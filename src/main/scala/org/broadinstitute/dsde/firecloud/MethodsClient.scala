@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.MethodsClient.MethodsListRequest
 import org.broadinstitute.dsde.firecloud.model.MethodEntity
-import org.broadinstitute.dsde.firecloud.model.MethodEntityJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import spray.client.pipelining._
 import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
