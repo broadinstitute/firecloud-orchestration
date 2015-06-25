@@ -29,11 +29,6 @@
         <appender-ref ref="console"/>
     </logger>
 
-    <logger name="akka" level="info" additivity="false">
-        <appender-ref ref="file"/>
-        <appender-ref ref="console"/>
-    </logger>
-
     <root level="warn">
         <appender-ref ref="file"/>
         <appender-ref ref="console"/>

@@ -1,13 +1,8 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import com.wordnik.swagger.annotations.{ApiModel, ApiModelProperty}
-import spray.json.DefaultJsonProtocol
 
 import scala.annotation.meta.field
-
-object MethodEntityJsonProtocol extends DefaultJsonProtocol {
-  implicit val impMethodEntity = jsonFormat10(MethodEntity)
-}
 
 @ApiModel(value = "Agora Method")
 case class MethodEntity(

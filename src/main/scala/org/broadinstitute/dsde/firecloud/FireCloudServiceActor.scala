@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud
 import akka.actor.ActorLogging
 import com.gettyimages.spray.swagger.SwaggerHttpService
 import com.wordnik.swagger.model.ApiInfo
-import org.broadinstitute.dsde.firecloud.service.MethodsService
+import org.broadinstitute.dsde.firecloud.service.{WorkspaceService, MethodsService}
 import spray.http.StatusCodes._
 import spray.routing.HttpServiceActor
 
@@ -20,16 +20,20 @@ class FireCloudServiceActor extends HttpServiceActor with ActorLogging {
   }
 
   val methodsService = new MethodsService with ActorRefFactoryContext
+  val workspaceService = new WorkspaceService with ActorRefFactoryContext
 
   def receive = runRoute(
-    swaggerService.routes ~ swaggerUiService ~ methodsService.listRoute
+    swaggerService.routes ~ swaggerUiService ~
+      methodsService.routes ~
+      workspaceService.routes
   )
 
   val swaggerService = new SwaggerHttpService {
 
     // All documented API services must be added to these API types for Swagger to recognize them.
     override def apiTypes = Seq(
-      typeOf[MethodsService]
+      typeOf[MethodsService],
+      typeOf[WorkspaceService]
     )
     override def apiVersion = FireCloudConfig.SwaggerConfig.apiVersion
     override def baseUrl = FireCloudConfig.SwaggerConfig.baseUrl

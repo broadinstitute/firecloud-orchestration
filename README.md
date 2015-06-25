@@ -32,21 +32,21 @@ sbt
 assembly
 ```
 
-Execute the jar with the path to the jar and path fo the config file:
+Execute the jar with the path to the jar and path of the desired config file:
+
 ```
 java -Dconfig.file=src/main/resources/application.conf -jar target/scala-2.11/FireCloud-Orchestration-assembly-0.1-9-SNAPSHOT.jar
 ```
 
 ## Testing
 
-Replace the integration components of application.conf to reflect correct values.
+Replace the openam components of appropriate config file to reflect correct values. 
 See DevOps or any Silver team member for details. Make sure sbt is run with the correct config file option.
 
-    methods {
-      // Mock test url. 
-      // Replace with Agora CI url for integration testing.
-      baseUrl="http://localhost:8989/methods"
-    }
+There are two example configuration files that can be used. For integration testing, 
+start sbt with `src/main/resources/application.conf`. For mock testing, use `src/test/resources/test.conf`. 
+`application.conf` has the urls for public services. `test.conf` has urls for local mock servers.
+
     openam {
 	  deploymentUri = "...replace..."
 	  realm = "...replace..."
@@ -57,5 +57,4 @@ See DevOps or any Silver team member for details. Make sure sbt is run with the 
 	    type = "module"
 	    value = "DataStore"
 	  }
-    }
-    
+    }  

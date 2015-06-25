@@ -9,7 +9,7 @@ import spray.routing.{HttpService, Route}
 
 class MethodsServiceActor extends Actor with MethodsService {
   def actorRefFactory = context
-  def receive = runRoute(listRoute)
+  def receive = runRoute(routes)
 }
 
 @Api(value = "/methods", description = "Methods Service", produces = "application/json")
@@ -17,7 +17,7 @@ trait MethodsService extends HttpService with FireCloudDirectives {
 
   private final val ApiPrefix = "methods"
 
-  val listRoute = listMethodsRoute
+  val routes = listMethodsRoute
 
   lazy val log = LoggerFactory.getLogger(getClass)
 

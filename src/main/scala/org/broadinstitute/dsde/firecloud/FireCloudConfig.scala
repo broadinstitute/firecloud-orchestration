@@ -29,6 +29,15 @@ object FireCloudConfig {
   object Methods {
     private val methods = config.getConfig("methods")
     lazy val baseUrl = methods.getString("baseUrl")
+    lazy val methodsPath = methods.getString("methodsPath")
+    lazy val methodsListUrl = baseUrl + methodsPath
+  }
+
+  object Workspace {
+    private val workspace = config.getConfig("workspace")
+    lazy val baseUrl= workspace.getString("baseUrl")
+    lazy val workspacesPath = workspace.getString("workspacesPath")
+    lazy val workspaceCreateUrl = baseUrl + workspacesPath
   }
 
 }
