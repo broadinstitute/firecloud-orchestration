@@ -51,7 +51,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
             respondWithJSON { requestContext =>
               ingest match {
                 case x if x.name.isEmpty || x.namespace.isEmpty =>
-                  log.error("Invalid workpace ingest object.")
+                  log.error("Invalid workspace ingest object.")
                   requestContext.complete(
                     BadRequest,
                     (if (x.name.isEmpty) " name is a required field;" else "") + (if (x.namespace.isEmpty) " namespace is a required field;" else "")
