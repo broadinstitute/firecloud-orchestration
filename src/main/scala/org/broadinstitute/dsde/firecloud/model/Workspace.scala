@@ -11,6 +11,7 @@ case class WorkspaceIngest  (
                               @(ApiModelProperty@field)(required = true, value = "The name of the workspace")
                               name: Option[String] = None)
 
+// TODO: Revisit this if the rawls service removes createdDate and createdBy from their API.
 @ApiModel(value = "Workspace Entity")
 case class WorkspaceEntity  (
                               @(ApiModelProperty@field)(required = true, value = "The namespace the workspace belongs to")

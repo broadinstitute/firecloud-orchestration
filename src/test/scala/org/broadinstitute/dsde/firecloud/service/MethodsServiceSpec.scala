@@ -40,7 +40,7 @@ class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteT
 
     "when calling GET on the methods path" - {
       "valid methods are returned" in {
-        Get("/methods") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(listRoute) ~> check {
+        Get("/methods") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
           status should equal(OK)
           val entities = responseAs[List[MethodEntity]]
           entities shouldNot be(empty)
@@ -54,7 +54,7 @@ class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteT
 
     "when calling GET on the methods path without a valid authentication token" - {
       "Found (302 redirect) response is returned" in {
-        Get("/methods") ~> sealRoute(listRoute) ~> check {
+        Get("/methods") ~> sealRoute(routes) ~> check {
           status should equal(Found)
         }
       }
@@ -62,7 +62,7 @@ class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteT
 
     "when calling POST on the methods path" - {
       "MethodNotAllowed error is returned" in {
-        Put("/methods") ~> sealRoute(listRoute) ~> check {
+        Put("/methods") ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
           responseAs[String] === "HTTP method not allowed, supported methods: GET"
         }
@@ -71,7 +71,7 @@ class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteT
 
     "when calling PUT on the methods path" - {
       "MethodNotAllowed error is returned" in {
-        Post("/methods") ~> sealRoute(listRoute) ~> check {
+        Post("/methods") ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
           responseAs[String] === "HTTP method not allowed, supported methods: GET"
         }

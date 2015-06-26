@@ -42,7 +42,7 @@ class MethodsClient(requestContext: RequestContext) extends Actor {
     val pipeline: HttpRequest => Future[HttpResponse] =
       addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
 
-    val responseFuture: Future[HttpResponse] = pipeline { Get(FireCloudConfig.Methods.baseUrl) }
+    val responseFuture: Future[HttpResponse] = pipeline { Get(FireCloudConfig.Methods.methodsListUrl) }
 
     responseFuture onComplete {
       case Success(response) =>

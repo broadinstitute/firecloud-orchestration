@@ -55,7 +55,7 @@ class WorkspaceClient (requestContext: RequestContext) extends Actor {
     val pipeline: HttpRequest => Future[HttpResponse] =
       addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
 
-    val responseFuture: Future[HttpResponse] = pipeline { Post(FireCloudConfig.Workspace.workspacesUrl, workspaceEntity) }
+    val responseFuture: Future[HttpResponse] = pipeline { Post(FireCloudConfig.Workspace.workspaceCreateUrl, workspaceEntity) }
 
     responseFuture onComplete {
       case Success(response) =>

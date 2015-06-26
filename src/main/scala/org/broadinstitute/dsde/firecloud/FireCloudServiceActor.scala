@@ -24,8 +24,8 @@ class FireCloudServiceActor extends HttpServiceActor with ActorLogging {
 
   def receive = runRoute(
     swaggerService.routes ~ swaggerUiService ~
-      methodsService.listRoute ~
-      workspaceService.createRoute
+      methodsService.routes ~
+      workspaceService.routes
   )
 
   val swaggerService = new SwaggerHttpService {
