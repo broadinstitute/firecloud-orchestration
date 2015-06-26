@@ -34,10 +34,13 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
     val workspaceIngest = WorkspaceIngest(
       name = Some(MockServers.randomAlpha()),
       namespace = Some(MockServers.randomAlpha()))
+    val invalidWorkspaceIngest = WorkspaceIngest(
+      name = Option.empty,
+      namespace = Option.empty)
 
     "when calling POST on the workspaces path with a valid WorkspaceIngest" - {
       "valid workspace is returned" in {
-        Post(ApiPrefix, workspaceIngest) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(createRoute) ~> check {
+        Post(ApiPrefix, workspaceIngest) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
           status should equal(Created)
           val entity = responseAs[WorkspaceEntity]
           entity.name shouldNot be(Option.empty)
@@ -51,15 +54,23 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
     "when calling POST on the workspaces path without a valid authentication token" - {
       "Unauthorized (401) response is returned" in {
-        Post(ApiPrefix, workspaceIngest) ~> sealRoute(createRoute) ~> check {
+        Post(ApiPrefix, workspaceIngest) ~> sealRoute(routes) ~> check {
           status should equal(Unauthorized)
+        }
+      }
+    }
+
+    "when calling POST on the workspaces path with an invalid workspace ingest entity" - {
+      "Bad Request (400) response is returned" in {
+        Post(ApiPrefix, invalidWorkspaceIngest) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~>sealRoute(routes) ~> check {
+          status should be(BadRequest)
         }
       }
     }
 
     "when calling GET on the workspaces path" - {
       "MethodNotAllowed error is returned" in {
-        Get(ApiPrefix) ~> sealRoute(createRoute) ~> check {
+        Get(ApiPrefix) ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
           responseAs[String] === "HTTP method not allowed, supported methods: GET"
         }
@@ -68,7 +79,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
     "when calling PUT on the workspaces path" - {
       "MethodNotAllowed error is returned" in {
-        Put(ApiPrefix) ~> sealRoute(createRoute) ~> check {
+        Put(ApiPrefix) ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
           responseAs[String] === "HTTP method not allowed, supported methods: GET"
         }
