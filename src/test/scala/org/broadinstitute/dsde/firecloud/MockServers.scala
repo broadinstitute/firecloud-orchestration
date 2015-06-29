@@ -7,8 +7,10 @@ import org.mockserver.model.{Cookie, Header}
 import org.mockserver.model.HttpRequest.request
 import org.mockserver.model.HttpResponse._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import spray.http.StatusCodes._
 import spray.json._
 import DefaultJsonProtocol._
+import org.mockserver.model.HttpCallback._
 
 /**
  * Represents all possible results that can be returned from the Methods Service
@@ -43,7 +45,7 @@ object MockServers {
       attributes = Some(Map.empty)
     )
   }
-  
+
   var methodsServer: ClientAndServer = _
   var workspaceServer: ClientAndServer = _
 
@@ -70,7 +72,7 @@ object MockServers {
           .withBody(
             mockMethodEntities.toJson.prettyPrint
           )
-          .withStatusCode(200)
+          .withStatusCode(OK.intValue)
       )
 
     MockServers.methodsServer
@@ -82,27 +84,23 @@ object MockServers {
         response()
           .withHeaders(header)
           .withBody("Invalid authentication token, please log in.")
-          .withStatusCode(302)
+          .withStatusCode(Found.intValue)
       )
 
   }
 
   def startWorkspaceServer(): Unit = {
     workspaceServer = startClientAndServer(8990)
-    
+
     MockServers.workspaceServer
       .when(
         request()
           .withMethod("POST")
           .withPath("/workspaces")
           .withCookies(cookie)
-      ).respond(
-        response()
-          .withHeaders(header)
-          .withBody(
-            mockWorkspace.toJson.prettyPrint
-          )
-          .withStatusCode(201)
+      ).callback(
+        callback().
+          withCallbackClass("org.broadinstitute.dsde.firecloud.ValidWorkspaceCallback")
       )
 
     MockServers.workspaceServer
@@ -114,7 +112,7 @@ object MockServers {
         response()
           .withHeaders(header)
           .withBody("Authentication is possible but has failed or not yet been provided.")
-          .withStatusCode(401)
+          .withStatusCode(Unauthorized.intValue)
       )
 
   }

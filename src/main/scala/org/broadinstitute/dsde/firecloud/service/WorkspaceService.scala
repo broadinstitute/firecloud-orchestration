@@ -49,22 +49,13 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
           // TODO: Revisit getting the username from the auth token if the rawls service removes it from their API.
           commonNameFromOptionalCookie() { username =>
             respondWithJSON { requestContext =>
-              ingest match {
-                case x if x.name.isEmpty || x.namespace.isEmpty =>
-                  log.error("Invalid workspace ingest object.")
-                  requestContext.complete(
-                    BadRequest,
-                    (if (x.name.isEmpty) " name is a required field;" else "") + (if (x.namespace.isEmpty) " namespace is a required field;" else "")
-                  )
-                case _ =>
-                  username match {
-                    case Some(x) =>
-                      val workspaceClient = actorRefFactory.actorOf(Props(new WorkspaceClient(requestContext)))
-                      workspaceClient ! WorkspaceClient.WorkspaceCreate(ingest, username)
-                    case None =>
-                      log.error("No authenticated username provided.")
-                      requestContext.complete(Unauthorized)
-                  }
+              username match {
+                case Some(x) =>
+                  val workspaceClient = actorRefFactory.actorOf(Props(new WorkspaceClient(requestContext)))
+                  workspaceClient ! WorkspaceClient.WorkspaceCreate(ingest, username)
+                case None =>
+                  log.error("No authenticated username provided.")
+                  requestContext.complete(Unauthorized)
               }
             }
           }
