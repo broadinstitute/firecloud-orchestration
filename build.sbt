@@ -92,3 +92,6 @@ testOptions in Test += Tests.Setup(classLoader =>
     .getMethod("getLogger", classLoader.loadClass("java.lang.String"))
     .invoke(null, "ROOT")
 )
+
+// Uncomment to build without running tests.
+// test in assembly := {}

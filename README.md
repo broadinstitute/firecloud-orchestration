@@ -29,13 +29,21 @@ FireCloud Orchestration Service
 Run the assembly task to build a fat jar:
 ```
 sbt
-assembly
+> assembly
 ```
 
 Execute the jar with the path to the jar and path of the desired config file:
 
 ```
-java -Dconfig.file=src/main/resources/application.conf -jar target/scala-2.11/FireCloud-Orchestration-assembly-0.1-9-SNAPSHOT.jar
+java -Dconfig.file=src/main/resources/application.conf \
+  -jar $(ls target/scala-2.11/FireCloud-Orchestration-assembly-* | tail -n 1)
+```
+
+For incremental builds, compile and run from sbt:
+```
+sbt
+> compile
+> reStart
 ```
 
 ## Testing
