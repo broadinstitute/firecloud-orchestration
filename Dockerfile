@@ -9,7 +9,10 @@ COPY build.sbt /usr/firecloud-orchestration/build.sbt
 COPY src /usr/firecloud-orchestration/src
 COPY project /usr/firecloud-orchestration/project
 COPY application.conf /usr/firecloud-orchestration/application.conf
+COPY test.conf /usr/firecloud-orchestration/test.conf
 
 WORKDIR /usr/firecloud-orchestration
 
-RUN sbt assembly -Dconfig.file=/usr/firecloud-orchestration/application.conf
+RUN sbt assembly -Dconfig.file=/usr/firecloud-orchestration/test.conf
+
+CMD java -Dconfig.file=/usr/firecloud-orchestration/application.conf -jar target/scala-2.11/FireCloud-Orchestration-assembly-0.1-9-SNAPSHOT.jar
