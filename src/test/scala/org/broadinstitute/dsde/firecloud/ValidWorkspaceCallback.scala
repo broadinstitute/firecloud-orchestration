@@ -19,7 +19,7 @@ class ValidWorkspaceCallback extends ExpectationCallback {
         response()
           .withHeaders(MockServers.header)
           .withStatusCode(Created.intValue)
-          .withBody(MockServers.mockWorkspace.toJson.prettyPrint)
+          .withBody(MockServers.createMockWorkspace().toJson.prettyPrint)
       case _ =>
         response()
           .withHeaders(MockServers.header)
