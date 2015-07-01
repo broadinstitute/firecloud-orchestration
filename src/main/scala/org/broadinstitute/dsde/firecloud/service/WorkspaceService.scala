@@ -22,9 +22,25 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
   private final val ApiPrefix = "workspaces"
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  val routes = createWorkspaceRoute
+  val routes = optionsRoute ~ createWorkspaceRoute ~ listWorkspacesRoute
 
   lazy val log = LoggerFactory.getLogger(getClass)
+
+  @ApiOperation(
+    value = "workspace options",
+    nickname = "workspaceOptions",
+    httpMethod = "OPTIONS",
+    notes = "response is an OPTIONS response")
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "OK")))
+  def optionsRoute: Route =
+    path(ApiPrefix) {
+      options {
+        respondWithStatus(200) { requestContext =>
+          ServiceUtils.addCorsHeaders(requestContext).complete("OK")
+        }
+      }
+    }
 
   @ApiOperation(
     value = "create workspace",
@@ -63,4 +79,23 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
       }
     }
 
+  @ApiOperation(
+    value = "list workspaces",
+    nickname = "listWorkspaces",
+    httpMethod = "GET",
+    response = classOf[WorkspaceEntity],
+    responseContainer = "List",
+    notes = "response is list of workspaces from the workspace service")
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Successful"),
+    new ApiResponse(code = 500, message = "Internal Error")))
+  def listWorkspacesRoute: Route =
+    path(ApiPrefix) {
+      get {
+        respondWithJSON { requestContext =>
+          val workspaceClient = actorRefFactory.actorOf(Props(new WorkspaceClient(requestContext)))
+          workspaceClient ! WorkspaceClient.WorkspacesListRequest
+        }
+      }
+    }
 }

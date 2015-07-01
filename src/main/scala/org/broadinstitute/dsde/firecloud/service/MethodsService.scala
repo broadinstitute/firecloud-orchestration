@@ -17,9 +17,25 @@ trait MethodsService extends HttpService with FireCloudDirectives {
 
   private final val ApiPrefix = "methods"
 
-  val routes = listMethodsRoute
+  val routes = optionsRoute ~ listMethodsRoute
 
   lazy val log = LoggerFactory.getLogger(getClass)
+
+  @ApiOperation(
+    value = "workspace options",
+    nickname = "workspaceOptions",
+    httpMethod = "OPTIONS",
+    notes = "response is an OPTIONS response")
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "OK")))
+  def optionsRoute: Route =
+    path(ApiPrefix) {
+      options {
+        respondWithStatus(200) { requestContext =>
+          ServiceUtils.addCorsHeaders(requestContext).complete("OK")
+        }
+      }
+    }
 
   @ApiOperation(
     value = "list methods",

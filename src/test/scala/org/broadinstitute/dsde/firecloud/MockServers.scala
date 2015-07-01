@@ -1,5 +1,8 @@
 package org.broadinstitute.dsde.firecloud
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import org.broadinstitute.dsde.firecloud.model.{WorkspaceEntity, MethodEntity}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
@@ -17,33 +20,37 @@ import org.mockserver.model.HttpCallback._
  */
 object MockServers {
 
+  val isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
   val cookie = new Cookie("iPlanetDirectoryPro", ".*")
   val header = new Header("Content-Type", "application/json")
   val mockMethodEntities: List[MethodEntity] = {
-    List.tabulate(randomInt())(
+    List.tabulate(randomPositiveInt())(
       n =>
         MethodEntity(
           namespace = Some(randomAlpha()),
           name = Some(randomAlpha()),
-          snapshotId = Some(randomInt()),
+          snapshotId = Some(randomPositiveInt()),
           synopsis = Some(randomAlpha()),
           documentation = Some(randomAlpha()),
           owner = Some(randomAlpha()),
-          createDate = Some(randomAlpha()),
+          createDate = Some(isoDate()),
           payload = Some(randomAlpha()),
           url = Some(randomAlpha()),
           entityType = Some(randomAlpha())
         )
     )
   }
-  val mockWorkspace: WorkspaceEntity = {
+  def createMockWorkspace(): WorkspaceEntity = {
     WorkspaceEntity(
       name = Some(randomAlpha()),
       namespace = Some(randomAlpha()),
-      createdDate = Some(randomAlpha()),
+      createdDate = Some(isoDate()),
       createdBy = Some(randomAlpha()),
       attributes = Some(Map.empty)
     )
+  }
+  val mockWorkspaceEntities: List[WorkspaceEntity] = {
+    List.tabulate(randomPositiveInt())(n => createMockWorkspace())
   }
 
   var methodsServer: ClientAndServer = _
@@ -115,17 +122,31 @@ object MockServers {
           .withStatusCode(Unauthorized.intValue)
       )
 
+    MockServers.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath("/workspaces")
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withBody(
+            mockWorkspaceEntities.toJson.prettyPrint
+          )
+          .withStatusCode(OK.intValue)
+      )
   }
 
   /****** Utilities ******/
   
-  def randomInt(): Int = {
+  def randomPositiveInt(): Int = {
     scala.util.Random.nextInt(9) + 1
   }
 
   def randomAlpha(): String = {
     val chars = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
-    randomStringFromCharList(randomInt(), chars)
+    randomStringFromCharList(randomPositiveInt(), chars)
   }
 
   def randomStringFromCharList(length: Int, chars: Seq[Char]): String = {
@@ -137,4 +158,7 @@ object MockServers {
     sb.toString()
   }
 
+  def isoDate(): String = {
+    isoDateFormat.format(new Date())
+  }
 }

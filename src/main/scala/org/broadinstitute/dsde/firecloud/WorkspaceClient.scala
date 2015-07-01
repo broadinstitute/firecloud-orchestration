@@ -3,16 +3,18 @@ package org.broadinstitute.dsde.firecloud
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import akka.event.Logging
-import org.broadinstitute.dsde.firecloud.WorkspaceClient.WorkspaceCreate
+import org.broadinstitute.dsde.firecloud.WorkspaceClient.{WorkspaceCreate, WorkspacesListRequest}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{WorkspaceEntity, WorkspaceIngest}
+import org.broadinstitute.dsde.firecloud.service.ServiceUtils
 import spray.client.pipelining._
 import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.http.{HttpRequest, HttpResponse, RequestProcessingException, StatusCodes}
 import spray.httpx.SprayJsonSupport._
+import spray.json.DefaultJsonProtocol._
 import spray.routing.RequestContext
 
 import scala.concurrent.Future
@@ -22,6 +24,7 @@ import scala.util.{Failure, Success}
 object WorkspaceClient {
 
   case class WorkspaceCreate(workspaceIngest: WorkspaceIngest, username: Option[String])
+  case class WorkspacesListRequest()
 
   def props(requestContext: RequestContext): Props = Props(new WorkspaceClient(requestContext))
 
@@ -39,6 +42,7 @@ class WorkspaceClient (requestContext: RequestContext) extends Actor {
 
     case WorkspaceCreate(workspaceIngest: WorkspaceIngest, username: Option[String]) =>
       createWorkspace(workspaceIngest, username)
+    case WorkspacesListRequest => listWorkspaces(sender())
 
   }
 
@@ -46,7 +50,7 @@ class WorkspaceClient (requestContext: RequestContext) extends Actor {
 
     val workspaceEntity = WorkspaceEntity(
       name = workspaceIngest.name,
-      namespace = workspaceIngest.namespace,
+      namespace = username,
       createdDate = Some(format.format(new Date())),
       createdBy = username,
       attributes = Some(Map.empty)
@@ -62,21 +66,38 @@ class WorkspaceClient (requestContext: RequestContext) extends Actor {
         response.status match {
           case Created =>
             log.debug("Workspace Created response")
-            requestContext.complete(response.status, unmarshal[WorkspaceEntity].apply(response))
+            ServiceUtils.addCorsHeaders(requestContext).complete(
+              response.status, unmarshal[WorkspaceEntity].apply(response)
+            )
             context.stop(self)
           case _ =>
             // Bubble up all other unmarshallable responses
             log.warning("Unanticipated response: " + response.status.defaultMessage)
-            requestContext.complete(response)
+            ServiceUtils.addCorsHeaders(requestContext).complete(response)
             context.stop(self)
         }
       case Failure(error) =>
         // Failure accessing service
         log.error(error, "Could not access the workspace service")
-        requestContext.failWith(new RequestProcessingException(StatusCodes.InternalServerError, error.getMessage))
+        ServiceUtils.addCorsHeaders(requestContext).failWith(
+          new RequestProcessingException(StatusCodes.InternalServerError, error.getMessage)
+        )
         context.stop(self)
     }
 
   }
 
+  def listWorkspaces(senderRef: ActorRef): Unit = {
+    log.info("listWorkspaces request received")
+    def completeSuccessfully(requestContext: RequestContext, response: HttpResponse): Unit = {
+      requestContext.complete(unmarshal[List[WorkspaceEntity]].apply(response))
+    }
+    ServiceUtils.completeFromExternalRequest(ServiceUtils.ExternalRequestParams(
+      log,
+      context,
+      FireCloudConfig.Workspace.workspacesListUrl,
+      requestContext,
+      completeSuccessfully
+    ))
+  }
 }
