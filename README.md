@@ -1,6 +1,7 @@
 # FireCloud-Orchestration
 FireCloud Orchestration Service
 
+* URL: https://firecloud-orchestration-ci.broadinstitute.org/swagger/index.html?url=/api-docs
 * Documentation: [https://broadinstitute.atlassian.net/wiki/display/DSDE/Silver+Team](https://broadinstitute.atlassian.net/wiki/display/DSDE/Silver+Team)
 * Github Repository: [https://github.com/broadinstitute/firecloud-orchestration/](https://github.com/broadinstitute/firecloud-orchestration/)
 
