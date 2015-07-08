@@ -1,74 +1,69 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import akka.actor.{Actor, Props}
-import com.wordnik.swagger.annotations._
-import org.broadinstitute.dsde.firecloud.WorkspaceClient
-import org.broadinstitute.dsde.firecloud.model.{WorkspaceEntity, WorkspaceIngest}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import com.wordnik.swagger.annotations.{Api, ApiImplicitParam, ApiImplicitParams, ApiOperation}
 import org.slf4j.LoggerFactory
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
+import spray.client.pipelining.{Get, Post}
+import spray.http.StatusCodes.Unauthorized
+import spray.json.DefaultJsonProtocol._
+import spray.json._
 import spray.routing._
+
 import org.broadinstitute.dsde.vault.common.directives.OpenAMDirectives._
+
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, HttpClient}
 
 class WorkspaceServiceActor extends Actor with WorkspaceService {
   def actorRefFactory = context
   def receive = runRoute(routes)
 }
 
-@Api(value = "/workspaces", description = "Workspace Services", produces = "application/json")
+@Api(value = "/workspaces", description = "Workspaces Service",
+  produces = "application/json, text/plain")
 trait WorkspaceService extends HttpService with FireCloudDirectives {
 
   private final val ApiPrefix = "workspaces"
+  private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  val routes = optionsRoute ~ createWorkspaceRoute ~ listWorkspacesRoute
+  val routes = createWorkspaceRoute ~ listWorkspacesRoute
 
   lazy val log = LoggerFactory.getLogger(getClass)
-
-  @ApiOperation(
-    value = "workspace options",
-    nickname = "workspaceOptions",
-    httpMethod = "OPTIONS",
-    notes = "response is an OPTIONS response")
-  @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "OK")))
-  def optionsRoute: Route =
-    path(ApiPrefix) {
-      options {
-        respondWithStatus(200) { requestContext =>
-          ServiceUtils.addCorsHeaders(requestContext).complete("OK")
-        }
-      }
-    }
 
   @ApiOperation(
     value = "create workspace",
     nickname = "createWorkspace",
     httpMethod = "POST",
-    produces = "application/json",
-    consumes = "application/json",
-    response = classOf[WorkspaceEntity],
-    notes = "response is a the workspace created by the workspace service")
+    consumes = "application/json, text/plain",
+    notes = "The response is forwarded unmodified from the workspaces service.")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "body", required = true, dataType = "org.broadinstitute.dsde.firecloud.model.WorkspaceIngest", paramType = "body", value = "Workspace to create")
+    new ApiImplicitParam(
+      paramType = "body", name = "body", required = true,
+      dataType = "org.broadinstitute.dsde.firecloud.model.WorkspaceIngest",
+      value = "Workspace to create"
+    )
   ))
-  @ApiResponses(Array(
-    new ApiResponse(code = 201, message = "Created"),
-    new ApiResponse(code = 400, message = "Bad Request"),
-    new ApiResponse(code = 401, message = "Unauthorized"),
-    new ApiResponse(code = 500, message = "Internal Error")))
   def createWorkspaceRoute: Route =
     path(ApiPrefix) {
       post {
-        entity(as[WorkspaceIngest]) { ingest =>
-          // TODO: Revisit getting the username from the auth token if the rawls service removes it from their API.
-          commonNameFromOptionalCookie() { username =>
-            respondWithJSON { requestContext =>
+        entity(as[String]) { ingest =>
+          commonNameFromOptionalCookie() { username => requestContext =>
               username match {
                 case Some(x) =>
-                  val workspaceClient = actorRefFactory.actorOf(Props(new WorkspaceClient(requestContext)))
-                  workspaceClient ! WorkspaceClient.WorkspaceCreate(ingest, username)
+                  val params = ingest.parseJson.convertTo[Map[String, JsValue]]
+                    .updated("namespace", username.get.toJson)
+                    .updated("createdBy", username.get.toJson)
+                    .updated("createdDate", dateFormat.format(new Date()).toJson)
+                    .updated("attributes", JsObject())
+                  val request = Post(
+                    FireCloudConfig.Workspace.workspaceCreateUrl,
+                    HttpClient.createJsonHttpEntity(params.toJson.compactPrint)
+                  )
+                  actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+                    HttpClient.PerformExternalRequest(request)
                 case None =>
                   log.error("No authenticated username provided.")
                   requestContext.complete(Unauthorized)
@@ -77,25 +72,17 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
           }
         }
       }
-    }
 
   @ApiOperation(
     value = "list workspaces",
     nickname = "listWorkspaces",
     httpMethod = "GET",
-    response = classOf[WorkspaceEntity],
-    responseContainer = "List",
-    notes = "response is list of workspaces from the workspace service")
-  @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "Successful"),
-    new ApiResponse(code = 500, message = "Internal Error")))
+    notes = "The response is forwarded unmodified from the workspaces service.")
   def listWorkspacesRoute: Route =
     path(ApiPrefix) {
-      get {
-        respondWithJSON { requestContext =>
-          val workspaceClient = actorRefFactory.actorOf(Props(new WorkspaceClient(requestContext)))
-          workspaceClient ! WorkspaceClient.WorkspacesListRequest
-        }
+      get { requestContext =>
+        actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Workspace.workspacesListUrl))
       }
     }
 }
