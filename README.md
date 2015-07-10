@@ -41,11 +41,10 @@ java -Dconfig.file=src/main/resources/application.conf \
   -jar $(ls target/scala-2.11/FireCloud-Orchestration-assembly-* | tail -n 1)
 ```
 
-For incremental builds, compile and run from sbt:
+For development, you can have sbt recompile and restart the server whenever a file changes on disk:
 ```
 sbt
-> compile
-> reStart
+> ~ reStart
 ```
 
 ## Testing
