@@ -10,7 +10,7 @@ import spray.http.Uri
 import spray.http.Uri.Path
 import spray.routing.{HttpServiceActor, Route}
 
-import org.broadinstitute.dsde.firecloud.service.{MethodsService, WorkspaceService}
+import org.broadinstitute.dsde.firecloud.service.{EntityService, MethodsService, WorkspaceService}
 
 class FireCloudServiceActor extends HttpServiceActor with ActorLogging {
 
@@ -20,15 +20,17 @@ class FireCloudServiceActor extends HttpServiceActor with ActorLogging {
 
   val methodsService = new MethodsService with ActorRefFactoryContext
   val workspaceService = new WorkspaceService with ActorRefFactoryContext
+  val entityService = new EntityService with ActorRefFactoryContext
 
-  def receive = runRoute(swaggerUiService ~ methodsService.routes ~ workspaceService.routes)
+  def receive = runRoute(swaggerUiService ~ methodsService.routes ~ workspaceService.routes ~ entityService.routes)
 
   val swaggerService = new SwaggerHttpService {
 
     // All documented API services must be added to these API types for Swagger to recognize them.
     override def apiTypes = Seq(
       typeOf[MethodsService],
-      typeOf[WorkspaceService]
+      typeOf[WorkspaceService],
+      typeOf[EntityService]
     )
     override def apiVersion = FireCloudConfig.SwaggerConfig.apiVersion
     override def baseUrl = FireCloudConfig.SwaggerConfig.baseUrl
