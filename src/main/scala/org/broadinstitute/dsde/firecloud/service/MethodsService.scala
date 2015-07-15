@@ -1,60 +1,35 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.{Actor, _}
-import com.wordnik.swagger.annotations.{Api, _}
-import org.broadinstitute.dsde.firecloud.MethodsClient
-import org.broadinstitute.dsde.firecloud.model.MethodEntity
+import akka.actor.{Actor, Props}
+import com.wordnik.swagger.annotations.{Api, ApiOperation}
 import org.slf4j.LoggerFactory
+import spray.client.pipelining._
 import spray.routing.{HttpService, Route}
+
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, HttpClient}
 
 class MethodsServiceActor extends Actor with MethodsService {
   def actorRefFactory = context
   def receive = runRoute(routes)
 }
 
-@Api(value = "/methods", description = "Methods Service", produces = "application/json")
+@Api(value = "/methods", description = "Methods Service", produces = "application/json, text/plain")
 trait MethodsService extends HttpService with FireCloudDirectives {
 
   private final val ApiPrefix = "methods"
-
-  val routes = optionsRoute ~ listMethodsRoute
-
+  val routes = listMethodsRoute
   lazy val log = LoggerFactory.getLogger(getClass)
-
-  @ApiOperation(
-    value = "workspace options",
-    nickname = "workspaceOptions",
-    httpMethod = "OPTIONS",
-    notes = "response is an OPTIONS response")
-  @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "OK")))
-  def optionsRoute: Route =
-    path(ApiPrefix) {
-      options {
-        respondWithStatus(200) { requestContext =>
-          ServiceUtils.addCorsHeaders(requestContext).complete("OK")
-        }
-      }
-    }
 
   @ApiOperation(
     value = "list methods",
     nickname = "listMethods",
     httpMethod = "GET",
-    response = classOf[MethodEntity],
-    responseContainer = "List",
-    notes = "response is a list of methods from the methods repository")
-  @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "Successful"),
-    new ApiResponse(code = 500, message = "Internal Error")))
+    notes = "The response is forwarded unmodified from the methods repository.")
   def listMethodsRoute: Route =
     path(ApiPrefix) {
-      get {
-        respondWithJSON { requestContext =>
-          val methodsClient = actorRefFactory.actorOf(Props(new MethodsClient(requestContext)))
-          methodsClient ! MethodsClient.MethodsListRequest
-        }
+      get { requestContext =>
+        actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Methods.methodsListUrl))
       }
     }
-
 }
