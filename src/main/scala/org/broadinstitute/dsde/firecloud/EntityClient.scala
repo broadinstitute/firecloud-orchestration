@@ -27,7 +27,9 @@ import scala.util.{Failure, Success}
 
 object EntityClient {
 
-  case class EntityListRequest(workspaceNamespace: String, workspaceName: String, entityType: String)
+  case class EntityListRequest(workspaceNamespace: String,
+                               workspaceName: String,
+                               entityType: String)
 
   def props(requestContext: RequestContext): Props = Props(new EntityClient(requestContext))
 
@@ -42,7 +44,8 @@ class EntityClient (requestContext: RequestContext) extends Actor {
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
 
   override def receive: Receive = {
-    case EntityListRequest(workspaceNamespace: String, workspaceName: String, entityType: String) => listEntities(workspaceNamespace, workspaceName, entityType)
+    case EntityListRequest(workspaceNamespace: String, workspaceName: String, entityType: String) =>
+      listEntities(workspaceNamespace, workspaceName, entityType)
   }
 
   def listEntities(workspaceNamespace: String, workspaceName: String, entityType: String): Unit = {
@@ -53,14 +56,11 @@ class EntityClient (requestContext: RequestContext) extends Actor {
     ServiceUtils.completeFromExternalRequest(ServiceUtils.ExternalRequestParams(
       log,
       context,
-      formUrl(workspaceNamespace, workspaceName) + "/" + entityType,
+      s"${FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace,
+        workspaceName)}/${entityType}",
       requestContext,
       completeSuccessfully
     ))
-  }
-
-  def formUrl(workspaceNamespace: String, workspaceName: String): String = {
-    s"${FireCloudConfig.Workspace.baseUrl}/workspaces/${workspaceNamespace}/${workspaceName}/entities"
   }
 }
 
