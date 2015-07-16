@@ -4,16 +4,18 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import akka.actor.{Actor, Props}
-import com.wordnik.swagger.annotations.{Api, ApiImplicitParam, ApiImplicitParams, ApiOperation}
+import com.wordnik.swagger.annotations._
 import org.slf4j.LoggerFactory
 import spray.client.pipelining.{Get, Post}
-import spray.http.StatusCodes.Unauthorized
-import spray.json.DefaultJsonProtocol._
 import spray.json._
+import spray.json.DefaultJsonProtocol._
+import spray.http.StatusCodes._
+import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
+import org.broadinstitute.dsde.firecloud.model.EntityCreateResult
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.vault.common.directives.OpenAMDirectives._
-
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, HttpClient}
 
 class WorkspaceServiceActor extends Actor with WorkspaceService {
@@ -29,7 +31,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  val routes = createWorkspaceRoute ~ listWorkspacesRoute
+  val routes = createWorkspaceRoute ~ listWorkspacesRoute ~ importEntitiesRoute
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -83,6 +85,29 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
       get { requestContext =>
         actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
           HttpClient.PerformExternalRequest(Get(FireCloudConfig.Workspace.workspacesListUrl))
+      }
+    }
+
+  @ApiOperation(
+    value = "import entities (JSON)",
+    nickname = "importEntitiesJSON",
+    httpMethod = "POST",
+    response = classOf[EntityCreateResult],
+    notes = "Create entities from a list of JSON objects. This won't be the final API.")
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Successful"),
+    new ApiResponse(code = 500, message = "Internal Error")))
+  def importEntitiesRoute: Route =
+    path(ApiPrefix / Segment / Segment / "importEntitiesJSON" ) { (workspaceNamespace,
+                                                                   workspaceName) =>
+      post {
+        formFields( 'entities ) { (entities) =>
+          respondWithJSON { requestContext =>
+            //TODO: Parse the entities string as JSON, fire off create requests to Rawls,
+            //and combine the responses in the EntityCreateResult case class.
+            requestContext.complete(EntityCreateResult(workspaceNamespace,workspaceName, entities))
+          }
+        }
       }
     }
 }
