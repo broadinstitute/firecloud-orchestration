@@ -8,7 +8,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json.DefaultJsonProtocol._
-import spray.http.HttpCookie
+import spray.http.{FormData, HttpCookie}
 import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
@@ -87,6 +87,26 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
         Put(ApiPrefix) ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
           responseAs[String] === "HTTP method not allowed, supported methods: GET"
+        }
+      }
+    }
+
+    "when calling POST on the workspaces/*/*/importEntitiesJSON path" - {
+      "OK response is returned" in {
+        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", FormData(Seq("entities" -> """{}""")))
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when calling POST on the workspaces/*/*/importEntitiesJSON path with invalid form data" - {
+      "415 Unsupported Media Type response is returned" in {
+        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", """{}""")
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(UnsupportedMediaType)
         }
       }
     }
