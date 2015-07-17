@@ -67,3 +67,7 @@ start sbt with `src/main/resources/application.conf`. For mock testing, use `src
 	    value = "DataStore"
 	  }
     }  
+
+## Debugging
+
+Remote debugging is enabled for firecloud-orchestration on port 5051.

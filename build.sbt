@@ -63,6 +63,8 @@ libraryDependencies ++= {
 
 Revolver.settings.settings
 
+Revolver.enableDebugging(port = 5051, suspend = false)
+
 javaOptions in Revolver.reStart += "-Dconfig.file=src/main/resources/application.conf"
 
 // SLF4J initializes itself upon the first logging call.  Because sbt
