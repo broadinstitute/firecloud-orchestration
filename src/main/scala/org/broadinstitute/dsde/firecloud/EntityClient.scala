@@ -1,29 +1,18 @@
 package org.broadinstitute.dsde.firecloud
 
-/**
- * Created by mbemis on 7/10/15.
- */
 import java.text.SimpleDateFormat
-import java.util.Date
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, Props}
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.EntityClient.EntityListRequest
-import org.broadinstitute.dsde.firecloud.WorkspaceClient.{WorkspaceCreate, WorkspacesListRequest}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{WorkspaceEntity, WorkspaceIngest}
-import org.broadinstitute.dsde.firecloud.service.ServiceUtils
 import spray.client.pipelining._
 import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.http.{HttpRequest, HttpResponse, RequestProcessingException, StatusCodes}
-import spray.httpx.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
 import spray.routing.RequestContext
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-
 
 object EntityClient {
 
@@ -50,17 +39,30 @@ class EntityClient (requestContext: RequestContext) extends Actor {
 
   def listEntities(workspaceNamespace: String, workspaceName: String, entityType: String): Unit = {
     log.info("listEntities request received")
-    def completeSuccessfully(requestContext: RequestContext, response: HttpResponse): Unit = {
-      requestContext.complete(response)
+    val pipeline: HttpRequest => Future[HttpResponse] =
+      addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
+    val responseFuture: Future[HttpResponse] = pipeline {
+      Get(s"${FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType")
     }
-    ServiceUtils.completeFromExternalRequest(ServiceUtils.ExternalRequestParams(
-      log,
-      context,
-      s"${FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace,
-        workspaceName)}/${entityType}",
-      requestContext,
-      completeSuccessfully
-    ))
+
+    responseFuture onComplete {
+      case Success(response) =>
+        response.status match {
+          case OK =>
+            log.debug("OK response")
+            requestContext.complete(response)
+          case _ =>
+            // Bubble up all other unmarshallable responses
+            log.warning("Unanticipated response: " + response.status.defaultMessage)
+            requestContext.complete(response)
+        }
+      case Failure(error) =>
+        // Failure accessing service
+        log.error(error, "Service API call failed")
+        requestContext.failWith(
+          new RequestProcessingException(StatusCodes.InternalServerError, error.getMessage))
+    }
+
   }
 }
 
