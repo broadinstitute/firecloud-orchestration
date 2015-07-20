@@ -99,16 +99,18 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
     new ApiResponse(code = 500, message = "Internal Error")))
   //scala implementation
   def listMethodConfigurationsRoute: Route =
+    //see here :   https://rawls-dev.broadinstitute.org/
+    //under  :   methodconfigs : Method Configuration manipulation API
     //GET /workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs
-    path(ApiPrefix/"workspaces"/workspaceNamespace/workspaceName/"methodconfigs") {
+    path(ApiPrefix/"workspaces"/Segment/Segment/"methodconfigs") {
       (workspaceNamespace,workspaceName) =>
       get {
         requestContext =>
           actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
           HttpClient.PerformExternalRequest(Get(FireCloudConfig.Workspace.listMethodConfigurationsUrl))
         }
-
       }
+
 
 
 
