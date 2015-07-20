@@ -31,7 +31,10 @@ case class EntityCreateResult(
   name: String,
   theJSON: String)
 
+
+//swagger annotation
 @ApiModel(value="method configuration entity")
+//scala definitions
 case class MethodConfigurationEntity(
                               @(ApiModelProperty@field)(required=true, value="method configuration name")
                               name: Option[String]=None,
