@@ -88,6 +88,32 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
       }
     }
 
+  //swagger annotation
+  @ApiOperation (
+    value="list method configurations in a workspace",
+    nickname="listMethodConfigurations",
+    httpMethod="GET",
+    notes="the response is forwarded unmodified from the workspaces service.")
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Successful"),
+    new ApiResponse(code = 500, message = "Internal Error")))
+  //scala implementation
+  def listMethodConfigurationsRoute: Route =
+    //GET /workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs
+    path(ApiPrefix/"workspaces"/workspaceNamespace/workspaceName/"methodconfigs") {
+      (workspaceNamespace,workspaceName) =>
+      get {
+        requestContext =>
+          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Workspace.listMethodConfigurationsUrl))
+        }
+
+      }
+
+
+
+
+
   @ApiOperation(
     value = "import entities (JSON)",
     nickname = "importEntitiesJSON",
