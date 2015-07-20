@@ -1,12 +1,14 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud
 import org.broadinstitute.dsde.firecloud.MockServers
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{WorkspaceEntity, WorkspaceIngest}
+import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, WorkspaceEntity, WorkspaceIngest}
 import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
+import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.http.{FormData, HttpCookie}
 import spray.http.HttpHeaders.Cookie
@@ -91,9 +93,9 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       }
     }
 
-    "when calling POST on the workspaces/*/*/importEntitiesJSON path" - {
+    "when calling POST on the workspaces/*/*/importEntitiesJSON path with valid but empty form data" - {
       "OK response is returned" in {
-        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", FormData(Seq("entities" -> """{}""")))
+        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", MockServers.mockEmptyEntityFormData)
           ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
           ~> sealRoute(routes)) ~> check {
           status should equal(OK)
@@ -107,6 +109,17 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
           ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
           ~> sealRoute(routes)) ~> check {
           status should equal(UnsupportedMediaType)
+        }
+      }
+    }
+
+    "when calling POST on the workspaces/*/*/importEntitiesJSON path with non-empty data" - {
+      "OK response is returned, with correct results for each entity" in {
+        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", MockServers.mockNonEmptyEntityFormData)
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(OK)
+          responseAs[Seq[EntityCreateResult]].map(_.succeeded) should equal (MockServers.mockNonEmptySuccesses)
         }
       }
     }

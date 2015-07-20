@@ -7,16 +7,19 @@ import akka.actor.{Actor, Props}
 import com.wordnik.swagger.annotations._
 import org.slf4j.LoggerFactory
 import spray.client.pipelining.{Get, Post}
+import spray.http.HttpHeaders.Cookie
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
-import org.broadinstitute.dsde.firecloud.model.EntityCreateResult
+import org.broadinstitute.dsde.firecloud.model.{Entity, EntityCreateResult}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.vault.common.directives.OpenAMDirectives._
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, HttpClient}
+import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, HttpClient}
+
+import scala.util.Failure
 
 class WorkspaceServiceActor extends Actor with WorkspaceService {
   def actorRefFactory = context
@@ -93,21 +96,22 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
     nickname = "importEntitiesJSON",
     httpMethod = "POST",
     response = classOf[EntityCreateResult],
+    responseContainer = "Seq",
     notes = "Create entities from a list of JSON objects. This won't be the final API.")
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "Successful"),
     new ApiResponse(code = 500, message = "Internal Error")))
   def importEntitiesRoute: Route =
-    path(ApiPrefix / Segment / Segment / "importEntitiesJSON" ) { (workspaceNamespace,
-                                                                   workspaceName) =>
+    path(ApiPrefix / Segment / Segment / "importEntitiesJSON" ) { (workspaceNamespace, workspaceName) =>
       post {
-        formFields( 'entities ) { (entities) =>
+        formFields( 'entities ) { (entitiesJson) =>
           respondWithJSON { requestContext =>
-            //TODO: Parse the entities string as JSON, fire off create requests to Rawls,
-            //and combine the responses in the EntityCreateResult case class.
-            requestContext.complete(EntityCreateResult(workspaceNamespace,workspaceName, entities))
+            val entities = entitiesJson.parseJson.convertTo[Seq[Entity]]
+            val url = FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+            actorRefFactory.actorOf(Props(new EntityClient(requestContext))) !
+              EntityClient.CreateEntities(workspaceNamespace, workspaceName, entities)
+            }
           }
         }
       }
-    }
 }

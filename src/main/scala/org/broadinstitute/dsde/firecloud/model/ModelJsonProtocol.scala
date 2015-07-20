@@ -9,6 +9,7 @@ object ModelJsonProtocol {
   implicit val impWorkspaceIngest = jsonFormat2(WorkspaceIngest)
   implicit val impWorkspaceEntity = jsonFormat5(WorkspaceEntity)
 
-  implicit val impEntityCreateResult = jsonFormat3(EntityCreateResult)
+  implicit val impEntity = jsonFormat5(Entity)
+  implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
 
 }
