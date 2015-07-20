@@ -3,13 +3,14 @@ package org.broadinstitute.dsde.firecloud
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import org.broadinstitute.dsde.firecloud.model.{WorkspaceEntity, MethodEntity}
+import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, Entity, WorkspaceEntity, MethodEntity}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.{Cookie, Header}
 import org.mockserver.model.HttpRequest.request
 import org.mockserver.model.HttpResponse._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import spray.http.FormData
 import spray.http.StatusCodes._
 import spray.json._
 import DefaultJsonProtocol._
@@ -19,6 +20,9 @@ import org.mockserver.model.HttpCallback._
  * Represents all possible results that can be returned from the Methods Service
  */
 object MockServers {
+
+  val methodsServerPort = 8989
+  val workspaceServerPort = 8990
 
   val isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
   val cookie = new Cookie("iPlanetDirectoryPro", ".*")
@@ -40,6 +44,53 @@ object MockServers {
         )
     )
   }
+
+  val mockSampleValid = Entity(
+    Some("namespace"),
+    Some("name"),
+    Some("sample"),
+    Some("sample1"),
+    Some(Map("a" -> "1", "b" -> "foo"))
+  )
+
+  val mockPairValid = Entity(
+    Some("namespace"),
+    Some("name"),
+    Some("pair"),
+    Some("pair1"),
+    Some(Map("a" -> "1", "b" -> "foo"))
+  )
+
+  // "conflicts" with sample1 above (but different attributes so we can distinguish them)
+  val mockSampleConflict = Entity(
+    Some("namespace"),
+    Some("name"),
+    Some("sample"),
+    Some("sample1"),
+    Some(Map.empty)
+  )
+
+  // missing entity name
+  val mockSampleMissingName = Entity(
+    Some("namespace"),
+    Some("name"),
+    Some("sample"),
+    None,
+    Some(Map.empty)
+  )
+
+  val mockEmptyEntityFormData = FormData(Seq("entities" -> """[]"""))
+
+  val mockNonEmptyEntityFormData = FormData(Seq("entities" -> Seq(
+    MockServers.mockSampleValid,
+    MockServers.mockPairValid,
+    MockServers.mockSampleConflict,
+    MockServers.mockSampleMissingName
+  ).toJson.compactPrint))
+
+  // the expected results of posting the entities from the form data above
+  val mockNonEmptySuccesses = Seq(true, true, false, false)
+
   def createMockWorkspace(): WorkspaceEntity = {
     WorkspaceEntity(
       name = Some(randomAlpha()),
@@ -65,7 +116,7 @@ object MockServers {
   }
 
   def startMethodsServer(): Unit = {
-    methodsServer = startClientAndServer(8989)
+    methodsServer = startClientAndServer(methodsServerPort)
 
     MockServers.methodsServer
       .when(
@@ -97,7 +148,9 @@ object MockServers {
   }
 
   def startWorkspaceServer(): Unit = {
-    workspaceServer = startClientAndServer(8990)
+    workspaceServer = startClientAndServer(workspaceServerPort)
+
+    // workspace-level responses
 
     MockServers.workspaceServer
       .when(
@@ -135,6 +188,47 @@ object MockServers {
             mockWorkspaceEntities.toJson.prettyPrint
           )
           .withStatusCode(OK.intValue)
+      )
+
+    // entity-level responses
+
+    MockServers.workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath(s"/workspaces/${mockSampleValid.wsNamespace.get}/${mockSampleValid.wsName.get}/entities")
+          .withBody(mockSampleValid.toJson.compactPrint)
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(Created.intValue)
+      )
+
+    MockServers.workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath(s"/workspaces/${mockPairValid.wsNamespace.get}/${mockPairValid.wsName.get}/entities")
+          .withBody(mockPairValid.toJson.compactPrint)
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(Created.intValue)
+      )
+
+    MockServers.workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath(s"/workspaces/${mockSampleConflict.wsNamespace.get}/${mockSampleConflict.wsName.get}/entities")
+          .withBody(mockSampleConflict.toJson.compactPrint)
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(Conflict.intValue)
       )
   }
 

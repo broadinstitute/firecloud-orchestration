@@ -25,8 +25,4 @@ case class WorkspaceEntity  (
                               @(ApiModelProperty@field)(required = true, value = "The attributes of the workspace")
                               attributes: Option[Map[String, String]] = None)
 
-// TODO: This is a stub case class until we know what we're returning from the batch entity create endpoint.
-case class EntityCreateResult(
-  namespace: String,
-  name: String,
-  theJSON: String)
+case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
