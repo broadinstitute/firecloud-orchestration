@@ -111,11 +111,6 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
         }
       }
 
-
-
-
-
-
   @ApiOperation(
     value = "import entities (JSON)",
     nickname = "importEntitiesJSON",
