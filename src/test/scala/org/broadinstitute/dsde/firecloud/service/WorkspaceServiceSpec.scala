@@ -1,8 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import com.wordnik.swagger.annotations.ApiModelProperty
 import org.broadinstitute.dsde.firecloud
 import org.broadinstitute.dsde.firecloud.MockServers
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.{WorkspaceEntity, WorkspaceIngest,MethodConfigurationEntity }
 import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, WorkspaceEntity, WorkspaceIngest}
 import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
 import org.scalatest.concurrent.ScalaFutures
@@ -15,6 +17,8 @@ import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.testkit.ScalatestRouteTest
+
+import scala.annotation.meta.field
 
 class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with WorkspaceService {
 
@@ -54,6 +58,33 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
         }
       }
     }
+
+
+    //EAS
+  "when calling GET on the list method configurations with a valid workspace name and a valid list of method configurations"- {
+      "valid empty list is returned with either nonexistent workspace name or namespace" in {
+        Get(ApiPrefix + "/nonexistent/nonexistent/methodconfigs") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRout(routes) ~> check{
+          status should be(BadRequest)
+        }
+      }
+    }
+
+//EAS
+    "when calling GET on the list method configurations with a valid workspace name and a valid list of method configurations"- {
+      "valid list of at list one length returned with given existing workspace name and namespace" in {
+        Get(ApiPrefix + "/nonexistent/nonexistent/methodconfigs") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRout(routes) ~> check{
+          status should equal(OK)
+          val methodconfigurations = responseAs[List[MethodConfigurationEntity]]
+          methodconfigurations  shouldNot be(empty)
+          methodconfigurations foreach {
+            mc: MethodConfigurationEntity => mc.name shouldNot be(empty)
+          }
+        }
+      }
+    }
+
+
+
 
     "when calling POST on the workspaces path without a valid authentication token" - {
       "Unauthorized (401) response is returned" in {

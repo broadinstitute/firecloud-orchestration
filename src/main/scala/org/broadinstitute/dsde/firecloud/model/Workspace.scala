@@ -25,4 +25,61 @@ case class WorkspaceEntity  (
                               @(ApiModelProperty@field)(required = true, value = "The attributes of the workspace")
                               attributes: Option[Map[String, String]] = None)
 
-case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
+case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)// TODO: This is a stub case class until we know what we're returning from the batch entity create endpoint.
+
+@ApiModel(value="method configuration entity")
+case class MethodConfigurationEntity(
+                              //3 basic string key/value pairs
+                              //1) name, 2) namespace, 3) root entity type
+                              @(ApiModelProperty@field)(required=true, value="method configuration name")
+                              name: Option[String]=None,
+                              @(ApiModelProperty@field)(required=true, value="method configuration namespace")
+                              namespace: Option[String]=None,
+                              @(ApiModelProperty@field)(required=true, value="root entity type")
+                              rootentitytype:Option[String]=None,
+                              //6 complex map string->string key/value pairs
+                              //1) workspace, 2) methodstore, 3) methodstoreconfig, 4) inputs, 5) outputs, 6) pre-requisites
+                              @(ApiModelProperty@field)(required=true, value="map with corresponding workspace-related information : name  and namespace ")
+                              workspaceName:Option[Map[String,String]]=None,
+                              @(ApiModelProperty@field)(required=true, value="map with corresponding method-related information")
+                              methodStoreMethod:Option[Map[String, String]] = None,
+                              @(ApiModelProperty@field)(required=true, value="map with corresponding method-store-related information")
+                              methodStoreConfig:Option[Map[String, String]] = None,
+                              @(ApiModelProperty@field)(required=true, value="map with outputs information")
+                              outputs:Option[Map[String, String]] = None,
+                              @(ApiModelProperty@field)(required=true, value="map with inputs information")
+                              inputs:Option[Map[String, String]] = None,
+                              @(ApiModelProperty@field)(required=true, value="PREREQUISITES:TODO PUT MORE PRECISE INFORMATION AND DETAIL HERE")
+                              prerequisites:Option[Map[String, String]] = None
+                              )
+/*Alex Baumann
+Jul-20 2:41 PM
+format will look like this { 
+  "name":"testConfig1",
+  "workspaceName":{ 
+      "namespace":"myNamespace",
+      "name":"myWorkspace"
+  },
+  "methodStoreMethod":{ 
+      "methodNamespace":"ns-config",
+      "methodName":"meth1",
+      "methodVersion":"1"
+  },
+  "methodStoreConfig":{ 
+      "methodConfigNamespace":"ns",
+      "methodConfigName":"meth1",
+      "methodConfigVersion":"1"
+  },
+  "outputs":{ 
+      "p1":"prereq expr"
+  },
+  "inputs":{ 
+      "o1":"output expr"
+  },
+  "rootEntityType":"Sample",
+  "prerequisites":{ 
+      "i1":"input expr"
+  },
+  "namespace":"ns"
+}
+Show less*/
