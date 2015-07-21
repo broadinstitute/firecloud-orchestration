@@ -68,7 +68,12 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       "valid list of at list one length returned with given existing workspace name and namespace" in {
         Get(ApiPrefix + "/nonexistent/nonexistent/methodconfigs") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRout(routes) ~> check{
           status should equal(OK)
-          val methodconfigurations = responseAs[List[WorkspaceEntity]]
+          val methodconfigurations = responseAs[List[MethodConfigurationEntity]]
+          methodconfigurations  shouldNot be(empty)
+          methodconfigurations foreach {
+            mc: MethodConfigurationEntity => mc.name shouldNot be(empty)
+
+          }
         }
       }
     }
