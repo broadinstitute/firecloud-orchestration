@@ -6,12 +6,13 @@ package org.broadinstitute.dsde.firecloud.service
 
 import javax.ws.rs.Path
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Props, Actor}
 import com.wordnik.swagger.annotations._
-import org.broadinstitute.dsde.firecloud.EntityClient
+import org.broadinstitute.dsde.firecloud.{HttpClient, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.model.Entity
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.slf4j.LoggerFactory
+import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
@@ -72,14 +73,9 @@ trait EntityService extends HttpService with FireCloudDirectives {
   def listEntitiesPerTypeRoute: Route =
     path("workspaces" / Segment / Segment / "entities" / Segment) {
       (workspaceNamespace, workspaceName, entityType) =>
-      get {
-        respondWithJSON { requestContext =>
-          val entityClient = actorRefFactory.actorOf(Props(new EntityClient(requestContext)))
-          entityClient ! EntityClient.EntityListRequest(
-            workspaceNamespace,
-            workspaceName,
-            entityType)
+        get { requestContext =>
+          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+            HttpClient.PerformExternalRequest(Get(s"${FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType"))
         }
       }
-    }
 }
