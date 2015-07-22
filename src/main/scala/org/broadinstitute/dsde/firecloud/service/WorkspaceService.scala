@@ -106,7 +106,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
       post {
         formFields( 'entities ) { (entitiesJson) =>
           respondWithJSON { requestContext =>
-            val entities = entitiesJson.parseJson.convertTo[Seq[Entity]]
+            val entities = entitiesJson.parseJson
             val url = FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace, workspaceName)
             actorRefFactory.actorOf(Props(new EntityClient(requestContext))) !
               EntityClient.CreateEntities(workspaceNamespace, workspaceName, entities)
