@@ -83,8 +83,8 @@ class EntityClient (requestContext: RequestContext) extends Actor {
     // and name in order to show errors.  This will all be replaced in our next sprint.
     def createFromJson(entity: JsObject) = {
       // NOTE: these expect that entityType and entityName exist
-      val entityType = entity.fields.get("entityType").get.convertTo[String]
-      val entityName = entity.fields.get("name").get.convertTo[String]
+      val entityType = entity.fields.get("entityType").getOrElse(new JsString("")).convertTo[String]
+      val entityName = entity.fields.get("name").getOrElse(new JsString("")).convertTo[String]
       createEntityOrReportError(wsNamespace, wsName, entity, entityType, entityName)
     }
     val results = entityJson.map(createFromJson)
