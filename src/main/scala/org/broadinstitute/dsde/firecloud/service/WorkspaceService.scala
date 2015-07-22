@@ -29,7 +29,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  val routes = createWorkspaceRoute ~ listWorkspacesRoute ~ listMethodConfigurationsRoute ~ importEntitiesRoute
+  val routes = createWorkspaceRoute ~ listWorkspacesRoute ~ listMethodConfigurationsRoute ~ importEntitiesJSONRoute ~ importEntitiesRoute
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -131,7 +131,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "Successful"),
     new ApiResponse(code = 500, message = "Internal Error")))
-  def importEntitiesRoute: Route =
+  def importEntitiesJSONRoute: Route =
     path(ApiPrefix / Segment / Segment / "importEntitiesJSON" ) { (workspaceNamespace, workspaceName) =>
       post {
         formFields( 'entities ) { (entitiesJson) =>
@@ -144,4 +144,25 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
           }
         }
       }
+
+  @ApiOperation(
+    value = "import entities (TSV)",
+    nickname = "importEntities",
+    httpMethod = "POST",
+    response = classOf[EntityCreateResult],
+    responseContainer = "Seq",
+    notes = "Create or update entities from a TSV file.")
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Successful"),
+    new ApiResponse(code = 500, message = "Internal Error")))
+  def importEntitiesRoute: Route =
+    path(ApiPrefix / Segment / Segment / "importEntities" ) { (workspaceNamespace, workspaceName) =>
+      post {
+        formFields( 'entities ) { (entitiesTSV) =>
+          respondWithJSON { requestContext =>
+            requestContext.complete( Seq( EntityCreateResult("implemented ", "yet? ", false, ", sorry") ) ) 
+          }
+        }
+      }
+    }
 }
