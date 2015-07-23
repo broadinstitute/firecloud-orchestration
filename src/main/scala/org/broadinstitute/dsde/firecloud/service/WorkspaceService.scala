@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.text.SimpleDateFormat
 import java.util.Date
+import javax.ws.rs.Path
 
 import akka.actor.{Actor, Props}
 import com.wordnik.swagger.annotations._
@@ -85,6 +86,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
       }
     }
 
+  @Path(value = "/{workspaceNamespace}/{workspaceName}/methodconfigs")
   @ApiOperation (
     value="list method configurations in a workspace",
     nickname="listMethodConfigurations",
@@ -92,6 +94,20 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
     response = classOf[MethodConfiguration],
     responseContainer = "List",
     notes="the response is forwarded unmodified from the workspaces service.")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(
+      name = "workspaceNamespace",
+      required = true,
+      dataType = "string",
+      paramType = "path",
+      value = "Workspace Namespace"),
+    new ApiImplicitParam(
+      name = "workspaceName",
+      required = true,
+      dataType = "string",
+      paramType = "path",
+      value = "Workspace Name")
+  ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "Successful"),
     new ApiResponse(code = 500, message = "Internal Error")))
