@@ -5,21 +5,15 @@ import java.util.Date
 
 import akka.actor.{Actor, Props}
 import com.wordnik.swagger.annotations._
+import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, MethodConfiguration}
+import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, HttpClient}
+import org.broadinstitute.dsde.vault.common.directives.OpenAMDirectives._
 import org.slf4j.LoggerFactory
 import spray.client.pipelining.{Get, Post}
-import spray.http.HttpHeaders.Cookie
-import spray.json._
-import spray.json.DefaultJsonProtocol._
 import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
+import spray.json.DefaultJsonProtocol._
+import spray.json._
 import spray.routing._
-
-import org.broadinstitute.dsde.firecloud.model.{Entity, EntityCreateResult}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.vault.common.directives.OpenAMDirectives._
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, HttpClient}
-
-import scala.util.Failure
 
 class WorkspaceServiceActor extends Actor with WorkspaceService {
   def actorRefFactory = context
@@ -34,7 +28,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  val routes = createWorkspaceRoute ~ listWorkspacesRoute ~ importEntitiesRoute
+  val routes = createWorkspaceRoute ~ listWorkspacesRoute ~ listMethodConfigurationsRoute ~ importEntitiesRoute
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -90,6 +84,26 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
           HttpClient.PerformExternalRequest(Get(FireCloudConfig.Workspace.workspacesListUrl))
       }
     }
+
+  @ApiOperation (
+    value="list method configurations in a workspace",
+    nickname="listMethodConfigurations",
+    httpMethod="GET",
+    response = classOf[MethodConfiguration],
+    responseContainer = "List",
+    notes="the response is forwarded unmodified from the workspaces service.")
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Successful"),
+    new ApiResponse(code = 500, message = "Internal Error")))
+  def listMethodConfigurationsRoute: Route =
+    path(ApiPrefix / Segment / Segment / "methodconfigs") {
+      (workspaceNamespace, workspaceName) =>
+      get {
+        requestContext =>
+          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Workspace.methodConfigPathFromWorkspace(workspaceNamespace, workspaceName)))
+        }
+      }
 
   @ApiOperation(
     value = "import entities (JSON)",
