@@ -56,7 +56,7 @@ class TSVParserSpec extends FlatSpec {
   }
 
   it should "load a one-line file" in {
-    val parseResult = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Map("foo" -> "woop", "bar" -> "de", "baz" -> "doo")))
+    val parseResult = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Array("woop", "de", "doo")))
     assertResult(parseResult) {
       TSVParser.parse(
         List(
@@ -67,7 +67,7 @@ class TSVParserSpec extends FlatSpec {
   }
 
   it should "be fine with a bunch of newlines at the end of file" in {
-    val parseResult = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Map("foo" -> "woop", "bar" -> "de", "baz" -> "doo")))
+    val parseResult = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Array("woop", "de", "doo")))
     assertResult(parseResult) {
       TSVParser.parse(
         List(
@@ -80,8 +80,8 @@ class TSVParserSpec extends FlatSpec {
   it should "load a multi-line file" in {
     val parseResult = TSVLoadFile("foo", Seq("foo", "bar", "baz"),
       Seq(
-        Map("foo" -> "woop", "bar" -> "de", "baz" -> "doo"),
-        Map("foo" -> "hip", "bar" -> "hip", "baz" -> "hooray")))
+        Array("woop", "de", "doo"),
+        Array("hip", "hip", "hooray")))
 
     assertResult(parseResult) {
       TSVParser.parse(

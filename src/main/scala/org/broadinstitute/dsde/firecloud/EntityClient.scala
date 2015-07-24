@@ -18,7 +18,7 @@ import spray.json.DefaultJsonProtocol._
 
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, ModelSchema}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 
 object EntityClient {
@@ -142,9 +142,9 @@ class EntityClient (requestContext: RequestContext) extends Actor {
   //Bail with a 400 Bad Request if the first column of the tsv has duplicate values.
   //Otherwise, carry on.
   private def checkFirstColumnsDistinct( tsv: TSVLoadFile )(op: Unit): Unit = {
-    val entitiesToUpdate = tsv.tsvData.map(_(tsv.firstColumnHeader))
+    val entitiesToUpdate = tsv.tsvData.map(_(0))
     val distinctEntities = entitiesToUpdate.distinct
-    if( entitiesToUpdate != distinctEntities ) {
+    if ( entitiesToUpdate.size != distinctEntities.size ) {
       requestContext.complete( HttpResponse(BadRequest, "TSV has duplicated entities: " + entitiesToUpdate.diff(distinctEntities).distinct.mkString(", ")) )
     } else {
       op
@@ -177,30 +177,62 @@ class EntityClient (requestContext: RequestContext) extends Actor {
     }
   }
 
-  def addToCollectionMembersAttribute( entityType: String, entityName: String, newMembers: Seq[(String, String)], membersAttributeName: String ) = {
-    //STUB: return a partial batch Rawls call for this:
-    //(entityName, entityType).attrs[membersAttributeName].extend(newMembers)
+  def batchCallToRawls( workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition] ) = {
+    log.info("TSV upload request received")
+    val pipeline: HttpRequest => Future[HttpResponse] =
+      addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
+    val responseFuture: Future[HttpResponse] = pipeline {
+      Post(FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/batchUpsert",
+            HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
+    }
+
+    responseFuture onComplete {
+      case Success(response) =>
+        response.status match {
+          case NoContent =>
+            log.debug("OK response")
+            requestContext.complete(response)
+          case _ =>
+            // Bubble up all other unmarshallable responses
+            log.warning("Unanticipated response: " + response.status.defaultMessage)
+            requestContext.complete(response)
+        }
+      case Failure(error) =>
+        // Failure accessing service
+        log.error(error, "Service API call failed")
+        requestContext.failWith(
+          new RequestProcessingException(StatusCodes.InternalServerError, error.getMessage))
+    }
   }
 
-  def setAttributesOnEntity(entityType: String, entityName: String, attributesMap: Map[String, String], referenceTypes: Map[String, String] ) = {
-    //for all attributes in attributesMap
-    // if the key is present in referenceTypes, the value is an entity name and referenceTypes(key) contains that entity's type
-    //MAYBE-DO: Parse out types provided in the TSV header? Or allow the model to specify types for optionally specified attributes?
+  val upsertAttrOperation = "op" -> AttributeString("AddUpdateAttribute")
+  val removeAttrOperation = "op" -> AttributeString("RemoveAttribute")
+  val addListMemberOperator = "op" -> AttributeString("AddListMember")
 
-    //STUB: return a batch of AddUpdateOperations
+  def setAttributesOnEntity(entityType: String, row: Seq[String], colInfo: Seq[(String,Option[String])]) = {
+    val ops = for { (value,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !value.isEmpty } yield {
+      val nameEntry = "attributeName" -> AttributeString(attributeName)
+      def valEntry( attr: Attribute ) = "addUpdateAttribute" -> attr
+      refTypeOpt match {
+        case Some(refType) => Map(upsertAttrOperation,nameEntry,valEntry(AttributeReference(refType,value)))
+        case None => value match {
+          case "__DELETE__" => Map(removeAttrOperation,nameEntry)
+          case _ => Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value)))
+        }
+      }
+    }
+    EntityUpdateDefinition(row(0),entityType,ops)
   }
 
-  def batchCallToRawls( calls: Any ) = {
-    //STUB: stitch the batch calls together and fire off the Rawls request.
-    //requestContext.complete(...)
-  }
-
-  def addToCollectionTypeFromTSV( workspaceNamespace: String, workspaceName: String, entityType: String, memberType: String, membersAttributeName: String, tsv: TSVLoadFile ) = {
-    //group together updates to distinct entities, construct the list of entities to add references to, and poke it into whatever the "members" field is called.
-    val tsvFieldName = memberType + "_id"
-    tsv.tsvData.groupBy( _(tsv.firstColumnHeader) ).map({
-      case (entityName, rows) => addToCollectionMembersAttribute( entityType, entityName, rows.map(row => (memberType, row(tsvFieldName))), membersAttributeName )
-    })
+  def addToCollectionTypeFromTSV( entityType: String, memberType: String, membersAttributeName: String, tsv: TSVLoadFile ) = {
+    // group together updates to distinct entities
+    tsv.tsvData groupBy(_(0)) map { case (entityName, rows) =>
+      val ops = rows map { row =>
+        val attrRef = AttributeReference(memberType,row(1))
+        Map(addListMemberOperator,"attributeListName"->AttributeString(membersAttributeName),"newMember"->attrRef)
+      }
+      EntityUpdateDefinition(entityName,entityType,ops)
+    }
   }
 
   private def tsvPopulatesCollectionMembers(tsv: TSVLoadFile, membersType: Option[String]): Boolean = {
@@ -218,20 +250,19 @@ class EntityClient (requestContext: RequestContext) extends Actor {
     val entityType = tsv.firstColumnHeader.stripSuffix("_id")
 
     withMemberCollectionType(entityType) { memberTypeOpt =>
-
       if( tsvPopulatesCollectionMembers(tsv, memberTypeOpt) ) {
-
         withPlural(memberTypeOpt.get) { memberPlural =>
-          val rawlsCalls = addToCollectionTypeFromTSV(workspaceNamespace, workspaceName, entityType, memberTypeOpt.get, memberPlural, tsv)
-          batchCallToRawls(rawlsCalls)
+          val rawlsCalls = addToCollectionTypeFromTSV(entityType, memberTypeOpt.get, memberPlural, tsv)
+          batchCallToRawls(workspaceNamespace, workspaceName, rawlsCalls.toSeq)
         }
       } else {
         //we're setting attributes on a bunch of entities
         checkFirstColumnsDistinct(tsv) {
           checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
             withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
-              val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, row(tsv.firstColumnHeader), row - tsv.firstColumnHeader, requiredAttributes))
-              batchCallToRawls(rawlsCalls)
+              val colInfo = tsv.headers.tail map { colName => (colName, requiredAttributes.get(colName)) }
+              val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, row, colInfo))
+              batchCallToRawls(workspaceNamespace, workspaceName, rawlsCalls)
             }
           }
         }
