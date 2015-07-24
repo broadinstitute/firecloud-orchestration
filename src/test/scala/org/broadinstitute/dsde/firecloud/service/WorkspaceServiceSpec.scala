@@ -1,19 +1,17 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud
-import org.broadinstitute.dsde.firecloud.MockServers
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, MockServers}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, WorkspaceEntity, WorkspaceIngest}
+import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, MethodConfiguration, WorkspaceEntity, WorkspaceIngest}
 import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
-import spray.json._
-import spray.json.DefaultJsonProtocol._
-import spray.http.{FormData, HttpCookie}
+import spray.http.HttpCookie
 import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
+import spray.json.DefaultJsonProtocol._
 import spray.testkit.ScalatestRouteTest
 
 class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with WorkspaceService {
@@ -51,6 +49,33 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
           entity.createdBy shouldNot be(Option.empty)
           entity.createdDate shouldNot be(Option.empty)
           entity.attributes should be(Some(Map.empty))
+        }
+      }
+    }
+
+    "when calling GET on the list method configurations with an invalid workspace namespace/name"- {
+      "Not Found is returned" in {
+        val path = FireCloudConfig.Workspace.methodConfigsListPath.format(
+          MockServers.mockInvalidWorkspace.namespace.get,
+          MockServers.mockInvalidWorkspace.name.get)
+        Get(path) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check{
+          status should be(NotFound)
+        }
+      }
+    }
+
+    "when calling GET on the list method configurations with a valid workspace namespace/name"- {
+      "OK response and a list of at list one Method Configuration is returned" in {
+        val path = FireCloudConfig.Workspace.methodConfigsListPath.format(
+          MockServers.mockValidWorkspace.namespace.get,
+          MockServers.mockValidWorkspace.name.get)
+        Get(path) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check{
+          status should equal(OK)
+          val methodconfigurations = responseAs[List[MethodConfiguration]]
+          methodconfigurations shouldNot be(empty)
+          methodconfigurations foreach {
+            mc: MethodConfiguration => mc.name shouldNot be(empty)
+          }
         }
       }
     }

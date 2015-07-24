@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, Entity, WorkspaceEntity, MethodEntity}
+import org.broadinstitute.dsde.firecloud.model.{Entity, WorkspaceEntity, MethodConfiguration, MethodEntity}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.{Cookie, Header}
@@ -44,6 +44,26 @@ object MockServers {
         )
     )
   }
+
+  val mockWorkspaces:List[WorkspaceEntity] = {
+    List.tabulate(randomPositiveInt())(
+      n =>
+        WorkspaceEntity(
+          name = Some(randomAlpha()),
+          namespace = Some(randomAlpha())
+        )
+    )
+  }
+
+  val mockValidWorkspace = WorkspaceEntity(
+    Some("namespace"),
+    Some("name")
+  )
+
+  val mockInvalidWorkspace = WorkspaceEntity(
+    Some("invalidNamespace"),
+    Some("invalidName")
+  )
 
   val mockSampleValid = Entity(
     Some("namespace"),
@@ -91,6 +111,23 @@ object MockServers {
   // the expected results of posting the entities from the form data above
   val mockNonEmptySuccesses = Seq(true, true, false, false)
 
+  val mockMethodConfigs: List[MethodConfiguration] = {
+    List.tabulate(2)(
+      n =>
+        MethodConfiguration(
+          name = Some(randomAlpha()),
+          namespace = Some(randomAlpha()),
+          rootentitytype = Some(randomAlpha()),
+          workspaceName = Some(Map.empty),
+          methodStoreMethod = Some(Map.empty),
+          methodStoreConfig = Some(Map.empty),
+          outputs = Some(Map.empty),
+          inputs = Some(Map.empty),
+          prerequisites = Some(Map.empty)
+        )
+    )
+  }
+
   def createMockWorkspace(): WorkspaceEntity = {
     WorkspaceEntity(
       name = Some(randomAlpha()),
@@ -100,6 +137,7 @@ object MockServers {
       attributes = Some(Map.empty)
     )
   }
+
   val mockWorkspaceEntities: List[WorkspaceEntity] = {
     List.tabulate(randomPositiveInt())(n => createMockWorkspace())
   }
@@ -184,11 +222,42 @@ object MockServers {
       ).respond(
         response()
           .withHeaders(header)
-          .withBody(
-            mockWorkspaceEntities.toJson.prettyPrint
-          )
+          .withBody(mockWorkspaces.toJson.prettyPrint)
           .withStatusCode(OK.intValue)
       )
+
+    // Method Configuration responses
+
+    MockServers.workspaceServer.
+      when(
+        request()
+          .withMethod("GET")
+          .withPath(
+            FireCloudConfig.
+              Workspace.
+              methodConfigsListPath.
+              format(mockInvalidWorkspace.namespace.get, mockInvalidWorkspace.name.get))
+          .withCookies(cookie)).
+      respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NotFound.intValue))
+
+    MockServers.workspaceServer.
+      when(
+        request()
+          .withMethod("GET")
+          .withPath(
+            FireCloudConfig.
+              Workspace.
+              methodConfigsListPath.
+              format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .withCookies(cookie)).
+      respond(
+        response()
+          .withHeaders(header)
+          .withBody(mockMethodConfigs.toJson.prettyPrint)
+          .withStatusCode(OK.intValue))
 
     // entity-level responses
 
