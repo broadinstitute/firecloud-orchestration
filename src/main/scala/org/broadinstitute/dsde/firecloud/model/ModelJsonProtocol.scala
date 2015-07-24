@@ -4,7 +4,8 @@ import spray.json.DefaultJsonProtocol._
 
 object ModelJsonProtocol {
 
-  implicit val impMethodEntity = jsonFormat10(MethodEntity)
+  implicit val impMethod = jsonFormat8(MethodRepository.Method)
+  implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
 
   implicit val impWorkspaceIngest = jsonFormat2(WorkspaceIngest)
   implicit val impWorkspaceEntity = jsonFormat5(WorkspaceEntity)

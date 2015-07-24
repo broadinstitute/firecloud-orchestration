@@ -1,17 +1,19 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, MockServers}
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.mock.MockUtils._
+import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, MethodConfiguration, WorkspaceEntity, WorkspaceIngest}
+import org.broadinstitute.dsde.firecloud.model.{MethodConfiguration, EntityCreateResult, WorkspaceEntity, WorkspaceIngest}
 import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
+import spray.json.DefaultJsonProtocol._
 import spray.http.HttpCookie
 import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
 import spray.testkit.ScalatestRouteTest
 
 class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with WorkspaceService {
@@ -21,11 +23,11 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
   private final val ApiPrefix = "/workspaces"
 
   override def beforeAll(): Unit = {
-    MockServers.startWorkspaceServer()
+    MockWorkspaceServer.startWorkspaceServer()
   }
 
   override def afterAll(): Unit = {
-    MockServers.stopWorkspaceServer()
+    MockWorkspaceServer.stopWorkspaceServer()
   }
 
   "WorkspaceService" - {
@@ -33,8 +35,8 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
     val openAMSession = OpenAMSession(()).futureValue(timeout(Span(5, Seconds)), interval(scaled(Span(0.5, Seconds))))
     val token = openAMSession.cookies.head.content
     val workspaceIngest = WorkspaceIngest(
-      name = Some(MockServers.randomAlpha()),
-      namespace = Some(MockServers.randomAlpha()))
+      name = Some(randomAlpha()),
+      namespace = Some(randomAlpha()))
     val invalidWorkspaceIngest = WorkspaceIngest(
       name = Option.empty,
       namespace = Option.empty)
@@ -56,8 +58,8 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
     "when calling GET on the list method configurations with an invalid workspace namespace/name"- {
       "Not Found is returned" in {
         val path = FireCloudConfig.Workspace.methodConfigsListPath.format(
-          MockServers.mockInvalidWorkspace.namespace.get,
-          MockServers.mockInvalidWorkspace.name.get)
+          MockWorkspaceServer.mockInvalidWorkspace.namespace.get,
+          MockWorkspaceServer.mockInvalidWorkspace.name.get)
         Get(path) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check{
           status should be(NotFound)
         }
@@ -67,8 +69,8 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
     "when calling GET on the list method configurations with a valid workspace namespace/name"- {
       "OK response and a list of at list one Method Configuration is returned" in {
         val path = FireCloudConfig.Workspace.methodConfigsListPath.format(
-          MockServers.mockValidWorkspace.namespace.get,
-          MockServers.mockValidWorkspace.name.get)
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
         Get(path) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check{
           status should equal(OK)
           val methodconfigurations = responseAs[List[MethodConfiguration]]
@@ -120,7 +122,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
     "when calling POST on the workspaces/*/*/importEntitiesJSON path with valid but empty form data" - {
       "OK response is returned" in {
-        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", MockServers.mockEmptyEntityFormData)
+        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", MockWorkspaceServer.mockEmptyEntityFormData)
           ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
           ~> sealRoute(routes)) ~> check {
           status should equal(OK)
@@ -140,11 +142,11 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
     "when calling POST on the workspaces/*/*/importEntitiesJSON path with non-empty data" - {
       "OK response is returned, with correct results for each entity" in {
-        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", MockServers.mockNonEmptyEntityFormData)
+        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", MockWorkspaceServer.mockNonEmptyEntityFormData)
           ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
           ~> sealRoute(routes)) ~> check {
           status should equal(OK)
-          responseAs[Seq[EntityCreateResult]].map(_.succeeded) should equal (MockServers.mockNonEmptySuccesses)
+          responseAs[Seq[EntityCreateResult]].map(_.succeeded) should equal (MockWorkspaceServer.mockNonEmptySuccesses)
         }
       }
     }
