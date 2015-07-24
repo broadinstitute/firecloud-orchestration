@@ -1,5 +1,6 @@
-package org.broadinstitute.dsde.firecloud
+package org.broadinstitute.dsde.firecloud.mock
 
+import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.WorkspaceIngest
 import org.mockserver.mock.action.ExpectationCallback
@@ -17,12 +18,12 @@ class ValidWorkspaceCallback extends ExpectationCallback {
     workspace match {
       case x if x.name.isDefined && x.namespace.isDefined =>
         response()
-          .withHeaders(MockServers.header)
+          .withHeaders(header)
           .withStatusCode(Created.intValue)
-          .withBody(MockServers.createMockWorkspace().toJson.prettyPrint)
+          .withBody(MockWorkspaceServer.createMockWorkspace().toJson.prettyPrint)
       case _ =>
         response()
-          .withHeaders(MockServers.header)
+          .withHeaders(header)
           .withStatusCode(BadRequest.intValue)
     }
 
