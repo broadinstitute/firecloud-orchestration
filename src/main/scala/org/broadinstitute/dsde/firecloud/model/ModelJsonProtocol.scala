@@ -15,4 +15,6 @@ object ModelJsonProtocol {
 
   implicit val impMethodConfiguration = jsonFormat9(MethodConfiguration)
 
+  implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
+  implicit val impModelSchema = jsonFormat1(EntityModel)
 }
