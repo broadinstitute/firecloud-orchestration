@@ -7,17 +7,20 @@ import javax.ws.rs.Path
 import akka.actor.{Actor, Props}
 import com.wordnik.swagger.annotations._
 
-import org.broadinstitute.dsde.vault.common.directives.OpenAMDirectives._
-
-import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, MethodConfiguration}
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, HttpClient}
-import org.broadinstitute.dsde.firecloud.utils.TSVParser
 import org.slf4j.LoggerFactory
 import spray.client.pipelining.{Get, Post}
+import spray.http.HttpResponse
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.routing._
+
+import org.broadinstitute.dsde.vault.common.directives.OpenAMDirectives._
+
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, MethodConfiguration}
+import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, HttpClient}
+import org.broadinstitute.dsde.firecloud.utils.TSVParser
 
 class WorkspaceServiceActor extends Actor with WorkspaceService {
   def actorRefFactory = context
@@ -165,7 +168,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
           respondWithJSON { requestContext =>
             actorRefFactory.actorOf(Props(new EntityClient(requestContext))) !
               EntityClient.UpsertEntitiesFromTSV(workspaceNamespace, workspaceName, TSVParser.parse(entitiesTSV))
-            requestContext.complete( Seq( EntityCreateResult("implemented ", "yet? ", false, ", sorry") ) ) 
+            requestContext.complete(HttpResponse(OK, HttpClient.createJsonHttpEntity(Seq(EntityCreateResult("implemented ", "yet? ", false, ", sorry")).toJson.prettyPrint)))
           }
         }
       }
