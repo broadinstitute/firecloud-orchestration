@@ -93,7 +93,7 @@ object MockWorkspaceServer {
         MethodConfiguration(
           name = Some(randomAlpha()),
           namespace = Some(randomAlpha()),
-          rootentitytype = Some(randomAlpha()),
+          rootEntityType = Some(randomAlpha()),
           workspaceName = Some(Map.empty),
           methodStoreMethod = Some(Map.empty),
           methodStoreConfig = Some(Map.empty),
@@ -117,6 +117,13 @@ object MockWorkspaceServer {
   val mockWorkspaceEntities: List[WorkspaceEntity] = {
     List.tabulate(randomPositiveInt())(n => createMockWorkspace())
   }
+
+  val malformedConfigurationFromRepo =
+    """{
+      |  "methodRepoNamespace": "malformed",
+      |  "methodRepoName": "malformed",
+      |  "methodRepoSnapshotId": "1"
+      |}""".stripMargin
 
   var workspaceServer: ClientAndServer = _
 
@@ -198,6 +205,20 @@ object MockWorkspaceServer {
           .withBody(mockMethodConfigs.toJson.prettyPrint)
           .withStatusCode(OK.intValue))
 
+    // "/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}"
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("PUT")
+          .withPath(s"/workspaces/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/methodconfigs")
+          .withBody("")
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+      )
+
     // entity-level responses
 
     MockWorkspaceServer.workspaceServer
@@ -238,6 +259,30 @@ object MockWorkspaceServer {
           .withHeaders(header)
           .withStatusCode(Conflict.intValue)
       )
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("POST")
+          .withPath("/methodconfigs/copyFromMethodRepo")
+          .withCookies(cookie)
+      ).callback(
+        callback().
+          withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidMethodConfigurationFromRepoCallback")
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath("/methodconfigs/copyFromMethodRepo")
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withBody("Authentication is possible but has failed or not yet been provided.")
+          .withStatusCode(Unauthorized.intValue)
+      )
+
   }
 
 }
