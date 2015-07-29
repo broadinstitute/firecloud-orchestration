@@ -6,7 +6,6 @@ import javax.ws.rs.Path
 
 import akka.actor.{Actor, Props}
 import com.wordnik.swagger.annotations._
-import org.broadinstitute.dsde.firecloud.utils.TSVParser
 import org.slf4j.LoggerFactory
 import spray.client.pipelining.{Get, Post}
 import spray.http.HttpResponse
