@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
+import org.broadinstitute.dsde.firecloud.mock.MockTSVFormData
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{MethodConfiguration, EntityCreateResult, WorkspaceEntity, WorkspaceIngest}
 import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
@@ -151,6 +152,101 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       }
     }
 
+    "when calling POST on the workspaces/*/*/importEntities path" - {
+
+      "should 400 Bad Request if the first column header of the TSV is an unknown entity type" in {
+        val path = FireCloudConfig.Workspace.importEntitiesPathFromWorkspace(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        (Post(path, MockTSVFormData.unknownFirstColumnHeader)
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+
+      //IGNORED - a collection-type TSV missing members header is currently indistinguishable from an entity-update TSV.
+      //This test should be reinstated when we can distinguish them.
+      "should 400 Bad Request if a collection-type TSV is missing its collection members header" ignore {
+        val path = FireCloudConfig.Workspace.importEntitiesPathFromWorkspace(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        (Post(path, MockTSVFormData.collectionTypeWithMissingMembersHeader)
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+
+      //NOTE: this is equivalent to:
+      // "should 400 Bad Request if an entity-update TSV has collection member attribute headers"
+      //This implies that we can't distinguish between the two - which is exactly why both are treated as errors!
+      "should 400 Bad Request if a collection-type TSV has other headers than its collection members" in {
+        val path = FireCloudConfig.Workspace.importEntitiesPathFromWorkspace(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        (Post(path, MockTSVFormData.collectionTypeWithExtraAttributes)
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+
+      "should 200 OK if a collection-type TSV has the correct headers and valid internals" in {
+        val path = FireCloudConfig.Workspace.importEntitiesPathFromWorkspace(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        (Post(path, MockTSVFormData.validCollection)
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "should 400 Bad Request if an entity-update TSV has duplicated entities to update" in {
+        val path = FireCloudConfig.Workspace.importEntitiesPathFromWorkspace(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        (Post(path, MockTSVFormData.dupedEntityUpdate)
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+
+      "should 400 Bad Request if an entity-update TSV is missing required attribute headers" in {
+        val path = FireCloudConfig.Workspace.importEntitiesPathFromWorkspace(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        (Post(path, MockTSVFormData.entityUpdateMissingRequiredAttrs)
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+
+      "should 200 OK if an entity-update TSV is has the full set of required attribute headers" in {
+        val path = FireCloudConfig.Workspace.importEntitiesPathFromWorkspace(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        (Post(path, MockTSVFormData.entityUpdateWithRequiredAttrs)
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "should 200 OK if an entity-update TSV is has the full set of required attribute headers, plus optionals" in {
+        val path = FireCloudConfig.Workspace.importEntitiesPathFromWorkspace(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        (Post(path, MockTSVFormData.entityUpdateWithRequiredAndOptionalAttrs)
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> sealRoute(routes)) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
   }
 
 }

@@ -21,6 +21,8 @@ import org.broadinstitute.dsde.firecloud.model.{EntityCreateResult, MethodConfig
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, HttpClient}
 import org.broadinstitute.dsde.firecloud.utils.TSVParser
 
+import scala.util.Try
+
 class WorkspaceServiceActor extends Actor with WorkspaceService {
   def actorRefFactory = context
   def receive = runRoute(routes)
@@ -166,8 +168,8 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
         formFields( 'entities ) { (entitiesTSV) =>
           respondWithJSON { requestContext =>
             actorRefFactory.actorOf(Props(new EntityClient(requestContext))) !
-              EntityClient.UpsertEntitiesFromTSV(workspaceNamespace, workspaceName, TSVParser.parse(entitiesTSV))
-            requestContext.complete(HttpResponse(OK, HttpClient.createJsonHttpEntity(Seq(EntityCreateResult("implemented ", "yet? ", false, ", sorry")).toJson.prettyPrint)))
+              EntityClient.UpsertEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV)
+            //requestContext.complete(HttpResponse(OK, HttpClient.createJsonHttpEntity(Seq(EntityCreateResult("implemented ", "yet? ", false, ", sorry")).toJson.prettyPrint)))
           }
         }
       }

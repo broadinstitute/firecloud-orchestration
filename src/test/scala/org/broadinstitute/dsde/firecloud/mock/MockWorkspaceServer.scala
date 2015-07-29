@@ -238,6 +238,18 @@ object MockWorkspaceServer {
           .withHeaders(header)
           .withStatusCode(Conflict.intValue)
       )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath(s"/workspaces/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/entities/batchUpsert")
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NoContent.intValue)
+      )
   }
 
 }

@@ -1,35 +1,35 @@
-{
-    "participant" : {
-        "requiredAttributes" : {},
-        "plural" : "participants"
+{ "schema" : {
+    "participant": {
+        "requiredAttributes": {},
+        "plural": "participants"
     },
-    "sample" : {
-        "requiredAttributes" : {
-            "participant_id" : "participant"
+    "sample": {
+        "requiredAttributes": {
+            "participant_id": "participant"
         },
-        "plural" : "samples"
+        "plural": "samples"
     },
-    "pair" : {
-        "requiredAttributes" : {
-            "case_sample_id" : "sample",
-            "control_sample_id" : "sample",
-            "participant_id" : "participant"
+    "pair": {
+        "requiredAttributes": {
+            "case_sample_id": "sample",
+            "control_sample_id": "sample",
+            "participant_id": "participant"
         },
-        "plural" : "pairs"
+        "plural": "pairs"
     },
-    "participant_set" : {
-        "requiredAttributes" : {},
-        "plural" : "participant_sets",
-        "memberType" : "participant"
+    "participant_set": {
+        "requiredAttributes": {},
+        "plural": "participant_sets",
+        "memberType": "participant"
     },
-    "sample_set" : {
-        "requiredAttributes" : {},
-        "plural" : "sample_sets",
-        "memberType" : "sample"
+    "sample_set": {
+        "requiredAttributes": {},
+        "plural": "sample_sets",
+        "memberType": "sample"
     },
-    "pair_set" : {
-        "requiredAttributes" : {},
-        "plural" : "pair_sets",
-        "memberType" : "pair"
+    "pair_set": {
+        "requiredAttributes": {},
+        "plural": "pair_sets",
+        "memberType": "pair"
     }
-}
+} }
