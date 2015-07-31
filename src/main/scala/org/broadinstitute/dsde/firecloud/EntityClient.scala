@@ -226,7 +226,7 @@ class EntityClient (requestContext: RequestContext) extends Actor {
   /**
    * colInfo is a list of (headerName, refType), where refType is the type of the entity if the headerName is an AttributeRef
    * e.g. on TCGA Pairs, there's a header called case_sample_id where the refType would be Sample */
-  def setAttributesOnEntity(entityType: String, row: Seq[String], colInfo: Seq[(String,Option[String])]) = {
+  def setAttributesOnEntity(entityType: String, memberTypeOpt: Option[String], row: Seq[String], colInfo: Seq[(String,Option[String])]) = {
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?
@@ -241,7 +241,16 @@ class EntityClient (requestContext: RequestContext) extends Actor {
         }
       }
     }
-    EntityUpdateDefinition(row.headOption.get,entityType,ops)
+
+    //If we're upserting a collection type entity, add an AddListMember( members_attr, null ) operation.
+    //This will force the members_attr attribute to exist if it's being created for the first time.
+    val collectionMemberAttrOp: Option[Map[String, Attribute]] = if( ModelSchema.isCollectionType(entityType).getOrElse(false) ) {
+      val membersAttributeName = ModelSchema.getPlural(memberTypeOpt.get).get
+      Some(Map(addListMemberOperation,"attributeListName"->AttributeString(membersAttributeName),"newMember"->AttributeNull()))
+    } else {
+      None
+    }
+    EntityUpdateDefinition(row.headOption.get,entityType,ops ++ collectionMemberAttrOp )
   }
 
   def addToCollectionTypeFromTSV( entityType: String, memberType: String, membersAttributeName: String, tsv: TSVLoadFile ) = {
@@ -284,7 +293,7 @@ class EntityClient (requestContext: RequestContext) extends Actor {
             checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
               withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
                 val colInfo = tsv.headers.tail map { colName => (colName, requiredAttributes.get(colName)) }
-                val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, row, colInfo))
+                val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
                 batchCallToRawls(workspaceNamespace, workspaceName, rawlsCalls)
               }
             }
