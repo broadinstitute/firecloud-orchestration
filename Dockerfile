@@ -11,7 +11,7 @@ COPY project /usr/firecloud-orchestration/project
 COPY application.conf /usr/firecloud-orchestration/application.conf
 COPY test.conf /usr/firecloud-orchestration/test.conf
 
-ENV JAVA_HOME '/usr/lib/jvm/jre/'
+ENV JAVA_HOME '/usr/lib/jvm/jre-1.8.0/'
 WORKDIR /usr/firecloud-orchestration
 
 RUN sbt assembly -Dconfig.file=/usr/firecloud-orchestration/test.conf
