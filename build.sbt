@@ -35,6 +35,7 @@ resolvers += "artifactory-releases" at artifactory + "libs-release"
 
 scalaVersion  := "2.11.6"
 
+javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-target:jvm-1.8")
 
 libraryDependencies ++= {
