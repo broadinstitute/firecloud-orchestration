@@ -11,6 +11,7 @@ COPY project /usr/firecloud-orchestration/project
 COPY application.conf /usr/firecloud-orchestration/application.conf
 COPY test.conf /usr/firecloud-orchestration/test.conf
 
+ENV JAVA_HOME '/usr/lib/jvm/jre/'
 WORKDIR /usr/firecloud-orchestration
 
 RUN sbt assembly -Dconfig.file=/usr/firecloud-orchestration/test.conf
