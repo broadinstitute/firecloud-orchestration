@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.mock
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.WorkspaceIngest
+import org.broadinstitute.dsde.firecloud.model.WorkspaceName
 import org.mockserver.mock.action.ExpectationCallback
 import org.mockserver.model.HttpResponse._
 import org.mockserver.model.{HttpRequest, HttpResponse}
@@ -14,7 +14,7 @@ class ValidWorkspaceCallback extends ExpectationCallback {
   override def handle(httpRequest: HttpRequest): HttpResponse = {
 
     val jsonAst = httpRequest.getBodyAsString.parseJson
-    val workspace = jsonAst.convertTo[WorkspaceIngest]
+    val workspace = jsonAst.convertTo[WorkspaceName]
     workspace match {
       case x if x.name.isDefined && x.namespace.isDefined =>
         response()

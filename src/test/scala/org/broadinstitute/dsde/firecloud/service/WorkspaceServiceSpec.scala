@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{MethodConfiguration, EntityCreateResult, WorkspaceEntity, WorkspaceIngest}
+import org.broadinstitute.dsde.firecloud.model.{MethodConfiguration, EntityCreateResult, WorkspaceEntity, WorkspaceName}
 import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
@@ -34,10 +34,10 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
     val openAMSession = OpenAMSession(()).futureValue(timeout(Span(5, Seconds)), interval(scaled(Span(0.5, Seconds))))
     val token = openAMSession.cookies.head.content
-    val workspaceIngest = WorkspaceIngest(
+    val workspaceIngest = WorkspaceName(
       name = Some(randomAlpha()),
       namespace = Some(randomAlpha()))
-    val invalidWorkspaceIngest = WorkspaceIngest(
+    val invalidWorkspaceIngest = WorkspaceName(
       name = Option.empty,
       namespace = Option.empty)
 
