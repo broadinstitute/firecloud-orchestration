@@ -35,7 +35,7 @@ resolvers += "artifactory-releases" at artifactory + "libs-release"
 
 scalaVersion  := "2.11.6"
 
-scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
+scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-target:jvm-1.8")
 
 libraryDependencies ++= {
   val akkaV = "2.3.9"
