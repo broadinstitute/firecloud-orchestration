@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import java.nio.file.{Paths, Files}
+import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 import spray.json._
@@ -42,7 +42,7 @@ object ModelSchema {
 
 object EntityTypes {
   val types : Map[String, EntityMetadata] = ModelJsonProtocol.impModelSchema.read(
-    Files.readAllLines(Paths.get(FireCloudConfig.Workspace.model)).toArray.mkString.parseJson ).schema
+    Source.fromURL(getClass.getResource(FireCloudConfig.Workspace.model)).mkString.parseJson ).schema
 }
 
 case class EntityMetadata(
