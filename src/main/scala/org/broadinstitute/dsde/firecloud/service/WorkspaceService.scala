@@ -7,11 +7,13 @@ import javax.ws.rs.Path
 import akka.actor.{Actor, Props}
 import com.wordnik.swagger.annotations._
 import org.slf4j.LoggerFactory
-import spray.client.pipelining.{Get, Post}
+import spray.client.pipelining.{Get, Post, Put}
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.routing._
+import spray.httpx.SprayJsonSupport._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import org.broadinstitute.dsde.vault.common.directives.OpenAMDirectives._
 
@@ -32,7 +34,9 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  val routes = createWorkspaceRoute ~ listWorkspacesRoute ~ listMethodConfigurationsRoute ~ importEntitiesJSONRoute ~ importEntitiesRoute
+  val routes = createWorkspaceRoute ~ listWorkspacesRoute ~
+    listMethodConfigurationsRoute ~ updateMethodConfigurationRoute ~
+    importEntitiesJSONRoute ~ importEntitiesRoute
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -123,6 +127,59 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
           HttpClient.PerformExternalRequest(Get(FireCloudConfig.Workspace.methodConfigPathFromWorkspace(workspaceNamespace, workspaceName)))
         }
       }
+
+  @Path(value = "/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}")
+  @ApiOperation (
+    value="update method configuration in a workspace",
+    nickname="updateMethodConfiguration",
+    httpMethod="PUT")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(
+      name = "workspaceNamespace",
+      required = true,
+      dataType = "string",
+      paramType = "path",
+      value = "Workspace Namespace"),
+    new ApiImplicitParam(
+      name = "workspaceName",
+      required = true,
+      dataType = "string",
+      paramType = "path",
+      value = "Workspace Name"),
+    new ApiImplicitParam(
+      name = "configNamespace",
+      required = true,
+      dataType = "string",
+      paramType = "path",
+      value = "Configuration Namespace"),
+    new ApiImplicitParam(
+      name = "configName",
+      required = true,
+      dataType = "string",
+      paramType = "path",
+      value = "Configuration Name"),
+    new ApiImplicitParam(
+      paramType = "body", name = "body", required = true,
+      dataType = "org.broadinstitute.dsde.firecloud.model.MethodConfiguration",
+      value = "Method Config to Update"
+    )
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Successful"),
+    new ApiResponse(code = 500, message = "Internal Error")))
+  def updateMethodConfigurationRoute: Route =
+    path(ApiPrefix / Segment / Segment / "methodconfigs" / Segment / Segment) {
+      (workspaceNamespace, workspaceName, configNamespace, configName) =>
+        put {
+          entity(as[MethodConfiguration]) { methodConfig =>
+            requestContext =>
+              actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+                HttpClient.PerformExternalRequest(Put(FireCloudConfig.Workspace.baseUrl +
+                  "/workspaces/%s/%s/methodconfigs/%s/%s".format(workspaceNamespace, workspaceName, configNamespace, configName),
+                  methodConfig))
+          }
+        }
+    }
 
   @ApiOperation(
     value = "import entities (JSON)",
