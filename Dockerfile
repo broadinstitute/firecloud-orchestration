@@ -10,6 +10,7 @@ COPY src /usr/firecloud-orchestration/src
 COPY project /usr/firecloud-orchestration/project
 COPY application.conf /usr/firecloud-orchestration/application.conf
 COPY test.conf /usr/firecloud-orchestration/test.conf
+COPY model.json /usr/firecloud-orchestration/model.json
 
 ENV JAVA_HOME '/usr/lib/jvm/jre-1.8.0/'
 WORKDIR /usr/firecloud-orchestration
