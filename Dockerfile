@@ -1,7 +1,7 @@
 FROM centos:7
 
 RUN curl https://bintray.com/sbt/rpm/rpm > /etc/yum.repos.d/bintray-sbt-rpm.repo
-RUN yum -y install git java-1.8.0-openjdk sbt supervisord && yum clean all
+RUN yum -y install git sbt && yum clean all
 
 EXPOSE 8080
 
