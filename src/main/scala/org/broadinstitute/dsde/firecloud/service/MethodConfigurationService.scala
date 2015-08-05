@@ -5,7 +5,7 @@ import javax.ws.rs.Path
 import akka.actor.{Props, Actor}
 import com.wordnik.swagger.annotations._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{WorkspaceName, Destination, MethodConfigurationCopy}
+import org.broadinstitute.dsde.firecloud.model.{MethodConfiguration, WorkspaceName, Destination, MethodConfigurationCopy}
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, HttpClient}
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
@@ -23,8 +23,46 @@ class MethodConfigurationServiceActor extends Actor with MethodConfigurationServ
 trait MethodConfigurationService extends HttpService with FireCloudDirectives {
 
   private final val ApiPrefix = "workspaces"
-  lazy val routes = copyMethodRepositoryConfigurationRoute
+  lazy val routes = methodConfigurationUpdateRoute ~ copyMethodRepositoryConfigurationRoute
   lazy val log = LoggerFactory.getLogger(getClass)
+
+  @Path(value = "/{configNamespace}/{configName}")
+  @ApiOperation (
+    value="update method configuration in a workspace",
+    nickname="updateMethodConfiguration",
+    httpMethod="PUT")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "workspaceNamespace", required = true, dataType = "string", paramType = "path",
+      value = "Workspace Namespace"),
+    new ApiImplicitParam(
+      name = "workspaceName", required = true, dataType = "string", paramType = "path", value = "Workspace Name"),
+    new ApiImplicitParam(
+      name = "configNamespace", required = true, dataType = "string", paramType = "path",
+      value = "Configuration Namespace"),
+    new ApiImplicitParam(
+      name = "configName", required = true, dataType = "string", paramType = "path", value = "Configuration Name"),
+    new ApiImplicitParam(
+      paramType = "body", name = "body", required = true,
+      dataType = "org.broadinstitute.dsde.firecloud.model.MethodConfiguration",
+      value = "Method Config to Update"
+    )
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Successful"),
+    new ApiResponse(code = 500, message = "Internal Error")))
+  def methodConfigurationUpdateRoute: Route =
+    path(ApiPrefix / Segment / Segment / "method_configs" / Segment / Segment) {
+      (workspaceNamespace, workspaceName, configNamespace, configName) =>
+        put {
+          entity(as[MethodConfiguration]) { methodConfig =>
+            requestContext =>
+              val endpointUrl = FireCloudConfig.Workspace.baseUrl + "/workspaces/%s/%s/methodconfigs/%s/%s".
+                format(workspaceNamespace, workspaceName, configNamespace, configName)
+              actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+                HttpClient.PerformExternalRequest(Put(endpointUrl, methodConfig))
+          }
+        }
+    }
 
   @Path(value = "/copyFromMethodRepo")
   @ApiOperation(
