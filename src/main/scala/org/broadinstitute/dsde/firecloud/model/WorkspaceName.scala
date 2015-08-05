@@ -39,9 +39,9 @@ case class MethodConfiguration(
   @(ApiModelProperty@field)(required = true, value = "map with corresponding workspace-related information : name  and namespace ")
   workspaceName: Option[Map[String, String]] = None,
   @(ApiModelProperty@field)(required = true, value = "map with corresponding method-related information")
-  methodStoreMethod: Option[Map[String, String]] = None,
+  methodRepoMethod: Option[Map[String, String]] = None,
   @(ApiModelProperty@field)(required = true, value = "map with corresponding method-store-related information")
-  methodStoreConfig: Option[Map[String, String]] = None,
+  methodRepoConfig: Option[Map[String, String]] = None,
   @(ApiModelProperty@field)(required = true, value = "map with outputs information")
   outputs: Option[Map[String, String]] = None,
   @(ApiModelProperty@field)(required = true, value = "map with inputs information")
