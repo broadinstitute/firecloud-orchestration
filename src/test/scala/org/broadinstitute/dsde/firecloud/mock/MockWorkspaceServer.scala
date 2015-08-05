@@ -95,8 +95,8 @@ object MockWorkspaceServer {
           namespace = Some(randomAlpha()),
           rootEntityType = Some(randomAlpha()),
           workspaceName = Some(Map.empty),
-          methodStoreMethod = Some(Map.empty),
-          methodStoreConfig = Some(Map.empty),
+          methodRepoMethod = Some(Map.empty),
+          methodRepoConfig = Some(Map.empty),
           outputs = Some(Map.empty),
           inputs = Some(Map.empty),
           prerequisites = Some(Map.empty)
