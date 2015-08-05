@@ -21,10 +21,11 @@ FireCloud Orchestration Service
 
 ## Development Notes
 * Configuration is excluded from the build package:
-    - When running via sbt, start sbt with the config file ```sbt -Dconfig.file=src/main/resources/application.conf``` and the run command will pick up your local configuration.
-    - Alternatively, add an ```.sbotopts``` file to the root directory of the project with the first line being ```-Dconfig.file=src/main/resources/application.conf``` or pointing to whichever config file you prefer to use.
+    - When running via sbt, start sbt with the config file `sbt -Dconfig.file=src/main/resources/application.conf` and the run command will pick up your local configuration.
+    - Alternatively, add an `.sbotopts` file to the root directory of the project with the first line being `-Dconfig.file=src/main/resources/application.conf` or pointing to whichever config file you prefer to use.
     - When running via sbt/revolver (i.e. using the re-start command), you can just run in sbt normally - the config is preset for you in build.sbt.
 * We push new features to a feature-branch and make pull requests against master.
+* New paths to external endpoints should be added to `src/main/resources/configurations.conf`. Existing endpoint URLs are configured in `application.conf` and `test.conf`
 
 ## Building and Running
 

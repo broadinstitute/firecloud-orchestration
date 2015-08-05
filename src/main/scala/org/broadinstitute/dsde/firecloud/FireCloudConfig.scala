@@ -4,16 +4,18 @@ import com.typesafe.config.ConfigFactory
 
 object FireCloudConfig {
   private val config = ConfigFactory.load()
+  private val configurations = ConfigFactory.load("configurations.conf")
+  private val merged = config.withFallback(configurations)
 
   object HttpConfig {
-    private val httpConfig = config.getConfig("http")
+    private val httpConfig = merged.getConfig("http")
     lazy val interface = httpConfig.getString("interface")
     lazy val port = httpConfig.getInt("port")
     lazy val timeoutSeconds = httpConfig.getLong("timeoutSeconds")
   }
 
   object SwaggerConfig {
-    private val swagger = config.getConfig("swagger")
+    private val swagger = merged.getConfig("swagger")
     lazy val apiVersion = swagger.getString("apiVersion")
     lazy val swaggerVersion = swagger.getString("swaggerVersion")
     lazy val info = swagger.getString("info")
@@ -27,7 +29,7 @@ object FireCloudConfig {
   }
 
   object Methods {
-    private val methods = config.getConfig("methods")
+    private val methods = merged.getConfig("methods")
     lazy val baseUrl = methods.getString("baseUrl")
     lazy val methodsPath = methods.getString("methodsPath")
     lazy val methodsListUrl = baseUrl + methodsPath
@@ -36,7 +38,7 @@ object FireCloudConfig {
   }
 
   object Workspace {
-    private val workspace = config.getConfig("workspace")
+    private val workspace = merged.getConfig("workspace")
     lazy val model = "/" + workspace.getString("model")
     lazy val baseUrl= workspace.getString("baseUrl")
     lazy val workspacesPath = workspace.getString("workspacesPath")
