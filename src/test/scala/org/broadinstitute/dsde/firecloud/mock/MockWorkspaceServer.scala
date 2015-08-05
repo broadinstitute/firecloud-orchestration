@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.mock
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.model.{Entity, WorkspaceEntity, MethodConfiguration}
+import org.broadinstitute.dsde.firecloud.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
@@ -118,13 +118,6 @@ object MockWorkspaceServer {
     List.tabulate(randomPositiveInt())(n => createMockWorkspace())
   }
 
-  val malformedConfigurationFromRepo =
-    """{
-      |  "methodRepoNamespace": "malformed",
-      |  "methodRepoName": "malformed",
-      |  "methodRepoSnapshotId": "1"
-      |}""".stripMargin
-
   var workspaceServer: ClientAndServer = _
 
   def stopWorkspaceServer(): Unit = {
@@ -205,7 +198,40 @@ object MockWorkspaceServer {
           .withBody(mockMethodConfigs.toJson.prettyPrint)
           .withStatusCode(OK.intValue))
 
-    // "/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}"
+    // Updating a method config
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("PUT")
+          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
+          format(
+            mockValidWorkspace.namespace.get,
+            mockValidWorkspace.name.get,
+            mockValidWorkspace.namespace.get,
+            mockValidWorkspace.name.get))
+          .withBody(mockMethodConfigs.head.toJson.prettyPrint)
+          .withCookies(cookie)).
+      respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue))
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("PUT")
+          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
+          format(
+            mockValidWorkspace.namespace.get,
+            mockValidWorkspace.name.get,
+            mockValidWorkspace.namespace.get,
+            mockValidWorkspace.name.get))
+          .withBody(mockMethodConfigs.head.toJson.prettyPrint)).
+      respond(
+        response()
+          .withBody("Authentication is possible but has failed or not yet been provided.")
+          .withStatusCode(Unauthorized.intValue))
+
     MockWorkspaceServer.workspaceServer
       .when(
         request()
