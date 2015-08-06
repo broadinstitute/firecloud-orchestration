@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
+import org.broadinstitute.dsde.firecloud.model.CopyConfigurationIngest
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
 import org.scalatest.concurrent.ScalaFutures
@@ -27,14 +28,14 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
   )
   private final val openAMSession = OpenAMSession(()).futureValue(timeout(Span(5, Seconds)), interval(scaled(Span(0.5, Seconds))))
   private final val token = openAMSession.cookies.head.content
-  private final val validConfigurationCopyFormData = FormData(Seq(
-    "configurationNamespace" -> "config-ns",
-    "configurationName" -> "config-name",
-    "configurationSnapshot" -> "1",
-    "destinationNamespace" -> "new-config-ns",
-    "destinationName" -> "new-config-name"
-  ))
-  private final val invalidConfigurationCopyFormData = FormData(Seq("configurationNamespace" -> "config-ns"))
+  private final val validConfigurationCopyFormData = CopyConfigurationIngest(
+    configurationNamespace = Option("namespace"),
+    configurationName = Option("name"),
+    configurationSnapshotId = Option("1"),
+    destinationNamespace = Option("namespace"),
+    destinationName = Option("new-name")
+  )
+  private final val invalidConfigurationCopyFormData = new CopyConfigurationIngest(None, None, None, None, None)
 
   override def beforeAll(): Unit = {
     MockWorkspaceServer.startWorkspaceServer()
