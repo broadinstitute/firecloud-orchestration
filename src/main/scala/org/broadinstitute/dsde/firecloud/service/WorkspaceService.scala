@@ -162,7 +162,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
         formFields( 'entities ) { (entitiesTSV) =>
           respondWithJSON { requestContext =>
             actorRefFactory.actorOf(Props(new EntityClient(requestContext))) !
-              EntityClient.UpsertEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV)
+              EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV)
           }
         }
       }

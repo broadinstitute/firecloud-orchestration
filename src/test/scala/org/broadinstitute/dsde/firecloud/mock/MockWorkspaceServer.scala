@@ -371,6 +371,18 @@ object MockWorkspaceServer {
           .withHeaders(header)
           .withStatusCode(NoContent.intValue)
       )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath(s"/workspaces/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/entities/batchUpdate")
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NoContent.intValue)
+      )
   }
 
 }

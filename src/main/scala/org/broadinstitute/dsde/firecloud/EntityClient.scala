@@ -30,7 +30,7 @@ object EntityClient {
                             workspaceName: String,
                             entities: JsValue)
 
-  case class UpsertEntitiesFromTSV(workspaceNamespace: String,
+  case class ImportEntitiesFromTSV(workspaceNamespace: String,
                                    workspaceName: String,
                                    tsvString: String)
 
@@ -51,8 +51,8 @@ class EntityClient (requestContext: RequestContext) extends Actor {
       listEntities(workspaceNamespace, workspaceName, entityType)
     case CreateEntities(workspaceNamespace: String, workspaceName: String, entities: JsValue) =>
       createEntities(workspaceNamespace, workspaceName, entities)
-    case UpsertEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
-      upsertEntitiesFromTSV(workspaceNamespace, workspaceName, tsvString)
+    case ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
+      importEntitiesFromTSV(workspaceNamespace, workspaceName, tsvString)
   }
 
   def listEntities(workspaceNamespace: String, workspaceName: String, entityType: String): Unit = {
@@ -154,11 +154,13 @@ class EntityClient (requestContext: RequestContext) extends Actor {
   /**
    * Bail with a 400 Bad Request if the first column of the tsv has duplicate values.
    * Otherwise, carry on. */
-  private def checkFirstColumnsDistinct( tsv: TSVLoadFile )(op: => Unit): Unit = {
+  private def checkFirstColumnsDistinct( tsv: TSVLoadFile, tsvTypeName: String )(op: => Unit): Unit = {
     val entitiesToUpdate = tsv.tsvData.map(_.headOption.get)
     val distinctEntities = entitiesToUpdate.distinct
     if ( entitiesToUpdate.size != distinctEntities.size ) {
-      requestContext.complete( HttpResponse(BadRequest, "TSV has duplicated entities: " + entitiesToUpdate.diff(distinctEntities).distinct.mkString(", ")) )
+      requestContext.complete( HttpResponse(BadRequest,
+        "Duplicated entities are not allowed in an " + tsvTypeName +
+          " TSV: " + entitiesToUpdate.diff(distinctEntities).distinct.mkString(", ")) )
     } else {
       op
     }
@@ -169,7 +171,9 @@ class EntityClient (requestContext: RequestContext) extends Actor {
    * Otherwise, carry on. */
   private def checkNoCollectionMemberAttribute( tsv: TSVLoadFile, memberTypeOpt: Option[String] )(op: => Unit): Unit = {
     if( memberTypeOpt.isDefined && tsv.headers.contains(memberTypeOpt.get + "_id") ) {
-      requestContext.complete( HttpResponse(BadRequest, "Can't set collection members along with other attributes; please use two-column TSV format or remove " + memberTypeOpt.get + "_id from your tsv.") )
+      requestContext.complete( HttpResponse(BadRequest,
+        "Can't set collection members along with other attributes; please use two-column TSV format or remove " +
+          memberTypeOpt.get + "_id from your tsv.") )
     } else {
       op
     }
@@ -184,7 +188,8 @@ class EntityClient (requestContext: RequestContext) extends Actor {
       case Failure(regret) => requestContext.complete(HttpResponse(BadRequest, regret.getMessage))
       case Success(requiredAttributes) => {
         if( !requiredAttributes.keySet.subsetOf(headers.toSet) ) {
-          requestContext.complete( HttpResponse(BadRequest, "TSV is missing required attributes: " + (requiredAttributes.keySet -- headers).mkString(", ")) )
+          requestContext.complete( HttpResponse(BadRequest,
+            "TSV is missing required attributes: " + (requiredAttributes.keySet -- headers).mkString(", ")) )
         } else {
           op(requiredAttributes)
         }
@@ -192,12 +197,12 @@ class EntityClient (requestContext: RequestContext) extends Actor {
     }
   }
 
-  def batchCallToRawls( workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition] ) = {
+  def batchCallToRawls( workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition], endpoint: String ) = {
     log.info("TSV upload request received")
     val pipeline: HttpRequest => Future[HttpResponse] =
       addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
     val responseFuture: Future[HttpResponse] = pipeline {
-      Post(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/batchUpsert",
+      Post(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/"+endpoint,
             HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
     }
 
@@ -244,61 +249,116 @@ class EntityClient (requestContext: RequestContext) extends Actor {
 
     //If we're upserting a collection type entity, add an AddListMember( members_attr, null ) operation.
     //This will force the members_attr attribute to exist if it's being created for the first time.
-    val collectionMemberAttrOp: Option[Map[String, Attribute]] = if( ModelSchema.isCollectionType(entityType).getOrElse(false) ) {
+    val collectionMemberAttrOp: Option[Map[String, Attribute]] =
+    if( ModelSchema.isCollectionType(entityType).getOrElse(false) ) {
       val membersAttributeName = ModelSchema.getPlural(memberTypeOpt.get).get
-      Some(Map(addListMemberOperation,"attributeListName"->AttributeString(membersAttributeName),"newMember"->AttributeNull()))
+      Some(Map(
+        addListMemberOperation,
+        "attributeListName"->AttributeString(membersAttributeName),
+        "newMember"->AttributeNull()))
     } else {
       None
     }
     EntityUpdateDefinition(row.headOption.get,entityType,ops ++ collectionMemberAttrOp )
   }
 
-  def addToCollectionTypeFromTSV( entityType: String, memberType: String, membersAttributeName: String, tsv: TSVLoadFile ) = {
-    // group together updates to distinct entities
-    tsv.tsvData groupBy(_(0)) map { case (entityName, rows) =>
-      val ops = rows map { row =>
-        val attrRef = AttributeReference(memberType,row(1)) //row(1) is the entity to add to the entity in row.head
-        Map(addListMemberOperation,"attributeListName"->AttributeString(membersAttributeName),"newMember"->attrRef)
-      }
-      EntityUpdateDefinition(entityName,entityType,ops)
+  private def validateMembershipTSV(tsv: TSVLoadFile, membersType: Option[String]) (op: => Unit): Unit = {
+    //This magical list of conditions determines whether the TSV is populating the "members" attribute of a collection type entity.
+    if( !membersType.isDefined ) {
+      requestContext.complete(
+        HttpResponse(BadRequest,"Invalid membership TSV. Entity type must be a collection type") )
+    } else if( tsv.headers.length != 2 ){
+      requestContext.complete(
+        HttpResponse(BadRequest, "Invalid membership TSV. Must have exactly two columns") )
+    } else if( tsv.headers != Seq(tsv.firstColumnHeader, membersType.get + "_id") ) {
+      requestContext.complete(
+        HttpResponse(BadRequest, "Invalid membership TSV. Second column header should be " + membersType.get + "_id") )
+    } else {
+      op
     }
   }
 
-  private def tsvPopulatesCollectionMembers(tsv: TSVLoadFile, membersType: Option[String]): Boolean = {
-    //This magical list of conditions determines whether the TSV is populating the "members" attribute of a collection type entity.
-    membersType.isDefined &&
-      tsv.headers.length == 2 &&
-      tsv.headers == Seq( tsv.firstColumnHeader, membersType.get + "_id" )
+  /**
+   * Imports collection members into a collection type entity. */
+  private def importMembershipTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Unit = {
+    withMemberCollectionType(entityType) { memberTypeOpt =>
+      validateMembershipTSV(tsv, memberTypeOpt) {
+        withPlural(memberTypeOpt.get) { memberPlural =>
+          val rawlsCalls = tsv.tsvData groupBy(_(0)) map { case (entityName, rows) =>
+            val ops = rows map { row =>
+              //row(1) is the entity to add as a member of the entity in row.head
+              val attrRef = AttributeReference(memberTypeOpt.get,row(1))
+              Map(addListMemberOperation,"attributeListName"->AttributeString(memberPlural),"newMember"->attrRef)
+            }
+            EntityUpdateDefinition(entityName,entityType,ops)
+          }
+          batchCallToRawls(workspaceNamespace, workspaceName, rawlsCalls.toSeq, "batchUpsert")
+        }
+      }
+    }
   }
 
   /**
-   * TSVs can be of two forms: they can either populate the "members" list of a collection entity,
-   * or they can populate the attributes on an(y kind of) entity. */
-  def upsertEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Unit = {
-
-    withTSVFile(tsvString) { tsv =>
-      //the first column header of the tsv defines the entity type we're trying to import or update.
-      //This is magically verified in the withFoo functions below.
-      val entityType = tsv.firstColumnHeader.stripSuffix("_id")
-
+   * Creates or updates entities from an entity TSV. Required attributes must exist in column headers. */
+  private def importEntityTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Unit = {
+    //we're setting attributes on a bunch of entities
+    checkFirstColumnsDistinct(tsv, "entity") {
       withMemberCollectionType(entityType) { memberTypeOpt =>
-        if( tsvPopulatesCollectionMembers(tsv, memberTypeOpt) ) {
-          withPlural(memberTypeOpt.get) { memberPlural =>
-            val rawlsCalls = addToCollectionTypeFromTSV(entityType, memberTypeOpt.get, memberPlural, tsv)
-            batchCallToRawls(workspaceNamespace, workspaceName, rawlsCalls.toSeq)
-          }
-        } else {
-          //we're setting attributes on a bunch of entities
-          checkFirstColumnsDistinct(tsv) {
-            checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
-              withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
-                val colInfo = tsv.headers.tail map { colName => (colName, requiredAttributes.get(colName)) }
-                val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
-                batchCallToRawls(workspaceNamespace, workspaceName, rawlsCalls)
-              }
-            }
+        checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
+          withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
+            val colInfo = tsv.headers.tail map { colName => (colName, requiredAttributes.get(colName))}
+            val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
+            batchCallToRawls(workspaceNamespace, workspaceName, rawlsCalls, "batchUpsert")
           }
         }
+      }
+    }
+  }
+
+  /**
+   * Updates existing entities from TSV. All entities must already exist. */
+  private def importUpdateTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Unit = {
+    //we're setting attributes on a bunch of entities
+    checkFirstColumnsDistinct(tsv, "entity") {
+      withMemberCollectionType(entityType) { memberTypeOpt =>
+        checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
+          ModelSchema.getRequiredAttributes(entityType) match {
+            //Required attributes aren't required to be headers in update TSVs - they should already have been
+            //defined when the entity was created. But we still need the type information if the headers do exist.
+            case Failure(regret) => requestContext.complete(HttpResponse(BadRequest, regret.getMessage))
+            case Success(requiredAttributes) =>
+              val colInfo = tsv.headers.tail map { colName => (colName, requiredAttributes.get(colName))}
+              val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
+              batchCallToRawls(workspaceNamespace, workspaceName, rawlsCalls, "batchUpdate")
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Determines the TSV type from the first column header and routes it to the correct import function. */
+  def importEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Unit = {
+    withTSVFile(tsvString) { tsv =>
+      //the first column header of the tsv defines:
+      // 1. The type of the tsv import file (membership, entity, or update)
+      // 2. The entity type we're trying to import or update, which is magically verified in the withFoo functions below.
+      tsv.firstColumnHeader.split(":") match {
+        case Array( tsvType, entityHeader ) =>
+          val entityType = entityHeader.stripSuffix("_id")
+          if( entityType == entityHeader ) {
+            requestContext.complete(HttpResponse(BadRequest, "Invalid first column header, entity type should end in _id"))
+          } else {
+            tsvType match {
+              case "membership" => importMembershipTSV(workspaceNamespace, workspaceName, tsv, entityType)
+              case "entity" => importEntityTSV(workspaceNamespace, workspaceName, tsv, entityType)
+              case "update" => importUpdateTSV(workspaceNamespace, workspaceName, tsv, entityType)
+              case _ => requestContext.complete(
+                HttpResponse(BadRequest, "Invalid TSV type, supported types are: membership, entity, update"))
+            }
+          }
+        case _ => requestContext.complete(
+          HttpResponse(BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
       }
     }
   }

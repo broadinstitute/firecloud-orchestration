@@ -53,43 +53,106 @@ object MockTSVStrings {
   /*
    * TSVs for testing the TSV import code.
    */
-  val unknownFirstColumnHeader = List(
-    List("sampel_id", "bar", "baz").mkString("\t"),
+  val missingTSVType = List(
+    List("sample_id", "bar", "baz").mkString("\t"),
     List("woop", "de", "doo").mkString("\t"),
     List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
 
-  val collectionTypeWithMissingMembersHeader = List( //missing sample_id
-    List("sample_set_id").mkString("\t"),
+  val nonexistentTSVType = List(
+    List("wobble:sample_id", "bar", "baz").mkString("\t"),
+    List("woop", "de", "doo").mkString("\t"),
+    List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
+
+  val malformedEntityType = List(
+    List("entity:sampleid", "bar", "baz").mkString("\t"),
+    List("woop", "de", "doo").mkString("\t"),
+    List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
+
+  //membership TSVs
+  val membershipUnknownFirstColumnHeader = List(
+    List("membership:sampel_id", "bar").mkString("\t"),
+    List("woop", "de").mkString("\t"),
+    List("hip", "hip").mkString("\t")).mkString("\n")
+
+  val membershipNotCollectionType = List(
+    List("membership:sample_id", "bar").mkString("\t"),
+    List("woop", "de").mkString("\t"),
+    List("hip", "hip").mkString("\t")).mkString("\n")
+
+  val membershipMissingMembersHeader = List( //missing sample_id
+    List("membership:sample_set_id").mkString("\t"),
     List("sset_1").mkString("\t"),
     List("sset_2").mkString("\t")).mkString("\n")
 
-  val collectionTypeWithExtraAttributes = List(
-    List("sample_set_id", "sample_id", "other_attribute").mkString("\t"),
+  val membershipExtraAttributes = List(
+    List("membership:sample_set_id", "sample_id", "other_attribute").mkString("\t"),
     List("woop", "de", "doo").mkString("\t"),
     List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
 
-  val validCollection = List(
-    List("sample_set_id", "sample_id").mkString("\t"),
+  val membershipValid = List(
+    List("membership:sample_set_id", "sample_id").mkString("\t"),
     List("sset_01", "sample_01").mkString("\t"),
     List("sset_01", "sample_02").mkString("\t")).mkString("\n")
 
-  val dupedEntityUpdate = List(
-    List("participant_id", "some_attribute").mkString("\t"),
+  //entity TSVs
+  val entityUnknownFirstColumnHeader = List(
+    List("entity:sampel_id", "bar", "baz").mkString("\t"),
+    List("woop", "de", "doo").mkString("\t"),
+    List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
+
+  val entityHasDupes = List(
+    List("entity:participant_id", "some_attribute").mkString("\t"),
     List("part_01", "de").mkString("\t"),
     List("part_01", "hip").mkString("\t")).mkString("\n")
 
+  val entityHasCollectionMembers = List(
+    List("entity:sample_set_id", "sample_id").mkString("\t"),
+    List("sset_01", "sample_01").mkString("\t"),
+    List("sset_01", "sample_02").mkString("\t")).mkString("\n")
+
   val entityUpdateMissingRequiredAttrs = List( //missing participant_id
-    List("sample_id", "some_attribute").mkString("\t"),
+    List("entity:sample_id", "some_attribute").mkString("\t"),
     List("sample_01", "de").mkString("\t"),
     List("sample_02", "hip").mkString("\t")).mkString("\n")
 
   val entityUpdateWithRequiredAttrs = List(
-    List("sample_id", "participant_id").mkString("\t"),
+    List("entity:sample_id", "participant_id").mkString("\t"),
     List("sample_01", "part_01").mkString("\t"),
     List("sample_02", "part_02").mkString("\t")).mkString("\n")
 
   val entityUpdateWithRequiredAndOptionalAttrs = List(
-    List("sample_id", "participant_id", "some_attribute").mkString("\t"),
+    List("entity:sample_id", "participant_id", "some_attribute").mkString("\t"),
+    List("sample_01", "part_01", "foo").mkString("\t"),
+    List("sample_02", "part_02", "bar").mkString("\t")).mkString("\n")
+
+  //update TSVs
+  val updateUnknownFirstColumnHeader = List(
+    List("update:sampel_id", "bar", "baz").mkString("\t"),
+    List("woop", "de", "doo").mkString("\t"),
+    List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
+
+  val updateHasDupes = List(
+    List("update:participant_id", "some_attribute").mkString("\t"),
+    List("part_01", "de").mkString("\t"),
+    List("part_01", "hip").mkString("\t")).mkString("\n")
+
+  val updateHasCollectionMembers = List(
+    List("update:sample_set_id", "sample_id").mkString("\t"),
+    List("sset_01", "sample_01").mkString("\t"),
+    List("sset_01", "sample_02").mkString("\t")).mkString("\n")
+
+  val updateMissingRequiredAttrs = List( //missing participant_id
+    List("update:sample_id", "some_attribute").mkString("\t"),
+    List("sample_01", "de").mkString("\t"),
+    List("sample_02", "hip").mkString("\t")).mkString("\n")
+
+  val updateWithRequiredAttrs = List(
+    List("update:sample_id", "participant_id").mkString("\t"),
+    List("sample_01", "part_01").mkString("\t"),
+    List("sample_02", "part_02").mkString("\t")).mkString("\n")
+
+  val updateWithRequiredAndOptionalAttrs = List(
+    List("update:sample_id", "participant_id", "some_attribute").mkString("\t"),
     List("sample_01", "part_01", "foo").mkString("\t"),
     List("sample_02", "part_02", "bar").mkString("\t")).mkString("\n")
 }
@@ -115,12 +178,27 @@ object MockTSVFormData {
       fieldName)))
   }
 
-  val unknownFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.unknownFirstColumnHeader)
-  val collectionTypeWithMissingMembersHeader = wrapInMultipart("entities", MockTSVStrings.collectionTypeWithMissingMembersHeader)
-  val collectionTypeWithExtraAttributes = wrapInMultipart("entities", MockTSVStrings.collectionTypeWithExtraAttributes)
-  val validCollection = wrapInMultipart("entities", MockTSVStrings.validCollection)
-  val dupedEntityUpdate = wrapInMultipart("entities", MockTSVStrings.dupedEntityUpdate)
+  val missingTSVType = wrapInMultipart("entities", MockTSVStrings.missingTSVType)
+  val nonexistentTSVType = wrapInMultipart("entities", MockTSVStrings.nonexistentTSVType)
+  val malformedEntityType = wrapInMultipart("entities", MockTSVStrings.malformedEntityType)
+
+  val membershipUnknownFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.membershipUnknownFirstColumnHeader)
+  val membershipNotCollectionType = wrapInMultipart("entities", MockTSVStrings.membershipNotCollectionType)
+  val membershipMissingMembersHeader = wrapInMultipart("entities", MockTSVStrings.membershipMissingMembersHeader)
+  val membershipExtraAttributes = wrapInMultipart("entities", MockTSVStrings.membershipExtraAttributes)
+  val membershipValid = wrapInMultipart("entities", MockTSVStrings.membershipValid)
+
+  val entityUnknownFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.entityUnknownFirstColumnHeader)
+  val entityHasDupes = wrapInMultipart("entities", MockTSVStrings.entityHasDupes)
+  val entityHasCollectionMembers = wrapInMultipart("entities", MockTSVStrings.entityHasCollectionMembers)
   val entityUpdateMissingRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateMissingRequiredAttrs)
   val entityUpdateWithRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateWithRequiredAttrs)
   val entityUpdateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateWithRequiredAndOptionalAttrs)
+
+  val updateUnknownFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.updateUnknownFirstColumnHeader)
+  val updateHasDupes = wrapInMultipart("entities", MockTSVStrings.updateHasDupes)
+  val updateHasCollectionMembers = wrapInMultipart("entities", MockTSVStrings.updateHasCollectionMembers)
+  val updateMissingRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.updateMissingRequiredAttrs)
+  val updateWithRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAttrs)
+  val updateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAndOptionalAttrs)
 }
