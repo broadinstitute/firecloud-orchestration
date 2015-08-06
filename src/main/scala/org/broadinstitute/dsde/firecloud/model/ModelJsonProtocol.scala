@@ -1,8 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import spray.json.DeserializationException
+import spray.json._
 import spray.json.DefaultJsonProtocol._
-import spray.json.{JsObject, JsString, JsValue, RootJsonFormat}
 
 object ModelJsonProtocol {
 
@@ -26,11 +25,13 @@ object ModelJsonProtocol {
   implicit object impAttributeFormat extends RootJsonFormat[Attribute] {
 
     override def write(obj: Attribute): JsValue = obj match {
+      case AttributeNull() => JsNull
       case AttributeString(s) => JsString(s)
       case AttributeReference(entityType, entityName) => JsObject(Map("entityType" -> JsString(entityType), "entityName" -> JsString(entityName)))
     }
 
     override def read(json: JsValue): Attribute = json match {
+      case JsNull => AttributeNull()
       case JsString(s) => AttributeString(s)
       case JsObject(members) => AttributeReference(members("entityType").asInstanceOf[JsString].value, members("entityName").asInstanceOf[JsString].value)
       case _ => throw new DeserializationException("unexpected json type")
