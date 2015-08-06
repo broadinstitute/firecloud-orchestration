@@ -69,3 +69,16 @@ case class MethodConfigurationCopy(
   methodRepoSnapshotId: Option[String] = None,
   @(ApiModelProperty@field)(required = true, value = "method configuration destination")
   destination: Option[Destination] = None)
+
+@ApiModel(value = "Method Repository Configuration Copy Ingest")
+case class CopyConfigurationIngest(
+  @(ApiModelProperty@field)(required = true, value = "method configuration namespace")
+  configurationNamespace: Option[String],
+  @(ApiModelProperty@field)(required = true, value = "method configuration name")
+  configurationName: Option[String],
+  @(ApiModelProperty@field)(required = true, value = "method configuration snapshot id")
+  configurationSnapshotId: Option[String],
+  @(ApiModelProperty@field)(required = true, value = "method configuration destination namespace")
+  destinationNamespace: Option[String],
+  @(ApiModelProperty@field)(required = true, value = "method configuration destination name")
+  destinationName: Option[String])
