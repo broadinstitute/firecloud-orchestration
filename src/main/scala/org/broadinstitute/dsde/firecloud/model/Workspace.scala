@@ -82,3 +82,10 @@ case class CopyConfigurationIngest(
   destinationNamespace: Option[String],
   @(ApiModelProperty@field)(required = true, value = "method configuration destination name")
   destinationName: Option[String])
+
+case class SubmissionIngest(
+  methodConfigurationNamespace: Option[String],
+  methodConfigurationName: Option[String],
+  entityType: Option[String],
+  entityName: Option[String],
+  expression: Option[String])
