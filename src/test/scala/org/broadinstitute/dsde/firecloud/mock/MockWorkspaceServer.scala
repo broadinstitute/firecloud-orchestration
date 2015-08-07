@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.mock
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
@@ -10,9 +10,8 @@ import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
 import spray.http.FormData
 import spray.http.StatusCodes._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import spray.json.DefaultJsonProtocol._
 import spray.json._
-import DefaultJsonProtocol._
 
 /**
  * Represents all possible results that can be returned from the Workspace Service
@@ -118,6 +117,24 @@ object MockWorkspaceServer {
     List.tabulate(randomPositiveInt())(n => createMockWorkspace())
   }
 
+  val mockValidId = randomPositiveInt()
+
+  val mockValidSubmission = SubmissionIngest(
+    methodConfigurationNamespace = Option(randomAlpha()),
+    methodConfigurationName = Option(randomAlpha()),
+    entityType = Option(randomAlpha()),
+    entityName = Option(randomAlpha()),
+    expression = Option(randomAlpha())    
+  ) 
+  
+  val mockInvalidSubmission = SubmissionIngest(
+    methodConfigurationNamespace = Option.empty,
+    methodConfigurationName = Option.empty,
+    entityType = Option.empty,
+    entityName = Option.empty,
+    expression = Option.empty
+  )
+
   var workspaceServer: ClientAndServer = _
 
   def stopWorkspaceServer(): Unit = {
@@ -126,6 +143,46 @@ object MockWorkspaceServer {
 
   def startWorkspaceServer(): Unit = {
     workspaceServer = startClientAndServer(workspaceServerPort)
+
+    // Submissions responses
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath(s"/workspaces/%s/%s/submissions"
+            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .withCookies(cookie))
+      .callback(
+        callback().
+          withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidSubmissionCallback")
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath(s"/workspaces/%s/%s/submissions"
+          .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get)))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(Found.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"/workspaces/%s/%s/submissions/%s"
+            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockValidId))
+          .withCookies(cookie))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+          .withBody(mockValidSubmission.toJson.prettyPrint)
+      )
 
     // workspace-level responses
 
@@ -171,11 +228,8 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("GET")
-          .withPath(
-            FireCloudConfig.
-              Workspace.
-              methodConfigsListPath.
-              format(mockInvalidWorkspace.namespace.get, mockInvalidWorkspace.name.get))
+          .withPath(s"/workspaces/%s/%s/methodconfigs"
+            .format(mockInvalidWorkspace.namespace.get, mockInvalidWorkspace.name.get))
           .withCookies(cookie)).
       respond(
         response()
@@ -186,11 +240,8 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("GET")
-          .withPath(
-            FireCloudConfig.
-              Workspace.
-              methodConfigsListPath.
-              format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .withPath(s"/workspaces/%s/%s/methodconfigs".
+            format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
           .withCookies(cookie)).
       respond(
         response()
