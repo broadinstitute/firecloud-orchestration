@@ -20,13 +20,13 @@ trait MethodsService extends HttpService with FireCloudDirectives {
     path("methods") {
       get { requestContext =>
         actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Methods.methodsListUrl))
+          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Agora.methodsListUrl))
       }
     } ~
     path("configurations") {
       get { requestContext =>
         actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Methods.configurationsListUrl))
+          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Agora.configurationsListUrl))
       }
     }
 

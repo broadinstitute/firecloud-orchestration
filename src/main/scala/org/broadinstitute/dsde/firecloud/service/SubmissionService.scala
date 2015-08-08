@@ -25,7 +25,7 @@ trait SubmissionService extends HttpService with FireCloudDirectives {
     path("workspaces" / Segment / Segment / "submissions") { (workspaceNamespace, workspaceName) =>
       post {
         entity(as[SubmissionIngest]) { submission => requestContext =>
-          val postSubmission: HttpRequest = Post(FireCloudConfig.Workspace.
+          val postSubmission: HttpRequest = Post(FireCloudConfig.Rawls.
             submissionsUrl(workspaceNamespace, workspaceName), submission)
           actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
             HttpClient.PerformExternalRequest(postSubmission)
@@ -35,7 +35,7 @@ trait SubmissionService extends HttpService with FireCloudDirectives {
     path("workspaces" / Segment / Segment / "submissions" / Segment) {
       (workspaceNamespace, workspaceName, submissionId) =>
       get { requestContext =>
-        val getSubmission: HttpRequest = Get(FireCloudConfig.Workspace.
+        val getSubmission: HttpRequest = Get(FireCloudConfig.Rawls.
           submissionByIdUrl(workspaceNamespace, workspaceName, submissionId))
         actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
           HttpClient.PerformExternalRequest(getSubmission)

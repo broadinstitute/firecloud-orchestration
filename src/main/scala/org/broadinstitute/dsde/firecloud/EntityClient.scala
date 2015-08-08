@@ -60,7 +60,7 @@ class EntityClient (requestContext: RequestContext) extends Actor {
     val pipeline: HttpRequest => Future[HttpResponse] =
       addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
     val responseFuture: Future[HttpResponse] = pipeline {
-      Get(s"${FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType")
+      Get(s"${FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType")
     }
 
     responseFuture onComplete {
@@ -105,7 +105,7 @@ class EntityClient (requestContext: RequestContext) extends Actor {
   }
 
   def createEntityOrReportError(workspaceNamespace: String, workspaceName: String, entityJson: JsValue, entityType: String, entityName: String) = {
-    val url = FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+    val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
     val externalRequest = Post(url, HttpClient.createJsonHttpEntity(entityJson.compactPrint))
     val pipeline = addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
     // TODO figure out how to get the response in a non-blocking way,
@@ -197,7 +197,7 @@ class EntityClient (requestContext: RequestContext) extends Actor {
     val pipeline: HttpRequest => Future[HttpResponse] =
       addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
     val responseFuture: Future[HttpResponse] = pipeline {
-      Post(FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/batchUpsert",
+      Post(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/batchUpsert",
             HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
     }
 

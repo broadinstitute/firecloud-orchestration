@@ -28,7 +28,7 @@ object FireCloudConfig {
     lazy val apiDocs = swagger.getString("apiDocs")
   }
 
-  object Methods {
+  object Agora {
     private val methods = merged.getConfig("methods")
     lazy val baseUrl = methods.getString("baseUrl")
     lazy val methodsPath = methods.getString("methodsPath")
@@ -37,7 +37,7 @@ object FireCloudConfig {
     lazy val configurationsListUrl = baseUrl + configurationsPath
   }
 
-  object Workspace {
+  object Rawls {
     private val workspace = merged.getConfig("workspace")
     lazy val model = "/" + workspace.getString("model")
     lazy val baseUrl= workspace.getString("baseUrl")

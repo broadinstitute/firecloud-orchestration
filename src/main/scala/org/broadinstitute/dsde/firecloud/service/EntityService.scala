@@ -75,7 +75,7 @@ trait EntityService extends HttpService with FireCloudDirectives {
       (workspaceNamespace, workspaceName, entityType) =>
         get { requestContext =>
           actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(Get(s"${FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType"))
+            HttpClient.PerformExternalRequest(Get(s"${FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType"))
         }
       }
 }

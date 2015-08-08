@@ -42,7 +42,7 @@ object ModelSchema {
 
 object EntityTypes {
   val types : Map[String, EntityMetadata] = ModelJsonProtocol.impModelSchema.read(
-    Source.fromURL(getClass.getResource(FireCloudConfig.Workspace.model)).mkString.parseJson ).schema
+    Source.fromURL(getClass.getResource(FireCloudConfig.Rawls.model)).mkString.parseJson ).schema
 }
 
 case class EntityMetadata(
