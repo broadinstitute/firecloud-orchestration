@@ -56,7 +56,7 @@ trait MethodConfigurationService extends HttpService with FireCloudDirectives {
         put {
           entity(as[MethodConfiguration]) { methodConfig =>
             requestContext =>
-              val endpointUrl = FireCloudConfig.Workspace.updateMethodConfigurationUrl.
+              val endpointUrl = FireCloudConfig.Rawls.updateMethodConfigurationUrl.
                 format(workspaceNamespace, workspaceName, configNamespace, configName)
               actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
                 HttpClient.PerformExternalRequest(Put(endpointUrl, methodConfig))
@@ -101,7 +101,7 @@ trait MethodConfigurationService extends HttpService with FireCloudDirectives {
                 namespace = Option(workspaceNamespace),
                 name = Option(workspaceName))))))
           actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(Post(FireCloudConfig.Workspace.copyFromMethodRepoConfigUrl, copyMethodConfig))
+            HttpClient.PerformExternalRequest(Post(FireCloudConfig.Rawls.copyFromMethodRepoConfigUrl, copyMethodConfig))
         }
       }
     }

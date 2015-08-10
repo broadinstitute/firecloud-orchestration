@@ -60,7 +60,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
                     .updated("createdDate", dateFormat.format(new Date()).toJson)
                     .updated("attributes", JsObject())
                   val request = Post(
-                    FireCloudConfig.Workspace.workspaceCreateUrl,
+                    FireCloudConfig.Rawls.workspaceCreateUrl,
                     HttpClient.createJsonHttpEntity(params.toJson.compactPrint)
                   )
                   actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
@@ -83,7 +83,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
     path(ApiPrefix) {
       get { requestContext =>
         actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Workspace.workspacesListUrl))
+          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Rawls.workspacesListUrl))
       }
     }
 
@@ -118,7 +118,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
       get {
         requestContext =>
           actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Workspace.methodConfigPathFromWorkspace(workspaceNamespace, workspaceName)))
+          HttpClient.PerformExternalRequest(Get(FireCloudConfig.Rawls.methodConfigPathFromWorkspace(workspaceNamespace, workspaceName)))
         }
       }
 
@@ -138,7 +138,7 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
         formFields( 'entities ) { (entitiesJson) =>
           respondWithJSON { requestContext =>
             val entities = entitiesJson.parseJson
-            val url = FireCloudConfig.Workspace.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+            val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
             actorRefFactory.actorOf(Props(new EntityClient(requestContext))) !
               EntityClient.CreateEntities(workspaceNamespace, workspaceName, entities)
             }

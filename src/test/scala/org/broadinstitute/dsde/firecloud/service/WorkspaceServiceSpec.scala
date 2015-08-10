@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.mock.MockTSVFormData
@@ -42,7 +41,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       name = Option.empty,
       namespace = Option.empty)
 
-    val validWorkspacePath = FireCloudConfig.Workspace.importEntitiesPathFromWorkspace(
+    val validWorkspacePath = s"/workspaces/%s/%s/importEntities".format(
       MockWorkspaceServer.mockValidWorkspace.namespace.get,
       MockWorkspaceServer.mockValidWorkspace.name.get)
 
@@ -62,7 +61,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
     "when calling GET on the list method configurations with an invalid workspace namespace/name"- {
       "Not Found is returned" in {
-        val path = FireCloudConfig.Workspace.methodConfigsListPath.format(
+        val path = "/workspaces/%s/%s/methodconfigs".format(
           MockWorkspaceServer.mockInvalidWorkspace.namespace.get,
           MockWorkspaceServer.mockInvalidWorkspace.name.get)
         Get(path) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check{
@@ -73,7 +72,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
     "when calling GET on the list method configurations with a valid workspace namespace/name"- {
       "OK response and a list of at list one Method Configuration is returned" in {
-        val path = FireCloudConfig.Workspace.methodConfigsListPath.format(
+        val path = "/workspaces/%s/%s/methodconfigs".format(
           MockWorkspaceServer.mockValidWorkspace.namespace.get,
           MockWorkspaceServer.mockValidWorkspace.name.get)
         Get(path) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check{
