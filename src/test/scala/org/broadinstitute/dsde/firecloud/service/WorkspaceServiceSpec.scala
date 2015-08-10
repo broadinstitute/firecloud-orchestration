@@ -41,7 +41,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       name = Option.empty,
       namespace = Option.empty)
 
-    val validWorkspacePath = s"/workspaces/%s/%s/importEntities".format(
+    val tsvImportPath = ApiPrefix + "/%s/%s/importEntities".format(
       MockWorkspaceServer.mockValidWorkspace.namespace.get,
       MockWorkspaceServer.mockValidWorkspace.name.get)
 
@@ -156,73 +156,169 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
     }
 
     "when calling POST on the workspaces/*/*/importEntities path" - {
-
-      "should 400 Bad Request if the first column header of the TSV is an unknown entity type" in {
-        (Post(validWorkspacePath, MockTSVFormData.unknownFirstColumnHeader)
+      "should 400 Bad Request if the TSV type is missing" in {
+        (Post(tsvImportPath, MockTSVFormData.missingTSVType)
           ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
           ~> sealRoute(routes)) ~> check {
           status should equal(BadRequest)
         }
       }
 
-      //TODO - a collection-type TSV missing members header is currently indistinguishable from an entity-update TSV.
-      //This test should be reinstated when we can distinguish them. DSDEEPB-937
-      "should 400 Bad Request if a collection-type TSV is missing its collection members header" ignore {
-        (Post(validWorkspacePath, MockTSVFormData.collectionTypeWithMissingMembersHeader)
+      "should 400 Bad Request if the TSV type is nonsense" in {
+        (Post(tsvImportPath, MockTSVFormData.nonexistentTSVType)
           ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
           ~> sealRoute(routes)) ~> check {
           status should equal(BadRequest)
         }
       }
 
-      //NOTE: this is equivalent to:
-      // "should 400 Bad Request if an entity-update TSV has collection member attribute headers"
-      //This implies that we can't distinguish between the two - which is exactly why both are treated as errors!
-      "should 400 Bad Request if a collection-type TSV has other headers than its collection members" in {
-        (Post(validWorkspacePath, MockTSVFormData.collectionTypeWithExtraAttributes)
+      "should 400 Bad Request if the TSV entity type doesn't end in _id" in {
+        (Post(tsvImportPath, MockTSVFormData.malformedEntityType)
           ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
           ~> sealRoute(routes)) ~> check {
           status should equal(BadRequest)
         }
       }
 
-      "should 200 OK if a collection-type TSV has the correct headers and valid internals" in {
-        (Post(validWorkspacePath, MockTSVFormData.validCollection)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
-          ~> sealRoute(routes)) ~> check {
-          status should equal(OK)
+      "a membership-type TSV" - {
+        "should 400 Bad Request if the entity type is unknown" in {
+          (Post(tsvImportPath, MockTSVFormData.membershipUnknownFirstColumnHeader)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 400 Bad Request if the entity type is not a collection type" in {
+          (Post(tsvImportPath, MockTSVFormData.membershipNotCollectionType)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 400 Bad Request if the collection members header is missing" in {
+          (Post(tsvImportPath, MockTSVFormData.membershipMissingMembersHeader)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 400 Bad Request if it contains other headers than its collection members" in {
+          (Post(tsvImportPath, MockTSVFormData.membershipExtraAttributes)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 200 OK if it has the correct headers and valid internals" in {
+          (Post(tsvImportPath, MockTSVFormData.membershipValid)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(OK)
+          }
         }
       }
 
-      "should 400 Bad Request if an entity-update TSV has duplicated entities to update" in {
-        (Post(validWorkspacePath, MockTSVFormData.dupedEntityUpdate)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
-          ~> sealRoute(routes)) ~> check {
-          status should equal(BadRequest)
+      "an entity-type TSV" - {
+        "should 400 Bad Request if the entity type is unknown" in {
+          (Post(tsvImportPath, MockTSVFormData.entityUnknownFirstColumnHeader)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 400 Bad Request if it contains duplicated entities to update" in {
+          (Post(tsvImportPath, MockTSVFormData.entityHasDupes)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 400 Bad Request if it contains collection member headers" in {
+          (Post(tsvImportPath, MockTSVFormData.entityHasCollectionMembers)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 400 Bad Request if it is missing required attribute headers" in {
+          (Post(tsvImportPath, MockTSVFormData.entityUpdateMissingRequiredAttrs)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 200 OK if it has the full set of required attribute headers" in {
+          (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAttrs)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(OK)
+          }
+        }
+
+        "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
+          (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAndOptionalAttrs)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(OK)
+          }
         }
       }
 
-      "should 400 Bad Request if an entity-update TSV is missing required attribute headers" in {
-        (Post(validWorkspacePath, MockTSVFormData.entityUpdateMissingRequiredAttrs)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
-          ~> sealRoute(routes)) ~> check {
-          status should equal(BadRequest)
+      "an update-type TSV" - {
+        "should 400 Bad Request if the entity type is unknown" in {
+          (Post(tsvImportPath, MockTSVFormData.updateUnknownFirstColumnHeader)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
         }
-      }
 
-      "should 200 OK if an entity-update TSV is has the full set of required attribute headers" in {
-        (Post(validWorkspacePath, MockTSVFormData.entityUpdateWithRequiredAttrs)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
-          ~> sealRoute(routes)) ~> check {
-          status should equal(OK)
+        "should 400 Bad Request if it contains duplicated entities to update" in {
+          (Post(tsvImportPath, MockTSVFormData.updateHasDupes)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
         }
-      }
 
-      "should 200 OK if an entity-update TSV is has the full set of required attribute headers, plus optionals" in {
-        (Post(validWorkspacePath, MockTSVFormData.entityUpdateWithRequiredAndOptionalAttrs)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
-          ~> sealRoute(routes)) ~> check {
-          status should equal(OK)
+        "should 400 Bad Request if it contains collection member headers" in {
+          (Post(tsvImportPath, MockTSVFormData.updateHasCollectionMembers)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 200 OK even if it is missing required attribute headers" in {
+          (Post(tsvImportPath, MockTSVFormData.updateMissingRequiredAttrs)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(OK)
+          }
+        }
+
+        "should 200 OK if it has the full set of required attribute headers" in {
+          (Post(tsvImportPath, MockTSVFormData.updateWithRequiredAttrs)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(OK)
+          }
+        }
+
+        "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
+          (Post(tsvImportPath, MockTSVFormData.updateWithRequiredAndOptionalAttrs)
+            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> sealRoute(routes)) ~> check {
+            status should equal(OK)
+          }
         }
       }
     }
