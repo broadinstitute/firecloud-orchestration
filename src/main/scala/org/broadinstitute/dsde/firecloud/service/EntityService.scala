@@ -30,12 +30,45 @@ class EntityServiceActor extends Actor with EntityService {
   produces = "application/json")
 trait EntityService extends HttpService with FireCloudDirectives {
 
-  private final val ApiPrefix = "entities"
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  val routes = listEntitiesPerTypeRoute
+  val routes = listEntityTypesRoute ~ listEntitiesPerTypeRoute
 
   lazy val log = LoggerFactory.getLogger(getClass)
+
+  @ApiOperation(value = "list all entity types in a workspace",
+    nickname = "listEntityTypes",
+    httpMethod = "GET",
+    produces = "application/json",
+    response = classOf[String],
+    responseContainer = "List")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(
+      name = "workspaceNamespace",
+      required = true,
+      dataType = "string",
+      paramType = "path",
+      value = "Workspace Namespace"),
+    new ApiImplicitParam(
+      name = "workspaceName",
+      required = true,
+      dataType = "string",
+      paramType = "path",
+      value = "Workspace Name")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Successful Request"),
+    new ApiResponse(code = 404, message = "Workspace does not exist"),
+    new ApiResponse(code = 500, message = "Internal Error")
+  ))
+  def listEntityTypesRoute: Route =
+    path("workspaces" / Segment / Segment / "entities") {
+      (workspaceNamespace, workspaceName) =>
+        get { requestContext =>
+          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+            HttpClient.PerformExternalRequest(Get(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)))
+        }
+    }
 
   @Path("/{entityType}")
   @ApiOperation(value = "list all entities of given type in a workspace",
