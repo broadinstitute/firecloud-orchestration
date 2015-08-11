@@ -2,9 +2,9 @@ package org.broadinstitute.dsde.firecloud
 
 import scala.reflect.runtime.universe._
 
-import akka.actor.ActorLogging
 import com.gettyimages.spray.swagger.SwaggerHttpService
 import com.wordnik.swagger.model.ApiInfo
+import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http.Uri
 import spray.http.Uri.Path
@@ -12,7 +12,7 @@ import spray.routing.{HttpServiceActor, Route}
 
 import org.broadinstitute.dsde.firecloud.service._
 
-class FireCloudServiceActor extends HttpServiceActor with ActorLogging {
+class FireCloudServiceActor extends HttpServiceActor {
 
   trait ActorRefFactoryContext {
     def actorRefFactory = context
@@ -24,8 +24,18 @@ class FireCloudServiceActor extends HttpServiceActor with ActorLogging {
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
 
-  def receive = runRoute(swaggerUiService ~ methodsService.routes ~ workspaceService.routes ~
-    entityService.routes ~ methodConfigurationService.routes ~ submissionsService.routes)
+  lazy val log = LoggerFactory.getLogger(getClass)
+  val logRequests = mapInnerRoute { route => requestContext =>
+    log.debug(requestContext.request.toString)
+    route(requestContext)
+  }
+
+  def receive = runRoute(
+    logRequests {
+      swaggerUiService ~ methodsService.routes ~ workspaceService.routes ~ entityService.routes ~
+      methodConfigurationService.routes ~ submissionsService.routes
+    }
+  )
 
   val swaggerService = new SwaggerHttpService {
 
