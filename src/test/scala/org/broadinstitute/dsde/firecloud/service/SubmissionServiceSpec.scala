@@ -44,6 +44,15 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
     val openAMSession = OpenAMSession(()).futureValue(timeout(Span(5, Seconds)), interval(scaled(Span(0.5, Seconds))))
     val token = openAMSession.cookies.head.content
 
+    "when calling GET on the /workspaces/*/*/submissions path" - {
+      "a list of submissions is returned" in {
+        (Get(localSubmissionsPath)
+          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
     "when calling POST on the /workspaces/*/*/submissions path with a valid submission" - {
       "OK response is returned" in {
         (Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission)
@@ -76,8 +85,6 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
       "OK response is returned" in {
         Get(localSubmissionIdPath) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
           status should equal(OK)
-          val submission = responseAs[SubmissionIngest]
-          submission shouldNot be (None)
         }
       }
     }
