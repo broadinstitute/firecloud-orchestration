@@ -174,6 +174,19 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("GET")
+          .withPath(s"/workspaces/%s/%s/submissions"
+          .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .withCookies(cookie))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
           .withPath(s"/workspaces/%s/%s/submissions/%s"
             .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockValidId))
           .withCookies(cookie))
