@@ -33,7 +33,7 @@ val artifactory = "https://artifactory.broadinstitute.org/artifactory/"
 
 resolvers += "artifactory-releases" at artifactory + "libs-release"
 
-scalaVersion  := "2.11.6"
+scalaVersion  := "2.11.7"
 
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-target:jvm-1.8")
