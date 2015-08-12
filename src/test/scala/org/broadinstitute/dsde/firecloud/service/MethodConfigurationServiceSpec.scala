@@ -17,6 +17,11 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
   def actorRefFactory = system
 
+  private final val validGetMethodConfigUrl = s"/workspaces/%s/%s/method_configs/%s/%s".format(
+    MockWorkspaceServer.mockValidWorkspace.namespace.get,
+    MockWorkspaceServer.mockValidWorkspace.name.get,
+    MockWorkspaceServer.mockValidWorkspace.namespace.get,
+    MockWorkspaceServer.mockValidWorkspace.name.get)
   private final val validUpdateMethodConfigUrl = s"/workspaces/%s/%s/method_configs/%s/%s".format(
     MockWorkspaceServer.mockValidWorkspace.namespace.get,
     MockWorkspaceServer.mockValidWorkspace.name.get,
@@ -64,9 +69,17 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
     }
 
     "when calling GET on the /workspaces/*/*/method_configs/*/* path" - {
-      "MethodNotAllowed error is returned" in {
-        Get(validUpdateMethodConfigUrl) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
+      "OK respose is returned" in {
+        Get(validGetMethodConfigUrl) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when calling GET on an invalid /workspaces/*/*/method_configs/*/* path" - {
+      "Not Found respose is returned" in {
+        Get("/workspaces/invalid/invalid/method_configs/invalid/invalid") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+          status should equal(NotFound)
         }
       }
     }
