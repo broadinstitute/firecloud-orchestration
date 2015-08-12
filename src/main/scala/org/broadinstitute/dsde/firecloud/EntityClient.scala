@@ -115,8 +115,8 @@ class EntityClient (requestContext: RequestContext) extends Actor {
         case StatusCodes.Created => EntityCreateResult(entityType, entityName, true, "Entity created successfully")
         case _ => EntityCreateResult(entityType, entityName, false, s"Bad response from workspace service: ${response.message}")
       }
-      case Failure(e: Exception) => EntityCreateResult(entityType, entityName, false,
-        s"Error sending request to workspace service: ${e.getMessage}")
+      case Failure(t: Throwable) => EntityCreateResult(entityType, entityName, false,
+        s"Error sending request to workspace service: ${t.getMessage}")
     }
   }
 
