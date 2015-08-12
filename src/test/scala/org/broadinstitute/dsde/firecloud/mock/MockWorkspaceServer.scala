@@ -283,6 +283,23 @@ object MockWorkspaceServer {
     MockWorkspaceServer.workspaceServer.
       when(
         request()
+          .withMethod("GET")
+          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
+          format(
+            mockValidWorkspace.namespace.get,
+            mockValidWorkspace.name.get,
+            mockValidWorkspace.namespace.get,
+            mockValidWorkspace.name.get))
+          .withCookies(cookie)).
+      respond(
+        response()
+          .withHeaders(header)
+          .withBody(mockMethodConfigs.head.toJson.prettyPrint)
+          .withStatusCode(OK.intValue))
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
           .withMethod("PUT")
           .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
           format(
