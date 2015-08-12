@@ -23,8 +23,38 @@ class MethodConfigurationServiceActor extends Actor with MethodConfigurationServ
 trait MethodConfigurationService extends HttpService with FireCloudDirectives {
 
   private final val ApiPrefix = "workspaces"
-  lazy val routes = methodConfigurationUpdateRoute ~ copyMethodRepositoryConfigurationRoute
+  lazy val routes = getMethodConfigurationRoute ~ methodConfigurationUpdateRoute ~ copyMethodRepositoryConfigurationRoute
   lazy val log = LoggerFactory.getLogger(getClass)
+
+  @Path(value = "/{configNamespace}/{configName}")
+  @ApiOperation (
+    value="get method configuration in a workspace",
+    nickname="getMethodConfiguration",
+    httpMethod="GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "workspaceNamespace", required = true, dataType = "string", paramType = "path",
+      value = "Workspace Namespace"),
+    new ApiImplicitParam(
+      name = "workspaceName", required = true, dataType = "string", paramType = "path", value = "Workspace Name"),
+    new ApiImplicitParam(
+      name = "configNamespace", required = true, dataType = "string", paramType = "path",
+      value = "Configuration Namespace"),
+    new ApiImplicitParam(
+      name = "configName", required = true, dataType = "string", paramType = "path", value = "Configuration Name")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Successful"),
+    new ApiResponse(code = 404, message = "Method Configuration Not Found"),
+    new ApiResponse(code = 500, message = "Internal Error")))
+  def getMethodConfigurationRoute: Route =
+    path(ApiPrefix / Segment / Segment / "method_configs" / Segment / Segment) {
+      (workspaceNamespace, workspaceName, configNamespace, configName) =>
+        get { requestContext =>
+          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+            HttpClient.PerformExternalRequest(Get(FireCloudConfig.Rawls.getMethodConfigUrl.
+              format(workspaceNamespace, workspaceName, configNamespace, configName)))
+        }
+    }
 
   @Path(value = "/{configNamespace}/{configName}")
   @ApiOperation (
