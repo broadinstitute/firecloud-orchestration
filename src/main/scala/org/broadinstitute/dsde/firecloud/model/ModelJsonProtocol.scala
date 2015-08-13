@@ -15,6 +15,7 @@ object ModelJsonProtocol {
   implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
 
   implicit val impMethodConfiguration = jsonFormat9(MethodConfiguration)
+  implicit val impMethodConfigurationRename = jsonFormat3(MethodConfigurationRename)
 
   implicit val impDestination = jsonFormat3(Destination)
   implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)

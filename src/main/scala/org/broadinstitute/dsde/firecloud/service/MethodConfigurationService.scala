@@ -23,7 +23,8 @@ class MethodConfigurationServiceActor extends Actor with MethodConfigurationServ
 trait MethodConfigurationService extends HttpService with FireCloudDirectives {
 
   private final val ApiPrefix = "workspaces"
-  lazy val routes = getMethodConfigurationRoute ~ methodConfigurationUpdateRoute ~ copyMethodRepositoryConfigurationRoute
+  lazy val routes = getMethodConfigurationRoute ~ methodConfigurationUpdateRoute ~ methodConfigurationRenameRoute ~
+    copyMethodRepositoryConfigurationRoute
   lazy val log = LoggerFactory.getLogger(getClass)
 
   @Path(value = "/{configNamespace}/{configName}")
@@ -90,6 +91,44 @@ trait MethodConfigurationService extends HttpService with FireCloudDirectives {
                 format(workspaceNamespace, workspaceName, configNamespace, configName)
               actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
                 HttpClient.PerformExternalRequest(Put(endpointUrl, methodConfig))
+          }
+        }
+    }
+
+  @Path(value = "/{configNamespace}/{configName}/rename")
+  @ApiOperation (
+    value="rename method configuration in a workspace",
+    nickname="renameMethodConfiguration",
+    httpMethod="POST")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "workspaceNamespace", required = true, dataType = "string", paramType = "path",
+      value = "Workspace Namespace"),
+    new ApiImplicitParam(
+      name = "workspaceName", required = true, dataType = "string", paramType = "path", value = "Workspace Name"),
+    new ApiImplicitParam(
+      name = "configNamespace", required = true, dataType = "string", paramType = "path",
+      value = "Configuration Namespace"),
+    new ApiImplicitParam(
+      name = "configName", required = true, dataType = "string", paramType = "path", value = "Configuration Name"),
+    new ApiImplicitParam(
+      paramType = "body", name = "body", required = true,
+      dataType = "org.broadinstitute.dsde.firecloud.model.MethodConfigurationRename",
+      value = "Method Config to Update"
+    )
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Successful"),
+    new ApiResponse(code = 500, message = "Internal Error")))
+  def methodConfigurationRenameRoute: Route =
+    path(ApiPrefix / Segment / Segment / "method_configs" / Segment / Segment / "rename") {
+      (workspaceNamespace, workspaceName, configNamespace, configName) =>
+        post {
+          entity(as[MethodConfigurationRename]) { methodConfigRename =>
+            requestContext =>
+              val endpointUrl = FireCloudConfig.Rawls.renameMethodConfigurationUrl.
+                format(workspaceNamespace, workspaceName, configNamespace, configName)
+              actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+                HttpClient.PerformExternalRequest(Post(endpointUrl, methodConfigRename))
           }
         }
     }
