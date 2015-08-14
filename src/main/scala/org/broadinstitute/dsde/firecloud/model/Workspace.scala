@@ -49,6 +49,15 @@ case class MethodConfiguration(
   @(ApiModelProperty@field)(required = true, value = "PREREQUISITES:TODO PUT MORE PRECISE INFORMATION AND DETAIL HERE")
   prerequisites: Option[Map[String, String]] = None)
 
+@ApiModel(value = "method configuration rename")
+case class MethodConfigurationRename(
+  @(ApiModelProperty@field)(required = true, value = "method configuration name")
+  name: Option[String] = None,
+  @(ApiModelProperty@field)(required = true, value = "method configuration namespace")
+  namespace: Option[String] = None,
+  @(ApiModelProperty@field)(required = true, value = "map with corresponding workspace-related information : name  and namespace ")
+  workspaceName: Option[Map[String, String]] = None)
+
 
 @ApiModel(value = "Method Repository Configuration Copy Destination")
 case class Destination(
