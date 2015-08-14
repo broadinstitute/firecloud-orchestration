@@ -8,29 +8,11 @@
         </encoder>
     </appender>
 
-    <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>firecloud.log</file>
-        <append>true</append>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- daily rollover -->
-            <fileNamePattern>firecloud.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <!-- keep 30 days' worth of history -->
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
-        <!-- encoders are assigned the type
-             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
-        <encoder>
-            <pattern>[%level] [%d{HH:mm:ss.SSS}] [%thread] %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
-
     <logger name="org.broadinstitute.dsde" level="info" additivity="false">
-        <appender-ref ref="file"/>
         <appender-ref ref="console"/>
     </logger>
 
     <root level="warn">
-        <appender-ref ref="file"/>
         <appender-ref ref="console"/>
     </root>
 
