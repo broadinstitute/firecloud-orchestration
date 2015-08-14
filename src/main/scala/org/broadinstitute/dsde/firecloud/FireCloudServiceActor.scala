@@ -1,35 +1,50 @@
 package org.broadinstitute.dsde.firecloud
 
-import akka.actor.ActorLogging
-import com.gettyimages.spray.swagger.SwaggerHttpService
-import com.wordnik.swagger.model.ApiInfo
-import org.broadinstitute.dsde.firecloud.service.MethodsService
-import spray.http.StatusCodes._
-import spray.routing.HttpServiceActor
-
 import scala.reflect.runtime.universe._
 
-class FireCloudServiceActor extends HttpServiceActor with ActorLogging {
+import com.gettyimages.spray.swagger.SwaggerHttpService
+import com.wordnik.swagger.model.ApiInfo
+import org.slf4j.LoggerFactory
+import spray.http.StatusCodes._
+import spray.http.Uri
+import spray.http.Uri.Path
+import spray.routing.{HttpServiceActor, Route}
 
-  // the HttpService trait defines only one abstract member, which
-  // connects the services environment to the enclosing actor or test
-  override def actorRefFactory = context
+import org.broadinstitute.dsde.firecloud.service._
+
+class FireCloudServiceActor extends HttpServiceActor {
 
   trait ActorRefFactoryContext {
     def actorRefFactory = context
   }
 
   val methodsService = new MethodsService with ActorRefFactoryContext
+  val workspaceService = new WorkspaceService with ActorRefFactoryContext
+  val entityService = new EntityService with ActorRefFactoryContext
+  val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
+  val submissionsService = new SubmissionService with ActorRefFactoryContext
+
+  lazy val log = LoggerFactory.getLogger(getClass)
+  val logRequests = mapInnerRoute { route => requestContext =>
+    log.debug(requestContext.request.toString)
+    route(requestContext)
+  }
 
   def receive = runRoute(
-    swaggerService.routes ~ swaggerUiService ~ methodsService.listRoute
+    logRequests {
+      swaggerUiService ~ methodsService.routes ~ workspaceService.routes ~ entityService.routes ~
+      methodConfigurationService.routes ~ submissionsService.routes
+    }
   )
 
   val swaggerService = new SwaggerHttpService {
 
     // All documented API services must be added to these API types for Swagger to recognize them.
     override def apiTypes = Seq(
-      typeOf[MethodsService]
+      typeOf[MethodsService],
+      typeOf[WorkspaceService],
+      typeOf[EntityService],
+      typeOf[MethodConfigurationService]
     )
     override def apiVersion = FireCloudConfig.SwaggerConfig.apiVersion
     override def baseUrl = FireCloudConfig.SwaggerConfig.baseUrl
@@ -47,21 +62,51 @@ class FireCloudServiceActor extends HttpServiceActor with ActorLogging {
 
   }
 
+  private val uri = extract { c => c.request.uri }
+  private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/2.1.0"
+
   val swaggerUiService = {
     get {
-      pathPrefix("swagger") {
-        // if the user just hits "swagger", redirect to the index page with our api docs specified on the url
-        pathEndOrSingleSlash { p =>
-          // the base context path may be different in various environments
-          val dynamicContext = FireCloudConfig.SwaggerConfig.baseUrl
-          p.redirect(dynamicContext + "swagger/index.html?url=" + dynamicContext + "api-docs", TemporaryRedirect)
+      pathPrefix("") { pathEnd{ uri { uri =>
+        redirectToSwagger(uri.withPath(uri.path + "api/swagger/"))
+      } } } ~
+      swaggerService.routes ~
+      // The "api" path prefix is never visible to this server in production because it is
+      // transparently proxied. We check for it here so the redirects work when visiting this server
+      // directly during local development.
+      pathPrefix("api") {
+        pathEnd { uri { uri => redirectToSwagger(uri.withPath(uri.path + "/swagger/")) } } ~
+        pathSingleSlash { uri { uri => redirectToSwagger(uri.withPath(uri.path + "swagger/")) } } ~
+        pathPrefix("swagger") {
+          pathEnd { uri { uri => redirectToSwagger(uri.withPath(uri.path + "/")) } } ~
+          pathSingleSlash { uri { uri => redirectToSwagger(uri) } } ~
+          getFromResourceDirectory(swaggerUiPath)
         } ~
-          pathPrefix("swagger/index.html") {
-            getFromResource("META-INF/resources/webjars/swagger-ui/2.1.0/index.html")
-          } ~
-          getFromResourceDirectory("META-INF/resources/webjars/swagger-ui/2.1.0")
+        swaggerService.routes
+      } ~
+      pathPrefix("swagger") {
+        pathEnd { uri { uri => redirectToSwagger(uri.withPath(Path("/api") ++ uri.path + "/")) } } ~
+        pathSingleSlash { uri { uri =>
+          redirectToSwagger(uri.withPath(Path("/api") ++ uri.path))
+        } } ~
+        getFromResourceDirectory(swaggerUiPath)
       }
     }
   }
 
+  private def redirectToSwagger(baseUri: Uri): Route = {
+    var head = Path("")
+    var tail = baseUri.path
+    while (tail.length > 2) {
+      head = head + tail.head.toString
+      tail = tail.tail
+    }
+    val pathWithoutLastSegment = head
+    redirect(
+      baseUri.withPath(baseUri.path + "index.html").withQuery(
+        ("url", (pathWithoutLastSegment + FireCloudConfig.SwaggerConfig.apiDocs).toString())
+      ),
+      TemporaryRedirect
+    )
+  }
 }

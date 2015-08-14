@@ -33,9 +33,10 @@ val artifactory = "https://artifactory.broadinstitute.org/artifactory/"
 
 resolvers += "artifactory-releases" at artifactory + "libs-release"
 
-scalaVersion  := "2.11.6"
+scalaVersion  := "2.11.7"
 
-scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
+javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
+scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8", "-target:jvm-1.8")
 
 libraryDependencies ++= {
   val akkaV = "2.3.9"
@@ -62,6 +63,8 @@ libraryDependencies ++= {
 }
 
 Revolver.settings.settings
+
+Revolver.enableDebugging(port = 5051, suspend = false)
 
 javaOptions in Revolver.reStart += "-Dconfig.file=src/main/resources/application.conf"
 
@@ -92,3 +95,6 @@ testOptions in Test += Tests.Setup(classLoader =>
     .getMethod("getLogger", classLoader.loadClass("java.lang.String"))
     .invoke(null, "ROOT")
 )
+
+// Uncomment to build without running tests.
+// test in assembly := {}
