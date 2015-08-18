@@ -1,22 +1,15 @@
 package org.broadinstitute.dsde.firecloud.service
 
-/**
- * Created by mbemis on 7/10/15.
- */
-
 import javax.ws.rs.Path
 
-import akka.actor.{Props, Actor}
+import akka.actor.{Actor, Props}
 import com.wordnik.swagger.annotations._
-import org.broadinstitute.dsde.firecloud.{HttpClient, FireCloudConfig}
+import org.broadinstitute.dsde.firecloud.core.{GetEntitiesWithTypeActor, GetEntitiesWithType}
 import org.broadinstitute.dsde.firecloud.model.Entity
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, HttpClient}
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
 import spray.routing._
-import org.broadinstitute.dsde.vault.common.directives.OpenAMDirectives._
 
 class EntityServiceActor extends Actor with EntityService {
   def actorRefFactory = context
@@ -31,10 +24,21 @@ class EntityServiceActor extends Actor with EntityService {
 trait EntityService extends HttpService with FireCloudDirectives {
 
   private implicit val executionContext = actorRefFactory.dispatcher
-
-  val routes = listEntityTypesRoute ~ listEntitiesPerTypeRoute
-
+  val routes = listEntityTypesRoute ~ listEntitiesPerTypeRoute ~ listEntitiesWithTypeRoute
   lazy val log = LoggerFactory.getLogger(getClass)
+
+  /**
+   * This endpoint collects all workspace entities and entity types into a list of EntityWithTypes.
+   */
+  def listEntitiesWithTypeRoute: Route =
+    path("workspaces" / Segment / Segment / "entities_with_type") {
+      (workspaceNamespace, workspaceName) =>
+        get { requestContext =>
+          val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+          val ewtActor = actorRefFactory.actorOf(Props(new GetEntitiesWithTypeActor(requestContext)))
+          ewtActor ! GetEntitiesWithType.ProcessUrl(url)
+        }
+    }
 
   @ApiOperation(value = "list all entity types in a workspace",
     nickname = "listEntityTypes",

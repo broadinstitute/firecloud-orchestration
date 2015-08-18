@@ -51,6 +51,7 @@ libraryDependencies ++= {
     "com.gettyimages"     %%  "spray-swagger" % "0.5.0",
     "org.webjars"          %  "swagger-ui"    % "2.1.0",
     "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
+    "com.typesafe.akka"   %%  "akka-contrib"  % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"    % akkaV,
     "org.specs2"          %%  "specs2-core"   % "2.3.11"  % "test",
