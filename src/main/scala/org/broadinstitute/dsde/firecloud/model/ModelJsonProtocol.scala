@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -13,6 +14,7 @@ object ModelJsonProtocol {
 
   implicit val impEntity = jsonFormat5(Entity)
   implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
+  implicit val impEntityWithType = jsonFormat2(EntityWithType)
 
   implicit val impMethodConfiguration = jsonFormat9(MethodConfiguration)
   implicit val impMethodConfigurationRename = jsonFormat3(MethodConfigurationRename)
