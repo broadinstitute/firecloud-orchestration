@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.mock
 
+import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType
+import GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
@@ -134,6 +136,8 @@ object MockWorkspaceServer {
     entityName = Option.empty,
     expression = Option.empty
   )
+
+  val entitiesWithTypeBasePath = "/workspaces/broad-dsde-dev/alexb_test_submission/"
 
   var workspaceServer: ClientAndServer = _
 
@@ -339,6 +343,71 @@ object MockWorkspaceServer {
         response()
           .withHeaders(header)
           .withStatusCode(Created.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(entitiesWithTypeBasePath + "entities")
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withBody(List("participant", "sample", "Pair", "sampleset").toJson.compactPrint)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(entitiesWithTypeBasePath + "entities/participant")
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withBody(List(EntityWithType("participant_01", "participant", Option.empty), EntityWithType("participant_02", "participant", Option.empty)).toJson.compactPrint)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(entitiesWithTypeBasePath + "entities/sample")
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withBody(List(EntityWithType("sample_01", "sample", Option.empty), EntityWithType("sample_02", "sample", Option.empty)).toJson.compactPrint)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(entitiesWithTypeBasePath + "entities/Pair")
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withBody(List(EntityWithType("pair_01", "Pair", Option.empty)).toJson.compactPrint)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(entitiesWithTypeBasePath + "entities/sampleset")
+          .withCookies(cookie)
+      ).respond(
+        response()
+          .withHeaders(header)
+          .withBody(List(EntityWithType("sampleset_01", "sampleset", Option.empty), EntityWithType("sampleset_02", "sampleset", Option.empty)).toJson.compactPrint)
+          .withStatusCode(OK.intValue)
       )
 
     MockWorkspaceServer.workspaceServer
