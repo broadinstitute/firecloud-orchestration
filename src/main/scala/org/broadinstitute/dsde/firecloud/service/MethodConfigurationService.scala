@@ -17,15 +17,27 @@ class MethodConfigurationServiceActor extends Actor with MethodConfigurationServ
   def receive = runRoute(routes)
 }
 
+//noinspection MutatorLikeMethodIsParameterless
 @Api(value = "/workspaces/{workspaceNamespace}/{workspaceName}/method_configs",
   description = "Method Configuration Services",
   produces = "application/json")
 trait MethodConfigurationService extends HttpService with FireCloudDirectives {
 
   private final val ApiPrefix = "workspaces"
-  lazy val routes = getMethodConfigurationRoute ~ methodConfigurationUpdateRoute ~ methodConfigurationRenameRoute ~
+  lazy val routes = deleteMethodConfigFromWorkspace ~ getMethodConfigurationRoute ~
+    methodConfigurationUpdateRoute ~ methodConfigurationRenameRoute ~
     copyMethodRepositoryConfigurationRoute
   lazy val log = LoggerFactory.getLogger(getClass)
+
+  def deleteMethodConfigFromWorkspace: Route =
+    path(ApiPrefix / Segment / Segment / "method_configs" / Segment / Segment) {
+      (workspaceNamespace, workspaceName, configNamespace, configName) =>
+        delete { requestContext =>
+          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
+            HttpClient.PerformExternalRequest(Delete(FireCloudConfig.Rawls.getMethodConfigUrl.
+              format(workspaceNamespace, workspaceName, configNamespace, configName)))
+        }
+    }
 
   @Path(value = "/{configNamespace}/{configName}")
   @ApiOperation (
