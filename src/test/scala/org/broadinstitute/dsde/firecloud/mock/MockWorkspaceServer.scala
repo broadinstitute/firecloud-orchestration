@@ -317,6 +317,36 @@ object MockWorkspaceServer {
           .withBody("Authentication is possible but has failed or not yet been provided.")
           .withStatusCode(Unauthorized.intValue))
 
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("DELETE")
+          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
+          format(
+            mockValidWorkspace.namespace.get,
+            mockValidWorkspace.name.get,
+            mockValidWorkspace.namespace.get,
+            mockValidWorkspace.name.get))
+      ).
+      respond(
+        response()
+          .withStatusCode(NoContent.intValue))
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("DELETE")
+          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
+          format(
+            mockInvalidWorkspace.namespace.get,
+            mockInvalidWorkspace.name.get,
+            mockInvalidWorkspace.namespace.get,
+            mockInvalidWorkspace.name.get))
+      ).
+      respond(
+        response()
+          .withStatusCode(NotFound.intValue))
+
     MockWorkspaceServer.workspaceServer
       .when(
         request()

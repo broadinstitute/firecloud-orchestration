@@ -52,6 +52,22 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
   "MethodConfigurationService" - {
 
+    "when calling DELETE on the /workspaces/*/*/method_configs/*/* with a valid path" - {
+      "Successful Request (204, NoContent) response is returned" in {
+        Delete(validGetMethodConfigUrl) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+          status should equal(NoContent)
+        }
+      }
+    }
+
+    "when calling DELETE on the /workspaces/*/*/method_configs/*/* with an invalid path" - {
+      "NotFound response is returned" in {
+        Delete("/workspaces/invalid/invalid/method_configs/invalid/invalid") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+          status should equal(NotFound)
+        }
+      }
+    }
+
     "when calling PUT on the /workspaces/*/*/method_configs/*/* path with a valid method configuration" - {
       "OK response is returned" in {
         Put(validUpdateMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
