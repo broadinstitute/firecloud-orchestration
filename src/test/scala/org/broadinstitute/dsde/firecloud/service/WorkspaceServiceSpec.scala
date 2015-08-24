@@ -124,37 +124,6 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       }
     }
 
-    "when calling POST on the workspaces/*/*/importEntitiesJSON path with valid but empty form data" - {
-      "OK response is returned" in {
-        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", MockWorkspaceServer.mockEmptyEntityFormData)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
-          ~> sealRoute(routes)) ~> check {
-          status should equal(OK)
-        }
-      }
-    }
-
-    "when calling POST on the workspaces/*/*/importEntitiesJSON path with invalid form data" - {
-      "415 Unsupported Media Type response is returned" in {
-        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", """{}""")
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
-          ~> sealRoute(routes)) ~> check {
-          status should equal(UnsupportedMediaType)
-        }
-      }
-    }
-
-    "when calling POST on the workspaces/*/*/importEntitiesJSON path with non-empty data" - {
-      "OK response is returned, with correct results for each entity" in {
-        (Post(ApiPrefix + "/namespace/name/importEntitiesJSON", MockWorkspaceServer.mockNonEmptyEntityFormData)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
-          ~> sealRoute(routes)) ~> check {
-          status should equal(OK)
-          responseAs[Seq[EntityCreateResult]].map(_.succeeded) should equal (MockWorkspaceServer.mockNonEmptySuccesses)
-        }
-      }
-    }
-
     "when calling POST on the workspaces/*/*/importEntities path" - {
       "should 400 Bad Request if the TSV type is missing" in {
         (Post(tsvImportPath, MockTSVFormData.missingTSVType)
