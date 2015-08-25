@@ -79,11 +79,7 @@ class FireCloudServiceActor extends HttpServiceActor {
           case url => complete {
             val inputStream = url.openStream()
             try {
-              val yaml = FileUtils.readAllText(inputStream)
-              val port = uri.authority.port
-              val portSuffix = if (port != 80 && port != 443) ":" + port else ""
-              val host = uri.authority.host + portSuffix
-              yaml.format(host)
+              FileUtils.readAllText(inputStream)
             } finally {
               inputStream.close()
             }

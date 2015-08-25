@@ -10,8 +10,6 @@ info:
     url: http://opensource.org/licenses/BSD-3-Clause
   termsOfService: https://github.com/broadinstitute/firecloud-orchestration
 
-# TODO(dmohs): Don't do this.
-host: %s
 basePath: /api
 
 paths:
