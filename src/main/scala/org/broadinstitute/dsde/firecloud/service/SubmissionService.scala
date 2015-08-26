@@ -16,7 +16,7 @@ abstract class SubmissionServiceActor extends Actor with SubmissionService {
   def receive = runRoute(routes)
 }
 
-trait SubmissionService extends HttpService with FireCloudDirectives {
+trait SubmissionService extends HttpService with PerRequestCreator with FireCloudDirectives {
 
   val routes = postAndGetRoutes
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -24,38 +24,34 @@ trait SubmissionService extends HttpService with FireCloudDirectives {
   def postAndGetRoutes: Route =
     path("workspaces" / Segment / Segment / "submissions") { (workspaceNamespace, workspaceName) =>
       get { requestContext =>
-          val getSubmissions: HttpRequest = Get(FireCloudConfig.Rawls.
+          val extReq = Get(FireCloudConfig.Rawls.
             submissionsUrl(workspaceNamespace, workspaceName))
-          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(getSubmissions)
+          externalHttpPerRequest(requestContext, extReq)
       }
     } ~
     path("workspaces" / Segment / Segment / "submissions") { (workspaceNamespace, workspaceName) =>
       post {
         entity(as[SubmissionIngest]) { submission => requestContext =>
-          val postSubmission: HttpRequest = Post(FireCloudConfig.Rawls.
+          val extReq = Post(FireCloudConfig.Rawls.
             submissionsUrl(workspaceNamespace, workspaceName), submission)
-          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(postSubmission)
+          externalHttpPerRequest(requestContext, extReq)
         }
       }
     } ~
     path("workspaces" / Segment / Segment / "submissions" / Segment) {
       (workspaceNamespace, workspaceName, submissionId) =>
       get { requestContext =>
-        val getSubmission: HttpRequest = Get(FireCloudConfig.Rawls.
+        val extReq = Get(FireCloudConfig.Rawls.
           submissionByIdUrl(workspaceNamespace, workspaceName, submissionId))
-        actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-          HttpClient.PerformExternalRequest(getSubmission)
+        externalHttpPerRequest(requestContext, extReq)
       }
     } ~
     path("workspaces" / Segment / Segment / "submissions" / Segment / "workflows" / Segment / "outputs") {
       (workspaceNamespace, workspaceName, submissionId, workflowId) =>
         get { requestContext =>
-          val getSubmission: HttpRequest = Get(FireCloudConfig.Rawls.
+          val extReq = Get(FireCloudConfig.Rawls.
             workflowOutputsByIdUrl(workspaceNamespace, workspaceName, submissionId, workflowId))
-          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(getSubmission)
+          externalHttpPerRequest(requestContext, extReq)
         }
     }
 

@@ -26,3 +26,272 @@ paths:
       responses:
         200:
           description: List of workspaces.
+  /methods:
+    get:
+      tags:
+      - Method Repository
+      operationId: listMethodRepositoryMethods
+      summary: |
+        Lists Method Repository methods.
+      produces:
+      - application/json
+      responses:
+        200:
+          description: List of Method Repository methods.
+  /configurations:
+    get:
+      tags:
+      - Method Repository
+      operationId: listMethodRepositoryConfigurations
+      summary: |
+        List Method Repository configurations.
+      produces:
+      - application/json
+      responses:
+        200:
+          description: List of Method Repository configurations.
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
+    get:
+      type: EntityWithType
+      tags:
+      - Entities
+      operationId: getEntitiesWithType
+      summary: |
+        List of entities in a workspace with type and attribute information
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: List of entities
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities:
+    get:
+      type: String
+      tags:
+      - Entities
+      operationId: getEntityTypes
+      summary: |
+        List of entity types in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: List of entity types in workspace
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
+    get:
+      type: Entity
+      tags:
+      - Entities
+      operationId: getEntities
+      summary: |
+        List of entities in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entityType
+          description: Entity Type
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: List of entities in workspace
+        404:
+          description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/submissions:
+    get:
+      tags:
+      - Submissions
+      operationId: listSubmissions
+      summary: |
+        List submissions.
+      produces:
+      - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: List of submissions
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+    post:
+      tags:
+      - Submissions
+      operationId: createSubmission
+      summary: |
+        Create a submission.
+      produces:
+      - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: submission
+          description: Post Submission
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: SubmissionIngest
+      responses:
+        201:
+          description: Successful Request
+        400:
+          description: Expression eval failed or entities are not of type required by method config
+        404:
+          description: Method Configuration or Entity not found
+        409:
+          description: Method Configuration failed to resolve input expressions with the supplied Entity
+        500:
+          description: Internal Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
+    get:
+      tags:
+      - Submissions
+      operationId: monitorSubmission
+      summary: |
+        Monitor submission status
+      produces:
+      - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: submissionId
+          description: Submission ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: monitor a submission status
+        404:
+          description: Submission not found
+        500:
+          description: Internal Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
+    get:
+      tags:
+      - Submissions
+      operationId: workflowOutputsInSubmission
+      summary: |
+        Get workflow outputs.
+      produces:
+      - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: submissionId
+          description: Submission ID
+          required: true
+          type: string
+          in: path
+        - name: workflowId
+          description: Workflow ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Get workflow outputs
+        404:
+          description: Submission or Workflow not found
+        500:
+          description: Internal Error
+
+definitions:
+  SubmissionIngest:
+    properties:
+      methodConfigurationNamespace:
+        type: string
+        description: Namespace of the method configuration to execute.
+      methodConfigurationName:
+        type: string
+        description: Name of the method configuration to execute.
+      entityType:
+        type: string
+        description: Type of root entity for expression.
+      entityName:
+        type: string
+        description: Name of root entity for expression.
+      expression:
+        type: string
+        description: Expression that resolves to one or more entities matching the entity type
+          in the method configuration. Leave blank for default.
+    required:
+      - methodConfigurationNamespace
+      - methodConfigurationName
+      - entityType
+      - entityName

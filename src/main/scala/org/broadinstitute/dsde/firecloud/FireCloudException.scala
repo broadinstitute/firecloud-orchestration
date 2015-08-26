@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud
 
-import spray.http.{StatusCodes, StatusCode}
+import spray.http.{StatusCode, StatusCodes}
 
 class FireCloudException(message: String = null, cause: Throwable = null) extends Exception(message, cause)
 
