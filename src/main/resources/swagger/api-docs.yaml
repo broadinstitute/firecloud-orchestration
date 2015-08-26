@@ -50,3 +50,66 @@ paths:
       responses:
         200:
           description: List of Method Repository configurations.
+  /workspaces/{workspaceNamespace}/{workspaceName}/submissions:
+    get:
+      tags:
+      - submissions
+      operationId: listSubmissions
+      summary: |
+        Lists submissions.
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        200:
+          description: List of submissions
+    post:
+      tags:
+      - submissions
+      operationId: createSubmission
+      summary: |
+        Create a submission.
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        200:
+          description: Return with ID and other info
+  /workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
+    get:
+      tags:
+      - submissions
+      operationId: monitorSubmission
+      summary: |
+        monitor a submission status.
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        200:
+          description: monitor a submission status
+    delete:
+      tags:
+      - submissions
+      operationId: deleteSubmission
+      summary: |
+        Delete a submission.
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        200:
+          description: indicates a successful submission abortion
+  /workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
+    get:
+      tags:
+      - submissions
+      operationId: workflowOutputsInSubmission
+      summary: |
+        Get workflow outputs.
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        200:
+          description: get outputs
