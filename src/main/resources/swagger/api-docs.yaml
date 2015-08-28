@@ -53,63 +53,152 @@ paths:
   /workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
       tags:
-      - submissions
+      - Submissions
       operationId: listSubmissions
       summary: |
-        Lists submissions.
+        List submissions.
       produces:
       - application/json
-      - text/plain
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
       responses:
         200:
           description: List of submissions
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
     post:
       tags:
-      - submissions
+      - Submissions
       operationId: createSubmission
       summary: |
         Create a submission.
       produces:
       - application/json
-      - text/plain
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: submission
+          description: Post Submission
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: SubmissionIngest
       responses:
-        200:
-          description: Return with ID and other info
+        201:
+          description: Successful Request
+        400:
+          description: Expression eval failed or entities are not of type required by method config
+        404:
+          description: Method Configuration or Entity not found
+        409:
+          description: Method Configuration failed to resolve input expressions with the supplied Entity
+        500:
+          description: Internal Error
   /workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
     get:
       tags:
-      - submissions
+      - Submissions
       operationId: monitorSubmission
       summary: |
-        monitor a submission status.
+        Monitor submission status
       produces:
       - application/json
-      - text/plain
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: submissionId
+          description: Submission ID
+          required: true
+          type: string
+          in: path
       responses:
         200:
           description: monitor a submission status
-    delete:
-      tags:
-      - submissions
-      operationId: deleteSubmission
-      summary: |
-        Delete a submission.
-      produces:
-      - application/json
-      - text/plain
-      responses:
-        200:
-          description: indicates a successful submission abortion
+        404:
+          description: Submission not found
+        500:
+          description: Internal Error
   /workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
     get:
       tags:
-      - submissions
+      - Submissions
       operationId: workflowOutputsInSubmission
       summary: |
         Get workflow outputs.
       produces:
       - application/json
-      - text/plain
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: submissionId
+          description: Submission ID
+          required: true
+          type: string
+          in: path
+        - name: workflowId
+          description: Workflow ID
+          required: true
+          type: string
+          in: path
       responses:
         200:
-          description: get outputs
+          description: Get workflow outputs
+        404:
+          description: Submission or Workflow not found
+        500:
+          description: Internal Error
+
+definitions:
+  SubmissionIngest:
+    properties:
+      methodConfigurationNamespace:
+        type: string
+      methodConfigurationName:
+        type: string
+      entityType:
+        type: string
+      entityName:
+        type: string
+      expression:
+        type: string
+    required:
+      - methodConfigurationNamespace
+      - methodConfigurationName
+      - entityType
+      - entityName
