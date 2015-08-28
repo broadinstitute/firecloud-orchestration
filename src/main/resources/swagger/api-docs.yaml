@@ -26,3 +26,27 @@ paths:
       responses:
         200:
           description: List of workspaces.
+  /methods:
+    get:
+      tags:
+      - Method Repository
+      operationId: listMethodRepositoryMethods
+      summary: |
+        Lists Method Repository methods.
+      produces:
+      - application/json
+      responses:
+        200:
+          description: List of Method Repository methods.
+  /configurations:
+    get:
+      tags:
+      - Method Repository
+      operationId: listMethodRepositoryConfigurations
+      summary: |
+        List Method Repository configurations.
+      produces:
+      - application/json
+      responses:
+        200:
+          description: List of Method Repository configurations.
