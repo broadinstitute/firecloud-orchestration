@@ -50,3 +50,90 @@ paths:
       responses:
         200:
           description: List of Method Repository configurations.
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
+    get:
+      type: EntityWithType
+      tags:
+      - Entities
+      operationId: getEntitiesWithType
+      summary: |
+        List of entities in a workspace with type and attribute information
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: List of entities
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities:
+    get:
+      type: String
+      tags:
+      - Entities
+      operationId: getEntityTypes
+      summary: |
+        List of entity types in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: List of entity types in workspace
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
+    get:
+      type: Entity
+      tags:
+      - Entities
+      operationId: getEntities
+      summary: |
+        List of entities in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entityType
+          description: Entity Type
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: List of entities in workspace
+        404:
+          description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
