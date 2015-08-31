@@ -189,14 +189,20 @@ definitions:
     properties:
       methodConfigurationNamespace:
         type: string
+        description: Namespace of the method configuration to execute.
       methodConfigurationName:
         type: string
+        description: Name of the method configuration to execute.
       entityType:
         type: string
+        description: Type of root entity for expression.
       entityName:
         type: string
+        description: Name of root entity for expression.
       expression:
         type: string
+        description: Expression that resolves to one or more entities matching the entity type
+          in the method configuration. Leave blank for default.
     required:
       - methodConfigurationNamespace
       - methodConfigurationName
