@@ -46,6 +46,14 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
         externalHttpPerRequest(requestContext, extReq)
       }
     } ~
+    path("workspaces" / Segment / Segment / "submissions" / Segment) {
+      (workspaceNamespace, workspaceName, submissionId) =>
+        delete { requestContext =>
+          val extReq: HttpRequest = Delete(FireCloudConfig.Rawls.
+            submissionByIdUrl(workspaceNamespace, workspaceName, submissionId))
+          externalHttpPerRequest(requestContext, extReq)
+        }
+    } ~
     path("workspaces" / Segment / Segment / "submissions" / Segment / "workflows" / Segment / "outputs") {
       (workspaceNamespace, workspaceName, submissionId, workflowId) =>
         get { requestContext =>

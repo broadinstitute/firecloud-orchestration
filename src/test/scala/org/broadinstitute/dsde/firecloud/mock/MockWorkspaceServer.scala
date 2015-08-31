@@ -201,6 +201,20 @@ object MockWorkspaceServer {
           .withBody(mockValidSubmission.toJson.prettyPrint)
       )
 
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("DELETE")
+          .withPath(s"/workspaces/%s/%s/submissions/%s"
+          .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockValidId))
+          .withCookies(cookie))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(204)
+      )
+
+
     // workspace-level responses
 
     MockWorkspaceServer.workspaceServer

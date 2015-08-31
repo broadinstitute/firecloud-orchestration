@@ -97,6 +97,22 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
       }
     }
 
+    "when calling DELETE on the /workspaces/*/*/submissions/* with a valid id" - {
+      "OK response is returned" in {
+        Delete(localSubmissionIdPath) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+          status should equal(NoContent)
+        }
+      }
+    }
+
+    "when calling DELETE on the /workspaces/*/*/submissions/* with an invalid id" - {
+      "NotFound response is returned" in {
+        Delete(localInvalidSubmissionIdPath) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+          status should equal(NotFound)
+        }
+      }
+    }
+
   }
 
 }

@@ -393,6 +393,37 @@ paths:
         500:
           description: Internal Error
   /workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
+    delete:
+      tags:
+      - Submissions
+      operationId: deleteSubmission
+      summary: |
+        abort a submission
+      produces:
+      - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: submissionId
+          description: Submission ID
+          required: true
+          type: string
+          in: path
+      responses:
+        204:
+          description: successful deletion
+        404:
+          description: Submission not found
+        500:
+          description: Internal Error
     get:
       tags:
       - Submissions
