@@ -283,10 +283,12 @@ paths:
           schema:
             $ref: MethodConfigRename
       responses:
-        200:
+        204:
           description: Successful request
         404:
           description: Workspace or Method Configuration not found
+        409:
+          description: Method Configuration with that name already exists
         500:
           description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
@@ -318,7 +320,7 @@ paths:
       responses:
         201:
           description: Successful request
-        403:
+        404:
           description: Source method configuration does not exist
         409:
           description: Destination method configuration by that name already exists
@@ -496,22 +498,22 @@ definitions:
         type: string
         description: Root entity type
       workspaceName:
-        type: string
+        type: Map[String, String]
         description: Map with corresponding workspace-related information - name and namespace
       methodRepoMethod:
-        type: string
+        type: Map[String, String]
         description: Map with corresponding method-related information
       methodRepoConfig:
-        type: string
+        type: Map[String, String]
         description: Map with corresponding method-store-related information
       outputs:
-        type: string
+        type: Map[String, String]
         description: Map with outputs information
       inputs:
-        type: string
+        type: Map[String, String]
         description: Map with inputs information
       prerequisites:
-        type: string
+        type: Map[String, String]
         description: Map of prerequisites (keys unused, will be removed in the future)
     required:
       - namespace
@@ -532,7 +534,7 @@ definitions:
         type: string
         description: Method configuration name
       workspaceName:
-        type: string
+        type: Map[String, String]
         description: Map with corresponding workspace-related information - name and namespace
     required:
       - namespace
