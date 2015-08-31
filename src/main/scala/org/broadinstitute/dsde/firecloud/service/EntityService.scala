@@ -1,8 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{GetEntitiesWithType, GetEntitiesWithTypeActor}
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, HttpClient}
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.routing._
@@ -12,7 +12,7 @@ class EntityServiceActor extends Actor with EntityService {
   def receive = runRoute(routes)
 }
 
-trait EntityService extends HttpService with FireCloudDirectives {
+trait EntityService extends HttpService with PerRequestCreator with FireCloudDirectives {
 
   private implicit val executionContext = actorRefFactory.dispatcher
   val routes = entityRoutes
@@ -23,22 +23,23 @@ trait EntityService extends HttpService with FireCloudDirectives {
       (workspaceNamespace, workspaceName) =>
         get { requestContext =>
           val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
-          val ewtActor = actorRefFactory.actorOf(Props(new GetEntitiesWithTypeActor(requestContext)))
-          ewtActor ! GetEntitiesWithType.ProcessUrl(url)
+          perRequest(requestContext, Props(new GetEntitiesWithTypeActor(requestContext)),
+            GetEntitiesWithType.ProcessUrl(url))
         }
     } ~
     path("workspaces" / Segment / Segment / "entities") {
       (workspaceNamespace, workspaceName) =>
         get { requestContext =>
-          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(Get(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)))
+          val extReq = Get(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName))
+          externalHttpPerRequest(requestContext, extReq)
         }
     } ~
     path("workspaces" / Segment / Segment / "entities" / Segment) {
       (workspaceNamespace, workspaceName, entityType) =>
         get { requestContext =>
-          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(Get(s"${FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType"))
+          val extReq = Get(s"${FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace,
+            workspaceName)}/$entityType")
+          externalHttpPerRequest(requestContext, extReq)
         }
     }
 

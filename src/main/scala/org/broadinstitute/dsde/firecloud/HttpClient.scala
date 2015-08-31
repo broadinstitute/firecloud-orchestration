@@ -1,17 +1,18 @@
 package org.broadinstitute.dsde.firecloud
 
 import java.text.SimpleDateFormat
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 import akka.actor.{Actor, Props}
+import org.broadinstitute.dsde.firecloud.HttpClient.PerformExternalRequest
+import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.HttpHeaders.Cookie
 import spray.http._
 import spray.routing.RequestContext
 
-import org.broadinstitute.dsde.firecloud.HttpClient.PerformExternalRequest
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 
 object HttpClient {
@@ -37,6 +38,7 @@ class HttpClient (requestContext: RequestContext) extends Actor {
 
     case PerformExternalRequest(externalRequest: HttpRequest) =>
       createResponseFutureFromExternalRequest(requestContext, externalRequest)
+
   }
 
   def createResponseFutureFromExternalRequest(
@@ -48,12 +50,10 @@ class HttpClient (requestContext: RequestContext) extends Actor {
     pipeline(externalRequest) onComplete {
       case Success(response) =>
         log.debug("Got response: " + response)
-        requestContext.complete(response.withHeaders(response.headers.filterNot(isAutomaticHeader)))
+        context.parent ! RequestCompleteWithHeaders(response, response.headers.filterNot(isAutomaticHeader):_*)
       case Failure(error) =>
         log.error("External request failed", error)
-        requestContext.failWith(
-          new RequestProcessingException(StatusCodes.InternalServerError, error.getMessage)
-        )
+        context.parent ! RequestComplete(StatusCodes.InternalServerError, error.getMessage)
     }
   }
 

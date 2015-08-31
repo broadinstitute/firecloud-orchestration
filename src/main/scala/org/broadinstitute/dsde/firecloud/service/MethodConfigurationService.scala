@@ -2,15 +2,15 @@ package org.broadinstitute.dsde.firecloud.service
 
 import javax.ws.rs.Path
 
-import akka.actor.{Props, Actor}
+import akka.actor.Actor
 import com.wordnik.swagger.annotations._
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, HttpClient}
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
-import spray.routing._
 import spray.httpx.SprayJsonSupport._
+import spray.routing._
 
 class MethodConfigurationServiceActor extends Actor with MethodConfigurationService {
   def actorRefFactory = context
@@ -21,7 +21,7 @@ class MethodConfigurationServiceActor extends Actor with MethodConfigurationServ
 @Api(value = "/workspaces/{workspaceNamespace}/{workspaceName}/method_configs",
   description = "Method Configuration Services",
   produces = "application/json")
-trait MethodConfigurationService extends HttpService with FireCloudDirectives {
+trait MethodConfigurationService extends HttpService with PerRequestCreator with FireCloudDirectives {
 
   private final val ApiPrefix = "workspaces"
   lazy val routes = deleteMethodConfigFromWorkspace ~ getMethodConfigurationRoute ~
@@ -33,9 +33,9 @@ trait MethodConfigurationService extends HttpService with FireCloudDirectives {
     path(ApiPrefix / Segment / Segment / "method_configs" / Segment / Segment) {
       (workspaceNamespace, workspaceName, configNamespace, configName) =>
         delete { requestContext =>
-          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(Delete(FireCloudConfig.Rawls.getMethodConfigUrl.
-              format(workspaceNamespace, workspaceName, configNamespace, configName)))
+          val extReq = Delete(FireCloudConfig.Rawls.getMethodConfigUrl.
+            format(workspaceNamespace, workspaceName, configNamespace, configName))
+          externalHttpPerRequest(requestContext, extReq)
         }
     }
 
@@ -63,9 +63,9 @@ trait MethodConfigurationService extends HttpService with FireCloudDirectives {
     path(ApiPrefix / Segment / Segment / "method_configs" / Segment / Segment) {
       (workspaceNamespace, workspaceName, configNamespace, configName) =>
         get { requestContext =>
-          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(Get(FireCloudConfig.Rawls.getMethodConfigUrl.
-              format(workspaceNamespace, workspaceName, configNamespace, configName)))
+          val extReq = Get(FireCloudConfig.Rawls.getMethodConfigUrl.
+            format(workspaceNamespace, workspaceName, configNamespace, configName))
+          externalHttpPerRequest(requestContext, extReq)
         }
     }
 
@@ -101,8 +101,8 @@ trait MethodConfigurationService extends HttpService with FireCloudDirectives {
             requestContext =>
               val endpointUrl = FireCloudConfig.Rawls.updateMethodConfigurationUrl.
                 format(workspaceNamespace, workspaceName, configNamespace, configName)
-              actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-                HttpClient.PerformExternalRequest(Put(endpointUrl, methodConfig))
+              val extReq = Put(endpointUrl, methodConfig)
+              externalHttpPerRequest(requestContext, extReq)
           }
         }
     }
@@ -139,8 +139,8 @@ trait MethodConfigurationService extends HttpService with FireCloudDirectives {
             requestContext =>
               val endpointUrl = FireCloudConfig.Rawls.renameMethodConfigurationUrl.
                 format(workspaceNamespace, workspaceName, configNamespace, configName)
-              actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-                HttpClient.PerformExternalRequest(Post(endpointUrl, methodConfigRename))
+              val extReq = Post(endpointUrl, methodConfigRename)
+              externalHttpPerRequest(requestContext, extReq)
           }
         }
     }
@@ -181,8 +181,8 @@ trait MethodConfigurationService extends HttpService with FireCloudDirectives {
               workspaceName = Option(WorkspaceName(
                 namespace = Option(workspaceNamespace),
                 name = Option(workspaceName))))))
-          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(Post(FireCloudConfig.Rawls.copyFromMethodRepoConfigUrl, copyMethodConfig))
+          val extReq = Post(FireCloudConfig.Rawls.copyFromMethodRepoConfigUrl, copyMethodConfig)
+          externalHttpPerRequest(requestContext, extReq)
         }
       }
     }

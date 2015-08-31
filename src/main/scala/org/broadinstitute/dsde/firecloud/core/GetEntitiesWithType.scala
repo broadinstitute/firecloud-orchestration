@@ -4,10 +4,11 @@ import akka.actor.{Actor, Props}
 import akka.contrib.pattern.Aggregator
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.{EntityWithType, ProcessUrl}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import spray.client.pipelining._
 import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
-import spray.http.{HttpResponse, RequestProcessingException, StatusCodes}
+import spray.http.{HttpResponse, StatusCodes}
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsValue
@@ -38,11 +39,11 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
           val entityTypes: List[String] = unmarshal[List[String]].apply(response)
           new EntityAggregator(requestContext, url, entityTypes)
         case Failure(e) =>
-          requestContext.failWith(new RequestProcessingException(StatusCodes.InternalServerError, e.getMessage))
+          context.parent ! RequestComplete(StatusCodes.InternalServerError, e.getMessage)
           context stop self
       }
     case _ =>
-      requestContext.complete(StatusCodes.BadRequest)
+      context.parent ! RequestComplete(StatusCodes.BadRequest)
       context stop self
   }
 
@@ -50,7 +51,6 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
 
     import context.dispatcher
     import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-    import spray.json.DefaultJsonProtocol._
 
     import collection.mutable.ArrayBuffer
 
@@ -70,14 +70,14 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
           }
           collectEntities()
         case Failure(e) =>
-          requestContext.failWith(new RequestProcessingException(StatusCodes.InternalServerError, e.getMessage))
+          context.parent ! RequestComplete(StatusCodes.InternalServerError, e.getMessage)
           context stop self
       }
     }
     else collectEntities()
 
     def collectEntities(): Unit = {
-      requestContext.complete(OK, values.toList)
+      context.parent ! RequestComplete(OK, values.toList)
       context stop self
     }
 

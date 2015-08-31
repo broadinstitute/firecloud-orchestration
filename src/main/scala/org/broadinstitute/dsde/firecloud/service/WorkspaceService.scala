@@ -6,6 +6,7 @@ import java.util.Date
 import akka.actor.{Actor, Props}
 import org.slf4j.LoggerFactory
 import spray.client.pipelining.{Get, Post}
+import spray.http.HttpRequest
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -19,7 +20,7 @@ class WorkspaceServiceActor extends Actor with WorkspaceService {
   def receive = runRoute(routes)
 }
 
-trait WorkspaceService extends HttpService with FireCloudDirectives {
+trait WorkspaceService extends HttpService with PerRequestCreator with FireCloudDirectives {
 
   private final val ApiPrefix = "workspaces"
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
@@ -33,8 +34,8 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
     pathPrefix(ApiPrefix) {
       pathEnd {
         get { requestContext =>
-          actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-            HttpClient.PerformExternalRequest(Get(rawlsWorkspacesRoot))
+          val extReq =  Get(rawlsWorkspacesRoot)
+          externalHttpPerRequest(requestContext, extReq)
         } ~
           post {
             entity(as[String]) { ingest =>
@@ -45,12 +46,11 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
                       .updated("createdBy", username.get.toJson)
                       .updated("createdDate", dateFormat.format(new Date()).toJson)
                       .updated("attributes", JsObject())
-                    val request = Post(
+                    val extReq = Post(
                       rawlsWorkspacesRoot,
                       HttpClient.createJsonHttpEntity(params.toJson.compactPrint)
                     )
-                    actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-                      HttpClient.PerformExternalRequest(request)
+                    externalHttpPerRequest(requestContext, extReq)
                   case None =>
                     log.error("No authenticated username provided.")
                     requestContext.complete(Unauthorized)
@@ -61,25 +61,21 @@ trait WorkspaceService extends HttpService with FireCloudDirectives {
       } ~
         pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
           pathEnd { requestContext =>
-              actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-                HttpClient.PerformExternalRequest(Get(
-                  rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
-                ))
+            val extReq = Get(rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName))
+            externalHttpPerRequest(requestContext, extReq)
           } ~
             path("methodconfigs") {
               get { requestContext =>
-                actorRefFactory.actorOf(Props(new HttpClient(requestContext))) !
-                  HttpClient.PerformExternalRequest(Get(
-                    rawlsWorkspacesRoot + "/%s/%s/methodconfigs".format(workspaceNamespace, workspaceName)
-                  ))
+                val extReq = Get(rawlsWorkspacesRoot + "/%s/%s/methodconfigs".format(workspaceNamespace, workspaceName))
+                externalHttpPerRequest(requestContext, extReq)
               }
             } ~
             path("importEntities") {
               post {
                 formFields( 'entities ) { (entitiesTSV) =>
                   respondWithJSON { requestContext =>
-                    actorRefFactory.actorOf(Props(new EntityClient(requestContext))) !
-                      EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV)
+                    perRequest(requestContext, Props(new EntityClient(requestContext)),
+                      EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
                   }
                 }
               }
