@@ -137,6 +137,195 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}:
+    get:
+      tags:
+        - Method Configurations
+      operationId: getWorkspaceMethodConfig
+      summary: Get a method configuration in a workspace
+      produces: application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: configNamespace
+          description: Configuration Namespace
+          required: true
+          type: string
+          in: path
+        - name: configName
+          description: Configuration Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Successful
+        404:
+          description: Workspace or Method Configuration not found
+        500:
+          description: Internal Server Error
+    put:
+      tags:
+        - Method Configurations
+      operationId: updateWorkspaceMethodConfig
+      summary: Update a method configuration in a workspace
+      produces: application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: configNamespace
+          description: Configuration Namespace
+          required: true
+          type: string
+          in: path
+        - name: configName
+          description: Configuration Name
+          required: true
+          type: string
+          in: path
+        - name: body
+          description: Method Config to Update
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: ConfigurationIngest
+      responses:
+        200:
+          description: Successful
+        404:
+          description: Workspace or Method Configuration not found
+        500:
+          description: Internal Server Error
+    delete:
+      tags:
+        - Method Configurations
+      operationId: deleteWorkspaceMethodConfig
+      summary: Delete a method configuration in a workspace
+      produces: application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: configNamespace
+          description: Configuration Namespace
+          required: true
+          type: string
+          in: path
+        - name: configName
+          description: Configuration Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Successful request
+        404:
+          description: Workspace or Method Configuration not found
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/rename:
+    post:
+      tags:
+        - Method Configurations
+      operationId: renameWorkspaceMethodConfig
+      summary: Rename a method configuration in a workspace
+      produces: application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: configNamespace
+          description: Configuration Namespace
+          required: true
+          type: string
+          in: path
+        - name: configName
+          description: Configuration Name
+          required: true
+          type: string
+          in: path
+        - name: rename
+          description: Method Config Rename
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: MethodConfigRename
+      responses:
+        200:
+          description: Successful request
+        404:
+          description: Workspace or Method Configuration not found
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
+    post:
+      tags:
+        - Method Configurations
+        - Method Repository
+      operationId: copyFromMethodRepo
+      summary: Copy a Method Repository Configuration into a workspace
+      produces: application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: configToCopy
+          description: Method Configuration to Copy
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: CopyConfigurationIngest
+      responses:
+        201:
+          description: Successful request
+        403:
+          description: Source method configuration does not exist
+        409:
+          description: Destination method configuration by that name already exists
+        422:
+          description: Error parsing source method configuration
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
       tags:
@@ -295,3 +484,80 @@ definitions:
       - methodConfigurationName
       - entityType
       - entityName
+  ConfigurationIngest:
+    properties:
+      namespace:
+        type: string
+        description: Method configuration namespace
+      name:
+        type: string
+        description: Method configuration name
+      rootEntityType:
+        type: string
+        description: Root entity type
+      workspaceName:
+        type: string
+        description: Map with corresponding workspace-related information - name and namespace
+      methodRepoMethod:
+        type: string
+        description: Map with corresponding method-related information
+      methodRepoConfig:
+        type: string
+        description: Map with corresponding method-store-related information
+      outputs:
+        type: string
+        description: Map with outputs information
+      inputs:
+        type: string
+        description: Map with inputs information
+      prerequisites:
+        type: string
+        description: Map of prerequisites (keys unused, will be removed in the future)
+    required:
+      - namespace
+      - name
+      - rootEntityType
+      - workspaceName
+      - methodRepoMethod
+      - methodRepoConfig
+      - outputs
+      - inputs
+      - prerequisites
+  MethodConfigRename:
+    properties:
+      namespace:
+        type: string
+        description: Method configuration namespace
+      name:
+        type: string
+        description: Method configuration name
+      workspaceName:
+        type: string
+        description: Map with corresponding workspace-related information - name and namespace
+    required:
+      - namespace
+      - name
+      - workspaceName
+  CopyConfigurationIngest:
+    properties:
+      configurationNamespace:
+        type: string
+        description: Method configuration namespace
+      configurationName:
+        type: string
+        description: Method configuration name
+      configurationSnapshotId:
+        type: string
+        description: Method configuration snapshot id
+      destinationNamespace:
+        type: string
+        description: Method configuration destination namespace
+      destinationName:
+        type: string
+        description: Method configuration destination name
+    required:
+      - configurationNamespace
+      - configurationName
+      - configurationSnapshotId
+      - destinationNamespace
+      - destinationName
