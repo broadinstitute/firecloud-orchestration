@@ -51,7 +51,7 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
 
     import context.dispatcher
     import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-    
+
     import collection.mutable.ArrayBuffer
 
     val values = ArrayBuffer.empty[EntityWithType]
