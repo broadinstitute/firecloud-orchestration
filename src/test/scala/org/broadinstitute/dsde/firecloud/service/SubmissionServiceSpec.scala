@@ -3,17 +3,15 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.SubmissionIngest
-import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
-import spray.http.HttpCookie
-import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.testkit.ScalatestRouteTest
 
-class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with SubmissionService {
+class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
+  with Matchers with SubmissionService with FireCloudTransformers {
 
   def actorRefFactory = system
 
@@ -41,13 +39,10 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
 
   "SubmissionService" - {
 
-    val openAMSession = OpenAMSession(()).futureValue(timeout(Span(5, Seconds)), interval(scaled(Span(0.5, Seconds))))
-    val token = openAMSession.cookies.head.content
-
     "when calling GET on the /workspaces/*/*/submissions path" - {
       "a list of submissions is returned" in {
         (Get(localSubmissionsPath)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))) ~> sealRoute(routes) ~> check {
+          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
           status should equal(OK)
         }
       }
@@ -56,7 +51,7 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
     "when calling POST on the /workspaces/*/*/submissions path with a valid submission" - {
       "OK response is returned" in {
         (Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))) ~> sealRoute(routes) ~> check {
+          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
           status should equal(OK)
           val submission = responseAs[SubmissionIngest]
           submission shouldNot be (None)
@@ -67,7 +62,7 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
     "when calling POST on the /workspaces/*/*/submissions path with an invalid submission" - {
       "BadRequest response is returned" in {
         (Post(localSubmissionsPath, MockWorkspaceServer.mockInvalidSubmission)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))) ~> sealRoute(routes) ~> check {
+          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
           status should equal(BadRequest)
         }
       }
@@ -83,7 +78,7 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
 
     "when calling GET on the /workspaces/*/*/submissions/* path with a valid id" - {
       "OK response is returned" in {
-        Get(localSubmissionIdPath) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Get(localSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(OK)
         }
       }
@@ -91,7 +86,7 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
 
     "when calling GET on the /workspaces/*/*/submissions/* path with an invalid id" - {
       "NotFound response is returned" in {
-        Get(localInvalidSubmissionIdPath) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Get(localInvalidSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
         }
       }
@@ -99,7 +94,7 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
 
     "when calling DELETE on the /workspaces/*/*/submissions/* with a valid id" - {
       "OK response is returned" in {
-        Delete(localSubmissionIdPath) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Delete(localSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NoContent)
         }
       }
@@ -107,7 +102,7 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
 
     "when calling DELETE on the /workspaces/*/*/submissions/* with an invalid id" - {
       "NotFound response is returned" in {
-        Delete(localInvalidSubmissionIdPath) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Delete(localInvalidSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
         }
       }

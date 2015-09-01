@@ -4,10 +4,11 @@ import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.HttpClient.PerformExternalRequest
+import org.broadinstitute.dsde.firecloud.service.FireCloudTransformers
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
 import org.slf4j.LoggerFactory
+import spray.client.pipelining
 import spray.client.pipelining._
-import spray.http.HttpHeaders.Cookie
 import spray.http._
 import spray.routing.RequestContext
 
@@ -24,9 +25,10 @@ object HttpClient {
   def createJsonHttpEntity(json: String) = {
     HttpEntity(ContentType(MediaType.custom("application", "json")), json)
   }
+
 }
 
-class HttpClient (requestContext: RequestContext) extends Actor {
+class HttpClient (requestContext: RequestContext) extends Actor with FireCloudTransformers {
 
   import system.dispatcher
   implicit val system = context.system
@@ -45,7 +47,7 @@ class HttpClient (requestContext: RequestContext) extends Actor {
       requestContext: RequestContext,
       externalRequest: HttpRequest): Unit = {
     val pipeline: HttpRequest => Future[HttpResponse] =
-      addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
+      authHeaders(requestContext) ~> sendReceive
     log.debug("Sending request: " + externalRequest)
     pipeline(externalRequest) onComplete {
       case Success(response) =>

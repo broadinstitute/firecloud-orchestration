@@ -156,7 +156,7 @@ object MockWorkspaceServer {
           .withMethod("POST")
           .withPath(s"/workspaces/%s/%s/submissions"
             .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
-          .withCookies(cookie))
+          .withHeader(authHeader))
       .callback(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidSubmissionCallback")
@@ -180,7 +180,7 @@ object MockWorkspaceServer {
           .withMethod("GET")
           .withPath(s"/workspaces/%s/%s/submissions"
           .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
-          .withCookies(cookie))
+          .withHeader(authHeader))
       .respond(
         response()
           .withHeaders(header)
@@ -193,7 +193,7 @@ object MockWorkspaceServer {
           .withMethod("GET")
           .withPath(s"/workspaces/%s/%s/submissions/%s"
             .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockValidId))
-          .withCookies(cookie))
+          .withHeader(authHeader))
       .respond(
         response()
           .withHeaders(header)
@@ -207,7 +207,7 @@ object MockWorkspaceServer {
           .withMethod("DELETE")
           .withPath(s"/workspaces/%s/%s/submissions/%s"
           .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockValidId))
-          .withCookies(cookie))
+          .withHeader(authHeader))
       .respond(
         response()
           .withHeaders(header)
@@ -222,8 +222,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("POST")
           .withPath("/workspaces")
-          .withCookies(cookie)
-      ).callback(
+          .withHeader(authHeader))
+      .callback(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidWorkspaceCallback")
       )
@@ -245,8 +245,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath("/workspaces")
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withBody(mockWorkspaces.toJson.prettyPrint)
@@ -261,8 +261,8 @@ object MockWorkspaceServer {
           .withMethod("GET")
           .withPath(s"/workspaces/%s/%s/methodconfigs"
             .format(mockInvalidWorkspace.namespace.get, mockInvalidWorkspace.name.get))
-          .withCookies(cookie)).
-      respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withStatusCode(NotFound.intValue))
@@ -273,8 +273,8 @@ object MockWorkspaceServer {
           .withMethod("GET")
           .withPath(s"/workspaces/%s/%s/methodconfigs".
             format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
-          .withCookies(cookie)).
-      respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withBody(mockMethodConfigs.toJson.prettyPrint)
@@ -292,8 +292,8 @@ object MockWorkspaceServer {
             mockValidWorkspace.namespace.get,
             mockValidWorkspace.name.get))
           .withBody(mockMethodConfigs.head.toJson.prettyPrint)
-          .withCookies(cookie)).
-      respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withStatusCode(OK.intValue))
@@ -308,8 +308,8 @@ object MockWorkspaceServer {
             mockValidWorkspace.name.get,
             mockValidWorkspace.namespace.get,
             mockValidWorkspace.name.get))
-          .withCookies(cookie)).
-      respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withBody(mockMethodConfigs.head.toJson.prettyPrint)
@@ -367,8 +367,8 @@ object MockWorkspaceServer {
           .withMethod("PUT")
           .withPath(s"/workspaces/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/methodconfigs")
           .withBody("")
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withStatusCode(OK.intValue)
@@ -382,8 +382,8 @@ object MockWorkspaceServer {
           .withMethod("POST")
           .withPath(s"/workspaces/${mockSampleValid.wsNamespace.get}/${mockSampleValid.wsName.get}/entities")
           .withBody(mockSampleValid.toJson.compactPrint)
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withStatusCode(Created.intValue)
@@ -394,8 +394,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath(entitiesWithTypeBasePath + "entities")
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withBody(List("participant", "sample", "Pair", "sampleset").toJson.compactPrint)
@@ -407,8 +407,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath(entitiesWithTypeBasePath + "entities/participant")
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withBody(List(EntityWithType("participant_01", "participant", Option.empty), EntityWithType("participant_02", "participant", Option.empty)).toJson.compactPrint)
@@ -420,8 +420,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath(entitiesWithTypeBasePath + "entities/sample")
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withBody(List(EntityWithType("sample_01", "sample", Option.empty), EntityWithType("sample_02", "sample", Option.empty)).toJson.compactPrint)
@@ -433,8 +433,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath(entitiesWithTypeBasePath + "entities/Pair")
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withBody(List(EntityWithType("pair_01", "Pair", Option.empty)).toJson.compactPrint)
@@ -446,8 +446,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath(entitiesWithTypeBasePath + "entities/sampleset")
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withBody(List(EntityWithType("sampleset_01", "sampleset", Option.empty), EntityWithType("sampleset_02", "sampleset", Option.empty)).toJson.compactPrint)
@@ -460,8 +460,8 @@ object MockWorkspaceServer {
           .withMethod("POST")
           .withPath(s"/workspaces/${mockPairValid.wsNamespace.get}/${mockPairValid.wsName.get}/entities")
           .withBody(mockPairValid.toJson.compactPrint)
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withStatusCode(Created.intValue)
@@ -473,8 +473,8 @@ object MockWorkspaceServer {
           .withMethod("POST")
           .withPath(s"/workspaces/${mockSampleConflict.wsNamespace.get}/${mockSampleConflict.wsName.get}/entities")
           .withBody(mockSampleConflict.toJson.compactPrint)
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withStatusCode(Conflict.intValue)
@@ -485,8 +485,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("POST")
           .withPath("/methodconfigs/copyFromMethodRepo")
-          .withCookies(cookie)
-      ).callback(
+          .withHeader(authHeader))
+      .callback(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidMethodConfigurationFromRepoCallback")
       )
@@ -508,8 +508,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("POST")
           .withPath(s"/workspaces/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/entities/batchUpsert")
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withStatusCode(NoContent.intValue)
@@ -520,8 +520,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("POST")
           .withPath(s"/workspaces/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/entities/batchUpdate")
-          .withCookies(cookie)
-      ).respond(
+          .withHeader(authHeader))
+      .respond(
         response()
           .withHeaders(header)
           .withStatusCode(NoContent.intValue)

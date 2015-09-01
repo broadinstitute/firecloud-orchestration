@@ -3,18 +3,16 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.mock.MockMethodsServer
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{Configuration, Method}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
-import spray.http.HttpCookie
-import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.testkit.ScalatestRouteTest
 
-class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with MethodsService {
+class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
+  with Matchers with MethodsService with FireCloudTransformers {
 
   def actorRefFactory = system
 
@@ -28,18 +26,9 @@ class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteT
 
   "MethodsService" - {
 
-    val openAMSession = OpenAMSession(()).futureValue(timeout(Span(5, Seconds)), interval(scaled(Span(0.5, Seconds))))
-    val token = openAMSession.cookies.head.content
-
-    "when generating an OpenAM token" - {
-      "token should be valid" in {
-        token should endWith("*")
-      }
-    }
-
     "when calling GET on the /methods path" - {
       "valid methods are returned" in {
-        Get("/methods") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Get("/methods") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(OK)
           val entities = responseAs[List[Method]]
           entities shouldNot be(empty)
@@ -80,7 +69,7 @@ class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteT
 
     "when calling GET on the /configurations path" - {
       "valid methods are returned" in {
-        Get("/configurations") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Get("/configurations") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(OK)
           val entities = responseAs[List[Configuration]]
           entities shouldNot be(empty)

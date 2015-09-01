@@ -2,6 +2,8 @@ package org.broadinstitute.dsde.firecloud
 
 import java.text.SimpleDateFormat
 
+import org.broadinstitute.dsde.firecloud.service.FireCloudTransformers
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Try, Failure, Success}
@@ -9,7 +11,7 @@ import scala.util.{Try, Failure, Success}
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import spray.client.pipelining._
-import spray.http.HttpHeaders.Cookie
+
 import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.RequestContext
@@ -38,7 +40,7 @@ object EntityClient {
 
 }
 
-class EntityClient (requestContext: RequestContext) extends Actor {
+class EntityClient (requestContext: RequestContext) extends Actor with FireCloudTransformers {
 
   import system.dispatcher
 
@@ -58,7 +60,7 @@ class EntityClient (requestContext: RequestContext) extends Actor {
   def listEntities(workspaceNamespace: String, workspaceName: String, entityType: String): Unit = {
     log.info("listEntities request received")
     val pipeline: HttpRequest => Future[HttpResponse] =
-      addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
+      authHeaders(requestContext) ~> sendReceive
     val responseFuture: Future[HttpResponse] = pipeline {
       Get(s"${FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType")
     }
@@ -107,7 +109,7 @@ class EntityClient (requestContext: RequestContext) extends Actor {
   def createEntityOrReportError(workspaceNamespace: String, workspaceName: String, entityJson: JsValue, entityType: String, entityName: String) = {
     val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
     val externalRequest = Post(url, HttpClient.createJsonHttpEntity(entityJson.compactPrint))
-    val pipeline = addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
+    val pipeline = authHeaders(requestContext) ~> sendReceive
     // TODO figure out how to get the response in a non-blocking way,
     // TODO given that the requestContext should not complete until *all* are finished?
     Try(Await.result(pipeline(externalRequest), Duration.Inf)) match {
@@ -200,7 +202,7 @@ class EntityClient (requestContext: RequestContext) extends Actor {
   def batchCallToRawls( workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition], endpoint: String ) = {
     log.info("TSV upload request received")
     val pipeline: HttpRequest => Future[HttpResponse] =
-      addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
+      authHeaders(requestContext) ~> sendReceive
     val responseFuture: Future[HttpResponse] = pipeline {
       Post(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/"+endpoint,
             HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))

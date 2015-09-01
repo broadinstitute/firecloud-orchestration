@@ -66,7 +66,7 @@ object MockMethodsServer {
         request()
           .withMethod("GET")
           .withPath("/methods")
-          .withCookies(cookie)
+          .withHeader(authHeader)
       ).respond(
         response()
           .withHeaders(header)
@@ -93,7 +93,7 @@ object MockMethodsServer {
         request()
           .withMethod("GET")
           .withPath("/configurations")
-          .withCookies(cookie)
+          .withHeader(authHeader)
       ).respond(
         response()
           .withHeaders(header)

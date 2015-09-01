@@ -5,18 +5,16 @@ import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.mock.MockTSVFormData
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{MethodConfiguration, EntityCreateResult, WorkspaceEntity, WorkspaceName}
-import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json.DefaultJsonProtocol._
-import spray.http.HttpCookie
-import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.testkit.ScalatestRouteTest
 
-class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with WorkspaceService {
+class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
+  with Matchers with WorkspaceService with FireCloudTransformers {
 
   def actorRefFactory = system
 
@@ -32,8 +30,6 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
   "WorkspaceService" - {
 
-    val openAMSession = OpenAMSession(()).futureValue(timeout(Span(5, Seconds)), interval(scaled(Span(0.5, Seconds))))
-    val token = openAMSession.cookies.head.content
     val workspaceIngest = WorkspaceName(
       name = Some(randomAlpha()),
       namespace = Some(randomAlpha()))
@@ -47,7 +43,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
     "when calling POST on the workspaces path with a valid WorkspaceIngest" - {
       "valid workspace is returned" in {
-        Post(ApiPrefix, workspaceIngest) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Post(ApiPrefix, workspaceIngest) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(Created)
           val entity = responseAs[WorkspaceEntity]
           entity.name shouldNot be(Option.empty)
@@ -64,7 +60,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
         val path = "/workspaces/%s/%s/methodconfigs".format(
           MockWorkspaceServer.mockInvalidWorkspace.namespace.get,
           MockWorkspaceServer.mockInvalidWorkspace.name.get)
-        Get(path) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check{
+        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check{
           status should be(NotFound)
         }
       }
@@ -75,7 +71,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
         val path = "/workspaces/%s/%s/methodconfigs".format(
           MockWorkspaceServer.mockValidWorkspace.namespace.get,
           MockWorkspaceServer.mockValidWorkspace.name.get)
-        Get(path) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check{
+        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check{
           status should equal(OK)
           val methodconfigurations = responseAs[List[MethodConfiguration]]
           methodconfigurations shouldNot be(empty)
@@ -96,7 +92,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
     "when calling POST on the workspaces path with an invalid workspace ingest entity" - {
       "Bad Request (400) response is returned" in {
-        Post(ApiPrefix, invalidWorkspaceIngest) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~>sealRoute(routes) ~> check {
+        Post(ApiPrefix, invalidWorkspaceIngest) ~> dummyAuthHeaders ~>sealRoute(routes) ~> check {
           status should be(BadRequest)
         }
       }
@@ -104,7 +100,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
     "when calling GET on the workspaces path" - {
       "valid workspaces are returned" in {
-        Get(ApiPrefix) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Get(ApiPrefix) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(OK)
           val workspaces = responseAs[List[WorkspaceEntity]]
           workspaces shouldNot be(empty)
@@ -127,7 +123,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
     "when calling POST on the workspaces/*/*/importEntities path" - {
       "should 400 Bad Request if the TSV type is missing" in {
         (Post(tsvImportPath, MockTSVFormData.missingTSVType)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> dummyAuthHeaders
           ~> sealRoute(routes)) ~> check {
           status should equal(BadRequest)
         }
@@ -135,7 +131,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
       "should 400 Bad Request if the TSV type is nonsense" in {
         (Post(tsvImportPath, MockTSVFormData.nonexistentTSVType)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> dummyAuthHeaders
           ~> sealRoute(routes)) ~> check {
           status should equal(BadRequest)
         }
@@ -143,7 +139,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
       "should 400 Bad Request if the TSV entity type doesn't end in _id" in {
         (Post(tsvImportPath, MockTSVFormData.malformedEntityType)
-          ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+          ~> dummyAuthHeaders
           ~> sealRoute(routes)) ~> check {
           status should equal(BadRequest)
         }
@@ -152,7 +148,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       "a membership-type TSV" - {
         "should 400 Bad Request if the entity type is unknown" in {
           (Post(tsvImportPath, MockTSVFormData.membershipUnknownFirstColumnHeader)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -160,7 +156,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 400 Bad Request if the entity type is not a collection type" in {
           (Post(tsvImportPath, MockTSVFormData.membershipNotCollectionType)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -168,7 +164,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 400 Bad Request if the collection members header is missing" in {
           (Post(tsvImportPath, MockTSVFormData.membershipMissingMembersHeader)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -176,7 +172,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 400 Bad Request if it contains other headers than its collection members" in {
           (Post(tsvImportPath, MockTSVFormData.membershipExtraAttributes)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -184,7 +180,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 200 OK if it has the correct headers and valid internals" in {
           (Post(tsvImportPath, MockTSVFormData.membershipValid)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(OK)
           }
@@ -194,7 +190,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       "an entity-type TSV" - {
         "should 400 Bad Request if the entity type is unknown" in {
           (Post(tsvImportPath, MockTSVFormData.entityUnknownFirstColumnHeader)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -202,7 +198,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 400 Bad Request if it contains duplicated entities to update" in {
           (Post(tsvImportPath, MockTSVFormData.entityHasDupes)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -210,7 +206,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 400 Bad Request if it contains collection member headers" in {
           (Post(tsvImportPath, MockTSVFormData.entityHasCollectionMembers)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -218,7 +214,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 400 Bad Request if it is missing required attribute headers" in {
           (Post(tsvImportPath, MockTSVFormData.entityUpdateMissingRequiredAttrs)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -226,7 +222,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 200 OK if it has the full set of required attribute headers" in {
           (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAttrs)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(OK)
           }
@@ -234,7 +230,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
           (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAndOptionalAttrs)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(OK)
           }
@@ -244,7 +240,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       "an update-type TSV" - {
         "should 400 Bad Request if the entity type is unknown" in {
           (Post(tsvImportPath, MockTSVFormData.updateUnknownFirstColumnHeader)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -252,7 +248,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 400 Bad Request if it contains duplicated entities to update" in {
           (Post(tsvImportPath, MockTSVFormData.updateHasDupes)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -260,7 +256,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 400 Bad Request if it contains collection member headers" in {
           (Post(tsvImportPath, MockTSVFormData.updateHasCollectionMembers)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
           }
@@ -268,7 +264,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 200 OK even if it is missing required attribute headers" in {
           (Post(tsvImportPath, MockTSVFormData.updateMissingRequiredAttrs)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(OK)
           }
@@ -276,7 +272,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 200 OK if it has the full set of required attribute headers" in {
           (Post(tsvImportPath, MockTSVFormData.updateWithRequiredAttrs)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(OK)
           }
@@ -284,7 +280,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
 
         "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
           (Post(tsvImportPath, MockTSVFormData.updateWithRequiredAndOptionalAttrs)
-            ~> Cookie(HttpCookie("iPlanetDirectoryPro", token))
+            ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(OK)
           }

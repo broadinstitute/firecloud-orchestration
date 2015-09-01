@@ -3,12 +3,12 @@ package org.broadinstitute.dsde.firecloud.mock
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import org.mockserver.model.{Cookie, Header}
+import org.mockserver.model.Header
 
 object MockUtils {
 
    val isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
-   val cookie = new Cookie("iPlanetDirectoryPro", ".*")
+   val authHeader = new Header("Authorization", "Bearer dummytoken")
    val header = new Header("Content-Type", "application/json")
 
    def randomPositiveInt(): Int = {

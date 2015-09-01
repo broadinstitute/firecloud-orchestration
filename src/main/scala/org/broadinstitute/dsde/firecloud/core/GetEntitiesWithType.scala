@@ -4,9 +4,9 @@ import akka.actor.{Actor, Props}
 import akka.contrib.pattern.Aggregator
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.{EntityWithType, ProcessUrl}
+import org.broadinstitute.dsde.firecloud.service.FireCloudTransformers
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import spray.client.pipelining._
-import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.http.{HttpResponse, StatusCodes}
 import spray.httpx.SprayJsonSupport._
@@ -23,7 +23,7 @@ object GetEntitiesWithType {
   def props(requestContext: RequestContext): Props = Props(new GetEntitiesWithTypeActor(requestContext))
 }
 
-class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor with Aggregator {
+class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor with Aggregator with FireCloudTransformers {
 
   implicit val system = context.system
   import system.dispatcher
@@ -32,7 +32,7 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
   expectOnce {
     case ProcessUrl(url: String) =>
       log.debug("Processing entity type map for url: " + url)
-      val pipeline = addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
+      val pipeline = authHeaders(requestContext) ~> sendReceive
       val entityTypesFuture: Future[HttpResponse] = pipeline { Get(url) }
       entityTypesFuture onComplete {
         case Success(response) =>
@@ -57,7 +57,7 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
     val values = ArrayBuffer.empty[EntityWithType]
 
     if (entityTypes.nonEmpty) {
-      val pipeline = addHeader(Cookie(requestContext.request.cookies)) ~> sendReceive
+      val pipeline = authHeaders(requestContext) ~> sendReceive
       val entityUrls: List[String] = entityTypes.map(s => s"$baseUrl/$s")
       val entityFutures: List[Future[HttpResponse]] = entityUrls map { entitiesUrl => pipeline { Get(entitiesUrl) } }
       val f: Future[List[HttpResponse]] = Future sequence entityFutures
