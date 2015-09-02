@@ -12,7 +12,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.testkit.ScalatestRouteTest
 
 class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-  with Matchers with MethodConfigurationService with FireCloudTransformers {
+  with Matchers with MethodConfigurationService with FireCloudRequestBuilding {
 
   def actorRefFactory = system
 

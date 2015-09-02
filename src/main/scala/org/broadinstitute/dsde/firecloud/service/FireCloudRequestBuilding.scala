@@ -7,7 +7,7 @@ import spray.routing.RequestContext
 /**
  * Created by davidan on 9/1/15.
  */
-trait FireCloudTransformers extends spray.httpx.RequestBuilding {
+trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
 
   // TODO: would be much better to make requestContext implicit, so callers don't have to always pass it in
   // TODO: this could probably be rewritten more tersely in idiomatic scala - for instance, don't create

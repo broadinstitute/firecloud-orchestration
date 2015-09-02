@@ -12,7 +12,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
 class EntityServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-  with Matchers with EntityService with FireCloudTransformers {
+  with Matchers with EntityService with FireCloudRequestBuilding {
 
   def actorRefFactory = system
 

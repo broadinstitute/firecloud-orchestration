@@ -14,7 +14,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.testkit.ScalatestRouteTest
 
 class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-  with Matchers with WorkspaceService with FireCloudTransformers {
+  with Matchers with WorkspaceService with FireCloudRequestBuilding {
 
   def actorRefFactory = system
 

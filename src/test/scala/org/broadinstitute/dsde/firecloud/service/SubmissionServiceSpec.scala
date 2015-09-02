@@ -11,7 +11,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.testkit.ScalatestRouteTest
 
 class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-  with Matchers with SubmissionService with FireCloudTransformers {
+  with Matchers with SubmissionService with FireCloudRequestBuilding {
 
   def actorRefFactory = system
 

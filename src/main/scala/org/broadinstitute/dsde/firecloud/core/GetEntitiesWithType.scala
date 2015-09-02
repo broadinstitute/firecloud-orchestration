@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.contrib.pattern.Aggregator
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.{EntityWithType, ProcessUrl}
-import org.broadinstitute.dsde.firecloud.service.FireCloudTransformers
+import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -23,7 +23,7 @@ object GetEntitiesWithType {
   def props(requestContext: RequestContext): Props = Props(new GetEntitiesWithTypeActor(requestContext))
 }
 
-class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor with Aggregator with FireCloudTransformers {
+class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor with Aggregator with FireCloudRequestBuilding {
 
   implicit val system = context.system
   import system.dispatcher

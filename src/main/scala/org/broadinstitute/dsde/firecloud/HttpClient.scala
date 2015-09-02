@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.HttpClient.PerformExternalRequest
-import org.broadinstitute.dsde.firecloud.service.FireCloudTransformers
+import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
 import org.slf4j.LoggerFactory
 import spray.client.pipelining
@@ -28,7 +28,7 @@ object HttpClient {
 
 }
 
-class HttpClient (requestContext: RequestContext) extends Actor with FireCloudTransformers {
+class HttpClient (requestContext: RequestContext) extends Actor with FireCloudRequestBuilding {
 
   import system.dispatcher
   implicit val system = context.system

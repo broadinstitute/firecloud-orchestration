@@ -12,7 +12,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.testkit.ScalatestRouteTest
 
 class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-  with Matchers with MethodsService with FireCloudTransformers {
+  with Matchers with MethodsService with FireCloudRequestBuilding {
 
   def actorRefFactory = system
 

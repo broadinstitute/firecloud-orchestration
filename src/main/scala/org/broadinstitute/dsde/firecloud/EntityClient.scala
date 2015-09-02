@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud
 
 import java.text.SimpleDateFormat
 
-import org.broadinstitute.dsde.firecloud.service.FireCloudTransformers
+import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -40,7 +40,7 @@ object EntityClient {
 
 }
 
-class EntityClient (requestContext: RequestContext) extends Actor with FireCloudTransformers {
+class EntityClient (requestContext: RequestContext) extends Actor with FireCloudRequestBuilding {
 
   import system.dispatcher
 
