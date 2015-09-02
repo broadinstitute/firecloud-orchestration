@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud
 import org.parboiled.common.FileUtils
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
-import spray.http.Uri.Path
+import spray.http.Uri.{Authority, Path}
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
 import spray.util._
@@ -48,24 +48,37 @@ class FireCloudServiceActor extends HttpServiceActor {
 
   val swaggerUiService = {
     get {
-      pathPrefix("") { pathEnd{ uri { uri =>
-        redirectToSwagger(uri.withPath(uri.path + "api/swagger/"))
-      } } } ~
-      pathPrefix("swagger") {
-        pathEnd { uri { uri => redirectToSwagger(uri.withPath(Path("/api") ++ uri.path + "/")) } } ~
-        pathSingleSlash { uri { uri =>
-          redirectToSwagger(uri.withPath(Path("/api") ++ uri.path))
-        } } ~
-          serveYaml("swagger") ~ getFromResourceDirectory(swaggerUiPath)
+      optionalHeaderValueByName("X-Forwarded-Host") { forwardedHost =>
+        pathPrefix("") {
+          pathEnd {
+            uri { uri =>
+              redirectToSwagger(forwardedHost, uri.withPath(uri.path + "api/swagger/"))
+            }
+          }
+        } ~
+          pathPrefix("swagger") {
+            pathEnd {
+              uri { uri =>
+                redirectToSwagger(forwardedHost, uri.withPath(Path("/api") ++ uri.path + "/")) }
+            } ~
+              pathSingleSlash {
+                uri { uri =>
+                  redirectToSwagger(forwardedHost, uri.withPath(Path("/api") ++ uri.path))
+                }
+              } ~
+              serveYaml("swagger") ~ getFromResourceDirectory(swaggerUiPath)
+          }
       }
     }
   }
 
-  private def redirectToSwagger(baseUri: Uri): Route = {
+  private def redirectToSwagger(forwardedHost: Option[String], baseUri: Uri): Route = {
+    val uri = forwardedHost match {
+      case Some(x) => baseUri.withAuthority(hostAndPortToAuthority(x))
+      case None => baseUri
+    }
     redirect(
-      baseUri.withPath(baseUri.path + "index.html").withQuery(
-        ("url", baseUri.path.toString + "api-docs")
-      ),
+      uri.withPath(uri.path + "index.html").withQuery(("url", uri.path.toString + "api-docs")),
       TemporaryRedirect
     )
   }
@@ -87,6 +100,15 @@ class FireCloudServiceActor extends HttpServiceActor {
         }
       }
     }
+  }
+
+  private def hostAndPortToAuthority(hostAndPort: String): Authority = {
+    val parts = hostAndPort.split(":")
+    val host = parts(0)
+    if (parts.length > 1)
+      Authority(Uri.Host(host), parts(1).toInt)
+    else
+      Authority(Uri.Host(host))
   }
 }
 
