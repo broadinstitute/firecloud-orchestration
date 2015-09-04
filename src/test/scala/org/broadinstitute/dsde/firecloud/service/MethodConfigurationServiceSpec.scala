@@ -3,17 +3,16 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.CopyConfigurationIngest
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.vault.common.openam.OpenAMSession
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
-import spray.http.HttpHeaders.Cookie
 import spray.http.StatusCodes._
 import spray.http._
 import spray.httpx.SprayJsonSupport._
 import spray.testkit.ScalatestRouteTest
 
-class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with MethodConfigurationService {
+class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
+  with Matchers with MethodConfigurationService with FireCloudRequestBuilding {
 
   def actorRefFactory = system
 
@@ -31,8 +30,6 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
     MockWorkspaceServer.mockValidWorkspace.namespace.get,
     MockWorkspaceServer.mockValidWorkspace.name.get
   )
-  private final val openAMSession = OpenAMSession(()).futureValue(timeout(Span(5, Seconds)), interval(scaled(Span(0.5, Seconds))))
-  private final val token = openAMSession.cookies.head.content
   private final val validConfigurationCopyFormData = CopyConfigurationIngest(
     configurationNamespace = Option("namespace"),
     configurationName = Option("name"),
@@ -54,7 +51,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling DELETE on the /workspaces/*/*/method_configs/*/* with a valid path" - {
       "Successful Request (204, NoContent) response is returned" in {
-        Delete(validGetMethodConfigUrl) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Delete(validGetMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NoContent)
         }
       }
@@ -62,7 +59,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling DELETE on the /workspaces/*/*/method_configs/*/* with an invalid path" - {
       "NotFound response is returned" in {
-        Delete("/workspaces/invalid/invalid/method_configs/invalid/invalid") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Delete("/workspaces/invalid/invalid/method_configs/invalid/invalid") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
         }
       }
@@ -70,7 +67,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling PUT on the /workspaces/*/*/method_configs/*/* path with a valid method configuration" - {
       "OK response is returned" in {
-        Put(validUpdateMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Put(validUpdateMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(OK)
         }
       }
@@ -78,7 +75,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling PUT on the /workspaces/*/*/method_configs/*/* path with a nonexistent method configuration" - {
       "OK response is returned" in {
-        Put(validUpdateMethodConfigUrl, MockWorkspaceServer.mockInvalidWorkspace) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Put(validUpdateMethodConfigUrl, MockWorkspaceServer.mockInvalidWorkspace) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
         }
       }
@@ -86,7 +83,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling GET on the /workspaces/*/*/method_configs/*/* path" - {
       "OK respose is returned" in {
-        Get(validGetMethodConfigUrl) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Get(validGetMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(OK)
         }
       }
@@ -94,7 +91,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling GET on an invalid /workspaces/*/*/method_configs/*/* path" - {
       "Not Found respose is returned" in {
-        Get("/workspaces/invalid/invalid/method_configs/invalid/invalid") ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Get("/workspaces/invalid/invalid/method_configs/invalid/invalid") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
         }
       }
@@ -102,7 +99,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling POST on the /workspaces/*/*/method_configs/*/* path" - {
       "MethodNotAllowed error is returned" in {
-        Post(validUpdateMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Post(validUpdateMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
         }
       }
@@ -122,7 +119,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
      */
     "when calling POST on the /workspaces*/*/method_configs/copyFromMethodRepo path with valid workspace and configuration data" - {
       "Created response is returned" in {
-        Post(validCopyFromRepoUrl, validConfigurationCopyFormData) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Post(validCopyFromRepoUrl, validConfigurationCopyFormData) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(Created)
         }
       }
@@ -130,7 +127,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling POST on the /workspaces*/*/method_configs/copyFromMethodRepo path with invalid data" - {
       "BadRequest response is returned" in {
-        Post(validCopyFromRepoUrl, invalidConfigurationCopyFormData) ~> Cookie(HttpCookie("iPlanetDirectoryPro", token)) ~> sealRoute(routes) ~> check {
+        Post(validCopyFromRepoUrl, invalidConfigurationCopyFormData) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(BadRequest)
         }
       }

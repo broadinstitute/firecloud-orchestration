@@ -39,7 +39,12 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
         } ~
           post {
             entity(as[String]) { ingest =>
-              commonNameFromOptionalCookie() { username => requestContext =>
+              // TODO: replace with a directive that pulls the username from the Google info!
+              // TODO: rawls should populate createdBy/createdDate/attributes on its own!
+              // commonNameFromOptionalCookie() { username => requestContext =>
+              requestContext =>
+              val username = Option("FIXME!")
+
                 username match {
                   case Some(x) =>
                     val params = ingest.parseJson.convertTo[Map[String, JsValue]]
@@ -55,7 +60,7 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
                     log.error("No authenticated username provided.")
                     requestContext.complete(Unauthorized)
                 }
-              }
+              // }
             }
           }
       } ~
