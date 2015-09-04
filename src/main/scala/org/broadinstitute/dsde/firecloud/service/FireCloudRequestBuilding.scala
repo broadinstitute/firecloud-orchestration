@@ -4,9 +4,7 @@ import spray.http.HttpHeaders.Authorization
 import spray.http.{HttpHeader, HttpCredentials, HttpRequest, OAuth2BearerToken}
 import spray.routing.RequestContext
 
-/**
- * Created by davidan on 9/1/15.
- */
+
 trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
 
   // TODO: would be much better to make requestContext implicit, so callers don't have to always pass it in
