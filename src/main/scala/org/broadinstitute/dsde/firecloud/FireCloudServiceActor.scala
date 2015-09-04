@@ -85,17 +85,15 @@ class FireCloudServiceActor extends HttpServiceActor {
 
   private def serveYaml(resourceDirectoryBase: String): Route = {
     unmatchedPath { path =>
-      extract(_.request.uri) { uri =>
-        val classLoader = actorSystem(actorRefFactory).dynamicAccess.classLoader
-        classLoader.getResource(resourceDirectoryBase + path + ".yaml") match {
-          case null => reject
-          case url => complete {
-            val inputStream = url.openStream()
-            try {
-              FileUtils.readAllText(inputStream)
-            } finally {
-              inputStream.close()
-            }
+      val classLoader = actorSystem(actorRefFactory).dynamicAccess.classLoader
+      classLoader.getResource(resourceDirectoryBase + path + ".yaml") match {
+        case null => reject
+        case url => complete {
+          val inputStream = url.openStream()
+          try {
+            FileUtils.readAllText(inputStream)
+          } finally {
+            inputStream.close()
           }
         }
       }
