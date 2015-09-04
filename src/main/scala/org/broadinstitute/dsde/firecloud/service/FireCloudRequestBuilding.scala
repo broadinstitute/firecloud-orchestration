@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import spray.http.HttpHeaders.Authorization
-import spray.http.{HttpHeader, HttpCredentials, HttpRequest, OAuth2BearerToken}
+import spray.http.{HttpCredentials, HttpRequest, OAuth2BearerToken}
 import spray.routing.RequestContext
 
 
@@ -13,25 +13,16 @@ trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
   def authHeaders(requestContext: RequestContext) = {
 
     // inspect headers for a pre-existing Authorization: header
-    val authorizationHeader:Option[HttpCredentials] = (requestContext.request.headers collect {
+    val authorizationHeader: Option[HttpCredentials] = (requestContext.request.headers collect {
         case Authorization(h) => h
     }).headOption
 
-    // inspect headers for a custom OIDC_access_token: header, coming from the mod_auth_openidc Apache proxy.
-    // take its value and create an OAuth2 bearer token from it.
-    val accessTokenHeader:Option[HttpCredentials] = (requestContext.request.headers collect {
-      case h:HttpHeader if h.name.equals("OIDC_access_token") => OAuth2BearerToken(h.value)
-    }).headOption
-
-    // prefer the Authorization: header over the OIDC_access_token
-    val creds = authorizationHeader orElse accessTokenHeader
-
-    creds match {
+    authorizationHeader match {
       // if we have authorization credentials, apply them to the outgoing request
       case Some(c) => addCredentials(c)
       // else, noop. But the noop needs to return an identity function in order to compile.
       // alternately, we could throw an error here, since we assume some authorization should exist.
-      case None => (r:HttpRequest)=>r
+      case None => (r: HttpRequest) => r
     }
 
   }
