@@ -2,8 +2,6 @@ package org.broadinstitute.dsde.firecloud
 
 import org.parboiled.common.FileUtils
 import org.slf4j.LoggerFactory
-import spray.http.StatusCodes._
-import spray.http.Uri.{Authority, Path}
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
 import spray.util._
@@ -33,17 +31,23 @@ class FireCloudServiceActor extends HttpServiceActor {
 
   def receive = runRoute(
     logRequests {
-      swaggerUiService ~ routes ~
-        // The "api" path prefix is never visible to this server in production because it is
-        // transparently proxied. We check for it here so the redirects work when visiting this
-        // server directly during local development.
+      // The "service" path prefix is never visible to this server in production because it is
+      // transparently proxied. We check for it here so the redirects work when visiting this
+      // server directly during local development.
+      pathPrefix("service") {
+        swaggerUiService ~
+          pathPrefix("api") {
+            routes
+          }
+      } ~
+        swaggerUiService ~
         pathPrefix("api") {
-          swaggerUiService ~ routes
+          routes
         }
+
     }
   )
 
-  private val uri = extract { c => c.request.uri }
   private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/2.1.1"
 
   val swaggerUiService = {
@@ -51,62 +55,50 @@ class FireCloudServiceActor extends HttpServiceActor {
       optionalHeaderValueByName("X-Forwarded-Host") { forwardedHost =>
         pathPrefix("") {
           pathEnd {
-            uri { uri =>
-              redirectToSwagger(forwardedHost, uri.withPath(uri.path + "api/swagger/"))
-            }
-          }
-        } ~
-          pathPrefix("swagger") {
-            pathEnd {
-              uri { uri =>
-                redirectToSwagger(forwardedHost, uri.withPath(Path("/api") ++ uri.path + "/")) }
+            cookie("access_token") { tokenCookie =>
+              serveIndex(tokenCookie.content)
             } ~
-              pathSingleSlash {
-                uri { uri =>
-                  redirectToSwagger(forwardedHost, uri.withPath(Path("/api") ++ uri.path))
-                }
-              } ~
-              serveYaml("swagger") ~ getFromResourceDirectory(swaggerUiPath)
-          }
-      }
-    }
-  }
-
-  private def redirectToSwagger(forwardedHost: Option[String], baseUri: Uri): Route = {
-    val uri = forwardedHost match {
-      case Some(x) => baseUri.withAuthority(hostAndPortToAuthority(x))
-      case None => baseUri
-    }
-    redirect(
-      uri.withPath(uri.path + "index.html").withQuery(("url", uri.path.toString + "api-docs")),
-      TemporaryRedirect
-    )
-  }
-
-  private def serveYaml(resourceDirectoryBase: String): Route = {
-    unmatchedPath { path =>
-      val classLoader = actorSystem(actorRefFactory).dynamicAccess.classLoader
-      classLoader.getResource(resourceDirectoryBase + path + ".yaml") match {
-        case null => reject
-        case url => complete {
-          val inputStream = url.openStream()
-          try {
-            FileUtils.readAllText(inputStream)
-          } finally {
-            inputStream.close()
-          }
+              complete {
+                HttpEntity(ContentType(MediaTypes.`text/html`),
+                  getResourceFileContents("swagger/auth-page.html")
+                .replace("{{googleClientId}}", FireCloudConfig.Auth.googleClientId)
+                )
+              }
+          } ~
+            pathSuffix("api-docs") {
+              complete {
+                getResourceFileContents("swagger/api-docs.yaml")
+              }
+            } ~
+            getFromResourceDirectory(swaggerUiPath)
         }
       }
     }
   }
 
-  private def hostAndPortToAuthority(hostAndPort: String): Authority = {
-    val parts = hostAndPort.split(":")
-    val host = parts(0)
-    if (parts.length > 1)
-      Authority(Uri.Host(host), parts(1).toInt)
-    else
-      Authority(Uri.Host(host))
+  private def serveIndex(accessToken: String): Route = {
+    val authLine = "$(function() { window.swaggerUi.api.clientAuthorizations.add(" +
+      "'key', new SwaggerClient.ApiKeyAuthorization('Authorization', 'Bearer " + accessToken +
+      "', 'header')); });"
+    val indexHtml = getResourceFileContents(swaggerUiPath + "/index.html")
+    complete {
+      HttpEntity(ContentType(MediaTypes.`text/html`),
+        indexHtml
+          .replace("</head>", "<script>" + authLine + "</script>\n</head>")
+          .replace("url = \"http://petstore.swagger.io/v2/swagger.json\";",
+            "url = '/service/api-docs';")
+      )
+    }
+  }
+
+  private def getResourceFileContents(path: String): String = {
+    val classLoader = actorSystem(actorRefFactory).dynamicAccess.classLoader
+    val inputStream = classLoader.getResource(path).openStream()
+    try {
+      FileUtils.readAllText(inputStream)
+    } finally {
+      inputStream.close()
+    }
   }
 }
 

@@ -7,6 +7,11 @@ object FireCloudConfig {
   private val configurations = ConfigFactory.load("configurations.conf")
   private val merged = config.withFallback(configurations)
 
+  object Auth {
+    private val auth = merged.getConfig("auth")
+    lazy val googleClientId = sys.env.getOrElse("GOOGLE_CLIENT_ID", auth.getString("googleClientId"))
+  }
+
   object HttpConfig {
     private val httpConfig = merged.getConfig("http")
     lazy val interface = httpConfig.getString("interface")
