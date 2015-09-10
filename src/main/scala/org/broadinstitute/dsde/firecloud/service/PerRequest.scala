@@ -2,11 +2,10 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import org.broadinstitute.dsde.firecloud.{HttpClient, FireCloudExceptionWithStatusCode}
 import org.broadinstitute.dsde.firecloud.service.PerRequest._
-import spray.client.pipelining._
-import spray.http.{RequestProcessingException, HttpRequest, HttpHeader}
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithStatusCode, HttpClient}
 import spray.http.StatusCodes._
+import spray.http.{HttpHeader, HttpHeaders, HttpRequest, RequestProcessingException}
 import spray.httpx.marshalling.ToResponseMarshaller
 import spray.routing.RequestContext
 
@@ -53,8 +52,16 @@ trait PerRequest extends Actor {
    * @return
    */
   private def complete[T](response: T, headers: HttpHeader*)(implicit marshaller: ToResponseMarshaller[T]) = {
-    r.withHttpResponseHeadersMapped(h => h ++ headers).complete(response)
+    r.withHttpResponseHeadersMapped(h => (h ++ headers).filterNot(isAutomaticHeader)).complete(response)
     stop(self)
+  }
+
+  private def isAutomaticHeader(h: HttpHeader): Boolean = h match {
+    case _:HttpHeaders.Date => true
+    case _:HttpHeaders.Server => true
+    case _:HttpHeaders.`Content-Type` => true
+    case _:HttpHeaders.`Content-Length` => true
+    case _ => false
   }
 
   override val supervisorStrategy =
