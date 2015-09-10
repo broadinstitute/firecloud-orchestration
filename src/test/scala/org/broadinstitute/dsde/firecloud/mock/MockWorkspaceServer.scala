@@ -42,6 +42,11 @@ object MockWorkspaceServer {
     Some("invalidName")
   )
 
+  val mockWorkspaceACL: List[Map[String, String]] = List(
+    Map("userId" -> randomAlpha(), "accessLevel" -> randomAlpha()),
+    Map("userId" -> randomAlpha(), "accessLevel" -> randomAlpha())
+  )
+
   val mockSampleValid = Entity(
     Some("namespace"),
     Some("name"),
@@ -250,6 +255,34 @@ object MockWorkspaceServer {
         response()
           .withHeaders(header)
           .withBody(mockWorkspaces.toJson.prettyPrint)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"/workspaces/%s/%s/acl"
+            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withBody(mockWorkspaceACL.toJson.prettyPrint)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("PATCH")
+          .withPath(s"/workspaces/%s/%s/acl"
+            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .withBody(mockWorkspaceACL.toJson.prettyPrint)
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
           .withStatusCode(OK.intValue)
       )
 

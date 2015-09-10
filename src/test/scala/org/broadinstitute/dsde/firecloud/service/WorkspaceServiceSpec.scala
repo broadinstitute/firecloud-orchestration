@@ -120,6 +120,30 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       }
     }
 
+    "when calling GET on the workspaces/*/*/acl path" - {
+      "valid ACL is returned" in {
+        val path = "/workspaces/%s/%s/acl".format(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+          val acl = responseAs[List[Map[String, String]]]
+          acl shouldNot be(empty)
+        }
+      }
+    }
+
+    "when calling PATCH on the workspaces/*/*/acl path" - {
+      "OK response is returned" in {
+        val path = "/workspaces/%s/%s/acl".format(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        Patch(path, MockWorkspaceServer.mockWorkspaceACL) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
     "when calling POST on the workspaces/*/*/importEntities path" - {
       "should 400 Bad Request if the TSV type is missing" in {
         (Post(tsvImportPath, MockTSVFormData.missingTSVType)

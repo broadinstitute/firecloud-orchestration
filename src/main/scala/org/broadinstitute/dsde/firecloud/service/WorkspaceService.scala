@@ -5,14 +5,12 @@ import java.util.Date
 
 import akka.actor.{Actor, Props}
 import org.slf4j.LoggerFactory
-import spray.client.pipelining.{Get, Post}
-import spray.http.HttpRequest
+import spray.client.pipelining.{Get, Post, Patch}
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.routing._
 
-import org.broadinstitute.dsde.vault.common.directives.OpenAMDirectives._
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, HttpClient}
 
 class WorkspaceServiceActor extends Actor with WorkspaceService {
@@ -82,6 +80,19 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
                     perRequest(requestContext, Props(new EntityClient(requestContext)),
                       EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
                   }
+                }
+              }
+            } ~
+            path("acl") {
+              get { requestContext =>
+                val extReq = Get(rawlsWorkspacesRoot + "/%s/%s/acl".format(workspaceNamespace, workspaceName))
+                externalHttpPerRequest(requestContext, extReq)
+              } ~
+              patch {
+                respondWithJSON { requestContext =>
+                  val extReq = Patch(rawlsWorkspacesRoot + "/%s/%s/acl".format(workspaceNamespace, workspaceName),
+                    requestContext.request.entity)
+                  externalHttpPerRequest(requestContext, extReq)
                 }
               }
             }
