@@ -53,19 +53,11 @@ class HttpClient (requestContext: RequestContext) extends Actor
     pipeline(externalRequest) onComplete {
       case Success(response) =>
         log.debug("Got response: " + response)
-        context.parent ! RequestCompleteWithHeaders(response, response.headers.filterNot(isAutomaticHeader):_*)
+        context.parent ! RequestCompleteWithHeaders(response, response.headers:_*)
       case Failure(error) =>
         log.error("External request failed", error)
         context.parent ! RequestComplete(StatusCodes.InternalServerError, error.getMessage)
     }
-  }
-
-  private def isAutomaticHeader(h: HttpHeader): Boolean = h match {
-    case _:HttpHeaders.Date => true
-    case _:HttpHeaders.Server => true
-    case _:HttpHeaders.`Content-Type` => true
-    case _:HttpHeaders.`Content-Length` => true
-    case _ => false
   }
 }
 
