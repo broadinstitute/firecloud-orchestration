@@ -262,6 +262,57 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("GET")
+          .withPath(s"/workspaces/%s/%s"
+            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withBody(mockValidWorkspace.toJson.prettyPrint)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("GET")
+          .withPath(s"/workspaces/%s/%s"
+            .format(mockInvalidWorkspace.namespace.get, mockInvalidWorkspace.name.get))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NotFound.intValue))
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("DELETE")
+          .withPath(s"/workspaces/%s/%s"
+          .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("DELETE")
+          .withPath(s"/workspaces/%s/%s"
+            .format(mockInvalidWorkspace.namespace.get, mockInvalidWorkspace.name.get))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NotFound.intValue))
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
           .withPath(s"/workspaces/%s/%s/acl"
             .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
           .withHeader(authHeader))
