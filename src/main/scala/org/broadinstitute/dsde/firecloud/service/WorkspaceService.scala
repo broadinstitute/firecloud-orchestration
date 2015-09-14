@@ -32,8 +32,7 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
     pathPrefix(ApiPrefix) {
       pathEnd {
         get { requestContext =>
-          val extReq =  Get(rawlsWorkspacesRoot)
-          externalHttpPerRequest(requestContext, extReq)
+          externalHttpPerRequest(requestContext, Get(rawlsWorkspacesRoot))
         } ~
         post {
           entity(as[String]) { ingest =>
@@ -63,20 +62,18 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
         }
       } ~
       pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
+        val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
         pathEnd {
           get { requestContext =>
-            val extReq = Get(rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName))
-            externalHttpPerRequest(requestContext, extReq)
+            externalHttpPerRequest(requestContext, Get(workspacePath))
           } ~
           delete { requestContext =>
-            val extReq = Delete(rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName))
-            externalHttpPerRequest(requestContext, extReq)
+            externalHttpPerRequest(requestContext, Delete(workspacePath))
           }
         } ~
         path("methodconfigs") {
           get { requestContext =>
-            val extReq = Get(rawlsWorkspacesRoot + "/%s/%s/methodconfigs".format(workspaceNamespace, workspaceName))
-            externalHttpPerRequest(requestContext, extReq)
+            externalHttpPerRequest(requestContext, Get(workspacePath + "/methodconfigs"))
           }
         } ~
         path("importEntities") {
@@ -90,15 +87,13 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
           }
         } ~
         path("acl") {
+          val workspaceAclPath = workspacePath + "/acl"
           get { requestContext =>
-            val extReq = Get(rawlsWorkspacesRoot + "/%s/%s/acl".format(workspaceNamespace, workspaceName))
-            externalHttpPerRequest(requestContext, extReq)
+            externalHttpPerRequest(requestContext, Get(workspaceAclPath))
           } ~
           patch {
             respondWithJSON { requestContext =>
-              val extReq = Patch(rawlsWorkspacesRoot + "/%s/%s/acl".format(workspaceNamespace, workspaceName),
-                requestContext.request.entity)
-              externalHttpPerRequest(requestContext, extReq)
+              externalHttpPerRequest(requestContext, Patch(workspaceAclPath, requestContext.request.entity))
             }
           }
         }
