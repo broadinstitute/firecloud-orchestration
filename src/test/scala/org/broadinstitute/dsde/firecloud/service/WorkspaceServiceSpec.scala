@@ -120,6 +120,47 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       }
     }
 
+    "when calling the GET workspace path" - {
+      "a workspace is returned for a valid ID" in {
+        val path = "/workspaces/%s/%s".format(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+          responseAs[WorkspaceEntity].namespace shouldNot be(empty)
+        }
+      }
+
+      "a 404 is returned for an invalid ID" in {
+        val path = "/workspaces/%s/%s".format(
+          MockWorkspaceServer.mockInvalidWorkspace.namespace.get,
+          MockWorkspaceServer.mockInvalidWorkspace.name.get)
+        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(NotFound)
+        }
+      }
+    }
+
+    "when calling the DELETE workspace path" - {
+      "a valid response is returned for a valid ID" in {
+        val path = "/workspaces/%s/%s".format(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        Delete(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "a 404 is returned for an invalid ID" in {
+        val path = "/workspaces/%s/%s".format(
+          MockWorkspaceServer.mockInvalidWorkspace.namespace.get,
+          MockWorkspaceServer.mockInvalidWorkspace.name.get)
+        Delete(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(NotFound)
+        }
+      }
+    }
+
     "when calling GET on the workspaces/*/*/acl path" - {
       "valid ACL is returned" in {
         val path = "/workspaces/%s/%s/acl".format(

@@ -50,6 +50,113 @@ paths:
       responses:
         200:
           description: List of Method Repository configurations.
+  /workspaces/{workspaceNamespace}/{workspaceName}:
+    get:
+      tags:
+        - workspaces
+      operationId: getWorkspace
+      summary: Get workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Successful Request
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+    delete:
+      tags:
+        - workspaces
+      operationId: deleteWorkspace
+      summary: Delete workspace
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        202:
+          description: Request Accepted
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/acl:
+    get:
+      tags:
+        - workspaces
+      operationId: getWorkspaceAcl
+      summary: Get workspace ACL
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Can't retrieve ACL for workspace
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Server Error
+    patch:
+      tags:
+        - workspaces
+      operationId: updateWorkspaceACL
+      summary: Update workspace ACL
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: aclUpdates
+          description: Series of ACL updates for workspace
+          required: true
+          type: List[Map[string, string]]
+          in: body
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Can't set ACL for workspace
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
     get:
       type: EntityWithType
