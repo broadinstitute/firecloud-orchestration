@@ -1,6 +1,6 @@
 *.class
 *.log
-env.sh
+/env.sh
 
 # sbt specific
 .sbtopts

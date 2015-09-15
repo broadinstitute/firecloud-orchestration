@@ -1,25 +1,43 @@
-FROM centos:7
+FROM phusion/baseimage
 
-RUN curl https://bintray.com/sbt/rpm/rpm > /etc/yum.repos.d/bintray-sbt-rpm.repo
-RUN yum -y install git sbt && yum clean all
+# How to install OpenJDK 8 from:
+# http://ubuntuhandbook.org/index.php/2015/01/install-openjdk-8-ubuntu-14-04-12-04-lts/
+RUN add-apt-repository ppa:openjdk-r/ppa
+
+# How to install sbt on Linux from:
+# http://www.scala-sbt.org/release/tutorial/Installing-sbt-on-Linux.html
+RUN echo "deb https://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
+
+RUN apt-get update
+RUN apt-get install -qy openjdk-8-jdk sbt
+
+# Standard apt-get cleanup.
+RUN apt-get -yq autoremove && \
+    apt-get -yq clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /tmp/* && \
+    rm -rf /var/tmp/*
+
+# Actually download sbt
+RUN sbt version
 
 EXPOSE 8080
 
-COPY build.sbt /usr/firecloud-orchestration/build.sbt
-COPY src /usr/firecloud-orchestration/src
-COPY project /usr/firecloud-orchestration/project
-#application.conf will be mounted in at runtime. 
-#COPY application.conf /usr/firecloud-orchestration/application.conf
-COPY test.conf /usr/firecloud-orchestration/test.conf
+RUN mkdir /app
+WORKDIR /app
 
-ENV JAVA_HOME '/usr/lib/jvm/jre-1.8.0/'
-WORKDIR /usr/firecloud-orchestration
+# Grab dependencies.
+COPY build.sbt build.sbt
+COPY project project
+RUN sbt compile
 
-RUN alternatives --set java /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.51-1.b16.el7_1.x86_64/jre/bin/java
+# Compile first to cache it.
+COPY src src
+RUN sbt compile
 
-RUN sbt assembly -Dconfig.file=/usr/firecloud-orchestration/test.conf
+# RUN AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' sbt test
 
-#No longer needed, remove it. 
-RUN rm -rf /usr/firecloud-orchestration/test.conf
+RUN sbt assembly
 
-CMD java -Dconfig.file=/usr/firecloud-orchestration/application.conf -jar $(ls target/scala-2.11/FireCloud-Orchestration-assembly-* | tail -n 1)
+COPY src/docker/run.sh /etc/service/orch/run
