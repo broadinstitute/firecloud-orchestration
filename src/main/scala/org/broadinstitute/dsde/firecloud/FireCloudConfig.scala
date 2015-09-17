@@ -6,7 +6,6 @@ object FireCloudConfig {
   private val config = ConfigFactory.load()
 
   object Auth {
-    private val auth = config.getConfig("auth")
     lazy val googleClientId = sys.env.get("GOOGLE_CLIENT_ID").get
   }
 
