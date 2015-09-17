@@ -47,6 +47,8 @@ object MockWorkspaceServer {
     Map("userId" -> randomAlpha(), "accessLevel" -> randomAlpha())
   )
 
+  val mockUpdateAttributeOperation: JsObject = JsObject("op" -> JsString("AddUpdateAttribute"), "attributeName" -> JsString("testname"), "addUpdateAttribute" -> JsString("testvalue"))
+
   val mockSampleValid = Entity(
     Some("namespace"),
     Some("name"),
@@ -363,6 +365,20 @@ object MockWorkspaceServer {
           .withHeaders(header)
           .withBody(mockMethodConfigs.toJson.prettyPrint)
           .withStatusCode(OK.intValue))
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("PATCH")
+          .withPath(s"/workspaces/%s/%s"
+          .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .withBody(mockUpdateAttributeOperation.toJson.prettyPrint)
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+      )
 
     // Updating a method config
     MockWorkspaceServer.workspaceServer.

@@ -16,7 +16,7 @@ paths:
   /workspaces:
     get:
       tags:
-      - workspaces
+      - Workspaces
       operationId: listWorkspaces
       summary: |
         Lists workspaces.
@@ -53,7 +53,7 @@ paths:
   /workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:
-        - workspaces
+        - Workspaces
       operationId: getWorkspace
       summary: Get workspace
       produces:
@@ -78,7 +78,7 @@ paths:
           description: Internal Server Error
     delete:
       tags:
-        - workspaces
+        - Workspaces
       operationId: deleteWorkspace
       summary: Delete workspace
       parameters:
@@ -102,7 +102,7 @@ paths:
   /workspaces/{workspaceNamespace}/{workspaceName}/acl:
     get:
       tags:
-        - workspaces
+        - Workspaces
       operationId: getWorkspaceAcl
       summary: Get workspace ACL
       produces:
@@ -129,7 +129,7 @@ paths:
           description: Internal Server Error
     patch:
       tags:
-        - workspaces
+        - Workspaces
       operationId: updateWorkspaceACL
       summary: Update workspace ACL
       parameters:
@@ -599,6 +599,43 @@ paths:
           description: Submission or Workflow not found
         500:
           description: Internal Error
+          
+  /workspaces/{workspaceNamespace}/{workspaceName}/updateAttributes:
+    patch:
+      tags:
+      - Workspaces
+      operationId: updateAttributes
+      summary: |
+        Modify attributes on a workspace.
+      produces:
+      - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: workspaceUpdateJson
+          description: Attribute operations
+          required: true
+          type: array
+          items:
+            $ref: AttributeUpdateOperation
+          in: body
+      responses:
+        200:
+          description: Success
+        400:
+          description: Invalid operation
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
 
 definitions:
   SubmissionIngest:
@@ -701,3 +738,17 @@ definitions:
       - configurationSnapshotId
       - destinationNamespace
       - destinationName
+  AttributeUpdateOperation:
+    properties:
+      op:
+        type: string
+        description: Operation to perform on the attribute
+      attributeName:
+        type: string
+        description: The name of the attribute
+      addUpdateAttribute:
+        type: string
+        description: The value of the attribute (if adding/updating)
+    required:
+      - op
+      - attributeName

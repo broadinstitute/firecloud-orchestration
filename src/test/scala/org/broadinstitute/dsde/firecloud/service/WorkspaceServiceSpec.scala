@@ -41,6 +41,10 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       MockWorkspaceServer.mockValidWorkspace.namespace.get,
       MockWorkspaceServer.mockValidWorkspace.name.get)
 
+    val attributeUpdatePath = ApiPrefix + "/%s/%s/updateAttributes".format(
+      MockWorkspaceServer.mockValidWorkspace.namespace.get,
+      MockWorkspaceServer.mockValidWorkspace.name.get)
+
     "when calling POST on the workspaces path with a valid WorkspaceIngest" - {
       "valid workspace is returned" in {
         Post(ApiPrefix, workspaceIngest) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
@@ -180,6 +184,16 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
           MockWorkspaceServer.mockValidWorkspace.namespace.get,
           MockWorkspaceServer.mockValidWorkspace.name.get)
         Patch(path, MockWorkspaceServer.mockWorkspaceACL) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when calling PATCH on the workspaces/*/*/updateAttributes to add/update an attribute" - {
+      "OK response is returned" in {
+        (Patch(attributeUpdatePath, MockWorkspaceServer.mockUpdateAttributeOperation)
+        ~> dummyAuthHeaders
+        ~> sealRoute(routes)) ~> check {
           status should equal(OK)
         }
       }
