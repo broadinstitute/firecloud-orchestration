@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.Actor
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.slf4j.LoggerFactory
+import spray.http.HttpMethods
 import spray.routing.{HttpService, Route}
 
 class MethodsServiceActor extends Actor with MethodsService {
@@ -16,10 +17,10 @@ trait MethodsService extends HttpService with FireCloudDirectives {
 
   val routes: Route =
     path("methods") {
-      passthrough(FireCloudConfig.Agora.methodsListUrl, "get")
+      passthrough(FireCloudConfig.Agora.methodsListUrl, HttpMethods.GET)
     } ~
     path("configurations") {
-      passthrough(FireCloudConfig.Agora.configurationsListUrl, "get")
+      passthrough(FireCloudConfig.Agora.configurationsListUrl, HttpMethods.GET)
     }
 
 }

@@ -1,32 +1,28 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import spray.http.HttpMethod
 import spray.http.MediaTypes._
-import spray.client.pipelining._
 
-trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreator {
+trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreator with spray.httpx.RequestBuilding {
   def respondWithJSON = respondWithMediaType(`application/json`)
 
-  def passthrough(path: String, methods: String*) = methods map {
-    case "delete" => delete { requestContext =>
-      externalHttpPerRequest(requestContext, Delete(path))
-    }
-    case "get" => get { requestContext =>
-     externalHttpPerRequest(requestContext, Get(path))
-    }
-    case "patch" => patch {
-      respondWithJSON { requestContext =>
-        externalHttpPerRequest(requestContext, Patch(path, requestContext.request.entity))
+  def passthrough(path: String, methods: HttpMethod*) = methods map { inMethod =>
+    val outMethod = new RequestBuilder(inMethod)
+
+    // POST, PUT, PATCH
+    if (inMethod.isEntityAccepted) {
+      method(inMethod) {
+        respondWithJSON { requestContext =>
+          externalHttpPerRequest(requestContext, outMethod(path, requestContext.request.entity))
+        }
       }
     }
-    case "post" => post {
-      respondWithJSON { requestContext =>
-        externalHttpPerRequest(requestContext, Post(path, requestContext.request.entity))
+    else {
+      // GET, DELETE
+      method(inMethod) { requestContext =>
+        externalHttpPerRequest(requestContext, outMethod(path))
       }
     }
-    case "put" => put {
-      respondWithJSON { requestContext =>
-        externalHttpPerRequest(requestContext, Put(path, requestContext.request.entity))
-      }
-    }
+
   } reduce (_ ~ _)
 }

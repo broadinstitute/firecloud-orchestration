@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
+import spray.http.HttpMethods
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
@@ -42,13 +43,13 @@ trait MethodConfigurationService extends HttpService with PerRequestCreator with
         } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>
           pathEnd {
             passthrough(FireCloudConfig.Rawls.getMethodConfigUrl.
-              format(workspaceNamespace, workspaceName, configNamespace, configName), "get", "delete") ~
+              format(workspaceNamespace, workspaceName, configNamespace, configName), HttpMethods.GET, HttpMethods.DELETE) ~
             passthrough(FireCloudConfig.Rawls.updateMethodConfigurationUrl.
-              format(workspaceNamespace, workspaceName, configNamespace, configName), "put")
+              format(workspaceNamespace, workspaceName, configNamespace, configName), HttpMethods.PUT)
           } ~
           path("rename") {
             passthrough(FireCloudConfig.Rawls.renameMethodConfigurationUrl.
-              format(workspaceNamespace, workspaceName, configNamespace, configName), "post")
+              format(workspaceNamespace, workspaceName, configNamespace, configName), HttpMethods.POST)
           }
         }
       }

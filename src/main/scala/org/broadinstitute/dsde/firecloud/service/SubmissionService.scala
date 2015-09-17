@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.SubmissionIngest
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
+import spray.http.HttpMethods
 import spray.httpx.SprayJsonSupport._
 import spray.routing.{HttpService, Route}
 
@@ -24,16 +25,16 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
     pathPrefix("workspaces" / Segment / Segment / "submissions") { (workspaceNamespace, workspaceName) =>
       val listSubmissionsPath = FireCloudConfig.Rawls.submissionsUrl(workspaceNamespace, workspaceName)
       pathEnd {
-        passthrough(listSubmissionsPath, "get", "post")
+        passthrough(listSubmissionsPath, HttpMethods.GET, HttpMethods.POST)
       } ~
       pathPrefix(Segment) { submissionId =>
         pathEnd {
           passthrough(FireCloudConfig.Rawls.
-            submissionByIdUrl(workspaceNamespace, workspaceName, submissionId), "get", "delete")
+            submissionByIdUrl(workspaceNamespace, workspaceName, submissionId), HttpMethods.GET, HttpMethods.DELETE)
         } ~
         path("workflows" / Segment / "outputs") { workflowId =>
           passthrough(FireCloudConfig.Rawls.
-            workflowOutputsByIdUrl(workspaceNamespace, workspaceName, submissionId, workflowId), "get")
+            workflowOutputsByIdUrl(workspaceNamespace, workspaceName, submissionId, workflowId), HttpMethods.GET)
         }
       }
     }
