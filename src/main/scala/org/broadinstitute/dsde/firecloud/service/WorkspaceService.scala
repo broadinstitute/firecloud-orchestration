@@ -9,6 +9,7 @@ import spray.client.pipelining.{Get, Post, Patch, Delete}
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, HttpClient}
@@ -83,6 +84,14 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
                 perRequest(requestContext, Props(new EntityClient(requestContext)),
                   EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
               }
+            }
+          }
+        } ~
+        path("updateAttributes") {
+          patch {
+            entity(as[spray.json.JsObject]) { attributeOp =>
+              requestContext =>
+                externalHttpPerRequest(requestContext, Patch(workspacePath, attributeOp))
             }
           }
         } ~
