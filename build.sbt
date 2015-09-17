@@ -98,5 +98,5 @@ testOptions in Test += Tests.Setup(classLoader =>
     .invoke(null, "ROOT")
 )
 
-// Uncomment to build without running tests.
-// test in assembly := {}
+// Build without running tests.
+test in assembly := {}

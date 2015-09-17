@@ -1,7 +1,7 @@
 # FireCloud-Orchestration
 FireCloud Orchestration Service
 
-* URL: https://firecloud-orchestration-ci.broadinstitute.org/swagger/index.html?url=/api-docs
+* URL: https://firecloud.dsde-dev.broadinstitute.org/service/
 * Documentation: [https://broadinstitute.atlassian.net/wiki/display/DSDE/Silver+Team](https://broadinstitute.atlassian.net/wiki/display/DSDE/Silver+Team)
 * Github Repository: [https://github.com/broadinstitute/firecloud-orchestration/](https://github.com/broadinstitute/firecloud-orchestration/)
 
@@ -50,25 +50,25 @@ sbt
 
 ## Testing
 
-Replace the openam components of appropriate config file to reflect correct values. 
-See DevOps or any Silver team member for details. Make sure sbt is run with the correct config file option.
-
-There are two example configuration files that can be used. For integration testing, 
-start sbt with `src/main/resources/application.conf`. For mock testing, use `src/test/resources/test.conf`. 
-`application.conf` has the urls for public services. `test.conf` has urls for local mock servers.
-
-    openam {
-	  deploymentUri = "...replace..."
-	  realm = "...replace..."
-	  username = "...replace..."
-	  password = "...replace..."
-	  commonName = "...replace..."
-	  authIndex {
-	    type = "module"
-	    value = "DataStore"
-	  }
-    }  
+```
+AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' sbt test
+```
 
 ## Debugging
 
 Remote debugging is enabled for firecloud-orchestration on port 5051.
+
+## Production Deployment
+
+Build the docker container:
+```
+docker build -t firecloud-orch .
+```
+
+Run the container:
+```
+docker run --name orch \
+  -e RAWLS_URL_ROOT='https://rawls.dsde-dev.broadinstitute.org' \
+  -e AGORA_URL_ROOT='https://agora.dsde-dev.broadinstitute.org' \
+  firecloud-orch
+```
