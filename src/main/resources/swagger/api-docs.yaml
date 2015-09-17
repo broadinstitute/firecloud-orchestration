@@ -50,6 +50,61 @@ paths:
       responses:
         200:
           description: List of Method Repository configurations.
+  /template:
+    post:
+      tags:
+        - Method Repository
+        - Workspaces
+      operationId: createMethodTemplate
+      summary: Create a Method Configuration template from a Method
+      produces:
+        - application/json
+      parameters:
+        - name: methodName
+          description: name of Method to use for template
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: MethodID
+      responses:
+        200:
+          description: Method Configuration template
+        400:
+          description: Method WDL can't be parsed
+        404:
+          description: No Such Method
+        500:
+          description: Internal Server Error
+  /configurations/{namespace}/{name}/{snapshotId}:
+    get:
+      tags:
+        - Method Repository
+      operationId: getMethodRepositoryConfiguration
+      summary: Get a Method Repository configuration
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method Configuration namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method Configuration name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method Configuration snapshot ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Method Repository configuration detail
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:
@@ -242,6 +297,68 @@ paths:
           description: List of entities in workspace
         404:
           description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/method_configs:
+    get:
+      tags:
+        - Method Configurations
+        - Workspaces
+      operationId: listWorkspaceMethodConfigs
+      summary: List of Method Configurations in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: List of Method Configurations
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Configurations
+        - Workspaces
+      operationId: postWorkspaceMethodConfig
+      summary: Create a Method Configuration in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: methodConfigJson
+          description: Method Configuration contents
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: NewMethodConfigIngest
+      responses:
+        201:
+          description: Successful Request
+        404:
+          description: Workspace not found
+        409:
+          description: Method Configuration already exists
         500:
           description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}:
@@ -805,6 +922,41 @@ definitions:
       - configurationSnapshotId
       - destinationNamespace
       - destinationName
+  NewMethodConfigIngest:
+    properties:
+      namespace:
+        type: string
+        description: Method configuration namespace
+      name:
+        type: string
+        description: Method configuration name
+      rootEntityType:
+        type: string
+        description: Method configuration root entity type
+      inputs:
+        type: Map[string, string]
+        description: Input map
+      outputs:
+        type: Map[string, string]
+        description: Output map
+      prerequisites:
+        type: Map[string, string]
+        description: Prerequisites map
+      methodRepoConfig:
+        type: Map
+        description: Method config ID
+      methodRepoMethod:
+        type: Map
+        description: Method ID
+    required:
+      - namespace
+      - name
+      - rootEntityType
+      - inputs
+      - outputs
+      - prerequisites
+      - methodRepoConfig
+      - methodRepoMethod
   PublishConfigurationIngest:
     properties:
       configurationNamespace:
@@ -838,3 +990,18 @@ definitions:
     required:
       - op
       - attributeName
+  MethodID:
+    properties:
+      methodNamespace:
+        type: string
+        description: Method namespace
+      methodName:
+        type: string
+        description: Method name
+      methodVersion:
+        type: int
+        description: Method version
+    required:
+      - methodNamespace
+      - methodName
+      - methodVersion

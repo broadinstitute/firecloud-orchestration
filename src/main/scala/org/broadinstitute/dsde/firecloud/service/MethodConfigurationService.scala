@@ -21,6 +21,9 @@ trait MethodConfigurationService extends HttpService with PerRequestCreator with
   lazy val log = LoggerFactory.getLogger(getClass)
 
   val routes: Route =
+    path("template") {
+      passthrough(FireCloudConfig.Rawls.templateUrl, HttpMethods.POST)
+    } ~
     pathPrefix(ApiPrefix) {
       pathPrefix(Segment / Segment / "method_configs") { (workspaceNamespace, workspaceName) =>
         path("copyFromMethodRepo") {
