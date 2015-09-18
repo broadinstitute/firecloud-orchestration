@@ -33,7 +33,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
   private final val validConfigurationCopyFormData = CopyConfigurationIngest(
     configurationNamespace = Option("namespace"),
     configurationName = Option("name"),
-    configurationSnapshotId = Option("1"),
+    configurationSnapshotId = Option(1),
     destinationNamespace = Option("namespace"),
     destinationName = Option("new-name")
   )
