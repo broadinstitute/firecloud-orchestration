@@ -88,11 +88,8 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
           }
         } ~
         path("updateAttributes") {
-          patch {
-            entity(as[spray.json.JsObject]) { attributeOp =>
-              requestContext =>
-                externalHttpPerRequest(requestContext, Patch(workspacePath, attributeOp))
-            }
+          patch { requestContext =>
+            externalHttpPerRequest(requestContext, Patch(workspacePath, requestContext.request.entity))
           }
         } ~
         path("acl") {
