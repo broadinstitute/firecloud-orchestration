@@ -29,7 +29,7 @@ trait StatusService extends HttpService with PerRequestCreator with FireCloudDir
           complete {
             JsObject(
               "workspacesUrl" -> JsString(FireCloudConfig.Rawls.baseUrl + "/workspaces"),
-              "methodsUrl" -> JsString(FireCloudConfig.Agora.methodsListUrl),
+              "methodsUrl" -> JsString(FireCloudConfig.Agora.methodsBaseUrl),
               "timestamp" -> JsString(dateFormat.format(new Date()))
             ).toString
           }

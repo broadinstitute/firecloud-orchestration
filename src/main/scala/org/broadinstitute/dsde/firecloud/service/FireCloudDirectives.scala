@@ -25,4 +25,12 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
     }
 
   } reduce (_ ~ _)
+
+  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String) = pathPrefix(ourEndpointPath) {
+    extract(_.request.method) { httpMethod =>
+      unmatchedPath { remaining =>
+        passthrough(targetEndpointUrl + remaining, httpMethod)
+      }
+    }
+  }
 }
