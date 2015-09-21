@@ -38,6 +38,28 @@ object EntityClient {
 
   def props(requestContext: RequestContext): Props = Props(new EntityClient(requestContext))
 
+  // Fix up certain attribute names for reference types:
+  // If the attribute name is of the form "something_{entityType}_id", we'll fix it up to be "something" --
+  //   for example, "case_sample_id" becomes "case" if we're loading "sample"s.  This will make "pair" entities prettier.
+  // Otherwise, we'll try just hacking "_id" off the end, if that suffix exists.
+  // Otherwise, we'll leave the name unmolested.
+  def improveAttributeNames(colInfo: Seq[(String,Option[String])]) = {
+    colInfo.map{ case (attrName,entityTypeOpt) =>
+      val newName = entityTypeOpt match {
+        case None => attrName // leave the name alone for non-reference attributes
+        case Some(entityType) =>
+          val pattern1 = s"(.*)_${entityType}_id".r
+          val pattern2 = "(.*)_id".r
+          attrName match {
+            case pattern1(improvedName) => improvedName // chop off the entityType_id suffix
+            case pattern2(improvedName) => improvedName // chop off the _id suffix
+            case _ => attrName // otherwise, leave the name alone
+          }
+      }
+      newName -> entityTypeOpt
+    }
+  }
+
 }
 
 class EntityClient (requestContext: RequestContext) extends Actor with FireCloudRequestBuilding {
@@ -237,7 +259,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?
-    val ops = for { (value,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !value.isEmpty } yield {
+    val ops = for { (value,(attributeName,refTypeOpt)) <- row.tail zip improveAttributeNames(colInfo) if refTypeOpt.isDefined || !value.isEmpty } yield {
       val nameEntry = "attributeName" -> AttributeString(attributeName)
       def valEntry( attr: Attribute ) = "addUpdateAttribute" -> attr
       refTypeOpt match {
