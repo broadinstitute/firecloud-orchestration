@@ -308,7 +308,8 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       withMemberCollectionType(entityType) { memberTypeOpt =>
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
-            val colInfo = tsv.headers.tail map { colName => (colName, requiredAttributes.get(colName))}
+            val renameMap = ModelSchema.getAttributeRenamingMap(entityType).get
+            val colInfo = tsv.headers.tail map { colName => (renameMap.getOrElse(colName,colName), requiredAttributes.get(colName))}
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
             batchCallToRawls(workspaceNamespace, workspaceName, rawlsCalls, "batchUpsert")
           }
@@ -329,7 +330,8 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
             //defined when the entity was created. But we still need the type information if the headers do exist.
             case Failure(regret) => requestContext.complete(HttpResponse(BadRequest, regret.getMessage))
             case Success(requiredAttributes) =>
-              val colInfo = tsv.headers.tail map { colName => (colName, requiredAttributes.get(colName))}
+              val renameMap = ModelSchema.getAttributeRenamingMap(entityType).get
+              val colInfo = tsv.headers.tail map { colName => (renameMap.getOrElse(colName,colName), requiredAttributes.get(colName))}
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
               batchCallToRawls(workspaceNamespace, workspaceName, rawlsCalls, "batchUpdate")
           }

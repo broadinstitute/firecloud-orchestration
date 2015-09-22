@@ -15,6 +15,10 @@
             "control_sample_id": "sample",
             "participant_id": "participant"
         },
+        "attributeRenaming": {
+            "case_sample_id": "case_sample",
+            "control_sample_id": "control_sample"
+        },
         "plural": "pairs"
     },
     "participant_set": {
