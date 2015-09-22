@@ -20,7 +20,8 @@ class FireCloudServiceActor extends HttpServiceActor {
   val entityService = new EntityService with ActorRefFactoryContext
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
-  val routes = methodsService.routes ~ workspaceService.routes ~ entityService.routes ~
+  val statusService = new StatusService with ActorRefFactoryContext
+  val routes = statusService.routes ~ methodsService.routes ~ workspaceService.routes ~ entityService.routes ~
     methodConfigurationService.routes ~ submissionsService.routes
 
   lazy val log = LoggerFactory.getLogger(getClass)
