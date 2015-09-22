@@ -636,6 +636,21 @@ paths:
           description: Workspace not found
         500:
           description: Internal Error
+  /status:
+    get:
+      tags:
+      - Status
+      operationId: status
+      summary: |
+        Returns the workspace service url, methods repository url, and the current timestamp.
+      produces:
+      - application/json
+      parameters:
+      responses:
+        200:
+          description: Success
+        500:
+          description: Internal Error
   /status/ping:
     get:
       tags:

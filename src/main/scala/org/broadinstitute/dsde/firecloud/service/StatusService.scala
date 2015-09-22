@@ -4,9 +4,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import akka.actor.Actor
-import org.slf4j.LoggerFactory
+import spray.json._
+
 import spray.routing._
 
+
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 
 class StatusServiceActor extends Actor with StatusService {
   def actorRefFactory = context
@@ -19,11 +22,19 @@ trait StatusService extends HttpService with PerRequestCreator with FireCloudDir
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  lazy val log = LoggerFactory.getLogger(getClass)
-
   val routes: Route =
     pathPrefix(ApiPrefix) {
-      path("ping") {
+      pathEnd {
+        respondWithJSON {
+          complete {
+            JsObject(
+              "workspacesUrl" -> JsString(FireCloudConfig.Rawls.baseUrl + "/workspaces"),
+              "methodsUrl" -> JsString(FireCloudConfig.Agora.methodsListUrl),
+              "timestamp" -> JsString(dateFormat.format(new Date()))
+            ).toString
+          }
+        }
+      } ~ path("ping") {
         complete {
           dateFormat.format(new Date())
         }
