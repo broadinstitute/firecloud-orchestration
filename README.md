@@ -69,25 +69,20 @@ https://console.developers.google.com/
 You can create credentials for yourself in **"APIs & Auth" -> "Credentials."** You want an **OAuth 2.0 client ID** with a **Web application** application type.
 
 Add your docker host as an authorized JavaScript origin. By convention, we use `dhost` as the hostname, so we add the following origins:
-- https://dhost
-- http://dhost
+- https://dhost:8080
+- http://dhost:8080
 
 Set your client ID in your environment:
 ```
 export GOOGLE_CLIENT_ID='...'
 ```
 
-Build the docker container:
-```
-docker build -t firecloud-orch .
-```
-
 Run the container:
 ```
-docker run --name orch \
+docker run --rm --name orch \
   -p 8080:8080
-  -e GOOGLE_CLIENT_ID='$GOOGLE_CLIENT_ID' \
+  -e GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
   -e RAWLS_URL_ROOT='https://rawls.dsde-dev.broadinstitute.org' \
   -e AGORA_URL_ROOT='https://agora.dsde-dev.broadinstitute.org' \
-  firecloud-orch
+  broadinstitute/firecloud-orch
 ```
