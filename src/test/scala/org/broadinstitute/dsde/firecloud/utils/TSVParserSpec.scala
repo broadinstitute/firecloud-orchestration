@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import org.scalatest.FlatSpec
-
+import org.broadinstitute.dsde.firecloud.EntityClient
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVLoadFiles, MockTSVStrings}
 
 /**
@@ -62,5 +62,11 @@ class TSVParserSpec extends FlatSpec {
     assertResult(parseResult) {
       TSVParser.parse(MockTSVStrings.validMultiline)
     }
+  }
+
+  "EntityClient.improveAttributeNames" should "fix up the names of attributes for certain reference types" in {
+    val input = Seq( "case_sample_id" -> None, "case_sample_id" -> Option("foo"), "case_sample_id" -> Option("sample"), "foo" -> Option("bar"))
+    val expect = Seq( "case_sample_id" -> None, "case_sample" -> Option("foo"), "case" -> Option("sample"), "foo" -> Option("bar"))
+    assertResult(expect) { EntityClient.improveAttributeNames(input) }
   }
 }
