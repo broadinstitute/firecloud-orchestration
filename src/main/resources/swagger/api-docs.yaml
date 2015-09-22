@@ -636,6 +636,21 @@ paths:
           description: Workspace not found
         500:
           description: Internal Error
+  /status/ping:
+    get:
+      tags:
+      - Status
+      operationId: ping
+      summary: |
+        Returns the current timestamp.
+      produces:
+      - text/plain
+      parameters:
+      responses:
+        200:
+          description: Success
+        500:
+          description: Internal Error
 
 definitions:
   SubmissionIngest:
