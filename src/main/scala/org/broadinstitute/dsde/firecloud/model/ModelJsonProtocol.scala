@@ -23,7 +23,7 @@ object ModelJsonProtocol {
   implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)
   implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)
 
-  implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
+  implicit val impEntityMetadata = jsonFormat4(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)
   implicit val impSubmissionIngest = jsonFormat5(SubmissionIngest)
 
