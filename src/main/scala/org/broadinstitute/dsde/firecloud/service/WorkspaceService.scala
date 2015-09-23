@@ -5,7 +5,7 @@ import java.util.Date
 
 import akka.actor.{Actor, Props}
 import org.slf4j.LoggerFactory
-import spray.client.pipelining.{Get, Post, Patch, Delete}
+import spray.client.pipelining.Post
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -32,9 +32,7 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
   val routes: Route =
     pathPrefix(ApiPrefix) {
       pathEnd {
-        get { requestContext =>
-          externalHttpPerRequest(requestContext, Get(rawlsWorkspacesRoot))
-        } ~
+        passthrough(rawlsWorkspacesRoot, "get") ~
         post {
           entity(as[String]) { ingest =>
             // TODO: replace with a directive that pulls the username from the Google info!
@@ -65,21 +63,14 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
       pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
         val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
         pathEnd {
-          get { requestContext =>
-            externalHttpPerRequest(requestContext, Get(workspacePath))
-          } ~
-          delete { requestContext =>
-            externalHttpPerRequest(requestContext, Delete(workspacePath))
-          }
+          passthrough(workspacePath, "get", "delete")
         } ~
         path("methodconfigs") {
-          get { requestContext =>
-            externalHttpPerRequest(requestContext, Get(workspacePath + "/methodconfigs"))
-          }
+          passthrough(workspacePath + "/methodconfigs", "get")
         } ~
         path("importEntities") {
           post {
-            formFields( 'entities ) { (entitiesTSV) =>
+            formFields( 'entities ) { entitiesTSV =>
               respondWithJSON { requestContext =>
                 perRequest(requestContext, Props(new EntityClient(requestContext)),
                   EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
@@ -88,20 +79,10 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
           }
         } ~
         path("updateAttributes") {
-          patch { requestContext =>
-            externalHttpPerRequest(requestContext, Patch(workspacePath, requestContext.request.entity))
-          }
+          passthrough(workspacePath, "patch")
         } ~
         path("acl") {
-          val workspaceAclPath = workspacePath + "/acl"
-          get { requestContext =>
-            externalHttpPerRequest(requestContext, Get(workspaceAclPath))
-          } ~
-          patch {
-            respondWithJSON { requestContext =>
-              externalHttpPerRequest(requestContext, Patch(workspaceAclPath, requestContext.request.entity))
-            }
-          }
+          passthrough(workspacePath + "/acl", "get", "patch")
         }
       }
     }

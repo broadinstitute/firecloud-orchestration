@@ -41,35 +41,14 @@ trait MethodConfigurationService extends HttpService with PerRequestCreator with
           }
         } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>
           pathEnd {
-            get { requestContext =>
-              val extReq = Get(FireCloudConfig.Rawls.getMethodConfigUrl.
-                format(workspaceNamespace, workspaceName, configNamespace, configName))
-              externalHttpPerRequest(requestContext, extReq)
-            } ~
-            put {
-              entity(as[MethodConfiguration]) { methodConfig =>
-                requestContext =>
-                  val endpointUrl = FireCloudConfig.Rawls.updateMethodConfigurationUrl.
-                    format(workspaceNamespace, workspaceName, configNamespace, configName)
-                  val extReq = Put(endpointUrl, methodConfig)
-                  externalHttpPerRequest(requestContext, extReq)
-              }
-            } ~
-            delete { requestContext =>
-              val extReq = Delete(FireCloudConfig.Rawls.getMethodConfigUrl.
-                format(workspaceNamespace, workspaceName, configNamespace, configName))
-              externalHttpPerRequest(requestContext, extReq)
-            }
-          } ~ path("rename") {
-            post {
-              entity(as[MethodConfigurationRename]) { methodConfigRename =>
-                requestContext =>
-                  val endpointUrl = FireCloudConfig.Rawls.renameMethodConfigurationUrl.
-                    format(workspaceNamespace, workspaceName, configNamespace, configName)
-                  val extReq = Post(endpointUrl, methodConfigRename)
-                  externalHttpPerRequest(requestContext, extReq)
-              }
-            }
+            passthrough(FireCloudConfig.Rawls.getMethodConfigUrl.
+              format(workspaceNamespace, workspaceName, configNamespace, configName), "get", "delete") ~
+            passthrough(FireCloudConfig.Rawls.updateMethodConfigurationUrl.
+              format(workspaceNamespace, workspaceName, configNamespace, configName), "put")
+          } ~
+          path("rename") {
+            passthrough(FireCloudConfig.Rawls.renameMethodConfigurationUrl.
+              format(workspaceNamespace, workspaceName, configNamespace, configName), "post")
           }
         }
       }

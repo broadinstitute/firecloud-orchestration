@@ -4,7 +4,6 @@ import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{GetEntitiesWithType, GetEntitiesWithTypeActor}
 import org.slf4j.LoggerFactory
-import spray.client.pipelining._
 import spray.routing._
 
 class EntityServiceActor extends Actor with EntityService {
@@ -19,28 +18,22 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
   lazy val log = LoggerFactory.getLogger(getClass)
 
   def entityRoutes: Route =
-    path("workspaces" / Segment / Segment / "entities_with_type") {
-      (workspaceNamespace, workspaceName) =>
+    pathPrefix("workspaces" / Segment / Segment) { (workspaceNamespace, workspaceName) =>
+      val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+      path("entities_with_type") {
         get { requestContext =>
-          val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
           perRequest(requestContext, Props(new GetEntitiesWithTypeActor(requestContext)),
             GetEntitiesWithType.ProcessUrl(url))
         }
-    } ~
-    path("workspaces" / Segment / Segment / "entities") {
-      (workspaceNamespace, workspaceName) =>
-        get { requestContext =>
-          val extReq = Get(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName))
-          externalHttpPerRequest(requestContext, extReq)
+      } ~
+      pathPrefix("entities") {
+        val entityUrl = url + "/entitites"
+        pathEnd {
+          passthrough(entityUrl, "get")
+        } ~
+        path(Segment) { entityType =>
+          passthrough(entityUrl + "/" + entityType, "get")
         }
-    } ~
-    path("workspaces" / Segment / Segment / "entities" / Segment) {
-      (workspaceNamespace, workspaceName, entityType) =>
-        get { requestContext =>
-          val extReq = Get(s"${FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace,
-            workspaceName)}/$entityType")
-          externalHttpPerRequest(requestContext, extReq)
-        }
+      }
     }
-
 }
