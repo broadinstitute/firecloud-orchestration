@@ -11,7 +11,7 @@ import spray.http.StatusCodes._
 import spray.http.{HttpResponse, StatusCodes}
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
-import spray.json.JsValue
+import spray.json.JsObject
 import spray.routing.RequestContext
 
 import scala.concurrent.Future
@@ -19,7 +19,7 @@ import scala.util.{Failure, Success}
 
 object GetEntitiesWithType {
   case class ProcessUrl(url: String)
-  case class EntityWithType(name: String, entityType: String, attributes: Option[Map[String, JsValue]])
+  case class EntityWithType(name: String, entityType: String, attributes: Option[Map[String, JsObject]])
   def props(requestContext: RequestContext): Props = Props(new GetEntitiesWithTypeActor(requestContext))
 }
 
