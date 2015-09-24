@@ -32,6 +32,9 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
         pathEnd {
           passthrough(entityUrl, HttpMethods.GET)
         } ~
+        path("copy") {
+          passthrough(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl, HttpMethods.POST)
+        } ~
         path(Segment) { entityType =>
           passthrough(entityUrl + "/" + entityType, HttpMethods.GET)
         }
