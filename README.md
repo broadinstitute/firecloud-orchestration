@@ -35,7 +35,8 @@ sbt
 > assembly
 ```
 
-Execute the jar with the path to the jar and path of the desired config file:
+Ensure that `GOOGLE_CLIENT_ID` (with origins set to `http://localhost:8080` and `https://localhost:8080` - see below), 
+`AGORA_URL_ROOT`, and `RAWLS_URL_ROOT` are defined in your environment, and execute the jar with the path to the jar and path of the desired config file:
 
 ```
 java -Dconfig.file=src/main/resources/application.conf \
@@ -60,17 +61,17 @@ Remote debugging is enabled for firecloud-orchestration on port 5051.
 
 ## Production Deployment
 
-Start with a [docker](https://www.docker.com/) environment.
+Start with a [docker](https://www.docker.com/) environment.  If your `/etc/hosts` does not have the conventional 
+docker-machine entry `dhost`, add one corresponding to the IP address returned by `docker-machine ip <your_docker_machine_name>`.    
 
-You will need to create a Google web application client ID. If you have one from firecloud-ui, use that. Otherwise create one here:
-
-https://console.developers.google.com/
+You will need to create a Google web application client ID. If you have one from firecloud-ui, use that. Otherwise create
+one via <https://console.developers.google.com/>.
 
 You can create credentials for yourself in **"APIs & Auth" -> "Credentials."** You want an **OAuth 2.0 client ID** with a **Web application** application type.
 
-Add your docker host as an authorized JavaScript origin. By convention, we use `dhost` as the hostname, so we add the following origins:
-- https://dhost:8080
-- http://dhost:8080
+Add your docker host as an authorized JavaScript origin, one entry per line.  Names are required instead of IP addresses.
+ - https://dhost:8080
+ - http://dhost:8080
 
 Set your client ID in your environment:
 ```
@@ -86,3 +87,5 @@ docker run --rm --name orch \
   -e AGORA_URL_ROOT='https://agora.dsde-dev.broadinstitute.org' \
   broadinstitute/firecloud-orchestration
 ```
+
+Browse to <http://dhost:8080>
