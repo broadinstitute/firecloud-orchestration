@@ -29,13 +29,29 @@ trait MethodConfigurationService extends HttpService with PerRequestCreator with
                 methodRepoName = ingest.configurationName,
                 methodRepoNamespace = ingest.configurationNamespace,
                 methodRepoSnapshotId = ingest.configurationSnapshotId,
-                destination = Option(Destination(
+                destination = Option(MethodConfigurationId(
                   name = ingest.destinationName,
                   namespace = ingest.destinationNamespace,
                   workspaceName = Option(WorkspaceName(
                     namespace = Option(workspaceNamespace),
                     name = Option(workspaceName))))))
               val extReq = Post(FireCloudConfig.Rawls.copyFromMethodRepoConfigUrl, copyMethodConfig)
+              externalHttpPerRequest(requestContext, extReq)
+            }
+          }
+        } ~ path("copyToMethodRepo") {
+          post {
+            entity(as[PublishConfigurationIngest]) { ingest => requestContext =>
+              val copyMethodConfig = new MethodConfigurationPublish(
+                methodRepoName = ingest.configurationName,
+                methodRepoNamespace = ingest.configurationNamespace,
+                source = Option(MethodConfigurationId(
+                  name = ingest.sourceName,
+                  namespace = ingest.sourceNamespace,
+                  workspaceName = Option(WorkspaceName(
+                    namespace = Option(workspaceNamespace),
+                    name = Option(workspaceName))))))
+              val extReq = Post(FireCloudConfig.Rawls.copyToMethodRepoConfigUrl, copyMethodConfig)
               externalHttpPerRequest(requestContext, extReq)
             }
           }
