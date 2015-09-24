@@ -27,7 +27,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
         }
       } ~
       pathPrefix("entities") {
-        val entityUrl = url + "/entitites"
+        val entityUrl = url + "/entities"
         pathEnd {
           passthrough(entityUrl, "get")
         } ~
