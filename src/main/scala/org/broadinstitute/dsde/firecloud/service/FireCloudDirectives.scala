@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import spray.http.HttpMethod
+import spray.http.{Uri, HttpMethod}
 import spray.http.MediaTypes._
 
 trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreator with spray.httpx.RequestBuilding {
@@ -29,7 +29,9 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
   def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String) = pathPrefix(ourEndpointPath) {
     extract(_.request.method) { httpMethod =>
       unmatchedPath { remaining =>
-        passthrough(targetEndpointUrl + remaining, httpMethod)
+        parameterMap { params =>
+          passthrough(Uri(targetEndpointUrl + remaining).withQuery(params).toString, httpMethod)
+        }
       }
     }
   }
