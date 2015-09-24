@@ -20,9 +20,9 @@ object FireCloudConfig {
     private val methods = config.getConfig("methods")
     lazy val baseUrl = sys.env.get("AGORA_URL_ROOT").get
     lazy val methodsPath = methods.getString("methodsPath")
-    lazy val methodsListUrl = baseUrl + methodsPath
+    lazy val methodsBaseUrl = baseUrl + methodsPath
     lazy val configurationsPath = methods.getString("configurationsPath")
-    lazy val configurationsListUrl = baseUrl + configurationsPath
+    lazy val configurationsBaseUrl = baseUrl + configurationsPath
   }
 
   object Rawls {

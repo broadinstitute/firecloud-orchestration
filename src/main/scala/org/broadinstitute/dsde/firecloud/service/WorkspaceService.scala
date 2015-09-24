@@ -6,6 +6,7 @@ import java.util.Date
 import akka.actor.{Actor, Props}
 import org.slf4j.LoggerFactory
 import spray.client.pipelining.Post
+import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -32,7 +33,7 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
   val routes: Route =
     pathPrefix(ApiPrefix) {
       pathEnd {
-        passthrough(rawlsWorkspacesRoot, "get") ~
+        passthrough(rawlsWorkspacesRoot, HttpMethods.GET) ~
         post {
           entity(as[String]) { ingest =>
             // TODO: replace with a directive that pulls the username from the Google info!
@@ -63,10 +64,10 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
       pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
         val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
         pathEnd {
-          passthrough(workspacePath, "get", "delete")
+          passthrough(workspacePath, HttpMethods.GET, HttpMethods.DELETE)
         } ~
         path("methodconfigs") {
-          passthrough(workspacePath + "/methodconfigs", "get")
+          passthrough(workspacePath + "/methodconfigs", HttpMethods.GET)
         } ~
         path("importEntities") {
           post {
@@ -79,10 +80,10 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
           }
         } ~
         path("updateAttributes") {
-          passthrough(workspacePath, "patch")
+          passthrough(workspacePath, HttpMethods.PATCH)
         } ~
         path("acl") {
-          passthrough(workspacePath + "/acl", "get", "patch")
+          passthrough(workspacePath + "/acl", HttpMethods.GET, HttpMethods.PATCH)
         }
       }
     }

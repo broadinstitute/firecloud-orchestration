@@ -91,6 +91,26 @@ object MockMethodsServer {
     MockMethodsServer.methodsServer
       .when(
         request()
+          .withMethod("POST")
+          .withPath("/methods")
+      ).respond(
+      response()
+        .withStatusCode(MethodNotAllowed.intValue)
+    )
+
+    MockMethodsServer.methodsServer
+      .when(
+        request()
+          .withMethod("PUT")
+          .withPath("/methods")
+      ).respond(
+      response()
+        .withStatusCode(MethodNotAllowed.intValue)
+    )
+
+    MockMethodsServer.methodsServer
+      .when(
+        request()
           .withMethod("GET")
           .withPath("/configurations")
           .withHeader(authHeader)
@@ -114,6 +134,26 @@ object MockMethodsServer {
           .withBody("Invalid authentication token, please log in.")
           .withStatusCode(Found.intValue)
       )
+
+    MockMethodsServer.methodsServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath("/configurations")
+      ).respond(
+      response()
+        .withStatusCode(MethodNotAllowed.intValue)
+    )
+
+    MockMethodsServer.methodsServer
+      .when(
+        request()
+          .withMethod("PUT")
+          .withPath("/configurations")
+      ).respond(
+      response()
+        .withStatusCode(MethodNotAllowed.intValue)
+    )
 
   }
 

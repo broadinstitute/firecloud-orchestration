@@ -4,6 +4,7 @@ import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{GetEntitiesWithType, GetEntitiesWithTypeActor}
 import org.slf4j.LoggerFactory
+import spray.http.HttpMethods
 import spray.routing._
 
 class EntityServiceActor extends Actor with EntityService {
@@ -29,10 +30,10 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
       pathPrefix("entities") {
         val entityUrl = url + "/entities"
         pathEnd {
-          passthrough(entityUrl, "get")
+          passthrough(entityUrl, HttpMethods.GET)
         } ~
         path(Segment) { entityType =>
-          passthrough(entityUrl + "/" + entityType, "get")
+          passthrough(entityUrl + "/" + entityType, HttpMethods.GET)
         }
       }
     }
