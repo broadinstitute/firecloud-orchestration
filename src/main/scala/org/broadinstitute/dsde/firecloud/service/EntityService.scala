@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{GetEntitiesWithType, GetEntitiesWithTypeActor}
+import org.broadinstitute.dsde.firecloud.model.{WorkspaceName, EntityCopyWithDestinationDefinition, EntityCopyDefinition}
 import org.slf4j.LoggerFactory
 import spray.http.HttpMethods
 import spray.routing._
@@ -33,7 +34,17 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
           passthrough(entityUrl, HttpMethods.GET)
         } ~
         path("copy") {
-          passthrough(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl, HttpMethods.POST)
+          post {
+            entity(as[EntityCopyDefinition]) { copyRequest => requestContext =>
+              val copyMethodConfig = new EntityCopyWithDestinationDefinition(
+                sourceWorkspace = copyRequest.sourceWorkspace,
+                destinationWorkspace = WorkspaceName(Some(workspaceNamespace), Some(workspaceName)),
+                entityType = copyRequest.entityType,
+                entityNames = copyRequest.entityNames)
+              val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl, copyMethodConfig)
+              externalHttpPerRequest(requestContext, extReq)
+            }
+          }
         } ~
         path(Segment) { entityType =>
           passthrough(entityUrl + "/" + entityType, HttpMethods.GET)

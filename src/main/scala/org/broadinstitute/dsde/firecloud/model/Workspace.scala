@@ -27,6 +27,19 @@ case class WorkspaceEntity(
 
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
 
+case class EntityCopyDefinition(
+  sourceWorkspace: WorkspaceName,
+  entityType: String,
+  entityNames: Seq[String]
+  )
+
+case class EntityCopyWithDestinationDefinition(
+  sourceWorkspace: WorkspaceName,
+  destinationWorkspace: WorkspaceName,
+  entityType: String,
+  entityNames: Seq[String]
+  )
+
 // TODO: This is a stub case class until we know what we're returning from the batch entity create endpoint.
 @ApiModel(value = "method configuration entity")
 case class MethodConfiguration(
