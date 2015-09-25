@@ -222,17 +222,17 @@ paths:
         - application/json
       parameters:
         - name: workspaceNamespace
-          description: Workspace Namespace
+          description: Destination Workspace Namespace
           required: true
           type: string
           in: path
         - name: workspaceName
-          description: Workspace Name
+          description: Destination Workspace Name
           required: true
           type: string
           in: path
         - name: body
-          description: Entity to Copy
+          description: Entities to Copy
           required: true
           in: body
           schema:
@@ -825,10 +825,6 @@ definitions:
         schema:
           $ref: Namespace
         description: Source Workspace Namespace
-      destinationWorkspace:
-        schema:
-          $ref: Namespace
-        description: Destination Workspace Namespace
       entityType:
         type: string
         description: Entity Type
