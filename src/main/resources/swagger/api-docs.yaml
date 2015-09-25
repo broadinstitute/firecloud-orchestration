@@ -266,6 +266,43 @@ paths:
           description: Workspace does not exist
         500:
           description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
+    post:
+      tags:
+      - Entities
+      operationId: copyEntities
+      summary: |
+        Copy entities from one workspace to another
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Destination Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Destination Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: body
+          description: Entities to Copy
+          required: true
+          in: body
+          schema:
+            $ref: CopyEntity
+      responses:
+        200:
+          description: No response was specified
+        201:
+          description: Successful Request
+        404:
+          description: Source Workspace or source entities does not exist
+        409:
+          description: One or more entities of that name/type already exist
+        500:
+          description: Internal Error
   /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
       type: Entity
@@ -990,6 +1027,28 @@ definitions:
     required:
       - op
       - attributeName
+  CopyEntity:
+    properties:
+      sourceWorkspace:
+        schema:
+          $ref: Namespace
+        description: Source Workspace Namespace
+      entityType:
+        type: string
+        description: Entity Type
+      entityNames:
+        type: array
+        items:
+          type: string
+        description: List of entity names to be copied
+  Namespace:
+    properties:
+      namespace:
+        type: string
+        description: Entity namespace
+      name:
+        type: string
+        description: Entity name
   MethodID:
     properties:
       methodNamespace:
