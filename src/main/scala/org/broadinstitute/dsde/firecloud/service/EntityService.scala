@@ -3,9 +3,11 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{GetEntitiesWithType, GetEntitiesWithTypeActor}
-import org.broadinstitute.dsde.firecloud.model.{WorkspaceName, EntityCopyWithDestinationDefinition, EntityCopyDefinition}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.{EntityCopyDefinition, EntityCopyWithDestinationDefinition, WorkspaceName}
 import org.slf4j.LoggerFactory
 import spray.http.HttpMethods
+import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
 class EntityServiceActor extends Actor with EntityService {
