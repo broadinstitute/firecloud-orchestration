@@ -435,6 +435,43 @@ paths:
           description: Error parsing source method configuration
         500:
           description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyToMethodRepo:
+    post:
+      tags:
+        - Method Configurations
+        - Method Repository
+      operationId: copyToMethodRepo
+      summary: Copy a Method Config in a workspace to the Method Repository
+      produces: application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: configToCopy
+          description: Method Configuration to Copy
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: PublishConfigurationIngest
+      responses:
+        201:
+          description: Successful request
+        404:
+          description: Source method configuration does not exist
+        409:
+          description: Destination method configuration by that name already exists
+        422:
+          description: Error parsing source method configuration
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
       tags:
@@ -768,6 +805,25 @@ definitions:
       - configurationSnapshotId
       - destinationNamespace
       - destinationName
+  PublishConfigurationIngest:
+    properties:
+      configurationNamespace:
+        type: string
+        description: Method configuration namespace
+      configurationName:
+        type: string
+        description: Method configuration name
+      sourceNamespace:
+        type: string
+        description: Method configuration source namespace
+      sourceName:
+        type: string
+        description: Method configuration source name
+    required:
+      - configurationNamespace
+      - configurationName
+      - sourceNamespace
+      - sourceName
   AttributeUpdateOperation:
     properties:
       op:

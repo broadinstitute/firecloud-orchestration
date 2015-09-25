@@ -39,6 +39,8 @@ object FireCloudConfig {
     lazy val renameMethodConfigurationUrl = baseUrl + methodConfigRenamePath
     lazy val copyFromMethodRepoConfigPath = workspace.getString("copyFromMethodRepoConfig")
     lazy val copyFromMethodRepoConfigUrl = baseUrl + copyFromMethodRepoConfigPath
+    lazy val copyToMethodRepoConfigPath = workspace.getString("copyToMethodRepoConfig")
+    lazy val copyToMethodRepoConfigUrl = baseUrl + copyToMethodRepoConfigPath
     lazy val importEntitiesPath = workspace.getString("importEntitiesPath")
     lazy val importEntitiesUrl = baseUrl + importEntitiesPath
     lazy val submissionsPath = workspace.getString("submissionsPath")

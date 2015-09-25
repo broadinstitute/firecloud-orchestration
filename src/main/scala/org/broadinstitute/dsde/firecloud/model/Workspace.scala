@@ -59,8 +59,8 @@ case class MethodConfigurationRename(
   workspaceName: Option[Map[String, String]] = None)
 
 
-@ApiModel(value = "Method Repository Configuration Copy Destination")
-case class Destination(
+@ApiModel(value = "Method Repository Configuration Identifying Properties")
+case class MethodConfigurationId(
   @(ApiModelProperty@field)(required = true, value = "method configuration destination name")
   name: Option[String] = None,
   @(ApiModelProperty@field)(required = true, value = "method configuration destination namespace")
@@ -77,7 +77,16 @@ case class MethodConfigurationCopy(
   @(ApiModelProperty@field)(required = true, value = "method configuration snapshot id")
   methodRepoSnapshotId: Option[Int] = None,
   @(ApiModelProperty@field)(required = true, value = "method configuration destination")
-  destination: Option[Destination] = None)
+  destination: Option[MethodConfigurationId] = None)
+
+@ApiModel(value = "Method Repository Configuration Publish")
+case class MethodConfigurationPublish(
+  @(ApiModelProperty@field)(required = true, value = "method configuration namespace")
+  methodRepoNamespace: Option[String] = None,
+  @(ApiModelProperty@field)(required = true, value = "method configuration name")
+  methodRepoName: Option[String] = None,
+  @(ApiModelProperty@field)(required = true, value = "method configuration source")
+  source: Option[MethodConfigurationId] = None)
 
 @ApiModel(value = "Method Repository Configuration Copy Ingest")
 case class CopyConfigurationIngest(
@@ -91,6 +100,17 @@ case class CopyConfigurationIngest(
   destinationNamespace: Option[String],
   @(ApiModelProperty@field)(required = true, value = "method configuration destination name")
   destinationName: Option[String])
+
+@ApiModel(value = "Method Repository Configuration Publish Ingest")
+case class PublishConfigurationIngest(
+  @(ApiModelProperty@field)(required = true, value = "method configuration namespace")
+  configurationNamespace: Option[String],
+  @(ApiModelProperty@field)(required = true, value = "method configuration name")
+  configurationName: Option[String],
+  @(ApiModelProperty@field)(required = true, value = "method configuration source namespace")
+  sourceNamespace: Option[String],
+  @(ApiModelProperty@field)(required = true, value = "method configuration source name")
+  sourceName: Option[String])
 
 case class SubmissionIngest(
   methodConfigurationNamespace: Option[String],
