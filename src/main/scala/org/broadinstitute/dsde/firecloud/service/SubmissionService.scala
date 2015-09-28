@@ -20,7 +20,9 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
   def postAndGetRoutes: Route =
     pathPrefix("workspaces" / Segment / Segment) {
       (workspaceNamespace, workspaceName) =>
-        val path = "workspaces/" + workspaceNamespace + "/" + workspaceName + "/submissions"
-        passthroughAllPaths("submissions", FireCloudConfig.Rawls.baseUrl + "/" + path)
+        pathPrefixTest("submissions") {
+          val path = "workspaces/" + workspaceNamespace + "/" + workspaceName + "/submissions"
+          passthroughAllPaths("submissions", FireCloudConfig.Rawls.baseUrl + "/" + path)
+        }
     }
 }
