@@ -1,14 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.Actor
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.SubmissionIngest
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.slf4j.LoggerFactory
-import spray.client.pipelining._
-import spray.http.HttpMethods
-import spray.httpx.SprayJsonSupport._
 import spray.routing.{HttpService, Route}
+
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 
 
 abstract class SubmissionServiceActor extends Actor with SubmissionService {
@@ -22,20 +18,9 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
   lazy val log = LoggerFactory.getLogger(getClass)
 
   def postAndGetRoutes: Route =
-    pathPrefix("workspaces" / Segment / Segment / "submissions") { (workspaceNamespace, workspaceName) =>
-      val listSubmissionsPath = FireCloudConfig.Rawls.submissionsUrl(workspaceNamespace, workspaceName)
-      pathEnd {
-        passthrough(listSubmissionsPath, HttpMethods.GET, HttpMethods.POST)
-      } ~
-      pathPrefix(Segment) { submissionId =>
-        pathEnd {
-          passthrough(FireCloudConfig.Rawls.
-            submissionByIdUrl(workspaceNamespace, workspaceName, submissionId), HttpMethods.GET, HttpMethods.DELETE)
-        } ~
-        path("workflows" / Segment / "outputs") { workflowId =>
-          passthrough(FireCloudConfig.Rawls.
-            workflowOutputsByIdUrl(workspaceNamespace, workspaceName, submissionId, workflowId), HttpMethods.GET)
-        }
-      }
+    pathPrefix("workspaces" / Segment / Segment) {
+      (workspaceNamespace, workspaceName) =>
+        val path = "workspaces/" + workspaceNamespace + "/" + workspaceName + "/submissions"
+        passthroughAllPaths("submissions", FireCloudConfig.Rawls.baseUrl + "/" + path)
     }
 }
