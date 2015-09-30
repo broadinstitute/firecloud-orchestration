@@ -899,9 +899,6 @@ definitions:
       methodRepoMethod:
         type: Map[String, String]
         description: Map with corresponding method-related information
-      methodRepoConfig:
-        type: Map[String, String]
-        description: Map with corresponding method-store-related information
       outputs:
         type: Map[String, String]
         description: Map with outputs information
@@ -917,7 +914,6 @@ definitions:
       - rootEntityType
       - workspaceName
       - methodRepoMethod
-      - methodRepoConfig
       - outputs
       - inputs
       - prerequisites
@@ -979,9 +975,6 @@ definitions:
       prerequisites:
         type: Map[string, string]
         description: Prerequisites map
-      methodRepoConfig:
-        type: Map
-        description: Method config ID
       methodRepoMethod:
         type: Map
         description: Method ID
@@ -992,7 +985,6 @@ definitions:
       - inputs
       - outputs
       - prerequisites
-      - methodRepoConfig
       - methodRepoMethod
   PublishConfigurationIngest:
     properties:
