@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -26,6 +27,9 @@ object ModelJsonProtocol {
   implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)
   implicit val impMethodConfigurationPublish = jsonFormat3(MethodConfigurationPublish)
   implicit val impPublishConfigurationIngest = jsonFormat4(PublishConfigurationIngest)
+
+  implicit val impFireCloudPermission = jsonFormat2(FireCloudPermission)
+  implicit val impAgoraPermission = jsonFormat2(AgoraPermission)
 
   implicit val impEntityMetadata = jsonFormat4(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)

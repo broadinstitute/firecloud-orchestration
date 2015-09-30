@@ -23,6 +23,12 @@ object FireCloudConfig {
     lazy val methodsBaseUrl = baseUrl + methodsPath
     lazy val configurationsPath = methods.getString("configurationsPath")
     lazy val configurationsBaseUrl = baseUrl + configurationsPath
+
+    def methodsPermissionsFromMethod(namespace:String, name:String, snapshotId:Int) = baseUrl +
+      methods.getString("methodsPermissionsPath").format(namespace, name, snapshotId)
+
+    def configurationsPermissionsFromConfig(namespace:String, name:String, snapshotId:Int) = baseUrl +
+      methods.getString("configurationsPermissionsPath").format(namespace, name, snapshotId)
   }
 
   object Rawls {
