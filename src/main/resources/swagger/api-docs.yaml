@@ -212,6 +212,36 @@ paths:
           description: Workspace not found
         500:
           description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/clone:
+    post:
+      tags:
+        - Workspaces
+      operationId: cloneWorkspace
+      summary: Clone Workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        201:
+          description: Successful Request
+        400:
+          description: Unable to create resources for workspace
+        404:
+          description: Source workspace not found
+        409:
+          description: Destination workspace already exists
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
     get:
       type: EntityWithType
