@@ -21,7 +21,7 @@ object AgoraPermissionHandler {
   case class Get(url: String)
   case class Post(url: String, agoraPermission: AgoraPermission)
   case class Put(url: String, agoraPermission: AgoraPermission)
-  def props(requestContext: RequestContext): Props = Props(new GetEntitiesWithTypeActor(requestContext))
+  def props(requestContext: RequestContext): Props = Props(new AgoraPermissionActor(requestContext))
 
   // TODO: add tests for all of the following methods!
 
