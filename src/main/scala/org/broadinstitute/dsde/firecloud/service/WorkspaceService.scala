@@ -5,7 +5,6 @@ import java.util.Date
 
 import akka.actor.{Actor, Props}
 import org.slf4j.LoggerFactory
-import spray.client.pipelining.Post
 import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
@@ -21,7 +20,6 @@ class WorkspaceServiceActor extends Actor with WorkspaceService {
 
 trait WorkspaceService extends HttpService with PerRequestCreator with FireCloudDirectives {
 
-  private final val ApiPrefix = "workspaces"
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private implicit val executionContext = actorRefFactory.dispatcher
 
@@ -30,7 +28,7 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
   lazy val rawlsWorkspacesRoot = rawlsUrlRoot + "/workspaces"
 
   val routes: Route =
-    pathPrefix(ApiPrefix) {
+    pathPrefix("workspaces") {
       pathEnd {
         passthrough(rawlsWorkspacesRoot, HttpMethods.GET) ~
         post {
@@ -83,6 +81,9 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
         } ~
         path("acl") {
           passthrough(workspacePath + "/acl", HttpMethods.GET, HttpMethods.PATCH)
+        } ~
+        path("clone") {
+          passthrough(workspacePath + "/clone", HttpMethods.POST)
         }
       }
     }
