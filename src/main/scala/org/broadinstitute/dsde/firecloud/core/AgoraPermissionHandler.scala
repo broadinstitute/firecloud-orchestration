@@ -103,7 +103,6 @@ class AgoraPermissionActor (requestContext: RequestContext) extends Actor with F
           context.parent ! RequestComplete(StatusCodes.InternalServerError, e.getMessage)
           context stop self
       }
-    case AgoraPermissionHandler.Delete(url: String, user: String) => // TODO: implement
 
     case AgoraPermissionHandler.Post(url: String, agoraPermission: AgoraPermission) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
@@ -126,8 +125,6 @@ class AgoraPermissionActor (requestContext: RequestContext) extends Actor with F
           context.parent ! RequestComplete(StatusCodes.InternalServerError, e.getMessage)
           context stop self
       }
-
-    case AgoraPermissionHandler.Put(url: String, agoraPermission: AgoraPermission) => // TODO: implement
 
     case _ =>
       context.parent ! RequestComplete(StatusCodes.BadRequest)
