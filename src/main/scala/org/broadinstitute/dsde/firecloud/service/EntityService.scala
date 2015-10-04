@@ -23,17 +23,16 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
 
   def entityRoutes: Route =
     pathPrefix("workspaces" / Segment / Segment) { (workspaceNamespace, workspaceName) =>
-      val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+      val baseRawlsEntitiesUrl = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
       path("entities_with_type") {
         get { requestContext =>
           perRequest(requestContext, Props(new GetEntitiesWithTypeActor(requestContext)),
-            GetEntitiesWithType.ProcessUrl(url))
+            GetEntitiesWithType.ProcessUrl(baseRawlsEntitiesUrl))
         }
       } ~
       pathPrefix("entities") {
-        val entityUrl = url + "/entities"
         pathEnd {
-          passthrough(entityUrl, HttpMethods.GET)
+          passthrough(baseRawlsEntitiesUrl, HttpMethods.GET)
         } ~
         path("copy") {
           post {
@@ -49,7 +48,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
           }
         } ~
         path(Segment) { entityType =>
-          passthrough(entityUrl + "/" + entityType, HttpMethods.GET)
+          passthrough(baseRawlsEntitiesUrl + "/" + entityType, HttpMethods.GET)
         }
       }
     }
