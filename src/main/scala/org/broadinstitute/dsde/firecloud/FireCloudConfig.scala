@@ -32,6 +32,7 @@ object FireCloudConfig {
     lazy val entitiesPath = workspace.getString("entitiesPath")
     lazy val methodConfigsListPath = workspace.getString("methodConfigsListPath")
     lazy val getMethodConfigUrl = baseUrl + workspace.getString("getMethodConfigPath")
+    lazy val getMethodConfigValidationUrl = baseUrl + workspace.getString("getMethodConfigValidationPath")
     lazy val methodConfigUpdatePath = workspace.getString("methodConfigUpdatePath")
     lazy val methodConfigRenamePath = workspace.getString("methodConfigRenamePath")
     lazy val listMethodConfigurationsUrl = baseUrl + methodConfigsListPath

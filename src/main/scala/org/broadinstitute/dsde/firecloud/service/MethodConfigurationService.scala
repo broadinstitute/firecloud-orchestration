@@ -69,6 +69,10 @@ trait MethodConfigurationService extends HttpService with PerRequestCreator with
           path("rename") {
             passthrough(FireCloudConfig.Rawls.renameMethodConfigurationUrl.
               format(workspaceNamespace, workspaceName, configNamespace, configName), HttpMethods.POST)
+          } ~
+          path("validate") {
+            passthrough(FireCloudConfig.Rawls.getMethodConfigValidationUrl.
+              format(workspaceNamespace, workspaceName, configNamespace, configName), HttpMethods.GET)
           }
         }
       }

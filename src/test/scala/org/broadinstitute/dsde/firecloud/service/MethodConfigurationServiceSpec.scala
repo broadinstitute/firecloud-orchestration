@@ -89,6 +89,14 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
       }
     }
 
+    "when calling GET on the /workspace/*/*/method_configs/*/*/validate path" - {
+      "OK response is returned" in {
+        Get(validGetMethodConfigUrl + "/validate") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
     "when calling GET on an invalid /workspaces/*/*/method_configs/*/* path" - {
       "Not Found respose is returned" in {
         Get("/workspaces/invalid/invalid/method_configs/invalid/invalid") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
