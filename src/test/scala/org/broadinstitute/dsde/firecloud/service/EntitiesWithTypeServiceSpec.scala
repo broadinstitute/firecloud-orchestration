@@ -108,7 +108,7 @@ with Matchers with EntityService with FireCloudRequestBuilding {
     }
 
     "when calling GET on an invalid entities_with_type path" - {
-      "valid list of entity types are returned" in {
+      "server error is returned" in {
         val path = invalidFireCloudPath + "entities_with_type"
         Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should be(InternalServerError)
