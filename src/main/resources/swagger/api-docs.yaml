@@ -368,6 +368,39 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/export:
+    get:
+      type: file
+      tags:
+      - Entities
+      operationId: exportEntities
+      summary: |
+        TSV file containing workspace entities of the specified type
+      produces:
+        - text/plain
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entityType
+          description: Entity Type
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Workspace entities of specified type in TSV format
+        404:
+          description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/method_configs:
     get:
       tags:
