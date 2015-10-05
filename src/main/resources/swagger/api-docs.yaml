@@ -266,6 +266,8 @@ paths:
       responses:
         200:
           description: List of entities
+        404:
+          description: Workspace or entities not found.
         500:
           description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/entities:

@@ -15,7 +15,7 @@ import spray.json.JsValue
 import spray.routing.RequestContext
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 object GetEntitiesWithType {
   case class ProcessUrl(url: String)
@@ -35,11 +35,14 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val entityTypesFuture: Future[HttpResponse] = pipeline { Get(url) }
       entityTypesFuture onComplete {
-        case Success(response) =>
+        case Success(response) if response.status == OK =>
           val entityTypes: List[String] = unmarshal[List[String]].apply(response)
           new EntityAggregator(requestContext, url, entityTypes)
-        case Failure(e) =>
-          context.parent ! RequestComplete(StatusCodes.InternalServerError, e.getMessage)
+        case Success(response) =>
+          context.parent ! RequestComplete(response.status)
+          context stop self
+        case _ =>
+          context.parent ! RequestComplete(StatusCodes.InternalServerError)
           context stop self
       }
     case _ =>
@@ -62,15 +65,19 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
       val entityFutures: List[Future[HttpResponse]] = entityUrls map { entitiesUrl => pipeline { Get(entitiesUrl) } }
       val f: Future[List[HttpResponse]] = Future sequence entityFutures
       f onComplete {
-        case Success(responses) =>
-          responses flatMap {
+        case Success(responses) if responses.forall(_.status == OK) =>
+          responses.flatMap {
             response =>
               val entities = unmarshal[List[EntityWithType]].apply(response)
               values ++= entities
           }
           collectEntities()
-        case Failure(e) =>
-          context.parent ! RequestComplete(StatusCodes.InternalServerError, e.getMessage)
+        case Success(responses) =>
+          val firstError = responses.filterNot(_.status == OK).head
+          context.parent ! RequestComplete(firstError.status)
+          context stop self
+        case _ =>
+          context.parent ! RequestComplete(StatusCodes.InternalServerError)
           context stop self
       }
     }
