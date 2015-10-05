@@ -461,6 +461,23 @@ object MockWorkspaceServer {
         response()
           .withStatusCode(NotFound.intValue))
 
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("GET")
+          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s/validate".
+          format(
+            mockValidWorkspace.namespace.get,
+            mockValidWorkspace.name.get,
+            mockValidWorkspace.namespace.get,
+            mockValidWorkspace.name.get))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withBody(mockMethodConfigs.head.toJson.prettyPrint)
+          .withStatusCode(OK.intValue))
+
     MockWorkspaceServer.workspaceServer
       .when(
         request()
