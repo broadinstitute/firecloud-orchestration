@@ -218,7 +218,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
         response.status match {
           case NoContent =>
             log.debug("OK response")
-            requestContext.complete(OK)
+            requestContext.complete(calls.head.entityType)
           case _ =>
             // Bubble up all other unmarshallable responses
             log.warning("Unanticipated response: " + response.status.defaultMessage)
