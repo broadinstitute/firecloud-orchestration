@@ -540,6 +540,43 @@ paths:
           description: Workspace or Method Configuration not found
         500:
           description: Internal Server Error
+  '/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}/validate':
+      get:
+        responses:
+          '200':
+            description: Successful Request
+            schema:
+              $ref: '#/definitions/ValidatedMethodConfiguration'
+          '404':
+            description: Workspace or Method Configuration does not exist
+          '500':
+            description: Rawls Internal Error
+        description: ''
+        tags:
+          - Method Configurations
+        summary: get syntax validation information for a method configuration
+        operationId: validate_method_configuration
+        parameters:
+          - in: path
+            description: Workspace Namespace
+            name: workspaceNamespace
+            required: true
+            type: string
+          - in: path
+            description: Workspace Name
+            name: workspaceName
+            required: true
+            type: string
+          - in: path
+            description: Method Configuration Namespace
+            name: configNamespace
+            required: true
+            type: string
+          - in: path
+            description: Method Configuration Name
+            name: configName
+            required: true
+            type: string
   /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/rename:
     post:
       tags:
@@ -1088,3 +1125,53 @@ definitions:
       - methodNamespace
       - methodName
       - methodVersion
+  MethodConfiguration:
+    description: ''
+    required:
+      - namespace
+      - name
+      - rootEntityType
+      - inputs
+      - methodRepoMethod
+    properties:
+      namespace:
+        type: string
+        description: 'This method configuration''s namespace'
+      name:
+        type: string
+        description: The name of the method configuration
+      rootEntityType:
+        type: string
+        description: The root entity type that the method will be running on
+      prerequisites:
+        $ref: ''
+      inputs:
+        $ref: ''
+      outputs:
+        $ref: ''
+      methodRepoMethod:
+        $ref: '#/definitions/MethodRepoMethod'
+        description: The properties of the method from the method store that this config is associated with
+  ValidatedMethodConfiguration:
+    description: ''
+    required:
+      -methodConfiguration
+      -validInputs
+      -invalidInputs
+      -validOutputs
+      -invalidOutputs
+    properties:
+      validInputs:
+        type: array
+        items:
+          type: string
+      invalidInputs:
+        $ref: ''
+      validOutputs:
+        type: array
+        items:
+          type: string
+      invalidOutputs:
+        $ref: ''
+      methodConfiguration:
+        $ref: '#/definitions/MethodConfiguration'

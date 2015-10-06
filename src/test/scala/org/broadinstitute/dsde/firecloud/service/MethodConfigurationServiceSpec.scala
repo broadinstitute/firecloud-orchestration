@@ -89,6 +89,14 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
       }
     }
 
+    "when calling GET on the /workspaces/*/*/method_configs/*/*/validate path" - {
+      "OK response is returned" in {
+        Get(validGetMethodConfigUrl + "/validate") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
     "when calling GET on an invalid /workspaces/*/*/method_configs/*/* path" - {
       "Not Found respose is returned" in {
         Get("/workspaces/invalid/invalid/method_configs/invalid/invalid") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
@@ -117,7 +125,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
      * This test will fail if used as an integration test. Integration testing requires an existing
      * configuration in Agora that is accessible to the current user and a valid workspace in Rawls.
      */
-    "when calling POST on the /workspaces*/*/method_configs/copyFromMethodRepo path with valid workspace and configuration data" - {
+    "when calling POST on the /workspaces/*/*/method_configs/copyFromMethodRepo path with valid workspace and configuration data" - {
       "Created response is returned" in {
         Post(validCopyFromRepoUrl, validConfigurationCopyFormData) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(Created)
@@ -125,7 +133,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
       }
     }
 
-    "when calling POST on the /workspaces*/*/method_configs/copyFromMethodRepo path with invalid data" - {
+    "when calling POST on the /workspaces/*/*/method_configs/copyFromMethodRepo path with invalid data" - {
       "BadRequest response is returned" in {
         Post(validCopyFromRepoUrl, invalidConfigurationCopyFormData) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(BadRequest)
@@ -133,7 +141,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
       }
     }
 
-    "when calling POST on the /workspaces*/*/method_configs/copyFromMethodRepo path without a valid authentication token" - {
+    "when calling POST on the /workspaces/*/*/method_configs/copyFromMethodRepo path without a valid authentication token" - {
       "Found (302 redirect) response is returned" in {
         Post(validCopyFromRepoUrl, validConfigurationCopyFormData) ~> sealRoute(routes) ~> check {
           status should equal(Unauthorized)
@@ -141,7 +149,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
       }
     }
 
-    "when calling GET on the /workspaces*/*/method_configs/copyFromMethodRepo path" - {
+    "when calling GET on the /workspaces/*/*/method_configs/copyFromMethodRepo path" - {
       "MethodNotAllowed error is returned" in {
         Get(validCopyFromRepoUrl) ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
@@ -150,7 +158,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
       }
     }
 
-    "when calling PUT on the /workspaces*/*/method_configs/copyFromMethodRepo path" - {
+    "when calling PUT on the /workspaces/*/*/method_configs/copyFromMethodRepo path" - {
       "MethodNotAllowed error is returned" in {
         Put(validCopyFromRepoUrl) ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
