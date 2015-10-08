@@ -84,6 +84,12 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
         } ~
         path("clone") {
           passthrough(workspacePath + "/clone", HttpMethods.POST)
+        } ~
+        path ("lock") {
+          passthrough(workspacePath + "/lock", HttpMethods.PUT)
+        } ~
+        path ("unlock") {
+          passthrough(workspacePath + "/unlock", HttpMethods.PUT)
         }
       }
     }
