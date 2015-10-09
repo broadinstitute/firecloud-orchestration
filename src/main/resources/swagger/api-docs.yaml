@@ -54,7 +54,6 @@ paths:
     post:
       tags:
         - Method Repository
-        - Workspaces
       operationId: createMethodTemplate
       summary: Create a Method Configuration template from a Method
       produces:
@@ -240,6 +239,66 @@ paths:
           description: Source workspace not found
         409:
           description: Destination workspace already exists
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/lock:
+    put:
+      tags:
+        - Workspaces
+      operationId: lockWorkspace
+      summary: Lock Workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: No response was specified
+        204:
+          description: Successful Request
+        403:
+          description: Not Owner
+        404:
+          description: Workspace Not Found
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/unlock:
+    put:
+      tags:
+        - Workspaces
+      operationId: unlockWorkspace
+      summary: Unlock Workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: No response was specified
+        204:
+          description: Successful Request
+        403:
+          description: Not Owner
+        404:
+          description: Workspace Not Found
         500:
           description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
