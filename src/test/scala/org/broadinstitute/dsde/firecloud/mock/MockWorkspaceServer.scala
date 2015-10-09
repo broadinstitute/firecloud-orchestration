@@ -9,7 +9,7 @@ import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
-import spray.http.FormData
+import spray.http.{StatusCode, FormData}
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -125,6 +125,7 @@ object MockWorkspaceServer {
   }
 
   val mockValidId = randomPositiveInt()
+  val mockInvalidId = randomPositiveInt()
 
   val mockValidSubmission = SubmissionIngest(
     methodConfigurationNamespace = Option(randomAlpha()),
@@ -144,8 +145,10 @@ object MockWorkspaceServer {
 
   val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   val entitiesWithTypeBasePath = workspaceBasePath + "/broad-dsde-dev/alexb_test_submission/"
-
   val methodConfigBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.methodConfigPath
+
+  def rawlsErrorReport(statusCode: StatusCode) =
+    ErrorReport("Rawls", "dummy text", Option(statusCode), Seq(), Seq())
 
   var workspaceServer: ClientAndServer = _
 
@@ -222,6 +225,34 @@ object MockWorkspaceServer {
           .withStatusCode(204)
       )
 
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
+            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockInvalidId))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("DELETE")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
+            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockInvalidId))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
 
     // workspace-level responses
 
@@ -244,8 +275,8 @@ object MockWorkspaceServer {
       ).respond(
         response()
           .withHeaders(header)
-          .withBody("Authentication is possible but has failed or not yet been provided.")
           .withStatusCode(Unauthorized.intValue)
+          .withBody(rawlsErrorReport(Unauthorized).toJson.compactPrint)
       )
 
     MockWorkspaceServer.workspaceServer
@@ -285,7 +316,9 @@ object MockWorkspaceServer {
       .respond(
         response()
           .withHeaders(header)
-          .withStatusCode(NotFound.intValue))
+          .withStatusCode(NotFound.intValue)
+          .withBody(rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
 
     MockWorkspaceServer.workspaceServer
       .when(
@@ -310,7 +343,9 @@ object MockWorkspaceServer {
       .respond(
         response()
           .withHeaders(header)
-          .withStatusCode(NotFound.intValue))
+          .withStatusCode(NotFound.intValue)
+          .withBody(rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
 
     MockWorkspaceServer.workspaceServer
       .when(
@@ -352,7 +387,9 @@ object MockWorkspaceServer {
       .respond(
         response()
           .withHeaders(header)
-          .withStatusCode(NotFound.intValue))
+          .withStatusCode(NotFound.intValue)
+          .withBody(rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
 
     MockWorkspaceServer.workspaceServer.
       when(
@@ -419,6 +456,24 @@ object MockWorkspaceServer {
     MockWorkspaceServer.workspaceServer.
       when(
         request()
+          .withMethod("GET")
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s".
+            format(
+              mockInvalidWorkspace.namespace.get,
+              mockInvalidWorkspace.name.get,
+              mockInvalidWorkspace.namespace.get,
+              mockInvalidWorkspace.name.get))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeader(header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
           .withMethod("PUT")
           .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s".
           format(
@@ -429,8 +484,45 @@ object MockWorkspaceServer {
           .withBody(mockMethodConfigs.head.toJson.prettyPrint)).
       respond(
         response()
-          .withBody("Authentication is possible but has failed or not yet been provided.")
-          .withStatusCode(Unauthorized.intValue))
+          .withStatusCode(Unauthorized.intValue)
+          .withBody(rawlsErrorReport(Unauthorized).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("PUT")
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s".
+            format(
+              mockValidWorkspace.namespace.get,
+              mockValidWorkspace.name.get,
+              mockValidWorkspace.namespace.get,
+              mockValidWorkspace.name.get))
+          .withBody(mockInvalidWorkspace.toJson.prettyPrint)).  // an invalid method config
+      respond(
+        response()
+          .withHeader(header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("PUT")
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s".
+            format(
+              mockInvalidWorkspace.namespace.get,
+              mockInvalidWorkspace.name.get,
+              mockInvalidWorkspace.namespace.get,
+              mockInvalidWorkspace.name.get))
+          .withBody(mockMethodConfigs.head.toJson.prettyPrint)).
+      respond(
+        response()
+          .withHeader(header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
 
     MockWorkspaceServer.workspaceServer.
       when(
@@ -460,7 +552,28 @@ object MockWorkspaceServer {
       ).
       respond(
         response()
-          .withStatusCode(NotFound.intValue))
+          .withHeader(header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("POST")
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s".
+            format(
+              mockInvalidWorkspace.namespace.get,
+              mockInvalidWorkspace.name.get,
+              mockInvalidWorkspace.namespace.get,
+              mockInvalidWorkspace.name.get))
+      ).
+      respond(
+        response()
+          .withHeader(header)
+          .withStatusCode(MethodNotAllowed.intValue)
+          .withBody(rawlsErrorReport(MethodNotAllowed).toJson.compactPrint)
+      )
 
     MockWorkspaceServer.workspaceServer.
       when(
@@ -544,6 +657,7 @@ object MockWorkspaceServer {
         response()
           .withHeaders(header)
           .withStatusCode(Conflict.intValue)
+          .withBody(rawlsErrorReport(Conflict).toJson.compactPrint)
       )
 
     MockWorkspaceServer.workspaceServer.
@@ -565,8 +679,34 @@ object MockWorkspaceServer {
       ).respond(
         response()
           .withHeaders(header)
-          .withBody("Authentication is possible but has failed or not yet been provided.")
           .withStatusCode(Unauthorized.intValue)
+          .withBody(rawlsErrorReport(Unauthorized).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("GET")
+          .withPath(s"${methodConfigBasePath}/copyFromMethodRepo")
+      ).
+      respond(
+        response()
+          .withHeader(header)
+          .withStatusCode(MethodNotAllowed.intValue)
+          .withBody(rawlsErrorReport(MethodNotAllowed).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer.
+      when(
+        request()
+          .withMethod("PUT")
+          .withPath(s"${methodConfigBasePath}/copyFromMethodRepo")
+      ).
+      respond(
+        response()
+          .withHeader(header)
+          .withStatusCode(MethodNotAllowed.intValue)
+          .withBody(rawlsErrorReport(MethodNotAllowed).toJson.compactPrint)
       )
 
     MockWorkspaceServer.workspaceServer
@@ -579,6 +719,7 @@ object MockWorkspaceServer {
         response()
           .withHeaders(header)
           .withStatusCode(NoContent.intValue)
+          .withBody(rawlsErrorReport(NoContent).toJson.compactPrint)
       )
 
     MockWorkspaceServer.workspaceServer
@@ -591,6 +732,7 @@ object MockWorkspaceServer {
         response()
           .withHeaders(header)
           .withStatusCode(NoContent.intValue)
+          .withBody(rawlsErrorReport(NoContent).toJson.compactPrint)
       )
   }
 

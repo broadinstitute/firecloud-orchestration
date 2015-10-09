@@ -1,31 +1,27 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
-import org.broadinstitute.dsde.firecloud.model.CopyConfigurationIngest
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{FreeSpec, Matchers}
+import org.broadinstitute.dsde.firecloud.model.{WorkspaceEntity, ErrorReport, CopyConfigurationIngest}
 import spray.http.StatusCodes._
-import spray.http._
-import spray.httpx.SprayJsonSupport._
-import spray.testkit.ScalatestRouteTest
 
-class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-  with Matchers with MethodConfigurationService with FireCloudRequestBuilding {
+import spray.httpx.SprayJsonSupport._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+
+class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfigurationService {
+
+  import ErrorReport.errorReportRejectionHandler
 
   def actorRefFactory = system
 
-  private final val validGetMethodConfigUrl = s"/workspaces/%s/%s/method_configs/%s/%s".format(
-    MockWorkspaceServer.mockValidWorkspace.namespace.get,
-    MockWorkspaceServer.mockValidWorkspace.name.get,
-    MockWorkspaceServer.mockValidWorkspace.namespace.get,
-    MockWorkspaceServer.mockValidWorkspace.name.get)
-  private final val validUpdateMethodConfigUrl = s"/workspaces/%s/%s/method_configs/%s/%s".format(
-    MockWorkspaceServer.mockValidWorkspace.namespace.get,
-    MockWorkspaceServer.mockValidWorkspace.name.get,
-    MockWorkspaceServer.mockValidWorkspace.namespace.get,
-    MockWorkspaceServer.mockValidWorkspace.name.get)
+  private def methodConfigUrl(workspaceEntity: WorkspaceEntity) = s"/workspaces/%s/%s/method_configs/%s/%s".format(
+    workspaceEntity.namespace.get,
+    workspaceEntity.name.get,
+    workspaceEntity.namespace.get,
+    workspaceEntity.name.get)
+
+  private final val validMethodConfigUrl = methodConfigUrl(MockWorkspaceServer.mockValidWorkspace)
+  private final val invalidMethodConfigUrl = methodConfigUrl(MockWorkspaceServer.mockInvalidWorkspace)
+
   private final val validCopyFromRepoUrl = s"/workspaces/%s/%s/method_configs/copyFromMethodRepo".format(
     MockWorkspaceServer.mockValidWorkspace.namespace.get,
     MockWorkspaceServer.mockValidWorkspace.name.get
@@ -51,7 +47,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling DELETE on the /workspaces/*/*/method_configs/*/* with a valid path" - {
       "Successful Request (204, NoContent) response is returned" in {
-        Delete(validGetMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Delete(validMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NoContent)
         }
       }
@@ -59,31 +55,42 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling DELETE on the /workspaces/*/*/method_configs/*/* with an invalid path" - {
       "NotFound response is returned" in {
-        Delete("/workspaces/invalid/invalid/method_configs/invalid/invalid") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Delete(invalidMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }
 
     "when calling PUT on the /workspaces/*/*/method_configs/*/* path with a valid method configuration" - {
       "OK response is returned" in {
-        Put(validUpdateMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Put(validMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(OK)
         }
       }
     }
 
-    "when calling PUT on the /workspaces/*/*/method_configs/*/* path with a nonexistent method configuration" - {
-      "OK response is returned" in {
-        Put(validUpdateMethodConfigUrl, MockWorkspaceServer.mockInvalidWorkspace) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+    "when calling PUT on the /workspaces/*/*/method_configs/*/* path with an invalid method configuration" - {
+      "Not Found response is returned" in {
+        Put(validMethodConfigUrl, MockWorkspaceServer.mockInvalidWorkspace) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
+        }
+      }
+    }
+
+    "when calling PUT on an invalid /workspaces/*/*/method_configs/*/* path with a valid method configuration" - {
+      "Not Found response is returned" in {
+        Put(invalidMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }
 
     "when calling GET on the /workspaces/*/*/method_configs/*/* path" - {
-      "OK respose is returned" in {
-        Get(validGetMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      "OK response is returned" in {
+        Get(validMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(OK)
         }
       }
@@ -91,32 +98,35 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
 
     "when calling GET on the /workspaces/*/*/method_configs/*/*/validate path" - {
       "OK response is returned" in {
-        Get(validGetMethodConfigUrl + "/validate") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(validMethodConfigUrl + "/validate") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(OK)
         }
       }
     }
 
     "when calling GET on an invalid /workspaces/*/*/method_configs/*/* path" - {
-      "Not Found respose is returned" in {
-        Get("/workspaces/invalid/invalid/method_configs/invalid/invalid") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      "Not Found response is returned" in {
+        Get(invalidMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }
 
     "when calling POST on the /workspaces/*/*/method_configs/*/* path" - {
       "MethodNotAllowed error is returned" in {
-        Post(validUpdateMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post(validMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
+          errorReportCheck("FireCloud", MethodNotAllowed)
         }
       }
     }
 
     "when calling PUT on the /workspaces/*/*/method_configs/*/* path without a valid authentication token" - {
-      "OK response is returned" in {
-        Put(validUpdateMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> sealRoute(routes) ~> check {
+      "Unauthorized response is returned" in {
+        Put(validMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> sealRoute(routes) ~> check {
           status should equal(Unauthorized)
+          errorReportCheck("Rawls", Unauthorized)
         }
       }
     }
@@ -137,14 +147,16 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
       "BadRequest response is returned" in {
         Post(validCopyFromRepoUrl, invalidConfigurationCopyFormData) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(BadRequest)
+          errorReportCheck("Rawls", BadRequest)
         }
       }
     }
 
     "when calling POST on the /workspaces/*/*/method_configs/copyFromMethodRepo path without a valid authentication token" - {
-      "Found (302 redirect) response is returned" in {
+      "Unauthorized response is returned" in {
         Post(validCopyFromRepoUrl, validConfigurationCopyFormData) ~> sealRoute(routes) ~> check {
           status should equal(Unauthorized)
+          errorReportCheck("Rawls", Unauthorized)
         }
       }
     }
@@ -153,7 +165,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
       "MethodNotAllowed error is returned" in {
         Get(validCopyFromRepoUrl) ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
-          responseAs[String] === "HTTP method not allowed, supported methods: GET"
+          errorReportCheck("FireCloud", MethodNotAllowed)
         }
       }
     }
@@ -162,7 +174,7 @@ class MethodConfigurationServiceSpec extends FreeSpec with ScalaFutures with Sca
       "MethodNotAllowed error is returned" in {
         Put(validCopyFromRepoUrl) ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
-          responseAs[String] === "HTTP method not allowed, supported methods: GET"
+          errorReportCheck("FireCloud", MethodNotAllowed)
         }
       }
     }

@@ -38,13 +38,14 @@ class ValidMethodConfigurationFromRepoCallback extends ExpectationCallback {
           response()
             .withHeaders(header)
             .withStatusCode(BadRequest.intValue)
+            .withBody(MockWorkspaceServer.rawlsErrorReport(BadRequest).toJson.compactPrint)
       }
     } else {
       log.debug("No authentication header provided")
       response()
         .withHeaders(header)
-        .withBody("Authentication is possible but has failed or not yet been provided.")
         .withStatusCode(Unauthorized.intValue)
+        .withBody(MockWorkspaceServer.rawlsErrorReport(Unauthorized).toJson.compactPrint)
     }
   }
 

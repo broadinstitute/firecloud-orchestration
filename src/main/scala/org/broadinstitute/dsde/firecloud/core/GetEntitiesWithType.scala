@@ -4,18 +4,19 @@ import akka.actor.{Actor, Props}
 import akka.contrib.pattern.Aggregator
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.{EntityWithType, ProcessUrl}
+import org.broadinstitute.dsde.firecloud.model.{ErrorReport,RequestCompleteWithErrorReport}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import spray.client.pipelining._
 import spray.http.StatusCodes._
-import spray.http.{HttpResponse, StatusCodes}
+import spray.http.HttpResponse
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsValue
 import spray.routing.RequestContext
 
 import scala.concurrent.Future
-import scala.util.Success
+import scala.util.{Failure, Try, Success}
 
 object GetEntitiesWithType {
   case class ProcessUrl(url: String)
@@ -39,14 +40,14 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
           val entityTypes: List[String] = unmarshal[List[String]].apply(response)
           new EntityAggregator(requestContext, url, entityTypes)
         case Success(response) =>
-          context.parent ! RequestComplete(response.status)
+          context.parent ! RequestComplete(response)
           context stop self
         case _ =>
-          context.parent ! RequestComplete(StatusCodes.InternalServerError)
+          context.parent ! RequestCompleteWithErrorReport(InternalServerError, "Request failed for URL " + url)
           context stop self
       }
     case _ =>
-      context.parent ! RequestComplete(StatusCodes.BadRequest)
+      context.parent ! RequestCompleteWithErrorReport(BadRequest, "Invalid message received by GetEntitiesWithTypeActor")
       context stop self
   }
 
@@ -73,11 +74,23 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
           }
           collectEntities()
         case Success(responses) =>
-          val firstError = responses.filterNot(_.status == OK).head
-          context.parent ! RequestComplete(firstError.status)
+          val errors = responses.filterNot(_.status == OK) map { e => (e, ErrorReport.tryUnmarshal(e) ) }
+          val errorReports = errors collect { case (_, Success(report)) => report }
+          val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
+
+          val errorMessage = {
+            val baseMessage = "%d failures out of %d attempts retrieving entityUrls.  Errors: %s".format(entityTypes.size, errors.size, errors mkString ",")
+            if (missingReports.isEmpty) baseMessage
+            else {
+              val supplementalErrorMessage = "Additionally, %d of these failures did not provide error reports: %s".format(missingReports.size, missingReports mkString ",")
+              baseMessage + "\n" + supplementalErrorMessage
+            }
+          }
+
+          context.parent ! RequestCompleteWithErrorReport(InternalServerError, errorMessage, errorReports)
           context stop self
         case _ =>
-          context.parent ! RequestComplete(StatusCodes.InternalServerError)
+          context.parent ! RequestCompleteWithErrorReport(InternalServerError, "Failure retrieving entityUrls: [%s]".format(entityUrls mkString ","))
           context stop self
       }
     }
