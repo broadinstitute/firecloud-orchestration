@@ -130,6 +130,63 @@ paths:
           description: Method Repository configuration detail
         500:
           description: Internal Server Error
+  /methods/{namespace}/{name}/{snapshotId}/permissions
+    get:
+      tags:
+        - Method Repository
+      operationId: get ACL permissions on a Method Repository method
+      summary: get ACL permissions on a Method Repository method
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method snapshot ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: the indicated method ACL
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: get ACL permissions on a Method Repository method
+      summary: get ACL permissions on a Method Repository method
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method snapshot ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: the indicated method ACL once the posted changes have been applied
+        500:
+          description: Internal Server Error
   /configurations/{namespace}/{name}/{snapshotId}/permissions
     get:
       tags:
