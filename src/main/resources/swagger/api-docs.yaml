@@ -130,6 +130,63 @@ paths:
           description: Method Repository configuration detail
         500:
           description: Internal Server Error
+  /configurations/{namespace}/{name}/{snapshotId}/permissions
+    get:
+      tags:
+        - Method Repository
+      operationId: get ACL permissions on a Method Repository configuration
+      summary: get ACL permissions on a Method Repository configuration
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method Configuration namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method Configuration name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method Configuration snapshot ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: the indicated configuration ACL
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: get ACL permissions on a Method Repository configuration
+      summary: get ACL permissions on a Method Repository configuration
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method Configuration namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method Configuration name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method Configuration snapshot ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: the indicated configuration ACL once the posted changes have been applied
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:
