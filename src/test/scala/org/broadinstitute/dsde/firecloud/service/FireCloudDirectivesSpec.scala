@@ -24,9 +24,16 @@ class FireCloudDirectivesSpec extends FreeSpec with ScalatestRouteTest with Fire
     }
     "Passthrough URLs with no parameters" - {
       "should not break during encoding" in {
-        val unencoded = "http://abc.com/"
+        val unencoded = "http://abc.com/path"
         val encoded = encodeUri(unencoded)
-        assert(encoded.equals("http://abc.com/"))
+        assert(encoded.equals("http://abc.com/path"))
+      }
+    }
+    "URL with port specified" - {
+      "should not break during encoding" in {
+        val unencoded = "http://abc.com:8080/"
+        val encoded = encodeUri(unencoded)
+        assert(encoded.equals("http://abc.com:8080/"))
       }
     }
   }
