@@ -6,8 +6,10 @@ import spray.http.MediaTypes._
 trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreator with spray.httpx.RequestBuilding {
   def respondWithJSON = respondWithMediaType(`application/json`)
 
-  def passthrough(path: String, methods: HttpMethod*) = methods map { inMethod =>
+  def passthrough(unencodedPath: String, methods: HttpMethod*) = methods map { inMethod =>
     val outMethod = new RequestBuilder(inMethod)
+
+    val path = encodeUri(unencodedPath)
 
     // POST, PUT, PATCH
     if (inMethod.isEntityAccepted) {
@@ -34,5 +36,15 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
         }
       }
     }
+  }
+
+  def encodeUri(path: String): String = {
+    val pattern = """(https|http)://([^/\r\n]+)(/[^\r\n]*)?""".r
+
+    def toUri(url: String) = url match {
+      case pattern(theScheme, theHost, thePath) => Uri.from(scheme = theScheme, host = theHost, path = thePath)
+    }
+
+    toUri(path).toString
   }
 }
