@@ -427,7 +427,7 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/method_configs:
+  /workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
     get:
       tags:
         - Method Configurations
