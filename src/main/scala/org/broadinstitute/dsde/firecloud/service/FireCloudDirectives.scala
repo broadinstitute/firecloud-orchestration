@@ -3,6 +3,8 @@ package org.broadinstitute.dsde.firecloud.service
 import spray.http.{Uri, HttpMethod}
 import spray.http.MediaTypes._
 
+import scala.util.Try
+
 trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreator with spray.httpx.RequestBuilding {
   def respondWithJSON = respondWithMediaType(`application/json`)
 
@@ -39,10 +41,12 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
   }
 
   def encodeUri(path: String): String = {
-    val pattern = """(https|http)://([^/\r\n]+)(/[^\r\n]*)?""".r
+    val pattern = """(https|http)://([^/\r\n]+?)(:\d+)?(/[^\r\n]*)?""".r
 
     def toUri(url: String) = url match {
-      case pattern(theScheme, theHost, thePath) => Uri.from(scheme = theScheme, host = theHost, path = thePath)
+      case pattern(theScheme, theHost, thePort, thePath) =>
+        val p: Int = Try(thePort.replace(":","").toInt).toOption.getOrElse(0)
+        Uri.from(scheme = theScheme, port = p, host = theHost, path = thePath)
     }
 
     toUri(path).toString
