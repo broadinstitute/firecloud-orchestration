@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.SubmissionIngest
@@ -23,16 +24,16 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
     MockWorkspaceServer.stopWorkspaceServer()
   }
 
-  val localSubmissionsPath = s"/workspaces/%s/%s/submissions".format(
+  val localSubmissionsPath = FireCloudConfig.Rawls.submissionsPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace.get,
     MockWorkspaceServer.mockValidWorkspace.name.get)
 
-  val localSubmissionIdPath = s"/workspaces/%s/%s/submissions/%s".format(
+  val localSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace.get,
     MockWorkspaceServer.mockValidWorkspace.name.get,
     MockWorkspaceServer.mockValidId)
 
-  val localInvalidSubmissionIdPath = s"/workspaces/%s/%s/submissions/%s".format(
+  val localInvalidSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace.get,
     MockWorkspaceServer.mockValidWorkspace.name.get,
     MockWorkspaceServer.mockValidId + MockUtils.randomPositiveInt())

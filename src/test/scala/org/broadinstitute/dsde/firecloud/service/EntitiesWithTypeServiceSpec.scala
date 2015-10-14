@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -22,8 +23,9 @@ with Matchers with EntityService with FireCloudRequestBuilding {
   // Due to the large volume of service specific test cases, generate them here to prevent the
   // extra clutter
   var workspaceServer: ClientAndServer = _
-  val validFireCloudPath = "/workspaces/broad-dsde-dev/valid/"
-  val invalidFireCloudPath = "/workspaces/broad-dsde-dev/invalid/"
+  val workspacesBase = FireCloudConfig.Rawls.workspacesPath
+  val validFireCloudPath = workspacesBase + "/broad-dsde-dev/valid/"
+  val invalidFireCloudPath = workspacesBase + "/broad-dsde-dev/invalid/"
   val sampleAtts = Map(
     "sample_type" -> "Blood".toJson,
     "ref_fasta" -> "gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta".toJson,
@@ -45,21 +47,21 @@ with Matchers with EntityService with FireCloudRequestBuilding {
     // Valid cases
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(validFireCloudPath + "entities").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + validFireCloudPath + "entities").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(List("participant", "sample").toJson.compactPrint).withStatusCode(OK.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(validFireCloudPath + "entities/sample").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + validFireCloudPath + "entities/sample").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(validSampleEntities.toJson.compactPrint).withStatusCode(OK.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(validFireCloudPath + "entities/participant").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + validFireCloudPath + "entities/participant").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(validParticipants.toJson.compactPrint).withStatusCode(OK.intValue)
@@ -68,21 +70,21 @@ with Matchers with EntityService with FireCloudRequestBuilding {
     // Invalid cases:
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(invalidFireCloudPath + "entities").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + invalidFireCloudPath + "entities").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(List("participant", "sample").toJson.compactPrint).withStatusCode(OK.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(invalidFireCloudPath + "entities/sample").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + invalidFireCloudPath + "entities/sample").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody("Error").withStatusCode(InternalServerError.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(invalidFireCloudPath + "entities/participant").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + invalidFireCloudPath + "entities/participant").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody("Error").withStatusCode(InternalServerError.intValue)
