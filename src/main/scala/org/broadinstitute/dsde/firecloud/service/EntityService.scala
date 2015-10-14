@@ -1,10 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.core.{GetEntitiesWithType, GetEntitiesWithTypeActor}
+import org.broadinstitute.dsde.firecloud.core.{ExportEntitiesByType, ExportEntitiesByTypeActor, GetEntitiesWithType, GetEntitiesWithTypeActor}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{EntityCopyDefinition, EntityCopyWithDestinationDefinition, WorkspaceName}
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.slf4j.LoggerFactory
 import spray.http.HttpMethods
 import spray.httpx.SprayJsonSupport._
@@ -15,7 +15,8 @@ class EntityServiceActor extends Actor with EntityService {
   def receive = runRoute(routes)
 }
 
-trait EntityService extends HttpService with PerRequestCreator with FireCloudDirectives {
+trait EntityService extends HttpService with PerRequestCreator with FireCloudDirectives
+  with FireCloudRequestBuilding {
 
   private implicit val executionContext = actorRefFactory.dispatcher
   val routes = entityRoutes
@@ -47,9 +48,18 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
             }
           }
         } ~
-        path(Segment) { entityType =>
-          passthrough(baseRawlsEntitiesUrl + "/" + entityType, HttpMethods.GET)
+        pathPrefix(Segment) { entityType =>
+          val entityTypeUrl = baseRawlsEntitiesUrl + "/" + entityType
+          pathEnd {
+            passthrough(entityTypeUrl, HttpMethods.GET)
+          } ~
+          path("tsv") { requestContext =>
+            val filename = entityType + ".txt"
+            perRequest(requestContext, Props(new ExportEntitiesByTypeActor(requestContext)),
+              ExportEntitiesByType.ProcessEntities(entityTypeUrl, filename, entityType))
+          }
         }
       }
     }
+
 }
