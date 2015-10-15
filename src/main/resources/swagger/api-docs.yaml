@@ -26,6 +26,32 @@ paths:
       responses:
         200:
           description: List of workspaces.
+    post:
+      tags:
+        - Workspaces
+      operationId: createWorkspace
+      summary: Create workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspace
+          description: New workspace information
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: WorkspaceIngest
+      responses:
+        200:
+          description: No response was specified
+        201:
+          description: Successful Request
+        403:
+          description: Unable to create bucket for workspace
+        409:
+          description: Workspace by that name already exists
+        500:
+          description: Internal Server Error
   /methods:
     get:
       tags:
@@ -1020,6 +1046,19 @@ paths:
           description: Internal Error
 
 definitions:
+  WorkspaceIngest:
+    properties:
+      namespace:
+        type: string
+        description: New workspace namespace
+      name:
+        type: string
+        description: New workspace name
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
+        description: Map of attributes
   SubmissionIngest:
     properties:
       methodConfigurationNamespace:
