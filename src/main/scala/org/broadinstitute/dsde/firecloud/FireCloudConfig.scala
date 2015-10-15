@@ -29,29 +29,37 @@ object FireCloudConfig {
     private val workspace = config.getConfig("workspace")
     lazy val model = "/" + workspace.getString("model")
     lazy val baseUrl = sys.env.get("RAWLS_URL_ROOT").get
+    lazy val authPrefix = workspace.getString("authPrefix")
+    lazy val authUrl = baseUrl + authPrefix
+    lazy val workspacesPath = workspace.getString("workspacesPath")
+    lazy val workspacesUrl = authUrl + workspacesPath
     lazy val entitiesPath = workspace.getString("entitiesPath")
     lazy val methodConfigsListPath = workspace.getString("methodConfigsListPath")
-    lazy val getMethodConfigUrl = baseUrl + workspace.getString("getMethodConfigPath")
-    lazy val getMethodConfigValidationUrl = baseUrl + workspace.getString("getMethodConfigValidationPath")
+    lazy val getMethodConfigUrl = authUrl + workspace.getString("getMethodConfigPath")
+    lazy val getMethodConfigValidationUrl = authUrl + workspace.getString("getMethodConfigValidationPath")
     lazy val methodConfigUpdatePath = workspace.getString("methodConfigUpdatePath")
     lazy val methodConfigRenamePath = workspace.getString("methodConfigRenamePath")
-    lazy val listMethodConfigurationsUrl = baseUrl + methodConfigsListPath
-    lazy val updateMethodConfigurationUrl = baseUrl + methodConfigUpdatePath
-    lazy val renameMethodConfigurationUrl = baseUrl + methodConfigRenamePath
+    lazy val listMethodConfigurationsUrl = authUrl + methodConfigsListPath
+    lazy val updateMethodConfigurationUrl = authUrl + methodConfigUpdatePath
+    lazy val renameMethodConfigurationUrl = authUrl + methodConfigRenamePath
+    lazy val methodConfigPath = workspace.getString("methodConfigPath")
+    lazy val methodConfigUrl = authUrl + workspace.getString("methodConfigPath")
     lazy val copyFromMethodRepoConfigPath = workspace.getString("copyFromMethodRepoConfig")
-    lazy val copyFromMethodRepoConfigUrl = baseUrl + copyFromMethodRepoConfigPath
+    lazy val copyFromMethodRepoConfigUrl = authUrl + copyFromMethodRepoConfigPath
     lazy val copyToMethodRepoConfigPath = workspace.getString("copyToMethodRepoConfig")
-    lazy val copyToMethodRepoConfigUrl = baseUrl + copyToMethodRepoConfigPath
+    lazy val copyToMethodRepoConfigUrl = authUrl + copyToMethodRepoConfigPath
     lazy val templatePath = workspace.getString("template")
-    lazy val templateUrl = baseUrl + templatePath
+    lazy val templateUrl = authUrl + templatePath
     lazy val importEntitiesPath = workspace.getString("importEntitiesPath")
-    lazy val importEntitiesUrl = baseUrl + importEntitiesPath
     lazy val workspacesEntitiesCopyPath = workspace.getString("workspacesEntitiesCopyPath")
-    lazy val workspacesEntitiesCopyUrl = baseUrl + workspacesEntitiesCopyPath
+    lazy val workspacesEntitiesCopyUrl = authUrl + workspacesEntitiesCopyPath
+    lazy val submissionsPath = workspace.getString("submissionsPath")
+    lazy val submissionsUrl = authUrl + submissionsPath
+    lazy val submissionsIdPath = workspace.getString("submissionsIdPath")
 
-    def entityPathFromWorkspace(namespace: String, name: String) = baseUrl + workspace.getString("entitiesPath").format(namespace, name)
-    def methodConfigPathFromWorkspace(namespace: String, name: String) = baseUrl + methodConfigsListPath.format(namespace, name)
-    def importEntitiesPathFromWorkspace(namespace: String, name: String) = importEntitiesUrl.format(namespace, name)
+    def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
+    def methodConfigPathFromWorkspace(namespace: String, name: String) = authUrl + methodConfigsListPath.format(namespace, name)
+    def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
   }
 
 }

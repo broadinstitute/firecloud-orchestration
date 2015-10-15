@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.mock
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
@@ -141,7 +142,10 @@ object MockWorkspaceServer {
     expression = Option.empty
   )
 
-  val entitiesWithTypeBasePath = "/workspaces/broad-dsde-dev/alexb_test_submission/"
+  val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
+  val entitiesWithTypeBasePath = workspaceBasePath + "/broad-dsde-dev/alexb_test_submission/"
+
+  val methodConfigBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.methodConfigPath
 
   var workspaceServer: ClientAndServer = _
 
@@ -158,7 +162,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath(s"/workspaces/%s/%s/submissions"
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions"
             .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
           .withHeader(authHeader))
       .callback(
@@ -170,7 +174,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath(s"/workspaces/%s/%s/submissions"
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions"
           .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get)))
       .respond(
         response()
@@ -182,7 +186,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("GET")
-          .withPath(s"/workspaces/%s/%s/submissions"
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions"
           .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
           .withHeader(authHeader))
       .respond(
@@ -195,7 +199,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("GET")
-          .withPath(s"/workspaces/%s/%s/submissions/%s"
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
             .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockValidId))
           .withHeader(authHeader))
       .respond(
@@ -209,7 +213,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("DELETE")
-          .withPath(s"/workspaces/%s/%s/submissions/%s"
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
           .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockValidId))
           .withHeader(authHeader))
       .respond(
@@ -225,7 +229,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath("/workspaces")
+          .withPath(workspaceBasePath)
           .withHeader(authHeader))
       .callback(
         callback().
@@ -236,7 +240,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath("/workspaces")
+          .withPath(workspaceBasePath)
       ).respond(
         response()
           .withHeaders(header)
@@ -248,7 +252,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("GET")
-          .withPath("/workspaces")
+          .withPath(workspaceBasePath)
           .withHeader(authHeader))
       .respond(
         response()
@@ -261,7 +265,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("GET")
-          .withPath(s"/workspaces/%s/%s"
+          .withPath(s"${workspaceBasePath}/%s/%s"
             .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
           .withHeader(authHeader))
       .respond(
@@ -275,7 +279,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("GET")
-          .withPath(s"/workspaces/%s/%s"
+          .withPath(s"${workspaceBasePath}/%s/%s"
             .format(mockInvalidWorkspace.namespace.get, mockInvalidWorkspace.name.get))
           .withHeader(authHeader))
       .respond(
@@ -287,7 +291,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("DELETE")
-          .withPath(s"/workspaces/%s/%s"
+          .withPath(s"${workspaceBasePath}/%s/%s"
           .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
           .withHeader(authHeader))
       .respond(
@@ -300,7 +304,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("DELETE")
-          .withPath(s"/workspaces/%s/%s"
+          .withPath(s"${workspaceBasePath}/%s/%s"
             .format(mockInvalidWorkspace.namespace.get, mockInvalidWorkspace.name.get))
           .withHeader(authHeader))
       .respond(
@@ -312,7 +316,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("GET")
-          .withPath(s"/workspaces/%s/%s/acl"
+          .withPath(s"${workspaceBasePath}/%s/%s/acl"
             .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
           .withHeader(authHeader))
       .respond(
@@ -326,7 +330,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("PATCH")
-          .withPath(s"/workspaces/%s/%s/acl"
+          .withPath(s"${workspaceBasePath}/%s/%s/acl"
             .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
           .withBody(mockWorkspaceACL.toJson.prettyPrint)
           .withHeader(authHeader))
@@ -342,7 +346,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("GET")
-          .withPath(s"/workspaces/%s/%s/methodconfigs"
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs"
             .format(mockInvalidWorkspace.namespace.get, mockInvalidWorkspace.name.get))
           .withHeader(authHeader))
       .respond(
@@ -354,7 +358,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("GET")
-          .withPath(s"/workspaces/%s/%s/methodconfigs".
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs".
             format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
           .withHeader(authHeader))
       .respond(
@@ -367,7 +371,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("PATCH")
-          .withPath(s"/workspaces/%s/%s"
+          .withPath(s"${workspaceBasePath}/%s/%s"
           .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
           .withBody(mockUpdateAttributeOperation.toJson.prettyPrint)
           .withHeader(authHeader))
@@ -382,7 +386,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("PUT")
-          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s".
           format(
             mockValidWorkspace.namespace.get,
             mockValidWorkspace.name.get,
@@ -399,7 +403,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("GET")
-          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s".
           format(
             mockValidWorkspace.namespace.get,
             mockValidWorkspace.name.get,
@@ -416,7 +420,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("PUT")
-          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s".
           format(
             mockValidWorkspace.namespace.get,
             mockValidWorkspace.name.get,
@@ -432,7 +436,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("DELETE")
-          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s".
           format(
             mockValidWorkspace.namespace.get,
             mockValidWorkspace.name.get,
@@ -447,7 +451,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("DELETE")
-          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s".
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s".
           format(
             mockInvalidWorkspace.namespace.get,
             mockInvalidWorkspace.name.get,
@@ -462,7 +466,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("GET")
-          .withPath(s"/workspaces/%s/%s/methodconfigs/%s/%s/validate".
+          .withPath(s"${workspaceBasePath}/%s/%s/methodconfigs/%s/%s/validate".
           format(
             mockValidWorkspace.namespace.get,
             mockValidWorkspace.name.get,
@@ -479,7 +483,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("PUT")
-          .withPath(s"/workspaces/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/methodconfigs")
+          .withPath(s"${workspaceBasePath}/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/methodconfigs")
           .withBody("")
           .withHeader(authHeader))
       .respond(
@@ -494,7 +498,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath(s"/workspaces/${mockSampleValid.wsNamespace.get}/${mockSampleValid.wsName.get}/entities")
+          .withPath(s"${workspaceBasePath}/${mockSampleValid.wsNamespace.get}/${mockSampleValid.wsName.get}/entities")
           .withBody(mockSampleValid.toJson.compactPrint)
           .withHeader(authHeader))
       .respond(
@@ -520,7 +524,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath(s"/workspaces/${mockPairValid.wsNamespace.get}/${mockPairValid.wsName.get}/entities")
+          .withPath(s"${workspaceBasePath}/${mockPairValid.wsNamespace.get}/${mockPairValid.wsName.get}/entities")
           .withBody(mockPairValid.toJson.compactPrint)
           .withHeader(authHeader))
       .respond(
@@ -533,7 +537,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath(s"/workspaces/${mockSampleConflict.wsNamespace.get}/${mockSampleConflict.wsName.get}/entities")
+          .withPath(s"${workspaceBasePath}/${mockSampleConflict.wsNamespace.get}/${mockSampleConflict.wsName.get}/entities")
           .withBody(mockSampleConflict.toJson.compactPrint)
           .withHeader(authHeader))
       .respond(
@@ -546,7 +550,7 @@ object MockWorkspaceServer {
       when(
         request()
           .withMethod("POST")
-          .withPath("/methodconfigs/copyFromMethodRepo")
+          .withPath(s"${methodConfigBasePath}/copyFromMethodRepo")
           .withHeader(authHeader))
       .callback(
         callback().
@@ -557,7 +561,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath("/methodconfigs/copyFromMethodRepo")
+          .withPath(s"${methodConfigBasePath}/copyFromMethodRepo")
       ).respond(
         response()
           .withHeaders(header)
@@ -569,7 +573,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath(s"/workspaces/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/entities/batchUpsert")
+          .withPath(s"${workspaceBasePath}/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/entities/batchUpsert")
           .withHeader(authHeader))
       .respond(
         response()
@@ -581,7 +585,7 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath(s"/workspaces/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/entities/batchUpdate")
+          .withPath(s"${workspaceBasePath}/${mockValidWorkspace.namespace.get}/${mockValidWorkspace.name.get}/entities/batchUpdate")
           .withHeader(authHeader))
       .respond(
         response()

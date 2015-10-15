@@ -24,8 +24,7 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
   private implicit val executionContext = actorRefFactory.dispatcher
 
   lazy val log = LoggerFactory.getLogger(getClass)
-  lazy val rawlsUrlRoot = FireCloudConfig.Rawls.baseUrl
-  lazy val rawlsWorkspacesRoot = rawlsUrlRoot + "/workspaces"
+  lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
 
   val routes: Route =
     pathPrefix("workspaces") {
