@@ -64,7 +64,7 @@ trait MethodsService extends HttpService with PerRequestCreator with FireCloudDi
     path("configurations" / Segment / Segment / IntNumber / "permissions") { (namespace, name, snapshotId) =>
 
       // generate the Agora url we'll call
-      val url = FireCloudConfig.Agora.methodsPermissionsFromMethod(namespace, name, snapshotId)
+      val url = FireCloudConfig.Agora.configurationsPermissionsFromConfig(namespace, name, snapshotId)
 
       delete {
         //this functionality is achieve via "NO ACCESS" in the Post
