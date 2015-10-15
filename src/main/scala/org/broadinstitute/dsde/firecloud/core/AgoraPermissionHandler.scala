@@ -63,8 +63,10 @@ object AgoraPermissionHandler {
       case None => "NO ACCESS"
       case Some(r) => {
         r.sorted match {
+          case List("All") => "OWNER"
           case List("Create","Manage","Read","Redact","Write") => "OWNER"
           case List("Read") => "READER"
+          case List("Nothing") => "NO ACCESS"
           case _ => "NO ACCESS" // TODO: throw an exception instead? Log something?
         }
       }
