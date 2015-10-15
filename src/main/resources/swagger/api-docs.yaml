@@ -154,6 +154,8 @@ paths:
           required: true
           type: string
           in: path
+        schema:
+          $ref: '#/definitions/MethodConfigACL'
       responses:
         200:
           description: the indicated method ACL
@@ -182,9 +184,13 @@ paths:
           required: true
           type: string
           in: path
+        schema:
+          $ref: '#/definitions/MethodConfigACL'
       responses:
         200:
           description: the indicated method ACL once the posted changes have been applied
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
         500:
           description: Internal Server Error
   /configurations/{namespace}/{name}/{snapshotId}/permissions
@@ -214,6 +220,8 @@ paths:
       responses:
         200:
           description: the indicated configuration ACL
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
         500:
           description: Internal Server Error
     post:
@@ -1305,6 +1313,17 @@ definitions:
         additionalProperties:
           type: string
         description: Map of attributes
+  MethodConfigACL:
+    properties:
+      userId:
+        type: string
+        description: a user's ID or "public"
+      accessLevel:
+        type: string
+        description: one of "NO ACCESS", "READER", or "OWNER"
+    required:
+      - userId
+      - accessLevel
   SubmissionIngest:
     properties:
       methodConfigurationNamespace:
