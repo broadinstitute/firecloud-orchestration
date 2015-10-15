@@ -30,10 +30,6 @@ trait MethodsService extends HttpService with PerRequestCreator with FireCloudDi
       // generate the Agora url we'll call
       val url = FireCloudConfig.Agora.methodsPermissionsFromMethod(namespace, name, snapshotId)
 
-      delete {
-        //this functionality is achieve via "NO ACCESS" in the Post
-        requestContext => requestContext.complete(BadRequest)
-      } ~
         get { requestContext =>
           // pass to AgoraPermissionHandler
           perRequest(requestContext,
@@ -52,10 +48,6 @@ trait MethodsService extends HttpService with PerRequestCreator with FireCloudDi
                 Props(new AgoraPermissionActor(requestContext)),
                 AgoraPermissionHandler.Post(url, agoraPermissions))
           }
-        } ~
-        put {
-          //use POST for all functionality
-          requestContext => requestContext.complete(BadRequest)
         }}
 
 
@@ -66,10 +58,6 @@ trait MethodsService extends HttpService with PerRequestCreator with FireCloudDi
       // generate the Agora url we'll call
       val url = FireCloudConfig.Agora.configurationsPermissionsFromConfig(namespace, name, snapshotId)
 
-      delete {
-        //this functionality is achieve via "NO ACCESS" in the Post
-        requestContext => requestContext.complete(BadRequest)
-      } ~
       get { requestContext =>
         // pass to AgoraPermissionHandler
         perRequest(requestContext,
@@ -88,10 +76,6 @@ trait MethodsService extends HttpService with PerRequestCreator with FireCloudDi
               Props(new AgoraPermissionActor(requestContext)),
               AgoraPermissionHandler.Post(url, agoraPermissions))
           }
-        } ~
-        put {
-          //use POST for all functionality
-          requestContext => requestContext.complete(BadRequest)
         }}
 
 

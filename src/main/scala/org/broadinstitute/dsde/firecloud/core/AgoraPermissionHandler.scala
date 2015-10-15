@@ -18,10 +18,8 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 object AgoraPermissionHandler {
-  case class Delete(url: String, user: String)
   case class Get(url: String)
   case class Post(url: String, agoraPermissions: List[AgoraPermission])
-  case class Put(url: String, agoraPermission: AgoraPermission)
   def props(requestContext: RequestContext): Props = Props(new GetEntitiesWithTypeActor(requestContext))
 
   // TODO: add tests for all of the following methods!
