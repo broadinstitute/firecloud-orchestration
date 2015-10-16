@@ -49,7 +49,7 @@ with Matchers with EntityService with FireCloudRequestBuilding {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample")
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample")
           .withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
