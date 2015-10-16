@@ -48,4 +48,7 @@ object ModelJsonProtocol {
   }
 
   implicit val impEntityUpdateDefinition = jsonFormat3(EntityUpdateDefinition)
+
+  implicit val impFireCloudKeyValue = jsonFormat2(FireCloudKeyValue)
+  implicit val impThurloeKeyValue = jsonFormat2(ThurloeKeyValue)
 }
