@@ -3,18 +3,16 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.mock.MockTSVFormData
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{MethodConfiguration, EntityCreateResult, WorkspaceEntity, WorkspaceName}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{FreeSpec, Matchers}
-import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.{MethodConfiguration, WorkspaceEntity, WorkspaceName}
 import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
-import spray.testkit.ScalatestRouteTest
 
-class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-  with Matchers with WorkspaceService with FireCloudRequestBuilding {
+import spray.httpx.SprayJsonSupport._
+import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+
+class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService {
+
+  import org.broadinstitute.dsde.firecloud.model.ErrorReport.errorReportRejectionHandler
 
   def actorRefFactory = system
 
@@ -66,6 +64,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
           MockWorkspaceServer.mockInvalidWorkspace.name.get)
         Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check{
           status should be(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }
@@ -86,18 +85,32 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       }
     }
 
+    "when calling PUT on the list method configurations with a valid workspace namespace/name"- {
+      "MethodNotAllowed response is returned" in {
+        val path = "/workspaces/%s/%s/methodconfigs".format(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        Put(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check{
+          status should equal(MethodNotAllowed)
+          errorReportCheck("FireCloud", MethodNotAllowed)
+        }
+      }
+    }
+
     "when calling POST on the workspaces path without a valid authentication token" - {
       "Unauthorized (401) response is returned" in {
         Post(ApiPrefix, workspaceIngest) ~> sealRoute(routes) ~> check {
           status should equal(Unauthorized)
+          errorReportCheck("Rawls", Unauthorized)
         }
       }
     }
 
     "when calling POST on the workspaces path with an invalid workspace ingest entity" - {
       "Bad Request (400) response is returned" in {
-        Post(ApiPrefix, invalidWorkspaceIngest) ~> dummyAuthHeaders ~>sealRoute(routes) ~> check {
+        Post(ApiPrefix, invalidWorkspaceIngest) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should be(BadRequest)
+          errorReportCheck("Rawls", BadRequest)
         }
       }
     }
@@ -119,7 +132,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       "MethodNotAllowed error is returned" in {
         Put(ApiPrefix) ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
-          responseAs[String] === "HTTP method not allowed, supported methods: GET"
+          errorReportCheck("FireCloud", MethodNotAllowed)
         }
       }
     }
@@ -141,6 +154,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
           MockWorkspaceServer.mockInvalidWorkspace.name.get)
         Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }
@@ -161,6 +175,19 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
           MockWorkspaceServer.mockInvalidWorkspace.name.get)
         Delete(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
+        }
+      }
+    }
+
+    "when calling the PUT workspace path" - {
+      "a MethodNotAllowed response is returned" in {
+        val path = "/workspaces/%s/%s".format(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        Put(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(MethodNotAllowed)
+          errorReportCheck("FireCloud", MethodNotAllowed)
         }
       }
     }
@@ -189,6 +216,18 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       }
     }
 
+    "when calling POST on the workspaces/*/*/acl path" - {
+      "MethodNotAllowed is returned" in {
+        val path = "/workspaces/%s/%s/acl".format(
+          MockWorkspaceServer.mockValidWorkspace.namespace.get,
+          MockWorkspaceServer.mockValidWorkspace.name.get)
+        Post(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(MethodNotAllowed)
+          errorReportCheck("FireCloud", MethodNotAllowed)
+        }
+      }
+    }
+
     "when calling PATCH on the workspaces/*/*/updateAttributes to add/update an attribute" - {
       "OK response is returned" in {
         (Patch(attributeUpdatePath, MockWorkspaceServer.mockUpdateAttributeOperation)
@@ -199,12 +238,24 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
       }
     }
 
+    "when calling GET on workspaces/*/*/updateAttributes" - {
+      "MethodNotAllowed response is returned" in {
+        (Get(attributeUpdatePath)
+          ~> dummyAuthHeaders
+          ~> sealRoute(routes)) ~> check {
+          status should equal(MethodNotAllowed)
+          errorReportCheck("FireCloud", MethodNotAllowed)
+        }
+      }
+    }
+
     "when calling POST on the workspaces/*/*/importEntities path" - {
       "should 400 Bad Request if the TSV type is missing" in {
         (Post(tsvImportPath, MockTSVFormData.missingTSVType)
           ~> dummyAuthHeaders
           ~> sealRoute(routes)) ~> check {
           status should equal(BadRequest)
+          errorReportCheck("FireCloud", BadRequest)
         }
       }
 
@@ -213,6 +264,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
           ~> dummyAuthHeaders
           ~> sealRoute(routes)) ~> check {
           status should equal(BadRequest)
+          errorReportCheck("FireCloud", BadRequest)
         }
       }
 
@@ -221,6 +273,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
           ~> dummyAuthHeaders
           ~> sealRoute(routes)) ~> check {
           status should equal(BadRequest)
+          errorReportCheck("FireCloud", BadRequest)
         }
       }
 
@@ -230,6 +283,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 
@@ -238,6 +292,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 
@@ -246,6 +301,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 
@@ -254,6 +310,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 
@@ -272,6 +329,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 
@@ -280,6 +338,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 
@@ -288,6 +347,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 
@@ -296,6 +356,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 
@@ -322,6 +383,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 
@@ -330,6 +392,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 
@@ -338,6 +401,7 @@ class WorkspaceServiceSpec extends FreeSpec with ScalaFutures with ScalatestRout
             ~> dummyAuthHeaders
             ~> sealRoute(routes)) ~> check {
             status should equal(BadRequest)
+            errorReportCheck("FireCloud", BadRequest)
           }
         }
 

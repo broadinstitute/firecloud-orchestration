@@ -3,20 +3,17 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FreeSpec, Matchers}
 import spray.http.StatusCodes._
+import spray.json._
+
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
-import spray.json._
-import spray.testkit.ScalatestRouteTest
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
-class EntitiesWithTypeServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-with Matchers with EntityService with FireCloudRequestBuilding {
+class EntitiesWithTypeServiceSpec extends ServiceSpec with EntityService {
 
   def actorRefFactory = system
 
@@ -114,6 +111,7 @@ with Matchers with EntityService with FireCloudRequestBuilding {
         val path = invalidFireCloudPath + "entities_with_type"
         Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should be(InternalServerError)
+          errorReportCheck("FireCloud", InternalServerError)
         }
       }
     }

@@ -3,22 +3,19 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.EntityMatrix
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FreeSpec, Matchers}
 import spray.http.StatusCodes._
-import spray.json.DefaultJsonProtocol._
 import spray.json._
-import spray.testkit.ScalatestRouteTest
 
 import scala.io.Source
 
-class ExportEntitiesByTypeServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-with Matchers with EntityService with FireCloudRequestBuilding {
+import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+
+class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
 
   def actorRefFactory = system
 
@@ -57,6 +54,20 @@ with Matchers with EntityService with FireCloudRequestBuilding {
           .withBody(validSampleEntities.toJson.compactPrint)
           .withStatusCode(OK.intValue)
       )
+
+    // Invalid Entities by sample type case
+    workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid") + "/sample")
+          .withHeader(MockUtils.authHeader))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(MockWorkspaceServer.rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
   }
 
   override def afterAll(): Unit = {
@@ -84,9 +95,10 @@ with Matchers with EntityService with FireCloudRequestBuilding {
     }
 
     "when calling GET on exporting an invalid entity type" - {
-      "OK response is returned" in {
+      "NotFound response is returned" in {
         Get(invalidFireCloudEntitiesSampleTSVPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should be(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }

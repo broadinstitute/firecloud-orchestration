@@ -1,6 +1,8 @@
 package org.broadinstitute.dsde.firecloud
 
 import java.text.SimpleDateFormat
+import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, ErrorReport}
+
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -10,11 +12,11 @@ import spray.client.pipelining._
 import spray.http.HttpHeaders.Cookie
 import spray.http._
 import spray.routing.RequestContext
+import spray.http.StatusCodes._
 
 import org.broadinstitute.dsde.firecloud.HttpClient.PerformExternalRequest
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
-
+import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestCompleteWithHeaders
 
 object HttpClient {
 
@@ -56,7 +58,7 @@ class HttpClient (requestContext: RequestContext) extends Actor
         context.parent ! RequestCompleteWithHeaders(response, response.headers:_*)
       case Failure(error) =>
         log.error("External request failed", error)
-        context.parent ! RequestComplete(StatusCodes.InternalServerError, error.getMessage)
+        context.parent ! RequestCompleteWithErrorReport(InternalServerError, "External request failed: " + error.getMessage, error)
     }
   }
 }

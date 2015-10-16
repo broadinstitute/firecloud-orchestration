@@ -30,6 +30,9 @@ class FireCloudServiceActor extends HttpServiceActor {
     route(requestContext)
   }
 
+  // wraps route rejections in an ErrorReport
+  import org.broadinstitute.dsde.firecloud.model.ErrorReport.errorReportRejectionHandler
+
   def receive = runRoute(
     logRequests {
       // The "service" path prefix is never visible to this server in production because it is
