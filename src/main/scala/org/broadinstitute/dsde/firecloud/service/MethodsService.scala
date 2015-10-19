@@ -4,6 +4,7 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import spray.routing.{HttpService, Route}
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.core.{AgoraPermissionActor, AgoraPermissionHandler}
+//import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler.determineIfASingleFCPermissionIsValidForTranslationByUser
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig}
 import org.slf4j.{ LoggerFactory}
@@ -15,9 +16,6 @@ class MethodsServiceActor extends Actor with MethodsService {
   def actorRefFactory = context
   def receive = runRoute(routes)
 }
-
-
-
 
 
 trait MethodsService extends HttpService with PerRequestCreator with FireCloudDirectives {
@@ -39,6 +37,17 @@ trait MethodsService extends HttpService with PerRequestCreator with FireCloudDi
           // take the body of the HTTP POST and construct a FireCloudPermission from it
           entity(as[List[FireCloudPermission]]) {
             fireCloudPermissions => requestContext =>
+              //scan user and roles of each input to make sure they're valid
+              val okayByUsers=fireCloudPermissions.map(x => x.verifyValidUser)
+              val okayByRoles=fireCloudPermissions.map(x => x.verifyValidRole)
+              //see http://stackoverflow.com/questions/22518773/applying-logical-and-to-list-of-boolean-values
+              val andAllByUsers = okayByUsers.foldLeft(true)(_ && _)
+              val andAllByRoles=okayByRoles.foldLeft(true)(_ && _)
+              if(!(andAllByUsers && andAllByRoles))
+                {
+                requestContext.complete(BadRequest)
+                }
+
               // translate the FireCloudPermissions into  AgoraPermissions
               val agoraPermissions = fireCloudPermissions.map(x => x.toAgoraPermission)
               // pass to AgoraPermissionHandler

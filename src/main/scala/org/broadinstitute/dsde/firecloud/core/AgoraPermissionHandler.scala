@@ -46,6 +46,27 @@ object AgoraPermissionHandler {
     }
   }
 
+  def determineIfASingleFCPermissionIsValidForTranslationByUser(fireCloudPermission: FireCloudPermission):Boolean = {
+    fireCloudPermission.user match {
+      case Some("") => false
+      case None => false
+      //any non-empty user is okay!
+      case _ => true
+    }
+  }
+
+
+  def determineIfASingleFCPermissionIsValidForTranslationByAccessLevel(fireCloudPermission: FireCloudPermission):Boolean = {
+    fireCloudPermission.role match {
+      case Some("NO ACCESS") => true
+      case Some("OWNER") => true
+      case Some("READER") => true
+      //anything that's one of the above-3 is good, anything else is bad
+      case _ => false
+    }
+  }
+
+
   // translation between a FireCloud role and a list of Agora roles
   def toAgoraRoles(fireCloudRole:Option[String]) = {
     fireCloudRole match {
