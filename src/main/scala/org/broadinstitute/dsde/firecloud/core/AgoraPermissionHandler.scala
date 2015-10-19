@@ -108,9 +108,11 @@ class AgoraPermissionActor (requestContext: RequestContext) extends Actor with F
     case AgoraPermissionHandler.Post(url: String, agoraPermissions: List[AgoraPermission]) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
       // TODO: allow AGORA to see empty values?
-      //or should such things bie dropped here?  What if only one of the requests in  batch is bad?
+      //or should such things be dropped here?  What if only one of the requests in  batch is bad?
       //should all be dropped?
       //For now, forward to Agora  and let it catch any error?
+      //if the permissions are untranslateable then catch the error and return it to user
+
       val permissionListFuture: Future[HttpResponse] = pipeline { Post(url.toString,
         HttpClient.createJsonHttpEntity(agoraPermissions.toString()))
       }
