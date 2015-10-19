@@ -15,6 +15,14 @@ class EntityServiceActor extends Actor with EntityService {
   def receive = runRoute(routes)
 }
 
+object EntityService {
+  val entitiesPath = "/workspaces/%s/%s/entities"
+  val copyPath = "/workspaces/entities/copy"
+  def entitiesPathFromWorkspace(workspaceNamespace: String, workspaceName: String): String = {
+    FireCloudConfig.Rawls.authUrl + entitiesPath.format(workspaceNamespace, workspaceName)
+  }
+}
+
 trait EntityService extends HttpService with PerRequestCreator with FireCloudDirectives
   with FireCloudRequestBuilding {
 
@@ -24,7 +32,8 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
 
   def entityRoutes: Route =
     pathPrefix("workspaces" / Segment / Segment) { (workspaceNamespace, workspaceName) =>
-      val baseRawlsEntitiesUrl = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+      val baseRawlsEntitiesUrl = EntityService.entitiesPathFromWorkspace(
+        workspaceNamespace, workspaceName)
       path("entities_with_type") {
         get { requestContext =>
           perRequest(requestContext, Props(new GetEntitiesWithTypeActor(requestContext)),
@@ -43,7 +52,8 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                 destinationWorkspace = WorkspaceName(Some(workspaceNamespace), Some(workspaceName)),
                 entityType = copyRequest.entityType,
                 entityNames = copyRequest.entityNames)
-              val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl, copyMethodConfig)
+              val extReq = Post(FireCloudConfig.Rawls.authUrl + EntityService.copyPath,
+                copyMethodConfig)
               externalHttpPerRequest(requestContext, extReq)
             }
           }

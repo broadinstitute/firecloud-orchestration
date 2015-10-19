@@ -55,7 +55,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample")
+          .withPath(EntityService.entitiesPathFromWorkspace("broad-dsde-dev", "valid") + "/sample")
           .withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
@@ -68,7 +68,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid"))
+          .withPath(EntityService.entitiesPathFromWorkspace("broad-dsde-dev", "valid"))
           .withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
@@ -79,7 +79,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
       .when(
         request()
           .withMethod("POST")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesEntitiesCopyPath)
+          .withPath(FireCloudConfig.Rawls.authPrefix + EntityService.copyPath)
           .withHeader(MockUtils.authHeader))
       .callback(
         callback().
@@ -91,7 +91,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid") + "/sample")
+          .withPath(EntityService.entitiesPathFromWorkspace("broad-dsde-dev", "invalid") + "/sample")
           .withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
@@ -104,7 +104,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid"))
+          .withPath(EntityService.entitiesPathFromWorkspace("broad-dsde-dev", "invalid"))
           .withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()

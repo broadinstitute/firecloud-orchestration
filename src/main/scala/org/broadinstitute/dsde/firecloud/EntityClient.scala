@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud
 
 import java.text.SimpleDateFormat
 
-import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
+import org.broadinstitute.dsde.firecloud.service.{EntityService, FireCloudRequestBuilding}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -68,7 +68,8 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     val pipeline: HttpRequest => Future[HttpResponse] =
       authHeaders(requestContext) ~> sendReceive
     val responseFuture: Future[HttpResponse] = pipeline {
-      Get(s"${FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType")
+      Get(EntityService.entitiesPathFromWorkspace(workspaceNamespace, workspaceName) +
+        s"/$entityType")
     }
 
     responseFuture onComplete {
@@ -112,7 +113,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   }
 
   def createEntityOrReportError(workspaceNamespace: String, workspaceName: String, entityJson: JsValue, entityType: String, entityName: String) = {
-    val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+    val url = EntityService.entitiesPathFromWorkspace(workspaceNamespace, workspaceName)
     val externalRequest = Post(url, HttpClient.createJsonHttpEntity(entityJson.compactPrint))
     val pipeline = authHeaders(requestContext) ~> sendReceive
     // TODO figure out how to get the response in a non-blocking way,
@@ -209,7 +210,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     val pipeline: HttpRequest => Future[HttpResponse] =
       authHeaders(requestContext) ~> sendReceive
     val responseFuture: Future[HttpResponse] = pipeline {
-      Post(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/"+endpoint,
+      Post(EntityService.entitiesPathFromWorkspace(workspaceNamespace, workspaceName)+"/"+endpoint,
             HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
     }
 
