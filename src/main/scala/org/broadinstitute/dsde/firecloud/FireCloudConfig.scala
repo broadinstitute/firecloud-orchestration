@@ -62,4 +62,13 @@ object FireCloudConfig {
     def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
   }
 
+  object Thurloe {
+    private val profile = config.getConfig("userprofile")
+    lazy val baseUrl = sys.env.get("THURLOE_URL_ROOT").get
+    lazy val setKey = profile.getString("setKey")
+    lazy val getAll = profile.getString("getAll")
+    lazy val get = profile.getString("get")
+    lazy val delete = profile.getString("delete")
+  }
+
 }
