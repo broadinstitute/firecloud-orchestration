@@ -1044,6 +1044,35 @@ paths:
           description: Success
         500:
           description: Internal Error
+  /storage/{bucket}/{object}:
+    get:
+      tags:
+      - Storage
+      operationId: getMetadata
+      summary: |
+        Get metadata about an object stored in GCS.
+      description: |
+        Mirror of Google's Cloud Storage json API. See https://cloud.google.com/storage/docs/json_api/v1/objects/get
+      produces:
+      - application/json
+      parameters:
+        - name: bucket
+          description: Name of the bucket in which the object resides.
+          required: true
+          type: string
+          in: path
+        - name: object
+          description: Name of the object. (be sure to urlencode)
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Success
+        404:
+          description: Not Found
+        500:
+          description: Internal Error
 
 definitions:
   WorkspaceIngest:
