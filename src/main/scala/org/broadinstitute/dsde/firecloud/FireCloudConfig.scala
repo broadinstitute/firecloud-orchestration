@@ -55,9 +55,6 @@ object FireCloudConfig {
     lazy val importEntitiesPath = workspace.getString("importEntitiesPath")
     lazy val workspacesEntitiesCopyPath = workspace.getString("workspacesEntitiesCopyPath")
     lazy val workspacesEntitiesCopyUrl = authUrl + workspacesEntitiesCopyPath
-    lazy val submissionsPath = workspace.getString("submissionsPath")
-    lazy val submissionsUrl = authUrl + submissionsPath
-    lazy val submissionsIdPath = workspace.getString("submissionsIdPath")
 
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
     def methodConfigPathFromWorkspace(namespace: String, name: String) = authUrl + methodConfigsListPath.format(namespace, name)

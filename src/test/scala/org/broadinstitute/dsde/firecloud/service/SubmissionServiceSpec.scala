@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
 import org.broadinstitute.dsde.firecloud.model.SubmissionIngest
 import spray.http.StatusCodes._
@@ -20,18 +19,13 @@ class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     MockWorkspaceServer.stopWorkspaceServer()
   }
 
-  val localSubmissionsPath = FireCloudConfig.Rawls.submissionsPath.format(
+  val localSubmissionsPath = submissionsPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace.get,
     MockWorkspaceServer.mockValidWorkspace.name.get)
 
-  val localSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
-    MockWorkspaceServer.mockValidWorkspace.namespace.get,
-    MockWorkspaceServer.mockValidWorkspace.name.get,
-    MockWorkspaceServer.mockValidId)
+  val localSubmissionIdPath = localSubmissionsPath + "/%s".format(MockWorkspaceServer.mockValidId)
 
-  val localInvalidSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
-    MockWorkspaceServer.mockValidWorkspace.namespace.get,
-    MockWorkspaceServer.mockValidWorkspace.name.get,
+  val localInvalidSubmissionIdPath = localSubmissionsPath + "/%s".format(
     MockWorkspaceServer.mockInvalidId)
 
   "SubmissionService" - {
