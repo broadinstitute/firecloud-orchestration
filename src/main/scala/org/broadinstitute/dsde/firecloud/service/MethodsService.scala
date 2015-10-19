@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import spray.routing.{HttpService, Route}
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.core.{AgoraPermissionActor, AgoraPermissionHandler}
-//import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler.determineIfASingleFCPermissionIsValidForTranslationByUser
+import org.broadinstitute.dsde.firecloud.model.{HttpResponseWithErrorReport, ErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig}
 import org.slf4j.{ LoggerFactory}
@@ -45,7 +45,7 @@ trait MethodsService extends HttpService with PerRequestCreator with FireCloudDi
               val andAllByRoles=okayByRoles.foldLeft(true)(_ && _)
               if(!(andAllByUsers && andAllByRoles))
                 {
-                requestContext.complete(BadRequest)
+                requestContext.complete(HttpResponseWithErrorReport(BadRequest, "Invalid user or access setting detected! Each permission posted must have a non-empty user and a permission of READER, OWNER, or NO ACCESS!"))
                 }
 
               // translate the FireCloudPermissions into  AgoraPermissions
