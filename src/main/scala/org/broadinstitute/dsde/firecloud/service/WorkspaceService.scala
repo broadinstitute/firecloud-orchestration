@@ -25,7 +25,7 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
     pathPrefix("workspaces") {
       pathEnd {
         passthrough(rawlsWorkspacesRoot, HttpMethods.GET, HttpMethods.POST)
-      } ~
+     } ~
       pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
         val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
         pathEnd {

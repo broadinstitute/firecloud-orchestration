@@ -3,21 +3,19 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{EntityCopyDefinition, ModelJsonProtocol, WorkspaceName}
+import org.broadinstitute.dsde.firecloud.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
+import org.mockserver.model.HttpCallback._
 import org.mockserver.model.HttpRequest._
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FreeSpec, Matchers}
 import spray.http.StatusCodes._
+import spray.json._
+
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
-import spray.json._
-import spray.testkit.ScalatestRouteTest
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
-class EntityServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers
-  with EntityService with FireCloudRequestBuilding {
+class EntityServiceSpec extends ServiceSpec with EntityService {
 
   def actorRefFactory = system
 
@@ -26,9 +24,22 @@ class EntityServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTe
   val validFireCloudEntitiesSamplePath = "/workspaces/broad-dsde-dev/valid/entities/sample"
   val validFireCloudEntitiesCopyPath = "/workspaces/broad-dsde-dev/valid/entities/copy"
   val invalidFireCloudEntitiesPath = "/workspaces/broad-dsde-dev/invalid/entities"
-  val entityCopy = EntityCopyDefinition(
+  val invalidFireCloudEntitiesSamplePath = "/workspaces/broad-dsde-dev/invalid/entities/sample"
+  val invalidFireCloudEntitiesCopyPath = "/workspaces/broad-dsde-dev/invalid/entities/copy"
+
+  val validEntityCopy = EntityCopyDefinition(
     sourceWorkspace = WorkspaceName(namespace=Some("broad-dsde-dev"), name=Some("other-ws")),
     entityType = "sample", Seq("sample_01"))
+  val invalidEntityCopy = EntityCopyDefinition(
+    sourceWorkspace = WorkspaceName(namespace=Some("invalid"), name=Some("other-ws")),
+    entityType = "sample", Seq("sample_01"))
+
+  def entityCopyWithDestination(copyDef: EntityCopyDefinition) = new EntityCopyWithDestinationDefinition(
+    sourceWorkspace = copyDef.sourceWorkspace,
+    destinationWorkspace = WorkspaceName(Some("broad-dsde-dev"), Some("valid")),
+    entityType = copyDef.entityType,
+    entityNames = copyDef.entityNames)
+
   val sampleAtts = Map(
     "sample_type" -> "Blood".toJson,
     "ref_fasta" -> "gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta".toJson,
@@ -63,17 +74,45 @@ class EntityServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTe
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
-    // Valid Copy case
+    // Valid/Invalid Copy cases
     workspaceServer
       .when(
         request()
           .withMethod("POST")
           .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesEntitiesCopyPath)
           .withHeader(MockUtils.authHeader))
+      .callback(
+        callback().
+          withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityCopyCallback")
+      )
+
+    // Invalid Entities by sample type case
+    workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid") + "/sample")
+          .withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
+          .withHeaders(MockUtils.header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(MockWorkspaceServer.rawlsErrorReport(NotFound).toJson.compactPrint)
       )
+    // Invalid entities case
+    workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid"))
+          .withHeader(MockUtils.authHeader))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(MockWorkspaceServer.rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
   }
 
   override def afterAll(): Unit = {
@@ -99,18 +138,46 @@ class EntityServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTe
       }
     }
 
-    "when calling GET on entities in an unknown workspace" - {
-      "Not Found response is returned" in {
-        Get(invalidFireCloudEntitiesPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should be(NotFound)
+    "when calling POST on valid copy entities" - {
+      "Created response is returned" in {
+        Post(validFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should be(Created)
         }
       }
     }
 
-    "when calling POST on valid copy entities" - {
-      "Created response is returned" in {
-        Post(validFireCloudEntitiesCopyPath, entityCopy) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should be(Created)
+    "when calling POST on invalid copy entities" - {
+      "NotFound response is returned" in {
+        Post(validFireCloudEntitiesCopyPath, invalidEntityCopy) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should be(NotFound)
+          errorReportCheck("Rawls", NotFound)
+        }
+      }
+    }
+
+    "when calling GET on an entity type in an unknown workspace" - {
+      "NotFound response is returned with an ErrorReport" in {
+        Get(invalidFireCloudEntitiesSamplePath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should be(NotFound)
+          errorReportCheck("Rawls", NotFound)
+        }
+      }
+    }
+
+    "when calling GET on entities in an unknown workspace" - {
+      "NotFound response is returned with an ErrorReport" in {
+        Get(invalidFireCloudEntitiesPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should be(NotFound)
+          errorReportCheck("Rawls", NotFound)
+        }
+      }
+    }
+
+    "when calling POST on copy entities in an unknown workspace" - {
+      "NotFound response is returned with an ErrorReport" in {
+        Post(invalidFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should be(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }

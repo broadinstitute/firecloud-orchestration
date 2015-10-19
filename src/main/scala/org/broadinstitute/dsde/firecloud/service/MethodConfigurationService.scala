@@ -5,7 +5,6 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.slf4j.LoggerFactory
-import spray.client.pipelining._
 import spray.http.HttpMethods
 import spray.httpx.SprayJsonSupport._
 import spray.routing._

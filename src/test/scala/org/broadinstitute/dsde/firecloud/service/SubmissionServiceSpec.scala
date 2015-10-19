@@ -2,17 +2,13 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.SubmissionIngest
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{FreeSpec, Matchers}
 import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
-import spray.testkit.ScalatestRouteTest
 
-class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-  with Matchers with SubmissionService with FireCloudRequestBuilding {
+import spray.httpx.SprayJsonSupport._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+
+class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
   def actorRefFactory = system
 
@@ -36,7 +32,7 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
   val localInvalidSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace.get,
     MockWorkspaceServer.mockValidWorkspace.name.get,
-    MockWorkspaceServer.mockValidId + MockUtils.randomPositiveInt())
+    MockWorkspaceServer.mockInvalidId)
 
   "SubmissionService" - {
 
@@ -65,6 +61,7 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
         (Post(localSubmissionsPath, MockWorkspaceServer.mockInvalidSubmission)
           ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
           status should equal(BadRequest)
+          errorReportCheck("Rawls", BadRequest)
         }
       }
     }
@@ -89,6 +86,7 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
       "NotFound response is returned" in {
         Get(localInvalidSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }
@@ -105,6 +103,7 @@ class SubmissionServiceSpec extends FreeSpec with ScalaFutures with ScalatestRou
       "NotFound response is returned" in {
         Delete(localInvalidSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }

@@ -1,11 +1,13 @@
 package org.broadinstitute.dsde.firecloud.mock
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
+import org.broadinstitute.dsde.firecloud.model.ErrorReport
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{Configuration, Method}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
+import spray.http.StatusCode
 import spray.http.StatusCodes._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import spray.json._
@@ -48,6 +50,9 @@ object MockMethodsServer {
         )
     )
   }
+
+  def agoraErrorReport(statusCode: StatusCode) =
+    ErrorReport("Agora", "dummy text", Option(statusCode), Seq(), Seq())
 
   /****** Server ******/
 
@@ -96,6 +101,8 @@ object MockMethodsServer {
       ).respond(
       response()
         .withStatusCode(MethodNotAllowed.intValue)
+        .withHeader(header)
+        .withBody(agoraErrorReport(MethodNotAllowed).toJson.compactPrint)
     )
 
     MockMethodsServer.methodsServer
@@ -106,6 +113,8 @@ object MockMethodsServer {
       ).respond(
       response()
         .withStatusCode(MethodNotAllowed.intValue)
+        .withHeader(header)
+        .withBody(agoraErrorReport(MethodNotAllowed).toJson.compactPrint)
     )
 
     MockMethodsServer.methodsServer
@@ -143,6 +152,8 @@ object MockMethodsServer {
       ).respond(
       response()
         .withStatusCode(MethodNotAllowed.intValue)
+        .withHeader(header)
+        .withBody(agoraErrorReport(MethodNotAllowed).toJson.compactPrint)
     )
 
     MockMethodsServer.methodsServer
@@ -153,6 +164,8 @@ object MockMethodsServer {
       ).respond(
       response()
         .withStatusCode(MethodNotAllowed.intValue)
+        .withHeader(header)
+        .withBody(agoraErrorReport(MethodNotAllowed).toJson.compactPrint)
     )
 
   }

@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
+import spray.http.StatusCode
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -30,6 +31,38 @@ object ModelJsonProtocol {
   implicit val impEntityMetadata = jsonFormat4(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)
   implicit val impSubmissionIngest = jsonFormat5(SubmissionIngest)
+
+  implicit object impStatusCode extends JsonFormat[StatusCode] {
+    override def write(code: StatusCode): JsValue = JsNumber(code.intValue)
+
+    override def read(json: JsValue): StatusCode = json match {
+      case JsNumber(n) => n.intValue
+      case _ => throw new DeserializationException("unexpected json type")
+    }
+  }
+
+  implicit object impStackTraceElement extends RootJsonFormat[StackTraceElement] {
+    val CLASS_NAME = "className"
+    val METHOD_NAME = "methodName"
+    val FILE_NAME = "fileName"
+    val LINE_NUMBER = "lineNumber"
+
+    def write(stackTraceElement: StackTraceElement) =
+      JsObject(CLASS_NAME -> JsString(stackTraceElement.getClassName),
+        METHOD_NAME -> JsString(stackTraceElement.getMethodName),
+        FILE_NAME -> JsString(stackTraceElement.getFileName),
+        LINE_NUMBER -> JsNumber(stackTraceElement.getLineNumber))
+
+    def read(json: JsValue) =
+      json.asJsObject.getFields(CLASS_NAME, METHOD_NAME, FILE_NAME, LINE_NUMBER) match {
+        case Seq(JsString(className), JsString(methodName), JsString(fileName), JsNumber(lineNumber)) =>
+          new StackTraceElement(className, methodName, fileName, lineNumber.toInt)
+        case _ => throw new DeserializationException("unable to deserialize StackTraceElement")
+      }
+  }
+
+  // see https://github.com/spray/spray-json#jsonformats-for-recursive-types
+  implicit val impErrorReport: RootJsonFormat[ErrorReport] = rootFormat(lazyFormat(jsonFormat5(ErrorReport)))
 
   implicit object impAttributeFormat extends RootJsonFormat[Attribute] {
 

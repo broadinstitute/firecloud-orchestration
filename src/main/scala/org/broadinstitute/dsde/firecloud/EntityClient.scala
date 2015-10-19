@@ -16,12 +16,13 @@ import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.RequestContext
 import spray.json._
-import spray.json.DefaultJsonProtocol._
 
 import org.broadinstitute.dsde.firecloud.EntityClient._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.{TSVParser, TSVLoadFile}
+
+import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 object EntityClient {
   case class EntityListRequest(workspaceNamespace: String,
@@ -84,8 +85,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       case Failure(error) =>
         // Failure accessing service
         log.error(error, "Service API call failed")
-        requestContext.failWith(
-          new RequestProcessingException(StatusCodes.InternalServerError, error.getMessage))
+        requestContext.complete(HttpResponseWithErrorReport(InternalServerError, error))
     }
   }
 
@@ -132,7 +132,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
    * Bails with a 400 Bad Request if the TSV is invalid. */
   private def withTSVFile(tsvString:String)(op: (TSVLoadFile => Unit)): Unit = {
     Try(TSVParser.parse(tsvString)) match {
-      case Failure(regret) => requestContext.complete(HttpResponse(BadRequest, regret.getMessage))
+      case Failure(regret) => requestContext.complete(HttpResponseWithErrorReport(BadRequest, regret.getMessage))
       case Success(tsvFile) => op(tsvFile)
     }
   }
@@ -143,7 +143,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
    * Bails with a 400 Bad Request if the provided entity type is unknown to the schema. */
   private def withMemberCollectionType(entityType: String)(op: (Option[String] => Unit)): Unit = {
     ModelSchema.getCollectionMemberType(entityType) match {
-      case Failure(regret) => requestContext.complete(HttpResponse(BadRequest, regret.getMessage))
+      case Failure(regret) => requestContext.complete(HttpResponseWithErrorReport(BadRequest, regret.getMessage))
       case Success(memberTypeOpt) => op(memberTypeOpt)
     }
   }
@@ -153,7 +153,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
    * Bails with a 400 Bad Request if the entity type is unknown to the schema. */
   private def withPlural(entityType: String)(op: (String => Unit)): Unit = {
     ModelSchema.getPlural(entityType) match {
-      case Failure(regret) => requestContext.complete(HttpResponse(BadRequest, regret.getMessage))
+      case Failure(regret) => requestContext.complete(HttpResponseWithErrorReport(BadRequest, regret.getMessage))
       case Success(plural) => op(plural)
     }
   }
@@ -165,7 +165,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     val entitiesToUpdate = tsv.tsvData.map(_.headOption.get)
     val distinctEntities = entitiesToUpdate.distinct
     if ( entitiesToUpdate.size != distinctEntities.size ) {
-      requestContext.complete( HttpResponse(BadRequest,
+      requestContext.complete( HttpResponseWithErrorReport(BadRequest,
         "Duplicated entities are not allowed in an " + tsvTypeName +
           " TSV: " + entitiesToUpdate.diff(distinctEntities).distinct.mkString(", ")) )
     } else {
@@ -178,7 +178,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
    * Otherwise, carry on. */
   private def checkNoCollectionMemberAttribute( tsv: TSVLoadFile, memberTypeOpt: Option[String] )(op: => Unit): Unit = {
     if( memberTypeOpt.isDefined && tsv.headers.contains(memberTypeOpt.get + "_id") ) {
-      requestContext.complete( HttpResponse(BadRequest,
+      requestContext.complete( HttpResponseWithErrorReport(BadRequest,
         "Can't set collection members along with other attributes; please use two-column TSV format or remove " +
           memberTypeOpt.get + "_id from your tsv.") )
     } else {
@@ -192,10 +192,10 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
    * Returns the list of required attributes if all is well. */
   private def withRequiredAttributes(entityType: String, headers: Seq[String])(op: (Map[String, String] => Unit)):Unit = {
     ModelSchema.getRequiredAttributes(entityType) match {
-      case Failure(regret) => requestContext.complete(HttpResponse(BadRequest, regret.getMessage))
+      case Failure(regret) => requestContext.complete(HttpResponseWithErrorReport(BadRequest, regret.getMessage))
       case Success(requiredAttributes) => {
         if( !requiredAttributes.keySet.subsetOf(headers.toSet) ) {
-          requestContext.complete( HttpResponse(BadRequest,
+          requestContext.complete( HttpResponseWithErrorReport(BadRequest,
             "TSV is missing required attributes: " + (requiredAttributes.keySet -- headers).mkString(", ")) )
         } else {
           op(requiredAttributes)
@@ -227,7 +227,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       case Failure(error) =>
         // Failure accessing service
         log.error(error, "Service API call failed")
-        requestContext.complete(StatusCodes.InternalServerError, error.getMessage)
+        requestContext.complete(HttpResponseWithErrorReport(InternalServerError, error))
     }
   }
 
@@ -273,13 +273,13 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     //This magical list of conditions determines whether the TSV is populating the "members" attribute of a collection type entity.
     if( !membersType.isDefined ) {
       requestContext.complete(
-        HttpResponse(BadRequest,"Invalid membership TSV. Entity type must be a collection type") )
+        HttpResponseWithErrorReport(BadRequest,"Invalid membership TSV. Entity type must be a collection type") )
     } else if( tsv.headers.length != 2 ){
       requestContext.complete(
-        HttpResponse(BadRequest, "Invalid membership TSV. Must have exactly two columns") )
+        HttpResponseWithErrorReport(BadRequest, "Invalid membership TSV. Must have exactly two columns") )
     } else if( tsv.headers != Seq(tsv.firstColumnHeader, membersType.get + "_id") ) {
       requestContext.complete(
-        HttpResponse(BadRequest, "Invalid membership TSV. Second column header should be " + membersType.get + "_id") )
+        HttpResponseWithErrorReport(BadRequest, "Invalid membership TSV. Second column header should be " + membersType.get + "_id") )
     } else {
       op
     }
@@ -332,7 +332,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
           ModelSchema.getRequiredAttributes(entityType) match {
             //Required attributes aren't required to be headers in update TSVs - they should already have been
             //defined when the entity was created. But we still need the type information if the headers do exist.
-            case Failure(regret) => requestContext.complete(HttpResponse(BadRequest, regret.getMessage))
+            case Failure(regret) => requestContext.complete(HttpResponseWithErrorReport(BadRequest, regret.getMessage))
             case Success(requiredAttributes) =>
               val colInfo = improveAttributeNames(entityType, tsv.headers, requiredAttributes)
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
@@ -354,18 +354,18 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
         case Array( tsvType, entityHeader ) =>
           val entityType = entityHeader.stripSuffix("_id")
           if( entityType == entityHeader ) {
-            requestContext.complete(HttpResponse(BadRequest, "Invalid first column header, entity type should end in _id"))
+            requestContext.complete(HttpResponseWithErrorReport(BadRequest, "Invalid first column header, entity type should end in _id"))
           } else {
             tsvType match {
               case "membership" => importMembershipTSV(workspaceNamespace, workspaceName, tsv, entityType)
               case "entity" => importEntityTSV(workspaceNamespace, workspaceName, tsv, entityType)
               case "update" => importUpdateTSV(workspaceNamespace, workspaceName, tsv, entityType)
               case _ => requestContext.complete(
-                HttpResponse(BadRequest, "Invalid TSV type, supported types are: membership, entity, update"))
+                HttpResponseWithErrorReport(BadRequest, "Invalid TSV type, supported types are: membership, entity, update"))
             }
           }
         case _ => requestContext.complete(
-          HttpResponse(BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
+          HttpResponseWithErrorReport(BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
       }
     }
   }

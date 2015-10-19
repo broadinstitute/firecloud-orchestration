@@ -2,19 +2,17 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.mock.MockMethodsServer
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{Configuration, Method}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{FreeSpec, Matchers}
 import spray.http.StatusCodes._
+
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
-import spray.testkit.ScalatestRouteTest
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
-class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest
-  with Matchers with MethodsService with FireCloudRequestBuilding {
+class MethodsServiceSpec extends ServiceSpec with MethodsService {
 
   def actorRefFactory = system
+
+  import org.broadinstitute.dsde.firecloud.model.ErrorReport.errorReportRejectionHandler
 
   override def beforeAll(): Unit = {
     MockMethodsServer.startMethodsServer()
@@ -52,7 +50,7 @@ class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteT
       "MethodNotAllowed error is returned" in {
         Put("/methods") ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
-          responseAs[String] === "HTTP method not allowed, supported methods: GET"
+          errorReportCheck("Agora", MethodNotAllowed)
         }
       }
     }
@@ -61,7 +59,7 @@ class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteT
       "MethodNotAllowed error is returned" in {
         Post("/methods") ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
-          responseAs[String] === "HTTP method not allowed, supported methods: GET"
+          errorReportCheck("Agora", MethodNotAllowed)
         }
       }
     }
@@ -93,7 +91,7 @@ class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteT
       "MethodNotAllowed error is returned" in {
         Put("/configurations") ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
-          responseAs[String] === "HTTP method not allowed, supported methods: GET"
+          errorReportCheck("Agora", MethodNotAllowed)
         }
       }
     }
@@ -102,7 +100,7 @@ class MethodsServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteT
       "MethodNotAllowed error is returned" in {
         Post("/configurations") ~> sealRoute(routes) ~> check {
           status should equal(MethodNotAllowed)
-          responseAs[String] === "HTTP method not allowed, supported methods: GET"
+          errorReportCheck("Agora", MethodNotAllowed)
         }
       }
     }
