@@ -58,7 +58,6 @@ class TSVParserSpec extends FlatSpec {
 
   it should "load a multi-line file" in {
     val parseResult = MockTSVLoadFiles.validMultiLine
-
     assertResult(parseResult) {
       TSVParser.parse(MockTSVStrings.validMultiline)
     }
@@ -81,7 +80,30 @@ class TSVParserSpec extends FlatSpec {
     val expect = Seq(
       "case_sample" -> Some("sample"),
       "control_sample" -> Some("sample"),
-      "participant_id" -> Some("participant"),
+      "participant" -> Some("participant"),
+      "some_other_id" -> None,
+      "ref_dict" -> None,
+      "ref_fasta" -> None)
+
+    assertResult(expect) {
+      EntityClient.improveAttributeNames(entityType, input, requiredAttributes)
+    }
+  }
+
+  it should "fix up the names of attributes for samples" in {
+    val entityType: String = "sample"
+    val requiredAttributes: Map[String, String] = Map(
+      "participant_id" -> "participant")
+
+    val input = Seq(
+      "entity:sample_id", // first column stripped off when parsing attributes
+      "participant_id",
+      "some_other_id",
+      "ref_dict",
+      "ref_fasta")
+
+    val expect = Seq(
+      "participant" -> Some("participant"),
       "some_other_id" -> None,
       "ref_dict" -> None,
       "ref_fasta" -> None)
