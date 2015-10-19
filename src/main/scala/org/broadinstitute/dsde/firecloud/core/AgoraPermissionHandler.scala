@@ -46,7 +46,15 @@ object AgoraPermissionHandler {
     }
   }
 
-  def determineIfASingleFCPermissionIsValidForTranslationByUser(fireCloudPermission: FireCloudPermission):Boolean = {
+
+  def hasValidUserAndRole(fireCloudPermission: FireCloudPermission):Boolean = {
+    val vRole=this.hasValidRole(fireCloudPermission)
+    val vUser=this.hasValidUser(fireCloudPermission)
+    return (vRole && vUser)
+  }
+
+
+  def hasValidUser(fireCloudPermission: FireCloudPermission):Boolean = {
     fireCloudPermission.user match {
       case Some("") => false
       case None => false
@@ -56,7 +64,7 @@ object AgoraPermissionHandler {
   }
 
 
-  def determineIfASingleFCPermissionIsValidForTranslationByAccessLevel(fireCloudPermission: FireCloudPermission):Boolean = {
+  def hasValidRole(fireCloudPermission: FireCloudPermission):Boolean = {
     fireCloudPermission.role match {
       case Some("NO ACCESS") => true
       case Some("OWNER") => true

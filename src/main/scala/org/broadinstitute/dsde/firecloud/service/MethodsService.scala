@@ -38,12 +38,10 @@ trait MethodsService extends HttpService with PerRequestCreator with FireCloudDi
           entity(as[List[FireCloudPermission]]) {
             fireCloudPermissions => requestContext =>
               //scan user and roles of each input to make sure they're valid
-              val okayByUsers=fireCloudPermissions.map(x => x.verifyValidUser)
-              val okayByRoles=fireCloudPermissions.map(x => x.verifyValidRole)
+              val validityFlags=fireCloudPermissions.map(x => x.verifyValidUserAndRole)
               //see http://stackoverflow.com/questions/22518773/applying-logical-and-to-list-of-boolean-values
-              val andAllByUsers = okayByUsers.foldLeft(true)(_ && _)
-              val andAllByRoles=okayByRoles.foldLeft(true)(_ && _)
-              if(!(andAllByUsers && andAllByRoles))
+              val andAllByUsersAndRoles=validityFlags.foldLeft(true)(_ && _)
+              if(!(andAllByUsersAndRoles))
                 {
                 requestContext.complete(HttpResponseWithErrorReport(BadRequest, "Invalid user or access setting detected! Each permission posted must have a non-empty user and a permission of READER, OWNER, or NO ACCESS!"))
                 }

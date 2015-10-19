@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.mock
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ErrorReport
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{Configuration, Method}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, Configuration, Method}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -15,9 +15,51 @@ import DefaultJsonProtocol._
 
 object MockMethodsServer {
 
+
+
+
   val methodsServerPort = 8989
 
   /****** Mock Data ******/
+
+  def generateRandomRoles():List[String] ={
+    val randomNum=scala.util.Random.nextInt(2)
+    val aList=List[String]()
+    if(randomNum %2==0) {
+      aList :+ "Read"
+    }
+    val randomNum2=scala.util.Random.nextInt(2)
+    if(randomNum2 %2==0 )
+    {
+      aList :+ "Write"
+    }
+    val randomNum3=scala.util.Random.nextInt(2)
+    if(randomNum3 %2==0)
+    {
+      aList :+ "Create"
+    }
+    val randomNum4=scala.util.Random.nextInt(2)
+    if(randomNum4 %2==0)
+    {
+      aList :+ "Redact"
+    }
+    val randomNum5=scala.util.Random.nextInt(2)
+    if(randomNum5 %2==0)
+    {
+      aList :+ "Manage"
+    }
+    return aList
+  }
+
+ val mockPermissions: List[AgoraPermission] = {
+    List.tabulate(randomPositiveInt()-1)(
+    n=>
+      AgoraPermission(
+        user=Some(randomAlpha()),
+        roles=Some(generateRandomRoles())
+      )
+    )
+  }
 
   val mockMethods: List[Method] = {
     List.tabulate(randomPositiveInt())(

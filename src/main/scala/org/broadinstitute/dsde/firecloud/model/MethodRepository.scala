@@ -32,8 +32,7 @@ object MethodRepository {
     user: Option[String] = None,
     role: Option[String] = None
   ) {
-    def verifyValidUser = AgoraPermissionHandler.determineIfASingleFCPermissionIsValidForTranslationByUser(this)
-    def verifyValidRole = AgoraPermissionHandler.determineIfASingleFCPermissionIsValidForTranslationByAccessLevel(this)
+    def verifyValidUserAndRole = AgoraPermissionHandler.hasValidUserAndRole(this)
     def toAgoraPermission = AgoraPermissionHandler.toAgoraPermission(this)
   }
 
