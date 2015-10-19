@@ -130,6 +130,144 @@ paths:
           description: Method Repository configuration detail
         500:
           description: Internal Server Error
+  /methods/{namespace}/{name}/{snapshotId}/permissions:
+    get:
+      tags:
+        - Method Repository
+      operationId: getMethodACL
+      summary: get ACL permissions on a Method Repository method
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method snapshot ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: the indicated method ACL
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: setMethodACL
+      summary: set ACL permissions on a Method Repository method
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method snapshot ID
+          required: true
+          type: string
+          in: path
+        - name: payload
+          description: the ACLs to upsert
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+      responses:
+        200:
+          description: the indicated method ACL once the posted changes have been applied
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Bad Request
+        500:
+          description: Internal Server Error
+  /configurations/{namespace}/{name}/{snapshotId}/permissions:
+    get:
+      tags:
+        - Method Repository
+      operationId: getConfigACL
+      summary: get ACL permissions on a Method Repository configuration
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method Configuration namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method Configuration name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method Configuration snapshot ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: the indicated configuration ACL
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: setConfigACL
+      summary: set ACL permissions on a Method Repository configuration
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method Configuration namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method Configuration name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method Configuration snapshot ID
+          required: true
+          type: string
+          in: path
+        - name: payload
+          description: the ACLs to upsert
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+      responses:
+        200:
+          description: the indicated configuration ACL once the posted changes have been applied
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Bad Request
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:
@@ -484,6 +622,79 @@ paths:
           description: Workspace entities of specified type in TSV format
         404:
           description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}:
+    get:
+      tags:
+        - Entities
+      operationId: getEntity
+      summary: Get entity in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entityType
+          description: Entity Type
+          required: true
+          type: string
+          in: path
+        - name: entityName
+          description: Entity Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Success
+        404:
+          description: Workspace or Entity does not exist
+        500:
+          description: Internal Server Error
+    delete:
+      tags:
+        - Entities
+      operationId: deleteEntity
+      summary: Delete entity in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entityType
+          description: Entity Type
+          required: true
+          type: string
+          in: path
+        - name: entityName
+          description: Entity Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: No response was specified
+        204:
+          description: Successful Request
+        404:
+          description: Workspace or Entity does not exist
         500:
           description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
@@ -1220,6 +1431,19 @@ definitions:
         additionalProperties:
           type: string
         description: Map of attributes
+  MethodConfigACL:
+    type: array
+    items:
+      properties:
+        user:
+          type: string
+          description: a user's ID or "public"
+        role:
+          type: string
+          description: one of "NO ACCESS", "READER", or "OWNER"
+      required:
+        - userId
+        - accessLevel
   SubmissionIngest:
     properties:
       methodConfigurationNamespace:

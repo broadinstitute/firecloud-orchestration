@@ -99,28 +99,17 @@ case class MethodConfigurationPublish(
   @(ApiModelProperty@field)(required = true, value = "method configuration source")
   source: Option[MethodConfigurationId] = None)
 
-@ApiModel(value = "Method Repository Configuration Copy Ingest")
 case class CopyConfigurationIngest(
-  @(ApiModelProperty@field)(required = true, value = "method configuration namespace")
   configurationNamespace: Option[String],
-  @(ApiModelProperty@field)(required = true, value = "method configuration name")
   configurationName: Option[String],
-  @(ApiModelProperty@field)(required = true, value = "method configuration snapshot id")
   configurationSnapshotId: Option[Int],
-  @(ApiModelProperty@field)(required = true, value = "method configuration destination namespace")
   destinationNamespace: Option[String],
-  @(ApiModelProperty@field)(required = true, value = "method configuration destination name")
   destinationName: Option[String])
 
-@ApiModel(value = "Method Repository Configuration Publish Ingest")
 case class PublishConfigurationIngest(
-  @(ApiModelProperty@field)(required = true, value = "method configuration namespace")
   configurationNamespace: Option[String],
-  @(ApiModelProperty@field)(required = true, value = "method configuration name")
   configurationName: Option[String],
-  @(ApiModelProperty@field)(required = true, value = "method configuration source namespace")
   sourceNamespace: Option[String],
-  @(ApiModelProperty@field)(required = true, value = "method configuration source name")
   sourceName: Option[String])
 
 case class SubmissionIngest(

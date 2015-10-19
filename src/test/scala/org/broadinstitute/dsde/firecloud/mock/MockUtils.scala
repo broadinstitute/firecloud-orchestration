@@ -7,9 +7,11 @@ import org.mockserver.model.Header
 
 object MockUtils {
 
-   val isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
-   val authHeader = new Header("Authorization", "Bearer mF_9.B5f-4.1JqM")
-   val header = new Header("Content-Type", "application/json")
+  val isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
+  val authHeader = new Header("Authorization", "Bearer mF_9.B5f-4.1JqM")
+  val header = new Header("Content-Type", "application/json")
+  val workspaceServerPort = 8990
+  val methodsServerPort = 8989
 
    def randomPositiveInt(): Int = {
      scala.util.Random.nextInt(9) + 1

@@ -39,7 +39,7 @@ class EntitiesWithTypeServiceSpec extends ServiceSpec with EntityService {
 
   override def beforeAll(): Unit = {
 
-    workspaceServer = startClientAndServer(MockWorkspaceServer.workspaceServerPort)
+    workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
 
     // Valid cases
     workspaceServer
