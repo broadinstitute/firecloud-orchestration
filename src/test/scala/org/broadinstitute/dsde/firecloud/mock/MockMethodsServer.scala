@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.mock
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ErrorReport
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{Configuration, Method}
@@ -16,6 +17,9 @@ import DefaultJsonProtocol._
 object MockMethodsServer {
 
   val methodsServerPort = 8989
+
+  val methodsUrl = FireCloudConfig.Agora.authPrefix + FireCloudConfig.Agora.methodsPath
+  val configsUrl = FireCloudConfig.Agora.authPrefix + FireCloudConfig.Agora.configurationsPath
 
   /****** Mock Data ******/
 
@@ -70,7 +74,7 @@ object MockMethodsServer {
       .when(
         request()
           .withMethod("GET")
-          .withPath("/methods")
+          .withPath(methodsUrl)
           .withHeader(authHeader)
       ).respond(
         response()
@@ -85,7 +89,7 @@ object MockMethodsServer {
       .when(
         request()
           .withMethod("GET")
-          .withPath("/methods")
+          .withPath(methodsUrl)
       ).respond(
         response()
           .withHeaders(header)
@@ -97,7 +101,7 @@ object MockMethodsServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath("/methods")
+          .withPath(methodsUrl)
       ).respond(
       response()
         .withStatusCode(MethodNotAllowed.intValue)
@@ -109,7 +113,7 @@ object MockMethodsServer {
       .when(
         request()
           .withMethod("PUT")
-          .withPath("/methods")
+          .withPath(methodsUrl)
       ).respond(
       response()
         .withStatusCode(MethodNotAllowed.intValue)
@@ -121,7 +125,7 @@ object MockMethodsServer {
       .when(
         request()
           .withMethod("GET")
-          .withPath("/configurations")
+          .withPath(configsUrl)
           .withHeader(authHeader)
       ).respond(
         response()
@@ -136,7 +140,7 @@ object MockMethodsServer {
       .when(
         request()
           .withMethod("GET")
-          .withPath("/configurations")
+          .withPath(configsUrl)
       ).respond(
         response()
           .withHeaders(header)
@@ -148,7 +152,7 @@ object MockMethodsServer {
       .when(
         request()
           .withMethod("POST")
-          .withPath("/configurations")
+          .withPath(configsUrl)
       ).respond(
       response()
         .withStatusCode(MethodNotAllowed.intValue)
@@ -160,7 +164,7 @@ object MockMethodsServer {
       .when(
         request()
           .withMethod("PUT")
-          .withPath("/configurations")
+          .withPath(configsUrl)
       ).respond(
       response()
         .withStatusCode(MethodNotAllowed.intValue)
