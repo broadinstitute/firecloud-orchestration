@@ -104,19 +104,23 @@ class MethodsServiceSpec extends ServiceSpec with MethodsService {
       }
     }
 
-  "when calling GET on a given configuration" - {
-    "A list of (translated agora-to) FireCloud permissions is returned" in {
-      Get("/configurations/broad-dsde-dev/EddieFastaCounter/1/permissions") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-        status should equal(OK)
-        val perms = responseAs[List[FireCloudPermission]]
-        perms foreach {
-          p: FireCloudPermission =>
-            p.user shouldNot be(empty)
-            p.role shouldBe Some(List)
+    "when calling GET on a given method" - {
+      "A list of (translated agora-to) FireCloud permissions is returned" in {
+        Get("/configurations/broad-dsde-dev/EddieFastaCounter/1/permissions") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+          val perms = responseAs[List[FireCloudPermission]]
+          perms foreach {
+            p: FireCloudPermission =>
+              p.user shouldNot be(empty)
+              p.role shouldBe Some(List)
+              val pCount=p.role.##
+              val pCountGoodFlag=(0<=pCount && pCount<=5)
+              pCountGoodFlag shouldBe true
+
+          }
         }
       }
     }
-  }
 
     "when calling GET on a given method" - {
       "A list of (translated agora-to) FireCloud permissions is returned" in {
@@ -125,8 +129,12 @@ class MethodsServiceSpec extends ServiceSpec with MethodsService {
           val perms = responseAs[List[FireCloudPermission]]
           perms foreach {
             p: FireCloudPermission =>
-              p.user shouldNot be(empty)
-              p.role shouldBe Some(List)
+             p.user shouldNot be(empty)
+             p.role shouldBe Some(List)
+             val pCount=p.role.##
+             val pCountGoodFlag=(0<=pCount && pCount<=5)
+             pCountGoodFlag shouldBe true
+
           }
         }
       }
