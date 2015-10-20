@@ -130,6 +130,128 @@ paths:
           description: Method Repository configuration detail
         500:
           description: Internal Server Error
+  /methods/{namespace}/{name}/{snapshotId}/permissions
+    get:
+      tags:
+        - Method Repository
+      operationId: get ACL permissions on a Method Repository method
+      summary: get ACL permissions on a Method Repository method
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method snapshot ID
+          required: true
+          type: string
+          in: path
+        schema:
+          $ref: '#/definitions/MethodConfigACL'
+      responses:
+        200:
+          description: the indicated method ACL
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: get ACL permissions on a Method Repository method
+      summary: get ACL permissions on a Method Repository method
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method snapshot ID
+          required: true
+          type: string
+          in: path
+        schema:
+          $ref: '#/definitions/MethodConfigACL'
+      responses:
+        200:
+          description: the indicated method ACL once the posted changes have been applied
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        500:
+          description: Internal Server Error
+  /configurations/{namespace}/{name}/{snapshotId}/permissions
+    get:
+      tags:
+        - Method Repository
+      operationId: get ACL permissions on a Method Repository configuration
+      summary: get ACL permissions on a Method Repository configuration
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method Configuration namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method Configuration name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method Configuration snapshot ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: the indicated configuration ACL
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: get ACL permissions on a Method Repository configuration
+      summary: get ACL permissions on a Method Repository configuration
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method Configuration namespace
+          required: true
+          type: string
+          in: path
+        - name: name
+          description: Method Configuration name
+          required: true
+          type: string
+          in: path
+        - name: snapshotId
+          description: Method Configuration snapshot ID
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: the indicated configuration ACL once the posted changes have been applied
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:
@@ -1191,6 +1313,17 @@ definitions:
         additionalProperties:
           type: string
         description: Map of attributes
+  MethodConfigACL:
+    properties:
+      userId:
+        type: string
+        description: a user's ID or "public"
+      accessLevel:
+        type: string
+        description: one of "NO ACCESS", "READER", or "OWNER"
+    required:
+      - userId
+      - accessLevel
   SubmissionIngest:
     properties:
       methodConfigurationNamespace:

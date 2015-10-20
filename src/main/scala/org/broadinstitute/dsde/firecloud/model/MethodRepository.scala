@@ -1,49 +1,47 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import com.wordnik.swagger.annotations.{ApiModelProperty, ApiModel}
-
-import scala.annotation.meta.field
+import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 
 object MethodRepository {
 
-  @ApiModel(value = "Configuration")
   case class Configuration(
-                            @(ApiModelProperty@field)(dataType = "string", value = "Namespace")
-                            namespace: Option[String] = None,
-                            @(ApiModelProperty@field)(dataType = "string", value = "Name ")
-                            name: Option[String] = None,
-                            @(ApiModelProperty@field)(dataType = "string", value = "Snapshot Id")
-                            snapshotId: Option[Int] = None,
-                            @(ApiModelProperty@field)(dataType = "string", value = "Synopsis")
-                            synopsis: Option[String] = None,
-                            @(ApiModelProperty@field)(dataType = "string", value = "Documentation")
-                            documentation: Option[String] = None,
-                            @(ApiModelProperty@field)(dataType = "string", value = "Owner")
-                            owner: Option[String] = None,
-                            @(ApiModelProperty@field)(dataType = "string", value = "Payload")
-                            payload: Option[String] = None,
-                            @(ApiModelProperty@field)(dataType = "string", value = "Excluded Field")
-                            excludedField: Option[String] = None,
-                            @(ApiModelProperty@field)(dataType = "string", value = "Included Field")
-                            includedField: Option[String] = None)
+    namespace: Option[String] = None,
+    name: Option[String] = None,
+    snapshotId: Option[Int] = None,
+    synopsis: Option[String] = None,
+    documentation: Option[String] = None,
+    owner: Option[String] = None,
+    payload: Option[String] = None,
+    excludedField: Option[String] = None,
+    includedField: Option[String] = None
+  )
 
-  @ApiModel(value = "Method")
   case class Method(
-                     @(ApiModelProperty@field)(dataType = "string", value = "Namespace")
-                     namespace: Option[String] = None,
-                     @(ApiModelProperty@field)(dataType = "string", value = "Name")
-                     name: Option[String] = None,
-                     @(ApiModelProperty@field)(dataType = "string", value = "Snapshot Id")
-                     snapshotId: Option[Int] = None,
-                     @(ApiModelProperty@field)(dataType = "string", value = "Synopsis")
-                     synopsis: Option[String] = None,
-                     @(ApiModelProperty@field)(dataType = "string", value = "Owner")
-                     owner: Option[String] = None,
-                     @(ApiModelProperty@field)(dataType = "string", value = "Creation Date")
-                     createDate: Option[String] = None,
-                     @(ApiModelProperty@field)(dataType = "string", value = "Payload")
-                     url: Option[String] = None,
-                     @(ApiModelProperty@field)(dataType = "string", value = "The type of the entity (Task, Workflow, Configuration)")
-                     entityType: Option[String] = None)
+    namespace: Option[String] = None,
+    name: Option[String] = None,
+    snapshotId: Option[Int] = None,
+    synopsis: Option[String] = None,
+    owner: Option[String] = None,
+    createDate: Option[String] = None,
+    url: Option[String] = None,
+    entityType: Option[String] = None
+  )
+
+  // represents a method/config permission as exposed to the user from the orchestration layer
+  case class FireCloudPermission(
+    user: Option[String] = None,
+    role: Option[String] = None
+  ) {
+    def verifyValidUserAndRole = AgoraPermissionHandler.hasValidUserAndRole(this)
+    def toAgoraPermission = AgoraPermissionHandler.toAgoraPermission(this)
+  }
+
+  // represents a method/config permission as exposed by Agora
+  case class AgoraPermission(
+    user: Option[String] = None,
+    roles: Option[List[String]] = None
+  ) {
+    def toFireCloudPermission = AgoraPermissionHandler.toFireCloudPermission(this)
+  }
 
 }
