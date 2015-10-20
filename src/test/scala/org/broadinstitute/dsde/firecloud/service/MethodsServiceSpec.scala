@@ -1,9 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.mock.MockMethodsServer
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{Configuration, Method}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import spray.http.StatusCodes._
-
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -105,12 +104,32 @@ class MethodsServiceSpec extends ServiceSpec with MethodsService {
       }
     }
 
-  /*"when calling GET on a given configuration" - {
-    "A list of FireCloud permissions is returned" in {
-      Get("/configurations/") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+  "when calling GET on a given configuration" - {
+    "A list of (translated agora-to) FireCloud permissions is returned" in {
+      Get("/configurations/broad-dsde-dev/EddieFastaCounter/1/permissions") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        status should equal(OK)
+        val perms = responseAs[List[FireCloudPermission]]
+        perms foreach {
+          p: FireCloudPermission =>
+            p.user shouldNot be(empty)
+            p.role shouldBe Some(List)
+        }
       }
     }
+  }
 
-  }*/
+    "when calling GET on a given method" - {
+      "A list of (translated agora-to) FireCloud permissions is returned" in {
+        Get("/methods/broad-dsde-dev/EddieFastaCounter/1/permissions") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+          val perms = responseAs[List[FireCloudPermission]]
+          perms foreach {
+            p: FireCloudPermission =>
+              p.user shouldNot be(empty)
+              p.role shouldBe Some(List)
+          }
+        }
+      }
+    }
 
 }}
