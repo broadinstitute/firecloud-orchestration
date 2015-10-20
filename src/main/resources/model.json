@@ -27,16 +27,25 @@
     },
     "participant_set": {
         "requiredAttributes": {},
+        "attributeRenaming": {
+            "participant_id": "participant"
+        },
         "plural": "participant_sets",
         "memberType": "participant"
     },
     "sample_set": {
         "requiredAttributes": {},
+        "attributeRenaming": {
+            "sample_id": "sample"
+        },
         "plural": "sample_sets",
         "memberType": "sample"
     },
     "pair_set": {
         "requiredAttributes": {},
+        "attributeRenaming": {
+            "pair_id": "pair"
+        },
         "plural": "pair_sets",
         "memberType": "pair"
     }
