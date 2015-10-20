@@ -63,6 +63,7 @@ trait PerRequest extends Actor {
     case _:HttpHeaders.Server => true
     case _:HttpHeaders.`Content-Type` => true
     case _:HttpHeaders.`Content-Length` => true
+    case _:HttpHeaders.`Transfer-Encoding` => true
     case _ => false
   }
 
