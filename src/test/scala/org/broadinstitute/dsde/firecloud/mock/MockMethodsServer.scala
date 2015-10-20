@@ -22,7 +22,10 @@ object MockMethodsServer {
 
   /****** Mock Data ******/
 
-  def generateRandomRoles():List[String] ={
+  def generateRandomRoles():List[String] =
+  {
+    //each of the 5 individual roles
+    //has a 1/2 probability of showing up
     val randomNum=scala.util.Random.nextInt(2)
     val aList=List[String]()
     if(randomNum %2==0) {
@@ -158,6 +161,55 @@ object MockMethodsServer {
         .withHeader(header)
         .withBody(agoraErrorReport(MethodNotAllowed).toJson.compactPrint)
     )
+
+    MockMethodsServer.methodsServer
+    .when(
+      request()
+        .withMethod("GET")
+        .withPath("/configurations/%s/%s/%s/permissions"))
+      .respond(
+        response()
+          .withStatusCode(200)
+          .withHeader(header)
+          .withBody(mockPermissions.toJson.compactPrint))
+
+    MockMethodsServer.methodsServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath("/methods/%s/%s/%s/permissions"))
+      .respond(
+        response()
+          .withStatusCode(200)
+          .withHeader(header)
+          .withBody(mockPermissions.toJson.compactPrint))
+
+    //POST returns the same as GET, but the data returned
+    //in the POST in real Agora is essentially an echo
+    //of what was sent which
+    MockMethodsServer.methodsServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath("/configurations/%s/%s/%s/permissions"))
+      .respond(
+        response()
+          .withStatusCode(200)
+          .withHeader(header)
+          .withBody(mockPermissions.toJson.compactPrint))
+
+    MockMethodsServer.methodsServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath("/methods/%s/%s/%s/permissions"))
+      .respond(
+        response()
+          .withStatusCode(200)
+          .withHeader(header)
+          .withBody(mockPermissions.toJson.compactPrint))
+
+
 
     MockMethodsServer.methodsServer
       .when(
