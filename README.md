@@ -36,7 +36,7 @@ sbt
 ```
 
 Ensure that `GOOGLE_CLIENT_ID` (with origins set to `http://localhost:8080` and `https://localhost:8080` - see below), 
-`AGORA_URL_ROOT`, and `RAWLS_URL_ROOT` are defined in your environment, and execute the jar with the path to the jar and path of the desired config file:
+`AGORA_URL_ROOT`, `RAWLS_URL_ROOT`, and `THURLOE_URL_ROOT` are defined in your environment, and execute the jar with the path to the jar and path of the desired config file:
 
 ```
 java -Dconfig.file=src/main/resources/application.conf \
@@ -52,7 +52,7 @@ sbt
 ## Testing
 
 ```
-AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' sbt test
+AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' THURLOE_URL_ROOT='http://localhost:8991' sbt test
 ```
 
 ## Debugging
@@ -85,6 +85,7 @@ docker run --rm --name orch \
   -e GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
   -e RAWLS_URL_ROOT='https://rawls.dsde-dev.broadinstitute.org' \
   -e AGORA_URL_ROOT='https://agora.dsde-dev.broadinstitute.org' \
+  -e THURLOE_URL_ROOT='https://thurloe.dsde-dev.broadinstitute.org' \
   broadinstitute/firecloud-orchestration
 ```
 
