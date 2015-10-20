@@ -105,6 +105,12 @@ class MethodsServiceSpec extends ServiceSpec with MethodsService {
       }
     }
 
-  }
+  /*"when calling GET on a given configuration" - {
+    "A list of FireCloud permissions is returned" in {
+      Get("/configurations/") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      }
+    }
 
-}
+  }*/
+
+}}
