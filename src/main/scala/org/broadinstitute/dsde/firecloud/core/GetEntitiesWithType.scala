@@ -4,19 +4,19 @@ import akka.actor.{Actor, Props}
 import akka.contrib.pattern.Aggregator
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.{EntityWithType, ProcessUrl}
-import org.broadinstitute.dsde.firecloud.model.{ErrorReport,RequestCompleteWithErrorReport}
-import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
+import org.broadinstitute.dsde.firecloud.model.{ErrorReport, RequestCompleteWithErrorReport}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import spray.client.pipelining._
-import spray.http.StatusCodes._
 import spray.http.HttpResponse
+import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsValue
 import spray.routing.RequestContext
 
 import scala.concurrent.Future
-import scala.util.{Failure, Try, Success}
+import scala.util.{Failure, Success}
 
 object GetEntitiesWithType {
   case class ProcessUrl(url: String)
@@ -62,7 +62,7 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
 
     if (entityTypes.nonEmpty) {
       val pipeline = authHeaders(requestContext) ~> sendReceive
-      val entityUrls: List[String] = entityTypes.map(s => s"$baseUrl/$s")
+      val entityUrls: List[String] = entityTypes.map(s => FireCloudDirectiveUtils.encodeUri(s"$baseUrl/$s"))
       val entityFutures: List[Future[HttpResponse]] = entityUrls map { entitiesUrl => pipeline { Get(entitiesUrl) } }
       val f: Future[List[HttpResponse]] = Future sequence entityFutures
       f onComplete {
