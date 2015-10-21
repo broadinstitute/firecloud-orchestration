@@ -26,6 +26,8 @@ class FireCloudServiceActor extends HttpServiceActor {
   val routes = statusService.routes ~ methodsService.routes ~ workspaceService.routes ~ entityService.routes ~
     methodConfigurationService.routes ~ submissionsService.routes ~ userService.routes ~ storageService.routes
 
+  val oAuthService = new OAuthService with ActorRefFactoryContext
+
   lazy val log = LoggerFactory.getLogger(getClass)
   val logRequests = mapInnerRoute { route => requestContext =>
     log.debug(requestContext.request.toString)
@@ -43,12 +45,14 @@ class FireCloudServiceActor extends HttpServiceActor {
       pathPrefix("service") {
         swaggerUiService ~
           testNihService ~
+          oAuthService.routes ~
           pathPrefix("api") {
             routes
           }
       } ~
         swaggerUiService ~
         testNihService ~
+        oAuthService.routes ~
         pathPrefix("api") {
           routes
         }
