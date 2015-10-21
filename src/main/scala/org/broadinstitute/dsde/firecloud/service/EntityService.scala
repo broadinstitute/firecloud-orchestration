@@ -28,7 +28,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
       path("entities_with_type") {
         get { requestContext =>
           perRequest(requestContext, Props(new GetEntitiesWithTypeActor(requestContext)),
-            GetEntitiesWithType.ProcessUrl(baseRawlsEntitiesUrl))
+            GetEntitiesWithType.ProcessUrl(encodeUri(baseRawlsEntitiesUrl)))
         }
       } ~
       pathPrefix("entities") {
