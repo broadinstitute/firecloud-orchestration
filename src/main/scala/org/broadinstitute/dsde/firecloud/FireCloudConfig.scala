@@ -19,10 +19,12 @@ object FireCloudConfig {
   object Agora {
     private val methods = config.getConfig("methods")
     lazy val baseUrl = sys.env.get("AGORA_URL_ROOT").get
+    lazy val authPrefix = methods.getString("authPrefix")
+    lazy val authUrl = baseUrl + authPrefix
     lazy val methodsPath = methods.getString("methodsPath")
-    lazy val methodsBaseUrl = baseUrl + methodsPath
+    lazy val methodsBaseUrl = authUrl + methodsPath
     lazy val configurationsPath = methods.getString("configurationsPath")
-    lazy val configurationsBaseUrl = baseUrl + configurationsPath
+    lazy val configurationsBaseUrl = authUrl + configurationsPath
   }
 
   object Rawls {
@@ -53,9 +55,6 @@ object FireCloudConfig {
     lazy val importEntitiesPath = workspace.getString("importEntitiesPath")
     lazy val workspacesEntitiesCopyPath = workspace.getString("workspacesEntitiesCopyPath")
     lazy val workspacesEntitiesCopyUrl = authUrl + workspacesEntitiesCopyPath
-    lazy val submissionsPath = workspace.getString("submissionsPath")
-    lazy val submissionsUrl = authUrl + submissionsPath
-    lazy val submissionsIdPath = workspace.getString("submissionsIdPath")
 
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
     def methodConfigPathFromWorkspace(namespace: String, name: String) = authUrl + methodConfigsListPath.format(namespace, name)
