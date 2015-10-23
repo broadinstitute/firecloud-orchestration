@@ -24,7 +24,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudDirec
   private implicit val executionContext = actorRefFactory.dispatcher
 
   lazy val log = LoggerFactory.getLogger(getClass)
-  lazy val thurloeRoot = FireCloudConfig.Thurloe.baseUrl
+  lazy val thurloeRoot = FireCloudConfig.Thurloe.authUrl
 
   val routes = requireUserInfo() { userInfo =>
     pathPrefix("profile") {
