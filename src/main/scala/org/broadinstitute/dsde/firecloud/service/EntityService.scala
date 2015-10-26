@@ -53,13 +53,13 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
           pathEnd {
             passthrough(entityTypeUrl, HttpMethods.GET)
           } ~
-          path(Segment) { entityName =>
-            passthrough(entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
-          } ~
           path("tsv") { requestContext =>
             val filename = entityType + ".txt"
             perRequest(requestContext, Props(new ExportEntitiesByTypeActor(requestContext)),
               ExportEntitiesByType.ProcessEntities(entityTypeUrl, filename, entityType))
+          } ~
+          path(Segment) { entityName =>
+            passthrough(entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
           }
         }
       }
