@@ -14,8 +14,11 @@ trait MethodsService extends HttpService with FireCloudDirectives {
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
+  val localMethodsPath = "methods"
+  val localConfigsPath = "configurations"
+
   val routes: Route =
-    passthroughAllPaths("methods", FireCloudConfig.Agora.methodsBaseUrl) ~
-    passthroughAllPaths("configurations", FireCloudConfig.Agora.configurationsBaseUrl)
+    passthroughAllPaths(localMethodsPath, FireCloudConfig.Agora.methodsBaseUrl) ~
+    passthroughAllPaths(localConfigsPath, FireCloudConfig.Agora.configurationsBaseUrl)
 
 }
