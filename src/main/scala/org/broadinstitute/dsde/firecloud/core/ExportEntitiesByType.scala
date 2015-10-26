@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
-import org.broadinstitute.dsde.firecloud.utils.EntityMatrix
+import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import spray.client.pipelining._
 import spray.http.MediaTypes._
 import spray.http.StatusCodes._
@@ -30,14 +30,14 @@ class ExportEntitiesByTypeActor(requestContext: RequestContext) extends Actor wi
   val log = Logging(system, getClass)
 
   override def receive: Receive = {
-    case ProcessEntities(url: String, filename: String, entityType: String) =>
-      log.debug("Processing entities for url: " + url)
+    case ProcessEntities(encodedUrl: String, filename: String, entityType: String) =>
+      log.debug("Processing entities for url: " + encodedUrl)
       val pipeline = authHeaders(requestContext) ~> sendReceive
-      pipeline { Get(url) } onComplete {
+      pipeline { Get(encodedUrl) } onComplete {
         case Success(response) if response.status == OK =>
           val entities = unmarshal[List[EntityWithType]].apply(response)
           log.debug("Processed entities: " + entities.toString)
-          val data = EntityMatrix.makeTsvString(entities, entityType)
+          val data = TSVFormatter.makeTsvString(entities, entityType)
           context.parent ! RequestCompleteWithHeaders(
             (OK, data),
             HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
