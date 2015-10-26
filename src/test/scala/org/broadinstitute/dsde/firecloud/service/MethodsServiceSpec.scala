@@ -1,110 +1,56 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.mock.MockMethodsServer
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{Configuration, Method}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.mockserver.integration.ClientAndServer
+import org.mockserver.integration.ClientAndServer._
+import org.mockserver.model.HttpRequest._
+import spray.http.HttpMethods
 import spray.http.StatusCodes._
-
-import spray.httpx.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 class MethodsServiceSpec extends ServiceSpec with MethodsService {
 
   def actorRefFactory = system
-
-  import org.broadinstitute.dsde.firecloud.model.ErrorReport.errorReportRejectionHandler
+  var methodsServer: ClientAndServer = _
+  val httpMethods = List(HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT,
+    HttpMethods.DELETE, HttpMethods.PATCH, HttpMethods.OPTIONS, HttpMethods.HEAD)
 
   override def beforeAll(): Unit = {
-    MockMethodsServer.startMethodsServer()
+    methodsServer = startClientAndServer(MockUtils.methodsServerPort)
+    httpMethods map {
+      method =>
+        methodsServer
+          .when(request().withMethod(method.name).withPath(MethodsService.remoteMethodsPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        methodsServer
+          .when(request().withMethod(method.name).withPath(MethodsService.remoteConfigurationsPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+    }
   }
 
   override def afterAll(): Unit = {
-    MockMethodsServer.stopMethodsServer()
+    methodsServer.stop()
   }
 
   "MethodsService" - {
-
-    "when calling GET on the /methods path" - {
-      "valid methods are returned" in {
-        Get("/methods") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-          val entities = responseAs[List[Method]]
-          entities shouldNot be(empty)
-          entities foreach {
-            e: Method =>
-              e.namespace shouldNot be(empty)
-          }
+    "when testing all HTTP methods on the methods path" - {
+      "MethodNotAllowed error is not returned" in {
+        httpMethods map {
+          method =>
+            new RequestBuilder(method)("/" + localMethodsPath) ~> sealRoute(routes) ~> check {
+              status shouldNot equal(MethodNotAllowed)
+            }
+            new RequestBuilder(method)("/" + localConfigsPath) ~> sealRoute(routes) ~> check {
+              status shouldNot equal(MethodNotAllowed)
+            }
         }
       }
     }
-
-    "when calling GET on the /methods path without a valid authentication token" - {
-      "Found (302 redirect) response is returned" in {
-        Get("/methods") ~> sealRoute(routes) ~> check {
-          status should equal(Found)
-        }
-      }
-    }
-
-    "when calling POST on the /methods path" - {
-      "MethodNotAllowed error is returned" in {
-        Put("/methods") ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("Agora", MethodNotAllowed)
-        }
-      }
-    }
-
-    "when calling PUT on the /methods path" - {
-      "MethodNotAllowed error is returned" in {
-        Post("/methods") ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("Agora", MethodNotAllowed)
-        }
-      }
-    }
-
-
-    "when calling GET on the /configurations path" - {
-      "valid methods are returned" in {
-        Get("/configurations") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-          val entities = responseAs[List[Configuration]]
-          entities shouldNot be(empty)
-          entities foreach {
-            e: Configuration =>
-              e.namespace shouldNot be(empty)
-          }
-        }
-      }
-    }
-
-    "when calling GET on the /configurations path without a valid authentication token" - {
-      "Found (302 redirect) response is returned" in {
-        Get("/configurations") ~> sealRoute(routes) ~> check {
-          status should equal(Found)
-        }
-      }
-    }
-
-    "when calling POST on the /configurations path" - {
-      "MethodNotAllowed error is returned" in {
-        Put("/configurations") ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("Agora", MethodNotAllowed)
-        }
-      }
-    }
-
-    "when calling PUT on the /configurations path" - {
-      "MethodNotAllowed error is returned" in {
-        Post("/configurations") ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("Agora", MethodNotAllowed)
-        }
-      }
-    }
-
   }
 
 }
