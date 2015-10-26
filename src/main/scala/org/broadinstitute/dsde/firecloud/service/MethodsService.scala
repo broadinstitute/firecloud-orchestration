@@ -10,6 +10,11 @@ class MethodsServiceActor extends Actor with MethodsService {
   def receive = runRoute(routes)
 }
 
+object MethodsService {
+  val remoteMethodsUrl = FireCloudConfig.Agora.authUrl + "/methods"
+  val remoteConfigurationsUrl = FireCloudConfig.Agora.authUrl + "/configurations"
+}
+
 trait MethodsService extends HttpService with FireCloudDirectives {
 
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -18,7 +23,7 @@ trait MethodsService extends HttpService with FireCloudDirectives {
   val localConfigsPath = "configurations"
 
   val routes: Route =
-    passthroughAllPaths(localMethodsPath, FireCloudConfig.Agora.methodsBaseUrl) ~
-    passthroughAllPaths(localConfigsPath, FireCloudConfig.Agora.configurationsBaseUrl)
+    passthroughAllPaths(localMethodsPath, MethodsService.remoteMethodsUrl) ~
+    passthroughAllPaths(localConfigsPath, MethodsService.remoteConfigurationsUrl)
 
 }
