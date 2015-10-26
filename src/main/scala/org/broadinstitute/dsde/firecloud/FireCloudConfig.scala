@@ -21,10 +21,6 @@ object FireCloudConfig {
     lazy val baseUrl = sys.env.get("AGORA_URL_ROOT").get
     lazy val authPrefix = methods.getString("authPrefix")
     lazy val authUrl = baseUrl + authPrefix
-    lazy val methodsPath = methods.getString("methodsPath")
-    lazy val methodsBaseUrl = authUrl + methodsPath
-    lazy val configurationsPath = methods.getString("configurationsPath")
-    lazy val configurationsBaseUrl = authUrl + configurationsPath
   }
 
   object Rawls {
