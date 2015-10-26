@@ -486,6 +486,79 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}:
+    get:
+      tags:
+        - Entities
+      operationId: getEntity
+      summary: Get entity in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entityType
+          description: Entity Type
+          required: true
+          type: string
+          in: path
+        - name: entityName
+          description: Entity Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Success
+        404:
+          description: Workspace or Entity does not exist
+        500:
+          description: Internal Server Error
+    delete:
+      tags:
+        - Entities
+      operationId: deleteEntity
+      summary: Delete entity in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entityType
+          description: Entity Type
+          required: true
+          type: string
+          in: path
+        - name: entityName
+          description: Entity Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: No response was specified
+        204:
+          description: Successful Request
+        404:
+          description: Workspace or Entity does not exist
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
     get:
       tags:

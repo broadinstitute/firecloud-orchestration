@@ -49,7 +49,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
           }
         } ~
         pathPrefix(Segment) { entityType =>
-          val entityTypeUrl = baseRawlsEntitiesUrl + "/" + entityType
+          val entityTypeUrl = encodeUri(baseRawlsEntitiesUrl + "/" + entityType)
           pathEnd {
             passthrough(entityTypeUrl, HttpMethods.GET)
           } ~
@@ -57,6 +57,9 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
             val filename = entityType + ".txt"
             perRequest(requestContext, Props(new ExportEntitiesByTypeActor(requestContext)),
               ExportEntitiesByType.ProcessEntities(entityTypeUrl, filename, entityType))
+          } ~
+          path(Segment) { entityName =>
+            passthrough(entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
           }
         }
       }

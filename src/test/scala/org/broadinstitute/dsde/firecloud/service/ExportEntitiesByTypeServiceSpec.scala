@@ -3,17 +3,13 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
-import org.broadinstitute.dsde.firecloud.utils.EntityMatrix
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import spray.http.StatusCodes._
-import spray.json._
-
-import scala.io.Source
-
 import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import spray.json._
 
 class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
 
@@ -23,7 +19,7 @@ class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
   val validFireCloudEntitiesSampleTSVPath = "/workspaces/broad-dsde-dev/valid/entities/sample/tsv"
   val invalidFireCloudEntitiesSampleTSVPath = "/workspaces/broad-dsde-dev/invalid/entities/sample/tsv"
 
-  def sampleAtts(): Map[String, JsValue] = {
+  val sampleAtts = {
     Map(
       "sample_type" -> "Blood".toJson,
       "header_1" -> MockUtils.randomAlpha().toJson,
@@ -33,10 +29,10 @@ class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
   }
 
   val validSampleEntities = List(
-    EntityWithType("sample_01", "sample", Some(sampleAtts())),
-    EntityWithType("sample_02", "sample", Some(sampleAtts())),
-    EntityWithType("sample_03", "sample", Some(sampleAtts())),
-    EntityWithType("sample_04", "sample", Some(sampleAtts()))
+    EntityWithType("sample_01", "sample", Some(sampleAtts)),
+    EntityWithType("sample_02", "sample", Some(sampleAtts)),
+    EntityWithType("sample_03", "sample", Some(sampleAtts)),
+    EntityWithType("sample_04", "sample", Some(sampleAtts))
   )
 
   override def beforeAll(): Unit = {
@@ -72,15 +68,6 @@ class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
 
   override def afterAll(): Unit = {
     workspaceServer.stop()
-  }
-
-  "EntityMatrix" - {
-    "should generate a TSV string with valid data" - {
-      val tsv = EntityMatrix.makeTsvString(validSampleEntities, "sample")
-      tsv shouldNot be(empty)
-      // Resultant data should have a header and one line per sample entity:
-      Source.fromString(tsv).getLines().size should equal(validSampleEntities.size + 1)
-    }
   }
 
   "EntityService-ExportEntitiesByType" - {

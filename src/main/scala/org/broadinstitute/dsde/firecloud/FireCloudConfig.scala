@@ -67,6 +67,8 @@ object FireCloudConfig {
   object Thurloe {
     private val profile = config.getConfig("userprofile")
     lazy val baseUrl = sys.env.get("THURLOE_URL_ROOT").get
+    lazy val authPrefix = profile.getString("authPrefix")
+    lazy val authUrl = baseUrl + authPrefix
     lazy val setKey = profile.getString("setKey")
     lazy val getAll = profile.getString("getAll")
     lazy val get = profile.getString("get")
