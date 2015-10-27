@@ -49,7 +49,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
   val validSampleEntities = List(EntityWithType("sample_01", "sample", Some(sampleAtts)))
 
   override def beforeAll(): Unit = {
-    workspaceServer = startClientAndServer(MockWorkspaceServer.workspaceServerPort)
+    workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
     // Valid Entities by sample type case
     workspaceServer
       .when(

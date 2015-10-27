@@ -1,180 +1,245 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
-import org.broadinstitute.dsde.firecloud.model.{WorkspaceEntity, ErrorReport, CopyConfigurationIngest}
-import spray.http.StatusCodes._
-
-import spray.httpx.SprayJsonSupport._
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.{CopyConfigurationIngest, PublishConfigurationIngest, WorkspaceEntity}
+import org.mockserver.integration.ClientAndServer
+import org.mockserver.integration.ClientAndServer._
+import org.mockserver.model.HttpRequest._
+import spray.http.HttpMethods
+import spray.http.StatusCodes._
+import spray.httpx.SprayJsonSupport._
 
 class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfigurationService {
 
-  import ErrorReport.errorReportRejectionHandler
-
   def actorRefFactory = system
 
-  private def methodConfigUrl(workspaceEntity: WorkspaceEntity) = s"/workspaces/%s/%s/method_configs/%s/%s".format(
-    workspaceEntity.namespace.get,
-    workspaceEntity.name.get,
-    workspaceEntity.namespace.get,
-    workspaceEntity.name.get)
-
-  private final val validMethodConfigUrl = methodConfigUrl(MockWorkspaceServer.mockValidWorkspace)
-  private final val invalidMethodConfigUrl = methodConfigUrl(MockWorkspaceServer.mockInvalidWorkspace)
-
-  private final val validCopyFromRepoUrl = s"/workspaces/%s/%s/method_configs/copyFromMethodRepo".format(
-    MockWorkspaceServer.mockValidWorkspace.namespace.get,
-    MockWorkspaceServer.mockValidWorkspace.name.get
-  )
-  private final val validConfigurationCopyFormData = CopyConfigurationIngest(
-    configurationNamespace = Option("namespace"),
-    configurationName = Option("name"),
-    configurationSnapshotId = Option(1),
-    destinationNamespace = Option("namespace"),
-    destinationName = Option("new-name")
-  )
-  private final val invalidConfigurationCopyFormData = new CopyConfigurationIngest(None, None, None, None, None)
+  var workspaceServer: ClientAndServer = _
+  private final val mockWorkspace = WorkspaceEntity(Some("namespace"), Some("name"))
 
   override def beforeAll(): Unit = {
-    MockWorkspaceServer.startWorkspaceServer()
+    workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
+    workspaceServer.when(
+      request().withMethod("POST").withPath(MethodConfigurationService.remoteTemplatePath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+    List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) map {
+      method =>
+        workspaceServer
+          .when(request().withMethod(method.name).withPath(
+            MethodConfigurationService.remoteMethodConfigPath(
+              mockWorkspace.namespace.get,
+              mockWorkspace.name.get,
+              mockWorkspace.namespace.get,
+              mockWorkspace.name.get)))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+    }
+    workspaceServer
+      .when(request().withMethod("POST").withPath(
+        MethodConfigurationService.remoteMethodConfigRenamePath(
+          mockWorkspace.namespace.get,
+          mockWorkspace.name.get,
+          mockWorkspace.namespace.get,
+          mockWorkspace.name.get)))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+    workspaceServer
+      .when(request().withMethod("GET").withPath(
+        MethodConfigurationService.remoteMethodConfigValidatePath(
+          mockWorkspace.namespace.get,
+          mockWorkspace.name.get,
+          mockWorkspace.namespace.get,
+          mockWorkspace.name.get)))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+    workspaceServer
+      .when(request().withMethod("POST").withPath(
+        MethodConfigurationService.remoteCopyFromMethodRepoConfigPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
+      )
+    workspaceServer
+      .when(request().withMethod("POST").withPath(
+        MethodConfigurationService.remoteCopyToMethodRepoConfigPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
+      )
   }
 
   override def afterAll(): Unit = {
-    MockWorkspaceServer.stopWorkspaceServer()
+    workspaceServer.stop()
   }
 
   "MethodConfigurationService" - {
 
-    "when calling DELETE on the /workspaces/*/*/method_configs/*/* with a valid path" - {
-      "Successful Request (204, NoContent) response is returned" in {
-        Delete(validMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(NoContent)
+    /* Handle passthrough handlers here */
+
+    val localTemplatePath = "/template"
+
+    "when calling the passthrough service" - {
+      s"POST on $localTemplatePath" - {
+        "should not receive a MethodNotAllowed" in {
+          Post(localTemplatePath) ~> sealRoute(routes) ~> check {
+            status shouldNot equal(MethodNotAllowed)
+          }
+        }
+      }
+
+      s"GET, PUT, DELETE on $localTemplatePath" - {
+        "should receive a MethodNotAllowed" in {
+          List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) map {
+            method =>
+              new RequestBuilder(method)(localTemplatePath) ~> sealRoute(routes) ~> check {
+                status should equal(MethodNotAllowed)
+              }
+          }
+        }
+      }
+
+      val localMethodConfigPath = "/workspaces/%s/%s/method_configs/%s/%s".format(
+        mockWorkspace.namespace.get,
+        mockWorkspace.name.get,
+        mockWorkspace.namespace.get,
+        mockWorkspace.name.get)
+
+      s"GET, PUT, and DELETE on $localMethodConfigPath " - {
+        "should not receive a MethodNotAllowed" in {
+          List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) map {
+            method =>
+              new RequestBuilder(method)(localMethodConfigPath) ~> sealRoute(routes) ~> check {
+                status shouldNot equal(MethodNotAllowed)
+              }
+          }
+        }
+      }
+
+      s"POST, PATCH on $localMethodConfigPath " - {
+        "should receive a MethodNotAllowed" in {
+          List(HttpMethods.POST, HttpMethods.PATCH) map {
+            method =>
+              new RequestBuilder(method)(localMethodConfigPath) ~> sealRoute(routes) ~> check {
+                status should equal(MethodNotAllowed)
+              }
+          }
+        }
+      }
+
+      val localMethodConfigRenamePath = localMethodConfigPath + "/rename"
+
+      s"POST on $localMethodConfigRenamePath " - {
+        "should not receive a MethodNotAllowed" in {
+          Post(localMethodConfigRenamePath) ~> sealRoute(routes) ~> check {
+            status shouldNot equal(MethodNotAllowed)
+          }
+        }
+      }
+
+      s"GET, PATCH, PUT, DELETE on $localMethodConfigRenamePath " - {
+        "should receive a MethodNotAllowed" in {
+          List(HttpMethods.GET, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
+            method =>
+              new RequestBuilder(method)(localMethodConfigRenamePath) ~> sealRoute(routes) ~> check {
+                status should equal(MethodNotAllowed)
+              }
+          }
+        }
+      }
+
+      val localMethodConfigValidatePath = localMethodConfigPath + "/validate"
+
+      s"GET on $localMethodConfigValidatePath " - {
+        "should not receive a MethodNotAllowed" in {
+          Get(localMethodConfigValidatePath) ~> sealRoute(routes) ~> check {
+            status shouldNot equal(MethodNotAllowed)
+          }
+        }
+      }
+
+      s"PUT, POST, PATCH, DELETE on $localMethodConfigValidatePath " - {
+        "should receive a MethodNotAllowed" in {
+          List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.POST, HttpMethods.DELETE) map {
+            method =>
+              new RequestBuilder(method)(localMethodConfigValidatePath) ~> sealRoute(routes) ~> check {
+                status should equal(MethodNotAllowed)
+              }
+          }
+        }
+      }
+
+    }
+
+    "when copying a method FROM the method repo" - {
+      val validCopyFromRepoUrl = s"/workspaces/%s/%s/method_configs/copyFromMethodRepo".format(
+        mockWorkspace.namespace.get,
+        mockWorkspace.name.get
+      )
+      val configurationCopyFormData = CopyConfigurationIngest(
+        configurationNamespace = Option("namespace"),
+        configurationName = Option("name"),
+        configurationSnapshotId = Option(1),
+        destinationNamespace = Option("namespace"),
+        destinationName = Option("new-name")
+      )
+
+      s"when calling POST on the $validCopyFromRepoUrl path with valid workspace and configuration data" - {
+        "Created response is returned" in {
+          Post(validCopyFromRepoUrl, configurationCopyFormData) ~> sealRoute(routes) ~> check {
+            status should equal(Created)
+          }
+        }
+      }
+
+      s"GET, PUT, PATCH, DELETE on $validCopyFromRepoUrl " - {
+        "should receive a MethodNotAllowed" in {
+          List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
+            method =>
+              new RequestBuilder(method)(validCopyFromRepoUrl, configurationCopyFormData) ~> sealRoute(routes) ~> check {
+                status should equal(MethodNotAllowed)
+              }
+          }
         }
       }
     }
 
-    "when calling DELETE on the /workspaces/*/*/method_configs/*/* with an invalid path" - {
-      "NotFound response is returned" in {
-        Delete(invalidMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(NotFound)
-          errorReportCheck("Rawls", NotFound)
+    "when copying a method TO the method repo" - {
+      val validCopyToRepoUrl = s"/workspaces/%s/%s/method_configs/copyToMethodRepo".format(
+        mockWorkspace.namespace.get,
+        mockWorkspace.name.get
+      )
+      val configurationPublishFormData = PublishConfigurationIngest(
+        configurationNamespace = Option("configNamespace"),
+        configurationName = Option("configName"),
+        sourceNamespace = Option("sourceNamespace"),
+        sourceName = Option("sourceName")
+      )
+
+      s"when calling POST on the $validCopyToRepoUrl path with valid workspace and configuration data" - {
+        "Created response is returned" in {
+          Post(validCopyToRepoUrl, configurationPublishFormData) ~> sealRoute(routes) ~> check {
+            status should equal(Created)
+          }
         }
       }
-    }
 
-    "when calling PUT on the /workspaces/*/*/method_configs/*/* path with a valid method configuration" - {
-      "OK response is returned" in {
-        Put(validMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-        }
-      }
-    }
-
-    "when calling PUT on the /workspaces/*/*/method_configs/*/* path with an invalid method configuration" - {
-      "Not Found response is returned" in {
-        Put(validMethodConfigUrl, MockWorkspaceServer.mockInvalidWorkspace) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(NotFound)
-          errorReportCheck("Rawls", NotFound)
-        }
-      }
-    }
-
-    "when calling PUT on an invalid /workspaces/*/*/method_configs/*/* path with a valid method configuration" - {
-      "Not Found response is returned" in {
-        Put(invalidMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(NotFound)
-          errorReportCheck("Rawls", NotFound)
-        }
-      }
-    }
-
-    "when calling GET on the /workspaces/*/*/method_configs/*/* path" - {
-      "OK response is returned" in {
-        Get(validMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-        }
-      }
-    }
-
-    "when calling GET on the /workspaces/*/*/method_configs/*/*/validate path" - {
-      "OK response is returned" in {
-        Get(validMethodConfigUrl + "/validate") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-        }
-      }
-    }
-
-    "when calling GET on an invalid /workspaces/*/*/method_configs/*/* path" - {
-      "Not Found response is returned" in {
-        Get(invalidMethodConfigUrl) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(NotFound)
-          errorReportCheck("Rawls", NotFound)
-        }
-      }
-    }
-
-    "when calling POST on the /workspaces/*/*/method_configs/*/* path" - {
-      "MethodNotAllowed error is returned" in {
-        Post(validMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("FireCloud", MethodNotAllowed)
-        }
-      }
-    }
-
-    "when calling PUT on the /workspaces/*/*/method_configs/*/* path without a valid authentication token" - {
-      "Unauthorized response is returned" in {
-        Put(validMethodConfigUrl, MockWorkspaceServer.mockMethodConfigs.head) ~> sealRoute(routes) ~> check {
-          status should equal(Unauthorized)
-          errorReportCheck("Rawls", Unauthorized)
-        }
-      }
-    }
-
-    /**
-     * This test will fail if used as an integration test. Integration testing requires an existing
-     * configuration in Agora that is accessible to the current user and a valid workspace in Rawls.
-     */
-    "when calling POST on the /workspaces/*/*/method_configs/copyFromMethodRepo path with valid workspace and configuration data" - {
-      "Created response is returned" in {
-        Post(validCopyFromRepoUrl, validConfigurationCopyFormData) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(Created)
-        }
-      }
-    }
-
-    "when calling POST on the /workspaces/*/*/method_configs/copyFromMethodRepo path with invalid data" - {
-      "BadRequest response is returned" in {
-        Post(validCopyFromRepoUrl, invalidConfigurationCopyFormData) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(BadRequest)
-          errorReportCheck("Rawls", BadRequest)
-        }
-      }
-    }
-
-    "when calling POST on the /workspaces/*/*/method_configs/copyFromMethodRepo path without a valid authentication token" - {
-      "Unauthorized response is returned" in {
-        Post(validCopyFromRepoUrl, validConfigurationCopyFormData) ~> sealRoute(routes) ~> check {
-          status should equal(Unauthorized)
-          errorReportCheck("Rawls", Unauthorized)
-        }
-      }
-    }
-
-    "when calling GET on the /workspaces/*/*/method_configs/copyFromMethodRepo path" - {
-      "MethodNotAllowed error is returned" in {
-        Get(validCopyFromRepoUrl) ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("FireCloud", MethodNotAllowed)
-        }
-      }
-    }
-
-    "when calling PUT on the /workspaces/*/*/method_configs/copyFromMethodRepo path" - {
-      "MethodNotAllowed error is returned" in {
-        Put(validCopyFromRepoUrl) ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("FireCloud", MethodNotAllowed)
+      s"GET, PUT, PATCH, DELETE on $validCopyToRepoUrl " - {
+        "should receive a MethodNotAllowed" in {
+          List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
+            method =>
+              new RequestBuilder(method)(validCopyToRepoUrl, configurationPublishFormData) ~> sealRoute(routes) ~> check {
+                status should equal(MethodNotAllowed)
+              }
+          }
         }
       }
     }

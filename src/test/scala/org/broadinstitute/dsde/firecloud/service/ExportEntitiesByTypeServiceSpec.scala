@@ -36,7 +36,7 @@ class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
   )
 
   override def beforeAll(): Unit = {
-    workspaceServer = startClientAndServer(MockWorkspaceServer.workspaceServerPort)
+    workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
     // Valid Entities by sample type case
     workspaceServer
       .when(
