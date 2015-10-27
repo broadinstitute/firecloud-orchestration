@@ -420,6 +420,31 @@ paths:
           description: One or more entities of that name/type already exist
         500:
           description: Internal Error
+  /workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
+    post:
+      tags:
+      - Entities
+      operationId: deleteEntities
+      summary: Bulk delete entities from a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Destination Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Destination Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: body
+          description: Entities to delete
+          required: true
+          in: body
+          schema:
+            $ref: DeleteEntities
   /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
       type: Entity
@@ -1475,6 +1500,27 @@ definitions:
       name:
         type: string
         description: Entity name
+  DeleteEntities:
+    properties:
+      recursive:
+        type: boolean
+        description: Whether or not to recursively delete (currently unimplemented)
+      entities:
+        type: array
+        items:
+          type: EntityID
+        description: List of entities to be deleted
+    required:
+      - recursive
+      - entities
+  EntityID:
+    properties:
+      entityType:
+        type: string
+        description: Entity Type
+      entityName:
+        type: string
+        description: Entity Name
   MethodID:
     properties:
       methodNamespace:

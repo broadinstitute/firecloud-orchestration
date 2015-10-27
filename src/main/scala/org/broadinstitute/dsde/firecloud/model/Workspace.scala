@@ -40,6 +40,9 @@ case class EntityCopyWithDestinationDefinition(
   entityNames: Seq[String]
   )
 
+case class EntityId(entityType: String, entityName: String)
+case class EntityDeleteDefinition(recursive: Boolean, entities: Seq[EntityId])
+
 // TODO: This is a stub case class until we know what we're returning from the batch entity create endpoint.
 @ApiModel(value = "method configuration entity")
 case class MethodConfiguration(

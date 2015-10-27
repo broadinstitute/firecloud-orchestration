@@ -79,7 +79,7 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
           val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
 
           val errorMessage = {
-            val baseMessage = "%d failures out of %d attempts retrieving entityUrls.  Errors: %s".format(entityTypes.size, errors.size, errors mkString ",")
+            val baseMessage = "%d failures out of %d attempts retrieving entityUrls.  Errors: %s".format(errors.size, entityTypes.size, errors mkString ",")
             if (missingReports.isEmpty) baseMessage
             else {
               val supplementalErrorMessage = "Additionally, %d of these failures did not provide error reports: %s".format(missingReports.size, missingReports mkString ",")
