@@ -11,7 +11,6 @@ import spray.http.{FormData, StatusCodes, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
-import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 
@@ -26,7 +25,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
   val routes: Route =
     path("login") {
       get {
-        headerValueByName("X-Forwarded-Host") { fHost => requestContext =>
+        headerValueByName("X-Forwarded-Host") { fHost =>
 
           // create the callback url
           // TODO: make scheme dynamic based on request
@@ -53,7 +52,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
               ("scope", "profile email https://www.googleapis.com/auth/devstorage.full_control https://www.googleapis.com/auth/compute"),
               ("state", "TODO"),
               ("access_type", "offline"))
-          requestContext.redirect(authUrl, StatusCodes.TemporaryRedirect)
+          redirect(authUrl, StatusCodes.TemporaryRedirect)
         }
       }
     } ~
@@ -67,7 +66,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
         https://oauth2-login-demo.appspot.com/auth?code=4/P7q7W91a-oMsCeLvIaQm6bTrgtp7
       */
         parameters("code", "state") { (code, state) =>
-          headerValueByName("X-Forwarded-Host") { fHost => requestContext =>
+          headerValueByName("X-Forwarded-Host") { fHost =>
 
             // create the callback url
             // TODO: this doesn't seem to be used, but is required?
@@ -85,20 +84,18 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
 
             val tokenExchangeRequest = Post(tokenExchangeUrl, FormData(postData))
             val pipeline = sendReceive ~> unmarshal[TokenResponse]
-            val futureToken: Future[TokenResponse] = pipeline(tokenExchangeRequest)
 
-            // exchange for a token, then send the access token to the UI
-            futureToken onComplete {
+            onComplete(pipeline(tokenExchangeRequest)) {
               case Success(tr: TokenResponse) => {
                 // TODO: make scheme dynamic based on request
                 // TODO: what url does the UI want to be redirected to?
                 // TODO: drop a cookie instead of sending token in url
-                val uiRedirect = Uri(scheme = "https", Authority(Host(fHost)), Path("/login"), Query(("token", tr.access_token)), fragment = None)
-                requestContext.redirect(uiRedirect, StatusCodes.TemporaryRedirect)
+                val uiRedirect = Uri(scheme = "https", Authority(Host(fHost)), Path("/"), Query(("token", tr.access_token)), fragment = Some("login"))
+                  redirect(uiRedirect, StatusCodes.TemporaryRedirect)
               }
               // TODO: much, much better error handling
-              case Failure(error) => requestContext.complete(InternalServerError, error.toString)
-              case _ => requestContext.complete(InternalServerError, "unknown")
+              case Failure(error) => complete(InternalServerError, error.toString)
+              case _ => complete(InternalServerError, "unknown")
             }
           }
         } ~
