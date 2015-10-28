@@ -14,6 +14,8 @@ abstract class SubmissionServiceActor extends Actor with SubmissionService {
 
 trait SubmissionService extends HttpService with PerRequestCreator with FireCloudDirectives {
 
+  val submissionsPath = "/workspaces/%s/%s/submissions"
+
   val routes = postAndGetRoutes
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -21,7 +23,8 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
     pathPrefix("workspaces" / Segment / Segment) {
       (workspaceNamespace, workspaceName) =>
         pathPrefixTest("submissions") {
-          val path = FireCloudConfig.Rawls.submissionsUrl.format(workspaceNamespace, workspaceName)
+          val path = FireCloudConfig.Rawls.authUrl +
+            submissionsPath.format(workspaceNamespace, workspaceName)
           passthroughAllPaths("submissions", path)
         }
     }

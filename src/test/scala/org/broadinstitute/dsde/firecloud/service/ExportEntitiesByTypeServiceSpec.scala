@@ -42,7 +42,7 @@ class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample")
+          .withPath(EntityService.entitiesPathFromWorkspace("broad-dsde-dev", "valid") + "/sample")
           .withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
@@ -56,7 +56,7 @@ class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid") + "/sample")
+          .withPath(EntityService.entitiesPathFromWorkspace("broad-dsde-dev", "invalid") + "/sample")
           .withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()

@@ -2,22 +2,18 @@ FROM phusion/baseimage
 
 # How to install OpenJDK 8 from:
 # http://ubuntuhandbook.org/index.php/2015/01/install-openjdk-8-ubuntu-14-04-12-04-lts/
-RUN add-apt-repository ppa:openjdk-r/ppa
-
 # How to install sbt on Linux from:
 # http://www.scala-sbt.org/release/tutorial/Installing-sbt-on-Linux.html
-RUN echo "deb https://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
 
-RUN apt-get update
-RUN apt-get install -qy openjdk-8-jdk sbt
-
-# Standard apt-get cleanup.
-RUN apt-get -yq autoremove && \
-    apt-get -yq clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf /tmp/* && \
-    rm -rf /var/tmp/*
+# Add repos, update, cleanup all in one command to minimize layer size.
+RUN true \
+  && add-apt-repository ppa:openjdk-r/ppa \
+  && echo "deb https://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list \
+  && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823 \
+  && apt-get update \
+  && apt-get install -qy openjdk-8-jdk sbt \
+  && apt-get -yq autoremove && apt-get -yq clean && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* && rm -rf /var/tmp/*
 
 # Actually download sbt
 RUN sbt version
