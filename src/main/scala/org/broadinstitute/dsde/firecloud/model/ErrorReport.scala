@@ -21,11 +21,11 @@ case class ErrorReport (
                      @(ApiModelProperty@field)(required = true, value = "The error message / exception text")
                      message: String,
                      @(ApiModelProperty@field)(required = true, value = "The HTTP status code of the response, if applicable")
-                     httpStatusCode: Option[StatusCode] = None,
+                     statusCode: Option[StatusCode] = None,
                      @(ApiModelProperty@field)(required = true, value = "Root causes of the error, if applicable")
                      causes: Seq[ErrorReport] = Seq(),
                      @(ApiModelProperty@field)(required = true, value = "Stack traces associated with the error, if applicable")
-                     stackTraces: Seq[StackTraceElement] = Seq())
+                     stackTrace: Seq[StackTraceElement] = Seq())
 
 object ErrorReport extends ((String,String,Option[StatusCode],Seq[ErrorReport],Seq[StackTraceElement]) => ErrorReport) {
   private val SOURCE = "FireCloud"
