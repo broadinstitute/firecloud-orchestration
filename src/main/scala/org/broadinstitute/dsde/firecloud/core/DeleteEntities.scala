@@ -43,7 +43,7 @@ class DeleteEntitiesActor(requestContext: RequestContext, entities: Seq[EntityId
           val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
 
           val errorMessage = {
-            val baseMessage = "%d failures out of %d attempts deleting entities.  Errors: %s".format(errors.size, entities.size, errors mkString ",")
+            val baseMessage = "%d entities deleted, with %d failures.  Errors: %s".format(entities.size, errors.size, errors mkString ",")
             if (missingReports.isEmpty) baseMessage
             else {
               val supplementalErrorMessage = "Additionally, %d of these failures did not provide error reports: %s".format(missingReports.size, missingReports mkString ",")
