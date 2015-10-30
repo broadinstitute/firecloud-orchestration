@@ -23,6 +23,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
   val validFireCloudEntitiesPath = "/workspaces/broad-dsde-dev/valid/entities"
   val validFireCloudEntitiesSamplePath = "/workspaces/broad-dsde-dev/valid/entities/sample"
   val validFireCloudEntitiesCopyPath = "/workspaces/broad-dsde-dev/valid/entities/copy"
+  val validFireCloudEntitiesBulkDeletePath = "/workspaces/broad-dsde-dev/valid/entities/delete"
   val invalidFireCloudEntitiesPath = "/workspaces/broad-dsde-dev/invalid/entities"
   val invalidFireCloudEntitiesSamplePath = "/workspaces/broad-dsde-dev/invalid/entities/sample"
   val invalidFireCloudEntitiesCopyPath = "/workspaces/broad-dsde-dev/invalid/entities/copy"
@@ -33,6 +34,10 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
   val invalidEntityCopy = EntityCopyDefinition(
     sourceWorkspace = WorkspaceName(namespace=Some("invalid"), name=Some("other-ws")),
     entityType = "sample", Seq("sample_01"))
+
+  val validEntityDelete = EntityDeleteDefinition(false, Seq(EntityId("sample","id"),EntityId("sample","bar")))
+  val invalidEntityDelete = validEntityCopy // we're testing that the payload can't be unmarshalled to an EntityDeleteDefinition
+  val mixedFailEntityDelete = EntityDeleteDefinition(false, Seq(EntityId("sample","foo"),EntityId("failme","kthxbai"),EntityId("sample","bar")))
 
   def entityCopyWithDestination(copyDef: EntityCopyDefinition) = new EntityCopyWithDestinationDefinition(
     sourceWorkspace = copyDef.sourceWorkspace,
@@ -112,7 +117,30 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
           .withStatusCode(NotFound.intValue)
           .withBody(MockWorkspaceServer.rawlsErrorReport(NotFound).toJson.compactPrint)
       )
-
+    // Bulk delete endpoint
+    workspaceServer
+      .when(
+        request()
+          .withMethod("DELETE")
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample/.+")
+          .withHeader(MockUtils.authHeader))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(OK.intValue)
+      )
+    workspaceServer
+      .when(
+        request()
+          .withMethod("DELETE")
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/failme/.+")
+          .withHeader(MockUtils.authHeader))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(MockWorkspaceServer.rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
   }
 
   override def afterAll(): Unit = {
@@ -182,6 +210,30 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
       }
     }
 
+    "when calling bulk entity delete" - {
+      "response is OK" in {
+        Post(validFireCloudEntitiesBulkDeletePath, validEntityDelete) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should be(OK)
+        }
+      }
+    }
+
+    "when calling bulk entity delete with an invalid payload" - {
+      "BadRequest is returned" in {
+        Post(validFireCloudEntitiesBulkDeletePath, invalidEntityDelete) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should be(BadRequest)
+        }
+      }
+    }
+
+    "when calling bulk entity delete and expecting mixed success/fail" - {
+      "InternalServerError is returned with an ErrorReport" in {
+        Post(validFireCloudEntitiesBulkDeletePath, mixedFailEntityDelete) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should be(InternalServerError)
+          errorReportCheck("FireCloud", InternalServerError)
+        }
+      }
+    }
   }
 
 }

@@ -1,9 +1,9 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
-import org.broadinstitute.dsde.firecloud.core.{ExportEntitiesByType, ExportEntitiesByTypeActor, GetEntitiesWithType, GetEntitiesWithTypeActor}
+import org.broadinstitute.dsde.firecloud.core._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{EntityCopyDefinition, EntityCopyWithDestinationDefinition, WorkspaceName}
+import org.broadinstitute.dsde.firecloud.model.{EntityDeleteDefinition, EntityCopyDefinition, EntityCopyWithDestinationDefinition, WorkspaceName}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.slf4j.LoggerFactory
 import spray.http.HttpMethods
@@ -45,6 +45,14 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                 entityNames = copyRequest.entityNames)
               val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl, copyMethodConfig)
               externalHttpPerRequest(requestContext, extReq)
+            }
+          }
+        } ~
+        path("delete") {
+          post {
+            entity(as[EntityDeleteDefinition]) { deleteDefinition => requestContext =>
+              perRequest(requestContext, Props(new DeleteEntitiesActor(requestContext, deleteDefinition.entities)),
+                DeleteEntities.ProcessUrl(baseRawlsEntitiesUrl))
             }
           }
         } ~
