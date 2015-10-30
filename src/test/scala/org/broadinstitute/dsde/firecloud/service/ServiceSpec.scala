@@ -15,7 +15,7 @@ trait ServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest wit
   def errorReportCheck(source: String, statusCode: StatusCode) = {
     val report = responseAs[ErrorReport]
     report.source should be(source)
-    report.httpStatusCode.get should be(statusCode)
+    report.statusCode.get should be(statusCode)
   }
 
 }
