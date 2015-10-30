@@ -445,6 +445,13 @@ paths:
           in: body
           schema:
             $ref: DeleteEntities
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Malformed Request
+        500:
+          description: Internal Server Error
   /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
       type: Entity
@@ -1504,11 +1511,12 @@ definitions:
     properties:
       recursive:
         type: boolean
+        default: false
         description: Whether or not to recursively delete (currently unimplemented)
       entities:
         type: array
         items:
-          type: EntityID
+          $ref: EntityID
         description: List of entities to be deleted
     required:
       - recursive
