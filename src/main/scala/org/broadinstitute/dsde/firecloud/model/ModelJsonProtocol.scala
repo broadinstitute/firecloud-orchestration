@@ -93,6 +93,8 @@ object ModelJsonProtocol {
 
   implicit val impFireCloudKeyValue = jsonFormat2(FireCloudKeyValue)
   implicit val impThurloeKeyValue = jsonFormat2(ThurloeKeyValue)
+  implicit val impRegistration = jsonFormat4(Profile)
+
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

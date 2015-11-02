@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import spray.http.HttpHeaders.Authorization
-import spray.http.{HttpCredentials, HttpRequest, OAuth2BearerToken}
+import spray.http.HttpHeaders.{RawHeader, Authorization}
+import spray.http._
 import spray.routing.RequestContext
 
 
@@ -29,6 +29,14 @@ trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
 
   def dummyAuthHeaders = {
     addCredentials(OAuth2BearerToken("mF_9.B5f-4.1JqM"))
+  }
+
+  def dummyUserIdHeaders(userId: String) = {
+    addCredentials(OAuth2BearerToken("mF_9.B5f-4.1JqM")) ~>
+      addHeader(RawHeader("OIDC_CLAIM_user_id", userId)) ~>
+      addHeader(RawHeader("OIDC_access_token", "access_token")) ~>
+      addHeader(RawHeader("OIDC_CLAIM_email", "random@site.com")) ~>
+      addHeader(RawHeader("OIDC_CLAIM_expires_in", "100000"))
   }
 
 }
