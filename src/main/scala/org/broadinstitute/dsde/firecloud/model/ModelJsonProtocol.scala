@@ -95,7 +95,7 @@ object ModelJsonProtocol {
   implicit val impThurloeKeyValue = jsonFormat2(ThurloeKeyValue)
   implicit val impRegistration = jsonFormat4(Profile)
 
-  implicit val impTokenResponse = jsonFormat5(TokenResponse)
+  implicit val impTokenResponse = jsonFormat5(OAuthTokens)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

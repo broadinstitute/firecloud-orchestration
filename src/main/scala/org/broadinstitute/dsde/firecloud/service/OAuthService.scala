@@ -1,106 +1,80 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.TokenResponse
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.model.OAuthException
 import org.slf4j.LoggerFactory
-import spray.client.pipelining._
-import spray.http.StatusCodes._
-import spray.http.Uri.{Authority, Host, Path, Query}
-import spray.http.{FormData, StatusCodes, Uri}
-import spray.httpx.SprayJsonSupport._
+import spray.http.Uri._
+import spray.http.{StatusCodes, Uri}
 import spray.routing._
-
-import scala.util.{Failure, Success}
-
 
 // see https://developers.google.com/identity/protocols/OAuth2WebServer
 
 trait OAuthService extends HttpService with PerRequestCreator with FireCloudDirectives {
 
   private implicit val executionContext = actorRefFactory.dispatcher
-
   lazy val log = LoggerFactory.getLogger(getClass)
 
   val routes: Route =
     path("login") {
       get {
-        headerValueByName("X-Forwarded-Host") { fHost =>
+        parameter("path") { userpath =>
+          // TODO: future story: generate and persist unique token along with the user path
+          val state = userpath
 
-          // create the callback url
-          // TODO: make scheme dynamic based on request
-          val redirectUri = Uri(scheme = "https", Authority(Host(fHost)), Path("/service/oauth2callback"))
+          // approval prompt - "force" to force a refresh token
+          // TODO: future story: make dynamic based on whether or not the user has a refresh token stored already
+          val approvalPrompt = "auto"
 
-          /* configure the login request with:
-            - client ID
-            - client secret
-            - scopes that your app needs to request
-
-            optional:
-            - approval_prompt=auto ("force" to get a new refresh token)
-            - login_hint=email or sub
-            - include_granted_scopes=false ("true" to include previously-granted scopes)
-         */
-          // TODO: generate and validate unique state param
-          // TODO: extract scopes into a constant enum somewhere
-          // TODO: login hint, if possible
-          // TODO: approval_prompt should not be hardcoded to force
-          val authUrl = Uri("https://accounts.google.com/o/oauth2/auth")
-            .withQuery(("response_type", "code"),
-              ("client_id", FireCloudConfig.Auth.googleClientId),
-              ("redirect_uri", redirectUri.toString),
-              ("scope", "profile email https://www.googleapis.com/auth/devstorage.full_control https://www.googleapis.com/auth/compute"),
-              ("state", "TODO"),
-              ("access_type", "offline"))
-          redirect(authUrl, StatusCodes.TemporaryRedirect)
+          try {
+            // create the authentication url and redirect the browser
+            val gcsAuthUrl = HttpGoogleServicesDAO.getGoogleRedirectURI(state, approvalPrompt)
+            redirect(gcsAuthUrl, StatusCodes.TemporaryRedirect)
+          } catch {
+            /* we don't expect any exceptions here; if we get any, it's likely
+                a misconfiguration of our client id/secrets/callback. But since this is about
+                authentication, we are extra careful.
+             */
+            case e: Exception => {
+              log.error("problem during OAuth redirect", e)
+              // TODO: here and elsewhere, redirect to a UI error page instead of issuing a 401?
+              complete(StatusCodes.Unauthorized, e.getMessage)
+            }
+          }
         }
       }
     } ~
     path("oauth2callback") {
       get {
         /*
-      interpret auth server's response
-        An error response:
-        https://oauth2-login-demo.appspot.com/auth?error=access_denied
-      An authorization code response:
-        https://oauth2-login-demo.appspot.com/auth?code=4/P7q7W91a-oMsCeLvIaQm6bTrgtp7
-      */
-        parameters("code", "state") { (code, state) =>
-          headerValueByName("X-Forwarded-Host") { fHost =>
+          interpret auth server's response
+            An error response has "?error=access_denied"
+            An authorization code response has "?code=4/P7q7W91a-oMsCeLvIaQm6bTrgtp7"
+        */
+        parameters("code", "state") { (code, actualState) =>
+          // TODO: future story: use expected-state we previously persisted
+          val expectedState = actualState
 
-            // create the callback url
-            // TODO: this doesn't seem to be used, but is required?
-            val redirectUri = Uri(scheme = "https", Authority(Host(fHost)), Uri.Path("/service/oauth2callback"))
+          try {
+            // is it worth breaking this out into an async/perrequest actor, so we don't block a thread?
+            // not sure what the google library does under the covers - is it blocking?
+            val gcsTokenResponse = HttpGoogleServicesDAO.getTokens(actualState, expectedState, code)
+            val accessToken = gcsTokenResponse.access_token
 
-            // create the token exchange url
-            val tokenExchangeUrl = Uri("https://www.googleapis.com/oauth2/v3/token")
-
-            // create the post payload for token exchange
-            val postData = Map(("code", code),
-              ("client_id", FireCloudConfig.Auth.googleClientId),
-              ("client_secret", FireCloudConfig.Auth.googleClientSecret),
-              ("redirect_uri", redirectUri.toString),
-              ("grant_type", "authorization_code"))
-
-            val tokenExchangeRequest = Post(tokenExchangeUrl, FormData(postData))
-            val pipeline = sendReceive ~> unmarshal[TokenResponse]
-
-            onComplete(pipeline(tokenExchangeRequest)) {
-              case Success(tr: TokenResponse) => {
-                // TODO: make scheme dynamic based on request
-                // TODO: what url does the UI want to be redirected to?
-                // TODO: drop a cookie instead of sending token in url
-                val uiRedirect = Uri(scheme = "https", Authority(Host(fHost)), Path("/"), Query(("token", tr.access_token)), fragment = Some("login"))
-                  redirect(uiRedirect, StatusCodes.TemporaryRedirect)
-              }
-              // TODO: much, much better error handling
-              case Failure(error) => complete(InternalServerError, error.toString)
-              case _ => complete(InternalServerError, "unknown")
+            val uiRedirect = Uri(FireCloudConfig.FireCloud.baseUrl)
+              .withFragment(actualState)
+              .withQuery(("token", accessToken))
+            redirect(uiRedirect, StatusCodes.TemporaryRedirect)
+          } catch {
+            case e:OAuthException => complete(StatusCodes.Unauthorized, e.getMessage) // these can be shown to the user
+            case e: Exception => {
+              log.error("problem during OAuth code exchange", e)
+              complete(StatusCodes.Unauthorized, e.getMessage)
             }
           }
         } ~
           parameter("error") { errorMsg =>
-            // TODO: much, much better error handling
+            // echo the oauth error back to the user. Is that safe to do?
             complete(StatusCodes.Unauthorized, errorMsg)
           }
       }

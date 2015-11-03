@@ -55,6 +55,7 @@ libraryDependencies ++= {
     "com.typesafe.akka"   %%  "akka-contrib"  % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"    % akkaV,
+    "com.google.api-client" % "google-api-client" % "1.20.0",
     "org.specs2"          %%  "specs2-core"   % "2.3.11"  % "test",
     "org.scalatest"       %%  "scalatest"     % "2.2.1"   % "test",
     "org.mock-server"      %  "mockserver-netty" % "3.9.2" % "test"
