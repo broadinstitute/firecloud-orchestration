@@ -31,6 +31,7 @@ FireCloud Orchestration Service
 * New paths to external endpoints should be added to `src/main/resources/configurations.conf`. Existing endpoint URLs are configured in `application.conf` and `test.conf`
 
 ## Building and Running
+See https://github.com/broadinstitute/firecloud-environment/blob/master/README.md for directions on running locally in docker.
 
 Run the assembly task to build a fat jar:
 ```

@@ -1,0 +1,26 @@
+{{with $environment := env "ENVIRONMENT"}}
+{{$keyname := printf "secret/dsde/%s/firecloud-orchestration/docker-compose.yaml" $environment}}
+{{with vault $keyname}}
+
+app:
+  image: {{.Data.app_image}}
+  {{.Data.app_dns}}
+  {{.Data.app_ports}}
+  {{.Data.app_volumes}}
+  environment:
+    GOOGLE_CLIENT_ID: {{.Data.env_client_id}}
+    AGORA_URL_ROOT: {{.Data.env_agora_url}}
+    RAWLS_URL_ROOT: {{.Data.env_rawls_url}}
+    THURLOE_URL_ROOT: {{.Data.env_thurloe_url}}
+proxy:
+  extends:
+    file: proxy-compose.yaml
+    service: proxy
+  links:
+    - app:app
+  environment:
+    PROXY_URL: http://app:8080/
+    PROXY_URL2: http://app:8080/api
+
+{{end}}
+{{end}}
