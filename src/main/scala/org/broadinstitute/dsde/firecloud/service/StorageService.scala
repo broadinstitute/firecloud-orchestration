@@ -18,8 +18,8 @@ trait StorageService extends HttpService with PerRequestCreator with FireCloudDi
   val routes: Route =
     pathPrefix(ApiPrefix) {
       // call Google's storage REST API for info about this object
-      path(Segment / Segment) { (bucket,obj) => requestContext =>
-        val extReq = Get(gcsStatUrl.format(bucket,obj))
+      path(Segment / Rest) { (bucket,obj) => requestContext =>
+        val extReq = Get(gcsStatUrl.format(bucket, java.net.URLEncoder.encode(obj,"UTF-8")))
         externalHttpPerRequest(requestContext, extReq)
       }
     }
