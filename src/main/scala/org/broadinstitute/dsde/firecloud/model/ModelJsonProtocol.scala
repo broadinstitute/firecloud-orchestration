@@ -2,8 +2,12 @@ package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import spray.http.StatusCode
+import spray.http.StatusCodes.BadRequest
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
+import spray.routing.directives.RouteDirectives.complete
 
 object ModelJsonProtocol {
 
@@ -29,6 +33,9 @@ object ModelJsonProtocol {
   implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)
   implicit val impMethodConfigurationPublish = jsonFormat3(MethodConfigurationPublish)
   implicit val impPublishConfigurationIngest = jsonFormat4(PublishConfigurationIngest)
+
+  implicit val impFireCloudPermission = jsonFormat2(FireCloudPermission)
+  implicit val impAgoraPermission = jsonFormat2(AgoraPermission)
 
   implicit val impEntityMetadata = jsonFormat4(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)
@@ -86,4 +93,11 @@ object ModelJsonProtocol {
 
   implicit val impFireCloudKeyValue = jsonFormat2(FireCloudKeyValue)
   implicit val impThurloeKeyValue = jsonFormat2(ThurloeKeyValue)
+
+  // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
+  val entityExtractionRejectionHandler = RejectionHandler {
+    case MalformedRequestContentRejection(errorMsg, _) :: _ =>
+      complete(BadRequest, errorMsg)
+  }
+
 }

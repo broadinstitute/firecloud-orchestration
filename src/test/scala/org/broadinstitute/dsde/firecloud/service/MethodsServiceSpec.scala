@@ -9,6 +9,9 @@ import spray.http.StatusCodes._
 
 class MethodsServiceSpec extends ServiceSpec with MethodsService {
 
+  val methodsPermPath="/methods/namespace/name/1/permissions"
+  val configsPermPath="/configurations/namespace/name/1/permissions"
+
   def actorRefFactory = system
   var methodsServer: ClientAndServer = _
   val httpMethods = List(HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT,
