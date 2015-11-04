@@ -1356,6 +1356,27 @@ paths:
         500:
           description: Internal server error
           produces: text/plain
+    post:
+      tags:
+        - Profile
+      operationId: setProfile
+      summary: Sets a profile object in the user profile service for the currently logged-in user.
+      consumes:
+      - application/json
+      parameters:
+      - name: profile
+        description: A complete profile
+        type: string
+        in: body
+        schema:
+          $ref: Profile
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad request
+        500:
+          description: Internal server error
   /profile/{key}:
     post:
       tags:
@@ -1745,3 +1766,17 @@ definitions:
         $ref: ''
       methodConfiguration:
         $ref: '#/definitions/MethodConfiguration'
+  Profile:
+    properties:
+      name:
+        type: string
+        description: User's full name
+      email:
+        type: string
+        description: User's email address
+      institution:
+        type: string
+        description: User's home institution
+      pi:
+        type: string
+        description: Primary Investigator

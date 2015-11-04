@@ -12,6 +12,7 @@ object MockUtils {
   val header = new Header("Content-Type", "application/json")
   val workspaceServerPort = 8990
   val methodsServerPort = 8989
+  val thurloeServerPort = 8991
 
    def randomPositiveInt(): Int = {
      scala.util.Random.nextInt(9) + 1

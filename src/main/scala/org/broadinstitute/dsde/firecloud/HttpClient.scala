@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud
 
 import java.text.SimpleDateFormat
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, ErrorReport}
+import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}

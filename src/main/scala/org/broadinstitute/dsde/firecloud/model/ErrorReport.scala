@@ -4,8 +4,8 @@ import com.wordnik.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import spray.client.pipelining._
 import spray.http.MediaTypes._
-import spray.http.{ContentType, HttpEntity, HttpResponse, StatusCode}
-import spray.routing.RejectionHandler
+import spray.http._
+import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 
 import scala.annotation.meta.field
 import scala.util.{Success, Try}
@@ -67,6 +67,8 @@ object ErrorReport extends ((String,String,Option[StatusCode],Seq[ErrorReport],S
 
   // adapted from https://gist.github.com/jrudolph/9387700
   implicit val errorReportRejectionHandler = RejectionHandler {
+    case MalformedRequestContentRejection(errorMsg, _) :: _ =>
+      ctx => ctx.complete(StatusCodes.BadRequest, ErrorReport(StatusCodes.BadRequest, errorMsg))
     case x if RejectionHandler.Default.isDefinedAt(x) =>
       ctx => RejectionHandler.Default(x) {
         ctx.withHttpResponseMapped {
