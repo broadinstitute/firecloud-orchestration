@@ -8,10 +8,12 @@ app:
   {{.Data.app_ports}}
   {{.Data.app_volumes}}
   environment:
-    GOOGLE_CLIENT_ID: {{.Data.env_client_id}}
-    AGORA_URL_ROOT: {{.Data.env_agora_url}}
-    RAWLS_URL_ROOT: {{.Data.env_rawls_url}}
-    THURLOE_URL_ROOT: {{.Data.env_thurloe_url}}
+    - GOOGLE_CLIENT_ID={{.Data.env_client_id}}
+    - AGORA_URL_ROOT={{.Data.env_agora_url}}
+    - RAWLS_URL_ROOT={{.Data.env_rawls_url}}
+    - THURLOE_URL_ROOT={{.Data.env_thurloe_url}}
+    - FIRECLOUD_URL_ROOT={{.Data.env_firecloud_url}}
+    - GOOGLE_SECRET_JSON={{.Data.env_google_json}}
 proxy:
   extends:
     file: proxy-compose.yaml

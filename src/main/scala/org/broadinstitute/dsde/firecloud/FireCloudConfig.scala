@@ -7,6 +7,7 @@ object FireCloudConfig {
 
   object Auth {
     lazy val googleClientId = sys.env.get("GOOGLE_CLIENT_ID").get
+    lazy val googleSecretJson = sys.env.get("GOOGLE_SECRET_JSON").get
   }
 
   object HttpConfig {
@@ -52,6 +53,10 @@ object FireCloudConfig {
     lazy val getAll = profile.getString("getAll")
     lazy val get = profile.getString("get")
     lazy val delete = profile.getString("delete")
+  }
+
+  object FireCloud {
+    lazy val baseUrl = sys.env.get("FIRECLOUD_URL_ROOT").get
   }
 
 }

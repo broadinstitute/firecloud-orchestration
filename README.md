@@ -39,8 +39,8 @@ sbt
 > assembly
 ```
 
-Ensure that `GOOGLE_CLIENT_ID` (with origins set to `http://localhost:8080` and `https://localhost:8080` - see below), 
-`AGORA_URL_ROOT`, `RAWLS_URL_ROOT`, and `THURLOE_URL_ROOT` are defined in your environment, and execute the jar with the path to the jar and path of the desired config file:
+Ensure that `GOOGLE_CLIENT_ID` and `GOOGLE_SECRET_JSON` (with origin set to `https://local.broadinstitute.org` - see below), 
+`AGORA_URL_ROOT`, `RAWLS_URL_ROOT`, `THURLOE_URL_ROOT`, and `FIRECLOUD_URL_ROOT` are defined in your environment, and execute the jar with the path to the jar and path of the desired config file:
 
 ```
 java -Dconfig.file=src/main/resources/application.conf \
@@ -56,7 +56,8 @@ sbt
 ## Testing
 
 ```
-AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' THURLOE_URL_ROOT='http://localhost:8991' sbt test
+AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' \
+    THURLOE_URL_ROOT='http://localhost:8991' FIRECLOUD_URL_ROOT='https://local.broadinstitute.org' sbt test
 ```
 
 ## Debugging
@@ -80,6 +81,8 @@ Add your docker host as an authorized JavaScript origin, one entry per line.  Na
 Set your client ID in your environment:
 ```
 export GOOGLE_CLIENT_ID='...'
+export GOOGLE_SECRET_JSON='...'
+
 ```
 
 Run the container:
@@ -87,9 +90,11 @@ Run the container:
 docker run --rm --name orch \
   -p 8080:8080 \
   -e GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
+  -e GOOGLE_SECRET_JSON=$GOOGLE_SECRET_JSON \
   -e RAWLS_URL_ROOT='https://rawls.dsde-dev.broadinstitute.org' \
   -e AGORA_URL_ROOT='https://agora.dsde-dev.broadinstitute.org' \
   -e THURLOE_URL_ROOT='https://thurloe.dsde-dev.broadinstitute.org' \
+  -e FIRECLOUD_URL_ROOT='https://local.broadinstitute.org' \
   broadinstitute/firecloud-orchestration
 ```
 
