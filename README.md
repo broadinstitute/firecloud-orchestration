@@ -89,8 +89,8 @@ Run the container:
 ```
 docker run --rm --name orch \
   -p 8080:8080 \
-  -e GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID \
-  -e GOOGLE_SECRET_JSON=GOOGLE_SECRET_JSON \
+  -e GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
+  -e GOOGLE_SECRET_JSON=$GOOGLE_SECRET_JSON \
   -e RAWLS_URL_ROOT='https://rawls.dsde-dev.broadinstitute.org' \
   -e AGORA_URL_ROOT='https://agora.dsde-dev.broadinstitute.org' \
   -e THURLOE_URL_ROOT='https://thurloe.dsde-dev.broadinstitute.org' \

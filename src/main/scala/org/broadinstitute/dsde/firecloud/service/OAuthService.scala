@@ -37,7 +37,6 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
              */
             case e: Exception => {
               log.error("problem during OAuth redirect", e)
-              // TODO: here and elsewhere, redirect to a UI error page instead of issuing a 401?
               complete(StatusCodes.Unauthorized, e.getMessage)
             }
           }
@@ -63,7 +62,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
 
             val uiRedirect = Uri(FireCloudConfig.FireCloud.baseUrl)
               .withFragment(actualState)
-              .withQuery(("token", accessToken))
+              .withQuery(("access_token", accessToken))
             redirect(uiRedirect, StatusCodes.TemporaryRedirect)
           } catch {
             case e:OAuthException => complete(StatusCodes.Unauthorized, e.getMessage) // these can be shown to the user
