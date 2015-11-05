@@ -43,7 +43,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
         }
       }
     } ~
-    path("oauth2callback") {
+    path("callback") {
       get {
         /*
           interpret auth server's response
@@ -60,9 +60,13 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
             val gcsTokenResponse = HttpGoogleServicesDAO.getTokens(actualState, expectedState, code)
             val accessToken = gcsTokenResponse.access_token
 
-            val uiRedirect = Uri(FireCloudConfig.FireCloud.baseUrl)
-              .withFragment(actualState)
-              .withQuery(("access_token", accessToken))
+            // redirect to the root url ("/"), with a fragment containing the user's original path and
+            // the access token. The access token part LOOKS like a query param, but the entire string including "?"
+            // is actually the fragment and the UI will parse it out.
+            val uiRedirect = Uri()
+              .withPath(Uri.Path./)
+              .withFragment(s"${actualState}?access_token=${accessToken}")
+
             redirect(uiRedirect, StatusCodes.TemporaryRedirect)
           } catch {
             case e:OAuthException => complete(StatusCodes.Unauthorized, e.getMessage) // these can be shown to the user
