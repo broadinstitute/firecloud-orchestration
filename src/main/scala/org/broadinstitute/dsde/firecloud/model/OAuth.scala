@@ -12,5 +12,7 @@ case class OAuthTokens(
   id_token: Option[String]
 )
 
+case class RawlsToken(refreshToken: String)
+
 case class OAuthException(message: String = null, cause: Throwable = null) extends RuntimeException(message, cause)
 
