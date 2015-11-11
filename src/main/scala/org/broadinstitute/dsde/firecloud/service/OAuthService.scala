@@ -33,27 +33,32 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
   val routes: Route =
     path("login") {
       get {
-        parameter("path") { userpath =>
-          // TODO: future story: generate and persist unique token along with the user path
-          val state = userpath
+        parameters("path".?, "prompt".?, "callback".?) { (userpath, prompt, callback) =>
 
-          // approval prompt - "force" to force a refresh token
-          // TODO: future story: make dynamic based on whether or not the user has a refresh token stored already
-          val approvalPrompt = "force"
+          // create a hash-delimited string of the callback+path and pass into the state param.
+          // the state param will be roundtripped during the login process, so we can read it during callback.
+          // TODO: future story: generate and persist unique security token along with the callback/path
+          val state = callback.getOrElse("") + "#" + userpath.getOrElse("")
+
+          // if the user requested "auto" then "auto"; if the user specified something else, or nothing, use "force".
+          // this allows the end user/UI to control when we force-request a new refresh token. Default to asking
+          // for the refresh token.
+          val approvalPrompt = prompt match {
+            case Some("auto") => "auto"
+            case _ => "force"
+          }
 
           try {
             // create the authentication url and redirect the browser
-            val gcsAuthUrl = HttpGoogleServicesDAO.getGoogleRedirectURI(state, approvalPrompt)
-            redirect(gcsAuthUrl, StatusCodes.TemporaryRedirect)
+            initiateAuth(state, approvalPrompt=approvalPrompt)
           } catch {
             /* we don't expect any exceptions here; if we get any, it's likely
                 a misconfiguration of our client id/secrets/callback. But since this is about
                 authentication, we are extra careful.
              */
-            case e: Exception => {
+            case e: Exception =>
               log.error("problem during OAuth redirect", e)
               complete(StatusCodes.Unauthorized, e.getMessage)
-            }
           }
         }
       }
@@ -66,7 +71,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
             An authorization code response has "?code=4/P7q7W91a-oMsCeLvIaQm6bTrgtp7"
         */
         parameters("code", "state") { (code, actualState) =>
-          // TODO: future story: use expected-state we previously persisted
+          // TODO: future story: check the security token we previously persisted in the expected-state
           val expectedState = actualState
 
           try {
@@ -77,7 +82,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
             val refreshToken = gcsTokenResponse.refresh_token
 
             // if we have a refresh token, store it in rawls
-            refreshToken map {rt =>
+            refreshToken foreach {rt =>
               val tokenReq = Put(OAuthService.remoteTokenPutUrl, RawlsToken(accessToken))
               // we can't use the standard externalHttpPerRequest here, because the requestContext doesn't have the
               // access token yet; we have to add the token manually
@@ -88,25 +93,48 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
               // will happen async. If token storage fails, we rely on underlying services to notice the
               // missing token and re-initiate the oauth grants.
               tokenStoreFuture onComplete {
-                case Success(response) => {
+                case Success(response) =>
                   response.status match {
                     case StatusCodes.Created => log.debug("successfully stored refresh token")
-                    case x => log.warn(s"failed to store refresh token (status code ${x}): " + response.entity)
+                    case x => log.warn(s"failed to store refresh token (status code $x): " + response.entity)
                   }
-                }
                 case Failure(error) => log.warn("failed to store refresh token: " + error.getMessage)
                 case _ => log.warn("failed to store refresh token due to unknown error")
               }
             }
 
+            // as created in the /login endpoint, the actual state contains the desired callback url
+            // and the desired callback fragment, separated by a hash. But, either value may be the empty string.
+
+            val redirectParts = actualState.split("#")
+            val List(redirectBase, redirectFragment) = redirectParts match {
+              // callback#fragment
+              case x if x.length == 2 => List(redirectParts(0), redirectParts(1))
+              // #fragment
+              case x if (x.length == 1 && actualState.startsWith("#")) => List("", redirectParts(0))
+              // callback#
+              case x if (x.length == 1 && actualState.endsWith("#")) => List(redirectParts(0), "")
+              // #
+              case x if x.length == 0 => List("", "")
+              // an unexpected case where we have too many parts. Do our best to handle this gracefully.
+              case _ =>
+                log.debug(s"Unexpected state parameter during login callback: [$actualState]")
+                List(redirectParts.head, redirectParts.tail.mkString("#"))
+            }
+
+            // validate the redirect base against our known whitelist.
+            // this will return the original value if it exists in the whitelist,
+            // or the empty string if it does not
+            val finalRedirectBase = HttpGoogleServicesDAO.whitelistRedirect(redirectBase)
+
             // redirect to the root url ("/"), with a fragment containing the user's original path and
             // the access token. The access token part LOOKS like a query param, but the entire string including "?"
             // is actually the fragment and the UI will parse it out.
-            val uiRedirect = Uri()
+            val uiRedirect = Uri(finalRedirectBase)
               .withPath(Uri.Path./)
-              .withFragment(s"${actualState}?access_token=${accessToken}")
+              .withFragment(s"$redirectFragment?access_token=$accessToken")
 
-            redirect(uiRedirect, StatusCodes.TemporaryRedirect)
+            redirect(Uri(uiRedirect.toString), StatusCodes.TemporaryRedirect)
           } catch {
             case e:OAuthException => complete(StatusCodes.Unauthorized, e.getMessage) // these can be shown to the user
             case e: Exception => {
@@ -121,5 +149,13 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
           }
       }
     }
+
+
+  def initiateAuth(state: String, approvalPrompt: String) =  {
+    val gcsAuthUrl = HttpGoogleServicesDAO.getGoogleRedirectURI(state, approvalPrompt=approvalPrompt)
+    redirect(gcsAuthUrl, StatusCodes.TemporaryRedirect)
+  }
+
+
 
 }

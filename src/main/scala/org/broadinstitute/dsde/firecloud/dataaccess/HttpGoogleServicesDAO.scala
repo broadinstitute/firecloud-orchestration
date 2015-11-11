@@ -7,6 +7,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.{OAuthException, OAuthTokens}
+import org.slf4j.LoggerFactory
 import spray.http.Uri
 
 import scala.collection.JavaConversions._
@@ -30,10 +31,14 @@ object HttpGoogleServicesDAO {
   val jsonFactory = JacksonFactory.getDefaultInstance
 
   val clientSecrets = GoogleClientSecrets.load(jsonFactory, new StringReader(secretContent))
+  // Google Java Client doesn't offer direct access to the allowed origins, so we have to jump through a couple hoops
+  val origins:List[String] = (clientSecrets.getDetails.get("javascript_origins").asInstanceOf[java.util.ArrayList[String]]).toList
+
 
   val flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport,
     jsonFactory, clientSecrets, scopes).build()
 
+  lazy val log = LoggerFactory.getLogger(getClass)
 
   /**
    * first step of OAuth dance: redirect the browser to Google's login page
@@ -76,6 +81,17 @@ object HttpGoogleServicesDAO {
       refreshToken,
       idToken
     )
+  }
+
+  // check the requested UI redirect against the list of allowed JS origins
+  def whitelistRedirect(userUri:String) = {
+    userUri match {
+      case "" => ""
+      case x if origins.contains(x) => x
+      case _ =>
+        log.warn("User requested a redirect to " + userUri + ", but that url does not exist in whitelist.")
+        ""
+    }
   }
 
   def randomStateString = randomString(24)
