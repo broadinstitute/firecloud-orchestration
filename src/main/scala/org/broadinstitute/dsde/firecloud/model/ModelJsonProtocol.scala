@@ -97,6 +97,7 @@ object ModelJsonProtocol {
 
   implicit val impTokenResponse = jsonFormat5(OAuthTokens)
   implicit val impRawlsToken = jsonFormat1(RawlsToken)
+  implicit val impRawlsTokenDate = jsonFormat1(RawlsTokenDate)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

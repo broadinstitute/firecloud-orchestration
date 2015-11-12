@@ -14,5 +14,7 @@ case class OAuthTokens(
 
 case class RawlsToken(refreshToken: String)
 
+case class RawlsTokenDate(refreshTokenUpdatedDate: String)
+
 case class OAuthException(message: String = null, cause: Throwable = null) extends RuntimeException(message, cause)
 
