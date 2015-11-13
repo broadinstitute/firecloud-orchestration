@@ -38,7 +38,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudDirec
   lazy val log = LoggerFactory.getLogger(getClass)
 
   val routes = requireUserInfo() { userInfo =>
-    pathPrefix("profile") {
+    pathPrefix("register" / "profile") {
 
       // GET /profile - get all keys for current user
       pathEnd {
