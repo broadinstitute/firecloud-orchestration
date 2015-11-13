@@ -1,1 +1,1 @@
-{{with $secret := vault "secret/dsde/local/local_broadinsititute_org" }}{{$secret.Data.ca_bundle_crt}}{{end}}
+{{with $secret := vault "secret/common/ca-bundle.crt" }}{{$secret.Data.chain}}{{end}}

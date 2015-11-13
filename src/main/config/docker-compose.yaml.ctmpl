@@ -1,5 +1,5 @@
 {{with $environment := env "ENVIRONMENT"}}
-{{$keyname := printf "secret/dsde/%s/firecloud-orchestration/docker-compose.yaml" $environment}}
+{{$keyname := printf "secret/dsde/%s/firecloud-orchestration/firecloud-orchestration-compose.yaml" $environment}}
 {{with vault $keyname}}
 
 app:
@@ -9,10 +9,10 @@ app:
   {{.Data.app_volumes}}
   environment:
     - GOOGLE_CLIENT_ID={{.Data.env_client_id}}
-    - AGORA_URL_ROOT={{.Data.env_agora_url}}
-    - RAWLS_URL_ROOT={{.Data.env_rawls_url}}
-    - THURLOE_URL_ROOT={{.Data.env_thurloe_url}}
-    - FIRECLOUD_URL_ROOT={{.Data.env_firecloud_url}}
+    - AGORA_URL_ROOT={{.Data.env_agora_url_root}}
+    - RAWLS_URL_ROOT={{.Data.env_rawls_url_root}}
+    - THURLOE_URL_ROOT={{.Data.env_thurloe_url_root}}
+    - FIRECLOUD_URL_ROOT={{.Data.env_firecloud_url_root}}
     - GOOGLE_SECRET_JSON={{.Data.env_google_json}}
 proxy:
   extends:
