@@ -19,7 +19,6 @@ FireCloud Orchestration Service
 * spray-json
 * sbt-assembly
 * sbt-revolver
-* spray-swagger
 * mock-server
 
 ## Development Notes

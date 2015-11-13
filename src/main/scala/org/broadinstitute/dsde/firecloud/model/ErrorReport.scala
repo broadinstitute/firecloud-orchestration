@@ -1,31 +1,23 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import com.wordnik.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import spray.client.pipelining._
 import spray.http.MediaTypes._
 import spray.http._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 
-import scala.annotation.meta.field
 import scala.util.{Success, Try}
 
 import spray.httpx.SprayJsonSupport._
 import ModelJsonProtocol._
 import spray.json._
 
-@ApiModel(value = "ErrorReport")
 case class ErrorReport (
-                     @(ApiModelProperty@field)(required = true, value = "The source service of the error")
-                     source: String,
-                     @(ApiModelProperty@field)(required = true, value = "The error message / exception text")
-                     message: String,
-                     @(ApiModelProperty@field)(required = true, value = "The HTTP status code of the response, if applicable")
-                     statusCode: Option[StatusCode] = None,
-                     @(ApiModelProperty@field)(required = true, value = "Root causes of the error, if applicable")
-                     causes: Seq[ErrorReport] = Seq(),
-                     @(ApiModelProperty@field)(required = true, value = "Stack traces associated with the error, if applicable")
-                     stackTrace: Seq[StackTraceElement] = Seq())
+  source: String,
+  message: String,
+  statusCode: Option[StatusCode] = None,
+  causes: Seq[ErrorReport] = Seq(),
+  stackTrace: Seq[StackTraceElement] = Seq())
 
 object ErrorReport extends ((String,String,Option[StatusCode],Seq[ErrorReport],Seq[StackTraceElement]) => ErrorReport) {
   private val SOURCE = "FireCloud"
