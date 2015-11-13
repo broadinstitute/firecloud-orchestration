@@ -1,8 +1,6 @@
 name := "FireCloud-Orchestration"
 
-val vaultOrg = "org.broadinstitute.dsde.vault"
-
-organization  := vaultOrg
+organization := "org.broadinstitute.dsde.firecloud"
 
 // Canonical version
 val versionRoot = "0.1"
@@ -43,19 +41,20 @@ libraryDependencies ++= {
   val akkaV = "2.3.9"
   val sprayV = "1.3.3"
   Seq(
-    vaultOrg              %%  "vault-common"  % "0.1-17-0ee4ad5",
+    "org.broadinstitute.dsde.vault" %%  "vault-common"  % "0.1-17-0ee4ad5",
     "io.spray"            %%  "spray-can"     % sprayV,
     "io.spray"            %%  "spray-routing" % sprayV,
     "io.spray"            %%  "spray-json"    % "1.3.1",
     "io.spray"            %%  "spray-client"  % sprayV,
     "io.spray"            %%  "spray-testkit" % sprayV    % "test",
-    "com.gettyimages"     %%  "spray-swagger" % "0.5.0", // TODO(dmohs): Remove
     "org.webjars"          %  "swagger-ui"    % "2.1.1",
     "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"  % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"    % akkaV,
     ("com.google.api-client" % "google-api-client" % "1.20.0").exclude("com.google.guava", "guava-jdk5"),
+    "joda-time"            % "joda-time"      % "2.3",
+    "org.joda"             % "joda-convert"   % "1.2",
     "org.specs2"          %%  "specs2-core"   % "2.3.11"  % "test",
     "org.scalatest"       %%  "scalatest"     % "2.2.1"   % "test",
     "org.mock-server"      %  "mockserver-netty" % "3.9.2" % "test"
