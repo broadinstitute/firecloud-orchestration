@@ -22,11 +22,11 @@ class FireCloudServiceActor extends HttpServiceActor {
   val submissionsService = new SubmissionService with ActorRefFactoryContext
   val storageService = new StorageService with ActorRefFactoryContext
   val statusService = new StatusService with ActorRefFactoryContext
-  val userService = new UserService with ActorRefFactoryContext
   val routes = statusService.routes ~ methodsService.routes ~ workspaceService.routes ~ entityService.routes ~
-    methodConfigurationService.routes ~ submissionsService.routes ~ userService.routes ~ storageService.routes
+    methodConfigurationService.routes ~ submissionsService.routes ~ storageService.routes
 
   val oAuthService = new OAuthService with ActorRefFactoryContext
+  val userService = new UserService with ActorRefFactoryContext
 
   lazy val log = LoggerFactory.getLogger(getClass)
   val logRequests = mapInnerRoute { route => requestContext =>
@@ -46,6 +46,7 @@ class FireCloudServiceActor extends HttpServiceActor {
         swaggerUiService ~
           testNihService ~
           oAuthService.routes ~
+          userService.routes ~
           pathPrefix("api") {
             routes
           }
@@ -53,6 +54,7 @@ class FireCloudServiceActor extends HttpServiceActor {
         swaggerUiService ~
         testNihService ~
         oAuthService.routes ~
+        userService.routes ~
         pathPrefix("api") {
           routes
         }
@@ -72,7 +74,7 @@ class FireCloudServiceActor extends HttpServiceActor {
               complete {
                 HttpEntity(ContentType(MediaTypes.`text/html`),
                   getResourceFileContents("swagger/auth-page.html")
-                .replace("{{googleClientId}}", FireCloudConfig.Auth.googleClientId)
+                    .replace("{{googleClientId}}", FireCloudConfig.Auth.googleClientId)
                 )
               }
           } ~

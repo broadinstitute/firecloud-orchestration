@@ -10,10 +10,10 @@ info:
     url: http://opensource.org/licenses/BSD-3-Clause
   termsOfService: https://github.com/broadinstitute/firecloud-orchestration
 
-basePath: /service/api
+basePath: /service
 
 paths:
-  /workspaces:
+  /api/workspaces:
     get:
       tags:
       - Workspaces
@@ -52,7 +52,7 @@ paths:
           description: Workspace by that name already exists
         500:
           description: Internal Server Error
-  /methods:
+  /api/methods:
     get:
       tags:
       - Method Repository
@@ -64,7 +64,7 @@ paths:
       responses:
         200:
           description: List of Method Repository methods.
-  /configurations:
+  /api/configurations:
     get:
       tags:
       - Method Repository
@@ -76,7 +76,7 @@ paths:
       responses:
         200:
           description: List of Method Repository configurations.
-  /template:
+  /api/template:
     post:
       tags:
         - Method Repository
@@ -101,7 +101,7 @@ paths:
           description: No Such Method
         500:
           description: Internal Server Error
-  /configurations/{namespace}/{name}/{snapshotId}:
+  /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
       tags:
         - Method Repository
@@ -130,7 +130,7 @@ paths:
           description: Method Repository configuration detail
         500:
           description: Internal Server Error
-  /methods/{namespace}/{name}/{snapshotId}/permissions:
+  /api/methods/{namespace}/{name}/{snapshotId}/permissions:
     get:
       tags:
         - Method Repository
@@ -199,7 +199,7 @@ paths:
           description: Bad Request
         500:
           description: Internal Server Error
-  /configurations/{namespace}/{name}/{snapshotId}/permissions:
+  /api/configurations/{namespace}/{name}/{snapshotId}/permissions:
     get:
       tags:
         - Method Repository
@@ -268,7 +268,7 @@ paths:
           description: Bad Request
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:
         - Workspaces
@@ -317,7 +317,7 @@ paths:
           description: Workspace does not exist
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/acl:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/acl:
     get:
       tags:
         - Workspaces
@@ -375,7 +375,7 @@ paths:
           description: Workspace not found
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/clone:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/clone:
     post:
       tags:
         - Workspaces
@@ -405,7 +405,7 @@ paths:
           description: Destination workspace already exists
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/lock:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/lock:
     put:
       tags:
         - Workspaces
@@ -435,7 +435,7 @@ paths:
           description: Workspace Not Found
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/unlock:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
     put:
       tags:
         - Workspaces
@@ -465,7 +465,7 @@ paths:
           description: Workspace Not Found
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
     get:
       type: EntityWithType
       tags:
@@ -493,7 +493,7 @@ paths:
           description: Workspace or entities not found.
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/entities:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities:
     get:
       type: String
       tags:
@@ -521,7 +521,7 @@ paths:
           description: Workspace does not exist
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
     post:
       tags:
       - Entities
@@ -558,7 +558,7 @@ paths:
           description: One or more entities of that name/type already exist
         500:
           description: Internal Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
     post:
       tags:
       - Entities
@@ -590,7 +590,7 @@ paths:
           description: Malformed Request
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
       type: Entity
       tags:
@@ -623,7 +623,7 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       type: file
       tags:
@@ -656,7 +656,7 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}:
     get:
       tags:
         - Entities
@@ -729,7 +729,7 @@ paths:
           description: Workspace or Entity does not exist
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
     get:
       tags:
         - Method Configurations
@@ -791,7 +791,7 @@ paths:
           description: Method Configuration already exists
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}:
     get:
       tags:
         - Method Configurations
@@ -901,7 +901,7 @@ paths:
           description: Workspace or Method Configuration not found
         500:
           description: Internal Server Error
-  '/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}/validate':
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}/validate:
       get:
         responses:
           '200':
@@ -938,7 +938,7 @@ paths:
             name: configName
             required: true
             type: string
-  /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/rename:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/rename:
     post:
       tags:
         - Method Configurations
@@ -982,7 +982,7 @@ paths:
           description: Method Configuration with that name already exists
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
     post:
       tags:
         - Method Configurations
@@ -1019,7 +1019,7 @@ paths:
           description: Error parsing source method configuration
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyToMethodRepo:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyToMethodRepo:
     post:
       tags:
         - Method Configurations
@@ -1056,7 +1056,7 @@ paths:
           description: Error parsing source method configuration
         500:
           description: Internal Server Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/submissions:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
       tags:
       - Submissions
@@ -1120,7 +1120,7 @@ paths:
           description: Method Configuration failed to resolve input expressions with the supplied Entity
         500:
           description: Internal Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
     delete:
       tags:
       - Submissions
@@ -1183,7 +1183,7 @@ paths:
           description: Submission not found
         500:
           description: Internal Error
-  /workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
     get:
       tags:
       - Submissions
@@ -1221,7 +1221,7 @@ paths:
         500:
           description: Internal Error
           
-  /workspaces/{workspaceNamespace}/{workspaceName}/updateAttributes:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/updateAttributes:
     patch:
       tags:
       - Workspaces
@@ -1257,7 +1257,7 @@ paths:
           description: Workspace not found
         500:
           description: Internal Error
-  /status:
+  /api/status:
     get:
       tags:
       - Status
@@ -1272,7 +1272,7 @@ paths:
           description: Success
         500:
           description: Internal Error
-  /status/ping:
+  /api/status/ping:
     get:
       tags:
       - Status
@@ -1287,7 +1287,7 @@ paths:
           description: Success
         500:
           description: Internal Error
-  /storage/{bucket}/{object}:
+  /api/storage/{bucket}/{object}:
     get:
       tags:
       - Storage
@@ -1316,7 +1316,7 @@ paths:
           description: Not Found
         500:
           description: Internal Error
-  /profile:
+  /register/profile:
     get:
       tags:
         - Profile
@@ -1377,7 +1377,7 @@ paths:
           description: Bad request
         500:
           description: Internal server error
-  /profile/{key}:
+  /register/profile/{key}:
     post:
       tags:
         - Profile
@@ -1469,7 +1469,7 @@ paths:
           description: Key not found
         500:
           description: Internal server error
-  /../login:
+  /login:
     get:
       tags:
         - OAuth
