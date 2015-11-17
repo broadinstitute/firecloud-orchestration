@@ -1491,7 +1491,7 @@ paths:
         required: false
         type: string
         enum: ["auto","force"]
-        default: "force"
+        default: "auto"
       - name: callback
         in: query
         description: The host to use after finishing authentication. Include the scheme, but no trailing slash, e.g. https://firecloud.broadinstitute.org
