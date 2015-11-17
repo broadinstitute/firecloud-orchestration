@@ -1469,6 +1469,20 @@ paths:
           description: Key not found
         500:
           description: Internal server error
+  /register/userinfo:
+    get:
+      tags:
+        - Profile
+      operationId: userInfo
+      summary: Passes through to Google's userinfo API and returns its response
+      description: See https://developers.google.com/+/web/api/rest/openidconnect/getOpenIdConnect for response info.
+        Userinfo endpoint lives at https://www.googleapis.com/oauth2/v3/userinfo.
+      parameters:
+      responses:
+        200:
+          description: OK
+          produces:
+          - application/json
   /login:
     get:
       tags:
