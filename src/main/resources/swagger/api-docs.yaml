@@ -1477,12 +1477,33 @@ paths:
       summary: Passes through to Google's userinfo API and returns its response
       description: See https://developers.google.com/+/web/api/rest/openidconnect/getOpenIdConnect for response info.
         Userinfo endpoint lives at https://www.googleapis.com/oauth2/v3/userinfo.
-      parameters:
       responses:
         200:
           description: OK
           produces:
           - application/json
+  /api/profile/billing:
+    get:
+      tags:
+        - Profile
+      operationId: billing
+      summary: List billing projects for a user
+      responses:
+        200:
+          description: OK
+          produces:
+          - application/json
+          schema:
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+        404:
+          description: User Not Found
+        500:
+          description: Internal Server Error
   /login:
     get:
       tags:

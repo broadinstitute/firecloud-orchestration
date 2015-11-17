@@ -27,6 +27,9 @@ object UserService {
 
   val remoteDeleteKeyURL = remoteGetKeyURL
 
+  val billingPath = FireCloudConfig.Rawls.authPrefix + "/user/billing"
+  val billingUrl = FireCloudConfig.Rawls.baseUrl + billingPath
+
 }
 
 // TODO: this should use UserInfoDirectives, not StandardUserInfoDirectives. That would require a refactoring
@@ -38,6 +41,12 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudDirec
   lazy val log = LoggerFactory.getLogger(getClass)
 
   val routes = requireUserInfo() { userInfo =>
+    pathPrefix("api") {
+      path("profile" / "billing") { requestContext =>
+        val extReq = Get(UserService.billingUrl)
+        externalHttpPerRequest(requestContext, extReq)
+      }
+    } ~
     pathPrefix("register") {
       path("userinfo") { requestContext =>
         val extReq = Get("https://www.googleapis.com/oauth2/v3/userinfo")
