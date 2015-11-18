@@ -1,1 +1,1 @@
-{{with $environment := env "ENVIRONMENT"}}{{$keyname := printf "secret/dsde/%s/firecloud-oauth2.json" $environment}}{{with vault $keyname}}{{.Data.json}}{{end}}{{end}}
+{{with $environment := env "ENVIRONMENT"}}{{$keyname := printf "secret/dsde/%s/common/firecloud-oauth2.json" $environment}}{{with vault $keyname}}{{.Data.json}}{{end}}{{end}}
