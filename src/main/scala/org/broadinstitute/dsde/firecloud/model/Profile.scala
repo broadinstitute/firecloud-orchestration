@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import scala.language.postfixOps
+
 case class FireCloudKeyValue(
   key: Option[String] = None,
   value: Option[String] = None)
