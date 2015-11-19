@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.model.{RawlsTokenDate, RawlsToken, OAut
 import org.joda.time.{Days, DateTime}
 import org.slf4j.LoggerFactory
 import spray.http.Uri._
-import spray.http.{HttpResponse, OAuth2BearerToken, StatusCodes, Uri}
+import spray.http._
 import spray.routing._
 import spray.client.pipelining._
 import spray.httpx.SprayJsonSupport._
@@ -192,7 +192,13 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
       .withPath(Uri.Path./)
       .withFragment(s"$redirectFragment?access_token=$accessToken")
 
-    redirect(Uri(uiRedirect.toString), StatusCodes.TemporaryRedirect)
+    // we require a spray DateTime, not a joda DateTime
+    // expire in one day
+    val expiration = spray.http.DateTime.now + (1000 * 60 * 60 * 24)
+
+    setCookie(HttpCookie("FCtoken", content=accessToken, expires = Some(expiration), httpOnly = true)) {
+      redirect(Uri(uiRedirect.toString), StatusCodes.TemporaryRedirect)
+    }
   }
 
 
