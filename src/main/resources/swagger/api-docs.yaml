@@ -1469,6 +1469,41 @@ paths:
           description: Key not found
         500:
           description: Internal server error
+  /register/userinfo:
+    get:
+      tags:
+        - Profile
+      operationId: userInfo
+      summary: Passes through to Google's userinfo API and returns its response
+      description: See https://developers.google.com/+/web/api/rest/openidconnect/getOpenIdConnect for response info.
+        Userinfo endpoint lives at https://www.googleapis.com/oauth2/v3/userinfo.
+      responses:
+        200:
+          description: OK
+          produces:
+          - application/json
+  /api/profile/billing:
+    get:
+      tags:
+        - Profile
+      operationId: billing
+      summary: List billing projects for a user
+      responses:
+        200:
+          description: OK
+          produces:
+          - application/json
+          schema:
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+        404:
+          description: User Not Found
+        500:
+          description: Internal Server Error
   /login:
     get:
       tags:
@@ -1491,7 +1526,7 @@ paths:
         required: false
         type: string
         enum: ["auto","force"]
-        default: "force"
+        default: "auto"
       - name: callback
         in: query
         description: The host to use after finishing authentication. Include the scheme, but no trailing slash, e.g. https://firecloud.broadinstitute.org
