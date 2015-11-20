@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.mockserver.integration.ClientAndServer
@@ -15,6 +16,7 @@ import spray.json.DefaultJsonProtocol._
 class UserServiceSpec extends ServiceSpec with UserService {
 
   def actorRefFactory = system
+  var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
   val httpMethods = List(HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT,
     HttpMethods.DELETE, HttpMethods.PATCH, HttpMethods.OPTIONS, HttpMethods.HEAD)
@@ -23,18 +25,28 @@ class UserServiceSpec extends ServiceSpec with UserService {
   val exampleKey = "favoriteColor"
   val exampleVal = "green"
   val fullProfile = Profile(
-    name = MockUtils.randomAlpha(),
-    email = MockUtils.randomAlpha(),
-    institution = MockUtils.randomAlpha(),
-    pi = MockUtils.randomAlpha()
+    name = randomAlpha(),
+    email = randomAlpha(),
+    institution = randomAlpha(),
+    pi = randomAlpha()
   )
   val allProperties: Map[String, String] = fullProfile.propertyValueMap
 
   override def beforeAll(): Unit = {
-    profileServer = startClientAndServer(MockUtils.thurloeServerPort)
+
+    workspaceServer = startClientAndServer(workspaceServerPort)
+    workspaceServer
+      .when(request.withMethod("GET").withPath(UserService.billingPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+
+    profileServer = startClientAndServer(thurloeServerPort)
     // Generate a mock response for all combinations of profile properties
     // to ensure that all posts to any combination will yield a successful response.
-    allProperties.keys map {
+    allProperties.keys foreach {
       key =>
         profileServer
           .when(request().withMethod("POST").withPath(
@@ -45,7 +57,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
           )
     }
 
-    List(HttpMethods.GET, HttpMethods.POST, HttpMethods.DELETE) map {
+    List(HttpMethods.GET, HttpMethods.POST, HttpMethods.DELETE) foreach {
       method =>
         profileServer
           .when(request().withMethod(method.name).withPath(
@@ -70,52 +82,22 @@ class UserServiceSpec extends ServiceSpec with UserService {
   }
 
   override def afterAll(): Unit = {
+    workspaceServer.stop()
     profileServer.stop()
   }
 
   "UserService" - {
 
+    "when calling GET for user billing service " - {
+      "MethodNotAllowed response is not returned" in {
+        Get("/api/profile/billing") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          log.debug("/api/profile/billing: " + status)
+          status shouldNot equal(MethodNotAllowed)
+        }
+      }
+    }
+
     val ApiPrefix = "register/profile"
-
-    "when GET-ting or DELETE-ing a single profile key" - {
-      "MethodNotAllowed response is not returned" in {
-        List(HttpMethods.GET, HttpMethods.DELETE) map {
-          method =>
-            new RequestBuilder(method)(s"/$ApiPrefix/$exampleKey") ~>
-              dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
-              log.debug(s"$method /$ApiPrefix/$exampleKey: " + status)
-              status shouldNot equal(MethodNotAllowed)
-            }
-        }
-      }
-    }
-
-    "when POST-ting a single profile key" - {
-      "MethodNotAllowed response is not returned" in {
-        allProperties foreach {
-          (e: (String, String)) =>
-            val payload = ThurloeKeyValue(Some(uniqueId),
-              Some(FireCloudKeyValue(Some(e._1), Some(e._2))))
-            Post(s"/$ApiPrefix/$exampleKey") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
-              log.debug(s"POST /$ApiPrefix/$exampleKey: " + status)
-              status shouldNot equal(MethodNotAllowed)
-            }
-        }
-      }
-    }
-
-    "when calling other methods a single profile key" - {
-      "MethodNotAllowed response is returned" in {
-        List(HttpMethods.PUT, HttpMethods.PATCH) map {
-          method =>
-            new RequestBuilder(method)(s"/$ApiPrefix/$exampleKey") ~>
-              dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
-              log.debug(s"$method /$ApiPrefix/$exampleKey: " + status)
-              status should be (MethodNotAllowed)
-            }
-        }
-      }
-    }
 
     "when GET-ting all profile information" - {
       "MethodNotAllowed response is not returned" in {
@@ -126,8 +108,6 @@ class UserServiceSpec extends ServiceSpec with UserService {
       }
     }
 
-
-    // Testing the only non-passthrough routes in UserService so we are testing for correct status
     "when POST-ting a complete profile" - {
       "OK response is returned" in {
         Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
@@ -137,10 +117,9 @@ class UserServiceSpec extends ServiceSpec with UserService {
       }
     }
 
-    // Testing the only non-passthrough routes in UserService so we are testing for correct status
     "when POST-ting an incomplete profile" - {
       "BadRequest response is not returned" in {
-        val incompleteProfile = Map("name" -> MockUtils.randomAlpha())
+        val incompleteProfile = Map("name" -> randomAlpha())
         Post(s"/$ApiPrefix", incompleteProfile) ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
           log.debug(s"POST /$ApiPrefix: " + status)

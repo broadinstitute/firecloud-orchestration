@@ -59,34 +59,13 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudDirec
             val extReq = Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))
             externalHttpPerRequest(requestContext, extReq)
           } ~
-            post {
-              entity(as[Profile]) {
-                profileData => requestContext =>
-                  perRequest(requestContext, Props(new ProfileActor(requestContext)),
-                    ProfileActor.UpdateProfile(userInfo, profileData))
-              }
+          post {
+            entity(as[Profile]) {
+              profileData => requestContext =>
+                perRequest(requestContext, Props(new ProfileActor(requestContext)),
+                  ProfileActor.UpdateProfile(userInfo, profileData))
             }
-        } ~
-        path(Segment) { key =>
-          // GET /profile/${key} - get specified key for current user
-          get { requestContext =>
-            val extReq = Get(UserService.remoteGetKeyURL.format(userInfo.getUniqueId, key))
-            externalHttpPerRequest(requestContext, extReq)
-          } ~
-            // POST /profile/${key} - upsert specified key for current user
-            post {
-              entity(as[String]) { value => requestContext =>
-                val kv = FireCloudKeyValue(Some(key), Some(value))
-                val payload = ThurloeKeyValue(Some(userInfo.getUniqueId), Some(kv))
-                val extReq = Post(UserService.remoteSetKeyURL, payload)
-                externalHttpPerRequest(requestContext, extReq)
-              }
-            } ~
-            // DELETE /profile/${key} - delete specified key for current user
-            delete { requestContext =>
-              val extReq = Delete(UserService.remoteDeleteKeyURL.format(userInfo.getUniqueId, key))
-              externalHttpPerRequest(requestContext, extReq)
-            }
+          }
         }
       }
     }
