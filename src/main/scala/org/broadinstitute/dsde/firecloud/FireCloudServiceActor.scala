@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud
 
 import org.parboiled.common.FileUtils
 import org.slf4j.LoggerFactory
+import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
 import spray.util._
@@ -39,6 +40,7 @@ class FireCloudServiceActor extends HttpServiceActor {
 
   def receive = runRoute(
     logRequests {
+      swaggerCorsService ~
       // The "service" path prefix is never visible to this server in production because it is
       // transparently proxied. We check for it here so the redirects work when visiting this
       // server directly during local development.
@@ -84,6 +86,18 @@ class FireCloudServiceActor extends HttpServiceActor {
               }
             } ~
             getFromResourceDirectory(swaggerUiPath)
+        }
+      }
+    }
+  }
+
+  val swaggerCorsService = {
+    options{
+      optionalHeaderValueByName("Referer") { refer =>
+        refer match {
+          // at some point in the future, we may want to support additional referers; careful of hardcoding!
+          case Some("https://swagger.dsde-dev.broadinstitute.org/") => complete(OK)
+          case _ => reject
         }
       }
     }
