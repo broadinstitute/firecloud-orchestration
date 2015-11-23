@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.core.ProfileActor
+import org.broadinstitute.dsde.firecloud.core.{ProfileClientActor, ProfileClient}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -29,6 +29,12 @@ object UserService {
 
   val billingPath = FireCloudConfig.Rawls.authPrefix + "/user/billing"
   val billingUrl = FireCloudConfig.Rawls.baseUrl + billingPath
+
+  val rawlsGetUserPath = "/register/user"
+  val rawlsGetUserURL = FireCloudConfig.Rawls.baseUrl + rawlsGetUserPath
+
+  val rawlsRegisterUserPath = "/register/user"
+  val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
 
 }
 
@@ -62,8 +68,8 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudDirec
           post {
             entity(as[Profile]) {
               profileData => requestContext =>
-                perRequest(requestContext, Props(new ProfileActor(requestContext)),
-                  ProfileActor.UpdateProfile(userInfo, profileData))
+                perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
+                  ProfileClient.UpdateProfile(userInfo, profileData))
             }
           }
         }

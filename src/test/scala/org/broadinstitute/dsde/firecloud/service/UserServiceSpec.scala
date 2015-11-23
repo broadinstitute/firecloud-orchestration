@@ -42,6 +42,19 @@ class UserServiceSpec extends ServiceSpec with UserService {
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
 
+    workspaceServer
+      .when(request.withMethod("GET").withPath(UserService.rawlsGetUserPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("POST").withPath(UserService.rawlsRegisterUserPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
+      )
 
     profileServer = startClientAndServer(thurloeServerPort)
     // Generate a mock response for all combinations of profile properties
@@ -86,6 +99,8 @@ class UserServiceSpec extends ServiceSpec with UserService {
     profileServer.stop()
   }
 
+  val ApiPrefix = "register/profile"
+
   "UserService" - {
 
     "when calling GET for user billing service " - {
@@ -96,8 +111,6 @@ class UserServiceSpec extends ServiceSpec with UserService {
         }
       }
     }
-
-    val ApiPrefix = "register/profile"
 
     "when GET-ting all profile information" - {
       "MethodNotAllowed response is not returned" in {
@@ -118,12 +131,57 @@ class UserServiceSpec extends ServiceSpec with UserService {
     }
 
     "when POST-ting an incomplete profile" - {
-      "BadRequest response is not returned" in {
+      "BadRequest response is returned" in {
         val incompleteProfile = Map("name" -> randomAlpha())
         Post(s"/$ApiPrefix", incompleteProfile) ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
           log.debug(s"POST /$ApiPrefix: " + status)
           status should equal(BadRequest)
+        }
+      }
+    }
+
+  }
+
+  "UserService Edge Cases" - {
+
+    "When testing profile update for a brand new user in Rawls" - {
+      "OK response is returned" in {
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsGetUserPath))
+        workspaceServer
+          .when(request.withMethod("GET").withPath(UserService.rawlsGetUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
+          )
+        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          log.debug(s"POST /$ApiPrefix: " + status)
+          status should equal(OK)
+        }
+      }
+    }
+
+    "When testing profile update for a pre-existing but non-enabled user in Rawls" - {
+      "OK response is returned" in {
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsGetUserPath))
+        workspaceServer.clear(request.withMethod("POST").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer
+          .when(request.withMethod("GET").withPath(UserService.rawlsGetUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
+          )
+        workspaceServer
+          .when(request.withMethod("POST").withPath(UserService.rawlsRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header)
+              .withStatusCode(InternalServerError.intValue)
+              .withBody(Conflict.intValue + " " + Conflict.reason)
+          )
+        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          log.debug(s"POST /$ApiPrefix: " + status)
+          status should equal(OK)
         }
       }
     }
