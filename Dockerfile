@@ -29,14 +29,13 @@ WORKDIR /app
 
 # Grab dependencies.
 COPY build.sbt build.sbt
-COPY project project
+COPY project/plugins.sbt project/plugins.sbt
 RUN sbt compile
 
 # Compile first to cache it.
-COPY src src
+COPY src/main src/main
+COPY src/test src/test
 RUN sbt compile
-
-# RUN AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' sbt test
 
 RUN sbt assembly
 
