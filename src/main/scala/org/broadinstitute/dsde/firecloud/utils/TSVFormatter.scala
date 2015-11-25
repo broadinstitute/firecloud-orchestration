@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import spray.json.JsValue
 
 import scala.collection.{immutable, mutable}
+import scala.util.Try
 
 object TSVFormatter {
 
@@ -43,39 +44,31 @@ object TSVFormatter {
     row.update(0, entity.name)
     entity.attributes.getOrElse(Map.empty).foreach { e =>
       val columnPosition = headerValues.indexOf(headerRenamingMap.getOrElse(e._1, e._1))
-      makeCellValue(row, columnPosition, e._1, e._2)
+      makeCellValue(row, columnPosition, e._2)
     }
     row.toIndexedSeq
   }
 
   /**
-   * When adding a cell to a row, we need to check if the entry is an "_id" field. In that case,
+   * When adding a cell to a row, we need to check if the entry is a JSObject. In that case,
    * we have to parse the value as a json structure and look for "entityName"
    *
    * @param row The row to update
    * @param columnPosition The column position of the inserted value
-   * @param header The header to check. "_id" headers require special processing
    * @param value The value to insert/parse for real value
    */
   private def makeCellValue(
     row: mutable.IndexedSeq[String],
     columnPosition: Int,
-    header: String,
     value: JsValue) = {
-    header match {
-      case x if x.endsWith("_id") || x.equals("case_sample") || x.equals("control_sample") =>
-        value match {
-          case y if y.asJsObject.fields.contains("entityName") =>
-            row.update(
-              columnPosition,
-              cleanJsValue(value.asJsObject.fields.getOrElse("entityName", value))
-            )
-          case _ =>
-            row.update(columnPosition, cleanJsValue(value))
-        }
-      case x =>
-        row.update(columnPosition, cleanJsValue(value))
-    }
+      value match {
+        case y if Try(y.asJsObject.fields.contains("entityName")).isSuccess =>
+          row.update(
+            columnPosition,
+            cleanValue(value.asJsObject.fields.getOrElse("entityName", value)))
+        case _ =>
+          row.update(columnPosition, cleanValue(value))
+      }
   }
 
   /**
@@ -84,7 +77,7 @@ object TSVFormatter {
    * @param value The JsValue to remove leading and trailing quotes from.
    * @return Trimmed string value
    */
-  private def cleanJsValue(value: JsValue): String = {
+  private def cleanValue(value: JsValue): String = {
     val regex = "^\"|\"$".r
     regex.replaceAllIn(value.toString(), "")
   }
