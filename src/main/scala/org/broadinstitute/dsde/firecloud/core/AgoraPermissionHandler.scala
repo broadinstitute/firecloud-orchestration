@@ -2,22 +2,23 @@ package org.broadinstitute.dsde.firecloud.core
 
 import akka.actor.{Actor, Props}
 import akka.event.Logging
+import akka.pattern.pipe
+
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.ACLNames._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding}
-import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
-import org.broadinstitute.dsde.firecloud.HttpClient
+import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
+import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+
 import spray.client.pipelining._
 import spray.http.StatusCodes._
-import spray.http.{Uri, HttpResponse, StatusCodes}
+import spray.http.{HttpResponse, StatusCodes}
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.routing.RequestContext
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 object AgoraPermissionHandler {
   case class Get(url: String)
@@ -68,54 +69,38 @@ class AgoraPermissionActor (requestContext: RequestContext) extends Actor with F
 
   implicit val system = context.system
   import system.dispatcher
-
   val log = Logging(system, getClass)
-
   val pipeline = authHeaders(requestContext) ~> sendReceive
 
   def receive = {
-    // GET requests
     case AgoraPermissionHandler.Get(url: String) =>
-      val permissionListFuture: Future[HttpResponse] = pipeline { Get(url) }
-      handleAgoraResponse(permissionListFuture)
-
+      createAgoraResponse(pipeline { Get(url) }) pipeTo context.parent
     case AgoraPermissionHandler.Post(url: String, agoraPermissions: List[AgoraPermission]) =>
-      val permissionListFuture: Future[HttpResponse] = pipeline {Post(url, agoraPermissions)}
-      handleAgoraResponse(permissionListFuture)
-
+      createAgoraResponse(pipeline { Post(url, agoraPermissions) }) pipeTo context.parent
     case _ =>
-      context.parent ! RequestComplete(StatusCodes.BadRequest)
-      context stop self
+      Future(RequestComplete(StatusCodes.BadRequest)) pipeTo context.parent
   }
 
-  def handleAgoraResponse(permissionListFuture: Future[HttpResponse]) = {
-    permissionListFuture onComplete {
-      case Success(response) =>
+  def createAgoraResponse(permissionListFuture: Future[HttpResponse]): Future[PerRequestMessage] = {
+    permissionListFuture.map {response =>
         response.status match {
           case StatusCodes.OK =>
             try {
               val agoraPermissions = unmarshal[List[AgoraPermission]].apply(response)
               val fireCloudPermissions = agoraPermissions.map(x => x.toFireCloudPermission)
-              context.parent ! RequestComplete(OK, fireCloudPermissions)
-              context stop self
+              RequestComplete(OK, fireCloudPermissions)
             } catch {
               // TODO: more specific and graceful error-handling
               case e: Exception =>
-                context.parent ! RequestCompleteWithErrorReport(InternalServerError, "Failed to interpret methods " +
+                RequestCompleteWithErrorReport(InternalServerError, "Failed to interpret methods " +
                   "server response: " + e.getMessage)
-                context stop self
             }
           case x =>
-            context.parent ! RequestCompleteWithErrorReport(x, response.entity.asString)
-            context stop self
+            RequestCompleteWithErrorReport(x, response.entity.asString)
         }
-      case Failure(e) =>
-        context.parent ! RequestCompleteWithErrorReport(StatusCodes.InternalServerError, e.getMessage)
-        context stop self
-    }
+      }.recoverWith {
+        case e: Throwable => Future(RequestCompleteWithErrorReport(InternalServerError, e.getMessage))
+      }
   }
 
-
 }
-
-
