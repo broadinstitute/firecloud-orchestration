@@ -47,7 +47,7 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
     extract(_.request.method) { httpMethod =>
       unmatchedPath { remaining =>
         parameterMap { params =>
-          passthrough(Uri(targetEndpointUrl + remaining).withQuery(params).toString, httpMethod)
+          passthrough(Uri(encodeUri(targetEndpointUrl + remaining)).withQuery(params).toString, httpMethod)
         }
       }
     }
