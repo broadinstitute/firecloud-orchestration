@@ -31,7 +31,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Workspaces
@@ -63,7 +63,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/methods:
     get:
       tags:
@@ -81,7 +81,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/configurations:
     get:
       tags:
@@ -99,7 +99,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/template:
     post:
       tags:
@@ -130,7 +130,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
       tags:
@@ -165,7 +165,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/methods/{namespace}/{name}/{snapshotId}/permissions:
     get:
       tags:
@@ -202,7 +202,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Method Repository
@@ -246,7 +246,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/configurations/{namespace}/{name}/{snapshotId}/permissions:
     get:
       tags:
@@ -283,7 +283,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Method Repository
@@ -327,7 +327,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:
@@ -359,7 +359,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     delete:
       tags:
         - Workspaces
@@ -388,7 +388,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/acl:
     get:
       tags:
@@ -422,7 +422,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     patch:
       tags:
         - Workspaces
@@ -458,7 +458,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/clone:
     post:
       tags:
@@ -494,7 +494,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/lock:
     put:
       tags:
@@ -530,7 +530,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
     put:
       tags:
@@ -566,7 +566,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
     get:
       type: EntityWithType
@@ -600,7 +600,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities:
     get:
       type: String
@@ -634,7 +634,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
     post:
       tags:
@@ -677,7 +677,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
     post:
       tags:
@@ -715,7 +715,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
       type: Entity
@@ -754,7 +754,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       type: file
@@ -793,7 +793,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}:
     get:
       tags:
@@ -835,7 +835,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     delete:
       tags:
         - Entities
@@ -878,7 +878,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
     get:
       tags:
@@ -911,7 +911,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Method Configurations
@@ -952,7 +952,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}:
     get:
       tags:
@@ -993,7 +993,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     put:
       tags:
         - Method Configurations
@@ -1040,7 +1040,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     delete:
       tags:
         - Method Configurations
@@ -1080,7 +1080,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}/validate:
     get:
       responses:
@@ -1123,7 +1123,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/rename:
     post:
       tags:
@@ -1173,7 +1173,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
     post:
       tags:
@@ -1216,7 +1216,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyToMethodRepo:
     post:
       tags:
@@ -1259,7 +1259,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
       tags:
@@ -1292,7 +1292,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
       - Submissions
@@ -1335,7 +1335,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
     delete:
       tags:
@@ -1373,7 +1373,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     get:
       tags:
       - Submissions
@@ -1410,7 +1410,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
     get:
       tags:
@@ -1453,7 +1453,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/updateAttributes:
     patch:
       tags:
@@ -1495,7 +1495,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/status:
     get:
       tags:
@@ -1516,7 +1516,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/status/ping:
     get:
       tags:
@@ -1537,7 +1537,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/storage/{bucket}/{object}:
     get:
       tags:
@@ -1572,7 +1572,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /register/profile:
     get:
       tags:
@@ -1618,7 +1618,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Profile
@@ -1645,7 +1645,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /register/profile/{key}:
     post:
       tags:
@@ -1677,7 +1677,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     get:
       tags:
         - Profile
@@ -1729,7 +1729,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
     delete:
       tags:
         - Profile
@@ -1755,7 +1755,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /register/userinfo:
     get:
       tags:
@@ -1774,7 +1774,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/profile/billing:
     get:
       tags:
@@ -1802,7 +1802,7 @@ paths:
             - openid
             - email
             - profile
-            - devstorage.full_control
+            - https://www.googleapis.com/auth/devstorage.full_control
   /login:
     get:
       tags:
@@ -1847,7 +1847,7 @@ securityDefinitions:
       openid: open id authorization
       email: email authorization
       profile: profile authorization
-      devstorage.full_control: GCS storage
+      https://www.googleapis.com/auth/devstorage.full_control: GCS storage
 definitions:
   WorkspaceIngest:
     properties:
