@@ -89,7 +89,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
             // if we have a refresh token, store it in rawls
             refreshToken match {
               case Some(rt) =>
-                val tokenReq = Put(OAuthService.remoteTokenPutUrl, RawlsToken(accessToken))
+                val tokenReq = Put(OAuthService.remoteTokenPutUrl, RawlsToken(rt))
                 val tokenStoreFuture: Future[HttpResponse] = pipeline { tokenReq }
 
                 // we intentionally don't gate the login process on storage of the refresh token. Token storage
