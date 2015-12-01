@@ -9,8 +9,6 @@ proxy:
   environment:
     AUTH_TYPE: AuthType None
     AUTH_TYPE2: AuthType oauth20
-    CLIENTID: {{.Data.env_client_id}}
-    CLIENTSECRET: {{.Data.env_client_secret}}
     CALLBACK_URI: {{.Data.env_callback_uri}}
     LOG_LEVEL: {{.Data.proxy_log_level}}
     OIDC_CLAIM: Require all granted
