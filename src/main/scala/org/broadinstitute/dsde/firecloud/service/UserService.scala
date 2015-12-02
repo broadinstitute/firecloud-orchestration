@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.core.ProfileActor
+import org.broadinstitute.dsde.firecloud.core.{ProfileClientActor, ProfileClient}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -29,6 +29,12 @@ object UserService {
 
   val billingPath = FireCloudConfig.Rawls.authPrefix + "/user/billing"
   val billingUrl = FireCloudConfig.Rawls.baseUrl + billingPath
+
+  val rawlsGetUserPath = "/register/user"
+  val rawlsGetUserURL = FireCloudConfig.Rawls.baseUrl + rawlsGetUserPath
+
+  val rawlsRegisterUserPath = "/register/user"
+  val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
 
 }
 
@@ -59,34 +65,13 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudDirec
             val extReq = Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))
             externalHttpPerRequest(requestContext, extReq)
           } ~
-            post {
-              entity(as[Profile]) {
-                profileData => requestContext =>
-                  perRequest(requestContext, Props(new ProfileActor(requestContext)),
-                    ProfileActor.UpdateProfile(userInfo, profileData))
-              }
+          post {
+            entity(as[Profile]) {
+              profileData => requestContext =>
+                perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
+                  ProfileClient.UpdateProfile(userInfo, profileData))
             }
-        } ~
-        path(Segment) { key =>
-          // GET /profile/${key} - get specified key for current user
-          get { requestContext =>
-            val extReq = Get(UserService.remoteGetKeyURL.format(userInfo.getUniqueId, key))
-            externalHttpPerRequest(requestContext, extReq)
-          } ~
-            // POST /profile/${key} - upsert specified key for current user
-            post {
-              entity(as[String]) { value => requestContext =>
-                val kv = FireCloudKeyValue(Some(key), Some(value))
-                val payload = ThurloeKeyValue(Some(userInfo.getUniqueId), Some(kv))
-                val extReq = Post(UserService.remoteSetKeyURL, payload)
-                externalHttpPerRequest(requestContext, extReq)
-              }
-            } ~
-            // DELETE /profile/${key} - delete specified key for current user
-            delete { requestContext =>
-              val extReq = Delete(UserService.remoteDeleteKeyURL.format(userInfo.getUniqueId, key))
-              externalHttpPerRequest(requestContext, extReq)
-            }
+          }
         }
       }
     }
