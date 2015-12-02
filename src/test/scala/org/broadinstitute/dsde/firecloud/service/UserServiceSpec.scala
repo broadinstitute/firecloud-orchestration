@@ -43,7 +43,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
       )
 
     workspaceServer
-      .when(request.withMethod("GET").withPath(UserService.rawlsGetUserPath))
+      .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -147,9 +147,9 @@ class UserServiceSpec extends ServiceSpec with UserService {
 
     "When testing profile update for a brand new user in Rawls" - {
       "OK response is returned" in {
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsGetUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsGetUserPath))
+          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
@@ -163,10 +163,10 @@ class UserServiceSpec extends ServiceSpec with UserService {
 
     "When testing profile update for a pre-existing but non-enabled user in Rawls" - {
       "OK response is returned" in {
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsGetUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
         workspaceServer.clear(request.withMethod("POST").withPath(UserService.rawlsRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsGetUserPath))
+          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)

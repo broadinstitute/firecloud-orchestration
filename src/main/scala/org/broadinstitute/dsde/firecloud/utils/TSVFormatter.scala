@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import spray.json.JsValue
 
-import scala.collection.{immutable, mutable}
+import scala.collection.immutable
 import scala.util.Try
 
 object TSVFormatter {
@@ -33,42 +33,29 @@ object TSVFormatter {
   }
 
   /**
-   * Generate a row of values in the order of the headers.
+   * Generate a row of values in the same order as the headers.
    *
    * @param entity The EntityWithType object to extract data from
-   * @param headerValues List of header values to determine column position for
-   * @return The ordered data fields in an IndexedSeq
+   * @param headerValues List of ordered header values to determine order of values
+   * @return IndexedSeq of ordered data fields
    */
-  private def makeRow(entity: EntityWithType, headerValues: IndexedSeq[String], headerRenamingMap:Map[String, String]): IndexedSeq[String] = {
-    val row = mutable.IndexedSeq().padTo(headerValues.size, "")
-    row.update(0, entity.name)
-    entity.attributes.getOrElse(Map.empty).foreach { e =>
-      val columnPosition = headerValues.indexOf(headerRenamingMap.getOrElse(e._1, e._1))
-      makeCellValue(row, columnPosition, e._2)
+  private def makeRow(entity: EntityWithType, headerValues: IndexedSeq[String],
+    headerRenamingMap:Map[String, String]): IndexedSeq[String] = {
+    val rowMap: Map[Int, String] =  entity.attributes.getOrElse(Map.empty) map {
+      entity =>
+        val columnPosition = headerValues.indexOf(headerRenamingMap.getOrElse(entity._1, entity._1))
+        val cellValue = entity._2 match {
+          case x if Try(x.asJsObject.fields.contains("entityName")).isSuccess =>
+            cleanValue(x.asJsObject.fields.getOrElse("entityName", x))
+          case _ =>
+            cleanValue(entity._2)
+        }
+        columnPosition -> cellValue
     }
-    row.toIndexedSeq
-  }
-
-  /**
-   * When adding a cell to a row, we need to check if the entry is a JSObject. In that case,
-   * we have to parse the value as a json structure and look for "entityName"
-   *
-   * @param row The row to update
-   * @param columnPosition The column position of the inserted value
-   * @param value The value to insert/parse for real value
-   */
-  private def makeCellValue(
-    row: mutable.IndexedSeq[String],
-    columnPosition: Int,
-    value: JsValue) = {
-      value match {
-        case y if Try(y.asJsObject.fields.contains("entityName")).isSuccess =>
-          row.update(
-            columnPosition,
-            cleanValue(value.asJsObject.fields.getOrElse("entityName", value)))
-        case _ =>
-          row.update(columnPosition, cleanValue(value))
-      }
+    // The rowMap manipulation sorts the position-value map by the key, converts it to a seq of
+    // tuples, pulls out the second element of the tuple (column value) resulting in a sorted seq
+    // of the original map values.
+    entity.name +: rowMap.toSeq.sortBy(_._1).map(_._2).toIndexedSeq
   }
 
   /**
