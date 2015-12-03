@@ -30,9 +30,6 @@ object UserService {
   val billingPath = FireCloudConfig.Rawls.authPrefix + "/user/billing"
   val billingUrl = FireCloudConfig.Rawls.baseUrl + billingPath
 
-  val rawlsGetUserPath = "/register/user"
-  val rawlsGetUserURL = FireCloudConfig.Rawls.baseUrl + rawlsGetUserPath
-
   val rawlsRegisterUserPath = "/register/user"
   val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
 

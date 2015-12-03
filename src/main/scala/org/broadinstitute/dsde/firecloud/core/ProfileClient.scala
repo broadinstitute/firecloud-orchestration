@@ -93,7 +93,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   def checkUserInRawls(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     requestContext: RequestContext): Future[PerRequestMessage] = {
-    pipeline { Get(UserService.rawlsGetUserURL) } flatMap { response =>
+    pipeline { Get(UserService.rawlsRegisterUserURL) } flatMap { response =>
         response.status match {
           case x if x == OK =>
             Future(RequestComplete(OK))
