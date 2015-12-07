@@ -32,9 +32,27 @@ class UserServiceSpec extends ServiceSpec with UserService {
   )
   val allProperties: Map[String, String] = fullProfile.propertyValueMap
 
+  val userStatus = """{
+                     |  "userInfo": {
+                     |    "userSubjectId": "1234567890",
+                     |    "userEmail": "user@gmail.com"
+                     |  },
+                     |  "enabled": {
+                     |    "google": true,
+                     |    "ldap": true
+                     |  }
+                     |}""".stripMargin
+
   override def beforeAll(): Unit = {
 
     workspaceServer = startClientAndServer(workspaceServerPort)
+    workspaceServer
+      .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withBody(userStatus).withStatusCode(OK.intValue)
+      )
+
     workspaceServer
       .when(request.withMethod("GET").withPath(UserService.billingPath))
       .respond(
@@ -103,7 +121,16 @@ class UserServiceSpec extends ServiceSpec with UserService {
 
   "UserService" - {
 
-    "when calling GET for user billing service " - {
+    "when calling GET for the user registration service" - {
+      "MethodNotAllowed response is not returned" in {
+        Get("/register") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          log.debug("/register: " + status)
+          status shouldNot equal(MethodNotAllowed)
+        }
+      }
+    }
+
+    "when calling GET for user billing service" - {
       "MethodNotAllowed response is not returned" in {
         Get("/api/profile/billing") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
           log.debug("/api/profile/billing: " + status)
