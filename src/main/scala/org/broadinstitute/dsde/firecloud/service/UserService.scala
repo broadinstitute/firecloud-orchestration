@@ -51,6 +51,11 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudDirec
       }
     } ~
     pathPrefix("register") {
+      pathEnd {
+        get { requestContext =>
+          externalHttpPerRequest(requestContext, Get(UserService.rawlsRegisterUserURL))
+        }
+      } ~
       path("userinfo") { requestContext =>
         val extReq = Get("https://www.googleapis.com/oauth2/v3/userinfo")
         externalHttpPerRequest(requestContext, extReq)
