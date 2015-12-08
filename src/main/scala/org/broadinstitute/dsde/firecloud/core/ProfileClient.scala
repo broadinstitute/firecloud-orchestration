@@ -48,9 +48,11 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
             completionUpdate.flatMap { response =>
               response.status match {
                 case x if x.isSuccess => checkUserInRawls(pipeline, requestContext)
-                case _ => Future(RequestCompleteWithErrorReport(response.status, response.toString))
+                case _ => Future(RequestCompleteWithErrorReport(response.status,
+                                  "Profile partially saved, but error completing profile", Seq(ErrorReport(response))))
               }
-            } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage) }
+            } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
+                                              "Profile partially saved, but unexpected error completing profile", e) }
           case false =>
             val errors = responses.filterNot(_.status == OK) map { e => (e, ErrorReport.tryUnmarshal(e) ) }
             val errorReports = errors collect { case (_, Success(report)) => report }
@@ -67,7 +69,8 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
             }
             Future(RequestCompleteWithErrorReport(InternalServerError, errorMessage, errorReports))
         }
-      } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage) }
+      } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
+                                        "Unexpected error saving profile", e) }
 
       profileResponse pipeTo context.parent
 
@@ -100,9 +103,11 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
           case x if x == NotFound =>
             registerUserInRawls(pipeline, requestContext)
           case _ =>
-            Future(RequestCompleteWithErrorReport(response.status, response.toString))
+            Future(RequestCompleteWithErrorReport(response.status,
+                    "Profile saved, but error verifying user registration", Seq(ErrorReport(response))))
         }
-    } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage) }
+    } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
+                                      "Profile saved, but unexpected error verifying user registration", e) }
   }
 
   def registerUserInRawls(
@@ -113,9 +118,11 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
           case x if x.isSuccess || isConflict(response) =>
             RequestComplete(OK)
           case _ =>
-            RequestCompleteWithErrorReport(response.status, response.toString)
+            RequestCompleteWithErrorReport(response.status,
+              "Profile saved, but error registering user", Seq(ErrorReport(response)))
         }
-    } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage) }
+    } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
+                                      "Profile saved, but unexpected error registering user", e) }
   }
 
   /**
