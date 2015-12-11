@@ -120,7 +120,7 @@ class FireCloudServiceActor extends HttpServiceActor {
 
   private def serveIndex(accessToken: String): Route = {
     val authLine = "$(function() { window.swaggerUi.api.clientAuthorizations.add(" +
-      "'key', new SwaggerClient.ApiKeyAuthorization('Authorization', 'Bearer " + accessToken +
+      "'bearer', new SwaggerClient.ApiKeyAuthorization('Authorization', 'Bearer " + accessToken +
       "', 'header')); });"
     val indexHtml = getResourceFileContents(swaggerUiPath + "/index.html")
     complete {
