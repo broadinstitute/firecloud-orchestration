@@ -27,6 +27,7 @@ paths:
         200:
           description: List of workspaces.
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -59,6 +60,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -77,6 +79,7 @@ paths:
         200:
           description: List of Method Repository methods.
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -95,6 +98,7 @@ paths:
         200:
           description: List of Method Repository configurations.
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -126,6 +130,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -161,6 +166,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -198,6 +204,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -242,6 +249,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -279,6 +287,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -323,6 +332,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -355,6 +365,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -384,6 +395,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -418,6 +430,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -454,6 +467,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -490,6 +504,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -526,6 +541,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -562,6 +578,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -596,6 +613,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -630,6 +648,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -673,6 +692,7 @@ paths:
         500:
           description: Internal Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -711,6 +731,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -750,6 +771,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -789,6 +811,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -831,6 +854,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -874,6 +898,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -907,6 +932,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -948,6 +974,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -989,6 +1016,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1036,6 +1064,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1076,6 +1105,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1119,6 +1149,7 @@ paths:
           required: true
           type: string
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1169,6 +1200,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1212,6 +1244,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1255,6 +1288,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1288,6 +1322,7 @@ paths:
         500:
           description: Internal Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1331,6 +1366,7 @@ paths:
         500:
           description: Internal Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1369,6 +1405,7 @@ paths:
         500:
           description: Internal Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1406,6 +1443,7 @@ paths:
         500:
           description: Internal Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1449,6 +1487,7 @@ paths:
         500:
           description: Internal Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1491,6 +1530,7 @@ paths:
         500:
           description: Internal Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1512,11 +1552,13 @@ paths:
         500:
           description: Internal Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+        - bearer:
   /api/status/ping:
     get:
       tags:
@@ -1533,11 +1575,13 @@ paths:
         500:
           description: Internal Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+        - bearer:
   /api/storage/{bucket}/{object}:
     get:
       tags:
@@ -1568,6 +1612,7 @@ paths:
         500:
           description: Internal Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1614,6 +1659,7 @@ paths:
           description: Internal server error
           produces: text/plain
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1641,6 +1687,7 @@ paths:
         500:
           description: Internal server error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1660,6 +1707,7 @@ paths:
           produces:
           - application/json
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1688,6 +1736,7 @@ paths:
         500:
           description: Internal Server Error
       security:
+        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1738,6 +1787,10 @@ securityDefinitions:
       email: email authorization
       profile: profile authorization
       https://www.googleapis.com/auth/devstorage.full_control: GCS storage
+  bearer:
+    type: apiKey
+    name: Authorization
+    in: header
 definitions:
   WorkspaceIngest:
     properties:
