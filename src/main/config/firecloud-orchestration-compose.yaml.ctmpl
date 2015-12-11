@@ -8,7 +8,7 @@ app:
   {{.Data.app_ports}}
   {{.Data.app_volumes}}
   environment:
-    - GOOGLE_CLIENT_ID={{.Data.env_client_id}}
+    - GOOGLE_CLIENT_ID={{.Data.env_google_client_id}}
     - AGORA_URL_ROOT={{.Data.env_agora_url_root}}
     - RAWLS_URL_ROOT={{.Data.env_rawls_url_root}}
     - THURLOE_URL_ROOT={{.Data.env_thurloe_url_root}}
