@@ -59,4 +59,8 @@ object FireCloudConfig {
     lazy val baseUrl = sys.env.get("FIRECLOUD_URL_ROOT").get
   }
 
+  object Shibboleth {
+    lazy val signingKey = sys.env.get("JWT_SIGNING_KEY").get
+  }
+
 }

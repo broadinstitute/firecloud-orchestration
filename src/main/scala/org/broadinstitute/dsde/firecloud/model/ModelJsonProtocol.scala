@@ -99,6 +99,8 @@ object ModelJsonProtocol {
   implicit val impRawlsToken = jsonFormat1(RawlsToken)
   implicit val impRawlsTokenDate = jsonFormat1(RawlsTokenDate)
 
+  implicit val impJWTWrapper = jsonFormat1(JWTWrapper)
+
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
     case MalformedRequestContentRejection(errorMsg, _) :: _ =>

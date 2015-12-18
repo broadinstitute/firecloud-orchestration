@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
 
-import org.broadinstitute.dsde.firecloud.core.ProfileClient.UpdateProfile
+import org.broadinstitute.dsde.firecloud.core.ProfileClient.{UpdateNIHLink, UpdateProfile}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{UserService, FireCloudRequestBuilding}
@@ -21,6 +21,7 @@ import scala.util.{Failure, Success}
 
 object ProfileClient {
   case class UpdateProfile(userInfo: UserInfo, profile: Profile)
+  case class UpdateNIHLink(userInfo: UserInfo, nihLink: NIHLink)
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
 }
 
@@ -53,24 +54,26 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
               }
             } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
                                               "Profile partially saved, but unexpected error completing profile", e) }
-          case false =>
-            val errors = responses.filterNot(_.status == OK) map { e => (e, ErrorReport.tryUnmarshal(e) ) }
-            val errorReports = errors collect { case (_, Success(report)) => report }
-            val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
-            val errorMessage = {
-              val baseMessage = "%d failures out of %d attempts saving profile.  Errors: %s"
-                .format(profilePropertyMap.size, errors.size, errors mkString ",")
-              if (missingReports.isEmpty) baseMessage
-              else {
-                val supplementalErrorMessage = "Additionally, %d of these failures did not provide error reports: %s"
-                  .format(missingReports.size, missingReports mkString ",")
-                baseMessage + "\n" + supplementalErrorMessage
-              }
-            }
-            Future(RequestCompleteWithErrorReport(InternalServerError, errorMessage, errorReports))
+          case false => handleFailedUpdateResponse(responses, profilePropertyMap)
         }
       } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
                                         "Unexpected error saving profile", e) }
+
+      profileResponse pipeTo context.parent
+
+    case UpdateNIHLink(userInfo: UserInfo, nihLink: NIHLink) =>
+      val parent = context.parent
+      val pipeline = authHeaders(requestContext) ~> sendReceive
+      val profilePropertyMap = nihLink.propertyValueMap
+      val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
+      val profileResponse: Future[PerRequestMessage] = propertyUpdates flatMap { responses =>
+        val allSucceeded = responses.forall { _.status.isSuccess }
+        allSucceeded match {
+          case true => Future(RequestComplete(OK))
+          case false => handleFailedUpdateResponse(responses, profilePropertyMap)
+        }
+      } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
+        "Unexpected error updating NIH link", e) }
 
       profileResponse pipeTo context.parent
 
@@ -91,6 +94,25 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
         }
     }
     Future sequence propertyPosts.toList
+  }
+
+  def handleFailedUpdateResponse(
+    responses:List[HttpResponse],
+    profilePropertyMap:Map[String,String]) = {
+      val errors = responses.filterNot(_.status == OK) map { e => (e, ErrorReport.tryUnmarshal(e) ) }
+      val errorReports = errors collect { case (_, Success(report)) => report }
+      val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
+      val errorMessage = {
+        val baseMessage = "%d failures out of %d attempts saving profile.  Errors: %s"
+          .format(profilePropertyMap.size, errors.size, errors mkString ",")
+        if (missingReports.isEmpty) baseMessage
+        else {
+          val supplementalErrorMessage = "Additionally, %d of these failures did not provide error reports: %s"
+            .format(missingReports.size, missingReports mkString ",")
+          baseMessage + "\n" + supplementalErrorMessage
+        }
+      }
+      Future(RequestCompleteWithErrorReport(InternalServerError, errorMessage, errorReports))
   }
 
   def checkUserInRawls(
