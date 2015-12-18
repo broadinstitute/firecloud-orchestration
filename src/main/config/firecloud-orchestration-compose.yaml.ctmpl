@@ -14,6 +14,10 @@ app:
     - THURLOE_URL_ROOT={{.Data.env_thurloe_url_root}}
     - FIRECLOUD_URL_ROOT={{.Data.env_firecloud_url_root}}
     - GOOGLE_SECRET_JSON={{.Data.env_google_secret_json}}
+    {{$signingkey := printf "secret/dsde/%s/shibboleth/signing-secret" $environment}}
+    {{with vault $signingkey}}
+    - JWT_SIGNING_KEY={{.Data.value}}
+    {{end}}
   {{if .Data.log_driver}}log_driver: "{{.Data.log_driver}}"{{end}}
 proxy:
   extends:
