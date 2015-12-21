@@ -3,18 +3,22 @@ package org.broadinstitute.dsde.firecloud.core
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
+import com.ocpsoft.pretty.time.PrettyTime
 
-import org.broadinstitute.dsde.firecloud.core.ProfileClient.{UpdateNIHLink, UpdateProfile}
+import org.broadinstitute.dsde.firecloud.core.ProfileClient.{GetNIHStatus, UpdateNIHLink, UpdateProfile}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{UserService, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.joda.time.{Hours, DateTime}
 
 import spray.client.pipelining._
-import spray.http.{HttpRequest, HttpResponse}
+import spray.http.{StatusCodes, HttpRequest, HttpResponse}
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
+import spray.httpx.unmarshalling._
 import spray.routing.RequestContext
+
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -22,6 +26,7 @@ import scala.util.{Failure, Success}
 object ProfileClient {
   case class UpdateProfile(userInfo: UserInfo, profile: Profile)
   case class UpdateNIHLink(userInfo: UserInfo, nihLink: NIHLink)
+  case class GetNIHStatus(userInfo: UserInfo)
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
 }
 
@@ -77,6 +82,68 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
       profileResponse pipeTo context.parent
 
+    case GetNIHStatus(userInfo: UserInfo) =>
+      val parent = context.parent
+      val pipeline = authHeaders(requestContext) ~> sendReceive
+      val profileReq = Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))
+
+      val profileResponse: Future[PerRequestMessage] = pipeline(profileReq) map {response:HttpResponse =>
+        response.status match {
+          case OK =>
+            val profileEither = response.entity.as[ProfileWrapper]
+            profileEither match {
+              case Right(profileWrapper) =>
+                val profile = Profile(profileWrapper)
+                profile.linkedNihUsername match {
+                  case Some(nihUsername) =>
+                    // we have a linked profile.
+                    profile.isDbgapAuthorized match {
+                      // TODO: if the user is not dbGaP authorized, should we bother making them log in to NIH?
+                      // change the below from "Some(x)" to "Some(true)" to only consider dbGaP-authorized users
+                      case Some(x) =>
+                        profile.lastLinkTime match {
+                          case Some(epochLink:Long) =>
+                            val loginDateTime = new DateTime(epochLink*1000L)
+                            val howOld = Hours.hoursBetween(loginDateTime, DateTime.now)
+
+                            val loginRequired = (howOld.getHours >= 24)
+                            val secsSinceLastLink = (System.currentTimeMillis() - (epochLink*1000L)) / 1000L
+
+                            val descSince = new PrettyTime().format(new java.util.Date(epochLink*1000L))
+
+                            val statusResponse = NIHStatus(
+                              loginRequired,
+                              linkedNihUsername = profile.linkedNihUsername,
+                              isDbgapAuthorized = profile.isDbgapAuthorized,
+                              lastLinkTime = Some(epochLink),
+                              secondsSinceLastLink = Some(secsSinceLastLink),
+                              descriptionSinceLastLink = Some(descSince))
+
+                            RequestComplete(StatusCodes.OK, statusResponse)
+                          case _ =>
+                            // user is linked and authorized, but we have no record of login time.
+                            RequestComplete(StatusCodes.OK, NIHStatus(true,
+                              linkedNihUsername = profile.linkedNihUsername,
+                              isDbgapAuthorized = profile.isDbgapAuthorized))
+                        }
+                      case _ => RequestComplete(NoContent, "Not dbGaP authorized")
+                    }
+                  case _ =>
+                    RequestComplete(NotFound, "Linked NIH username not found")
+                }
+              case Left(err) => RequestCompleteWithErrorReport(InternalServerError,
+                "Could not unmarshal profile response: " + err.toString, Seq())
+            }
+          case x =>
+            // request for profile returned non-200
+            RequestCompleteWithErrorReport(x, response.toString, Seq())
+        }
+      } recover {
+        // unexpected error retrieving profile
+        case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
+      }
+
+      profileResponse pipeTo context.parent
   }
 
   def updateUserProperties(
