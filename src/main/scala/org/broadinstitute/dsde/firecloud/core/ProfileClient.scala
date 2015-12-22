@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{UserService, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.joda.time.{Hours, DateTime}
 
 import spray.client.pipelining._
@@ -102,20 +103,20 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                       // change the below from "Some(x)" to "Some(true)" to only consider dbGaP-authorized users
                       case Some(x) =>
                         profile.lastLinkTime match {
-                          case Some(epochLink:Long) =>
-                            val loginDateTime = new DateTime(epochLink*1000L)
-                            val howOld = Hours.hoursBetween(loginDateTime, DateTime.now)
+                          case Some(lastLinkSeconds:Long) =>
+                            val howOld = DateUtils.hoursSince(lastLinkSeconds)
+                            val loginRequired = (howOld >= 24)
 
-                            val loginRequired = (howOld.getHours >= 24)
-                            val secsSinceLastLink = (System.currentTimeMillis() - (epochLink*1000L)) / 1000L
+                            val secsSinceLastLink = DateUtils.secondsSince(lastLinkSeconds)
 
-                            val descSince = new PrettyTime().format(new java.util.Date(epochLink*1000L))
+                            val descSince = DateUtils.prettySince(lastLinkSeconds)
 
                             val statusResponse = NIHStatus(
                               loginRequired,
                               linkedNihUsername = profile.linkedNihUsername,
                               isDbgapAuthorized = profile.isDbgapAuthorized,
-                              lastLinkTime = Some(epochLink),
+                              lastLinkTime = Some(lastLinkSeconds),
+                              linkExpireTime = profile.linkExpireTime,
                               secondsSinceLastLink = Some(secsSinceLastLink),
                               descriptionSinceLastLink = Some(descSince))
 
@@ -124,6 +125,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                             // user is linked and authorized, but we have no record of login time.
                             RequestComplete(StatusCodes.OK, NIHStatus(true,
                               linkedNihUsername = profile.linkedNihUsername,
+                              linkExpireTime = profile.linkExpireTime,
                               isDbgapAuthorized = profile.isDbgapAuthorized))
                         }
                       case _ => RequestComplete(NoContent, "Not dbGaP authorized")

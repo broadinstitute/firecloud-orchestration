@@ -19,6 +19,7 @@ case class Profile (
     pi: String,
     linkedNihUsername: Option[String] = None,
     lastLinkTime: Option[Long] = None,
+    linkExpireTime: Option[Long] = None,
     isDbgapAuthorized: Option[Boolean] = None
   ) extends mappedPropVals {
 
@@ -44,6 +45,10 @@ object Profile {
         case Some(time) => Some(time.toLong)
         case _ => None
       },
+      linkExpireTime = mappedKVPs.get("linkExpireTime") match {
+        case Some(time) => Some(time.toLong)
+        case _ => None
+      },
       isDbgapAuthorized = mappedKVPs.get("isDbgapAuthorized") match {
         case Some(auth) => Some(auth.toBoolean)
         case _ => None
@@ -52,7 +57,7 @@ object Profile {
   }
 }
 
-case class NIHLink (linkedNihUsername: String, lastLinkTime: Long, isDbgapAuthorized: Boolean) extends mappedPropVals {
+case class NIHLink (linkedNihUsername: String, lastLinkTime: Long, linkExpireTime: Long, isDbgapAuthorized: Boolean) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(linkedNihUsername), "linkedNihUsername must be non-empty")
 }
 
@@ -61,6 +66,7 @@ case class NIHStatus(
     linkedNihUsername: Option[String] = None,
     isDbgapAuthorized: Option[Boolean] = None,
     lastLinkTime: Option[Long] = None,
+    linkExpireTime: Option[Long] = None,
     secondsSinceLastLink: Option[Long] = None,
     descriptionSinceLastLink: Option[String] = None
 )

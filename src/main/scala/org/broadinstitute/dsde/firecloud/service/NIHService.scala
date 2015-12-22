@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.firecloud.utils.{DateUtils, StandardUserInfoDirectives}
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport._
@@ -47,11 +47,12 @@ trait NIHService extends HttpService with PerRequestCreator with FireCloudDirect
                 // the entirety of the claims portion of the jwt is the NIH username.
                 val linkedNihUsername = new String(decoded)
                 // JWT standard uses epoch time for dates, so we'll follow that convention here.
-                val lastLinkTime = System.currentTimeMillis() / 1000L;
+                val lastLinkTime = DateUtils.now
+                val linkExpireTime = DateUtils.nowPlus30Days
                 // TODO: look up in whitelist, once that functionality exists!
                 val isDbgapAuthorized = false
 
-                val nihLink = NIHLink(linkedNihUsername, lastLinkTime, isDbgapAuthorized)
+                val nihLink = NIHLink(linkedNihUsername, lastLinkTime, linkExpireTime, isDbgapAuthorized)
 
                 // TODO: call API to update proxy groups, once it exists
 
