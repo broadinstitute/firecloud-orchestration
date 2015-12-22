@@ -25,7 +25,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 object ProfileClient {
-  case class UpdateProfile(userInfo: UserInfo, profile: Profile)
+  case class UpdateProfile(userInfo: UserInfo, profile: BasicProfile)
   case class UpdateNIHLink(userInfo: UserInfo, nihLink: NIHLink)
   case class GetNIHStatus(userInfo: UserInfo)
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
@@ -39,7 +39,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
   override def receive: Receive = {
 
-    case UpdateProfile(userInfo: UserInfo, profile: Profile) =>
+    case UpdateProfile(userInfo: UserInfo, profile: BasicProfile) =>
       val parent = context.parent
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = profile.propertyValueMap

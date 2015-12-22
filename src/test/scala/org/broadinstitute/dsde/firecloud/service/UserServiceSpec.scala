@@ -24,7 +24,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
   val uniqueId = "1234"
   val exampleKey = "favoriteColor"
   val exampleVal = "green"
-  val fullProfile = Profile(
+  val fullProfile = BasicProfile(
     name = randomAlpha(),
     email = randomAlpha(),
     institution = randomAlpha(),

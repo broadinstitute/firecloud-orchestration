@@ -12,6 +12,18 @@ case class ThurloeKeyValue(
 
 case class ProfileWrapper(userId: String, keyValuePairs: List[FireCloudKeyValue])
 
+case class BasicProfile (
+    name: String,
+    email: String,
+    institution: String,
+    pi: String
+  ) extends mappedPropVals {
+  require(ProfileValidator.nonEmpty(name), "name must be non-empty")
+  require(ProfileValidator.nonEmpty(email), "email must be non-empty")
+  require(ProfileValidator.nonEmpty(institution), "institution must be non-empty")
+  require(ProfileValidator.nonEmpty(pi), "primary investigator must be non-empty")
+}
+
 case class Profile (
     name: String,
     email: String,
