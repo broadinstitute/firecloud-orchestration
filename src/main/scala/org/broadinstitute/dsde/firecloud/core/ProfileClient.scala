@@ -100,12 +100,17 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                     // we have a linked profile.
                     profile.isDbgapAuthorized match {
                       // TODO: if the user is not dbGaP authorized, should we bother making them log in to NIH?
-                      // change the below from "Some(x)" to "Some(true)" to only consider dbGaP-authorized users
+                        // change the below from "Some(x)" to "Some(true)" to only consider dbGaP-authorized users
+                      // TODO: isDbgapAuthorized should really defer to rawls or wherever else has the source-of-record
+                      // TODO: we don't really need to check both lastLinkTime and linkExpireTime here.
+                        // but, until the main OAuth login sets linkExpireTime, we need it for safety.
                       case Some(x) =>
-                        profile.lastLinkTime match {
-                          case Some(lastLinkSeconds:Long) =>
+                        (profile.lastLinkTime, profile.linkExpireTime) match {
+                          case (Some(lastLinkSeconds:Long), Some(linkExpireSeconds:Long)) =>
                             val howOld = DateUtils.hoursSince(lastLinkSeconds)
-                            val loginRequired = (howOld >= 24)
+                            val howSoonExpire = DateUtils.secondsSince(linkExpireSeconds)
+
+                            val loginRequired = (howOld >= 24 || howSoonExpire >= 0)
 
                             val secsSinceLastLink = DateUtils.secondsSince(lastLinkSeconds)
 
@@ -122,11 +127,13 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
                             RequestComplete(StatusCodes.OK, statusResponse)
                           case _ =>
-                            // user is linked and authorized, but we have no record of login time.
+                            // user is linked and authorized, but we have no record of login time or expiration time.
                             RequestComplete(StatusCodes.OK, NIHStatus(true,
                               linkedNihUsername = profile.linkedNihUsername,
+                              lastLinkTime = profile.lastLinkTime,
                               linkExpireTime = profile.linkExpireTime,
                               isDbgapAuthorized = profile.isDbgapAuthorized))
+
                         }
                       case _ => RequestComplete(NoContent, "Not dbGaP authorized")
                     }
