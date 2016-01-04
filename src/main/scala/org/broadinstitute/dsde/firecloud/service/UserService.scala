@@ -68,7 +68,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudDirec
             externalHttpPerRequest(requestContext, extReq)
           } ~
           post {
-            entity(as[Profile]) {
+            entity(as[BasicProfile]) {
               profileData => requestContext =>
                 perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
                   ProfileClient.UpdateProfile(userInfo, profileData))

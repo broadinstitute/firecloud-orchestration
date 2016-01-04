@@ -1807,6 +1807,33 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /api/nih/status:
+    get:
+      tags:
+        - NIH
+      operationId: NIHStatus
+      summary: Retrieves info about a user's NIH link
+      parameters:
+      responses:
+        200:
+          description: Successfully retrieved NIH status
+          produces:
+            - application/json
+          schema:
+            $ref: NIHStatus
+        204:
+          description: isDbgapAuthorized key missing from status
+        404:
+          description: linkedNihUsername key missing from status
+        500:
+          description: Internal server error retrieving NIH status
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
 securityDefinitions:
   googleoauth:
     type: oauth2
@@ -2136,3 +2163,28 @@ definitions:
       jwt:
         type: string
         description: the encoded/signed JWT
+  NIHStatus:
+    required:
+      - loginRequired
+      - linkedNihUsername
+    properties:
+      loginRequired:
+        type: boolean
+      linkedNihUsername:
+        type: string
+      isDbgapAuthorized:
+        type: boolean
+      lastLinkTime:
+        type: long
+        format: int64
+        default: 0
+      linkExpireTime:
+        type: long
+        format: int64
+        default: 0
+      secondsSinceLastLink:
+        type: long
+        format: int64
+        default: 0
+      descriptionSinceLastLink:
+        type: string

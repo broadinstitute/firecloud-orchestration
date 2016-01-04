@@ -3,25 +3,31 @@ package org.broadinstitute.dsde.firecloud.core
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
+import com.ocpsoft.pretty.time.PrettyTime
 
-import org.broadinstitute.dsde.firecloud.core.ProfileClient.{UpdateNIHLink, UpdateProfile}
+import org.broadinstitute.dsde.firecloud.core.ProfileClient.{GetNIHStatus, UpdateNIHLink, UpdateProfile}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{UserService, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.firecloud.utils.DateUtils
+import org.joda.time.{Hours, DateTime}
 
 import spray.client.pipelining._
-import spray.http.{HttpRequest, HttpResponse}
+import spray.http.{StatusCodes, HttpRequest, HttpResponse}
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
+import spray.httpx.unmarshalling._
 import spray.routing.RequestContext
+
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 object ProfileClient {
-  case class UpdateProfile(userInfo: UserInfo, profile: Profile)
+  case class UpdateProfile(userInfo: UserInfo, profile: BasicProfile)
   case class UpdateNIHLink(userInfo: UserInfo, nihLink: NIHLink)
+  case class GetNIHStatus(userInfo: UserInfo)
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
 }
 
@@ -33,7 +39,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
   override def receive: Receive = {
 
-    case UpdateProfile(userInfo: UserInfo, profile: Profile) =>
+    case UpdateProfile(userInfo: UserInfo, profile: BasicProfile) =>
       val parent = context.parent
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = profile.propertyValueMap
@@ -77,6 +83,76 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
       profileResponse pipeTo context.parent
 
+    case GetNIHStatus(userInfo: UserInfo) =>
+      val parent = context.parent
+      val pipeline = authHeaders(requestContext) ~> sendReceive
+      val profileReq = Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))
+
+      val profileResponse: Future[PerRequestMessage] = pipeline(profileReq) map {response:HttpResponse =>
+        response.status match {
+          case OK =>
+            val profileEither = response.entity.as[ProfileWrapper]
+            profileEither match {
+              case Right(profileWrapper) =>
+                val profile = Profile(profileWrapper)
+                profile.linkedNihUsername match {
+                  case Some(nihUsername) =>
+                    // we have a linked profile.
+                    profile.isDbgapAuthorized match {
+                      // TODO: if the user is not dbGaP authorized, should we bother making them log in to NIH?
+                        // change the below from "Some(x)" to "Some(true)" to only consider dbGaP-authorized users
+                      // TODO: isDbgapAuthorized should really defer to rawls or wherever else has the source-of-record
+                      // TODO: we don't really need to check both lastLinkTime and linkExpireTime here.
+                        // but, until the main OAuth login sets linkExpireTime, we need it for safety.
+                      case Some(x) =>
+                        (profile.lastLinkTime, profile.linkExpireTime) match {
+                          case (Some(lastLinkSeconds:Long), Some(linkExpireSeconds:Long)) =>
+                            val howOld = DateUtils.hoursSince(lastLinkSeconds)
+                            val howSoonExpire = DateUtils.secondsSince(linkExpireSeconds)
+
+                            val loginRequired = (howOld >= 24 || howSoonExpire >= 0)
+
+                            val secsSinceLastLink = DateUtils.secondsSince(lastLinkSeconds)
+
+                            val descSince = DateUtils.prettySince(lastLinkSeconds)
+
+                            val statusResponse = NIHStatus(
+                              loginRequired,
+                              linkedNihUsername = profile.linkedNihUsername,
+                              isDbgapAuthorized = profile.isDbgapAuthorized,
+                              lastLinkTime = Some(lastLinkSeconds),
+                              linkExpireTime = profile.linkExpireTime,
+                              secondsSinceLastLink = Some(secsSinceLastLink),
+                              descriptionSinceLastLink = Some(descSince))
+
+                            RequestComplete(StatusCodes.OK, statusResponse)
+                          case _ =>
+                            // user is linked and authorized, but we have no record of login time or expiration time.
+                            RequestComplete(StatusCodes.OK, NIHStatus(true,
+                              linkedNihUsername = profile.linkedNihUsername,
+                              lastLinkTime = profile.lastLinkTime,
+                              linkExpireTime = profile.linkExpireTime,
+                              isDbgapAuthorized = profile.isDbgapAuthorized))
+
+                        }
+                      case _ => RequestComplete(NoContent, "Not dbGaP authorized")
+                    }
+                  case _ =>
+                    RequestComplete(NotFound, "Linked NIH username not found")
+                }
+              case Left(err) => RequestCompleteWithErrorReport(InternalServerError,
+                "Could not unmarshal profile response: " + err.toString, Seq())
+            }
+          case x =>
+            // request for profile returned non-200
+            RequestCompleteWithErrorReport(x, response.toString, Seq())
+        }
+      } recover {
+        // unexpected error retrieving profile
+        case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
+      }
+
+      profileResponse pipeTo context.parent
   }
 
   def updateUserProperties(
