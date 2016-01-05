@@ -98,7 +98,7 @@ object ModelJsonProtocol {
   implicit val impProfileWrapper = jsonFormat2(ProfileWrapper)
 
 
-  implicit val impTokenResponse = jsonFormat5(OAuthTokens)
+  implicit val impTokenResponse = jsonFormat6(OAuthTokens)
   implicit val impRawlsToken = jsonFormat1(RawlsToken)
   implicit val impRawlsTokenDate = jsonFormat1(RawlsTokenDate)
 

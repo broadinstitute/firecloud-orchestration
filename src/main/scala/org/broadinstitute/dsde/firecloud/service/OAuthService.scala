@@ -1,9 +1,11 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.actor.Props
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{RawlsTokenDate, RawlsToken, OAuthException}
+import org.broadinstitute.dsde.firecloud.model.{UserInfo, RawlsTokenDate, RawlsToken, OAuthException}
 import org.joda.time.{Days, DateTime}
 import org.slf4j.LoggerFactory
 import spray.http.Uri._
@@ -34,7 +36,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
   val routes: Route =
     path("login") {
       get {
-        parameters("path".?, "prompt".?, "callback".?) { (userpath, prompt, callback) =>
+        parameters("path".?, "prompt".?, "callback".?) { (userpath, prompt, callback) => requestContext =>
 
           // create a hash-delimited string of the callback+path and pass into the state param.
           // the state param will be roundtripped during the login process, so we can read it during callback.
@@ -51,7 +53,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
 
           try {
             // create the authentication url and redirect the browser
-            initiateAuth(state, approvalPrompt=approvalPrompt)
+            initiateAuth(state, approvalPrompt=approvalPrompt, requestContext)
           } catch {
             /* we don't expect any exceptions here; if we get any, it's likely
                 a misconfiguration of our client id/secrets/callback. But since this is about
@@ -59,7 +61,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
              */
             case e: Exception =>
               log.error("problem during OAuth redirect", e)
-              complete(StatusCodes.Unauthorized, e.getMessage)
+              requestContext.complete(StatusCodes.Unauthorized, e.getMessage)
           }
         }
       }
@@ -71,7 +73,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
             An error response has "?error=access_denied"
             An authorization code response has "?code=4/P7q7W91a-oMsCeLvIaQm6bTrgtp7"
         */
-        parameters("code", "state") { (code, actualState) =>
+        parameters("code", "state") { (code, actualState) => requestContext =>
           // TODO: future story: check the security token we previously persisted in the expected-state
           val expectedState = actualState
 
@@ -81,6 +83,17 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
             val gcsTokenResponse = HttpGoogleServicesDAO.getTokens(actualState, expectedState, code)
             val accessToken = gcsTokenResponse.access_token
             val refreshToken = gcsTokenResponse.refresh_token
+
+            // update the NIH link expiration time, as applicable
+            gcsTokenResponse.subject_id match {
+              case Some(sub) =>
+                // NB: we use dummy values in the UserInfo object for email addr and expire time; these are irrelevant
+                val userInfo:UserInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, gcsTokenResponse.subject_id.get)
+                perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
+                  ProfileClient.GetAndUpdateNIHStatus(userInfo))
+              case None =>
+                log.warn("Could not determine current user's subjectID; NIH link expiration will not be updated")
+            }
 
             // we can't use the standard externalHttpPerRequest here, because the requestContext doesn't have the
             // access token yet; we have to add the token manually
@@ -103,12 +116,12 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
                     }
                   case Failure(error) => log.warn("failed to store refresh token: " + error.getMessage)
                 }
-                completeAuthWithRedirect(actualState, accessToken)
+                completeAuthWithRedirect(actualState, accessToken, requestContext)
               case None =>
                 val tokenDateReq = Get(OAuthService.remoteTokenDateUrl)
                 val tokenDateFuture: Future[HttpResponse] = pipeline { tokenDateReq }
 
-                onComplete(tokenDateFuture) {
+                tokenDateFuture onComplete {
                   case Success(response) =>
                     response.status match {
                       case StatusCodes.OK =>
@@ -118,31 +131,31 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
                         howOld.getDays match {
                           case x if x < 90 =>
                             log.debug(s"User's refresh token is $x days old; all good!")
-                            completeAuthWithRedirect(actualState, accessToken) // fine; continue on
+                            completeAuthWithRedirect(actualState, accessToken, requestContext) // fine; continue on
                           case x =>
                             log.info(s"User's refresh token is $x days old; requesting a new one.")
-                            initiateAuth(actualState, "force")
+                            initiateAuth(actualState, "force", requestContext)
                         }
                       case StatusCodes.NotFound =>
                         log.info(s"User does not already have a refresh token; requesting a new one.")
                         // rawls does not have a refresh token for us. restart auth.
                         // TODO: if the rawls put-token endpoint goes down, this will cause an infinite loop in login
-                        initiateAuth(actualState, "force")
+                        initiateAuth(actualState, "force", requestContext)
                       case x =>
                         log.warn("Unexpected response code when querying rawls for existence of refresh token: "
                           + x.value + " " + x.reason)
-                        completeAuthWithRedirect(actualState, accessToken)
+                        completeAuthWithRedirect(actualState, accessToken, requestContext)
                     }
                   case Failure(error) =>
                     log.warn("Could not query rawls for existence of refresh token: " + error.getMessage)
-                    completeAuthWithRedirect(actualState, accessToken)
+                    completeAuthWithRedirect(actualState, accessToken, requestContext)
                 }
             }
           } catch {
             case e:OAuthException => complete(StatusCodes.Unauthorized, e.getMessage) // these can be shown to the user
             case e: Exception => {
               log.error("problem during OAuth code exchange", e)
-              complete(StatusCodes.Unauthorized, e.getMessage)
+              requestContext.complete(StatusCodes.Unauthorized, e.getMessage)
             }
           }
         } ~
@@ -154,13 +167,12 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
     }
 
 
-  private def initiateAuth(state: String, approvalPrompt: String) =  {
-    log.info(s"initiateAuth: $approvalPrompt")
+  private def initiateAuth(state: String, approvalPrompt: String, requestContext: RequestContext) =  {
     val gcsAuthUrl = HttpGoogleServicesDAO.getGoogleRedirectURI(state, approvalPrompt=approvalPrompt)
-    redirect(gcsAuthUrl, StatusCodes.TemporaryRedirect)
+    requestContext.redirect(gcsAuthUrl, StatusCodes.TemporaryRedirect)
   }
 
-  private def completeAuthWithRedirect(actualState: String, accessToken: String) = {
+  private def completeAuthWithRedirect(actualState: String, accessToken: String, requestContext: RequestContext) = {
     // as created in the /login endpoint, the actual state contains the desired callback url
     // and the desired callback fragment, separated by a hash. But, either value may be the empty string.
 
@@ -192,7 +204,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
       .withPath(Uri.Path./)
       .withFragment(s"$redirectFragment?access_token=$accessToken")
 
-    redirect(Uri(uiRedirect.toString), StatusCodes.TemporaryRedirect)
+    requestContext.redirect(Uri(uiRedirect.toString), StatusCodes.TemporaryRedirect)
   }
 
 

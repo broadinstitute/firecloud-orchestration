@@ -79,8 +79,8 @@ case class NIHStatus(
     isDbgapAuthorized: Option[Boolean] = None,
     lastLinkTime: Option[Long] = None,
     linkExpireTime: Option[Long] = None,
-    secondsSinceLastLink: Option[Long] = None,
-    descriptionSinceLastLink: Option[String] = None
+    descriptionSinceLastLink: Option[String] = None,
+    descriptionUntilExpires: Option[String] = None
 )
 
 object ProfileValidator {
