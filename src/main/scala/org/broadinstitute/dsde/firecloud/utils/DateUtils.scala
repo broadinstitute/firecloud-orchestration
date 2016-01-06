@@ -26,6 +26,10 @@ object DateUtils {
     Hours.hoursBetween(dtFromSeconds(seconds), nowDateTime).getHours
   }
 
+  def hoursUntil(seconds: Long): Int = {
+    Hours.hoursBetween(nowDateTime, dtFromSeconds(seconds)).getHours
+  }
+
   def secondsSince(seconds: Long): Int = {
     Seconds.secondsBetween(dtFromSeconds(seconds), nowDateTime).getSeconds
   }

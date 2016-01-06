@@ -9,7 +9,8 @@ case class OAuthTokens(
   token_type: String,
   expires_in: Long,
   refresh_token: Option[String],
-  id_token: Option[String]
+  id_token: Option[String],
+  subject_id: Option[String]
 )
 
 case class RawlsToken(refreshToken: String)

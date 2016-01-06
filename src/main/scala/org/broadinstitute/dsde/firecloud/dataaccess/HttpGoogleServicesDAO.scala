@@ -69,9 +69,10 @@ object HttpGoogleServicesDAO {
       case null => None
       case x => Some(x)
     }
-    val idToken = gcsTokenResponse.getIdToken match {
-      case null => None
-      case x => Some(x)
+    val List(idToken:Option[String], subjectId:Option[String]) = gcsTokenResponse.getIdToken match {
+      case null => List(None, None)
+      case x =>
+        List( Some(x), Some(gcsTokenResponse.parseIdToken().getPayload.getSubject) )
     }
 
     new OAuthTokens(
@@ -79,7 +80,8 @@ object HttpGoogleServicesDAO {
       gcsTokenResponse.getTokenType,
       gcsTokenResponse.getExpiresInSeconds,
       refreshToken,
-      idToken
+      idToken,
+      subjectId
     )
   }
 

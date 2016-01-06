@@ -66,19 +66,6 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
       }
     }
 
-    "when GET-ting a profile with missing isDbgapAuthorized" - {
-      "NoContent response is returned" in {
-        respondWith(
-          linkedNihUsername = Some("nihuser"),
-          lastLinkTime = Some(222),
-          linkExpireTime = Some(333)
-        )
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
-          status should equal(NoContent)
-        }
-      }
-    }
-
     "when GET-ting a profile with missing lastLinkTime" - {
       "loginRequired is true" in {
         respondWith(
@@ -149,25 +136,6 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
       }
     }
 
-    "when GET-ting a profile with expired lastLinkTime and future linkExpireTime" - {
-      "loginRequired is true" in {
-
-        val lastLinkTime = DateUtils.nowMinus24Hours
-        val linkExpireTime = DateUtils.nowPlus30Days
-
-        respondWith(
-          linkedNihUsername = Some("nihuser"),
-          lastLinkTime = Some(lastLinkTime),
-          linkExpireTime = Some(linkExpireTime),
-          isDbgapAuthorized = Some(true)
-        )
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-          val nihStatus = responseAs[NIHStatus]
-          nihStatus.loginRequired shouldBe(true)
-        }
-      }
-    }
   }
 
   def respondWith(
