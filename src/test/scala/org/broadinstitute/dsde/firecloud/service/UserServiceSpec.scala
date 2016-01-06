@@ -167,7 +167,6 @@ class UserServiceSpec extends ServiceSpec with UserService {
         }
       }
     }
-
   }
 
   "UserService Edge Cases" - {
@@ -212,6 +211,151 @@ class UserServiceSpec extends ServiceSpec with UserService {
         }
       }
     }
+
+  }
+
+  "UserService /me endpoint tests" - {
+
+    "when calling /me without Authorization header" - {
+      "Unauthorized response is returned" in {
+        Get(s"/me") ~> sealRoute(routes) ~> check {
+          status should equal(Unauthorized)
+        }
+      }
+    }
+
+    "when calling /me and rawls returns 401" - {
+      "Unauthorized response is returned" in {
+
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer
+          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(Unauthorized.intValue)
+          )
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(Unauthorized)
+        }
+      }
+    }
+
+    "when calling /me and rawls returns 404" - {
+      "NotFound response is returned" in {
+
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer
+          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
+          )
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(NotFound)
+        }
+      }
+    }
+
+    "when calling /me and rawls returns 500" - {
+      "InternalServerError response is returned" in {
+
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer
+          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(InternalServerError.intValue)
+          )
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(InternalServerError)
+        }
+      }
+    }
+
+    "when calling /me and rawls says not-google-enabled" - {
+      "Forbidden response is returned" in {
+
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer
+          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"enabled": {"google": false, "ldap": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(Forbidden)
+        }
+      }
+    }
+
+    "when calling /me and rawls says not-ldap-enabled" - {
+      "Forbidden response is returned" in {
+
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer
+          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"enabled": {"google": true, "ldap": false}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(Forbidden)
+        }
+      }
+    }
+
+    "when calling /me and rawls says fully enabled" - {
+      "OK response is returned" in {
+
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer
+          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"enabled": {"google": true, "ldap": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when calling /me and rawls returns ugly json" - {
+      "InternalServerError response is returned" in {
+
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer
+          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"userInfo": "whaaaaaaat??"}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(InternalServerError)
+        }
+      }
+    }
+
+    "when calling /me and rawls returns an unexpected HTTP response code" - {
+      "InternalServerError response is returned" in {
+
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer
+          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(EnhanceYourCalm.intValue)
+          )
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(InternalServerError)
+        }
+      }
+    }
+
 
   }
 

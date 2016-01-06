@@ -8,11 +8,10 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
-import spray.http.{StatusCode, HttpRequest, HttpCredentials}
+import spray.http.{StatusCode, HttpCredentials}
 import spray.http.HttpHeaders.Authorization
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
 import spray.httpx.unmarshalling._
 import spray.routing._
 
