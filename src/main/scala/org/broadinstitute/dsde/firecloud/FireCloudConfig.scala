@@ -8,6 +8,7 @@ object FireCloudConfig {
   object Auth {
     lazy val googleClientId = sys.env.get("GOOGLE_CLIENT_ID").get
     lazy val googleSecretJson = sys.env.get("GOOGLE_SECRET_JSON").get
+    lazy val adminRefreshToken = sys.env.get("ADMIN_REFRESH_TOKEN").get
   }
 
   object HttpConfig {
