@@ -7,15 +7,12 @@ proxy:
   {{.Data.proxy_ports}}
   {{.Data.proxy_volumes}}
   environment:
-    AUTH_TYPE: AuthType None
-    AUTH_TYPE2: AuthType oauth20
     CALLBACK_URI: {{.Data.env_callback_uri}}
     LOG_LEVEL: {{.Data.proxy_log_level}}
-    OIDC_CLAIM: Require all granted
-    OIDC_CLAIM2: Require valid-user
-    PROXY_PATH: /
-    PROXY_PATH2: /api
     SERVER_NAME: {{.Data.env_server_name}}
-
+    AUTH_REQUIRE2: Require ldap-group {{.Data.proxy_ldap_group}}
+    AUTH_LDAP_URL2: 'AuthLDAPURL "{{.Data.proxy_ldap_url}}"'
+    AUTH_LDAP_GROUP_ATTR2: 'AuthLDAPGroupAttribute member'
+    REMOTE_USER_CLAIM: sub
 {{end}}
 {{end}}
