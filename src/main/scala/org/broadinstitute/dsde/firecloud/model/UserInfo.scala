@@ -16,3 +16,9 @@ import spray.http.OAuth2BearerToken
 case class UserInfo(userEmail: String, accessToken: OAuth2BearerToken, accessTokenExpiresIn: Long, id: String) {
   def getUniqueId = id
 }
+
+case class RegistrationInfo(userInfo: RawlsUserInfo, enabled: RawlsEnabled)
+
+case class RawlsUserInfo(userSubjectId: String, userEmail: String)
+case class RawlsEnabled(google: Boolean, ldap: Boolean)
+
