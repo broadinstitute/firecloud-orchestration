@@ -79,3 +79,9 @@ case class SubmissionIngest(
   entityType: Option[String],
   entityName: Option[String],
   expression: Option[String])
+
+case class RawlsGroupMemberList(
+  userEmails: Option[Seq[String]] = None,
+  subGroupEmails: Option[Seq[String]] = None,
+  userSubjectIds: Option[Seq[String]] = None,
+  subGroupNames: Option[Seq[String]] = None)

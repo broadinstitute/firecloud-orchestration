@@ -12,8 +12,6 @@ import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
-import spray.httpx.unmarshalling._
-
 trait NIHService extends HttpService with PerRequestCreator with FireCloudDirectives with StandardUserInfoDirectives {
 
   private implicit val executionContext = actorRefFactory.dispatcher

@@ -109,6 +109,7 @@ object ModelJsonProtocol {
   implicit val impRawlsEnabled = jsonFormat2(RawlsEnabled)
   implicit val impRegistrationInfo = jsonFormat2(RegistrationInfo)
 
+  implicit val impRawlsGroupMemberList = jsonFormat4(RawlsGroupMemberList)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
