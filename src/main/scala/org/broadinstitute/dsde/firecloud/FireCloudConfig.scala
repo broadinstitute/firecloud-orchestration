@@ -29,6 +29,7 @@ object FireCloudConfig {
     private val workspace = config.getConfig("workspace")
     lazy val model = "/" + workspace.getString("model")
     lazy val baseUrl = sys.env.get("RAWLS_URL_ROOT").get
+    lazy val dbGapAuthorizedUsersGroup = sys.env.get("DBGAP_AUTHORIZED_USERS_GROUP")
     lazy val authPrefix = workspace.getString("authPrefix")
     lazy val authUrl = baseUrl + authPrefix
     lazy val workspacesPath = workspace.getString("workspacesPath")

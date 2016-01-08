@@ -55,7 +55,8 @@ sbt
 ## Testing
 
 ```
-AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' \
+DBGAP_AUTHORIZED_USERS_GROUP='dbGapAuthorizedUsers' \
+    AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' \
     THURLOE_URL_ROOT='http://localhost:8991' FIRECLOUD_URL_ROOT='https://local.broadinstitute.org' sbt test
 ```
 

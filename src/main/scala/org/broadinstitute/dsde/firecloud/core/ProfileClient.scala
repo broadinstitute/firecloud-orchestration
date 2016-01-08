@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.core
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 
 import org.broadinstitute.dsde.firecloud.core.ProfileClient._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -12,7 +13,7 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 
 import spray.client.pipelining._
-import spray.http.{StatusCodes, HttpRequest, HttpResponse}
+import spray.http.{StatusCode, StatusCodes, HttpRequest, HttpResponse}
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
@@ -94,7 +95,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
     val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
     val profileReq = Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))
 
-    pipeline(profileReq) map { response: HttpResponse =>
+    pipeline(profileReq) flatMap { response: HttpResponse =>
       response.status match {
         case OK =>
           val profileEither = response.entity.as[ProfileWrapper]
@@ -147,27 +148,18 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                   val descriptionSince = DateUtils.prettySince(lastLinkSeconds)
                   val descriptionExpires = DateUtils.prettySince(linkExpireSeconds)
 
-                  val statusResponse = NIHStatus(
-                    loginRequired,
-                    linkedNihUsername = profile.linkedNihUsername,
-                    isDbgapAuthorized = profile.isDbgapAuthorized,
-                    lastLinkTime = Some(lastLinkSeconds),
-                    linkExpireTime = Some(linkExpireSeconds),
-                    descriptionSinceLastLink = Some(descriptionSince),
-                    descriptionUntilExpires = Some(descriptionExpires)
-                  )
-
-                  RequestComplete(StatusCodes.OK, statusResponse)
+                  getNIHStatusResponse(pipeline, loginRequired, profile)
 
                 case _ =>
-                  RequestComplete(NotFound, "Linked NIH username not found")
+                  Future(RequestComplete(NotFound, "Linked NIH username not found"))
               }
-            case Left(err) => RequestCompleteWithErrorReport(InternalServerError,
-              "Could not unmarshal profile response: " + err.toString, Seq())
+            case Left(err) =>
+              Future(RequestCompleteWithErrorReport(InternalServerError,
+                "Could not unmarshal profile response: " + err.toString, Seq()))
           }
         case x =>
           // request for profile returned non-200
-          RequestCompleteWithErrorReport(x, response.toString, Seq())
+          Future(RequestCompleteWithErrorReport(x, response.toString, Seq()))
       }
     } recover {
       // unexpected error retrieving profile
@@ -176,6 +168,32 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
   }
 
+  def getNIHStatusResponse(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
+    loginRequired: Boolean, profile: Profile): Future[PerRequestMessage] = {
+    val dbGapUrl = UserService.groupUrl(FireCloudConfig.Rawls.dbGapAuthorizedUsersGroup)
+    val isDbGapAuthorizedRequest = Get(dbGapUrl)
+
+    pipeline(isDbGapAuthorizedRequest) map { response: HttpResponse =>
+      val authorized: Boolean = response.status match {
+        case x if x == OK => true
+        case _ => false
+      }
+      RequestComplete(OK,
+        NIHStatus(
+          loginRequired,
+          linkedNihUsername = profile.linkedNihUsername,
+          isDbgapAuthorized = Some(authorized),
+          lastLinkTime = Some(profile.lastLinkTime.getOrElse(0L)),
+          linkExpireTime = Some(profile.linkExpireTime.getOrElse(0L)),
+          descriptionSinceLastLink = Some(DateUtils.prettySince(profile.lastLinkTime.getOrElse(0L))),
+          descriptionUntilExpires = Some(DateUtils.prettySince(profile.linkExpireTime.getOrElse(0L)))
+        )
+      )
+    } recover {
+      // unexpected error retrieving dbgap group status
+      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
+    }
+  }
 
   def updateUserProperties(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
