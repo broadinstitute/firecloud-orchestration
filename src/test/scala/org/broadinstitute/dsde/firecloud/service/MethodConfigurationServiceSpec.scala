@@ -19,12 +19,13 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
 
   override def beforeAll(): Unit = {
     workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
-    workspaceServer.when(
-      request().withMethod("POST").withPath(MethodConfigurationService.remoteTemplatePath))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-      )
+    List(MethodConfigurationService.remoteTemplatePath, MethodConfigurationService.remoteInputsOutputsPath) map {
+      path =>
+        workspaceServer.when(
+          request().withMethod("POST").withPath(path))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withHeaders(MockUtils.header).withStatusCode(OK.intValue))
+    }
     List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) map {
       method =>
         workspaceServer
@@ -86,25 +87,29 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
     /* Handle passthrough handlers here */
 
     val localTemplatePath = "/template"
+    val localInputsOutputsPath = "/inputsOutputs"
 
     "when calling the passthrough service" - {
-      s"POST on $localTemplatePath" - {
-        "should not receive a MethodNotAllowed" in {
-          Post(localTemplatePath) ~> sealRoute(routes) ~> check {
-            status shouldNot equal(MethodNotAllowed)
-          }
-        }
-      }
-
-      s"GET, PUT, DELETE on $localTemplatePath" - {
-        "should receive a MethodNotAllowed" in {
-          List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) map {
-            method =>
-              new RequestBuilder(method)(localTemplatePath) ~> sealRoute(routes) ~> check {
-                status should equal(MethodNotAllowed)
+      List(localTemplatePath, localInputsOutputsPath) map {
+        path =>
+          s"POST on $path" - {
+            "should not receive a MethodNotAllowed" in {
+              Post(path) ~> sealRoute(routes) ~> check {
+                status shouldNot equal(MethodNotAllowed)
               }
+            }
           }
-        }
+
+          s"GET, PUT, DELETE on $path" - {
+            "should receive a MethodNotAllowed" in {
+              List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) map {
+                method =>
+                  new RequestBuilder(method)(path) ~> sealRoute(routes) ~> check {
+                    status should equal(MethodNotAllowed)
+                  }
+              }
+            }
+          }
       }
 
       val localMethodConfigPath = "/workspaces/%s/%s/method_configs/%s/%s".format(
