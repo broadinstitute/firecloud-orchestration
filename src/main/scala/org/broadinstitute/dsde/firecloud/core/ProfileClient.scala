@@ -174,7 +174,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
   def getNIHStatusResponse(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     loginRequired: Boolean, profile: Profile, linkExpireSeconds: Long): Future[PerRequestMessage] = {
-    val dbGapUrl = UserService.groupUrl(FireCloudConfig.Rawls.dbGapAuthorizedUsersGroup)
+    val dbGapUrl = UserService.groupUrl(FireCloudConfig.Nih.rawlsGroupName)
     val isDbGapAuthorizedRequest = Get(dbGapUrl)
 
     pipeline(isDbGapAuthorizedRequest) map { response: HttpResponse =>
