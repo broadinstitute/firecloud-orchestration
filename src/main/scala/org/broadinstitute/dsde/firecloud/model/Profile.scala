@@ -42,6 +42,10 @@ case class Profile (
 }
 
 object Profile {
+
+  // increment this number every time you make a change to the user-provided profile fields
+  val currentVersion:Int = 1
+
   def apply(wrapper: ProfileWrapper) = {
 
     val mappedKVPs:Map[String,String] = (wrapper.keyValuePairs map {

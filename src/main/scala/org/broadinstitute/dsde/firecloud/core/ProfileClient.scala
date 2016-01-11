@@ -47,7 +47,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
         val allSucceeded = responses.forall { _.status.isSuccess }
         allSucceeded match {
           case true =>
-            val kv2 = FireCloudKeyValue(Some("isRegistrationComplete"), Some("true"))
+            val kv2 = FireCloudKeyValue(Some("isRegistrationComplete"), Some(Profile.currentVersion.toString))
             val completionUpdate = pipeline {
               Post(UserService.remoteSetKeyURL, ThurloeKeyValue(Some(userInfo.getUniqueId), Some(kv2)))
             }
