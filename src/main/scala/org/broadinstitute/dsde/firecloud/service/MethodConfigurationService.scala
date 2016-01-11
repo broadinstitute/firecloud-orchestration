@@ -18,6 +18,9 @@ object MethodConfigurationService {
   val remoteTemplatePath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/template"
   val remoteTemplateURL = FireCloudConfig.Rawls.baseUrl + remoteTemplatePath
 
+  val remoteInputsOutputsPath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/inputsOutputs"
+  val remoteInputsOutputsURL = FireCloudConfig.Rawls.baseUrl + remoteInputsOutputsPath
+
   val remoteCopyFromMethodRepoConfigPath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/copyFromMethodRepo"
   val remoteCopyFromMethodRepoConfigUrl = FireCloudConfig.Rawls.baseUrl + remoteCopyFromMethodRepoConfigPath
 
@@ -49,6 +52,9 @@ trait MethodConfigurationService extends HttpService with PerRequestCreator with
   val routes: Route =
     path("template") {
       passthrough(MethodConfigurationService.remoteTemplateURL, HttpMethods.POST)
+    } ~
+    path("inputsOutputs") {
+      passthrough(MethodConfigurationService.remoteInputsOutputsURL, HttpMethods.POST)
     } ~
     pathPrefix(ApiPrefix) {
       pathPrefix(Segment / Segment / "method_configs") { (workspaceNamespace, workspaceName) =>

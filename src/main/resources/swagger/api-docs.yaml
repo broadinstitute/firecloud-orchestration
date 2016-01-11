@@ -136,6 +136,38 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /api/inputsOutputs:
+    post:
+      tags:
+        - Method Repository
+      operationId: getMethodIO
+      summary: Get information about a method's inputs and outputs
+      produces:
+        - application/json
+      parameters:
+        - name: methodName
+          description: name of Method to look up
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: MethodID
+      responses:
+        200:
+          description: Method Configuration inputs and outputs
+        400:
+          description: Method WDL can't be parsed
+        404:
+          description: No Such Method
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
       tags:
@@ -2117,6 +2149,7 @@ definitions:
         description: Method name
       methodVersion:
         type: int
+        default: 0
         description: Method version
     required:
       - methodNamespace
