@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -9,18 +10,18 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 
-import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json._
-import spray.json.DefaultJsonProtocol._
 
 
 class NIHServiceSpec extends ServiceSpec with NIHService {
 
   def actorRefFactory = system
   var profileServer: ClientAndServer = _
+  var workspaceServer: ClientAndServer = _
   val uniqueId = "1234"
+  val dbGapPath = UserService.groupPath(FireCloudConfig.Rawls.dbGapAuthorizedUsersGroup)
 
   override def beforeAll(): Unit = {
 
@@ -33,10 +34,21 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           .withBody("{}")
       )
+
+    workspaceServer = startClientAndServer(workspaceServerPort)
+    workspaceServer
+      .when(request().withMethod("GET").withPath(dbGapPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          .withBody("true")
+      )
+
   }
 
   override def afterAll(): Unit = {
     profileServer.stop()
+    workspaceServer.stop()
   }
 
   val targetUri = "/nih/status"
@@ -143,22 +155,42 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
                    lastLinkTime: Option[Long] = None,
                    linkExpireTime: Option[Long] = None,
                    isDbgapAuthorized: Option[Boolean] = None) = {
+
     profileServer.clear(request.withMethod("GET").withPath(UserService.remoteGetAllPath.format(uniqueId)))
     profileServer
       .when(request().withMethod("GET").withPath(UserService.remoteGetAllPath.format(uniqueId)))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          .withBody(generateResponse(linkedNihUsername, lastLinkTime, linkExpireTime, isDbgapAuthorized))
+          .withBody(generateResponse(linkedNihUsername, lastLinkTime, linkExpireTime))
       )
+
+    workspaceServer.clear(request.withMethod("GET").withPath(dbGapPath))
+    isDbgapAuthorized match {
+      case Some(x) if x =>
+        workspaceServer
+          .when(request().withMethod("GET").withPath(dbGapPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+              .withBody("true")
+          )
+      case _ =>
+        workspaceServer
+          .when(request().withMethod("GET").withPath(dbGapPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
+              .withBody("false")
+          )
+    }
   }
 
 
   def generateResponse(
                         linkedNihUsername: Option[String] = None,
                         lastLinkTime: Option[Long] = None,
-                        linkExpireTime: Option[Long] = None,
-                        isDbgapAuthorized: Option[Boolean] = None): String = {
+                        linkExpireTime: Option[Long] = None): String = {
 
     val kvps: List[FireCloudKeyValue] = List(
       FireCloudKeyValue(Some("name"), Some("testName")),
@@ -174,17 +206,11 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
     }) ::: (linkExpireTime match {
       case Some(x:Long) => List(FireCloudKeyValue(Some("linkExpireTime"), Some(x.toString)))
       case _ => List.empty[FireCloudKeyValue]
-    }) ::: (isDbgapAuthorized match {
-      case Some(x:Boolean) => List(FireCloudKeyValue(Some("isDbgapAuthorized"), Some(x.toString)))
-      case _ => List.empty[FireCloudKeyValue]
     })
 
     val profileWrapper = ProfileWrapper(uniqueId,kvps)
 
     profileWrapper.toJson.prettyPrint
   }
-
-
-
 
 }
