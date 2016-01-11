@@ -145,10 +145,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                     }
                   }
 
-                  val descriptionSince = DateUtils.prettySince(lastLinkSeconds)
-                  val descriptionExpires = DateUtils.prettySince(linkExpireSeconds)
-
-                  getNIHStatusResponse(pipeline, loginRequired, profile)
+                  getNIHStatusResponse(pipeline, loginRequired, profile, linkExpireSeconds)
 
                 case _ =>
                   Future(RequestComplete(NotFound, "Linked NIH username not found"))
@@ -169,7 +166,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   }
 
   def getNIHStatusResponse(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    loginRequired: Boolean, profile: Profile): Future[PerRequestMessage] = {
+    loginRequired: Boolean, profile: Profile, linkExpireSeconds: Long): Future[PerRequestMessage] = {
     val dbGapUrl = UserService.groupUrl(FireCloudConfig.Rawls.dbGapAuthorizedUsersGroup)
     val isDbGapAuthorizedRequest = Get(dbGapUrl)
 
@@ -184,9 +181,9 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
           linkedNihUsername = profile.linkedNihUsername,
           isDbgapAuthorized = Some(authorized),
           lastLinkTime = Some(profile.lastLinkTime.getOrElse(0L)),
-          linkExpireTime = Some(profile.linkExpireTime.getOrElse(0L)),
+          linkExpireTime = Some(linkExpireSeconds),
           descriptionSinceLastLink = Some(DateUtils.prettySince(profile.lastLinkTime.getOrElse(0L))),
-          descriptionUntilExpires = Some(DateUtils.prettySince(profile.linkExpireTime.getOrElse(0L)))
+          descriptionUntilExpires = Some(DateUtils.prettySince(linkExpireSeconds))
         )
       )
     } recover {
