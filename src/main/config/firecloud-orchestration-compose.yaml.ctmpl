@@ -13,7 +13,6 @@ app:
     - RAWLS_URL_ROOT={{.Data.env_rawls_url_root}}
     - THURLOE_URL_ROOT={{.Data.env_thurloe_url_root}}
     - FIRECLOUD_URL_ROOT={{.Data.env_firecloud_url_root}}
-    - DBGAP_AUTHORIZED_USERS_GROUP={{.Data.env_dbgap_authorized_users_group}}
     - GOOGLE_SECRET_JSON={{.Data.env_google_secret_json}}
     - ADMIN_REFRESH_TOKEN={{.Data.env_admin_refresh_token}}
     {{$signingkey := printf "secret/dsde/%s/common/signing-secret" $environment}}

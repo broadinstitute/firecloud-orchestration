@@ -40,8 +40,8 @@ object UserService {
   val rawlsRegisterUserPath = "/register/user"
   val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
 
-  def groupPath(group: Option[String]): String = FireCloudConfig.Rawls.authPrefix + "/user/group/%s".format(group.getOrElse(""))
-  def groupUrl(group: Option[String]): String = FireCloudConfig.Rawls.baseUrl + groupPath(group)
+  def groupPath(group: String): String = FireCloudConfig.Rawls.authPrefix + "/user/group/%s".format(group)
+  def groupUrl(group: String): String = FireCloudConfig.Rawls.baseUrl + groupPath(group)
 
 }
 
