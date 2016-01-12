@@ -193,10 +193,17 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
                         linkExpireTime: Option[Long] = None): String = {
 
     val kvps: List[FireCloudKeyValue] = List(
-      FireCloudKeyValue(Some("name"), Some("testName")),
-      FireCloudKeyValue(Some("email"), Some("testEmail")),
-      FireCloudKeyValue(Some("institution"), Some("testInstitution")),
-      FireCloudKeyValue(Some("pi"), Some("testPI"))
+      FireCloudKeyValue(Some("firstName"), Some("firstName")),
+      FireCloudKeyValue(Some("lastName"), Some("lastName")),
+      FireCloudKeyValue(Some("title"), Some("title")),
+      FireCloudKeyValue(Some("institute"), Some("institute")),
+      FireCloudKeyValue(Some("institutionalProgram"), Some("institutionalProgram")),
+      FireCloudKeyValue(Some("programLocationCity"), Some("city")),
+      FireCloudKeyValue(Some("programLocationState"), Some("state")),
+      FireCloudKeyValue(Some("programLocationCountry"), Some("country")),
+      FireCloudKeyValue(Some("pi"), Some("testPI")),
+      FireCloudKeyValue(Some("nonProfitStatus"), Some("NonProfit")),
+      FireCloudKeyValue(Some("billingAccountName"), Some("Test Account"))
     ) ::: (linkedNihUsername match {
       case Some(x:String) => List(FireCloudKeyValue(Some("linkedNihUsername"), Some(x)))
       case _ => List.empty[FireCloudKeyValue]
