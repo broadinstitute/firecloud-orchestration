@@ -21,7 +21,7 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
   var profileServer: ClientAndServer = _
   var workspaceServer: ClientAndServer = _
   val uniqueId = "1234"
-  val dbGapPath = UserService.groupPath(FireCloudConfig.Rawls.dbGapAuthorizedUsersGroup)
+  val dbGapPath = UserService.groupPath(FireCloudConfig.Nih.rawlsGroupName)
 
   override def beforeAll(): Unit = {
 

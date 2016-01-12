@@ -53,6 +53,7 @@ libraryDependencies ++= {
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"    % akkaV,
     ("com.google.api-client" % "google-api-client" % "1.20.0").exclude("com.google.guava", "guava-jdk5"),
+    "com.google.apis" % "google-api-services-storage" % "v1-rev30-1.20.0",
     "joda-time"            % "joda-time"      % "2.9.1",
     "org.joda"             % "joda-convert"   % "1.8.1",
     "com.jason-goodwin"   %% "authentikat-jwt" % "0.4.1",

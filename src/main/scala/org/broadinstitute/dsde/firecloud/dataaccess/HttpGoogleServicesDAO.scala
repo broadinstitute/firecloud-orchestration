@@ -2,9 +2,12 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.io.StringReader
 
-import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets, GoogleTokenResponse}
+import com.google.api.client.auth.oauth2.{Credential, TokenResponse}
+import com.google.api.client.googleapis.auth.oauth2.{GoogleCredential, GoogleAuthorizationCodeFlow, GoogleClientSecrets, GoogleTokenResponse}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.services.storage.{StorageScopes, Storage}
+
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.{OAuthException, OAuthTokens}
 import org.slf4j.LoggerFactory
@@ -14,7 +17,6 @@ import scala.collection.JavaConversions._
 
 object HttpGoogleServicesDAO {
 
-  val secretContent = FireCloudConfig.Auth.googleSecretJson
   val baseUrl = FireCloudConfig.FireCloud.baseUrl
   val callbackPath = "/service/callback"
 
@@ -30,13 +32,21 @@ object HttpGoogleServicesDAO {
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
   val jsonFactory = JacksonFactory.getDefaultInstance
 
-  val clientSecrets = GoogleClientSecrets.load(jsonFactory, new StringReader(secretContent))
+  val clientSecrets = GoogleClientSecrets.load(jsonFactory, new StringReader(FireCloudConfig.Auth.googleSecretJson))
+
   // Google Java Client doesn't offer direct access to the allowed origins, so we have to jump through a couple hoops
   val origins:List[String] = (clientSecrets.getDetails.get("javascript_origins").asInstanceOf[java.util.ArrayList[String]]).toList
 
-
   val flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport,
     jsonFactory, clientSecrets, scopes).build()
+
+  val adminUserRefreshToken = FireCloudConfig.Auth.adminRefreshToken
+  val refreshTokenClientSecrets = GoogleClientSecrets.load(jsonFactory, new StringReader(FireCloudConfig.Auth.refreshTokenSecretJson))
+
+  val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
+
+  val pemFile = FireCloudConfig.Auth.pemFile
+  val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -99,5 +109,30 @@ object HttpGoogleServicesDAO {
   def randomStateString = randomString(24)
 
   def randomString(length: Int) = scala.util.Random.alphanumeric.take(length).mkString
+
+  def getAdminUserAccessToken = {
+    val googleCredential = new GoogleCredential.Builder().setTransport(httpTransport)
+      .setJsonFactory(jsonFactory)
+      .setClientSecrets(refreshTokenClientSecrets)
+      .build().setFromTokenResponse(new TokenResponse().setRefreshToken(adminUserRefreshToken))
+
+    googleCredential.refreshToken()
+    googleCredential.getAccessToken
+  }
+
+  private def getBucketServiceAccountCredential: Credential = {
+    new GoogleCredential.Builder()
+      .setTransport(httpTransport)
+      .setJsonFactory(jsonFactory)
+      .setServiceAccountId(pemFileClientId)
+      .setServiceAccountScopes(storageReadOnly)
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
+      .build()
+  }
+
+  def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
+    storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
+  }
 
 }

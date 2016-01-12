@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import spray.http.HttpHeaders.{RawHeader, Authorization}
 import spray.http._
 import spray.routing.RequestContext
@@ -38,5 +39,8 @@ trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
       addHeader(RawHeader("OIDC_CLAIM_email", "random@site.com")) ~>
       addHeader(RawHeader("OIDC_CLAIM_expires_in", "100000"))
   }
+
+  // with great power comes great responsibility!
+  def addAdminCredentials = addCredentials(OAuth2BearerToken(HttpGoogleServicesDAO.getAdminUserAccessToken))
 
 }

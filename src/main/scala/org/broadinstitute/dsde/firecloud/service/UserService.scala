@@ -23,11 +23,14 @@ class UserServiceActor extends Actor with UserService {
 }
 
 object UserService {
+  val remoteGetKeyPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.get
+  val remoteGetKeyURL = FireCloudConfig.Thurloe.baseUrl + remoteGetKeyPath
+
   val remoteGetAllPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.getAll
   val remoteGetAllURL = FireCloudConfig.Thurloe.baseUrl + remoteGetAllPath
 
-  val remoteGetKeyPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.get
-  val remoteGetKeyURL = FireCloudConfig.Thurloe.baseUrl + remoteGetKeyPath
+  val remoteGetQueryPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.getQuery
+  val remoteGetQueryURL = FireCloudConfig.Thurloe.baseUrl + remoteGetQueryPath
 
   val remoteSetKeyPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.setKey
   val remoteSetKeyURL = FireCloudConfig.Thurloe.baseUrl + remoteSetKeyPath
