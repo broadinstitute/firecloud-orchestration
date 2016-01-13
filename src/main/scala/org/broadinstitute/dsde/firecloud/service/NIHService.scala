@@ -54,7 +54,7 @@ trait NIHService extends HttpService with PerRequestCreator with FireCloudDirect
                 val groupUpdate = perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
                   ProfileClient.SyncSelf(userInfo))
 
-                // TODO: isDbgapAuthorized should be removed entirely, since /api/nih/status reads it from rawls
+                // TODO: DSDEEPB-2512 isDbgapAuthorized should be removed entirely, since /api/nih/status reads it from rawls
                 val isDbgapAuthorized = false
                 val nihLink = NIHLink(linkedNihUsername, lastLinkTime, linkExpireTime, isDbgapAuthorized)
 

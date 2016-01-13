@@ -15,7 +15,6 @@ class NIHSyncEndpointsSpec extends ServiceSpec with NIHSyncService {
 
 
   val syncWhitelistPath = "/sync_whitelist"
-  val syncSelfPath = "/api/sync_self"
 
   "NIHSyncEndpointsSpec" - {
 
