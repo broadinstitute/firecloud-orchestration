@@ -15,7 +15,7 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 
 import spray.client.pipelining._
-import spray.http.{HttpRequest, HttpResponse}
+import spray.http.{Uri, HttpRequest, HttpResponse}
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
@@ -31,6 +31,7 @@ object ProfileClient {
   case class GetNIHStatus(userInfo: UserInfo)
   case class GetAndUpdateNIHStatus(userInfo: UserInfo)
   case object SyncWhitelist
+  case class SyncSelf(userInfo: UserInfo)
 
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
 }
@@ -96,7 +97,11 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       // do NOT pipe the response back to the parent!
 
     case SyncWhitelist =>
-      context.parent ! syncWhitelist
+      context.parent ! syncWhitelist()
+
+    case SyncSelf(userInfo: UserInfo) =>
+      context.parent ! syncWhitelist(Some(userInfo.getUniqueId))
+
    }
 
   def getProfile(userInfo: UserInfo, updateExpiration: Boolean): Future[PerRequestMessage] = {
@@ -280,13 +285,13 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       postResponse.entity.asString.contains(Conflict.reason)
   }
 
-  def syncWhitelist: PerRequestMessage = Try {
+  def syncWhitelist(subjectId: Option[String] = None): PerRequestMessage = Try {
     val (bucket, file) = (FireCloudConfig.Nih.whitelistBucket, FireCloudConfig.Nih.whitelistFile)
     val whitelist = Source.fromInputStream(HttpGoogleServicesDAO.getBucketObjectAsInputStream(bucket, file)).getLines().toSet
 
     // note: everything after this point involves Futures
 
-    val nihEnabledFireCloudUsers = NIHWhitelistUtils.getCurrentNihUsernameMap map { mapping =>
+    val nihEnabledFireCloudUsers = NIHWhitelistUtils.getCurrentNihUsernameMap(subjectId) map { mapping =>
       mapping.collect { case (fcUser, nihUser) if whitelist contains nihUser => fcUser }.toSeq
     }
 
@@ -295,7 +300,17 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
     val pipeline = addAdminCredentials ~> sendReceive
     val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(FireCloudConfig.Nih.rawlsGroupName)
 
-    memberList flatMap { members => pipeline { Put(url, members) } }
+    // if we have a subjectId specified, we are activating a single user at runtime.
+    // Use the Post endpoint, which is add-only.
+    //
+    // if we do NOT have a subjectId, we are syncing the entire whitelist.
+    // Use the Put endpoint, which replaces all members.
+    val rawlsRequestMethod = subjectId match {
+      case Some(user) => Post
+      case None => Put
+    }
+
+    memberList flatMap { members => pipeline { rawlsRequestMethod(url, members) } }
 
     // don't leak any sensitive data
     RequestComplete(NoContent)
@@ -307,10 +322,17 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 }
 
 object NIHWhitelistUtils extends FireCloudRequestBuilding {
-  def getAllUserValuesForKey(key: String)(implicit arf: ActorRefFactory, ec: ExecutionContext): Future[Map[String, String]] = {
+  def getAllUserValuesForKey(key: String, userId: Option[String] = None)(implicit arf: ActorRefFactory, ec: ExecutionContext): Future[Map[String, String]] = {
     val pipeline = addAdminCredentials ~> sendReceive
+
+    val queryParams = userId match {
+      case Some(sub) => Map("key"->key, "userId"->sub)
+      case None      => Map("key"->key)
+    }
+    val queryUri = Uri(UserService.remoteGetQueryURL).withQuery(queryParams)
+
     pipeline {
-      Get(s"${UserService.remoteGetQueryURL}key=${key}")
+      Get(queryUri)
     } map { response =>
       if (response.status != OK) throw new Exception(response.toString)   // TODO: better error handling
       response.entity.as[Seq[ThurloeKeyValue]] match {
@@ -339,9 +361,9 @@ object NIHWhitelistUtils extends FireCloudRequestBuilding {
   }
 
   // get a mapping of FireCloud user name to NIH User name, for only those Thurloe users with a non-expired NIH link
-  def getCurrentNihUsernameMap(implicit arf: ActorRefFactory, ec: ExecutionContext): Future[Map[String, String]] = {
-    val nihUsernames = getAllUserValuesForKey("linkedNihUsername")
-    val nihExpiretimes = getAllUserValuesForKey("linkExpireTime")
+  def getCurrentNihUsernameMap(subjectId: Option[String] = None)(implicit arf: ActorRefFactory, ec: ExecutionContext): Future[Map[String, String]] = {
+    val nihUsernames = getAllUserValuesForKey("linkedNihUsername", subjectId)
+    val nihExpiretimes = getAllUserValuesForKey("linkExpireTime", subjectId)
 
     filterForCurrentUsers(nihUsernames, nihExpiretimes)
   }

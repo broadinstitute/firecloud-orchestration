@@ -47,12 +47,16 @@ trait NIHService extends HttpService with PerRequestCreator with FireCloudDirect
                 // JWT standard uses epoch time for dates, so we'll follow that convention here.
                 val lastLinkTime = DateUtils.now
                 val linkExpireTime = DateUtils.nowPlus30Days
-                // TODO: look up in whitelist, once that functionality exists!
+
+                // update this user's dbGaP access in rawls, assuming the user exists in the whitelist.
+                // this call is silent/async - if it fails, we continue on, and the user's access will
+                // be updated the next time sync_whitelist runs; the user will have to wait for that.
+                val groupUpdate = perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
+                  ProfileClient.SyncSelf(userInfo))
+
+                // TODO: isDbgapAuthorized should be removed entirely, since /api/nih/status reads it from rawls
                 val isDbgapAuthorized = false
-
                 val nihLink = NIHLink(linkedNihUsername, lastLinkTime, linkExpireTime, isDbgapAuthorized)
-
-                // TODO: call API to update proxy groups, once it exists
 
                 // save the NIH link keys into Thurloe
                 perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
