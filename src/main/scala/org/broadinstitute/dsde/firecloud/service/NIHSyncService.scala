@@ -12,8 +12,10 @@ trait NIHSyncService extends HttpService with PerRequestCreator with FireCloudDi
   lazy val log = LoggerFactory.getLogger(getClass)
 
   val routes: Route =
-    path("sync_whitelist") { requestContext =>
-      perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
-        ProfileClient.SyncWhitelist)
+    post {
+      path("sync_whitelist") { requestContext =>
+        perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
+          ProfileClient.SyncWhitelist)
+      }
     }
 }
