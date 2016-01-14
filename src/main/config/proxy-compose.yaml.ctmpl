@@ -14,12 +14,8 @@ proxy:
   {{ $proxy_ports }}
   {{ $proxy_volumes }}
   environment:
-    AUTH_TYPE: AuthType None
-    AUTH_TYPE2: AuthType oauth20
     CALLBACK_URI: {{ $env_callback_uri }}
     LOG_LEVEL: {{ $proxy_log_level }}
-    AUTH_REQUIRE: Require all granted
-    AUTH_REQUIRE2: Require valid-user
     PROXY_PATH: /
     PROXY_PATH2: /api
     SERVER_NAME: {{ $env_server_name }}
