@@ -25,10 +25,17 @@ class UserServiceSpec extends ServiceSpec with UserService {
   val exampleKey = "favoriteColor"
   val exampleVal = "green"
   val fullProfile = BasicProfile(
-    name = randomAlpha(),
-    email = randomAlpha(),
-    institution = randomAlpha(),
-    pi = randomAlpha()
+    firstName= randomAlpha(),
+    lastName = randomAlpha(),
+    title = randomAlpha(),
+    institute = randomAlpha(),
+    institutionalProgram = randomAlpha(),
+    programLocationCity = randomAlpha(),
+    programLocationState = randomAlpha(),
+    programLocationCountry = randomAlpha(),
+    pi = randomAlpha(),
+    nonProfitStatus = randomAlpha(),
+    billingAccountName = Some(randomAlpha())
   )
   val allProperties: Map[String, String] = fullProfile.propertyValueMap
 

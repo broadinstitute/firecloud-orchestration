@@ -13,38 +13,63 @@ case class ThurloeKeyValue(
 case class ProfileWrapper(userId: String, keyValuePairs: List[FireCloudKeyValue])
 
 case class BasicProfile (
-    name: String,
-    email: String,
-    institution: String,
-    pi: String
+    firstName: String,
+    lastName: String,
+    title: String,
+    institute: String,
+    institutionalProgram: String,
+    programLocationCity: String,
+    programLocationState: String,
+    programLocationCountry: String,
+    pi: String,
+    nonProfitStatus: String,
+    billingAccountName: Option[String]
   ) extends mappedPropVals {
-  require(ProfileValidator.nonEmpty(name), "name must be non-empty")
-  require(ProfileValidator.nonEmpty(email), "email must be non-empty")
-  require(ProfileValidator.nonEmpty(institution), "institution must be non-empty")
-  require(ProfileValidator.nonEmpty(pi), "primary investigator must be non-empty")
+  require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
+  require(ProfileValidator.nonEmpty(lastName), "last name must be non-empty")
+  require(ProfileValidator.nonEmpty(title), "title must be non-empty")
+  require(ProfileValidator.nonEmpty(institute), "institute must be non-empty")
+  require(ProfileValidator.nonEmpty(institutionalProgram), "institutional program must be non-empty")
+  require(ProfileValidator.nonEmpty(programLocationCity), "program location city must be non-empty")
+  require(ProfileValidator.nonEmpty(programLocationState), "program location state must be non-empty")
+  require(ProfileValidator.nonEmpty(programLocationCountry), "program location country must be non-empty")
+  require(ProfileValidator.nonEmpty(pi), "principal investigator/program lead must be non-empty")
+  require(ProfileValidator.nonEmpty(nonProfitStatus), "non-profit status must be non-empty")
 }
 
 case class Profile (
-    name: String,
-    email: String,
-    institution: String,
+    firstName: String,
+    lastName: String,
+    title: String,
+    institute: String,
+    institutionalProgram: String,
+    programLocationCity: String,
+    programLocationState: String,
+    programLocationCountry: String,
     pi: String,
+    nonProfitStatus: String,
+    billingAccountName: Option[String] = None,
     linkedNihUsername: Option[String] = None,
     lastLinkTime: Option[Long] = None,
     linkExpireTime: Option[Long] = None,
     isDbgapAuthorized: Option[Boolean] = None
   ) extends mappedPropVals {
-
-  require(ProfileValidator.nonEmpty(name), "name must be non-empty")
-  require(ProfileValidator.nonEmpty(email), "email must be non-empty")
-  require(ProfileValidator.nonEmpty(institution), "institution must be non-empty")
-  require(ProfileValidator.nonEmpty(pi), "primary investigator must be non-empty")
+  require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
+  require(ProfileValidator.nonEmpty(lastName), "last name must be non-empty")
+  require(ProfileValidator.nonEmpty(title), "title must be non-empty")
+  require(ProfileValidator.nonEmpty(institute), "institute must be non-empty")
+  require(ProfileValidator.nonEmpty(institutionalProgram), "institutional program must be non-empty")
+  require(ProfileValidator.nonEmpty(programLocationCity), "program location city must be non-empty")
+  require(ProfileValidator.nonEmpty(programLocationState), "program location state must be non-empty")
+  require(ProfileValidator.nonEmpty(programLocationCountry), "program location country must be non-empty")
+  require(ProfileValidator.nonEmpty(pi), "principal investigator/program lead must be non-empty")
+  require(ProfileValidator.nonEmpty(nonProfitStatus), "non-profit status must be non-empty")
 }
 
 object Profile {
 
   // increment this number every time you make a change to the user-provided profile fields
-  val currentVersion:Int = 1
+  val currentVersion:Int = 2
 
   def apply(wrapper: ProfileWrapper) = {
 
@@ -52,10 +77,17 @@ object Profile {
       fckv:FireCloudKeyValue => (fckv.key.get -> fckv.value.get) }).toMap
 
     new Profile(
-      name = mappedKVPs.get("name").get,
-      email = mappedKVPs.get("email").get,
-      institution = mappedKVPs.get("institution").get,
+      firstName = mappedKVPs.get("firstName").get,
+      lastName = mappedKVPs.get("lastName").get,
+      title = mappedKVPs.get("title").get,
+      institute = mappedKVPs.get("institute").get,
+      institutionalProgram = mappedKVPs.get("institutionalProgram").get,
+      programLocationCity = mappedKVPs.get("programLocationCity").get,
+      programLocationState = mappedKVPs.get("programLocationState").get,
+      programLocationCountry = mappedKVPs.get("programLocationCountry").get,
       pi = mappedKVPs.get("pi").get,
+      nonProfitStatus = mappedKVPs.get("nonProfitStatus").get,
+      billingAccountName = mappedKVPs.get("billingAccountName"),
       linkedNihUsername = mappedKVPs.get("linkedNihUsername"),
       lastLinkTime = mappedKVPs.get("lastLinkTime") match {
         case Some(time) => Some(time.toLong)
@@ -89,6 +121,7 @@ case class NIHStatus(
 
 object ProfileValidator {
   def nonEmpty(field: String): Boolean = !field.trim.isEmpty
+  def nonEmpty(field: Option[String]): Boolean = !field.getOrElse("").trim.isEmpty
 }
 
 trait mappedPropVals {
@@ -96,7 +129,10 @@ trait mappedPropVals {
     this.getClass.getDeclaredFields map {
       f =>
         f.setAccessible(true)
-        f.getName -> f.get(this).toString
+        f.get(this) match {
+          case x: String => f.getName -> x
+          case y: Option[_] => f.getName -> y.asInstanceOf[Option[_]].getOrElse("").toString
+        }
     } toMap
   }
 }
