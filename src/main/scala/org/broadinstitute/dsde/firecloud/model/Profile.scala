@@ -132,6 +132,7 @@ trait mappedPropVals {
         f.get(this) match {
           case x: String => f.getName -> x
           case y: Option[_] => f.getName -> y.asInstanceOf[Option[_]].getOrElse("").toString
+          case z => f.getName -> z.toString
         }
     } toMap
   }
