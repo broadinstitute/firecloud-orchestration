@@ -62,7 +62,7 @@ libraryDependencies ++= {
     "org.scalatest"       %%  "scalatest"     % "2.2.6"   % "test",
     "org.mock-server"      %  "mockserver-netty" % "3.10.2" % "test"
     // -- Logging --
-    ,"ch.qos.logback" % "logback-classic" % "1.1.2"
+    ,"ch.qos.logback" % "logback-classic" % "1.1.3"
     ,"com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2"
   )
 }
