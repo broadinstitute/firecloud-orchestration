@@ -38,13 +38,13 @@ javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8", "-target:jvm-1.8")
 
 libraryDependencies ++= {
-  val akkaV = "2.3.9"
+  val akkaV = "2.4.1"
   val sprayV = "1.3.3"
   Seq(
     "org.broadinstitute.dsde.vault" %%  "vault-common"  % "0.1-17-0ee4ad5",
     "io.spray"            %%  "spray-can"     % sprayV,
     "io.spray"            %%  "spray-routing" % sprayV,
-    "io.spray"            %%  "spray-json"    % "1.3.1",
+    "io.spray"            %%  "spray-json"    % "1.3.2",
     "io.spray"            %%  "spray-client"  % sprayV,
     "io.spray"            %%  "spray-testkit" % sprayV    % "test",
     "org.webjars"          %  "swagger-ui"    % "2.1.4",
