@@ -80,7 +80,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
     }
   )
 
-  private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/2.1.1"
+  private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/2.1.4"
 
   val swaggerUiService = {
     get {
