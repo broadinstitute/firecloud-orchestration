@@ -58,9 +58,9 @@ libraryDependencies ++= {
     "org.joda"             % "joda-convert"   % "1.8.1",
     "com.jason-goodwin"   %% "authentikat-jwt" % "0.4.1",
     "org.ocpsoft.prettytime" % "prettytime" % "4.0.1.Final",
-    "org.specs2"          %%  "specs2-core"   % "2.3.11"  % "test",
-    "org.scalatest"       %%  "scalatest"     % "2.2.1"   % "test",
-    "org.mock-server"      %  "mockserver-netty" % "3.9.2" % "test"
+    "org.specs2"          %%  "specs2-core"   % "3.7"  % "test",
+    "org.scalatest"       %%  "scalatest"     % "2.2.6"   % "test",
+    "org.mock-server"      %  "mockserver-netty" % "3.10.2" % "test"
     // -- Logging --
     ,"ch.qos.logback" % "logback-classic" % "1.1.2"
     ,"com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2"
