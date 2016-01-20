@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import com.ocpsoft.pretty.time.PrettyTime
+import org.ocpsoft.prettytime.PrettyTime
 import org.joda.time.{Seconds, Hours, DateTime}
 
 

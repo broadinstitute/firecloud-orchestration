@@ -57,7 +57,7 @@ libraryDependencies ++= {
     "joda-time"            % "joda-time"      % "2.9.1",
     "org.joda"             % "joda-convert"   % "1.8.1",
     "com.jason-goodwin"   %% "authentikat-jwt" % "0.4.1",
-    "com.ocpsoft"          % "ocpsoft-pretty-time" % "1.0.7",
+    "org.ocpsoft.prettytime" % "prettytime" % "4.0.1.Final",
     "org.specs2"          %%  "specs2-core"   % "2.3.11"  % "test",
     "org.scalatest"       %%  "scalatest"     % "2.2.1"   % "test",
     "org.mock-server"      %  "mockserver-netty" % "3.9.2" % "test"
