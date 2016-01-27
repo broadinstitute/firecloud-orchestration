@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._

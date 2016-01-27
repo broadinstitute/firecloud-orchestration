@@ -1,250 +1,339 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
-import org.broadinstitute.dsde.firecloud.mock.MockTSVFormData
-import org.broadinstitute.dsde.firecloud.model.{MethodConfiguration, WorkspaceEntity, WorkspaceName}
-import spray.http.StatusCodes._
-
-import spray.httpx.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockTSVFormData}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
-class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService {
+import org.mockserver.integration.ClientAndServer
+import org.mockserver.integration.ClientAndServer._
+import org.mockserver.model.HttpRequest._
+import org.scalatest.BeforeAndAfterEach
+import spray.http.HttpMethods
 
-  import org.broadinstitute.dsde.firecloud.model.ErrorReport.errorReportRejectionHandler
+import spray.http.StatusCodes._
+import spray.json._
+
+class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService with BeforeAndAfterEach {
 
   def actorRefFactory = system
 
-  private final val ApiPrefix = "/workspaces"
+  val workspace = WorkspaceEntity(
+    Some("namespace"),
+    Some("name")
+  )
 
-  override def beforeAll(): Unit = {
-    MockWorkspaceServer.startWorkspaceServer()
+  // Mock remote endpoints
+  private final val workspacesRoot = "workspaces"
+  private final val workspacesPath = workspacesRoot + "/%s/%s".format(workspace.namespace.get, workspace.name.get)
+  private final val methodconfigsPath = workspacesRoot + "/%s/%s/methodconfigs".format(workspace.namespace.get, workspace.name.get)
+  private final val updateAttributesPath = workspacesRoot + "/%s/%s/updateAttributes".format(workspace.namespace.get, workspace.name.get)
+  private final val aclPath = workspacesRoot + "/%s/%s/acl".format(workspace.namespace.get, workspace.name.get)
+  private final val clonePath = workspacesRoot + "/%s/%s/clone".format(workspace.namespace.get, workspace.name.get)
+  private final val lockPath = workspacesRoot + "/%s/%s/lock".format(workspace.namespace.get, workspace.name.get)
+  private final val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace.get, workspace.name.get)
+
+  private final val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
+  private final val tsvImportPath = "/" + workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace.get, workspace.name.get)
+
+  var workspaceServer: ClientAndServer = _
+
+  override def beforeEach(): Unit = {
+    workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
+
+    // Passthrough Responders
+
+    // workspaces
+    List(HttpMethods.GET, HttpMethods.POST) map {
+      method =>
+        workspaceServer
+          .when(request().withMethod(method.name).withPath(workspacesRoot))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+    }
+    // workspaces/%s/%s
+    List(HttpMethods.GET, HttpMethods.DELETE) map {
+      method =>
+        workspaceServer
+          .when(request().withMethod(method.name).withPath(workspacesPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+    }
+    // workspaces/%s/%s/methodconfigs
+    List(HttpMethods.GET, HttpMethods.POST) map {
+      method =>
+        workspaceServer
+          .when(request().withMethod(method.name).withPath(methodconfigsPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+    }
+    // workspaces/%s/%s/updateAttributes
+    workspaceServer
+      .when(request().withMethod("PATCH").withPath(updateAttributesPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+    // workspaces/%s/%s/acl
+    List(HttpMethods.GET, HttpMethods.PATCH) map {
+      method =>
+        workspaceServer
+          .when(request().withMethod(method.name).withPath(aclPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+    }
+    // workspaces/%s/%s/clone
+    workspaceServer
+      .when(request().withMethod("POST").withPath(clonePath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+    // workspaces/%s/%s/lock
+    workspaceServer
+      .when(request().withMethod("PUT").withPath(lockPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+    // workspaces/%s/%s/unlock
+    workspaceServer
+      .when(request().withMethod("PUT").withPath(unlockPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    // Entity responders
+
+    workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath(s"${workspaceBasePath}/${workspace.namespace.get}/${workspace.name.get}/entities/batchUpsert")
+          .withHeader(authHeader))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(NoContent.intValue)
+          .withBody(rawlsErrorReport(NoContent).toJson.compactPrint)
+      )
+
+    workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath(s"${workspaceBasePath}/${workspace.namespace.get}/${workspace.name.get}/entities/batchUpdate")
+          .withHeader(authHeader))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(NoContent.intValue)
+          .withBody(rawlsErrorReport(NoContent).toJson.compactPrint)
+      )
   }
 
-  override def afterAll(): Unit = {
-    MockWorkspaceServer.stopWorkspaceServer()
+  override def afterEach(): Unit = {
+    workspaceServer.stop()
   }
 
-  "WorkspaceService" - {
+  "WorkspaceService Passthrough Negative Tests" - {
 
-    val workspaceIngest = WorkspaceName(
-      name = Some(randomAlpha()),
-      namespace = Some(randomAlpha()))
-    val invalidWorkspaceIngest = WorkspaceName(
-      name = Option.empty,
-      namespace = Option.empty)
-
-    val tsvImportPath = ApiPrefix + "/%s/%s/importEntities".format(
-      MockWorkspaceServer.mockValidWorkspace.namespace.get,
-      MockWorkspaceServer.mockValidWorkspace.name.get)
-
-    val attributeUpdatePath = ApiPrefix + "/%s/%s/updateAttributes".format(
-      MockWorkspaceServer.mockValidWorkspace.namespace.get,
-      MockWorkspaceServer.mockValidWorkspace.name.get)
-
-    "when calling POST on the workspaces path with a valid WorkspaceIngest" - {
-      "valid workspace is returned" in {
-        Post(ApiPrefix, workspaceIngest) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(Created)
-          val entity = responseAs[WorkspaceEntity]
-          entity.name shouldNot be(Option.empty)
-          entity.namespace shouldNot be(Option.empty)
-          entity.createdBy shouldNot be(Option.empty)
-          entity.createdDate shouldNot be(Option.empty)
-          entity.attributes should be(Some(Map.empty))
+    "Passthrough tests on the /workspaces path" - {
+      "MethodNotAllowed error is returned for HTTP PUT, PATCH, DELETE methods" in {
+        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)("/workspaces") ~> sealRoute(routes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling GET on the list method configurations with an invalid workspace namespace/name"- {
-      "Not Found is returned" in {
-        val path = "/workspaces/%s/%s/methodconfigs".format(
-          MockWorkspaceServer.mockInvalidWorkspace.namespace.get,
-          MockWorkspaceServer.mockInvalidWorkspace.name.get)
-        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check{
-          status should be(NotFound)
-          errorReportCheck("Rawls", NotFound)
+    "Passthrough tests on the /workspaces/segment/segment path" - {
+      "MethodNotAllowed error is returned for HTTP PUT, PATCH, POST methods" in {
+        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.POST) map {
+          method =>
+            new RequestBuilder(method)("/workspaces/namespace/name") ~> sealRoute(routes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling GET on the list method configurations with a valid workspace namespace/name"- {
-      "OK response and a list of at list one Method Configuration is returned" in {
-        val path = "/workspaces/%s/%s/methodconfigs".format(
-          MockWorkspaceServer.mockValidWorkspace.namespace.get,
-          MockWorkspaceServer.mockValidWorkspace.name.get)
-        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check{
-          status should equal(OK)
-          val methodconfigurations = responseAs[List[MethodConfiguration]]
-          methodconfigurations shouldNot be(empty)
-          methodconfigurations foreach {
-            mc: MethodConfiguration => mc.name shouldNot be(empty)
-          }
+    "Passthrough tests on the /workspaces/segment/segment/methodconfigs path" - {
+      "MethodNotAllowed error is returned for HTTP PUT, PATCH, DELETE methods" in {
+        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)("/workspaces/namespace/name/methodconfigs") ~> sealRoute(routes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling PUT on the list method configurations with a valid workspace namespace/name"- {
-      "MethodNotAllowed response is returned" in {
-        val path = "/workspaces/%s/%s/methodconfigs".format(
-          MockWorkspaceServer.mockValidWorkspace.namespace.get,
-          MockWorkspaceServer.mockValidWorkspace.name.get)
-        Put(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check{
-          status should equal(MethodNotAllowed)
-          errorReportCheck("FireCloud", MethodNotAllowed)
+    "Passthrough tests on the /workspaces/segment/segment/updateAttributes path" - {
+      "MethodNotAllowed error is returned for HTTP PUT, POST, GET, DELETE methods" in {
+        List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)("/workspaces/namespace/name/updateAttributes") ~> sealRoute(routes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling POST on the workspaces path without a valid authentication token" - {
-      "Unauthorized (401) response is returned" in {
-        Post(ApiPrefix, workspaceIngest) ~> sealRoute(routes) ~> check {
-          status should equal(Unauthorized)
-          errorReportCheck("Rawls", Unauthorized)
+    "Passthrough tests on the /workspaces/segment/segment/acl path" - {
+      "MethodNotAllowed error is returned for HTTP PUT, POST, DELETE methods" in {
+        List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)("/workspaces/namespace/name/acl") ~> sealRoute(routes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling POST on the workspaces path with an invalid workspace ingest entity" - {
-      "Bad Request (400) response is returned" in {
-        Post(ApiPrefix, invalidWorkspaceIngest) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should be(BadRequest)
-          errorReportCheck("Rawls", BadRequest)
+    "Passthrough tests on the /workspaces/segment/segment/clone path" - {
+      "MethodNotAllowed error is returned for HTTP PUT, PATCH, GET, DELETE methods" in {
+        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)("/workspaces/namespace/name/clone") ~> sealRoute(routes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling GET on the workspaces path" - {
-      "valid workspaces are returned" in {
-        Get(ApiPrefix) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-          val workspaces = responseAs[List[WorkspaceEntity]]
-          workspaces shouldNot be(empty)
-          workspaces foreach {
-            w: WorkspaceEntity => w.namespace shouldNot be(empty)
-          }
+    "Passthrough tests on the /workspaces/segment/segment/lock path" - {
+      "MethodNotAllowed error is returned for HTTP POST, PATCH, GET, DELETE methods" in {
+        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)("/workspaces/namespace/name/lock") ~> sealRoute(routes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling PUT on the workspaces path" - {
-      "MethodNotAllowed error is returned" in {
-        Put(ApiPrefix) ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("FireCloud", MethodNotAllowed)
+    "Passthrough tests on the /workspaces/segment/segment/unlock path" - {
+      "MethodNotAllowed error is returned for HTTP POST, PATCH, GET, DELETE methods" in {
+        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)("/workspaces/namespace/name/unlock") ~> sealRoute(routes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling the GET workspace path" - {
-      "a workspace is returned for a valid ID" in {
-        val path = "/workspaces/%s/%s".format(
-          MockWorkspaceServer.mockValidWorkspace.namespace.get,
-          MockWorkspaceServer.mockValidWorkspace.name.get)
-        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-          responseAs[WorkspaceEntity].namespace shouldNot be(empty)
-        }
-      }
+  }
 
-      "a 404 is returned for an invalid ID" in {
-        val path = "/workspaces/%s/%s".format(
-          MockWorkspaceServer.mockInvalidWorkspace.namespace.get,
-          MockWorkspaceServer.mockInvalidWorkspace.name.get)
-        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(NotFound)
-          errorReportCheck("Rawls", NotFound)
+  "WorkspaceService Passthrough Tests" - {
+
+    "Passthrough tests on the /workspaces path" - {
+      "MethodNotAllowed error is not returned for HTTP GET and POST methods" in {
+        List(HttpMethods.GET, HttpMethods.POST) map {
+          method =>
+            new RequestBuilder(method)(workspacesRoot) ~> sealRoute(routes) ~> check {
+              status shouldNot equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling the DELETE workspace path" - {
-      "a valid response is returned for a valid ID" in {
-        val path = "/workspaces/%s/%s".format(
-          MockWorkspaceServer.mockValidWorkspace.namespace.get,
-          MockWorkspaceServer.mockValidWorkspace.name.get)
-        Delete(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-        }
-      }
 
-      "a 404 is returned for an invalid ID" in {
-        val path = "/workspaces/%s/%s".format(
-          MockWorkspaceServer.mockInvalidWorkspace.namespace.get,
-          MockWorkspaceServer.mockInvalidWorkspace.name.get)
-        Delete(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(NotFound)
-          errorReportCheck("Rawls", NotFound)
+    "Passthrough tests on the /workspaces/%s/%s path" - {
+      "MethodNotAllowed error is not returned for HTTP GET and DELETE methods" in {
+        List(HttpMethods.GET, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)(workspacesRoot) ~> sealRoute(routes) ~> check {
+              status shouldNot equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling the PUT workspace path" - {
-      "a MethodNotAllowed response is returned" in {
-        val path = "/workspaces/%s/%s".format(
-          MockWorkspaceServer.mockValidWorkspace.namespace.get,
-          MockWorkspaceServer.mockValidWorkspace.name.get)
-        Put(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("FireCloud", MethodNotAllowed)
+
+    "Passthrough tests on the /workspaces/%s/%s/methodconfigs path" - {
+      "MethodNotAllowed error is not returned for HTTP GET and POST methods" in {
+        List(HttpMethods.GET, HttpMethods.POST) map {
+          method =>
+            new RequestBuilder(method)(methodconfigsPath) ~> sealRoute(routes) ~> check {
+              status shouldNot equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling GET on the workspaces/*/*/acl path" - {
-      "valid ACL is returned" in {
-        val path = "/workspaces/%s/%s/acl".format(
-          MockWorkspaceServer.mockValidWorkspace.namespace.get,
-          MockWorkspaceServer.mockValidWorkspace.name.get)
-        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-          val acl = responseAs[List[Map[String, String]]]
-          acl shouldNot be(empty)
+
+    "Passthrough tests on the /workspaces/%s/%s/updateAttributes path" - {
+      "MethodNotAllowed error is not returned for HTTP PATCH method" in {
+        Patch(updateAttributesPath) ~> sealRoute(routes) ~> check {
+          status shouldNot equal(MethodNotAllowed)
         }
       }
     }
 
-    "when calling PATCH on the workspaces/*/*/acl path" - {
-      "OK response is returned" in {
-        val path = "/workspaces/%s/%s/acl".format(
-          MockWorkspaceServer.mockValidWorkspace.namespace.get,
-          MockWorkspaceServer.mockValidWorkspace.name.get)
-        Patch(path, MockWorkspaceServer.mockWorkspaceACL) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(OK)
+
+    "Passthrough tests on the /workspaces/%s/%s/acl path" - {
+      "MethodNotAllowed error is not returned for HTTP GET and PATCH methods" in {
+        List(HttpMethods.GET, HttpMethods.PATCH) map {
+          method =>
+            new RequestBuilder(method)(aclPath) ~> sealRoute(routes) ~> check {
+              status shouldNot equal(MethodNotAllowed)
+            }
         }
       }
     }
 
-    "when calling POST on the workspaces/*/*/acl path" - {
-      "MethodNotAllowed is returned" in {
-        val path = "/workspaces/%s/%s/acl".format(
-          MockWorkspaceServer.mockValidWorkspace.namespace.get,
-          MockWorkspaceServer.mockValidWorkspace.name.get)
-        Post(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("FireCloud", MethodNotAllowed)
+
+    "Passthrough tests on the /workspaces/%s/%s/clone path" - {
+      "MethodNotAllowed error is not returned for POST method" in {
+        Post(clonePath) ~> sealRoute(routes) ~> check {
+          status shouldNot equal(MethodNotAllowed)
         }
       }
     }
 
-    "when calling PATCH on the workspaces/*/*/updateAttributes to add/update an attribute" - {
-      "OK response is returned" in {
-        (Patch(attributeUpdatePath, MockWorkspaceServer.mockUpdateAttributeOperation)
-        ~> dummyAuthHeaders
-        ~> sealRoute(routes)) ~> check {
-          status should equal(OK)
+
+    "Passthrough tests on the /workspaces/%s/%s/lock path" - {
+      "MethodNotAllowed error is not returned for PUT method" in {
+        Put(lockPath) ~> sealRoute(routes) ~> check {
+          status shouldNot equal(MethodNotAllowed)
         }
       }
     }
 
-    "when calling GET on workspaces/*/*/updateAttributes" - {
-      "MethodNotAllowed response is returned" in {
-        (Get(attributeUpdatePath)
-          ~> dummyAuthHeaders
-          ~> sealRoute(routes)) ~> check {
-          status should equal(MethodNotAllowed)
-          errorReportCheck("FireCloud", MethodNotAllowed)
+
+    "Passthrough tests on the /workspaces/%s/%s/unlock path" - {
+      "MethodNotAllowed error is not returned for PUT method" in {
+        Put(unlockPath) ~> sealRoute(routes) ~> check {
+          status shouldNot equal(MethodNotAllowed)
+        }
+      }
+    }
+
+  }
+
+  "WorkspaceService TSV Tests" - {
+
+    "when calling any method other than POST on workspaces/*/*/importEntities path" - {
+      "should receive a MethodNotAllowed error" in {
+        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)(tsvImportPath, MockTSVFormData.membershipValid) ~> sealRoute(routes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
         }
       }
     }
