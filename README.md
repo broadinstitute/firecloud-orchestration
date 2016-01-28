@@ -61,7 +61,16 @@ AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' \
 
 ## Debugging
 
-Remote debugging is enabled for firecloud-orchestration on port 5051.
+Remote debugging is enabled for firecloud-orchestration on port 5051. From inside the docker container, the debug port
+is only enabled when running through sbt reStart. To make sure that happens, delete the compiled jar (or run sbt clean) since
+the run command will first try to run the assembled jar, or if that fails, run sbt and call reStart. Alternatively, if the jar
+is started, shell into the running container, stop the orch service, and call sbt ~reStart, which will fire up the app listening
+on the debug port:
+```
+docker exec -it <orch container id> bash
+sv stop orch
+sbt ~reStart
+```
 
 ## Production Deployment
 
