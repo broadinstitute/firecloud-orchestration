@@ -7,6 +7,7 @@ app:
   {{.Data.app_dns}}
   {{.Data.app_ports}}
   {{.Data.app_volumes}}
+  restart: always
   environment:
     - GOOGLE_CLIENT_ID={{.Data.env_google_client_id}}
     - AGORA_URL_ROOT={{.Data.env_agora_url_root}}
