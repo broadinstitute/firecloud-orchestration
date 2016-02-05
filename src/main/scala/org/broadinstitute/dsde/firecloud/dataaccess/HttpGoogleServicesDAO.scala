@@ -18,7 +18,7 @@ import scala.collection.JavaConversions._
 object HttpGoogleServicesDAO {
 
   val baseUrl = FireCloudConfig.FireCloud.baseUrl
-  val callbackPath = "/service/callback"
+  val callbackPath = "/callback"
 
   // this needs to match a value in the "Authorized redirect URIs" section of the Google credential in use
   val callbackUri = Uri(s"${baseUrl}${callbackPath}")
