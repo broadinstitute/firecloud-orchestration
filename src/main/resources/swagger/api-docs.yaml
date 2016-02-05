@@ -10,7 +10,7 @@ info:
     url: http://opensource.org/licenses/BSD-3-Clause
   termsOfService: https://github.com/broadinstitute/firecloud-orchestration
 
-basePath: /service
+basePath: /
 
 paths:
   /api/workspaces:
@@ -1872,7 +1872,7 @@ paths:
       tags:
         - NIH
       operationId: NIHStatus
-      summary: Retrieves info about a user's NIH link
+      summary: "Retrieves info about a user's NIH link"
       parameters:
       responses:
         200:
