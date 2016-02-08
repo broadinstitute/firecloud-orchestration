@@ -4,7 +4,7 @@
 # FireCloud-Orchestration
 FireCloud Orchestration Service
 
-* URL: https://firecloud.dsde-dev.broadinstitute.org/service/
+* URL: https://firecloud-orchestration.dsde-dev.broadinstitute.org/
 * Documentation: [https://broadinstitute.atlassian.net/wiki/display/DSDE/Silver+Team](https://broadinstitute.atlassian.net/wiki/display/DSDE/Silver+Team)
 * Github Repository: [https://github.com/broadinstitute/firecloud-orchestration/](https://github.com/broadinstitute/firecloud-orchestration/)
 
@@ -30,16 +30,14 @@ FireCloud Orchestration Service
 * New paths to external endpoints should be added to `src/main/resources/configurations.conf`. Existing endpoint URLs are configured in `application.conf` and `test.conf`
 
 ## Building and Running
-See https://github.com/broadinstitute/firecloud-environment/blob/master/README.md for directions on running locally in docker.
+
+See https://github.com/broadinstitute/firecloud-develop for directions on running locally within Broad's DSDE environment.
 
 Run the assembly task to build a fat jar:
 ```
 sbt
 > assembly
 ```
-
-Ensure that `GOOGLE_CLIENT_ID` and `GOOGLE_SECRET_JSON` (with origin set to `https://local.broadinstitute.org` - see below), 
-`AGORA_URL_ROOT`, `RAWLS_URL_ROOT`, `THURLOE_URL_ROOT`, and `FIRECLOUD_URL_ROOT` are defined in your environment, and execute the jar with the path to the jar and path of the desired config file:
 
 ```
 java -Dconfig.file=src/main/resources/application.conf \
@@ -61,49 +59,4 @@ AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' \
 
 ## Debugging
 
-Remote debugging is enabled for firecloud-orchestration on port 5051. From inside the docker container, the debug port
-is only enabled when running through sbt reStart. To make sure that happens, delete the compiled jar (or run sbt clean) since
-the run command will first try to run the assembled jar, or if that fails, run sbt and call reStart. Alternatively, if the jar
-is started, shell into the running container, stop the orch service, and call sbt ~reStart, which will fire up the app listening
-on the debug port:
-```
-docker exec -it <orch container id> bash
-sv stop orch
-sbt ~reStart
-```
-
-## Production Deployment
-
-Start with a [docker](https://www.docker.com/) environment.  If your `/etc/hosts` does not have the conventional 
-docker-machine entry `dhost`, add one corresponding to the IP address returned by `docker-machine ip <your_docker_machine_name>`.    
-
-You will need to create a Google web application client ID. If you have one from firecloud-ui, use that. Otherwise create
-one via <https://console.developers.google.com/>.
-
-You can create credentials for yourself in **"APIs & Auth" -> "Credentials."** You want an **OAuth 2.0 client ID** with a **Web application** application type.
-
-Add your docker host as an authorized JavaScript origin, one entry per line.  Names are required instead of IP addresses.
- - https://dhost:8080
- - http://dhost:8080
-
-Set your client ID in your environment:
-```
-export GOOGLE_CLIENT_ID='...'
-export GOOGLE_SECRET_JSON='...'
-
-```
-
-Run the container:
-```
-docker run --rm --name orch \
-  -p 8080:8080 \
-  -e GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
-  -e GOOGLE_SECRET_JSON=$GOOGLE_SECRET_JSON \
-  -e RAWLS_URL_ROOT='https://rawls.dsde-dev.broadinstitute.org' \
-  -e AGORA_URL_ROOT='https://agora.dsde-dev.broadinstitute.org' \
-  -e THURLOE_URL_ROOT='https://thurloe.dsde-dev.broadinstitute.org' \
-  -e FIRECLOUD_URL_ROOT='https://local.broadinstitute.org' \
-  broadinstitute/firecloud-orchestration
-```
-
-Browse to <http://dhost:8080>
+Remote debugging is enabled for firecloud-orchestration on port 5051.

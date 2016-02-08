@@ -46,26 +46,14 @@ class FireCloudServiceActor extends HttpServiceActor {
   def receive = runRoute(
     logRequests {
       swaggerCorsService ~
-      // The "service" path prefix is never visible to this server in production because it is
-      // transparently proxied. We check for it here so the redirects work when visiting this
-      // server directly during local development.
-      pathPrefix("service") {
-        swaggerUiService ~
-          testNihService ~
-          oAuthService.routes ~
-          userService.routes ~
-          pathPrefix("api") {
-            routes
-          }
-      } ~
-        swaggerUiService ~
-        testNihService ~
-        oAuthService.routes ~
-        userService.routes ~
-        nihSyncService.routes ~
-        pathPrefix("api") {
-          routes
-        }
+      swaggerUiService ~
+      testNihService ~
+      oAuthService.routes ~
+      userService.routes ~
+      nihSyncService.routes ~
+      pathPrefix("api") {
+        routes
+      }
     }
   )
 
@@ -76,15 +64,7 @@ class FireCloudServiceActor extends HttpServiceActor {
       optionalHeaderValueByName("X-Forwarded-Host") { forwardedHost =>
         pathPrefix("") {
           pathEnd {
-            cookie("access_token") { tokenCookie =>
-              serveIndex(tokenCookie.content)
-            } ~
-              complete {
-                HttpEntity(ContentType(MediaTypes.`text/html`),
-                  getResourceFileContents("swagger/auth-page.html")
-                    .replace("{{googleClientId}}", FireCloudConfig.Auth.googleClientId)
-                )
-              }
+            serveIndex()
           } ~
             pathSuffix("api-docs") {
               complete {
@@ -124,17 +104,17 @@ class FireCloudServiceActor extends HttpServiceActor {
     }
   }
 
-  private def serveIndex(accessToken: String): Route = {
-    val authLine = "$(function() { window.swaggerUi.api.clientAuthorizations.add(" +
-      "'bearer', new SwaggerClient.ApiKeyAuthorization('Authorization', 'Bearer " + accessToken +
-      "', 'header')); });"
+  private def serveIndex(): Route = {
     val indexHtml = getResourceFileContents(swaggerUiPath + "/index.html")
     complete {
       HttpEntity(ContentType(MediaTypes.`text/html`),
         indexHtml
-          .replace("</head>", "<script>" + authLine + "</script>\n</head>")
+          .replace("your-client-id", FireCloudConfig.Auth.googleClientId)
+          .replace("your-realms", "broad-dsde-dev")
+          .replace("your-app-name", "broad-dsde-dev")
+          .replace("scopeSeparator: \",\"", "scopeSeparator: \" \"")
           .replace("url = \"http://petstore.swagger.io/v2/swagger.json\";",
-            "url = '/service/api-docs';")
+            "url = '/api-docs';")
       )
     }
   }
