@@ -13,6 +13,7 @@ proxy:
   image: broadinstitute/openidc-proxy:latest
   {{ $proxy_ports }}
   {{ $proxy_volumes }}
+  restart: always
   environment:
     CALLBACK_URI: {{ $env_callback_uri }}
     LOG_LEVEL: {{ $proxy_log_level }}
