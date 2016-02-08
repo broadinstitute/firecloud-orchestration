@@ -3,7 +3,9 @@ package org.broadinstitute.dsde.firecloud.mock
 import java.text.SimpleDateFormat
 import java.util.Date
 
+import org.broadinstitute.dsde.firecloud.model.ErrorReport
 import org.mockserver.model.Header
+import spray.http.StatusCode
 
 object MockUtils {
 
@@ -36,4 +38,7 @@ object MockUtils {
      isoDateFormat.format(new Date())
    }
 
- }
+  def rawlsErrorReport(statusCode: StatusCode) =
+    ErrorReport("Rawls", "dummy text", Option(statusCode), Seq(), Seq())
+
+}

@@ -102,7 +102,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
           .withStatusCode(NotFound.intValue)
-          .withBody(MockWorkspaceServer.rawlsErrorReport(NotFound).toJson.compactPrint)
+          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
       )
     // Invalid entities case
     workspaceServer
@@ -115,7 +115,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
           .withStatusCode(NotFound.intValue)
-          .withBody(MockWorkspaceServer.rawlsErrorReport(NotFound).toJson.compactPrint)
+          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
       )
     // Bulk delete endpoint
     workspaceServer
@@ -139,7 +139,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
           .withStatusCode(NotFound.intValue)
-          .withBody(MockWorkspaceServer.rawlsErrorReport(NotFound).toJson.compactPrint)
+          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
       )
   }
 

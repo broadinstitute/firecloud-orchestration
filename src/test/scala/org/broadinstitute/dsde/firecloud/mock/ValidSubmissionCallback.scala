@@ -29,7 +29,7 @@ class ValidSubmissionCallback extends ExpectationCallback {
         response()
           .withHeaders(header)
           .withStatusCode(BadRequest.intValue)
-          .withBody(MockWorkspaceServer.rawlsErrorReport(BadRequest).toJson.compactPrint)
+          .withBody(MockUtils.rawlsErrorReport(BadRequest).toJson.compactPrint)
     }
 
   }

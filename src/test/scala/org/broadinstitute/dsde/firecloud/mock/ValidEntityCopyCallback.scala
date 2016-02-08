@@ -24,7 +24,7 @@ class ValidEntityCopyCallback extends ExpectationCallback {
         response()
           .withHeaders(header)
           .withStatusCode(NotFound.intValue)
-          .withBody(MockWorkspaceServer.rawlsErrorReport(NotFound).toJson.compactPrint)
+          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
     }
   }
 }
