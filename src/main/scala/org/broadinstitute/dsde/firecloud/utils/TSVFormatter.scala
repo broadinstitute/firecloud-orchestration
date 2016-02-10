@@ -2,14 +2,34 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.model.ModelSchema
-import spray.json.JsValue
 
 import scala.collection.immutable
 import scala.util.Try
 
+import spray.json.DefaultJsonProtocol._
+import spray.json.JsValue
+
 object TSVFormatter {
 
-  def makeTsvString(entities: List[EntityWithType], entityType: String) = {
+  def makeMembershipTsvString(entities: List[EntityWithType], entityType: String): String = {
+    val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq("membership:" + entityType + "_id", entityType.replace("_set", "_id"))
+    val rows: List[IndexedSeq[String]] = entities filter { _.entityType == entityType } flatMap { entity =>
+      entity.attributes.getOrElse(Map.empty) flatMap { m =>
+        m._2.convertTo[List[JsValue]] map { jsValue =>
+          val cellValue: String = jsValue match {
+            case x if Try(x.asJsObject.fields.contains("entityName")).isSuccess =>
+              cleanValue(x.asJsObject.fields.getOrElse("entityName", x))
+            case _ =>
+              ""
+          }
+          IndexedSeq[String](entity.name, cellValue)
+        }
+      }
+    }
+    exportToString(headers, rows.toIndexedSeq)
+  }
+
+  def makeEntityTsvString(entities: List[EntityWithType], entityType: String): String = {
     val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeRenamingMap(entityType).getOrElse(Map.empty[String, String])
     val entityHeader = "entity:" + entityType + "_id"
     val headers: immutable.IndexedSeq[String] = entityHeader +: entities.
@@ -42,13 +62,13 @@ object TSVFormatter {
   private def makeRow(entity: EntityWithType, headerValues: IndexedSeq[String],
     headerRenamingMap:Map[String, String]): IndexedSeq[String] = {
     val rowMap: Map[Int, String] =  entity.attributes.getOrElse(Map.empty) map {
-      entity =>
-        val columnPosition = headerValues.indexOf(headerRenamingMap.getOrElse(entity._1, entity._1))
-        val cellValue = entity._2 match {
+      attribute =>
+        val columnPosition = headerValues.indexOf(headerRenamingMap.getOrElse(attribute._1, attribute._1))
+        val cellValue = attribute._2 match {
           case x if Try(x.asJsObject.fields.contains("entityName")).isSuccess =>
             cleanValue(x.asJsObject.fields.getOrElse("entityName", x))
           case _ =>
-            cleanValue(entity._2)
+            cleanValue(attribute._2)
         }
         columnPosition -> cellValue
     }
