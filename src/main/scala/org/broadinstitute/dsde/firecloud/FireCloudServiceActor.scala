@@ -9,12 +9,16 @@ import spray.util._
 
 import org.broadinstitute.dsde.firecloud.service._
 
-class FireCloudServiceActor extends HttpServiceActor {
+class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
   implicit val system = context.system
 
   trait ActorRefFactoryContext {
     def actorRefFactory = context
   }
+
+  // insecure cookie-authed routes
+
+  val cookieAuthedService = new CookieAuthedService with ActorRefFactoryContext
 
   // routes under /api
 
@@ -53,6 +57,9 @@ class FireCloudServiceActor extends HttpServiceActor {
       nihSyncService.routes ~
       pathPrefix("api") {
         routes
+      } ~
+      pathPrefix("cookie-authed") {
+        cookieAuthedService.routes
       }
     }
   )

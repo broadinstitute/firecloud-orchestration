@@ -936,6 +936,39 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
+    get:
+      type: file
+      tags:
+      - Entities
+      operationId: browserDownloadEntitiesTSV
+      summary: |
+        TSV file containing workspace entities of the specified type (allows cookie-based authentication)
+      produces:
+        - text/plain
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entityType
+          description: Entity Type
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Workspace entities of specified type in TSV format
+        404:
+          description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
   /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
     get:
       tags:
