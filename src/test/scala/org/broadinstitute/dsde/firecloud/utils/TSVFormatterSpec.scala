@@ -23,7 +23,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
             "sample_type" -> "Blood".toJson,
             "header_1" -> MockUtils.randomAlpha().toJson,
             "header_2" -> MockUtils.randomAlpha().toJson,
-            "participant_id" -> """{"entityType":"participant","entityName":"participant_name"}""".parseJson
+            "participant" -> """{"entityType":"participant","entityName":"participant_name"}""".parseJson
           )
         }
         val sampleList = List(
@@ -32,7 +32,10 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
           EntityWithType("sample_03", "sample", Some(sampleAtts)),
           EntityWithType("sample_04", "sample", Some(sampleAtts))
         )
-        testEntityDataSet("sample", sampleList)
+        val expectedHeaders = ("entity:sample_id", Set("sample_type", "header_1", "header_2", "participant_id"))
+        assertResult(expectedHeaders) {
+          testEntityDataSet("sample", sampleList)
+        }
       }
 
       "Set Data" in {
@@ -46,29 +49,32 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         val sampleSetList = List(EntityWithType("sample_set_1", "sample_set", Some(sampleSetAtts)))
         testMembershipDataSet("sample_set", sampleSetList, samples.size)
       }
-
     }
 
     "Participant tests should pass for" - {
 
       "Entity Data" in {
-        val participantSetAtts1 = {
+        val participantAtts1 = {
           Map(
             "participant_id" -> """{"entityType":"participant","entityName":"1143"}""".parseJson,
             "gender" -> "F".toJson,
             "age" -> "52".toJson
           )
         }
-        val participantSetAtts2 = {
+        val participantAtts2 = {
           Map(
             "participant_id" -> """{"entityType":"participant","entityName":"1954"}""".parseJson,
             "gender" -> "M".toJson,
             "age" -> "61".toJson
           )
         }
-        val participantList = List(EntityWithType("1143", "participant", Some(participantSetAtts1)),
-          EntityWithType("1954", "participant", Some(participantSetAtts2)))
-        testEntityDataSet("participant", participantList)
+        val participantList = List(EntityWithType("1143", "participant", Some(participantAtts1)),
+          EntityWithType("1954", "participant", Some(participantAtts2)))
+
+        val expectedHeaders = ("entity:participant_id", Set("participant_id", "gender", "age"))
+        assertResult(expectedHeaders) {
+          testEntityDataSet("participant", participantList)
+        }
       }
 
       "Set Data" in {
@@ -80,7 +86,6 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         val participantSetList = List(EntityWithType("participant_set_1", "participant_set", Some(participantSetAtts)))
         testMembershipDataSet("participant_set", participantSetList, participants.size)
       }
-
     }
 
     "Pair tests should pass for" - {
@@ -88,23 +93,27 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
       "Entity data" in {
         val pairAtts1 = {
           Map(
-            "case_sample_id" -> """{"entityType": "sample", "entityName": "345"}""".parseJson,
-            "control_sample_id" -> """{"entityType": "sample", "entityName": "456"}""".parseJson,
-            "participant_id" -> """{"entityType":"participant","entityName":"1143"}""".parseJson,
+            "case_sample" -> """{"entityType": "sample", "entityName": "345"}""".parseJson,
+            "control_sample" -> """{"entityType": "sample", "entityName": "456"}""".parseJson,
+            "participant" -> """{"entityType":"participant","entityName":"1143"}""".parseJson,
             "header_1" -> MockUtils.randomAlpha().toJson
           )
         }
         val pairAtts2 = {
           Map(
-            "case_sample_id" -> """{"entityType": "sample", "entityName": "567"}""".parseJson,
-            "control_sample_id" -> """{"entityType": "sample", "entityName": "678"}""".parseJson,
-            "participant_id" -> """{"entityType":"participant","entityName":"1954"}""".parseJson,
+            "case_sample" -> """{"entityType": "sample", "entityName": "567"}""".parseJson,
+            "control_sample" -> """{"entityType": "sample", "entityName": "678"}""".parseJson,
+            "participant" -> """{"entityType":"participant","entityName":"1954"}""".parseJson,
             "header_1" -> MockUtils.randomAlpha().toJson
           )
         }
         val pairList = List(EntityWithType("1", "pair", Some(pairAtts1)),
           EntityWithType("2", "pair", Some(pairAtts2)))
-        testEntityDataSet("pair", pairList)
+
+        val expectedHeaders = ("entity:pair_id", Set("case_sample_id", "control_sample_id", "participant_id", "header_1"))
+        assertResult(expectedHeaders) {
+          testEntityDataSet("pair", pairList)
+        }
       }
 
       "Set data" in {
@@ -116,13 +125,12 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         val pairSetList = List(EntityWithType("pair_set_1", "pair_set", Some(pairSetAtts)))
         testMembershipDataSet("pair_set", pairSetList, pairs.size)
       }
-
     }
 
   }
 
-  private def testEntityDataSet(entityType: String, entities: List[EntityWithType]): Unit = {
-    val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeRenamingMap(entityType)
+ private def testEntityDataSet(entityType: String, entities: List[EntityWithType]) = {
+    val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeExportRenamingMap(entityType)
       .getOrElse(Map.empty[String, String])
     val tsv = TSVFormatter.makeEntityTsvString(entities, entityType)
 
@@ -140,6 +148,10 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
     // Conversely, the TSV file should not have any of the pre-rename values
     forAll (headerRenamingMap.keys.toList) { x => headers shouldNot contain(x) }
+
+    // header order is arbitrary except for the first column
+    val headersToCheck = (headers.head, headers.tail.toSet)
+    headersToCheck
   }
 
   private def testMembershipDataSet(
