@@ -84,8 +84,8 @@ class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
     "when calling GET on exporting an invalid entity type" - {
       "NotFound response is returned" in {
         Get(invalidFireCloudEntitiesSampleTSVPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should be(NotFound)
-          errorReportCheck("Rawls", NotFound)
+          status should be(InternalServerError)
+          errorReportCheck("FireCloud", InternalServerError)
         }
       }
     }

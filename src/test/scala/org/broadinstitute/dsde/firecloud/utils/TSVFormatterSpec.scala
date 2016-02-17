@@ -2,7 +2,8 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.model.ModelSchema
+import org.broadinstitute.dsde.firecloud.model.{ModelJsonProtocol, Entity, ModelSchema}
+import ModelJsonProtocol._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FreeSpec, Inspectors, Matchers}
 import spray.json.DefaultJsonProtocol._
@@ -14,91 +15,116 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
   "TSVFormatter" - {
 
-    "should work with sample data" in {
-      val sampleAtts = {
-        Map(
-          "sample_type" -> "Blood".toJson,
-          "header_1" -> MockUtils.randomAlpha().toJson,
-          "header_2" -> MockUtils.randomAlpha().toJson,
-          "participant_id" -> """{"entityType":"participant","entityName":"participant_name"}""".parseJson
+    "Sample tests should pass for" - {
+
+      "Entity Data" in {
+        val sampleAtts = {
+          Map(
+            "sample_type" -> "Blood".toJson,
+            "header_1" -> MockUtils.randomAlpha().toJson,
+            "header_2" -> MockUtils.randomAlpha().toJson,
+            "participant_id" -> """{"entityType":"participant","entityName":"participant_name"}""".parseJson
+          )
+        }
+        val sampleList = List(
+          EntityWithType("sample_01", "sample", Some(sampleAtts)),
+          EntityWithType("sample_02", "sample", Some(sampleAtts)),
+          EntityWithType("sample_03", "sample", Some(sampleAtts)),
+          EntityWithType("sample_04", "sample", Some(sampleAtts))
         )
+        testEntityDataSet("sample", sampleList)
       }
-      val sampleList = List(
-        EntityWithType("sample_01", "sample", Some(sampleAtts)),
-        EntityWithType("sample_02", "sample", Some(sampleAtts)),
-        EntityWithType("sample_03", "sample", Some(sampleAtts)),
-        EntityWithType("sample_04", "sample", Some(sampleAtts))
-      )
-      testDataSet("sample", sampleList)
+
+      "Set Data" in {
+        val samples = List(Entity(entityType = Some("sample"), entityName = Some("sample_01")),
+          Entity(entityType = Some("sample"), entityName = Some("sample_02")),
+          Entity(entityType = Some("sample"), entityName = Some("sample_03")),
+          Entity(entityType = Some("sample"), entityName = Some("sample_04")))
+        val sampleSetAtts = {
+          Map("samples" -> samples.toJson)
+        }
+        val sampleSetList = List(EntityWithType("sample_set_1", "sample_set", Some(sampleSetAtts)))
+        testMembershipDataSet("sample_set", sampleSetList, samples.size)
+      }
+
     }
 
-    "should work with pair data" in {
-      val pairAtts = {
-        Map(
-          "case_sample_id" -> """{"entityType": "sample", "entityName": "HCC1143"}""".parseJson,
-          "control_sample_id" -> """{"entityType": "sample", "entityName": "HCC1143_BL"}""".parseJson,
-          "participant_id" -> """{"entityType":"participant","entityName":"subject_HCC1143"}""".parseJson,
-          "header_1" -> MockUtils.randomAlpha().toJson,
-          "header_2" -> MockUtils.randomAlpha().toJson
-        )
+    "Participant tests should pass for" - {
+
+      "Entity Data" in {
+        val participantSetAtts1 = {
+          Map(
+            "participant_id" -> """{"entityType":"participant","entityName":"1143"}""".parseJson,
+            "gender" -> "F".toJson,
+            "age" -> "52".toJson
+          )
+        }
+        val participantSetAtts2 = {
+          Map(
+            "participant_id" -> """{"entityType":"participant","entityName":"1954"}""".parseJson,
+            "gender" -> "M".toJson,
+            "age" -> "61".toJson
+          )
+        }
+        val participantList = List(EntityWithType("1143", "participant", Some(participantSetAtts1)),
+          EntityWithType("1954", "participant", Some(participantSetAtts2)))
+        testEntityDataSet("participant", participantList)
       }
-      val pairList = List(EntityWithType("pair_01", "pair", Some(pairAtts)))
-      testDataSet("pair", pairList)
+
+      "Set Data" in {
+        val participants = List(Entity(entityType = Some("participant"), entityName = Some("subject_HCC1143")),
+          Entity(entityType = Some("participant"), entityName = Some("subject_HCC1144")))
+        val participantSetAtts = {
+          Map("participants" -> participants.toJson)
+        }
+        val participantSetList = List(EntityWithType("participant_set_1", "participant_set", Some(participantSetAtts)))
+        testMembershipDataSet("participant_set", participantSetList, participants.size)
+      }
+
     }
 
-    "should work with participant_set data" in {
-      val participantSetAtts = {
-        Map(
-          "disease" -> "lung cancer".toJson,
-          "case_sample_id" -> """{"entityType": "sample", "entityName": "HCC1143"}""".parseJson,
-          "control_sample_id" -> """{"entityType": "sample", "entityName": "HCC1143_BL"}""".parseJson,
-          "participant_id" -> """{"entityType":"participant_set","entityName":"subject_HCC1143"}""".parseJson,
-          "gender" -> "male".toJson,
-          "header_1" -> MockUtils.randomAlpha().toJson,
-          "header_2" -> MockUtils.randomAlpha().toJson
-        )
-      }
-      val participantSetList = List(EntityWithType("participant_set_01", "participant_set", Some(participantSetAtts)))
-      testDataSet("participant_set", participantSetList)
-    }
+    "Pair tests should pass for" - {
 
-    "should work with sample_set data" in {
-      val sampleSetAtts = {
-        Map(
-          "sample_id" -> """{"entityType": "sample", "entityName": "HCC1143"}""".parseJson,
-          "control_sample_id" -> """{"entityType": "sample", "entityName": "HCC1143_BL"}""".parseJson,
-          "participant_id" -> """{"entityType":"participant_set","entityName":"subject_HCC1143"}""".parseJson,
-          "gender" -> "male".toJson,
-          "header_1" -> MockUtils.randomAlpha().toJson
-        )
+      "Entity data" in {
+        val pairAtts1 = {
+          Map(
+            "case_sample_id" -> """{"entityType": "sample", "entityName": "345"}""".parseJson,
+            "control_sample_id" -> """{"entityType": "sample", "entityName": "456"}""".parseJson,
+            "participant_id" -> """{"entityType":"participant","entityName":"1143"}""".parseJson,
+            "header_1" -> MockUtils.randomAlpha().toJson
+          )
+        }
+        val pairAtts2 = {
+          Map(
+            "case_sample_id" -> """{"entityType": "sample", "entityName": "567"}""".parseJson,
+            "control_sample_id" -> """{"entityType": "sample", "entityName": "678"}""".parseJson,
+            "participant_id" -> """{"entityType":"participant","entityName":"1954"}""".parseJson,
+            "header_1" -> MockUtils.randomAlpha().toJson
+          )
+        }
+        val pairList = List(EntityWithType("1", "pair", Some(pairAtts1)),
+          EntityWithType("2", "pair", Some(pairAtts2)))
+        testEntityDataSet("pair", pairList)
       }
-      val sampleSetList = List(
-        EntityWithType("sample_set_01", "sample_set", Some(sampleSetAtts)),
-        EntityWithType("sample_set_02", "sample_set", Some(sampleSetAtts)),
-        EntityWithType("sample_set_03", "sample_set", Some(sampleSetAtts))
-      )
-      testDataSet("sample_set", sampleSetList)
-    }
 
-    "should work with pair_set data" in {
-      val pairSetAtts = {
-        Map(
-          "pair_id" -> """{"entityType": "pair", "entityName": "HCC1143_pair"}""".parseJson,
-          "sample_id" -> """{"entityType": "sample", "entityName": "HCC1143"}""".parseJson,
-          "header_1" -> MockUtils.randomAlpha().toJson,
-          "header_2" -> MockUtils.randomAlpha().toJson
-        )
+      "Set data" in {
+        val pairs = List(Entity(entityType = Some("pair"), entityName = Some("1")),
+          Entity(entityType = Some("pair"), entityName = Some("2")))
+        val pairSetAtts = {
+          Map("pairs" -> pairs.toJson)
+        }
+        val pairSetList = List(EntityWithType("pair_set_1", "pair_set", Some(pairSetAtts)))
+        testMembershipDataSet("pair_set", pairSetList, pairs.size)
       }
-      val pairSetList = List(EntityWithType("pair_set_01", "pair_set", Some(pairSetAtts)))
-      testDataSet("pair_set", pairSetList)
+
     }
 
   }
 
-  private def testDataSet(entityType: String, entities: List[EntityWithType]): Unit = {
+  private def testEntityDataSet(entityType: String, entities: List[EntityWithType]): Unit = {
     val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeRenamingMap(entityType)
       .getOrElse(Map.empty[String, String])
-    val tsv = TSVFormatter.makeTsvString(entities, entityType)
+    val tsv = TSVFormatter.makeEntityTsvString(entities, entityType)
 
     tsv shouldNot be(empty)
 
@@ -114,6 +140,21 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
     // Conversely, the TSV file should not have any of the pre-rename values
     forAll (headerRenamingMap.keys.toList) { x => headers shouldNot contain(x) }
+  }
+
+  private def testMembershipDataSet(
+    entityType: String,
+    entities: List[EntityWithType],
+    expectedSize: Int
+  ): Unit = {
+    val tsv = TSVFormatter.makeMembershipTsvString(entities, entityType)
+    tsv shouldNot be(empty)
+
+    val lines: List[String] = Source.fromString(tsv).getLines().toList
+    lines.size should equal(expectedSize + 1) // Add 1 for the header line.
+
+    val columns = lines map { _.split("\t").size }
+    columns foreach( _ should equal(2) )
   }
 
 }
