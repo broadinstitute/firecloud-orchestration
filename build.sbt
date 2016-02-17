@@ -41,7 +41,7 @@ libraryDependencies ++= {
   val akkaV = "2.4.1"
   val sprayV = "1.3.3"
   Seq(
-    "org.broadinstitute.dsde.vault" %%  "vault-common"  % "0.1-17-0ee4ad5",
+    "org.broadinstitute.dsde.vault" %%  "vault-common"  % "0.1-19-ca8b927",
     "io.spray"            %%  "spray-can"     % sprayV,
     "io.spray"            %%  "spray-routing" % sprayV,
     "io.spray"            %%  "spray-json"    % "1.3.2",
