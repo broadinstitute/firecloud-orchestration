@@ -30,7 +30,7 @@ object TSVFormatter {
   }
 
   def makeEntityTsvString(entities: List[EntityWithType], entityType: String): String = {
-    val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeRenamingMap(entityType).getOrElse(Map.empty[String, String])
+    val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeExportRenamingMap(entityType).getOrElse(Map.empty[String, String])
     val entityHeader = "entity:" + entityType + "_id"
     val headers: immutable.IndexedSeq[String] = entityHeader +: entities.
       filter { _.entityType == entityType }.

@@ -31,8 +31,8 @@ object EntityClient {
 
   def props(requestContext: RequestContext): Props = Props(new EntityClient(requestContext))
 
-  def improveAttributeNames(entityType: String, headers: Seq[String], requiredAttributes: Map[String,String]) = {
-    val renameMap = ModelSchema.getAttributeRenamingMap(entityType).get
+  def colNamesToAttributeNames(entityType: String, headers: Seq[String], requiredAttributes: Map[String,String]) = {
+    val renameMap = ModelSchema.getAttributeImportRenamingMap(entityType).get
     headers.tail map { colName => (renameMap.getOrElse(colName,colName), requiredAttributes.get(colName))}
   }
 
@@ -239,7 +239,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       withMemberCollectionType(entityType) { memberTypeOpt =>
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
-            val colInfo = improveAttributeNames(entityType, tsv.headers, requiredAttributes)
+            val colInfo = colNamesToAttributeNames(entityType, tsv.headers, requiredAttributes)
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
             batchCallToRawls(pipeline, workspaceNamespace, workspaceName, rawlsCalls, "batchUpsert")
           }
@@ -262,7 +262,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
             //defined when the entity was created. But we still need the type information if the headers do exist.
             case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
             case Success(requiredAttributes) =>
-              val colInfo = improveAttributeNames(entityType, tsv.headers, requiredAttributes)
+              val colInfo = colNamesToAttributeNames(entityType, tsv.headers, requiredAttributes)
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
               batchCallToRawls(pipeline, workspaceNamespace, workspaceName, rawlsCalls, "batchUpdate")
           }

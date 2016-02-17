@@ -39,8 +39,13 @@ object ModelSchema {
     getTypeSchema(entityType).map(_.requiredAttributes)
   }
 
-  def getAttributeRenamingMap(entityType: String): Try[Map[String,String]] = {
+  def getAttributeImportRenamingMap(entityType: String): Try[Map[String,String]] = {
     getTypeSchema(entityType).map(_.attributeRenaming.getOrElse(Map.empty))
+  }
+
+  def getAttributeExportRenamingMap(entityType: String): Try[Map[String,String]] = {
+    // the inverse of the import mapping
+    getAttributeImportRenamingMap(entityType).map(_.map(_.swap))
   }
 }
 

@@ -62,7 +62,7 @@ class TSVParserSpec extends FlatSpec {
       TSVParser.parse(MockTSVStrings.validMultiline)
     }
   }
-  "EntityClient.improveAttributeNames" should "fix up the names of attributes for certain reference types for pairs" in {
+  "EntityClient.colNamesToAttributeNames" should "fix up the names of attributes for certain reference types for pairs" in {
     val entityType: String = "pair"
     val requiredAttributes: Map[String, String] = Map("case_sample_id" -> "sample",
       "control_sample_id" -> "sample",
@@ -86,7 +86,7 @@ class TSVParserSpec extends FlatSpec {
       "ref_fasta" -> None)
 
     assertResult(expect) {
-      EntityClient.improveAttributeNames(entityType, input, requiredAttributes)
+      EntityClient.colNamesToAttributeNames(entityType, input, requiredAttributes)
     }
   }
 
@@ -109,7 +109,7 @@ class TSVParserSpec extends FlatSpec {
       "ref_fasta" -> None)
 
     assertResult(expect) {
-      EntityClient.improveAttributeNames(entityType, input, requiredAttributes)
+      EntityClient.colNamesToAttributeNames(entityType, input, requiredAttributes)
     }
   }
 
@@ -128,7 +128,7 @@ class TSVParserSpec extends FlatSpec {
       "some_other_id" -> None)
     
     assertResult(expect) {
-      EntityClient.improveAttributeNames(entityType, input, requiredAttributes)
+      EntityClient.colNamesToAttributeNames(entityType, input, requiredAttributes)
     }
   }
 }
