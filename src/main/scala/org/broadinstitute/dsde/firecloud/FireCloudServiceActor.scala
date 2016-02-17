@@ -43,23 +43,39 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
     log.debug(requestContext.request.toString)
     route(requestContext)
   }
+  val appendTimestamp = mapHttpResponse { response =>
+    if (response.status.isFailure) {
+      try {
+        import spray.json._
+        import spray.json.DefaultJsonProtocol._
+        val dataMap = response.entity.asString.parseJson.convertTo[Map[String, JsValue]]
+        val withTimestamp = dataMap + ("timestamp" -> JsNumber(System.currentTimeMillis()))
+        response.withEntity(HttpEntity(withTimestamp.toJson.prettyPrint))
+      } catch {
+        // usually a failure to parse, if the response isn't JSON (e.g. HTML responses from Google)
+        case e: Exception => response
+      }
+    } else response
+  }
 
   // wraps route rejections in an ErrorReport
   import org.broadinstitute.dsde.firecloud.model.ErrorReport.errorReportRejectionHandler
 
   def receive = runRoute(
-    logRequests {
-      swaggerCorsService ~
-      swaggerUiService ~
-      testNihService ~
-      oAuthService.routes ~
-      userService.routes ~
-      nihSyncService.routes ~
-      pathPrefix("api") {
-        routes
-      } ~
-      pathPrefix("cookie-authed") {
-        cookieAuthedService.routes
+    appendTimestamp {
+      logRequests {
+        swaggerCorsService ~
+        swaggerUiService ~
+        testNihService ~
+        oAuthService.routes ~
+        userService.routes ~
+        nihSyncService.routes ~
+        pathPrefix("api") {
+          routes
+        } ~
+        pathPrefix("cookie-authed") {
+          cookieAuthedService.routes
+        }
       }
     }
   )
