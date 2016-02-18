@@ -38,31 +38,31 @@ javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8", "-target:jvm-1.8")
 
 libraryDependencies ++= {
-  val akkaV = "2.3.9"
+  val akkaV = "2.4.1"
   val sprayV = "1.3.3"
   Seq(
-    "org.broadinstitute.dsde.vault" %%  "vault-common"  % "0.1-17-0ee4ad5",
+    "org.broadinstitute.dsde.vault" %%  "vault-common"  % "0.1-19-ca8b927",
     "io.spray"            %%  "spray-can"     % sprayV,
     "io.spray"            %%  "spray-routing" % sprayV,
-    "io.spray"            %%  "spray-json"    % "1.3.1",
+    "io.spray"            %%  "spray-json"    % "1.3.2",
     "io.spray"            %%  "spray-client"  % sprayV,
     "io.spray"            %%  "spray-testkit" % sprayV    % "test",
-    "org.webjars"          %  "swagger-ui"    % "2.1.1",
+    "org.webjars"          %  "swagger-ui"    % "2.1.4",
     "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"  % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"    % akkaV,
-    ("com.google.api-client" % "google-api-client" % "1.20.0").exclude("com.google.guava", "guava-jdk5"),
-    "com.google.apis" % "google-api-services-storage" % "v1-rev30-1.20.0",
+    ("com.google.api-client" % "google-api-client" % "1.21.0").exclude("com.google.guava", "guava-jdk5"),
+    "com.google.apis" % "google-api-services-storage" % "v1-rev58-1.21.0",
     "joda-time"            % "joda-time"      % "2.9.1",
     "org.joda"             % "joda-convert"   % "1.8.1",
     "com.jason-goodwin"   %% "authentikat-jwt" % "0.4.1",
-    "com.ocpsoft"          % "ocpsoft-pretty-time" % "1.0.7",
-    "org.specs2"          %%  "specs2-core"   % "2.3.11"  % "test",
-    "org.scalatest"       %%  "scalatest"     % "2.2.1"   % "test",
-    "org.mock-server"      %  "mockserver-netty" % "3.9.2" % "test"
+    "org.ocpsoft.prettytime" % "prettytime" % "4.0.1.Final",
+    "org.specs2"          %%  "specs2-core"   % "3.7"  % "test",
+    "org.scalatest"       %%  "scalatest"     % "2.2.6"   % "test",
+    "org.mock-server"      %  "mockserver-netty" % "3.10.2" % "test"
     // -- Logging --
-    ,"ch.qos.logback" % "logback-classic" % "1.1.2"
+    ,"ch.qos.logback" % "logback-classic" % "1.1.3"
     ,"com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2"
   )
 }
