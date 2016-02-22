@@ -21,6 +21,7 @@ Add the following to your main PR comment
 - [ ] **Assign to submitter** to finalize
 - [ ] **Submitter**: Squash commits, rebase if necessary
 - [ ] **Submitter**: Verify all tests go green, including CI tests
+- [ ] **Ask QA if it's a convenient time to merge this PR**; hold off if they're in the middle of testing something
 - [ ] **Submitter**: Merge to develop 
 - [ ] **Submitter**: Delete branch after merge
 - [ ] **Submitter**: Check configuration files in Jenkins in case they need changes
