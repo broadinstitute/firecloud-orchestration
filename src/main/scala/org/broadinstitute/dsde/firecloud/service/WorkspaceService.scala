@@ -3,9 +3,12 @@ package org.broadinstitute.dsde.firecloud.service
 import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
+import org.broadinstitute.dsde.firecloud.model.{WorkspaceCreate, RawlsWorkspaceCreate}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.slf4j.LoggerFactory
 import spray.http.HttpMethods
+import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
 class WorkspaceServiceActor extends Actor with WorkspaceService {
@@ -24,8 +27,21 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
   val routes: Route =
     pathPrefix("workspaces") {
       pathEnd {
-        passthrough(rawlsWorkspacesRoot, HttpMethods.GET, HttpMethods.POST)
-     } ~
+        passthrough(rawlsWorkspacesRoot, HttpMethods.GET) ~
+        post {
+          entity(as[WorkspaceCreate]) { createRequest => requestContext =>
+            val rawlsCreate = RawlsWorkspaceCreate(
+              namespace = createRequest.namespace,
+              name = createRequest.name,
+              attributes = createRequest.attributes.getOrElse(Map.empty),
+              realm = if (createRequest.isProtected.getOrElse(false))
+                        Some(Map("groupName" -> FireCloudConfig.Nih.rawlsGroupName))
+                      else None)
+            val extReq = Post(FireCloudConfig.Rawls.workspacesUrl, rawlsCreate)
+            externalHttpPerRequest(requestContext, extReq)
+          }
+        }
+      } ~
       pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
         val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
         pathEnd {

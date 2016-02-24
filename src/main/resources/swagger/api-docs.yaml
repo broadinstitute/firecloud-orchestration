@@ -1954,6 +1954,9 @@ securityDefinitions:
     in: header
 definitions:
   WorkspaceIngest:
+    required:
+      - namespace
+      - name
     properties:
       namespace:
         type: string
@@ -1966,6 +1969,9 @@ definitions:
         additionalProperties:
           type: string
         description: Map of attributes
+      isProtected:
+        type: boolean
+        description: Whether or not the data should be restricted to dbGaP-enabled users.  Optional, default false.
   MethodConfigACL:
     type: array
     items:
