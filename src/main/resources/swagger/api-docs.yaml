@@ -1954,6 +1954,9 @@ securityDefinitions:
     in: header
 definitions:
   WorkspaceIngest:
+    required:
+      - namespace
+      - name
     properties:
       namespace:
         type: string
@@ -1961,6 +1964,9 @@ definitions:
       name:
         type: string
         description: New workspace name
+      realm:
+        $ref: '#/definitions/GroupRef'
+        description: An optional realm for the workspace
       attributes:
         type: object
         additionalProperties:
@@ -2315,3 +2321,9 @@ definitions:
         $ref: '#/definitions/UserInfo'
       enabled:
         $ref: '#/definitions/Enabled'
+  GroupRef:
+    description: a reference to a group
+    properties:
+      groupName:
+        type: string
+        description: ''
