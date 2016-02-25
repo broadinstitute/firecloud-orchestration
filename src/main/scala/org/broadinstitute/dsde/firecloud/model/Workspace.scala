@@ -11,6 +11,18 @@ case class WorkspaceEntity(
   createdBy: Option[String] = None,
   attributes: Option[Map[String, String]] = None)
 
+case class WorkspaceCreate(
+  namespace: String,
+  name: String,
+  attributes: Option[Map[String, String]] = None,
+  isProtected: Option[Boolean] = Some(false))
+
+case class RawlsWorkspaceCreate(
+  namespace: String,
+  name: String,
+  attributes: Map[String, String],
+  realm: Option[Map[String, String]] = None)
+
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
 
 case class EntityCopyDefinition(
