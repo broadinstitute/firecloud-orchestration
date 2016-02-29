@@ -3,11 +3,13 @@ package org.broadinstitute.dsde.firecloud.service
 import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
-import org.broadinstitute.dsde.firecloud.model.{WorkspaceCreate, RawlsWorkspaceCreate}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.slf4j.LoggerFactory
-import spray.http.HttpMethods
+import spray.json._
+import spray.http.{HttpMethods, HttpEntity}
+import spray.httpx.unmarshalling._
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
@@ -24,20 +26,22 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
   lazy val log = LoggerFactory.getLogger(getClass)
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
 
+  def transformSingleWorkspaceRequest(entity: HttpEntity): HttpEntity = {
+    entity.as[RawlsWorkspaceResponse] match {
+      case Right(rwr) => new UIWorkspaceResponse(rwr).toJson.prettyPrint
+      case Left(error) =>
+        log.error("Unable to unmarshal entity -- " + error.toString)
+        entity
+    }
+  }
+
   val routes: Route =
     pathPrefix("workspaces") {
       pathEnd {
         passthrough(rawlsWorkspacesRoot, HttpMethods.GET) ~
         post {
           entity(as[WorkspaceCreate]) { createRequest => requestContext =>
-            val rawlsCreate = RawlsWorkspaceCreate(
-              namespace = createRequest.namespace,
-              name = createRequest.name,
-              attributes = createRequest.attributes.getOrElse(Map.empty),
-              realm = if (createRequest.isProtected.getOrElse(false))
-                        Some(Map("groupName" -> FireCloudConfig.Nih.rawlsGroupName))
-                      else None)
-            val extReq = Post(FireCloudConfig.Rawls.workspacesUrl, rawlsCreate)
+            val extReq = Post(FireCloudConfig.Rawls.workspacesUrl, new RawlsWorkspaceCreate(createRequest))
             externalHttpPerRequest(requestContext, extReq)
           }
         }
@@ -45,7 +49,10 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
       pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
         val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
         pathEnd {
-          passthrough(workspacePath, HttpMethods.GET, HttpMethods.DELETE)
+          mapHttpResponseEntity(transformSingleWorkspaceRequest) {
+            passthrough(workspacePath, HttpMethods.GET)
+          } ~
+          passthrough(workspacePath, HttpMethods.DELETE)
         } ~
         path("methodconfigs") {
           passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
@@ -67,7 +74,12 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
           passthrough(workspacePath + "/acl", HttpMethods.GET, HttpMethods.PATCH)
         } ~
         path("clone") {
-          passthrough(workspacePath + "/clone", HttpMethods.POST)
+          post {
+            entity(as[WorkspaceCreate]) { createRequest => requestContext =>
+              val extReq = Post(workspacePath + "/clone", new RawlsWorkspaceCreate(createRequest))
+              externalHttpPerRequest(requestContext, extReq)
+            }
+          }
         } ~
         path ("lock") {
           passthrough(workspacePath + "/lock", HttpMethods.PUT)
