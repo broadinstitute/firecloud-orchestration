@@ -1,4 +1,4 @@
-Add the following to your main PR comment
+Main PR comment goes here
 =========================
 ```
 - [ ] **Submitter**: Rebase to develop. DO NOT SQUASH
@@ -21,10 +21,10 @@ Add the following to your main PR comment
 - [ ] **Assign to submitter** to finalize
 - [ ] **Submitter**: Squash commits, rebase if necessary
 - [ ] **Submitter**: Verify all tests go green, including CI tests
-- [ ] **Ask QA if it's a convenient time to merge this PR**; hold off if they're in the middle of testing something
 - [ ] **Submitter**: Merge to develop 
 - [ ] **Submitter**: Delete branch after merge
 - [ ] **Submitter**: Check configuration files in Jenkins in case they need changes
+- [ ] **Submitter**: **Test this change works on dev environment after deployment**. YOU own getting it fixed if dev isn't working for ANY reason!
 - [ ] **Submitter**: Verify swagger UI on dev server still works after deployment
 - [ ] **Submitter**: Inform other teams of any API changes via hipchat and/or email
 - [ ] **Submitter**: Mark JIRA issue as resolved once this checklist is completed
