@@ -524,6 +524,13 @@ paths:
           required: true
           type: string
           in: path
+        - name: workspace
+          description: Cloned workspace information
+          required: true
+          type: string
+          in: body
+          schema:
+            $ref: WorkspaceIngest
       responses:
         201:
           description: Successful Request
@@ -1957,6 +1964,7 @@ definitions:
     required:
       - namespace
       - name
+      - attributes
     properties:
       namespace:
         type: string
