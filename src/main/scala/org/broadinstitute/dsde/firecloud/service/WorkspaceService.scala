@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.slf4j.LoggerFactory
 import spray.json._
+import spray.json.DefaultJsonProtocol._
 import spray.http.{HttpMethods, HttpEntity}
 import spray.httpx.unmarshalling._
 import spray.httpx.SprayJsonSupport._
@@ -35,10 +36,21 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
     }
   }
 
+  def transformListWorkspaceRequest(entity: HttpEntity): HttpEntity = {
+    entity.as[List[RawlsWorkspaceResponse]] match {
+      case Right(lrwr) => lrwr.map(new UIWorkspaceResponse(_)).toJson.prettyPrint
+      case Left(error) =>
+        log.error("Unable to unmarshal entity -- " + error.toString)
+        entity
+    }
+  }
+
   val routes: Route =
     pathPrefix("workspaces") {
       pathEnd {
-        passthrough(rawlsWorkspacesRoot, HttpMethods.GET) ~
+        mapHttpResponseEntity(transformListWorkspaceRequest) {
+          passthrough(rawlsWorkspacesRoot, HttpMethods.GET)
+        } ~
         post {
           entity(as[WorkspaceCreate]) { createRequest => requestContext =>
             val extReq = Post(FireCloudConfig.Rawls.workspacesUrl, new RawlsWorkspaceCreate(createRequest))
