@@ -19,6 +19,12 @@ object ModelJsonProtocol {
   implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate)
   implicit val impRawlsWorkspaceCreate = jsonFormat4(RawlsWorkspaceCreate)
 
+  implicit val impSubmissionStats = jsonFormat3(SubmissionStats)
+  implicit val impRawlsWorkspace = jsonFormat11(RawlsWorkspace)
+  implicit val impRawlsWorkspaceResponse = jsonFormat4(RawlsWorkspaceResponse)
+  implicit val impUIWorkspace = jsonFormat12(UIWorkspace)
+  implicit val impUIWorkspaceResponse = jsonFormat4(UIWorkspaceResponse)
+
   implicit val impEntity = jsonFormat5(Entity)
   implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
   implicit val impEntityWithType = jsonFormat3(EntityWithType)

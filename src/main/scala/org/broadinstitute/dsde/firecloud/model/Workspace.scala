@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
+
 case class WorkspaceName(
   namespace: Option[String] = None,
   name: Option[String] = None)
@@ -14,14 +16,72 @@ case class WorkspaceEntity(
 case class WorkspaceCreate(
   namespace: String,
   name: String,
-  attributes: Option[Map[String, String]] = None,
+  attributes: Map[String, String],
   isProtected: Option[Boolean] = Some(false))
 
 case class RawlsWorkspaceCreate(
   namespace: String,
   name: String,
   attributes: Map[String, String],
-  realm: Option[Map[String, String]] = None)
+  realm: Option[Map[String, String]] = None) {
+  def this(wc: WorkspaceCreate) =
+    this(wc.namespace, wc.name, wc.attributes,
+      if (wc.isProtected.getOrElse(false))
+        Some(Map("groupName" -> FireCloudConfig.Nih.rawlsGroupName))
+      else None)
+}
+
+case class RawlsWorkspaceResponse(
+  accessLevel: Option[String] = None,
+  workspace: Option[RawlsWorkspace] = None,
+  workspaceSubmissionStats: Option[SubmissionStats] = None,
+  owners: Option[List[String]] = None)
+
+case class RawlsWorkspace(
+  workspaceId: String,
+  namespace: String,
+  name: String,
+  isLocked: Option[Boolean] = None,
+  createdBy: String,
+  createdDate: String,
+  lastModified: Option[String] = None,
+  attributes: Map[String, String],
+  bucketName: String,
+  accessLevels: Map[String, Map[String, String]],
+  realm: Option[Map[String, String]])
+
+case class SubmissionStats(
+  lastSuccessDate: Option[String] = None,
+  lastFailureDate: Option[String] = None,
+  runningSubmissionsCount: Int)
+
+case class UIWorkspaceResponse(
+  accessLevel: Option[String] = None,
+  workspace: Option[UIWorkspace] = None,
+  workspaceSubmissionStats: Option[SubmissionStats] = None,
+  owners: Option[List[String]] = None) {
+  def this(rwr: RawlsWorkspaceResponse) =
+    this(rwr.accessLevel, rwr.workspace.map(new UIWorkspace(_)), rwr.workspaceSubmissionStats, rwr.owners)
+}
+
+case class UIWorkspace(
+  workspaceId: String,
+  namespace: String,
+  name: String,
+  isLocked: Option[Boolean] = None,
+  createdBy: String,
+  createdDate: String,
+  lastModified: Option[String] = None,
+  attributes: Map[String, String],
+  bucketName: String,
+  accessLevels: Map[String, Map[String, String]],
+  realm: Option[Map[String, String]],
+  isProtected: Boolean) {
+  def this(rw: RawlsWorkspace) =
+    this(rw.workspaceId, rw.namespace, rw.name, rw.isLocked, rw.createdBy, rw.createdDate,
+      rw.lastModified, rw.attributes, rw.bucketName, rw.accessLevels, rw.realm,
+      rw.realm.flatMap(_.get("groupName").map(_ == FireCloudConfig.Nih.rawlsGroupName)).getOrElse(false))
+}
 
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
 
