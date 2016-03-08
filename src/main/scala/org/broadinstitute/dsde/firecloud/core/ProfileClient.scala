@@ -34,6 +34,21 @@ object ProfileClient {
   case class SyncSelf(userInfo: UserInfo)
 
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
+
+  def calculateExpireTime(profile:Profile): Long = {
+    (profile.lastLinkTime, profile.linkExpireTime) match {
+      case (Some(lastLink), Some(expire)) if (lastLink < DateUtils.nowMinus24Hours && expire > DateUtils.nowPlus24Hours) =>
+        // The user has not logged in to FireCloud within 24 hours, AND the user's expiration is
+        // more than 24 hours in the future. Reset the user's expiration.
+        DateUtils.nowPlus24Hours
+      case (Some(lastLink), Some(expire)) =>
+        // User in good standing; return the expire time unchanged
+        expire
+      case _ =>
+        // Either last-link or expire is missing. Reset the user's expiration.
+        DateUtils.nowPlus24Hours
+    }
+  }
 }
 
 class ProfileClientActor(requestContext: RequestContext) extends Actor with FireCloudRequestBuilding {
@@ -119,24 +134,18 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                 case Some(nihUsername) =>
                   // we have a linked profile.
 
-                  // if we have no record of the user logging in or the user's expire time, default to 0
-                  val lastLinkSeconds = profile.lastLinkTime.getOrElse(0L)
-                  var linkExpireSeconds = profile.linkExpireTime.getOrElse(0L)
+                  // get the current link expiration time
+                  val profileExpiration = profile.linkExpireTime.getOrElse(0L)
 
-                  val howOld = DateUtils.hoursSince(lastLinkSeconds)
-                  val howSoonExpire = DateUtils.secondsSince(linkExpireSeconds)
+                  // calculate the possible new link expiration time
+                  val linkExpireSeconds = if (updateExpiration) {
+                    calculateExpireTime(profile)
+                  } else {
+                    profileExpiration
+                  }
 
-                  // if the user's link has expired, the user must re-link.
-                  // NB: we use a separate val here in case we need to change the logic. For instance, we could
-                  // change the logic later to be "link has expired OR user hasn't logged in within 24 hours"
-                  val loginRequired = (howSoonExpire >= 0)
-
-                  // if the user has not logged in to FireCloud within 24 hours, AND the user's expiration is
-                  // further out than 24 hours, reset the user's expiration.
-                  if (updateExpiration && howOld >= 24 && Math.abs(howSoonExpire) >= (24*60*60)) {
-                    // generate time now+24 hours
-                    linkExpireSeconds = DateUtils.nowPlus24Hours
-                    // update linkExpireTime in Thurloe for this user
+                  // if the link expiration time needs updating (i.e. is different than what's in the profile), do the updating
+                  if (linkExpireSeconds != profileExpiration) {
                     val expireKVP = FireCloudKeyValue(Some("linkExpireTime"), Some(linkExpireSeconds.toString))
                     val expirePayload = ThurloeKeyValue(Some(userInfo.getUniqueId), Some(expireKVP))
 
@@ -157,6 +166,13 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                           s"but the system encountered an unexpected error updating link expiration: " + e.getMessage, e)
                     }
                   }
+
+                  val howSoonExpire = DateUtils.secondsSince(linkExpireSeconds)
+
+                  // if the user's link has expired, the user must re-link.
+                  // NB: we use a separate val here in case we need to change the logic. For instance, we could
+                  // change the logic later to be "link has expired OR user hasn't logged in within 24 hours"
+                  val loginRequired = (howSoonExpire >= 0)
 
                   getNIHStatusResponse(pipeline, loginRequired, profile, linkExpireSeconds)
 
