@@ -1,7 +1,5 @@
 package org.broadinstitute.dsde.firecloud.core
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
@@ -13,20 +11,18 @@ import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireC
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 
 import spray.client.pipelining._
+import spray.http.HttpEncodings._
+import spray.http.HttpHeaders.`Accept-Encoding`
 import spray.http.HttpResponse
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
+import spray.httpx.encoding.Gzip
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsValue
 import spray.routing.RequestContext
 
-import scala.concurrent.duration.Duration
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-
-import spray.httpx.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
-
 
 object GetEntitiesWithType {
   case class ProcessUrl(url: String)
@@ -43,7 +39,7 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
   def receive = {
     case ProcessUrl(url: String) =>
       log.debug("Processing entity type map for url: " + url)
-      val pipeline = authHeaders(requestContext) ~> sendReceive
+      val pipeline = authHeaders(requestContext) ~> addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
       val entityTypesFuture: Future[HttpResponse] = pipeline { Get(url) }
       val allEntitiesResponse = entityTypesFuture.flatMap { response =>
         response.status match {

@@ -22,37 +22,42 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
   def respondWithJSON = respondWithMediaType(`application/json`)
 
   def passthrough(unencodedPath: String, methods: HttpMethod*) = methods map { inMethod =>
-    val outMethod = new RequestBuilder(inMethod)
-
-    val path = encodeUri(unencodedPath)
-
-    // POST, PUT, PATCH
-    if (inMethod.isEntityAccepted) {
-      method(inMethod) {
-        respondWithJSON { requestContext =>
-          externalHttpPerRequest(requestContext, outMethod(path, requestContext.request.entity))
-        }
-      }
-    }
-    else {
-      // GET, DELETE
-      method(inMethod) { requestContext =>
-        externalHttpPerRequest(requestContext, outMethod(path))
-      }
-    }
-
+    generateExternalHttpPerRequestForMethod(requestCompression = false, unencodedPath, inMethod)
   } reduce (_ ~ _)
 
-  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String) = pathPrefix(ourEndpointPath) {
+  def passthrough(requestCompression: Boolean, unencodedPath: String, methods: HttpMethod*) = methods map { inMethod =>
+    generateExternalHttpPerRequestForMethod(requestCompression, unencodedPath, inMethod)
+  } reduce (_ ~ _)
+
+  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = false) = pathPrefix(ourEndpointPath) {
     extract(_.request.method) { httpMethod =>
       unmatchedPath { remaining =>
         parameterMap { params =>
-          passthrough(Uri(encodeUri(targetEndpointUrl + remaining)).withQuery(params).toString, httpMethod)
+          passthrough(requestCompression, Uri(encodeUri(targetEndpointUrl + remaining)).withQuery(params).toString, httpMethod)
         }
       }
     }
   }
 
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
+
+  private def generateExternalHttpPerRequestForMethod(requestCompression: Boolean, unencodedPath: String, inMethod: HttpMethod) = {
+    val outMethod = new RequestBuilder(inMethod)
+    val path = encodeUri(unencodedPath)
+    // POST, PUT, PATCH
+    if (inMethod.isEntityAccepted) {
+      method(inMethod) {
+        respondWithJSON { requestContext =>
+          externalHttpPerRequest(requestCompression, requestContext, outMethod(path, requestContext.request.entity))
+        }
+      }
+    }
+    else {
+      // GET, DELETE
+      method(inMethod) { requestContext =>
+        externalHttpPerRequest(requestCompression, requestContext, outMethod(path))
+      }
+    }
+  }
 
 }
