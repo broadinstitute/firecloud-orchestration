@@ -13,6 +13,10 @@ object DateUtils {
     nowDateTime.plusDays(30).getMillis / EPOCH
   }
 
+  def nowMinus30Days: Long = {
+    nowDateTime.minusDays(30).getMillis / EPOCH
+  }
+
   def nowPlus24Hours: Long = {
     nowDateTime.plusHours(24).getMillis / EPOCH
   }
@@ -21,6 +25,13 @@ object DateUtils {
     nowDateTime.minusHours(24).getMillis / EPOCH
   }
 
+  def nowPlus1Hour: Long = {
+    nowDateTime.plusHours(1).getMillis / EPOCH
+  }
+
+  def nowMinus1Hour: Long = {
+    nowDateTime.minusHours(1).getMillis / EPOCH
+  }
 
   def hoursSince(seconds: Long): Int = {
     Hours.hoursBetween(dtFromSeconds(seconds), nowDateTime).getHours
