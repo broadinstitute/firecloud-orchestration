@@ -48,7 +48,7 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
       val allEntitiesResponse = entityTypesFuture.flatMap { response =>
         response.status match {
           case x if x == OK =>
-            val entityTypes: List[String] = unmarshal[List[String]].apply(response)
+            val entityTypes: List[String] = unmarshal[Map[String, Int]].apply(response).keys.toList
             val entityUrls: List[String] = entityTypes.map(s => FireCloudDirectiveUtils.encodeUri(s"$url/$s"))
             val entityFutures: List[Future[HttpResponse]] = entityUrls map { entitiesUrl => pipeline { Get(entitiesUrl) } }
             getEntitiesForTypesResponse(Future sequence entityFutures, entityTypes)
