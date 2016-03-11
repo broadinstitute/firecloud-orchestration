@@ -26,11 +26,9 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
     pathPrefix("workspaces" / Segment / Segment) { (workspaceNamespace, workspaceName) =>
       val baseRawlsEntitiesUrl = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
       path("entities_with_type") {
-        get {
-          compressResponseIfRequested() { requestContext =>
+        get { requestContext =>
             perRequest(requestContext, Props(new GetEntitiesWithTypeActor(requestContext)),
               GetEntitiesWithType.ProcessUrl(encodeUri(baseRawlsEntitiesUrl)))
-          }
         }
       } ~
       pathPrefix("entities") {
