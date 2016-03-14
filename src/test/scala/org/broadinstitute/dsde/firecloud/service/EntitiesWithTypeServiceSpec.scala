@@ -47,7 +47,7 @@ class EntitiesWithTypeServiceSpec extends ServiceSpec with EntityService {
         request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + validFireCloudPath + "entities").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody(List("participant", "sample").toJson.compactPrint).withStatusCode(OK.intValue)
+          .withHeaders(MockUtils.header).withBody(Map("participant"->1, "sample"->1).toJson.compactPrint).withStatusCode(OK.intValue)
       )
     workspaceServer
       .when(
