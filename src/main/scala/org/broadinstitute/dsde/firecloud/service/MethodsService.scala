@@ -1,17 +1,15 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.model.MethodRepository._
-import spray.http.StatusCodes
-import spray.routing.{RejectionHandler, MalformedRequestContentRejection, HttpService, Route}
 import akka.actor.{Actor, Props}
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{AgoraPermissionActor, AgoraPermissionHandler}
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, HttpResponseWithErrorReport, ErrorReport}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig}
-import org.slf4j.{ LoggerFactory}
-import spray.http.StatusCodes._
+import org.slf4j.LoggerFactory
+import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
+import spray.routing.{HttpService, Route}
 
 class MethodsServiceActor extends Actor with MethodsService {
   def actorRefFactory = context

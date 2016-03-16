@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import org.broadinstitute.dsde.firecloud.model.{HttpResponseWithErrorReport, ErrorReport}
+import org.broadinstitute.dsde.firecloud.model.HttpResponseWithErrorReport
 import org.broadinstitute.dsde.firecloud.service.PerRequest._
 import org.broadinstitute.dsde.firecloud.HttpClient
 import spray.http.StatusCodes._
@@ -123,5 +123,10 @@ trait PerRequestCreator {
 
   /** convenience for HttpClient */
   def externalHttpPerRequest(r: RequestContext, request: HttpRequest) =
-    perRequest(r, Props(new HttpClient(r)), HttpClient.PerformExternalRequest(request))
+    perRequest(r, Props(new HttpClient(r)), HttpClient.PerformExternalRequest(requestCompression = false, request))
+
+  /** overloaded convenience method for HttpClient */
+  def externalHttpPerRequest(requestCompression: Boolean, r: RequestContext, request: HttpRequest) =
+    perRequest(r, Props(new HttpClient(r)), HttpClient.PerformExternalRequest(requestCompression, request))
+
 }
