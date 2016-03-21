@@ -693,6 +693,48 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importEntities:
+    post:
+      tags:
+        - Entities
+      operationId: importEntities
+      summary: Import entities from a tsv file
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Destination Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Destination Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entities
+          in: formData
+          description: A valid TSV import file
+          required: true
+          type: file
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Bad Request
+        404:
+          description: Source Workspace not found
+        500:
+          description: Internal Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
     post:
       tags:
@@ -1718,6 +1760,30 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /register:
+    get:
+      tags:
+        - Profile
+      operationId: getUserStatus
+      summary: Passes through to the Rawls userinfo API and returns its response
+      responses:
+        200:
+          description: OK
+          produces:
+          - application/json
+          schema:
+            $ref: '#/definitions/RawlsMe'
+        404:
+          description: User Not Found.
+        500:
+          description: Internal Server Error determining Rawls user status.
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
   /register/profile:
     get:
       tags:
@@ -2315,6 +2381,9 @@ definitions:
       ldap:
         type: boolean
         description: User enabled in LDAP?
+      allUsersGroup:
+        type: boolean
+        description: User is a member of the "All Users" group?
   UserInfo:
     properties:
       userSubjectId:
@@ -2329,3 +2398,17 @@ definitions:
         $ref: '#/definitions/UserInfo'
       enabled:
         $ref: '#/definitions/Enabled'
+  ExtendedEnabled:
+    allOf:
+      - $ref: '#/definitions/Enabled'
+    properties:
+      allUsersGroup:
+        type: boolean
+        description: User is a member of the "All Users" group?
+  RawlsMe:
+    properties:
+      userInfo:
+        $ref: '#/definitions/UserInfo'
+      enabled:
+        $ref: '#/definitions/ExtendedEnabled'
+
