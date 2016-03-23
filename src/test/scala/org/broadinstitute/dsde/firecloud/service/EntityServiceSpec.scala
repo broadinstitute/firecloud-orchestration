@@ -211,7 +211,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
     }
 
     "when calling bulk entity delete" - {
-      "response is OK" in {
+      "response is OK" ignore {
         Post(validFireCloudEntitiesBulkDeletePath, validEntityDelete) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should be(OK)
         }
@@ -219,7 +219,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
     }
 
     "when calling bulk entity delete with an invalid payload" - {
-      "BadRequest is returned" in {
+      "BadRequest is returned" ignore {
         Post(validFireCloudEntitiesBulkDeletePath, invalidEntityDelete) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should be(BadRequest)
         }
@@ -227,7 +227,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
     }
 
     "when calling bulk entity delete and expecting mixed success/fail" - {
-      "InternalServerError is returned with an ErrorReport" in {
+      "InternalServerError is returned with an ErrorReport" ignore {
         Post(validFireCloudEntitiesBulkDeletePath, mixedFailEntityDelete) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should be(InternalServerError)
           errorReportCheck("FireCloud", InternalServerError)

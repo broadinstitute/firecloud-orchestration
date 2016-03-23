@@ -779,45 +779,46 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
-    post:
-      tags:
-      - Entities
-      operationId: deleteEntities
-      summary: Bulk delete entities from a workspace
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Destination Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Destination Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: body
-          description: Entities to delete
-          required: true
-          in: body
-          schema:
-            $ref: DeleteEntities
-      responses:
-        200:
-          description: Successful Request
-        400:
-          description: Malformed Request
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+# Entity delete endpoint commented out until GAWB-422 is complete
+#  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
+#    post:
+#      tags:
+#      - Entities
+#      operationId: deleteEntities
+#      summary: Bulk delete entities from a workspace
+#      produces:
+#        - application/json
+#      parameters:
+#        - name: workspaceNamespace
+#          description: Destination Workspace Namespace
+#          required: true
+#          type: string
+#          in: path
+#        - name: workspaceName
+#          description: Destination Workspace Name
+#          required: true
+#          type: string
+#          in: path
+#        - name: body
+#          description: Entities to delete
+#          required: true
+#          in: body
+#          schema:
+#            $ref: DeleteEntities
+#      responses:
+#        200:
+#          description: Successful Request
+#        400:
+#          description: Malformed Request
+#        500:
+#          description: Internal Server Error
+#      security:
+#        - bearer:
+#        - googleoauth:
+#            - openid
+#            - email
+#            - profile
+#            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
       type: Entity
@@ -941,50 +942,51 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
-    delete:
-      tags:
-        - Entities
-      operationId: deleteEntity
-      summary: Delete entity in a workspace
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: entityType
-          description: Entity Type
-          required: true
-          type: string
-          in: path
-        - name: entityName
-          description: Entity Name
-          required: true
-          type: string
-          in: path
-      responses:
-        200:
-          description: No response was specified
-        204:
-          description: Successful Request
-        404:
-          description: Workspace or Entity does not exist
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+# Entity delete endpoint commented out until GAWB-422 is complete
+#    delete:
+#      tags:
+#        - Entities
+#      operationId: deleteEntity
+#      summary: Delete entity in a workspace
+#      produces:
+#        - application/json
+#      parameters:
+#        - name: workspaceNamespace
+#          description: Workspace Namespace
+#          required: true
+#          type: string
+#          in: path
+#        - name: workspaceName
+#          description: Workspace Name
+#          required: true
+#          type: string
+#          in: path
+#        - name: entityType
+#          description: Entity Type
+#          required: true
+#          type: string
+#          in: path
+#        - name: entityName
+#          description: Entity Name
+#          required: true
+#          type: string
+#          in: path
+#      responses:
+#        200:
+#          description: No response was specified
+#        204:
+#          description: Successful Request
+#        404:
+#          description: Workspace or Entity does not exist
+#        500:
+#          description: Internal Server Error
+#      security:
+#        - bearer:
+#        - googleoauth:
+#            - openid
+#            - email
+#            - profile
+#            - https://www.googleapis.com/auth/devstorage.full_control
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       type: file
