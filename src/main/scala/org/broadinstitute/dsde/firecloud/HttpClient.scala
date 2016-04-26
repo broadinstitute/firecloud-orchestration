@@ -73,7 +73,7 @@ class HttpClient (requestContext: RequestContext) extends Actor
 
 trait LogRequestBuilding extends spray.httpx.RequestBuilding {
   def logRequest(log: Logger): RequestTransformer = { request =>
-    log.debug("Sending request: " + request)
+    if (log.isDebugEnabled) {log.debug("Sending request: " + request)}
     request
   }
 }
