@@ -55,11 +55,9 @@ class HttpClient (requestContext: RequestContext) extends Actor
     val pipeline: HttpRequest => Future[HttpResponse] =
       requestCompression match {
         case true =>
-          authHeaders(requestContext) ~> addHeaders(Cookie(requestContext.request.cookies), `Accept-Encoding`(gzip)) ~>
-            logRequest(log) ~> sendReceive ~> decode(Gzip)
+          authHeaders(requestContext) ~> addHeaders(`Accept-Encoding`(gzip)) ~> logRequest(log) ~> sendReceive ~> decode(Gzip)
         case _ =>
-          authHeaders(requestContext) ~> addHeader(Cookie(requestContext.request.cookies)) ~>
-            logRequest(log) ~> sendReceive
+          authHeaders(requestContext) ~> logRequest(log) ~> sendReceive
       }
     pipeline(externalRequest) onComplete {
       case Success(response) =>
@@ -75,7 +73,7 @@ class HttpClient (requestContext: RequestContext) extends Actor
 
 trait LogRequestBuilding extends spray.httpx.RequestBuilding {
   def logRequest(log: Logger): RequestTransformer = { request =>
-    log.debug("Sending request: " + request)
+    if (log.isDebugEnabled) {log.debug("Sending request: " + request)}
     request
   }
 }
