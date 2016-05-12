@@ -1609,6 +1609,25 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /api/submissions/queueStatus:
+    get:
+      responses:
+        '200':
+          description: Successful Request
+        '500':
+          description: Internal Error
+      description: List workflow counts by queueing state
+      tags:
+        - Submissions
+      summary: workflow queue status
+      operationId: workflowQueueStatus
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/updateAttributes:
     patch:
       tags:
