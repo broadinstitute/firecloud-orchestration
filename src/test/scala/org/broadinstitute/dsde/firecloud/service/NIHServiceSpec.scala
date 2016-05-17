@@ -202,8 +202,7 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
       FireCloudKeyValue(Some("programLocationState"), Some("state")),
       FireCloudKeyValue(Some("programLocationCountry"), Some("country")),
       FireCloudKeyValue(Some("pi"), Some("testPI")),
-      FireCloudKeyValue(Some("nonProfitStatus"), Some("NonProfit")),
-      FireCloudKeyValue(Some("billingAccountName"), Some("Test Account"))
+      FireCloudKeyValue(Some("nonProfitStatus"), Some("NonProfit"))
     ) ::: (linkedNihUsername match {
       case Some(x:String) => List(FireCloudKeyValue(Some("linkedNihUsername"), Some(x)))
       case _ => List.empty[FireCloudKeyValue]

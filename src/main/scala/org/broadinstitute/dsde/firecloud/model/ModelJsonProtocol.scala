@@ -101,8 +101,8 @@ object ModelJsonProtocol {
 
   implicit val impFireCloudKeyValue = jsonFormat2(FireCloudKeyValue)
   implicit val impThurloeKeyValue = jsonFormat2(ThurloeKeyValue)
-  implicit val impBasicProfile = jsonFormat11(BasicProfile)
-  implicit val impProfile = jsonFormat15(Profile.apply)
+  implicit val impBasicProfile = jsonFormat10(BasicProfile)
+  implicit val impProfile = jsonFormat14(Profile.apply)
   implicit val impProfileWrapper = jsonFormat2(ProfileWrapper)
 
 
