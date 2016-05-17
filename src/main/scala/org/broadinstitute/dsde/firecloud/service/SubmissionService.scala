@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.Actor
 import org.slf4j.LoggerFactory
+import spray.http.HttpMethods
 import spray.routing.{HttpService, Route}
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
@@ -24,5 +25,10 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
           val path = FireCloudConfig.Rawls.submissionsUrl.format(workspaceNamespace, workspaceName)
           passthroughAllPaths("submissions", path)
         }
+    } ~
+    path("submissions" / "queueStatus") {
+      pathEnd {
+        passthrough(requestCompression = true, FireCloudConfig.Rawls.submissionQueueStatusUrl, HttpMethods.GET)
+      }
     }
 }
