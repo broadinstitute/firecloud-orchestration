@@ -22,8 +22,7 @@ case class BasicProfile (
     programLocationState: String,
     programLocationCountry: String,
     pi: String,
-    nonProfitStatus: String,
-    billingAccountName: Option[String]
+    nonProfitStatus: String
   ) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
   require(ProfileValidator.nonEmpty(lastName), "last name must be non-empty")
@@ -48,7 +47,6 @@ case class Profile (
     programLocationCountry: String,
     pi: String,
     nonProfitStatus: String,
-    billingAccountName: Option[String] = None,
     linkedNihUsername: Option[String] = None,
     lastLinkTime: Option[Long] = None,
     linkExpireTime: Option[Long] = None,
@@ -87,7 +85,6 @@ object Profile {
       programLocationCountry = mappedKVPs.get("programLocationCountry").get,
       pi = mappedKVPs.get("pi").get,
       nonProfitStatus = mappedKVPs.get("nonProfitStatus").get,
-      billingAccountName = mappedKVPs.get("billingAccountName"),
       linkedNihUsername = mappedKVPs.get("linkedNihUsername"),
       lastLinkTime = mappedKVPs.get("lastLinkTime") match {
         case Some(time) => Some(time.toLong)

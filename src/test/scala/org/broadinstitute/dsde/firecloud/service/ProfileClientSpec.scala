@@ -20,7 +20,6 @@ class ProfileClientSpec extends FreeSpec {
       "programLocationCountry",
       "pi",
       "nonProfitStatus",
-      Some("billingAccountName"),
       Some("linkedNihUsername"),
       lastLinkTime, //lastLinkTime
       linkExpireTime, //linkExpireTime

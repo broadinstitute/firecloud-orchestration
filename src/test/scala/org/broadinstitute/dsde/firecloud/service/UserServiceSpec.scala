@@ -34,8 +34,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
     programLocationState = randomAlpha(),
     programLocationCountry = randomAlpha(),
     pi = randomAlpha(),
-    nonProfitStatus = randomAlpha(),
-    billingAccountName = Some(randomAlpha())
+    nonProfitStatus = randomAlpha()
   )
   val allProperties: Map[String, String] = fullProfile.propertyValueMap
 
