@@ -22,6 +22,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
   var workspaceServer: ClientAndServer = _
   val validFireCloudEntitiesPath = "/workspaces/broad-dsde-dev/valid/entities"
   val validFireCloudEntitiesSamplePath = "/workspaces/broad-dsde-dev/valid/entities/sample"
+  val validFireCloudEntityQuerySamplePath = "/workspaces/broad-dsde-dev/valid/entityQuery/sample"
   val validFireCloudEntitiesCopyPath = "/workspaces/broad-dsde-dev/valid/entities/copy"
   val validFireCloudEntitiesBulkDeletePath = "/workspaces/broad-dsde-dev/valid/entities/delete"
   val invalidFireCloudEntitiesPath = "/workspaces/broad-dsde-dev/invalid/entities"
@@ -74,6 +75,17 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
         request()
           .withMethod("GET")
           .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid"))
+          .withHeader(MockUtils.authHeader))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+    // Valid entity query case
+    workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entityQueryPath.format("broad-dsde-dev", "valid") + "/sample")
           .withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
@@ -161,6 +173,22 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
     "when calling GET on valid entities" - {
       "OK response is returned" in {
         Get(validFireCloudEntitiesPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should be(OK)
+        }
+      }
+    }
+
+    "when calling GET on valid entityQuery with no params" - {
+      "OK response is returned" in {
+        Get(validFireCloudEntityQuerySamplePath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should be(OK)
+        }
+      }
+    }
+
+    "when calling GET on valid entityQuery with params" - {
+      "OK response is returned" in {
+        Get(validFireCloudEntityQuerySamplePath + "?page=1&pageSize=1") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should be(OK)
         }
       }

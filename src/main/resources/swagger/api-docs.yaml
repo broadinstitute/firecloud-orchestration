@@ -1020,6 +1020,74 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
+    get:
+      type: Entity
+      tags:
+        - Entities
+      operationId: entityQuery
+      summary: Paginated query for entities in a workspace
+      produces:
+        - application/json
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entityType
+          description: Entity Type
+          required: true
+          type: string
+          in: path
+        - name: page
+          description: Page number, 1-indexed (default 1)
+          default: 1
+          minimum: 1
+          type: number
+          in: query
+        - name: pageSize
+          description: Page size (default 10)
+          default: 10
+          minimum: 1
+          type: number
+          in: query
+        - name: sortField
+          description: Sort field (default "name")
+          default: name
+          type: string
+          in: query
+        - name: sortDirection
+          description: Sort direction (asc or desc, default asc)
+          default: asc
+          enum: ["asc","desc"]
+          type: string
+          in: query
+        - name: filterTerms
+          description: Filter terms
+          type: string
+          in: query
+      responses:
+        200:
+          description: List of entities in workspace
+          schema:
+            $ref: '#/definitions/EntityQueryResponse'
+        404:
+          description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
     get:
       tags:
@@ -2284,6 +2352,76 @@ definitions:
       entityName:
         type: string
         description: Entity Name
+  Entity:
+    description: ''
+    required:
+      - name
+      - entityType
+      - attributes
+    properties:
+      name:
+        type: string
+        description: The name of the entity
+      entityType:
+        type: string
+        description: The type of the entity
+      attributes:
+        type: ''
+        description: Map[String,Attribute]
+  EntityQueryParameters:
+    description: ''
+    required:
+      - page
+      - pageSize
+      - sortField
+      - sortDirection
+    properties:
+      page:
+        type: number
+        description: page number, 1-indexed positive integer
+      pageSize:
+        type: number
+        description: count of items per page, positive integer
+      sortField:
+        type: string
+        description: field to sort by
+      sortDirection:
+        type: string
+        description: asc or desc
+      filterTerms:
+        type: string
+        descriptions: terms to filter results by
+  EntityQueryResultMetadata:
+    description: ''
+    required:
+      - unfilteredCount
+      - filteredCount
+      - filteredPageCount
+    properties:
+      unfilteredCount:
+        type: number
+        description: count of results before filtering
+      filteredCount:
+        type: number
+        description: count of results after filtering
+      filteredPageCount:
+        type: number
+        description: count of pages after filtering; honors pageSize parameter
+  EntityQueryResponse:
+    description: ''
+    required:
+      - parameters
+      - resultMetadata
+      - results
+    properties:
+      parameters:
+        $ref: '#/definitions/EntityQueryParameters'
+      resultMetadata:
+        $ref: '#/definitions/EntityQueryResultMetadata'
+      results:
+        type: array
+        items:
+          $ref: '#/definitions/Entity'
   MethodID:
     properties:
       methodNamespace:
