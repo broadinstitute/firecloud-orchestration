@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{EntityDeleteDefinition, EntityCopyDefinition, EntityCopyWithDestinationDefinition, WorkspaceName}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.slf4j.LoggerFactory
-import spray.http.HttpMethods
+import spray.http.{Uri, HttpMethods}
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
@@ -69,6 +69,24 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
           } ~
           path(Segment) { entityName =>
             passthrough(requestCompression = true, entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
+          }
+        }
+      } ~
+      pathPrefix("entityQuery" / Segment) { entityType =>
+        val baseRawlsEntityQueryUrl = FireCloudConfig.Rawls.entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)
+        val baseEntityQueryUri = Uri(baseRawlsEntityQueryUrl)
+
+        pathEnd {
+          get { requestContext =>
+            val requestUri = requestContext.request.uri
+
+            val entityQueryUri = baseEntityQueryUri
+              .withPath(baseEntityQueryUri.path ++ Uri.Path.SingleSlash ++ Uri.Path(entityType))
+              .withQuery(requestUri.query)
+
+            // we use externalHttpPerRequest instead of passthrough; passthrough does not handle query params well.
+            val extReq = Get(entityQueryUri)
+            externalHttpPerRequest(requestCompression = true, requestContext, extReq)
           }
         }
       }
