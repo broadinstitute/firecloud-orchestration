@@ -16,6 +16,7 @@ case class BasicProfile (
     firstName: String,
     lastName: String,
     title: String,
+    contactEmail: Option[String],
     institute: String,
     institutionalProgram: String,
     programLocationCity: String,
@@ -27,6 +28,7 @@ case class BasicProfile (
   require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
   require(ProfileValidator.nonEmpty(lastName), "last name must be non-empty")
   require(ProfileValidator.nonEmpty(title), "title must be non-empty")
+  require(ProfileValidator.emptyOrValidEmail(contactEmail), "contact email must be valid or empty")
   require(ProfileValidator.nonEmpty(institute), "institute must be non-empty")
   require(ProfileValidator.nonEmpty(institutionalProgram), "institutional program must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationCity), "program location city must be non-empty")
@@ -40,6 +42,7 @@ case class Profile (
     firstName: String,
     lastName: String,
     title: String,
+    contactEmail: Option[String],
     institute: String,
     institutionalProgram: String,
     programLocationCity: String,
@@ -55,6 +58,7 @@ case class Profile (
   require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
   require(ProfileValidator.nonEmpty(lastName), "last name must be non-empty")
   require(ProfileValidator.nonEmpty(title), "title must be non-empty")
+  require(ProfileValidator.emptyOrValidEmail(contactEmail), "contact email must be valid or empty")
   require(ProfileValidator.nonEmpty(institute), "institute must be non-empty")
   require(ProfileValidator.nonEmpty(institutionalProgram), "institutional program must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationCity), "program location city must be non-empty")
@@ -67,7 +71,7 @@ case class Profile (
 object Profile {
 
   // increment this number every time you make a change to the user-provided profile fields
-  val currentVersion:Int = 2
+  val currentVersion:Int = 3
 
   def apply(wrapper: ProfileWrapper) = {
 
@@ -78,6 +82,7 @@ object Profile {
       firstName = mappedKVPs.get("firstName").get,
       lastName = mappedKVPs.get("lastName").get,
       title = mappedKVPs.get("title").get,
+      contactEmail = mappedKVPs.get("contactEmail"),
       institute = mappedKVPs.get("institute").get,
       institutionalProgram = mappedKVPs.get("institutionalProgram").get,
       programLocationCity = mappedKVPs.get("programLocationCity").get,
@@ -117,8 +122,15 @@ case class NIHStatus(
 )
 
 object ProfileValidator {
+  private val emailRegex = """^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$""".r
   def nonEmpty(field: String): Boolean = !field.trim.isEmpty
   def nonEmpty(field: Option[String]): Boolean = !field.getOrElse("").trim.isEmpty
+  def emptyOrValidEmail(field: Option[String]): Boolean = field match {
+    case None => true
+    case Some(x) if x.isEmpty => true
+    case Some(x) if emailRegex.findFirstMatchIn(x).isDefined => true
+    case _ => false
+  }
 }
 
 trait mappedPropVals {
