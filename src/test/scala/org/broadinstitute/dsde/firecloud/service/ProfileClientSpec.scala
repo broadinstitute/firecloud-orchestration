@@ -13,6 +13,7 @@ class ProfileClientSpec extends FreeSpec {
       "firstName",
       "lastName",
       "title",
+      Option.empty,
       "institute",
       "institutionalProgram",
       "programLocationCity",

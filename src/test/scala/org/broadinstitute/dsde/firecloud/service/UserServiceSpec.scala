@@ -28,6 +28,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
     firstName= randomAlpha(),
     lastName = randomAlpha(),
     title = randomAlpha(),
+    contactEmail = Option.empty,
     institute = randomAlpha(),
     institutionalProgram = randomAlpha(),
     programLocationCity = randomAlpha(),
