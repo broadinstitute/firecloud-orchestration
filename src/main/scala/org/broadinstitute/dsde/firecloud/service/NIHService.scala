@@ -48,19 +48,15 @@ trait NIHService extends HttpService with PerRequestCreator with FireCloudDirect
                 val lastLinkTime = DateUtils.now
                 val linkExpireTime = DateUtils.nowPlus30Days
 
-                // update this user's dbGaP access in rawls, assuming the user exists in the whitelist.
-                // this call is silent/async - if it fails, we continue on, and the user's access will
-                // be updated the next time sync_whitelist runs; the user will have to wait for that.
-                val groupUpdate = perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
-                  ProfileClient.SyncSelf(userInfo))
-
                 // TODO: DSDEEPB-2512 isDbgapAuthorized should be removed entirely, since /api/nih/status reads it from rawls
                 val isDbgapAuthorized = false
                 val nihLink = NIHLink(linkedNihUsername, lastLinkTime, linkExpireTime, isDbgapAuthorized)
 
-                // save the NIH link keys into Thurloe
+                // update this user's dbGaP access in rawls, assuming the user exists in the whitelist
+                // and save the NIH link keys into Thurloe
                 perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
-                  ProfileClient.UpdateNIHLink(userInfo, nihLink))
+                  ProfileClient.UpdateNIHLinkAndSyncSelf(userInfo, nihLink))
+
               }
             }
           }

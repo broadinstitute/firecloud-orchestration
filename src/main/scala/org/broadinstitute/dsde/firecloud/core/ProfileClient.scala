@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.core
 
 import akka.actor.{ActorRefFactory, Actor, Props}
 import akka.event.Logging
+import akka.pattern.ask
 import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 
@@ -22,12 +23,13 @@ import spray.httpx.unmarshalling._
 import spray.routing.RequestContext
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 import scala.io.Source
 import scala.util.{Try, Failure, Success}
 
 object ProfileClient {
   case class UpdateProfile(userInfo: UserInfo, profile: BasicProfile)
-  case class UpdateNIHLink(userInfo: UserInfo, nihLink: NIHLink)
+  case class UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink)
   case class GetNIHStatus(userInfo: UserInfo)
   case class GetAndUpdateNIHStatus(userInfo: UserInfo)
   case object SyncWhitelist
@@ -87,8 +89,10 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
       profileResponse pipeTo context.parent
 
-    case UpdateNIHLink(userInfo: UserInfo, nihLink: NIHLink) =>
+    case UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) =>
       val parent = context.parent
+      // Complete syncWhitelist and ignore as neither success nor failure are useful to the client
+      ask(self, ProfileClient.SyncSelf(userInfo))(1.minute)
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = nihLink.propertyValueMap
       val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
@@ -101,7 +105,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
         "Unexpected error updating NIH link", e) }
 
-      profileResponse pipeTo context.parent
+      profileResponse pipeTo parent
 
     case GetNIHStatus(userInfo: UserInfo) =>
       val profileResponse = getProfile(userInfo, false)
@@ -332,7 +336,9 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
     RequestComplete(NoContent)
   }.recover {
     // intentionally quash errors so as not to leak sensitive data
-    case _ => RequestCompleteWithErrorReport(InternalServerError, "Error synchronizing NIH whitelist")
+    case _ =>
+      log.error("Error synchronizing NIH whitelist")
+      RequestCompleteWithErrorReport(InternalServerError, "Error synchronizing NIH whitelist")
   }.get
 
 }
