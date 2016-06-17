@@ -27,11 +27,10 @@ import scala.util.{Try, Failure, Success}
 
 object ProfileClient {
   case class UpdateProfile(userInfo: UserInfo, profile: BasicProfile)
-  case class UpdateNIHLink(userInfo: UserInfo, nihLink: NIHLink)
+  case class UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink)
   case class GetNIHStatus(userInfo: UserInfo)
   case class GetAndUpdateNIHStatus(userInfo: UserInfo)
   case object SyncWhitelist
-  case class SyncSelf(userInfo: UserInfo)
 
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
 
@@ -87,8 +86,9 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
       profileResponse pipeTo context.parent
 
-    case UpdateNIHLink(userInfo: UserInfo, nihLink: NIHLink) =>
+    case UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) =>
       val parent = context.parent
+      val syncWhiteListResult = Future(syncWhitelist(Some(userInfo.getUniqueId)))
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = nihLink.propertyValueMap
       val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
@@ -100,8 +100,10 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
         }
       } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
         "Unexpected error updating NIH link", e) }
-
-      profileResponse pipeTo context.parent
+      // Complete syncWhitelist and ignore as neither success nor failure are useful to the client
+      syncWhiteListResult onComplete {
+        case _ => profileResponse pipeTo parent
+      }
 
     case GetNIHStatus(userInfo: UserInfo) =>
       val profileResponse = getProfile(userInfo, false)
@@ -113,9 +115,6 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
     case SyncWhitelist =>
       context.parent ! syncWhitelist()
-
-    case SyncSelf(userInfo: UserInfo) =>
-      context.parent ! syncWhitelist(Some(userInfo.getUniqueId))
 
    }
 
