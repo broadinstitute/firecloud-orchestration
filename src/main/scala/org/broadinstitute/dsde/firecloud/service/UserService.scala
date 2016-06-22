@@ -43,6 +43,9 @@ object UserService {
   val rawlsRegisterUserPath = "/register/user"
   val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
 
+  val remotePostNotifyPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.postNotify
+  val remotePostNotifyURL = FireCloudConfig.Thurloe.baseUrl + remotePostNotifyPath
+
   def groupPath(group: String): String = FireCloudConfig.Rawls.authPrefix + "/user/group/%s".format(group)
   def groupUrl(group: String): String = FireCloudConfig.Rawls.baseUrl + groupPath(group)
 

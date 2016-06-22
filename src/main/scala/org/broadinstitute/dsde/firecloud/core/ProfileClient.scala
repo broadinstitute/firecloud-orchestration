@@ -74,7 +74,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
             }
             completionUpdate.flatMap { response =>
               response.status match {
-                case x if x.isSuccess => checkUserInRawls(pipeline, requestContext)
+                case x if x.isSuccess => checkUserInRawls(pipeline, requestContext, userInfo.getUniqueId)
                 case _ => Future(RequestCompleteWithErrorReport(response.status,
                                   "Profile partially saved, but error completing profile", Seq(ErrorReport(response))))
               }
@@ -258,13 +258,13 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
   def checkUserInRawls(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    requestContext: RequestContext): Future[PerRequestMessage] = {
+    requestContext: RequestContext, userId: String): Future[PerRequestMessage] = {
     pipeline { Get(UserService.rawlsRegisterUserURL) } flatMap { response =>
         response.status match {
           case x if x == OK =>
             Future(RequestComplete(OK))
           case x if x == NotFound =>
-            registerUserInRawls(pipeline, requestContext)
+            registerUserInRawls(pipeline, requestContext, userId)
           case _ =>
             Future(RequestCompleteWithErrorReport(response.status,
                     "Profile saved, but error verifying user registration", Seq(ErrorReport(response))))
@@ -275,10 +275,14 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
   def registerUserInRawls(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    requestContext: RequestContext): Future[PerRequestMessage] = {
+    requestContext: RequestContext, userId: String): Future[PerRequestMessage] = {
     pipeline { Post(UserService.rawlsRegisterUserURL) } map { response =>
         response.status match {
           case x if x.isSuccess || isConflict(response) =>
+            //sendNotification is purposely detached from the sequence. we don't want to block
+            //the completion of registration by waiting for sendgrid to succeed or fail the registration
+            // if sendgrid fails. unfortunately, if this call fails then ¯\_(ツ)_/¯
+            sendNotification(pipeline, ActivationNotification(userId)) //todo: get user id from headers??
             RequestComplete(OK)
           case _ =>
             RequestCompleteWithErrorReport(response.status,
@@ -286,6 +290,13 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
         }
     } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
                                       "Profile saved, but unexpected error registering user", e) }
+  }
+
+  def sendNotification(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
+    notification: Notification) = {
+    pipeline {
+      Post(UserService.remotePostNotifyURL, ThurloeNotification(notification.userId, notification.notificationId, notification.toMap))
+    }
   }
 
   /**

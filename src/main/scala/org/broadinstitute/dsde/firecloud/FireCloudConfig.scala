@@ -65,6 +65,7 @@ object FireCloudConfig {
     lazy val getAll = profile.getString("getAll")
     lazy val getQuery = profile.getString("getQuery")
     lazy val delete = profile.getString("delete")
+    lazy val postNotify = profile.getString("postNotify")
   }
 
   object FireCloud {
