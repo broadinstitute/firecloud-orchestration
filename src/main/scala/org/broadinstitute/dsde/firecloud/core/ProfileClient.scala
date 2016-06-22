@@ -282,7 +282,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
             //sendNotification is purposely detached from the sequence. we don't want to block
             //the completion of registration by waiting for sendgrid to succeed or fail the registration
             // if sendgrid fails. unfortunately, if this call fails then ¯\_(ツ)_/¯
-            sendNotification(pipeline, ActivationNotification(userId)) //todo: get user id from headers??
+            sendNotification(pipeline, ActivationNotification(userId))
             RequestComplete(OK)
           case _ =>
             RequestCompleteWithErrorReport(response.status,
@@ -296,6 +296,10 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
     notification: Notification) = {
     pipeline {
       Post(UserService.remotePostNotifyURL, ThurloeNotification(notification.userId, notification.notificationId, notification.toMap))
+    } flatMap { response =>
+      if(response.status.isFailure)
+        log.warning(s"Could not send notification: ${notification}")
+      Future.successful(response)
     }
   }
 
