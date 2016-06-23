@@ -84,7 +84,7 @@ object FireCloudConfig {
   }
 
   object Notification {
-    lazy val activationTemplateId = sys.env.get("ACTIVATION_TEMPLATE_ID")
+    lazy val activationTemplateId = sys.env.get("ACTIVATION_TEMPLATE_ID").get
   }
 
 }
