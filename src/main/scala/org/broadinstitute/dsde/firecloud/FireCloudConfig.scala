@@ -83,4 +83,8 @@ object FireCloudConfig {
     lazy val rawlsGroupName = nih.getString("rawlsGroupName")
   }
 
+  object Notification {
+    lazy val activationTemplateId = sys.env.get("ACTIVATION_TEMPLATE_ID")
+  }
+
 }

@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
+
 /**
  * Created by mbemis on 6/22/16.
  */
@@ -11,6 +13,6 @@ sealed trait Notification {
 
 case class ActivationNotification(recipientUserId: String) extends Notification {
   val userId = recipientUserId
-  val notificationId = "8c646115-d58b-45c2-a8ea-a4f5d47d5d2e"
+  val notificationId = FireCloudConfig.Notification.activationTemplateId
   def toMap: Map[String, String] = Map.empty
 }
