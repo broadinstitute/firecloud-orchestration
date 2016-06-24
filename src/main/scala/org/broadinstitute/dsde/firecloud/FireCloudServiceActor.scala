@@ -113,16 +113,19 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
   }
 
   // Placeholder endpoint for testing an authenticated request from NIH. The user will hit this
-  // only after successful authentication. Right now, it just echos the request so we can see what
-  // we get. TODO(dmohs): Remove or turn into an echo endpoint after testing.
+  // instead of the NIH login service, and this endpoint will always return a hardcoded, valid
+  // authentication token.
   val testNihService = {
     path("link-nih-account") {
-      extract(_.request) { request =>
-        complete(
-          "Received:\n" + request.method + " " + request.uri + "\n\n"
-            + request.headers.mkString("\n") + "\n\n"
-            + request.entity + "\n"
-        )
+      parameter("redirect-url") { redirectUrlTemplate =>
+        FireCloudConfig.Nih.dummyToken match {
+          // only supply a dummy token if one is populated in config; this way we control
+          // which environments support this endpoint
+          case Some(token) =>
+            val redirectTo = redirectUrlTemplate.replace("{token}", token)
+            redirect(spray.http.Uri(redirectTo), TemporaryRedirect)
+          case _ => reject
+        }
       }
     }
   }

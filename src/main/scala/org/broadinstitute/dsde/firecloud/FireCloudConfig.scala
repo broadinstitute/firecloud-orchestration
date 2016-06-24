@@ -80,6 +80,7 @@ object FireCloudConfig {
     lazy val whitelistBucket = sys.env.get("NIH_WHITELIST_BUCKET").get
     lazy val whitelistFile = nih.getString("whitelistFile")
     lazy val rawlsGroupName = nih.getString("rawlsGroupName")
+    lazy val dummyToken = sys.env.get("NIH_DUMMY_TOKEN")
   }
 
 }
