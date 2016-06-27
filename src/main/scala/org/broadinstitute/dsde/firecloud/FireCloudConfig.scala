@@ -84,7 +84,8 @@ object FireCloudConfig {
   }
 
   object Notification {
-    lazy val activationTemplateId = sys.env.get("ACTIVATION_TEMPLATE_ID").getOrElse("dummy")
+    private val notification = config.getConfig("notification")
+    lazy val activationTemplateId = sys.env.get("ACTIVATION_TEMPLATE_ID").getOrElse(notification.getString("activationTemplateId"))
   }
 
 }
