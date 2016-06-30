@@ -437,7 +437,7 @@ paths:
     get:
       description: Read a workspace bucket
       tags:
-        - workspaces
+        - Workspaces
       summary: Read workspace bucket
       operationId: readBucket
       parameters:
