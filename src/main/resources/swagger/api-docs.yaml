@@ -433,6 +433,40 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/bucket:
+    get:
+      description: Read a workspace bucket
+      tags:
+        - workspaces
+      summary: Read workspace bucket
+      operationId: readBucket
+      parameters:
+        - in: path
+          description: Workspace Namespace
+          name: workspaceNamespace
+          required: true
+          type: string
+        - in: path
+          description: Workspace Name
+          name: workspaceName
+          required: true
+          type: string
+      responses:
+        200:
+          description: Successful Request
+        403:
+          description: Insufficient permissions to access workspace bucket
+        404:
+          description: Workspace Not Found
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/acl:
     get:
       tags:
