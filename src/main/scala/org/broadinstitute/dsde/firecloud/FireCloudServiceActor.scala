@@ -37,6 +37,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
   val oAuthService = new OAuthService with ActorRefFactoryContext
   val userService = new UserService with ActorRefFactoryContext
   val nihSyncService = new NIHSyncService with ActorRefFactoryContext
+  val healthService = new HealthService with ActorRefFactoryContext
 
   lazy val log = LoggerFactory.getLogger(getClass)
   val logRequests = mapInnerRoute { route => requestContext =>
@@ -70,6 +71,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
         oAuthService.routes ~
         userService.routes ~
         nihSyncService.routes ~
+        healthService.routes ~
         pathPrefix("api") {
           routes
         } ~
