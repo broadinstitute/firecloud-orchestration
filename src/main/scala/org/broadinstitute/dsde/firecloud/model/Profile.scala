@@ -10,6 +10,11 @@ case class ThurloeKeyValue(
   userId: Option[String] = None,
   keyValuePair: Option[FireCloudKeyValue] = None)
 
+case class ThurloeNotification(
+  userId: String,
+  notificationId: String,
+  substitutions: Map[String, String])
+
 case class ProfileWrapper(userId: String, keyValuePairs: List[FireCloudKeyValue])
 
 case class BasicProfile (

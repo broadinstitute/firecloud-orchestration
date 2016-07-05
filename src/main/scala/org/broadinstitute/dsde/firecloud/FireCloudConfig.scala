@@ -65,6 +65,7 @@ object FireCloudConfig {
     lazy val getAll = profile.getString("getAll")
     lazy val getQuery = profile.getString("getQuery")
     lazy val delete = profile.getString("delete")
+    lazy val postNotify = profile.getString("postNotify")
   }
 
   object FireCloud {
@@ -80,6 +81,11 @@ object FireCloudConfig {
     lazy val whitelistBucket = sys.env.get("NIH_WHITELIST_BUCKET").get
     lazy val whitelistFile = nih.getString("whitelistFile")
     lazy val rawlsGroupName = nih.getString("rawlsGroupName")
+  }
+
+  object Notification {
+    private val notification = config.getConfig("notification")
+    lazy val activationTemplateId = sys.env.get("ACTIVATION_TEMPLATE_ID").getOrElse(notification.getString("activationTemplateId"))
   }
 
 }
