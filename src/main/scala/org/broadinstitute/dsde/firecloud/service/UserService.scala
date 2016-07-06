@@ -117,6 +117,10 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
       path("profile" / "billing") { requestContext =>
         val extReq = Get(UserService.billingUrl)
         externalHttpPerRequest(requestContext, extReq)
+      } ~
+      path("profile" / "refreshTokenDate") { requestContext =>
+        val extReq = Get(OAuthService.remoteTokenDateUrl)
+        externalHttpPerRequest(requestContext, extReq)
       }
     } ~
     pathPrefix("register") {

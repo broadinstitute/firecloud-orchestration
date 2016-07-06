@@ -68,6 +68,13 @@ class UserServiceSpec extends ServiceSpec with UserService {
       )
 
     workspaceServer
+      .when(request.withMethod("GET").withPath(OAuthService.remoteTokenDateUrl))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
       .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
@@ -141,6 +148,14 @@ class UserServiceSpec extends ServiceSpec with UserService {
       "MethodNotAllowed response is not returned" in {
         Get("/api/profile/billing") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
           log.debug("/api/profile/billing: " + status)
+          status shouldNot equal(MethodNotAllowed)
+        }
+      }
+    }
+
+    "when calling GET for user refresh token date service" - {
+      "MethodNotAllowed response is not returned" in {
+        Get("/api/profile/refreshTokenDate") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
           status shouldNot equal(MethodNotAllowed)
         }
       }
