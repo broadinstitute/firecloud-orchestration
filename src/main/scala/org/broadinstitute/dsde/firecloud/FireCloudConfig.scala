@@ -84,7 +84,9 @@ object FireCloudConfig {
   }
 
   object Notification {
-    private val notification = config.getConfig("notification")
+    //this config entry is only present during testing, otherwise it's set via environment variables in docker-compose
+    //we must lazily evaluate this setting so we don't get "configuration not found" errors
+    lazy private val notification = config.getConfig("notification")
     lazy val activationTemplateId = sys.env.get("ACTIVATION_TEMPLATE_ID").getOrElse(notification.getString("activationTemplateId"))
   }
 
