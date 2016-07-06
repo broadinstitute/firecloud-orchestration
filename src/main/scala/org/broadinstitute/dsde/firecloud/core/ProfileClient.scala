@@ -61,7 +61,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
     case UpdateProfile(userInfo: UserInfo, profile: BasicProfile) =>
       val parent = context.parent
       val pipeline = authHeaders(requestContext) ~> sendReceive
-      val profilePropertyMap = profile.propertyValueMap
+      val profilePropertyMap = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
       val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
       val profileResponse: Future[PerRequestMessage] = propertyUpdates flatMap { responses =>
         val allSucceeded = responses.forall { _.status.isSuccess }
