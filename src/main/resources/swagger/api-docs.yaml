@@ -433,7 +433,7 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/bucket:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/checkBucketReadAccess:
     get:
       description: Read a workspace bucket
       tags:

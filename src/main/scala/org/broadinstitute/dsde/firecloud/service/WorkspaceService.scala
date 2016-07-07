@@ -85,8 +85,8 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
         path("acl") {
           passthrough(workspacePath + "/acl", HttpMethods.GET, HttpMethods.PATCH)
         } ~
-        path("bucket") {
-          passthrough(workspacePath + "/bucket", HttpMethods.GET)
+        path("checkBucketReadAccess") {
+          passthrough(workspacePath + "/checkBucketReadAccess", HttpMethods.GET)
         } ~
         path("clone") {
           post {
