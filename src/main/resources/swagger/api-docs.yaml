@@ -1819,6 +1819,26 @@ paths:
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
         - bearer:
+  /health:
+    get:
+      tags:
+      - Status
+      operationId: health
+      summary: |
+        A health status endpoint for load balancing purposes
+      responses:
+        200:
+          description: Success
+  /error:
+    get:
+      tags:
+      - Status
+      operationId: error
+      summary: |
+        An error status endpoint for load balancing purposes
+      responses:
+        503:
+          description: Service Unavailable
   /api/storage/{bucket}/{object}:
     get:
       tags:
