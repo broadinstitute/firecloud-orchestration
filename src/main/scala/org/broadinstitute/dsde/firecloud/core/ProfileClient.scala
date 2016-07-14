@@ -343,8 +343,8 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
     memberList flatMap { members => pipeline { rawlsRequestMethod(url, members) } } map { response =>
       if(response.status.isFailure)
         RequestCompleteWithErrorReport(InternalServerError, "Error synchronizing NIH whitelist")
-      else RequestComplete(NoContent)
-    } map { _ => RequestComplete(NoContent) } // don't leak any sensitive data
+      else RequestComplete(NoContent) // don't leak any sensitive data
+    }
   }.get recover {
     // intentionally quash errors so as not to leak sensitive data
     case _ => RequestCompleteWithErrorReport(InternalServerError, "Error synchronizing NIH whitelist")
