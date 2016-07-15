@@ -88,7 +88,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
     case UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) =>
       val parent = context.parent
-      val syncWhiteListResult = Future(syncWhitelist(Some(userInfo.getUniqueId)))
+      val syncWhiteListResult = syncWhitelist(Some(userInfo.getUniqueId))
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = nihLink.propertyValueMap
       val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
@@ -114,9 +114,9 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       // do NOT pipe the response back to the parent!
 
     case SyncWhitelist =>
-      context.parent ! syncWhitelist()
+      syncWhitelist() pipeTo context.parent
 
-   }
+  }
 
   def getProfile(userInfo: UserInfo, updateExpiration: Boolean): Future[PerRequestMessage] = {
     val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
@@ -315,7 +315,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       postResponse.entity.asString.contains(Conflict.reason)
   }
 
-  def syncWhitelist(subjectId: Option[String] = None): PerRequestMessage = Try {
+  def syncWhitelist(subjectId: Option[String] = None): Future[PerRequestMessage] = Try {
     val (bucket, file) = (FireCloudConfig.Nih.whitelistBucket, FireCloudConfig.Nih.whitelistFile)
     val whitelist = Source.fromInputStream(HttpGoogleServicesDAO.getBucketObjectAsInputStream(bucket, file)).getLines().toSet
 
@@ -340,14 +340,15 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       case None => Put
     }
 
-    memberList flatMap { members => pipeline { rawlsRequestMethod(url, members) } }
-
-    // don't leak any sensitive data
-    RequestComplete(NoContent)
-  }.recover {
+    memberList flatMap { members => pipeline { rawlsRequestMethod(url, members) } } map { response =>
+      if(response.status.isFailure)
+        RequestCompleteWithErrorReport(InternalServerError, "Error synchronizing NIH whitelist")
+      else RequestComplete(NoContent) // don't leak any sensitive data
+    }
+  }.get recover {
     // intentionally quash errors so as not to leak sensitive data
     case _ => RequestCompleteWithErrorReport(InternalServerError, "Error synchronizing NIH whitelist")
-  }.get
+  }
 
 }
 
