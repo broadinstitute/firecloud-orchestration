@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.io.StringReader
 
 import com.google.api.client.auth.oauth2.{Credential, TokenResponse}
-import com.google.api.client.googleapis.auth.oauth2.{GoogleCredential, GoogleAuthorizationCodeFlow, GoogleClientSecrets, GoogleTokenResponse}
+import com.google.api.client.googleapis.auth.oauth2.{GoogleCredential, GoogleAuthorizationCodeFlow, GoogleClientSecrets}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.storage.{StorageScopes, Storage}
@@ -67,28 +67,11 @@ object HttpGoogleServicesDAO {
     if ( actualState != expectedState ) throw new OAuthException(
       "State mismatch: this authentication request cannot be completed.")
 
-    val gcsTokenResponse: GoogleTokenResponse = flow.newTokenRequest(authCode)
+    val gcsTokenResponse = flow.newTokenRequest(authCode)
       .setRedirectUri(callbackUri.toString)
       .execute()
 
-    val refreshToken = gcsTokenResponse.getRefreshToken match {
-      case null => None
-      case x => Some(x)
-    }
-    val List(idToken:Option[String], subjectId:Option[String]) = gcsTokenResponse.getIdToken match {
-      case null => List(None, None)
-      case x =>
-        List( Some(x), Some(gcsTokenResponse.parseIdToken().getPayload.getSubject) )
-    }
-
-    new OAuthTokens(
-      gcsTokenResponse.getAccessToken,
-      gcsTokenResponse.getTokenType,
-      gcsTokenResponse.getExpiresInSeconds,
-      refreshToken,
-      idToken,
-      subjectId
-    )
+    OAuthTokens(gcsTokenResponse)
   }
 
   // check the requested UI redirect against the list of allowed JS origins

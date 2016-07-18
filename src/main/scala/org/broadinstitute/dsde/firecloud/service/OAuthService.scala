@@ -116,7 +116,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
             gcsTokenResponse.subject_id match {
               case Some(sub) =>
                 // NB: we use dummy values in the UserInfo object for email addr and expire time; these are irrelevant
-                val userInfo:UserInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, gcsTokenResponse.subject_id.get)
+                val userInfo:UserInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, sub)
                 perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
                   ProfileClient.GetAndUpdateNIHStatus(userInfo))
               case None =>

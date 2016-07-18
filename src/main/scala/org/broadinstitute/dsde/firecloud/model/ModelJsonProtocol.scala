@@ -107,7 +107,7 @@ object ModelJsonProtocol {
 
   implicit val impNotification = jsonFormat3(ThurloeNotification)
 
-  implicit val impTokenResponse = jsonFormat6(OAuthTokens)
+  implicit val impTokenResponse = jsonFormat6(OAuthTokens.apply)
   implicit val impRawlsToken = jsonFormat1(RawlsToken)
   implicit val impRawlsTokenDate = jsonFormat1(RawlsTokenDate)
 
