@@ -2,10 +2,11 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.io.StringReader
 
-import com.google.api.client.auth.oauth2.{Credential, TokenResponse}
+import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.{GoogleCredential, GoogleAuthorizationCodeFlow, GoogleClientSecrets}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.services.compute.ComputeScopes
 import com.google.api.services.storage.{StorageScopes, Storage}
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
@@ -24,11 +25,11 @@ object HttpGoogleServicesDAO {
   val callbackUri = Uri(s"${baseUrl}${callbackPath}")
 
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
-  val authScopes = Seq("profile","email")
+  val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
   // the scopes we request for the end user during interactive login. TODO: remove compute?
-  val userLoginScopes = Seq(StorageScopes.DEVSTORAGE_FULL_CONTROL,"https://www.googleapis.com/auth/compute") ++ authScopes
+  val userLoginScopes = Seq(StorageScopes.DEVSTORAGE_FULL_CONTROL, ComputeScopes.COMPUTE) ++ authScopes
 
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
   val jsonFactory = JacksonFactory.getDefaultInstance
@@ -49,14 +50,19 @@ object HttpGoogleServicesDAO {
   /**
    * first step of OAuth dance: redirect the browser to Google's login page
    */
-  def getGoogleRedirectURI(state: String, approvalPrompt: String = "auto"): String = {
-    flow.newAuthorizationUrl()
-        .setRedirectUri(callbackUri.toString)
-        .setState(state)
-        .setAccessType("offline")   // enables refresh token
-        .setApprovalPrompt(approvalPrompt) // "force" to get a new refresh token
-        .build()
-        // TODO: login hint?
+  def getGoogleRedirectURI(state: String, approvalPrompt: String = "auto", overrideScopes: Option[Seq[String]] = None): String = {
+    val urlBuilder = flow.newAuthorizationUrl()
+      .setRedirectUri(callbackUri.toString)
+      .setState(state)
+      .setAccessType("offline")   // enables refresh token
+      .setApprovalPrompt(approvalPrompt) // "force" to get a new refresh token
+
+    overrideScopes match {
+      case Some(newScopes) => urlBuilder.setScopes(newScopes).build()
+      case _ => urlBuilder.build()
+    }
+
+    // TODO: login hint?
   }
 
   /**

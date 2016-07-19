@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{ProfileClientActor, ProfileClient}
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -14,8 +15,9 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.routing._
+import spray.json._
 
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 class UserServiceActor extends Actor with UserService {
   def actorRefFactory = context
@@ -39,6 +41,9 @@ object UserService {
 
   val billingPath = FireCloudConfig.Rawls.authPrefix + "/user/billing"
   val billingUrl = FireCloudConfig.Rawls.baseUrl + billingPath
+
+  val billingAccountsPath = FireCloudConfig.Rawls.authPrefix + "/user/billingAccounts"
+  val billingAccountsUrl = FireCloudConfig.Rawls.baseUrl + billingAccountsPath
 
   val rawlsRegisterUserPath = "/register/user"
   val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
@@ -117,6 +122,28 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
       path("profile" / "billing") {
         passthrough(UserService.billingUrl, HttpMethods.GET)
       } ~
+      path("profile" / "billingAccounts") {
+        oauthParams { (state, _) => requestContext =>
+          val pipeline = authHeaders(requestContext) ~> sendReceive
+          val extReq = Get(UserService.billingAccountsUrl)
+          pipeline(extReq) onComplete {
+            case Success(response) if response.status == Forbidden =>
+              val tryParseScopes = Try {
+                response.entity.asString.parseJson.convertTo[ErrorReport].message.parseJson.convertTo[BillingAccountScopes]
+              }
+              tryParseScopes match {
+                case Success(scopes) =>
+                  // user does not have appropriate scopes.  Ask user to enable them via OAuth
+                  val redirectURI = HttpGoogleServicesDAO.getGoogleRedirectURI(state, "auto", Option(scopes.requiredScopes ++ HttpGoogleServicesDAO.userLoginScopes))
+                  requestContext.complete(Forbidden, ErrorReport(Forbidden, BillingAccountRedirect(redirectURI).toJson.toString))
+                case _ =>
+                  requestContext.complete(Forbidden, response.entity)
+              }
+            case Success(response) => requestContext.complete(response.status, response.entity)
+            case Failure(regrets) => respondWithErrorReport(regrets, requestContext)
+          }
+        }
+      } ~
       path("profile" / "refreshTokenDate") {
         passthrough(OAuthService.remoteTokenDateUrl, HttpMethods.GET)
       }
@@ -150,5 +177,9 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
 
   private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext) = {
     requestContext.complete(statusCode, ErrorReport(statusCode=statusCode, message=message))
+  }
+
+  private def respondWithErrorReport(error: Throwable, requestContext: RequestContext) = {
+    requestContext.complete(InternalServerError, ErrorReport(error))
   }
 }

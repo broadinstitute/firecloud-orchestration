@@ -120,6 +120,9 @@ object ModelJsonProtocol {
 
   implicit val impRawlsGroupMemberList = jsonFormat4(RawlsGroupMemberList)
 
+  implicit val impBillingAccountScopes = jsonFormat1(BillingAccountScopes)
+  implicit val impBillingAccountRedirect = jsonFormat1(BillingAccountRedirect)
+
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
     case MalformedRequestContentRejection(errorMsg, _) :: _ =>

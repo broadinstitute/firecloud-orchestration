@@ -2051,6 +2051,37 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /api/profile/billingAccounts:
+    get:
+      tags:
+        - Profile
+      operationId: billingAccounts
+      summary: List billing accounts for a user
+      responses:
+        200:
+          description: OK
+          produces:
+          - application/json
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BillingAccount'
+        403:
+          description: Forbidden - redirect to Google to enable appropriate scopes
+          produces:
+          - application/json
+          schema:
+            $ref: '#/definitions/BillingAccountRedirect'
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
+            - https://www.googleapis.com/auth/cloud-billing
   /login:
     get:
       tags:
@@ -2164,6 +2195,7 @@ securityDefinitions:
       email: email authorization
       profile: profile authorization
       https://www.googleapis.com/auth/devstorage.full_control: GCS storage
+      https://www.googleapis.com/auth/cloud-billing: GCS billing
   bearer:
     type: apiKey
     name: Authorization
@@ -2624,4 +2656,23 @@ definitions:
         $ref: '#/definitions/UserInfo'
       enabled:
         $ref: '#/definitions/ExtendedEnabled'
-
+  BillingAccountRedirect:
+    description: 'Google redirect URL to enable appropriate scopes'
+    required:
+      - redirect
+    properties:
+      redirect:
+        type: string
+        description: URL to redirect to
+  BillingAccount:
+    description: 'Details for a single billing account'
+    required:
+      - accountName
+      - firecloudHasAccess
+    properties:
+      accountName:
+        type: string
+        description: name of billing account
+      firecloudHasAccess:
+        type: boolean
+        description: whether the Firecloud service has been given access to this billing account
