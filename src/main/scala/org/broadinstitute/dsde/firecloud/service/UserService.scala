@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
-import spray.http.{StatusCode, HttpCredentials}
+import spray.http.{HttpMethods, StatusCode, HttpCredentials}
 import spray.http.HttpHeaders.Authorization
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
@@ -114,31 +114,27 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
     } ~
     requireUserInfo() { userInfo =>
     pathPrefix("api") {
-      path("profile" / "billing") { requestContext =>
-        val extReq = Get(UserService.billingUrl)
-        externalHttpPerRequest(requestContext, extReq)
+      path("profile" / "billing") {
+        passthrough(UserService.billingUrl, HttpMethods.GET)
       } ~
-      path("profile" / "refreshTokenDate") { requestContext =>
-        val extReq = Get(OAuthService.remoteTokenDateUrl)
-        externalHttpPerRequest(requestContext, extReq)
+      path("profile" / "refreshTokenDate") {
+        passthrough(OAuthService.remoteTokenDateUrl, HttpMethods.GET)
       }
     } ~
     pathPrefix("register") {
       pathEnd {
-        get { requestContext =>
-          externalHttpPerRequest(requestContext, Get(UserService.rawlsRegisterUserURL))
+        get {
+          passthrough(UserService.rawlsRegisterUserURL, HttpMethods.GET)
         }
       } ~
-      path("userinfo") { requestContext =>
-        val extReq = Get("https://www.googleapis.com/oauth2/v3/userinfo")
-        externalHttpPerRequest(requestContext, extReq)
+      path("userinfo") {
+        passthrough("https://www.googleapis.com/oauth2/v3/userinfo", HttpMethods.GET)
       } ~
       pathPrefix("profile") {
         // GET /profile - get all keys for current user
         pathEnd {
-          get { requestContext =>
-            val extReq = Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))
-            externalHttpPerRequest(requestContext, extReq)
+          get {
+            passthrough(UserService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
           } ~
           post {
             entity(as[BasicProfile]) {
