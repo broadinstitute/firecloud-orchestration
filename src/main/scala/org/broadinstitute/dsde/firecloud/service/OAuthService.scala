@@ -38,8 +38,26 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
       get {
         parameters("path".?, "prompt".?, "callback".?) { (userpath, prompt, callback) => requestContext =>
 
+          /*
+           * prompt:    either "force" or "auto". Anything else will be treated as "auto".
+           *              "force" always requests a new refresh token, prompting the user for offline permission.
+           *              "auto" allows Google to determine if it thinks the user needs a new refresh token,
+           *                which is not necessarily in sync with rawls' cache.
+           *
+           * callback:  once OAuth is done and we have an access token from Google, to what hostname should we
+           *              return the browser? Example: "https://portal.firecloud.org/"
+           * path:      once OAuth is done and we have an access token from Google, to what fragment should we
+           *              return the browser? Example: "workspaces"
+           *
+           * The FireCloud UI typically calls /login with a callback parameter containing the hostname of the UI.
+           *  It does not typically pass a path parameter.
+           *  It never passes a prompt parameter; this exists to allow developers to call /login manually to
+           *    get a new refresh token.
+           */
+
           // create a hash-delimited string of the callback+path and pass into the state param.
-          // the state param will be roundtripped during the login process, so we can read it during callback.
+          // the state param is defined by and required by the OAuth standard, and we override its typical
+          // usage here to pass the UI's hostname/fragment through the OAuth dance.
           // TODO: future story: generate and persist unique security token along with the callback/path
           val state = callback.getOrElse("") + "#" + userpath.getOrElse("")
 
@@ -52,7 +70,10 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
           }
 
           try {
-            // create the authentication url and redirect the browser
+            // Create the authentication url and redirect the browser. This will redirect to Google, who displays
+            // the login screen. Once the user has logged in, Google will redirect to the /callback endpoint,
+            // just below here in this class.
+            // Do not confuse the /callback endpoint with the callback parameter!
             initiateAuth(state, approvalPrompt=approvalPrompt, requestContext)
           } catch {
             /* we don't expect any exceptions here; if we get any, it's likely
@@ -74,6 +95,13 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
             An authorization code response has "?code=4/P7q7W91a-oMsCeLvIaQm6bTrgtp7"
         */
         parameters("code", "state") { (code, actualState) => requestContext =>
+
+          /*
+           * code:  the temporary authentication code from Google that we will use to generate access/refresh tokens
+           * state: the FireCloud UI's hostname+fragment to which we will eventually redirect once the OAuth dance
+           *         is done. See the /login endpoint above here in this class.
+           */
+
           // TODO: future story: check the security token we previously persisted in the expected-state
           val expectedState = actualState
 
@@ -173,8 +201,9 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
   }
 
   private def completeAuthWithRedirect(actualState: String, accessToken: String, requestContext: RequestContext) = {
-    // as created in the /login endpoint, the actual state contains the desired callback url
+    // as created in the /login endpoint, the actual state contains the desired callback hostname
     // and the desired callback fragment, separated by a hash. But, either value may be the empty string.
+    // the hostname+fragment contained in actualState will typically be the FireCloud UI's url.
 
     val redirectParts = actualState.split("#")
     val List(redirectBase, redirectFragment) = redirectParts match {
