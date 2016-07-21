@@ -89,6 +89,11 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
       optionalHeaderValueByName("X-Forwarded-Host") { forwardedHost =>
         pathPrefix("") {
           pathEnd {
+            parameter("url") {urlparam =>
+              requestUri {uri =>
+                redirect(uri.withQuery(Map.empty[String,String]), MovedPermanently)
+              }
+            } ~
             serveIndex()
           } ~
             pathSuffix("api-docs") {
