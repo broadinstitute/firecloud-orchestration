@@ -71,7 +71,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         authorizationHeader match {
           // no Authorization header; the user must be unauthorized
           case None =>
-            respondWithUserInfo(Unauthorized, Unauthorized.defaultMessage, requestContext)
+            respondWithErrorReport(Unauthorized, Unauthorized.defaultMessage, requestContext)
           // browser sent Authorization header; try to query rawls for user status
           case Some(c) =>
             val pipeline = authHeaders(requestContext) ~> sendReceive
@@ -80,11 +80,11 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
               case Success(response) =>
                 response.status match {
                   // rawls rejected our request. User is either invalid or their token timed out; this is truly unauthorized
-                  case Unauthorized => respondWithUserInfo(Unauthorized, Unauthorized.defaultMessage, requestContext)
+                  case Unauthorized => respondWithErrorReport(Unauthorized, Unauthorized.defaultMessage, requestContext)
                   // rawls 404 means the user is not registered with FireCloud
-                  case NotFound => respondWithUserInfo(NotFound, "FireCloud user registration not found", requestContext)
+                  case NotFound => respondWithErrorReport(NotFound, "FireCloud user registration not found", requestContext)
                   // rawls error? boo. All we can do is respond with an error.
-                  case InternalServerError => respondWithUserInfo(InternalServerError, InternalServerError.defaultMessage, requestContext)
+                  case InternalServerError => respondWithErrorReport(InternalServerError, InternalServerError.defaultMessage, requestContext)
                   // rawls found the user; we'll try to parse the response and inspect it
                   case OK =>
                     val respJson = response.entity.as[RegistrationInfo]
@@ -95,19 +95,19 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
                           requestContext.complete(OK, regInfo)
                         } else {
                           // rawls knows about the user, but the user isn't activated
-                          respondWithUserInfo(Forbidden, "FireCloud user not activated", requestContext)
+                          respondWithErrorReport(Forbidden, "FireCloud user not activated", requestContext)
                         }
                       // we couldn't parse the rawls response. Respond with an error.
                       case Left(error) =>
-                        respondWithUserInfo(InternalServerError, InternalServerError.defaultMessage, requestContext)
+                        respondWithErrorReport(InternalServerError, InternalServerError.defaultMessage, requestContext)
                     }
                   case x =>
                     // we got an unexpected error code from rawls; pass it on
-                    respondWithUserInfo(InternalServerError, "Unexpected response validating registration: " + x.toString, requestContext)
+                    respondWithErrorReport(InternalServerError, "Unexpected response validating registration: " + x.toString, requestContext)
                 }
               // we couldn't reach rawls (within timeout period). Respond with an error.
               case Failure(error) =>
-                respondWithUserInfo(InternalServerError, InternalServerError.defaultMessage, requestContext)
+                respondWithErrorReport(InternalServerError, InternalServerError.defaultMessage, requestContext)
             }
         }
       }
@@ -148,8 +148,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
     }
   }
 
-  private def respondWithUserInfo(statusCode: StatusCode, message: String, requestContext: RequestContext) = {
+  private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext) = {
     requestContext.complete(statusCode, ErrorReport(statusCode=statusCode, message=message))
   }
-
 }
