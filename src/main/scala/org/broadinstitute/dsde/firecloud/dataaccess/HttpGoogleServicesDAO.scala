@@ -41,9 +41,6 @@ object HttpGoogleServicesDAO {
   val flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport,
     jsonFactory, clientSecrets, userLoginScopes).build()
 
-  val adminUserRefreshToken = FireCloudConfig.Auth.adminRefreshToken
-  val refreshTokenClientSecrets = GoogleClientSecrets.load(jsonFactory, new StringReader(FireCloudConfig.Auth.refreshTokenSecretJson))
-
   val pemFile = FireCloudConfig.Auth.pemFile
   val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
 

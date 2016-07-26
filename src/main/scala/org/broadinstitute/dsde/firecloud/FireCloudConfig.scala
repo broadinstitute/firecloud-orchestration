@@ -8,8 +8,6 @@ object FireCloudConfig {
   object Auth {
     lazy val googleClientId = sys.env.get("GOOGLE_CLIENT_ID").get
     lazy val googleSecretJson = sys.env.get("GOOGLE_SECRET_JSON").get
-    lazy val adminRefreshToken = sys.env.get("ADMIN_REFRESH_TOKEN").get
-    lazy val refreshTokenSecretJson = sys.env.get("REFRESH_TOKEN_SECRET_JSON").get
     lazy val pemFile = sys.env.get("ORCHESTRATION_PEM").get
     lazy val pemFileClientId = sys.env.get("ORCHESTRATION_PEM_CLIENT_ID").get
     lazy val swaggerRealm = sys.env.get("SWAGGER_REALM").get
