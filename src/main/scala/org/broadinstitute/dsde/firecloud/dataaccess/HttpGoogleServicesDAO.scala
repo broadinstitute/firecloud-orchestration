@@ -23,11 +23,12 @@ object HttpGoogleServicesDAO {
   // this needs to match a value in the "Authorized redirect URIs" section of the Google credential in use
   val callbackUri = Uri(s"${baseUrl}${callbackPath}")
 
-  // modify these if we need more granular access in the future
-  val gcsFullControl = "https://www.googleapis.com/auth/devstorage.full_control"
-  val computeFullControl = "https://www.googleapis.com/auth/compute"
-  // TODO: remove compute?
-  val scopes = Seq(gcsFullControl,computeFullControl,"profile","email")
+  // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
+  val authScopes = Seq("profile","email")
+  // the minimal scope to read from GCS
+  val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
+  // the scopes we request for the end user during interactive login. TODO: remove compute?
+  val userLoginScopes = Seq(StorageScopes.DEVSTORAGE_FULL_CONTROL,"https://www.googleapis.com/auth/compute") ++ authScopes
 
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
   val jsonFactory = JacksonFactory.getDefaultInstance
@@ -38,12 +39,7 @@ object HttpGoogleServicesDAO {
   val origins:List[String] = (clientSecrets.getDetails.get("javascript_origins").asInstanceOf[java.util.ArrayList[String]]).toList
 
   val flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport,
-    jsonFactory, clientSecrets, scopes).build()
-
-  val adminUserRefreshToken = FireCloudConfig.Auth.adminRefreshToken
-  val refreshTokenClientSecrets = GoogleClientSecrets.load(jsonFactory, new StringReader(FireCloudConfig.Auth.refreshTokenSecretJson))
-
-  val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
+    jsonFactory, clientSecrets, userLoginScopes).build()
 
   val pemFile = FireCloudConfig.Auth.pemFile
   val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
@@ -111,10 +107,13 @@ object HttpGoogleServicesDAO {
   def randomString(length: Int) = scala.util.Random.alphanumeric.take(length).mkString
 
   def getAdminUserAccessToken = {
-    val googleCredential = new GoogleCredential.Builder().setTransport(httpTransport)
+    val googleCredential = new GoogleCredential.Builder()
+      .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
-      .setClientSecrets(refreshTokenClientSecrets)
-      .build().setFromTokenResponse(new TokenResponse().setRefreshToken(adminUserRefreshToken))
+      .setServiceAccountId(pemFileClientId)
+      .setServiceAccountScopes(authScopes) // use the smallest scope possible
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
+      .build()
 
     googleCredential.refreshToken()
     googleCredential.getAccessToken
