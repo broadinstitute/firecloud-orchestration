@@ -107,7 +107,7 @@ object ModelJsonProtocol {
 
   implicit val impNotification = jsonFormat3(ThurloeNotification)
 
-  implicit val impTokenResponse = jsonFormat6(OAuthTokens)
+  implicit val impTokenResponse = jsonFormat6(OAuthTokens.apply)
   implicit val impRawlsToken = jsonFormat1(RawlsToken)
   implicit val impRawlsTokenDate = jsonFormat1(RawlsTokenDate)
 
@@ -119,6 +119,9 @@ object ModelJsonProtocol {
   implicit val impRegistrationInfo = jsonFormat2(RegistrationInfo)
 
   implicit val impRawlsGroupMemberList = jsonFormat4(RawlsGroupMemberList)
+
+  implicit val impBillingAccountScopes = jsonFormat1(BillingAccountScopes)
+  implicit val impBillingAccountRedirect = jsonFormat1(BillingAccountRedirect)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

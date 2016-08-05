@@ -36,39 +36,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
   val routes: Route =
     path("login") {
       get {
-        parameters("path".?, "prompt".?, "callback".?) { (userpath, prompt, callback) => requestContext =>
-
-          /*
-           * prompt:    either "force" or "auto". Anything else will be treated as "auto".
-           *              "force" always requests a new refresh token, prompting the user for offline permission.
-           *              "auto" allows Google to determine if it thinks the user needs a new refresh token,
-           *                which is not necessarily in sync with rawls' cache.
-           *
-           * callback:  once OAuth is done and we have an access token from Google, to what hostname should we
-           *              return the browser? Example: "https://portal.firecloud.org/"
-           * path:      once OAuth is done and we have an access token from Google, to what fragment should we
-           *              return the browser? Example: "workspaces"
-           *
-           * The FireCloud UI typically calls /login with a callback parameter containing the hostname of the UI.
-           *  It does not typically pass a path parameter.
-           *  It never passes a prompt parameter; this exists to allow developers to call /login manually to
-           *    get a new refresh token.
-           */
-
-          // create a hash-delimited string of the callback+path and pass into the state param.
-          // the state param is defined by and required by the OAuth standard, and we override its typical
-          // usage here to pass the UI's hostname/fragment through the OAuth dance.
-          // TODO: future story: generate and persist unique security token along with the callback/path
-          val state = callback.getOrElse("") + "#" + userpath.getOrElse("")
-
-          // if the user requested "force" then "force"; if the user specified something else, or nothing, use "auto".
-          // this allows the end user/UI to control when we force-request a new refresh token. Default to auto,
-          // to allow Google to decide; we'll verify in our token store after this step completes.
-          val approvalPrompt = prompt match {
-            case Some("force") => "force"
-            case _ => "auto"
-          }
-
+        oauthParams { (state, approvalPrompt) => requestContext =>
           try {
             // Create the authentication url and redirect the browser. This will redirect to Google, who displays
             // the login screen. Once the user has logged in, Google will redirect to the /callback endpoint,
@@ -116,7 +84,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
             gcsTokenResponse.subject_id match {
               case Some(sub) =>
                 // NB: we use dummy values in the UserInfo object for email addr and expire time; these are irrelevant
-                val userInfo:UserInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, gcsTokenResponse.subject_id.get)
+                val userInfo:UserInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, sub)
                 perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
                   ProfileClient.GetAndUpdateNIHStatus(userInfo))
               case None =>
