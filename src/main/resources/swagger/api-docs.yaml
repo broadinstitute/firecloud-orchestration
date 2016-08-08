@@ -2174,12 +2174,9 @@ paths:
           produces:
           - application/json
           schema:
-            {
-              "type": "array",
-              "items": {
-                $ref: '#/definitions/BillingProjectMembership'
-              }
-            }
+            type: array
+            items:
+              $ref: '#/definitions/BillingProjectMembership'
         404:
           description: User Not Found
         500:
