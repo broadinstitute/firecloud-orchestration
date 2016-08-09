@@ -2026,16 +2026,16 @@ paths:
     post:
       responses:
         '204':
-          description: Successfully Created Billing Project
+          description: Successfully Created Billing Project in FireCloud and Google
         '400':
           description: firecloud billing user must be an administrator of the billing account
         '403':
           description: You must be an administrator of the google billing account
         '409':
-          description: project already exists in rawls or google
+          description: project already exists in firecloud or google
         '500':
           description: Rawls Internal Error
-      description: add user to billing project the caller owns
+      description: create new billing project in firecloud and google
       parameters:
         - in: body
           description: create project request
@@ -2045,9 +2045,8 @@ paths:
             $ref: '#/definitions/CreateRawlsBillingProjectFullRequest'
       tags:
         - Billing
-      summary: add user to billing project the caller owns
-      operationId: addUserToBillingProject
-      security:
+      summary: create billing project in firecloud and google
+      operationId: createBillingProjectFull
       security:
         - bearer:
         - googleoauth:
