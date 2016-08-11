@@ -6,7 +6,14 @@ organization := "org.broadinstitute.dsde.firecloud"
 val versionRoot = "0.1"
 
 // Get the revision, or -1 (later will be bumped to zero)
-val versionRevision = ("git rev-list --count HEAD" #|| "echo -1").!!.trim.toInt
+val versionRevision = {
+  try {
+	("git rev-list --count HEAD" #|| "echo -1").!!.trim.toInt
+  } catch {
+    case e: Exception =>
+      0
+  }
+}
 
 // Set the suffix to None...
 val versionSuffix = {
