@@ -2163,32 +2163,32 @@ paths:
 #            - openid
 #            - email
 #            - profile
-#  /api/profile/billing:
-#    get:
-#      tags:
-#        - Profile
-#      operationId: billing
-#      summary: List billing projects for a user
-#      responses:
-#        200:
-#          description: OK
-#          produces:
-#          - application/json
-#          schema:
-#            type: array
-#            items:
-#              $ref: '#/definitions/BillingProjectMembership'
-#        404:
-#          description: User Not Found
-#        500:
-#          description: Internal Server Error
-#      security:
-#        - bearer:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#            - https://www.googleapis.com/auth/devstorage.full_control
+  /api/profile/billing:
+    get:
+      tags:
+        - Profile
+      operationId: billing
+      summary: List billing projects for a user
+      responses:
+        200:
+          description: OK
+          produces:
+          - application/json
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BillingProjectMembership'
+        404:
+          description: User Not Found
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
 #  /api/profile/billingAccounts:
 #    get:
 #      tags:
