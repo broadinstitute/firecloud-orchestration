@@ -132,6 +132,11 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
                             log.info(s"User's refresh token is $x days old; requesting a new one.")
                             initiateAuth(actualState, "force", requestContext)
                         }
+                      case StatusCodes.BadRequest =>
+                        log.info(s"User has an illegal refresh token; requesting a new one.")
+                        // rawls does not have a refresh token for us. restart auth.
+                        // TODO: if the rawls put-token endpoint goes down, this will cause an infinite loop in login
+                        initiateAuth(actualState, "force", requestContext)
                       case StatusCodes.NotFound =>
                         log.info(s"User does not already have a refresh token; requesting a new one.")
                         // rawls does not have a refresh token for us. restart auth.
