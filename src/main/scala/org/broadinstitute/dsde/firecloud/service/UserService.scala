@@ -107,12 +107,12 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
                         respondWithErrorReport(InternalServerError, InternalServerError.defaultMessage, requestContext)
                     }
                   case x =>
-                    // we got an unexpected error code from rawls; pass it on
-                    respondWithErrorReport(InternalServerError, "Unexpected response validating registration: " + x.toString, requestContext)
+                    // if we get any other error from rawls, pass that error on
+                    respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
                 }
-              // we couldn't reach rawls (within timeout period). Respond with an error.
+              // we couldn't reach rawls (within timeout period). Respond with a Service Unavailable error.
               case Failure(error) =>
-                respondWithErrorReport(InternalServerError, InternalServerError.defaultMessage, requestContext)
+                respondWithErrorReport(ServiceUnavailable, ServiceUnavailable.defaultMessage, requestContext)
             }
         }
       }

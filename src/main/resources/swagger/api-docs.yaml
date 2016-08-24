@@ -1896,6 +1896,8 @@ paths:
           description: Not Found. User is authenticated to Google but not a FireCloud member.
         500:
           description: Internal Server Error determining user status.
+        503:
+          description: Service Unavailable. Could not reach underlying services to determine user status.
       security:
         - bearer:
         - googleoauth:
