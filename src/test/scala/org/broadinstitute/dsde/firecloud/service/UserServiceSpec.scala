@@ -363,7 +363,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
     }
 
     "when calling /me and rawls returns an unexpected HTTP response code" - {
-      "InternalServerError response is returned" in {
+      "echo the error code from rawls" in {
 
         workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
         workspaceServer
@@ -373,7 +373,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
               .withHeaders(MockUtils.header).withStatusCode(EnhanceYourCalm.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(InternalServerError)
+          status should equal(EnhanceYourCalm)
         }
       }
     }
