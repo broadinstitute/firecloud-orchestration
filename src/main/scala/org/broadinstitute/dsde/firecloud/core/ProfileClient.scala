@@ -321,11 +321,24 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
     // note: everything after this point involves Futures
 
-    val nihEnabledFireCloudUsers = NIHWhitelistUtils.getCurrentNihUsernameMap(subjectId) map { mapping =>
-      mapping.collect { case (fcUser, nihUser) if whitelist contains nihUser => fcUser }.toSeq
-    }
+    /* If we're syncing the entire whitelist, we want to make sure that those users don't have expired access,
+        so we need to check the expiration dates for every user.
+       If we're syncing just an individual user, we don't want to check their expiration date because:
+        a) this may be their first time linking, so they have no expiration date set
+        b) they may be re-linking to update their expired access
+     */
+    val memberList = subjectId match {
+      case None => {
+        val nihEnabledFireCloudUsers = NIHWhitelistUtils.getCurrentNihUsernameMap() map { mapping =>
+          mapping.collect { case (fcUser, nihUser) if whitelist contains nihUser => fcUser }.toSeq
+        }
 
-    val memberList = nihEnabledFireCloudUsers map { subjectIds => RawlsGroupMemberList(userSubjectIds = Some(subjectIds))}
+        nihEnabledFireCloudUsers map { subjectIds => {
+          RawlsGroupMemberList(userSubjectIds = Some(subjectIds))
+        }}
+      }
+      case Some(id) => Future.successful(RawlsGroupMemberList(userSubjectIds = Some(Seq(id))))
+    }
 
     val pipeline = addAdminCredentials ~> sendReceive
     val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(FireCloudConfig.Nih.rawlsGroupName)
@@ -392,9 +405,9 @@ object NIHWhitelistUtils extends FireCloudRequestBuilding {
   }
 
   // get a mapping of FireCloud user name to NIH User name, for only those Thurloe users with a non-expired NIH link
-  def getCurrentNihUsernameMap(subjectId: Option[String] = None)(implicit arf: ActorRefFactory, ec: ExecutionContext): Future[Map[String, String]] = {
-    val nihUsernames = getAllUserValuesForKey("linkedNihUsername", subjectId)
-    val nihExpiretimes = getAllUserValuesForKey("linkExpireTime", subjectId)
+  def getCurrentNihUsernameMap()(implicit arf: ActorRefFactory, ec: ExecutionContext): Future[Map[String, String]] = {
+    val nihUsernames = getAllUserValuesForKey("linkedNihUsername")
+    val nihExpiretimes = getAllUserValuesForKey("linkExpireTime")
 
     filterForCurrentUsers(nihUsernames, nihExpiretimes)
   }
