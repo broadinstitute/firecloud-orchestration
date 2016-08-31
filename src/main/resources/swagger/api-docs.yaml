@@ -2812,6 +2812,7 @@ definitions:
     required:
       - accountName
       - firecloudHasAccess
+      - displayName
     properties:
       accountName:
         type: string
@@ -2819,6 +2820,9 @@ definitions:
       firecloudHasAccess:
         type: boolean
         description: whether the Firecloud service has been given access to this billing account
+      displayName:
+        type: string
+        description: display name of billing account
   BillingProjectMembership:
     description: ''
     required:
