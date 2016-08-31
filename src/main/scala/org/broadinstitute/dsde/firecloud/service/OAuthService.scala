@@ -28,7 +28,7 @@ object OAuthService {
 
 }
 
-trait OAuthService extends HttpService with PerRequestCreator with FireCloudDirectives {
+trait OAuthService extends HttpService with PerRequestCreator with FireCloudDirectives with FireCloudRequestBuilding {
 
   private implicit val executionContext = actorRefFactory.dispatcher
   lazy val log = LoggerFactory.getLogger(getClass)

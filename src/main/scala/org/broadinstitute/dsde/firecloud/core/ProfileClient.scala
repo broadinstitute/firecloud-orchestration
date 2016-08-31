@@ -119,7 +119,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   }
 
   def getProfile(userInfo: UserInfo, updateExpiration: Boolean): Future[PerRequestMessage] = {
-    val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
+    val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
     val profileReq = Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))
 
     pipeline(profileReq) flatMap { response: HttpResponse =>
@@ -148,7 +148,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                     val expireKVP = FireCloudKeyValue(Some("linkExpireTime"), Some(linkExpireSeconds.toString))
                     val expirePayload = ThurloeKeyValue(Some(userInfo.getUniqueId), Some(expireKVP))
 
-                    val postPipeline = addCredentials(userInfo.accessToken) ~> sendReceive
+                    val postPipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
                     val updateReq = Post(UserService.remoteSetKeyURL, expirePayload)
 
                     postPipeline(updateReq) map { response: HttpResponse =>
@@ -367,7 +367,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
 object NIHWhitelistUtils extends FireCloudRequestBuilding {
   def getAllUserValuesForKey(key: String, userId: Option[String] = None)(implicit arf: ActorRefFactory, ec: ExecutionContext): Future[Map[String, String]] = {
-    val pipeline = addAdminCredentials ~> sendReceive
+    val pipeline = addFireCloudCredentials ~> sendReceive
 
     val queryParams = userId match {
       case Some(sub) => Map("key"->key, "userId"->sub)
