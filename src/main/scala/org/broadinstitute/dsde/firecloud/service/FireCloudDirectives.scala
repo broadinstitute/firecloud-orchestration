@@ -1,8 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import spray.http.{Uri, HttpMethod}
+import org.parboiled.common.FileUtils
+import spray.http.{HttpMethod, Uri}
 import spray.http.MediaTypes._
 import spray.routing._
+import spray.util._
 
 import scala.util.Try
 
@@ -96,6 +98,16 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
     }
 
     innerRoute(state, approvalPrompt)
+  }
+
+  def withResourceFileContents(path: String)(innerRoute: String => Route): Route = {
+    val classLoader = actorSystem(actorRefFactory).dynamicAccess.classLoader
+    val inputStream = classLoader.getResource(path).openStream()
+    try {
+      innerRoute( FileUtils.readAllText(inputStream) )
+    } finally {
+      inputStream.close()
+    }
   }
 
 

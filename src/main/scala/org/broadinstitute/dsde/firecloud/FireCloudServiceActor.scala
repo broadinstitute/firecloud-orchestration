@@ -39,6 +39,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
   val userService = new UserService with ActorRefFactoryContext
   val nihSyncService = new NIHSyncService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
+  val libraryService = new LibraryService with ActorRefFactoryContext
 
   lazy val log = LoggerFactory.getLogger(getClass)
   val logRequests = mapInnerRoute { route => requestContext =>
@@ -73,6 +74,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
         userService.routes ~
         nihSyncService.routes ~
         healthService.routes ~
+        libraryService.routes ~
         pathPrefix("api") {
           routes
         } ~
@@ -98,8 +100,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
             serveIndex()
           } ~
             pathSuffix("api-docs") {
-              complete {
-                getResourceFileContents("swagger/api-docs.yaml")
+              withResourceFileContents("swagger/api-docs.yaml") { apiDocs =>
+                complete(apiDocs)
               }
             } ~
             getFromResourceDirectory(swaggerUiPath)
@@ -136,28 +138,20 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
   }
 
   private def serveIndex(): Route = {
-    val indexHtml = getResourceFileContents(swaggerUiPath + "/index.html")
-    complete {
-      HttpEntity(ContentType(MediaTypes.`text/html`),
-        indexHtml
-          .replace("your-client-id", FireCloudConfig.Auth.googleClientId)
-          .replace("your-realms", FireCloudConfig.Auth.swaggerRealm)
-          .replace("your-app-name", FireCloudConfig.Auth.swaggerRealm)
-          .replace("scopeSeparator: \",\"", "scopeSeparator: \" \"")
-          .replace("url = \"http://petstore.swagger.io/v2/swagger.json\";",
-            "url = '/api-docs';")
-      )
+    withResourceFileContents(swaggerUiPath + "/index.html") { indexHtml =>
+      complete {
+        HttpEntity(ContentType(MediaTypes.`text/html`),
+          indexHtml
+            .replace("your-client-id", FireCloudConfig.Auth.googleClientId)
+            .replace("your-realms", FireCloudConfig.Auth.swaggerRealm)
+            .replace("your-app-name", FireCloudConfig.Auth.swaggerRealm)
+            .replace("scopeSeparator: \",\"", "scopeSeparator: \" \"")
+            .replace("url = \"http://petstore.swagger.io/v2/swagger.json\";",
+              "url = '/api-docs';")
+        )
+      }
     }
   }
 
-  private def getResourceFileContents(path: String): String = {
-    val classLoader = actorSystem(actorRefFactory).dynamicAccess.classLoader
-    val inputStream = classLoader.getResource(path).openStream()
-    try {
-      FileUtils.readAllText(inputStream)
-    } finally {
-      inputStream.close()
-    }
-  }
 }
 
