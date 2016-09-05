@@ -3,12 +3,11 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.io.StringReader
 
 import com.google.api.client.auth.oauth2.Credential
-import com.google.api.client.googleapis.auth.oauth2.{GoogleCredential, GoogleAuthorizationCodeFlow, GoogleClientSecrets}
+import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets, GoogleCredential}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.compute.ComputeScopes
-import com.google.api.services.storage.{StorageScopes, Storage}
-
+import com.google.api.services.storage.{Storage, StorageScopes}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.{OAuthException, OAuthTokens}
 import org.slf4j.LoggerFactory
@@ -121,6 +120,36 @@ object HttpGoogleServicesDAO {
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
+  }
+
+  // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program
+  def getSignedUrl(bucketName: String, objectKey: String) = {
+
+    // generate the string-to-be-signed
+    val verb = "GET"
+    val md5 = ""
+    val contentType = ""
+    val expire = (System.currentTimeMillis() /1000) + 300 // expires 5 minutes (300 seconds) from now
+    val objectPath = s"/$bucketName/$objectKey"
+
+    val signableString = s"$verb\n$md5\n$contentType\n$expire\n$objectPath"
+
+    // use GoogleCredential.Builder to parse the private key from the pem file
+    val builder = new GoogleCredential.Builder()
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
+    val privateKey = builder.getServiceAccountPrivateKey
+
+    // sign the string
+    val signature = java.security.Signature.getInstance("SHA256withRSA")
+    signature.initSign(privateKey)
+    signature.update(signableString.getBytes("UTF-8"))
+    val signedBytes = signature.sign()
+
+    // assemble the final url
+    s"https://storage.googleapis.com/$bucketName/$objectKey" +
+      s"?GoogleAccessId=$pemFileClientId" +
+      s"&Expires=$expire" +
+      "&Signature=" + java.net.URLEncoder.encode(java.util.Base64.getEncoder.encodeToString(signedBytes), "UTF-8")
   }
 
 }

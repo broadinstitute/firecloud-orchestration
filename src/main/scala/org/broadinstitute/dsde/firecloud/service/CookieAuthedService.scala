@@ -3,8 +3,9 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.Props
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core._
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.slf4j.LoggerFactory
-import spray.http.{HttpCookie, HttpRequest, HttpHeaders, OAuth2BearerToken}
+import spray.http._
 import spray.routing._
 
 trait CookieAuthedService extends HttpService with PerRequestCreator with FireCloudDirectives
@@ -33,10 +34,8 @@ trait CookieAuthedService extends HttpService with PerRequestCreator with FireCl
     path("download" / "b" / Segment / "o" / RestPath) { (bucket, obj) =>
         cookie("FCtoken") { tokenCookie =>
           mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
-            val gcsApiUrl = s"https://www.googleapis.com/storage/v1/b/%s/o/%s?alt=media".format(
-              bucket, java.net.URLEncoder.encode(obj.toString, "UTF-8"))
-            val extReq = Get(gcsApiUrl)
-            externalHttpPerRequest(requestContext, extReq)
+            val redirectUrl = HttpGoogleServicesDAO.getSignedUrl(bucket, obj.toString)
+            requestContext.redirect(redirectUrl, StatusCodes.TemporaryRedirect)
           }
         }
     }
