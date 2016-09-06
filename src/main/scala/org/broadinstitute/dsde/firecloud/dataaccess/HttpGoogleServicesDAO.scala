@@ -44,6 +44,9 @@ object HttpGoogleServicesDAO {
   val pemFile = FireCloudConfig.Auth.pemFile
   val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
 
+  val rawlsPemFile = FireCloudConfig.Auth.rawlsPemFile
+  val rawlsPemFileClientId = FireCloudConfig.Auth.rawlsPemFileClientId
+
   lazy val log = LoggerFactory.getLogger(getClass)
 
   /**
@@ -136,7 +139,7 @@ object HttpGoogleServicesDAO {
 
     // use GoogleCredential.Builder to parse the private key from the pem file
     val builder = new GoogleCredential.Builder()
-      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(rawlsPemFile))
     val privateKey = builder.getServiceAccountPrivateKey
 
     // sign the string
@@ -147,7 +150,7 @@ object HttpGoogleServicesDAO {
 
     // assemble the final url
     s"https://storage.googleapis.com/$bucketName/$objectKey" +
-      s"?GoogleAccessId=$pemFileClientId" +
+      s"?GoogleAccessId=$rawlsPemFileClientId" +
       s"&Expires=$expire" +
       "&Signature=" + java.net.URLEncoder.encode(java.util.Base64.getEncoder.encodeToString(signedBytes), "UTF-8")
   }

@@ -10,6 +10,8 @@ object FireCloudConfig {
     lazy val googleSecretJson = sys.env.get("GOOGLE_SECRET_JSON").get
     lazy val pemFile = sys.env.get("ORCHESTRATION_PEM").get
     lazy val pemFileClientId = sys.env.get("ORCHESTRATION_PEM_CLIENT_ID").get
+    lazy val rawlsPemFile = sys.env.get("RAWLS_PEM").get
+    lazy val rawlsPemFileClientId = sys.env.get("RAWLS_PEM_CLIENT_ID").get
     lazy val swaggerRealm = sys.env.get("SWAGGER_REALM").get
   }
 
