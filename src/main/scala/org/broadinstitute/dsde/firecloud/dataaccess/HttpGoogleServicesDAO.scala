@@ -155,4 +155,9 @@ object HttpGoogleServicesDAO {
       "&Signature=" + java.net.URLEncoder.encode(java.util.Base64.getEncoder.encodeToString(signedBytes), "UTF-8")
   }
 
+  def getObjectResourceUrl(bucketName: String, objectKey: String) = {
+    val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"
+    gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
+  }
+
 }
