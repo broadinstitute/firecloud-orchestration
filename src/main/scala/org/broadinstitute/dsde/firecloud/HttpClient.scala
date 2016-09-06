@@ -18,7 +18,7 @@ import spray.http.StatusCodes._
 
 import org.broadinstitute.dsde.firecloud.HttpClient.PerformExternalRequest
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestCompleteWithHeaders
+import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 
 object HttpClient {
 
@@ -62,7 +62,7 @@ class HttpClient (requestContext: RequestContext) extends Actor
     pipeline(externalRequest) onComplete {
       case Success(response) =>
         log.debug("Got response: " + response)
-        context.parent ! RequestCompleteWithHeaders(response, response.headers:_*)
+        context.parent ! RequestComplete(response)
       case Failure(error) =>
         log.error("External request failed", error)
         context.parent ! RequestCompleteWithErrorReport(InternalServerError, "External request failed: " + error.getMessage, error)
