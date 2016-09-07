@@ -132,10 +132,10 @@ object HttpGoogleServicesDAO {
     val verb = "GET"
     val md5 = ""
     val contentType = ""
-    val expire = (System.currentTimeMillis() /1000) + 300 // expires 5 minutes (300 seconds) from now
+    val expireSeconds = (System.currentTimeMillis() / 1000) + 120 // expires 2 minutes (120 seconds) from now
     val objectPath = s"/$bucketName/$objectKey"
 
-    val signableString = s"$verb\n$md5\n$contentType\n$expire\n$objectPath"
+    val signableString = s"$verb\n$md5\n$contentType\n$expireSeconds\n$objectPath"
 
     // use GoogleCredential.Builder to parse the private key from the pem file
     val builder = new GoogleCredential.Builder()
@@ -151,7 +151,7 @@ object HttpGoogleServicesDAO {
     // assemble the final url
     s"https://storage.googleapis.com/$bucketName/$objectKey" +
       s"?GoogleAccessId=$rawlsPemFileClientId" +
-      s"&Expires=$expire" +
+      s"&Expires=$expireSeconds" +
       "&Signature=" + java.net.URLEncoder.encode(java.util.Base64.getEncoder.encodeToString(signedBytes), "UTF-8")
   }
 
