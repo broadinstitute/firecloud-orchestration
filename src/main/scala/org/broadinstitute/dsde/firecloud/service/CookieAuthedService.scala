@@ -4,11 +4,14 @@ import akka.actor.Props
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core._
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.model.OAuthUser
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http._
 import spray.http.StatusCodes._
 import spray.routing._
+
+import scala.util.Try
 
 trait CookieAuthedService extends HttpService with PerRequestCreator with FireCloudDirectives
   with FireCloudRequestBuilding {
@@ -37,16 +40,41 @@ trait CookieAuthedService extends HttpService with PerRequestCreator with FireCl
         cookie("FCtoken") { tokenCookie =>
           mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
 
-            // check if the user has access to the file. If so, sign and issue a redirect; if not, replay Google's
-            // exception to the user, just as if the user tried to access the Google file directly.
-            val extReq = Get( HttpGoogleServicesDAO.getObjectResourceUrl(bucket, obj.toString) )
-            val pipeline = authHeaders(requestContext) ~> sendReceive
-            pipeline {extReq} map { response =>
-                response.status match {
-                  case OK =>
-                    val redirectUrl = HttpGoogleServicesDAO.getSignedUrl(bucket, obj.toString)
-                    requestContext.redirect(redirectUrl, StatusCodes.TemporaryRedirect)
-                  case _ => requestContext.complete(response)
+            // query Google for the user's info, then check if the user has access to the file.
+            // If the user is valid and has access, sign and issue a redirect; if not, replay Google's
+            // exception to the user, just as if the user tried to access Google directly.
+            val objectReq = Get( HttpGoogleServicesDAO.getObjectResourceUrl(bucket, obj.toString) )
+            val objectPipeline = authHeaders(requestContext) ~> sendReceive
+
+            val userReq = Get( HttpGoogleServicesDAO.profileUrl )
+            val userPipeline = authHeaders(requestContext) ~> sendReceive
+
+            val objectStr = s"gs://$bucket/$obj"
+
+            userPipeline{userReq} map { userResponse =>
+              userResponse.status match {
+                case OK =>
+                  objectPipeline {objectReq} map { objectResponse =>
+
+                    import spray.json._
+                    import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOAuthUser
+                    val oauthUser:Try[OAuthUser] = Try(userResponse.entity.asString.parseJson.convertTo[OAuthUser])
+                    val userStr = (oauthUser getOrElse userResponse.entity).toString
+
+                    objectResponse.status match {
+                      case OK =>
+                        log.info(s"$userStr download allowed for [$objectStr]")
+                        val redirectUrl = HttpGoogleServicesDAO.getSignedUrl(bucket, obj.toString)
+                        requestContext.redirect(redirectUrl, StatusCodes.TemporaryRedirect)
+                      case _ =>
+                        val responseStr = objectResponse.entity.asString.replaceAll("\n","")
+                        log.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status}): $responseStr")
+                        requestContext.complete(objectResponse)
+                    }
+                  }
+                case _ =>
+                  log.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.asString}")
+                  requestContext.complete(userResponse)
               }
             }
           }

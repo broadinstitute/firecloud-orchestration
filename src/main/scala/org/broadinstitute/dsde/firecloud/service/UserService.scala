@@ -155,7 +155,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         }
       } ~
       path("userinfo") {
-        passthrough("https://www.googleapis.com/oauth2/v3/userinfo", HttpMethods.GET)
+        passthrough(HttpGoogleServicesDAO.profileUrl, HttpMethods.GET)
       } ~
       pathPrefix("profile") {
         // GET /profile - get all keys for current user

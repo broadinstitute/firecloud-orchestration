@@ -17,6 +17,9 @@ case class UserInfo(userEmail: String, accessToken: OAuth2BearerToken, accessTok
   def getUniqueId = id
 }
 
+// response from Google has other fields, but these are the ones we care about
+case class OAuthUser(sub: String, email: String)
+
 case class RegistrationInfo(userInfo: RawlsUserInfo, enabled: RawlsEnabled)
 
 case class RawlsUserInfo(userSubjectId: String, userEmail: String)
