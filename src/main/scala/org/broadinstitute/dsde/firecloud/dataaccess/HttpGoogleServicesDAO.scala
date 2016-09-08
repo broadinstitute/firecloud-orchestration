@@ -47,7 +47,7 @@ object HttpGoogleServicesDAO {
   val rawlsPemFile = FireCloudConfig.Auth.rawlsPemFile
   val rawlsPemFileClientId = FireCloudConfig.Auth.rawlsPemFileClientId
 
-  val profileUrl = "https://www.googleapis.com/oauth2/v3/userinfo"
+  final val profileUrl = "https://www.googleapis.com/oauth2/v3/userinfo"
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
