@@ -2,14 +2,14 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.core.{ProfileClientActor, ProfileClient}
+import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
-import spray.http.{HttpMethods, StatusCode, HttpCredentials}
+import spray.http.{HttpCredentials, HttpMethods, StatusCode}
 import spray.http.HttpHeaders.Authorization
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
@@ -17,7 +17,7 @@ import spray.httpx.unmarshalling._
 import spray.routing._
 import spray.json._
 
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class UserServiceActor extends Actor with UserService {
   def actorRefFactory = context
@@ -161,7 +161,9 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         // GET /profile - get all keys for current user
         pathEnd {
           get {
-            passthrough(UserService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
+            mapRequest(addFireCloudCredentials) {
+              passthrough(UserService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
+            }
           } ~
           post {
             entity(as[BasicProfile]) {

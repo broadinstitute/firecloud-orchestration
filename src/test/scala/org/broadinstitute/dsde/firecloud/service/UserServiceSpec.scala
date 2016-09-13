@@ -94,7 +94,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
     allProperties.keys foreach {
       key =>
         profileServer
-          .when(request().withMethod("POST").withPath(
+          .when(request().withMethod("POST").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(
             UserService.remoteGetKeyPath.format(uniqueId, key)))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -105,7 +105,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
     List(HttpMethods.GET, HttpMethods.POST, HttpMethods.DELETE) foreach {
       method =>
         profileServer
-          .when(request().withMethod(method.name).withPath(
+          .when(request().withMethod(method.name).withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(
             UserService.remoteGetKeyPath.format(uniqueId, exampleKey)))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -113,13 +113,13 @@ class UserServiceSpec extends ServiceSpec with UserService {
           )
     }
     profileServer
-      .when(request().withMethod("GET").withPath(UserService.remoteGetAllPath.format(uniqueId)))
+      .when(request().withMethod("GET").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(UserService.remoteGetAllPath.format(uniqueId)))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
     profileServer
-      .when(request().withMethod("POST").withPath(UserService.remoteSetKeyPath))
+      .when(request().withMethod("POST").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(UserService.remoteSetKeyPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
