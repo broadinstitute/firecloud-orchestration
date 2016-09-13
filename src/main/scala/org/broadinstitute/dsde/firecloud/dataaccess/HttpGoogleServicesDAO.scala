@@ -122,6 +122,19 @@ object HttpGoogleServicesDAO {
       .build()
   }
 
+  def getRawlsServiceAccountAccessToken = {
+    val googleCredential = new GoogleCredential.Builder()
+      .setTransport(httpTransport)
+      .setJsonFactory(jsonFactory)
+      .setServiceAccountId(rawlsPemFileClientId)
+      .setServiceAccountScopes(storageReadOnly)
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(rawlsPemFile))
+      .build()
+
+    googleCredential.refreshToken()
+    googleCredential.getAccessToken
+  }
+
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
@@ -161,5 +174,6 @@ object HttpGoogleServicesDAO {
     val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"
     gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
   }
+
 
 }
