@@ -2,21 +2,27 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.io.StringReader
 
+import akka.actor.ActorRefFactory
 import com.google.api.client.auth.oauth2.Credential
-import com.google.api.client.googleapis.auth.oauth2.{GoogleCredential, GoogleAuthorizationCodeFlow, GoogleClientSecrets}
+import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets, GoogleCredential}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.compute.ComputeScopes
-import com.google.api.services.storage.{StorageScopes, Storage}
-
+import com.google.api.services.storage.{Storage, StorageScopes}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.{OAuthException, OAuthTokens}
+import org.broadinstitute.dsde.firecloud.model.{OAuthException, OAuthTokens, OAuthUser}
+import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.slf4j.LoggerFactory
-import spray.http.Uri
+import spray.client.pipelining._
+import spray.http.StatusCodes._
+import spray.http.{HttpResponse, OAuth2BearerToken, StatusCodes, Uri}
+import spray.routing.RequestContext
 
 import scala.collection.JavaConversions._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
-object HttpGoogleServicesDAO {
+object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
 
   val baseUrl = FireCloudConfig.FireCloud.baseUrl
   val callbackPath = "/callback"
@@ -44,6 +50,9 @@ object HttpGoogleServicesDAO {
 
   val pemFile = FireCloudConfig.Auth.pemFile
   val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
+
+  val rawlsPemFile = FireCloudConfig.Auth.rawlsPemFile
+  val rawlsPemFileClientId = FireCloudConfig.Auth.rawlsPemFileClientId
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -118,9 +127,136 @@ object HttpGoogleServicesDAO {
       .build()
   }
 
+  def getRawlsServiceAccountAccessToken = {
+    val googleCredential = new GoogleCredential.Builder()
+      .setTransport(httpTransport)
+      .setJsonFactory(jsonFactory)
+      .setServiceAccountId(rawlsPemFileClientId)
+      .setServiceAccountScopes(storageReadOnly)
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(rawlsPemFile))
+      .build()
+
+    googleCredential.refreshToken()
+    googleCredential.getAccessToken
+  }
+
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
+  }
+
+  // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program
+  def getSignedUrl(bucketName: String, objectKey: String) = {
+
+    // generate the string-to-be-signed
+    val verb = "GET"
+    val md5 = ""
+    val contentType = ""
+    val expireSeconds = (System.currentTimeMillis() / 1000) + 120 // expires 2 minutes (120 seconds) from now
+    val objectPath = s"/$bucketName/$objectKey"
+
+    val signableString = s"$verb\n$md5\n$contentType\n$expireSeconds\n$objectPath"
+
+    // use GoogleCredential.Builder to parse the private key from the pem file
+    val builder = new GoogleCredential.Builder()
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(rawlsPemFile))
+    val privateKey = builder.getServiceAccountPrivateKey
+
+    // sign the string
+    val signature = java.security.Signature.getInstance("SHA256withRSA")
+    signature.initSign(privateKey)
+    signature.update(signableString.getBytes("UTF-8"))
+    val signedBytes = signature.sign()
+
+    // assemble the final url
+    s"https://storage.googleapis.com/$bucketName/$objectKey" +
+      s"?GoogleAccessId=$rawlsPemFileClientId" +
+      s"&Expires=$expireSeconds" +
+      "&Signature=" + java.net.URLEncoder.encode(java.util.Base64.getEncoder.encodeToString(signedBytes), "UTF-8")
+  }
+
+  def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
+
+  def getObjectResourceUrl(bucketName: String, objectKey: String) = {
+    val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"
+    gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
+  }
+
+  def objectAccessCheck(bucketName: String, objectKey: String, authToken: String)
+                       (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
+    val accessRequest = Get( HttpGoogleServicesDAO.getObjectResourceUrl(bucketName, objectKey) )
+    val accessPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
+    accessPipeline{accessRequest}
+  }
+
+  def getUserProfile(requestContext: RequestContext)
+                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
+    val profileRequest = Get( "https://www.googleapis.com/oauth2/v3/userinfo" )
+    val profilePipeline = authHeaders(requestContext) ~> sendReceive
+
+    profilePipeline{profileRequest}
+  }
+
+  // download "proxy" for GCS objects. When using a simple RESTful url to download from GCS, Chrome/GCS will look
+  // at all the currently-signed in Google identities for the browser, and pick the "most recent" one. This may
+  // not be the one we want to use for downloading the GCS object. To force the identity we want, we jump through
+  // some hoops: if we can, we presign a url using a service account.
+  // pseudocode:
+  //  if (we can determine the user's identity via google)
+  //    if (the user has access to the object)
+  //      if (the service account has access to the object)
+  //        redirect to a signed url that guarantees the user's identity
+  //      else
+  //        redirect to a direct download in GCS
+  def getDownload(requestContext: RequestContext, bucketName: String, objectKey: String, userAuthToken: String)
+                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext) = {
+
+    val objectStr = s"gs://$bucketName/$objectKey" // for logging
+    // can we determine the current user's identity with Google?
+    getUserProfile(requestContext) map { userResponse =>
+      userResponse.status match {
+        case OK =>
+          // user is known to Google. Extract the user's email and SID from the response, for logging
+          import spray.json._
+          import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOAuthUser
+          val oauthUser:Try[OAuthUser] = Try(userResponse.entity.asString.parseJson.convertTo[OAuthUser])
+          val userStr = (oauthUser getOrElse userResponse.entity).toString
+          // Does the user have access to the target file?
+          objectAccessCheck(bucketName, objectKey, userAuthToken) map { objectResponse =>
+            objectResponse.status match {
+              case OK =>
+                // user has access to the object.
+                // now make a final request to see if our service account has access, so it can sign a URL
+                objectAccessCheck(bucketName, objectKey, getRawlsServiceAccountAccessToken) map { serviceAccountResponse =>
+                  serviceAccountResponse.status match {
+                    case OK =>
+                      // the service account can read the object too. We are safe to sign a url.
+                      log.info(s"$userStr download via signed URL allowed for [$objectStr]")
+                      requestContext.redirect(getSignedUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
+                    case _ =>
+                      // the service account cannot read the object, even though the user can. We cannot
+                      // make a signed url, because the service account won't have permission to sign it.
+                      // therefore, we rely on a direct link. We accept that a direct link is vulnerable to
+                      // identity problems if the current user is signed in to multiple google identies in
+                      // the same browser profile, but this is the best we can do.
+                      // generate direct link per https://cloud.google.com/storage/docs/authentication#cookieauth
+                      log.info(s"$userStr download via direct link allowed for [$objectStr]")
+                      requestContext.redirect(getDirectDownloadUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
+                  }
+                }
+              case _ =>
+                // the user does not have access to the object.
+                val responseStr = objectResponse.entity.asString.replaceAll("\n","")
+                log.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status}): $responseStr")
+                requestContext.complete(objectResponse)
+            }
+          }
+        case _ =>
+          // Google did not return a profile for this user; abort.
+          log.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.asString}")
+          requestContext.complete(userResponse)
+      }
+    }
   }
 
 }

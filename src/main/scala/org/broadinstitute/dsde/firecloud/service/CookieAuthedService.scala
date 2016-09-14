@@ -1,11 +1,18 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.Props
+import akka.actor.{ActorRefFactory, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core._
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.model.OAuthUser
 import org.slf4j.LoggerFactory
-import spray.http.{HttpCookie, HttpRequest, HttpHeaders, OAuth2BearerToken}
+import spray.client.pipelining._
+import spray.http._
+import spray.http.StatusCodes._
 import spray.routing._
+
+import scala.concurrent.Future
+import scala.util.Try
 
 trait CookieAuthedService extends HttpService with PerRequestCreator with FireCloudDirectives
   with FireCloudRequestBuilding {
@@ -26,17 +33,10 @@ trait CookieAuthedService extends HttpService with PerRequestCreator with FireCl
           }
         }
     } ~
-    // download "proxy" for GCS objects. When using a simple RESTful url to download from GCS, Chrome/GCS will look
-    // at all the currently-signed in Google identities for the browser, and pick the "most recent" one. This may
-    // not be the one we want to use for downloading the GCS object. To force the identity we want, we send the
-    // access token in the Authorization header when downloading the object.
     path("download" / "b" / Segment / "o" / RestPath) { (bucket, obj) =>
         cookie("FCtoken") { tokenCookie =>
           mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
-            val gcsApiUrl = s"https://www.googleapis.com/storage/v1/b/%s/o/%s?alt=media".format(
-              bucket, java.net.URLEncoder.encode(obj.toString, "UTF-8"))
-            val extReq = Get(gcsApiUrl)
-            externalHttpPerRequest(requestContext, extReq)
+            HttpGoogleServicesDAO.getDownload(requestContext, bucket, obj.toString, tokenCookie.content)
           }
         }
     }
