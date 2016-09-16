@@ -68,7 +68,8 @@ libraryDependencies ++= {
     "org.ocpsoft.prettytime" % "prettytime" % "4.0.1.Final",
     "org.specs2"          %%  "specs2-core"   % "3.7"  % "test",
     "org.scalatest"       %%  "scalatest"     % "2.2.6"   % "test",
-    "org.mock-server"      %  "mockserver-netty" % "3.10.2" % "test"
+    "org.mock-server"      %  "mockserver-netty" % "3.10.2" % "test",
+    "org.everit.json"      %  "org.everit.json.schema" % "1.4.0" % "test"
     // -- Logging --
     ,"ch.qos.logback" % "logback-classic" % "1.1.3"
     ,"com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2"
