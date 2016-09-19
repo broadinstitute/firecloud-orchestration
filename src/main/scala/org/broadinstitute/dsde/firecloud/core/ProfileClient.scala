@@ -367,7 +367,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
 object NIHWhitelistUtils extends FireCloudRequestBuilding {
   def getAllUserValuesForKey(key: String, userId: Option[String] = None)(implicit arf: ActorRefFactory, ec: ExecutionContext): Future[Map[String, String]] = {
-    val pipeline = addFireCloudCredentials ~> sendReceive
+    val pipeline = addAdminCredentials ~> addFireCloudCredentials ~> sendReceive
 
     val queryParams = userId match {
       case Some(sub) => Map("key"->key, "userId"->sub)
