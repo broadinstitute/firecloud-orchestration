@@ -25,3 +25,6 @@ case class RegistrationInfo(userInfo: RawlsUserInfo, enabled: RawlsEnabled)
 case class RawlsUserInfo(userSubjectId: String, userEmail: String)
 case class RawlsEnabled(google: Boolean, ldap: Boolean)
 
+// TODO: roll into RawlsEnabled? combine with an isAdmin role?
+case class Curator(curator: Boolean)
+

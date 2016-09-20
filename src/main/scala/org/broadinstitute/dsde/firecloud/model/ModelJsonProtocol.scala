@@ -119,6 +119,7 @@ object ModelJsonProtocol {
   implicit val impRawlsUserInfo = jsonFormat2(RawlsUserInfo)
   implicit val impRawlsEnabled = jsonFormat2(RawlsEnabled)
   implicit val impRegistrationInfo = jsonFormat2(RegistrationInfo)
+  implicit val impCurator = jsonFormat1(Curator)
 
   implicit val impRawlsGroupMemberList = jsonFormat4(RawlsGroupMemberList)
 

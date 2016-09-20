@@ -2028,9 +2028,7 @@ paths:
     get:
       responses:
         '200':
-          description: User is a curator
-        '404':
-          description: User is not a curator
+          schema: {"properties": {"curator": {type: "boolean"}}}
         '500':
           description: Rawls Internal Error
           schema:
