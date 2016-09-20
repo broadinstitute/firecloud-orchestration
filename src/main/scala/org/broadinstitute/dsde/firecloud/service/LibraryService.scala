@@ -28,13 +28,15 @@ trait LibraryService extends HttpService with FireCloudDirectives with FireCloud
     } ~
     pathPrefix("api") {
       pathPrefix("library") {
-        path("user" / "role" / "curator") { requestContext =>
-          val pipeline = authHeaders(requestContext) ~> sendReceive
-          pipeline{Get(rawlsCuratorUrl)} map { response =>
-            response.status match {
-              case OK => requestContext.complete(OK, Curator(true))
-              case NotFound => requestContext.complete(OK, Curator(false))
-              case _ => requestContext.complete(response) // replay the root exception
+        path("user" / "role" / "curator") {
+          get { requestContext =>
+            val pipeline = authHeaders(requestContext) ~> sendReceive
+            pipeline{Get(rawlsCuratorUrl)} map { response =>
+              response.status match {
+                case OK => requestContext.complete(OK, Curator(true))
+                case NotFound => requestContext.complete(OK, Curator(false))
+                case _ => requestContext.complete(response) // replay the root exception
+              }
             }
           }
         }
