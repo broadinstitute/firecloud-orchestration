@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
 import org.slf4j.LoggerFactory
+import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json._
@@ -47,6 +48,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   def updateAttributes(ns: String, name: String, attrs: JsValue): Future[PerRequestMessage] = {
     // spray routing can only (easily) make a JsValue; we need to work with a JsObject
     // TODO: handle exceptions on this cast
+
     val userAttrs = attrs.asJsObject
 
     // TODO: schema-validate user input
@@ -60,7 +62,10 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
         // between the time we retrieved them and here, where we update them.
         val allOperations = generateAttributeOperations(workspaceResponse.workspace.get.attributes, userAttrs)
         rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map (RequestComplete(_))
+
       }
+    } recover {
+      case pe:PipelineException => throw new FireCloudException("Error with workspace", pe)
     }
   }
 

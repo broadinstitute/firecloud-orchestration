@@ -71,5 +71,4 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     pipeline(req)
   }
 
-
 }
