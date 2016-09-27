@@ -1,20 +1,29 @@
 package org.broadinstitute.dsde.firecloud
 
+import org.broadinstitute.dsde.firecloud.dataaccess.{HttpRawlsDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.parboiled.common.FileUtils
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
 import spray.util._
-
 import org.broadinstitute.dsde.firecloud.service._
 
-class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
+import scala.concurrent.ExecutionContext.Implicits.global
+
+class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives with LibraryApiService {
   implicit val system = context.system
 
   trait ActorRefFactoryContext {
     def actorRefFactory = context
   }
+
+  val rawlsDAO:RawlsDAO = new HttpRawlsDAO
+
+  val app:Application = new Application(rawlsDAO)
+
+  val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
   // insecure cookie-authed routes
 
@@ -39,7 +48,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
   val userService = new UserService with ActorRefFactoryContext
   val nihSyncService = new NIHSyncService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
-  val libraryService = new LibraryService with ActorRefFactoryContext
 
   lazy val log = LoggerFactory.getLogger(getClass)
   val logRequests = mapInnerRoute { route => requestContext =>
@@ -74,7 +82,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives {
         userService.routes ~
         nihSyncService.routes ~
         healthService.routes ~
-        libraryService.routes ~
+        libraryRoutes ~
         pathPrefix("api") {
           routes
         } ~

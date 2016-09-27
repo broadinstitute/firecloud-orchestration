@@ -19,7 +19,7 @@ import org.everit.json.schema.loader.SchemaLoader
 import org.json.JSONObject
 import org.json.JSONTokener;
 
-class LibraryServiceSpec extends ServiceSpec with LibraryService {
+class LibraryApiServiceSpec extends ServiceSpec with LibraryApiService {
 
   def actorRefFactory = system
   var workspaceServer: ClientAndServer = _
@@ -50,7 +50,7 @@ class LibraryServiceSpec extends ServiceSpec with LibraryService {
         "should receive a MethodNotAllowed" in {
           List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(isCuratorPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(routes) ~> check {
+              new RequestBuilder(method)(isCuratorPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
                 System.out.println(response)
                 status should equal(MethodNotAllowed)
               }
