@@ -23,4 +23,5 @@ trait RawlsDAO {
 
   def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userInfo: UserInfo): Future[RawlsWorkspace]
 
+
 }

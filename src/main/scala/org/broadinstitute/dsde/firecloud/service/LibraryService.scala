@@ -10,7 +10,6 @@ import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
 import org.slf4j.LoggerFactory
-import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json._
@@ -65,18 +64,35 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
         rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map (RequestComplete(_))
       }
     }
-      /* recover {
-      case pe:PipelineException => RequestCompleteWithErrorReport(InternalServerError, "Error with workspace", pe)
-      case _ => RequestCompleteWithErrorReport(InternalServerError, "Unknown error")
-    } */
   }
 
-  // TODO: should be in a rawls dao, not library dao
-  private def getWorkspace(ns: String, name: String): Future[RawlsWorkspaceResponse] = {
-    val workspacePipeline = addCredentials(userInfo.accessToken) ~> sendReceive ~> unmarshal[RawlsWorkspaceResponse]
-    workspacePipeline(Get(getWorkspaceUrl(ns, name)))
+  /**
+    * given a set of existing attributes and a set of new attributes, calculate the attribute operations
+    * that need to be performed
+    * TODO: existing model uses Map[String,String] which will not work with arrays, booleans, etc!
+    * TODO: define how to handle "library:" prefix - is that sent in the inbound request?
+    */
+  private def generateAttributeOperations(existingAttrs: Map[String, String], newAttrs: JsObject): Seq[AttributeUpdateOperation] = {
+    val libraryAttrKeys = existingAttrs.keySet
+      .filter(_.startsWith("library:"))
+      .map(_.replaceFirst("library:", ""))
+
+    // remove any attributes that currently exist on the workspace, but are not in the user's packet
+    // for any array attributes, we remove them and recreate them entirely. Add the array attrs.
+    val keysToRemove = libraryAttrKeys.diff(newAttrs.fields.keySet) ++ newAttrs.fields.filter(_._2.isInstanceOf[JsArray]).keySet
+    val removeOperations = keysToRemove.map(RemoveAttribute(_)).toSeq
+
+    // TODO: handle numeric/boolean values
+    val updateOperations = newAttrs.fields.toSeq flatMap {
+      // case (key, value:JsBoolean) => AddUpdateAttribute(key, AttributeString(value.toString()))
+      // case (key, value:JsNumber) => AddUpdateAttribute(key, AttributeString(value.toString()))
+      case (key, value:JsArray) => value.elements.map{x => AddUpdateAttribute(key, AttributeString(x.toString()))}
+      case (key, value:JsValue) => Seq(AddUpdateAttribute(key, AttributeString(value.toString())))
+    }
+
+    // handle removals before upserts
+    removeOperations ++ updateOperations
   }
 
-  private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
 
 }
