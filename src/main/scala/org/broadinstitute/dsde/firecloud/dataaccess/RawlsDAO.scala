@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.firecloud.model.{RawlsWorkspace, RawlsWorkspaceResponse, UserInfo, WorkspaceName}
 
 import scala.concurrent.Future
@@ -15,6 +16,9 @@ abstract class RawlsDAO {
 
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
 
-  def withWorkspaceResponse(wsid: WorkspaceName)(implicit userInfo: UserInfo): Future[RawlsWorkspaceResponse]
+  def getWorkspace(ns: String, name: String)(implicit userInfo: UserInfo): Future[RawlsWorkspaceResponse]
+
+  def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userInfo: UserInfo): Future[RawlsWorkspace]
+
 
 }

@@ -2051,7 +2051,7 @@ paths:
         - Library
       operationId: putLibraryMetadata
       summary: |
-        put the entire metadata for a workspace
+        put the entire metadata for a library dataset
       parameters:
         - name: workspaceNamespace
           description: Workspace Namespace
@@ -2071,6 +2071,8 @@ paths:
       responses:
         200:
           description: Success
+          schema:
+            $ref: '#/definitions/Workspace'
         500:
           description: Rawls Internal Error
           schema:
@@ -2966,3 +2968,61 @@ definitions:
       lineNumber:
         type: integer
         description: line number
+
+  Workspace:
+    description: ''
+    required:
+      - namespace
+      - name
+      - workspaceId
+      - bucketName
+      - createdDate
+      - createdBy
+      - attributes
+      - accessLevels
+    properties:
+      namespace:
+        type: string
+        description: The namespace the workspace belongs to
+      name:
+        type: string
+        description: The name of the workspace
+      realm:
+        $ref: '#/definitions/RawlsGroupRef'
+        description: An optional realm for the workspace
+      workspaceId:
+        type: string
+        description: A UUID associated with the workspace
+      bucketName:
+        type: string
+        description: The name of the bucket associated with the workspace
+      createdDate:
+        type: string
+        format: date-time
+        description: 'The date the workspace was created in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
+      lastModified:
+        type: string
+        format: date-time
+        description: 'The date the workspace was last modified in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
+      createdBy:
+        type: string
+        description: The user who created the workspace
+      attributes:
+        $ref: ''
+        description: Map[String, Attribute]
+      accessLevels:
+         $ref: ''
+         description: Map[String, RawlsGroupRef]
+      realmACLs:
+         $ref: ''
+         description: Map[String, RawlsGroupRef]
+      isLocked:
+        type: boolean
+        description: Can the Workspace currently be modified?
+  RawlsGroupRef:
+    description: a reference to a group
+    properties:
+      groupName:
+        type: string
+        description: ''
+
