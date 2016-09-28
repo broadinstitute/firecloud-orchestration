@@ -15,6 +15,7 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json._
 
+
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -62,11 +63,20 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
         // between the time we retrieved them and here, where we update them.
         val allOperations = generateAttributeOperations(workspaceResponse.workspace.get.attributes, userAttrs)
         rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map (RequestComplete(_))
-
       }
-    } recover {
-      case pe:PipelineException => throw new FireCloudException("Error with workspace", pe)
     }
+      /* recover {
+      case pe:PipelineException => RequestCompleteWithErrorReport(InternalServerError, "Error with workspace", pe)
+      case _ => RequestCompleteWithErrorReport(InternalServerError, "Unknown error")
+    } */
   }
+
+  // TODO: should be in a rawls dao, not library dao
+  private def getWorkspace(ns: String, name: String): Future[RawlsWorkspaceResponse] = {
+    val workspacePipeline = addCredentials(userInfo.accessToken) ~> sendReceive ~> unmarshal[RawlsWorkspaceResponse]
+    workspacePipeline(Get(getWorkspaceUrl(ns, name)))
+  }
+
+  private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
 
 }
