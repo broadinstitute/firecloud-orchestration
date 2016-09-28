@@ -14,7 +14,7 @@ src/main/{packages}/
 - webservice
 	- route definitions
 	- minimal-to-none business logic; everything testable should be in a service
-	- calls service classes
+	- calls service classes, using PerRequest
 - startup class (Boot.scala, Agora.scala, Main.scala, etc - standardize name?)
 	- instantiates runtime DAOs from config (group into an Application object)
 	- defines the service constructors, which are used by webservices to create service instances
