@@ -3,7 +3,7 @@ src/main/{packages}/
 	- DAOs, defined per artifact. For instance, one DAO for ES, one for Thurloe, one for mysql.
 		- every DAO has an abstract parent, plus implementation classes for runtime instances.
 			We will also have mock implementation classes that live in the src/test hierarchy
-		- if a single DAO per artifact is too big, make the DAO a facade and delegate to impl classes.
+		- if a single DAO per artifact is too big, cut it up into multiple traits aggregated by a DAO class.
 - model
 	- model classes. Case classes if possible. Little-to-no logic implementations; things like toString allowed
 - service
