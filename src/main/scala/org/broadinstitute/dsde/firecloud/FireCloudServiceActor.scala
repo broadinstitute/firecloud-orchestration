@@ -9,6 +9,7 @@ import spray.http._
 import spray.routing.{HttpServiceActor, Route}
 import spray.util._
 import org.broadinstitute.dsde.firecloud.service._
+import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

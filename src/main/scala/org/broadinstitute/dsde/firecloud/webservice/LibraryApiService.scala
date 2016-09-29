@@ -1,15 +1,13 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.Props
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.{Curator, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impCurator
+import org.broadinstitute.dsde.firecloud.model.{Curator, UserInfo}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, LibraryService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import org.slf4j.LoggerFactory
+import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
-import spray.client.pipelining._
-import spray.json.{JsObject, JsValue}
 import spray.json._
 import spray.routing._
 

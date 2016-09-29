@@ -2,8 +2,12 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.net.URL
 
+import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.dataaccess.{HttpRawlsDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
+import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -25,6 +29,11 @@ class LibraryApiServiceSpec extends ServiceSpec with LibraryApiService {
   var workspaceServer: ClientAndServer = _
 
   lazy val isCuratorPath = "/api/library/user/role/curator"
+
+  // TODO: use mocks
+  val rawlsDAO:RawlsDAO = new HttpRawlsDAO
+  val app:Application = new Application(rawlsDAO)
+  val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
   override def beforeAll(): Unit = {
 
