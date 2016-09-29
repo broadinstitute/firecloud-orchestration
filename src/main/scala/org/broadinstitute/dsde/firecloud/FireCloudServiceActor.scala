@@ -1,13 +1,11 @@
 package org.broadinstitute.dsde.firecloud
 
-import org.broadinstitute.dsde.firecloud.dataaccess.{HttpRawlsDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, HttpRawlsDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.parboiled.common.FileUtils
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
-import spray.util._
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 
@@ -21,8 +19,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
   }
 
   val rawlsDAO:RawlsDAO = new HttpRawlsDAO
+  val searchDAO:SearchDAO = new ElasticSearchDAO
 
-  val app:Application = new Application(rawlsDAO)
+  val app:Application = new Application(rawlsDAO, searchDAO)
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 

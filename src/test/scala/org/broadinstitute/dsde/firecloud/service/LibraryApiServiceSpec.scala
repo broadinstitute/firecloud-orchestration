@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import java.net.URL
 
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.{HttpRawlsDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
@@ -21,7 +21,7 @@ import spray.util._
 import org.everit.json.schema.Schema
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.JSONObject
-import org.json.JSONTokener;
+import org.json.JSONTokener
 
 class LibraryApiServiceSpec extends ServiceSpec with LibraryApiService {
 
@@ -30,9 +30,9 @@ class LibraryApiServiceSpec extends ServiceSpec with LibraryApiService {
 
   lazy val isCuratorPath = "/api/library/user/role/curator"
 
-  // TODO: use mocks
-  val rawlsDAO:RawlsDAO = new HttpRawlsDAO
-  val app:Application = new Application(rawlsDAO)
+  val rawlsDAO:RawlsDAO = new MockRawlsDAO
+  val searchDAO:SearchDAO = new ElasticSearchDAO
+  val app:Application = new Application(rawlsDAO, searchDAO)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
   override def beforeAll(): Unit = {

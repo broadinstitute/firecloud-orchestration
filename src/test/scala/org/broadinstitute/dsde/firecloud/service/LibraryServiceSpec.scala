@@ -1,25 +1,12 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.core.NIHWhitelistUtils
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, RawlsDAO}
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, RemoveAttribute}
-import org.broadinstitute.dsde.firecloud.model.{AttributeString, UserInfo}
-import org.broadinstitute.dsde.firecloud.utils.DateUtils
+import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations._
+import org.broadinstitute.dsde.firecloud.model.AttributeString
 import org.scalatest.FreeSpec
-import spray.http.OAuth2BearerToken
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 import spray.json._
 
 class LibraryServiceSpec extends FreeSpec {
 
-  /*
-  val rawlsDAO:RawlsDAO = new MockRawlsDAO
-  val mockUserInfo = UserInfo(userEmail="nobody@nowhere.org", accessToken=OAuth2BearerToken("faketoken"), accessTokenExpiresIn=System.currentTimeMillis(), id="1111111111")
-  */
   val existingAttrs1 = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "library:keythree"->"valthree", "library:keyfour"->"valfour")
 
   "LibraryService" - {
