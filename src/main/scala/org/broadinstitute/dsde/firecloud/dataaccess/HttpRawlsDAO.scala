@@ -55,6 +55,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
 
+  // TODO: make this a globally-available util method
   private def userAuthedRequest(req: HttpRequest)(implicit userInfo: UserInfo): Future[HttpResponse] = {
     val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
     pipeline(req)
