@@ -10,12 +10,13 @@ import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.compute.ComputeScopes
 import com.google.api.services.storage.{Storage, StorageScopes}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.{OAuthException, OAuthTokens, OAuthUser}
+import org.broadinstitute.dsde.firecloud.model.{OAuthException, OAuthTokens, OAuthUser, ObjectMetadata}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.StatusCodes._
-import spray.http.{HttpResponse, OAuth2BearerToken, StatusCodes, Uri}
+import spray.http._
 import spray.routing.RequestContext
 
 import scala.collection.JavaConversions._
@@ -226,24 +227,45 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
             objectResponse.status match {
               case OK =>
                 // user has access to the object.
-                // now make a final request to see if our service account has access, so it can sign a URL
-                objectAccessCheck(bucketName, objectKey, getRawlsServiceAccountAccessToken) map { serviceAccountResponse =>
-                  serviceAccountResponse.status match {
-                    case OK =>
-                      // the service account can read the object too. We are safe to sign a url.
-                      log.info(s"$userStr download via signed URL allowed for [$objectStr]")
-                      requestContext.redirect(getSignedUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
-                    case _ =>
-                      // the service account cannot read the object, even though the user can. We cannot
-                      // make a signed url, because the service account won't have permission to sign it.
-                      // therefore, we rely on a direct link. We accept that a direct link is vulnerable to
-                      // identity problems if the current user is signed in to multiple google identies in
-                      // the same browser profile, but this is the best we can do.
-                      // generate direct link per https://cloud.google.com/storage/docs/authentication#cookieauth
-                      log.info(s"$userStr download via direct link allowed for [$objectStr]")
-                      requestContext.redirect(getDirectDownloadUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
+                // switch solutions based on the size of the target object. If the target object is small enough,
+                // proxy it through orchestration; this allows embedded images inside HTML reports to render correctly.
+                val objSize:Int = Try(objectResponse.entity.asString.parseJson.convertTo[ObjectMetadata].size)
+                                                    .toOption.getOrElse("-1").toInt
+                // 8MB or under ...
+                if (objSize > 0 && objSize < 8388608) {
+                  log.info(s"$userStr download via proxy allowed for [$objectStr]")
+                  val gcsApiUrl = getObjectResourceUrl(bucketName, objectKey) + "?alt=media"
+                  val extReq = Get(gcsApiUrl)
+                  val proxyPipeline = addCredentials(OAuth2BearerToken(userAuthToken)) ~> sendReceive
+                  // ensure we set the content-type correctly when proxying
+                  proxyPipeline(extReq) map { proxyResponse =>
+                      proxyResponse.header[HttpHeaders.`Content-Type`] match {
+                      case Some(ct) =>requestContext.withHttpResponseEntityMapped(e => HttpEntity(ct.contentType, e.data)).complete(proxyResponse.status, proxyResponse.entity)
+                      case None => requestContext.complete(proxyResponse.status, proxyResponse.entity)
+                    }
+                  }
+                } else {
+                  // object is too large to proxy; try to make a signed url.
+                  // now make a final request to see if our service account has access, so it can sign a URL
+                  objectAccessCheck(bucketName, objectKey, getRawlsServiceAccountAccessToken) map { serviceAccountResponse =>
+                    serviceAccountResponse.status match {
+                      case OK =>
+                        // the service account can read the object too. We are safe to sign a url.
+                        log.info(s"$userStr download via signed URL allowed for [$objectStr]")
+                        requestContext.redirect(getSignedUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
+                      case _ =>
+                        // the service account cannot read the object, even though the user can. We cannot
+                        // make a signed url, because the service account won't have permission to sign it.
+                        // therefore, we rely on a direct link. We accept that a direct link is vulnerable to
+                        // identity problems if the current user is signed in to multiple google identies in
+                        // the same browser profile, but this is the best we can do.
+                        // generate direct link per https://cloud.google.com/storage/docs/authentication#cookieauth
+                        log.info(s"$userStr download via direct link allowed for [$objectStr]")
+                        requestContext.redirect(getDirectDownloadUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
+                    }
                   }
                 }
+
               case _ =>
                 // the user does not have access to the object.
                 val responseStr = objectResponse.entity.asString.replaceAll("\n","")
