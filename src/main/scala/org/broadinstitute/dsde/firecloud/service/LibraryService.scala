@@ -64,6 +64,15 @@ object LibraryService {
     (removeOperations ++ updateOperations)
   }
 
+  def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
+    // TODO: publish attribute can just be a boolean once we support boolean attributes
+    val operations: Seq[AttributeUpdateOperation] =
+      if (value) Seq(AddUpdateAttribute("library:published", AttributeString("true")))
+      else Seq(RemoveAttribute("library:published"))
+
+    operations
+  }
+
 }
 
 
@@ -106,10 +115,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
       if (!workspaceResponse.accessLevel.contains("OWNER")) {
         Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner"))
       } else {
-        val operations: Seq[AttributeUpdateOperation] =
-          // TODO: publish attribute can just be a boolean once we support boolean attributes
-          if (value) Seq(AddUpdateAttribute("library", AttributeString("published")))
-          else Seq(RemoveAttribute("library"))
+        val operations = updatePublishAttribute(value)
         rawlsDAO.patchWorkspaceAttributes(ns, name, operations) map (RequestComplete(_))
       }
     }
