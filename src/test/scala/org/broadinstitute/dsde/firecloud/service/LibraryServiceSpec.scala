@@ -39,7 +39,7 @@ class LibraryServiceSpec extends FreeSpec {
       }
     }
     "when publishing a workspace" - {
-      "should add a library: published attribute" in {
+      "should add a library:published attribute" in {
         val expected = Seq(AddUpdateAttribute("library:published",AttributeString("true")))
         assertResult(expected) {
           LibraryService.updatePublishAttribute(true)
@@ -47,7 +47,7 @@ class LibraryServiceSpec extends FreeSpec {
       }
     }
     "when unpublishing a workspace" - {
-      "should remove the library: published attribute" in {
+      "should remove the library:published attribute" in {
         val expected = Seq(RemoveAttribute("library:published"))
         assertResult(expected) {
           LibraryService.updatePublishAttribute(false)

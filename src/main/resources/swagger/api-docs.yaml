@@ -2084,6 +2084,73 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  '/api/library/{workspaceNamespace}/{workspaceName}/published':
+    put:
+      tags:
+        - Library
+      operationId: publishLibraryWorkspace
+      summary: |
+        publish the workspace in the Library
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/Workspace'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      security:
+        - bearer:
+        - googleoauth:
+          - openid
+          - email
+          - profile
+          - https://www.googleapis.com/auth/devstorage.full_control
+    delete:
+      tags:
+        - Library
+      operationId: unpublishLibraryWorkspace
+      summary: |
+        unpublish the workspace in the Library
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/Workspace'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      security:
+        - bearer:
+        - googleoauth:
+          - openid
+          - email
+          - profile
+          - https://www.googleapis.com/auth/devstorage.full_control
 
 ### GAWB-934 we're hiding billing endpoints for now
 #  /api/billing:
