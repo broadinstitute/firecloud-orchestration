@@ -58,17 +58,19 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           } ~
-          path(Segment / Segment / "set-is-published" ) { (namespace, name) =>
-            parameters('value) { value =>
-              post { requestContext =>
-                perRequest(requestContext,
-                  LibraryService.props(libraryServiceConstructor, userInfo),
-                  LibraryService.SetPublished(namespace, name, value.toBoolean))
-              }
+          path(Segment / Segment / "published" ) { (namespace, name) =>
+            post { requestContext =>
+              perRequest(requestContext,
+                LibraryService.props(libraryServiceConstructor, userInfo),
+                LibraryService.SetPublishAttribute(namespace, name, true))
+            }
+            delete { requestContext =>
+              perRequest(requestContext,
+                LibraryService.props(libraryServiceConstructor, userInfo),
+                LibraryService.SetPublishAttribute(namespace, name, false))
             }
           }
         }
       }
     }
-
 }

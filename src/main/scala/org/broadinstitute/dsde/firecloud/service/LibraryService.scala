@@ -24,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object LibraryService {
   sealed trait LibraryServiceMessage
   case class UpdateAttributes(ns: String, name: String, attrs: JsValue) extends LibraryServiceMessage
-  case class SetPublished(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
+  case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
@@ -76,7 +76,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
 
   override def receive = {
     case UpdateAttributes(ns: String, name: String, attrs: JsValue) => asCurator {updateAttributes(ns, name, attrs)} pipeTo sender
-    case SetPublished(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
+    case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
   }
 
   def updateAttributes(ns: String, name: String, attrs: JsValue): Future[PerRequestMessage] = {
@@ -106,10 +106,10 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
       if (!workspaceResponse.accessLevel.contains("OWNER")) {
         Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner"))
       } else {
-        val operations: Seq[AttributeUpdateOperation] = Seq()
-        // either add or remove the library attribute
-        if (value) operations :+ AddUpdateAttribute("library", AttributeString("published"))
-        else operations :+ RemoveAttribute("library")
+        val operations: Seq[AttributeUpdateOperation] =
+          // TODO: publish attribute can just be a boolean once we support boolean attributes
+          if (value) Seq(AddUpdateAttribute("library", AttributeString("published")))
+          else Seq(RemoveAttribute("library"))
         rawlsDAO.patchWorkspaceAttributes(ns, name, operations) map (RequestComplete(_))
       }
     }
