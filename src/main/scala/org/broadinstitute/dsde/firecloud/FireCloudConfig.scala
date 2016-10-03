@@ -97,6 +97,7 @@ object FireCloudConfig {
       val hp = hostport.split(':')
       Authority(Host(hp(0)), hp(1).toInt)
     })
+    lazy val indexName = sys.env.get("ELASTICSEARCH_INDEX").get
   }
 
 }
