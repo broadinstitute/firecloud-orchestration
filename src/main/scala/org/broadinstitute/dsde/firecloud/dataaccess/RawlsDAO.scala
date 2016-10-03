@@ -9,7 +9,7 @@ import scala.concurrent.Future
 /**
   * Created by davidan on 9/23/16.
   */
-abstract class RawlsDAO {
+trait RawlsDAO {
 
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"

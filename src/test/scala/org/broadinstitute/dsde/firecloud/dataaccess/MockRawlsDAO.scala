@@ -9,6 +9,9 @@ import scala.concurrent.Future
 
 /**
   * Created by davidan on 9/28/16.
+  *
+  * Not currently used; serves as example code only
+  *
   */
 class MockRawlsDAO  extends RawlsDAO {
 
