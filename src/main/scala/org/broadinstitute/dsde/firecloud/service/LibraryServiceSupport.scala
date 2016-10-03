@@ -28,7 +28,7 @@ trait LibraryServiceSupport {
     val updateOperations = newAttrs.fields.toSeq flatMap {
       // case (key, value:JsBoolean) => AddUpdateAttribute(key, AttributeString(value.toString()))
       // case (key, value:JsNumber) => AddUpdateAttribute(key, AttributeString(value.toString()))
-      case (key, value:JsArray) => value.elements.map{x => AddListMember(key, AttributeString(x.toString()))}
+      case (key, value:JsArray) => value.elements.map{x => AddListMember(key, AttributeString(x.convertTo[String]))}
       case (key, value:JsString) => Seq(AddUpdateAttribute(key, AttributeString(value.convertTo[String])))
       case (key, value:JsValue) => Seq(AddUpdateAttribute(key, AttributeString(value.toString))) // .toString on a JsString includes extra quotes
     }
