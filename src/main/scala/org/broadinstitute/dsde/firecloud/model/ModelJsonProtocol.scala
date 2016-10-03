@@ -126,6 +126,8 @@ object ModelJsonProtocol {
   implicit val impBillingAccountScopes = jsonFormat1(BillingAccountScopes)
   implicit val impBillingAccountRedirect = jsonFormat1(BillingAccountRedirect)
 
+  implicit val impGoogleObjectMetadata = jsonFormat15(ObjectMetadata)
+
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
     case MalformedRequestContentRejection(errorMsg, _) :: _ =>
