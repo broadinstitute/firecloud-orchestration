@@ -21,6 +21,16 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext ) extends RawlsDAO {
 
+  override def isAdmin(userInfo: UserInfo): Future[Boolean] = {
+    userAuthedRequest( Get(rawlsAdminUrl) )(userInfo) map { response =>
+      response.status match {
+        case OK => true
+        case NotFound => false
+        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response)) // replay the root exception
+      }
+    }
+  }
+
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest( Get(rawlsCuratorUrl) )(userInfo) map { response =>
       response.status match {
