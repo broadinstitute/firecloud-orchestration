@@ -12,7 +12,10 @@ import scala.concurrent.Future
 trait RawlsDAO {
 
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
+  lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
+
+  def isAdmin(userInfo: UserInfo): Future[Boolean]
 
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
 

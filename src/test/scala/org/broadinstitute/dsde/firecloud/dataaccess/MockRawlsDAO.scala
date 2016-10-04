@@ -15,6 +15,8 @@ import scala.concurrent.Future
   */
 class MockRawlsDAO  extends RawlsDAO {
 
+  override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future(true)
+
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = Future(true)
 
   override def getWorkspace(ns: String, name: String)(implicit userInfo: UserInfo): Future[RawlsWorkspaceResponse] = {
