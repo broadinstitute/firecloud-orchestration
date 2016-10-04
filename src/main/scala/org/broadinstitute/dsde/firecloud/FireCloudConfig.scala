@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud
 
 import com.typesafe.config.ConfigFactory
+import spray.http.Uri.{Authority, Host}
 
 object FireCloudConfig {
   private val config = ConfigFactory.load()
@@ -89,6 +90,14 @@ object FireCloudConfig {
     //we must lazily evaluate this setting so we don't get "configuration not found" errors
     lazy private val notification = config.getConfig("notification")
     lazy val activationTemplateId = sys.env.get("ACTIVATION_TEMPLATE_ID").getOrElse(notification.getString("activationTemplateId"))
+  }
+
+  object ElasticSearch {
+    lazy val servers: Seq[Authority] = (sys.env.get("ELASTICSEARCH_URLS").get.split(',') map { hostport =>
+      val hp = hostport.split(':')
+      Authority(Host(hp(0)), hp(1).toInt)
+    })
+    lazy val indexName = sys.env.get("ELASTICSEARCH_INDEX").get
   }
 
 }
