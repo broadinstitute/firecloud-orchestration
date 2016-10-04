@@ -70,8 +70,7 @@ class LibraryApiServiceSpec extends ServiceSpec with LibraryApiService {
 
     "in its schema definition" - {
       "has valid JSON" in {
-        val classLoader = actorSystem(actorRefFactory).dynamicAccess.classLoader
-        val inputStream = classLoader.getResource("library/attribute-definitions.json").openStream()
+        val inputStream = getClass.getResource("/library/attribute-definitions.json").openStream()
         try {
           val fileContents = FileUtils.readAllText(inputStream)
           val jsonVal:Try[JsValue] = Try(fileContents.parseJson)
@@ -81,8 +80,7 @@ class LibraryApiServiceSpec extends ServiceSpec with LibraryApiService {
         }
       }
       "has valid JSON Schema" in {
-        val classLoader = actorSystem(actorRefFactory).dynamicAccess.classLoader
-        val inputStream = classLoader.getResource("library/attribute-definitions.json").openStream()
+        val inputStream = getClass.getResource("/library/attribute-definitions.json").openStream()
         val schemaStream = new URL("http://json-schema.org/draft-04/schema").openStream();
 
         try {
