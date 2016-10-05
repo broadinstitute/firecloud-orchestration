@@ -1,11 +1,14 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations._
-import org.broadinstitute.dsde.firecloud.model.AttributeString
+import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, _}
+import org.broadinstitute.dsde.firecloud.model.{AttributeString, UserInfo}
 import org.scalatest.FreeSpec
 import spray.json._
 
-class LibraryServiceSpec extends FreeSpec {
+import scala.concurrent.ExecutionContext
+
+class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
 
   val existingAttrs1 = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "library:keythree"->"valthree", "library:keyfour"->"valfour")
 
@@ -20,7 +23,7 @@ class LibraryServiceSpec extends FreeSpec {
           RemoveAttribute("library:keyfour")
         )
         assertResult(expected) {
-          LibraryService.generateAttributeOperations(existingAttrs1, newAttrs.asJsObject)
+          generateAttributeOperations(existingAttrs1, newAttrs.asJsObject)
         }
       }
     }
@@ -34,15 +37,33 @@ class LibraryServiceSpec extends FreeSpec {
           AddUpdateAttribute("library:keytwo",AttributeString("valtwoNew"))
         )
         assertResult(expected) {
-          LibraryService.generateAttributeOperations(existingAttrs1, newAttrs.asJsObject)
+          generateAttributeOperations(existingAttrs1, newAttrs.asJsObject)
         }
       }
     }
+    "when new attrs contain an array" - {
+      "should calculate list updates" in {
+        val newAttrs = """{"library:keyone":"valoneNew", "library:keytwo":["valtwoA","valtwoB","valtwoC"]}""".parseJson
+        val expected = Seq(
+          RemoveAttribute("library:keythree"),
+          RemoveAttribute("library:keyfour"),
+          RemoveAttribute("library:keytwo"),
+          AddUpdateAttribute("library:keyone",AttributeString("valoneNew")),
+          AddListMember("library:keytwo",AttributeString("valtwoA")),
+          AddListMember("library:keytwo",AttributeString("valtwoB")),
+          AddListMember("library:keytwo",AttributeString("valtwoC"))
+        )
+        assertResult(expected) {
+          generateAttributeOperations(existingAttrs1, newAttrs.asJsObject)
+        }
+      }
+    }
+
     "when publishing a workspace" - {
       "should add a library:published attribute" in {
         val expected = Seq(AddUpdateAttribute("library:published",AttributeString("true")))
         assertResult(expected) {
-          LibraryService.updatePublishAttribute(true)
+          updatePublishAttribute(true)
         }
       }
     }
@@ -50,7 +71,7 @@ class LibraryServiceSpec extends FreeSpec {
       "should remove the library:published attribute" in {
         val expected = Seq(RemoveAttribute("library:published"))
         assertResult(expected) {
-          LibraryService.updatePublishAttribute(false)
+          updatePublishAttribute(false)
         }
       }
     }
