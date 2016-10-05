@@ -49,25 +49,27 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           } ~
-          path(Segment / Segment / "metadata") { (namespace, name) =>
-            put {
-              entity(as[String]) { rawAttrsString => requestContext =>
+          path(Segment / Segment) { (namespace, name) =>
+            path( "metadata") {
+              put {
+                entity(as[String]) { rawAttrsString => requestContext =>
+                  perRequest(requestContext,
+                    LibraryService.props(libraryServiceConstructor, userInfo),
+                    LibraryService.UpdateAttributes(namespace, name, rawAttrsString.toString.parseJson))
+                }
+              }
+            } ~
+            path("published") {
+              post { requestContext =>
                 perRequest(requestContext,
                   LibraryService.props(libraryServiceConstructor, userInfo),
-                  LibraryService.UpdateAttributes(namespace, name, rawAttrsString.toString.parseJson))
+                  LibraryService.SetPublishAttribute(namespace, name, true))
+              } ~
+              delete { requestContext =>
+                perRequest(requestContext,
+                  LibraryService.props(libraryServiceConstructor, userInfo),
+                  LibraryService.SetPublishAttribute(namespace, name, false))
               }
-            }
-          } ~
-          path(Segment / Segment / "published" ) { (namespace, name) =>
-            post { requestContext =>
-              perRequest(requestContext,
-                LibraryService.props(libraryServiceConstructor, userInfo),
-                LibraryService.SetPublishAttribute(namespace, name, true))
-            }
-            delete { requestContext =>
-              perRequest(requestContext,
-                LibraryService.props(libraryServiceConstructor, userInfo),
-                LibraryService.SetPublishAttribute(namespace, name, false))
             }
           }
         }

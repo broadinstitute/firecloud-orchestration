@@ -2085,7 +2085,7 @@ paths:
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
   '/api/library/{workspaceNamespace}/{workspaceName}/published':
-    put:
+    post:
       tags:
         - Library
       operationId: publishLibraryWorkspace
@@ -2107,6 +2107,8 @@ paths:
           description: Success
           schema:
             $ref: '#/definitions/Workspace'
+        403:
+          description: You must be the workspace owner and library curator to publish a workspace to the library
         500:
           description: Rawls Internal Error
           schema:
@@ -2140,6 +2142,8 @@ paths:
           description: Success
           schema:
             $ref: '#/definitions/Workspace'
+        403:
+          description: You must be the workspace owner and library curator to unpublish a workspace from the library
         500:
           description: Rawls Internal Error
           schema:
