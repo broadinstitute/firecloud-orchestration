@@ -56,8 +56,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo context.parent
     case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
-      importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo context.parent
-
+      importAttributesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo context.parent
   }
 
   /**
@@ -88,6 +87,17 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     ModelSchema.getPlural(entityType) match {
       case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
       case Success(plural) => op(plural)
+    }
+  }
+
+  private def checkFirstRowDistinct( tsv: TSVLoadFile, tsvTypeName: String)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
+    val attributeNames = tsv.headers
+    val distinctAttributes = attributeNames.distinct
+    if (attributeNames.size != distinctAttributes.size) {
+      Future(RequestCompleteWithErrorReport(BadRequest,
+        "Duplicated attribute keys are not allowed"))
+    } else {
+      op
     }
   }
 
@@ -237,6 +247,14 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     }
   }
 
+
+  private def importWorkspaceAttributeTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
+                                          workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
+    checkFirstRowDistinct(tsv, "workspace") {
+      batchCallToRawls(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnEntity("workspace",)), "batchUpsert")
+    }
+  }
+
   /**
    * Creates or updates entities from an entity TSV. Required attributes must exist in column headers. */
   private def importEntityTSV(
@@ -308,11 +326,19 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     }
   }
 
-
-  def ImportAttributesFromTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
+  /*
+     Used for importing workspace attribute. We don't use importEntitiesFromTSV (above) because we want a new endpoint that can
+     ONLY import workspace attributes and nothing else
+   */
+  def importAttributesFromTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                              workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
     withTSVFile(tsvString) { tsv =>
-
+      tsv.firstColumnHeader.split(":")(0)  match {
+        case "workspace" =>
+          importWorkspaceAttributeTSV(pipeline, workspaceNamespace, workspaceName, tsv)
+        case _ =>
+          Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header should start with \"workspace\""))
+      }
     }
   }
 
