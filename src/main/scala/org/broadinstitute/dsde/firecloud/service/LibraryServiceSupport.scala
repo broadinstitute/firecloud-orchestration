@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.model.AttributeString
+import org.broadinstitute.dsde.firecloud.model.{AttributeString, RawlsWorkspace}
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import spray.json.{JsArray, JsObject, JsString, JsValue}
 import spray.json.DefaultJsonProtocol._
@@ -45,6 +45,19 @@ trait LibraryServiceSupport {
     // TODO: publish attribute can just be a boolean once we support boolean attributes
     if (value) Seq(AddUpdateAttribute("library:published", AttributeString("true")))
     else Seq(RemoveAttribute("library:published"))
+  }
+
+  // TODO: support for boolean, numeric, array attributes
+  def indexableDocument(workspace: RawlsWorkspace): JsObject = {
+    val attrfields = workspace.attributes map {
+      case (key, value) if key.startsWith("library:") => (key, JsString(value))
+    }
+    val idfields = Map(
+      "name" -> JsString(workspace.name),
+      "namespace" -> JsString(workspace.namespace),
+      "workspaceId" -> JsString(workspace.workspaceId)
+    )
+    JsObject(attrfields ++ idfields)
   }
 
 }

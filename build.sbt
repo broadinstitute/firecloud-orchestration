@@ -59,6 +59,7 @@ libraryDependencies ++= {
     "com.typesafe.akka"   %%  "akka-contrib"  % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"    % akkaV,
+    "org.elasticsearch"    % "elasticsearch"  % "2.4.0",
     ("com.google.api-client" % "google-api-client" % "1.21.0").exclude("com.google.guava", "guava-jdk5"),
     "com.google.apis" % "google-api-services-storage" % "v1-rev58-1.21.0",
     "com.google.apis" % "google-api-services-compute" % "v1-rev120-1.22.0",

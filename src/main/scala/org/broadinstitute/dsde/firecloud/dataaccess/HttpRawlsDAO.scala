@@ -47,9 +47,28 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     requestToObject[RawlsWorkspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 
+  // TODO: use rawls query-by-attribute once that exists
+  override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = {
+    val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
+
+    val allPublishedPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> sendReceive
+    allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
+      response.entity.as[Seq[RawlsWorkspace]] match {
+        case Right(srw) =>
+          logger.info("admin workspace list got: " + srw.length + " raw workspaces")
+          val published = srw.collect {
+            case rw:RawlsWorkspace if rw.attributes.getOrElse("library:published", "false").toBoolean => rw
+          }
+          logger.info("admin workspace list collected: " + published.length + " published workspaces")
+          published
+        case Left(error) =>
+          logger.warn("Could not unmarshal: " + error.toString)
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(response)) // replay the root exception
+      }
+    }
+  }
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
-
 
 
 }

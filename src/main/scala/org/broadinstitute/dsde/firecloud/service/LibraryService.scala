@@ -2,8 +2,9 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
 import akka.pattern._
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsWorkspace
 import org.broadinstitute.dsde.firecloud.model.{ErrorReport, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
@@ -26,18 +27,19 @@ object LibraryService {
   sealed trait LibraryServiceMessage
   case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
+  case object IndexAll extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new LibraryService(userInfo, app.rawlsDAO)
+    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO)
 }
 
 
-class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDAO)(implicit protected val executionContext: ExecutionContext) extends Actor
-  with LibraryServiceSupport with RoleSupport with SprayJsonSupport {
+class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDAO, val searchDAO: SearchDAO)(implicit protected val executionContext: ExecutionContext) extends Actor
+  with LibraryServiceSupport with RoleSupport with SprayJsonSupport with LazyLogging {
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -46,6 +48,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   override def receive = {
     case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => asCurator {updateAttributes(ns, name, attrsJsonString)} pipeTo sender
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
+    case IndexAll => asAdmin {indexAll pipeTo sender}
   }
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
@@ -81,4 +84,17 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
       }
     }
   }
+
+  def indexAll: Future[PerRequestMessage] = {
+    rawlsDAO.getAllLibraryPublishedWorkspaces map {workspaces =>
+      val toIndex:Seq[(String, JsObject)] = workspaces.map {workspace =>
+        (workspace.workspaceId, indexableDocument(workspace))
+      }
+      searchDAO.deleteIndex
+      val indexResult = searchDAO.bulkIndex(toIndex)
+      // todo: respond with something interesting
+      RequestComplete(OK)
+    }
+  }
+
 }
