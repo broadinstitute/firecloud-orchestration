@@ -29,6 +29,10 @@ object EntityClient {
                                    workspaceName: String,
                                    tsvString: String)
 
+  case class ImportAttributesFromTSV(workspaceNamespace: String,
+                                     workspaceName: String,
+                                     tsvString: String)
+
   def props(requestContext: RequestContext): Props = Props(new EntityClient(requestContext))
 
   def colNamesToAttributeNames(entityType: String, headers: Seq[String], requiredAttributes: Map[String,String]) = {
@@ -50,6 +54,10 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     case ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
       importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo context.parent
+    case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
+      val pipeline = authHeaders(requestContext) ~> sendReceive
+      importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo context.parent
+
   }
 
   /**
@@ -297,6 +305,14 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
         case _ =>
           Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
       }
+    }
+  }
+
+
+  def ImportAttributesFromTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
+                             workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
+    withTSVFile(tsvString) { tsv =>
+
     }
   }
 
