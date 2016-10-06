@@ -769,6 +769,48 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importAttributes:
+      post:
+        tags:
+          - workspace
+        operationId: importAttributes
+        summary: Import workspace attributes from a tsv file
+        consumes:
+          - multipart/form-data
+        produces:
+          - application/json
+        parameters:
+          - name: workspaceNamespace
+            description: Destination Workspace Namespace
+            required: true
+            type: string
+            in: path
+          - name: workspaceName
+            description: Destination Workspace Name
+            required: true
+            type: string
+            in: path
+          - name: attributes
+            in: formData
+            description: A valid TSV import file
+            required: true
+            type: file
+        responses:
+          200:
+            description: Successful Request
+          400:
+            description: Bad Request
+          404:
+            description: Source Workspace not found
+          500:
+            description: Internal Error
+        security:
+          - bearer:
+          - googleoauth:
+              - openid
+              - email
+              - profile
+              - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
     post:
       tags:

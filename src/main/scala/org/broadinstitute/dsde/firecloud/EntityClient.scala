@@ -209,6 +209,12 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     EntityUpdateDefinition(row.headOption.get,entityType,ops ++ collectionMemberAttrOp )
   }
 
+  def setAttributesOnWorkspace(pair: Seq[String]) = {
+
+
+    EntityUpdateDefinition()
+  }
+
   private def validateMembershipTSV(tsv: TSVLoadFile, membersType: Option[String]) (op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
     //This magical list of conditions determines whether the TSV is populating the "members" attribute of a collection type entity.
     if( membersType.isEmpty ) {
@@ -248,12 +254,45 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   }
 
 
+/*
+This is what eventually needs to be passed to rawls:
+[
+  {
+    "op": "AddUpdateAttribute",
+    "attributeName": "thisisthekey",
+    "addUpdateAttribute": "thisisthevalue"
+  }
+]
 
+All:
+{
+  "Example payload for AddUpdateAttribute": {
+    "op": "string",
+    "attributeName": "string",
+    "addUpdateAttribute": "string"
+  },
+  "Example payload for RemoveAttribute": {
+    "op": "string",
+    "attributeName": "string"
+  },
+  "Example payload for AddListMember": {
+    "op": "string",
+    "attributeListName": "string",
+    "newMember": "string"
+  },
+  "Example payload for RemoveListMember": {
+    "op": "string",
+    "attributeListName": "string",
+    "removeMember": "string"
+  }
+}
+ */
   private def importWorkspaceAttributeTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                                           workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
     checkFirstRowDistinct(tsv, "workspace") {
       val colInfo = colNamesToAttributeNames("workspace", tsv.headers, Map())
-      batchCallToRawls(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnEntity("workspace", None, row, colInfo)), "updateAttributes")
+      //batchCallToRawls(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace("workspace", None, row, colInfo)), "updateAttributes")
+      batchCallToRawls(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace(row)), "updateAttributes")
     }
   }
 
