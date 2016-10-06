@@ -37,4 +37,10 @@ trait LibraryServiceSupport {
     (removeOperations ++ updateOperations)
   }
 
+  def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
+    // TODO: publish attribute can just be a boolean once we support boolean attributes
+    if (value) Seq(AddUpdateAttribute("library:published", AttributeString("true")))
+    else Seq(RemoveAttribute("library:published"))
+  }
+
 }

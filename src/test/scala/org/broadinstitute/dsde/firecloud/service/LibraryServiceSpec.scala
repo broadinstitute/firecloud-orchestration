@@ -58,5 +58,22 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         }
       }
     }
+
+    "when publishing a workspace" - {
+      "should add a library:published attribute" in {
+        val expected = Seq(AddUpdateAttribute("library:published",AttributeString("true")))
+        assertResult(expected) {
+          updatePublishAttribute(true)
+        }
+      }
+    }
+    "when unpublishing a workspace" - {
+      "should remove the library:published attribute" in {
+        val expected = Seq(RemoveAttribute("library:published"))
+        assertResult(expected) {
+          updatePublishAttribute(false)
+        }
+      }
+    }
   }
 }

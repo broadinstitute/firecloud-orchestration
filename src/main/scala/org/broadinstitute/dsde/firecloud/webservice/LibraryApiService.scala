@@ -49,7 +49,8 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           } ~
-            path(Segment / Segment / "metadata") { (namespace, name) =>
+          path(Segment / Segment) { (namespace, name) =>
+            path( "metadata") {
               put {
                 entity(as[String]) { rawAttrsString => requestContext =>
                   perRequest(requestContext,
@@ -57,7 +58,20 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                     LibraryService.UpdateAttributes(namespace, name, rawAttrsString.toString.parseJson))
                 }
               }
+            } ~
+            path("published") {
+              post { requestContext =>
+                perRequest(requestContext,
+                  LibraryService.props(libraryServiceConstructor, userInfo),
+                  LibraryService.SetPublishAttribute(namespace, name, true))
+              } ~
+              delete { requestContext =>
+                perRequest(requestContext,
+                  LibraryService.props(libraryServiceConstructor, userInfo),
+                  LibraryService.SetPublishAttribute(namespace, name, false))
+              }
             }
+          }
         }
       }
     }
