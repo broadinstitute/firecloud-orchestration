@@ -248,10 +248,12 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   }
 
 
+
   private def importWorkspaceAttributeTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                                           workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
     checkFirstRowDistinct(tsv, "workspace") {
-      batchCallToRawls(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnEntity("workspace",)), "batchUpsert")
+      val colInfo = colNamesToAttributeNames("workspace", tsv.headers, Map())
+      batchCallToRawls(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnEntity("workspace", None, row, colInfo)), "updateAttributes")
     }
   }
 
