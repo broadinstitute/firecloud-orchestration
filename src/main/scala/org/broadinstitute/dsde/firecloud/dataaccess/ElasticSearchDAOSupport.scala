@@ -27,12 +27,12 @@ trait ElasticSearchDAOSupport extends LazyLogging {
     }
     TransportClient.builder().settings(settings).build.addTransportAddresses(addresses: _*)
   }
-  
+
   def executeESRequest[T <: ActionRequest[T], U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): U = {
     val responseTry = executeESRequestTry[T, U, V](req)
     responseTry match {
       case Success(s) =>
-        logger.info(s"ElasticSearch %s request succeeded.".format(req.getClass.getName))
+        logger.debug(s"ElasticSearch %s request succeeded.".format(req.getClass.getName))
         s
       case Failure(f) =>
         logger.warn("ElasticSearch request failed: " + f.getMessage)
@@ -43,7 +43,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
     val responseTry = executeESRequestTry[T, U, V](req)
     responseTry match {
       case Success(s) =>
-        logger.info(s"ElasticSearch %s request succeeded.".format(req.getClass.getName))
+        logger.debug(s"ElasticSearch %s request succeeded.".format(req.getClass.getName))
         Some(s)
       case Failure(f) =>
         logger.debug("ElasticSearch request failed: " + f.getMessage)

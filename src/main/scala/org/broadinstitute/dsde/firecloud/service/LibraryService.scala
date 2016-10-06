@@ -90,10 +90,9 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
       val toIndex:Seq[(String, JsObject)] = workspaces.map {workspace =>
         (workspace.workspaceId, indexableDocument(workspace))
       }
-      searchDAO.deleteIndex
+      searchDAO.recreateIndex
       val indexResult = searchDAO.bulkIndex(toIndex)
-      // todo: respond with something interesting
-      RequestComplete(OK)
+      RequestComplete(OK, indexResult.toString)
     }
   }
 

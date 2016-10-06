@@ -48,6 +48,8 @@ libraryDependencies ++= {
   val akkaV = "2.4.1"
   val sprayV = "1.3.3"
   Seq(
+    "ch.qos.logback" % "logback-classic" % "1.1.3",
+    "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
     "org.broadinstitute.dsde.vault" %%  "vault-common"  % "0.1-19-ca8b927",
     "io.spray"            %%  "spray-can"     % sprayV,
     "io.spray"            %%  "spray-routing" % sprayV,
@@ -59,7 +61,7 @@ libraryDependencies ++= {
     "com.typesafe.akka"   %%  "akka-contrib"  % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"    % akkaV,
-    "org.elasticsearch"    % "elasticsearch"  % "2.4.0",
+    "org.elasticsearch"    % "elasticsearch"  % "2.4.1",
     ("com.google.api-client" % "google-api-client" % "1.21.0").exclude("com.google.guava", "guava-jdk5"),
     "com.google.apis" % "google-api-services-storage" % "v1-rev58-1.21.0",
     "com.google.apis" % "google-api-services-compute" % "v1-rev120-1.22.0",
@@ -71,9 +73,6 @@ libraryDependencies ++= {
     "org.scalatest"       %%  "scalatest"     % "2.2.6"   % "test",
     "org.mock-server"      %  "mockserver-netty" % "3.10.2" % "test",
     "org.everit.json"      %  "org.everit.json.schema" % "1.4.0" % "test"
-    // -- Logging --
-    ,"ch.qos.logback" % "logback-classic" % "1.1.3"
-    ,"com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2"
   )
 }
 

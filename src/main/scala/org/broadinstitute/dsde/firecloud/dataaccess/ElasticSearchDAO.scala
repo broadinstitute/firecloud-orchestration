@@ -2,7 +2,10 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
 import org.elasticsearch.action.admin.indices.delete.{DeleteIndexRequest, DeleteIndexRequestBuilder, DeleteIndexResponse}
+import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
 import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkResponse}
+import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
+import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
 import org.elasticsearch.client.transport.TransportClient
 import spray.http.Uri.Authority
 import spray.json.JsObject
@@ -15,22 +18,86 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
   private val client: TransportClient = buildClient(servers)
   private final val datatype = "dataset"
 
+  // if the index does not exist, create it.
+  override def initIndex = {
+    _recreateIndex(false)
+  }
 
+  // delete an existing index, then re-create it.
+  override def recreateIndex = {
+    _recreateIndex(true)
+  }
+
+  override def indexExists = {
+    executeESRequest[IndicesExistsRequest, IndicesExistsResponse, IndicesExistsRequestBuilder](
+      client.admin.indices.prepareExists(indexName)
+    )
+  }
+
+  override def createIndex = {
+    executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
+      client.admin.indices.prepareCreate(indexName)
+    )
+  }
+  // will throw an error if index does not exist
   override def deleteIndex = {
-    // it's possible the index doesn't exist, so we need to beware of errors
-    executeESRequestOption[DeleteIndexRequest, DeleteIndexResponse, DeleteIndexRequestBuilder]( client.admin().indices().prepareDelete(indexName) )
-    executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder]( client.admin().indices().prepareCreate(indexName) )
+    executeESRequest[DeleteIndexRequest, DeleteIndexResponse, DeleteIndexRequestBuilder](
+      client.admin.indices.prepareDelete(indexName)
+    )
   }
 
   override def bulkIndex(docs: Seq[(String, JsObject)]) = {
-    val bulkRequest = client.prepareBulk()
+    val bulkRequest = client.prepareBulk
     docs map {
       case (id: String, doc: JsObject) => bulkRequest.add(client.prepareIndex(indexName, datatype, id).setSource(doc.compactPrint))
     }
-
     val bulkResponse = executeESRequest[BulkRequest, BulkResponse, BulkRequestBuilder](bulkRequest)
-    if (bulkResponse.hasFailures)
-      logger.warn(bulkResponse.buildFailureMessage())
+
+    if (bulkResponse.hasFailures) {
+      logger.warn(bulkResponse.buildFailureMessage)
+    }
+    bulkResponse.buildFailureMessage
   }
 
+  // TODO: untested and unused; remove this comment once you see this works
+  override def indexDocument(id: String, doc: JsObject) = {
+    executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder] (
+      client.prepareIndex(indexName, datatype, id).setSource(doc.compactPrint)
+    )
+  }
+
+  // TODO: untested and unused; remove this comment once you see this works
+  override def deleteDocument(id: String) = {
+    executeESRequest[DeleteRequest, DeleteResponse, DeleteRequestBuilder] (
+      client.prepareDelete(indexName, datatype, id)
+    )
+  }
+
+
+  private def _recreateIndex(deleteFirst: Boolean = false) = {
+    try {
+      // check existence
+      logger.info(s"Checking to see if ElasticSearch index '%s' exists ... ".format(indexName))
+      val exists = executeESRequest[IndicesExistsRequest, IndicesExistsResponse, IndicesExistsRequestBuilder](
+        client.admin.indices.prepareExists(indexName)
+      )
+      logger.info(s"... ES index '%s' exists: %s".format(indexName, exists.isExists.toString))
+      // delete the index, if it exists and the user asked to do so
+      if (deleteFirst && exists.isExists) {
+        logger.info(s"Deleting ES index '%s' before recreation ...".format(indexName))
+        deleteIndex
+        logger.info(s"... ES index '%s' deleted.".format(indexName))
+      }
+      // create the index, if it didn't exist or the user asked to delete it first
+      if (deleteFirst || !exists.isExists) {
+        logger.info(s"Creating ES index '%s' ...".format(indexName))
+        executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
+          client.admin.indices.prepareCreate(indexName)
+        )
+        logger.info(s"... ES index '%s' created.".format(indexName))
+      }
+    } catch {
+      case e: Exception => logger.warn(s"ES index '%s' could not be recreated and may be in an unstable state.".format(indexName))
+    }
+  }
 }

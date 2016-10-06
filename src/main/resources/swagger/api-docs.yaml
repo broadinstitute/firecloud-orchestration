@@ -2162,6 +2162,8 @@ paths:
       operationId: reindexAll
       summary: |
         deletes and rebuilds the entire index of published library datasets
+      produces:
+      - text/plain
       responses:
         200:
           description: Success

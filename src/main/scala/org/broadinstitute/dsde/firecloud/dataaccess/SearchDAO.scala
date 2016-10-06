@@ -8,8 +8,14 @@ import spray.json.JsObject
   */
 trait SearchDAO extends LazyLogging {
 
+  def initIndex
+  def recreateIndex
+  def indexExists
+  def createIndex
   def deleteIndex
 
   def bulkIndex(docs: Seq[(String, JsObject)])
+  def indexDocument(id: String, doc: JsObject)
+  def deleteDocument(id: String)
 
 }
