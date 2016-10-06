@@ -31,7 +31,7 @@ class LibraryApiServiceSpec extends ServiceSpec with LibraryApiService {
   lazy val isCuratorPath = "/api/library/user/role/curator"
 
   val rawlsDAO:RawlsDAO = new MockRawlsDAO
-  val searchDAO:SearchDAO = new ElasticSearchDAO
+  val searchDAO:SearchDAO = new MockSearchDAO
   val app:Application = new Application(rawlsDAO, searchDAO)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 

@@ -1,18 +1,31 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
-import org.broadinstitute.dsde.firecloud.model.{AttributeString, UserInfo}
-import org.scalatest.FreeSpec
-import spray.json._
+import java.util.UUID
 
-import scala.concurrent.ExecutionContext
+import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
+import org.broadinstitute.dsde.firecloud.model.{AttributeString, RawlsWorkspace}
+import org.scalatest.FreeSpec
+import spray.json.{JsString, _}
 
 class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
 
   val existingLibraryAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "library:keythree"->"valthree", "library:keyfour"->"valfour")
   val existingMixedAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "keythree"->"valthree", "keyfour"->"valfour")
   val existingPublishedAttrs = Map("library:published"->"true", "library:keytwo"->"valtwo", "keythree"->"valthree", "keyfour"->"valfour")
+
+  val testUUID = UUID.randomUUID()
+
+  val testWorkspace = new RawlsWorkspace(workspaceId=testUUID.toString,
+    namespace="testWorkspaceNamespace",
+    name="testWorkspaceName",
+    isLocked=Some(false),
+    createdBy="createdBy",
+    createdDate="createdDate",
+    lastModified=None,
+    attributes=Map.empty[String,String],
+    bucketName="bucketName",
+    accessLevels=Map.empty,
+    realm=None)
 
   "LibraryService" - {
     "when new attrs are empty" - {
@@ -125,6 +138,118 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val expected = Seq(RemoveAttribute("library:published"))
         assertResult(expected) {
           updatePublishAttribute(false)
+        }
+      }
+    }
+    "with only library attributes in workspace" - {
+      "should generate indexable document" in {
+        val w = testWorkspace.copy(attributes = Map(
+          "library:foo"->"foo",
+          "library:bar"->"bar"
+        ))
+        val expected = JsObject(Map(
+          "library:foo" -> JsString("foo"),
+          "library:bar" -> JsString("bar"),
+          "name" -> JsString(testWorkspace.name),
+          "namespace" -> JsString(testWorkspace.namespace),
+          "workspaceId" -> JsString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          indexableDocument(w)
+        }
+      }
+    }
+    "with only default attributes in workspace" - {
+      "should generate indexable document" in {
+        val w = testWorkspace.copy(attributes = Map(
+          "baz"->"defaultBaz",
+          "qux"->"defaultQux"
+        ))
+        val expected = JsObject(Map(
+          "name" -> JsString(testWorkspace.name),
+          "namespace" -> JsString(testWorkspace.namespace),
+          "workspaceId" -> JsString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          indexableDocument(w)
+        }
+      }
+    }
+    "with no attributes in workspace" - {
+      "should generate indexable document" in {
+        // the Map.empty below is currently the same as what's in testWorkspace;
+        // include explicitly here in case testWorkspace changes later
+        val w = testWorkspace.copy(attributes = Map.empty)
+        val expected = JsObject(Map(
+          "name" -> JsString(testWorkspace.name),
+          "namespace" -> JsString(testWorkspace.namespace),
+          "workspaceId" -> JsString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          indexableDocument(w)
+        }
+      }
+    }
+    "with just a (longish) description in workspace" - {
+      "should generate indexable document" in {
+        // https://hipsum.co/
+        val w = testWorkspace.copy(attributes = Map(
+          "description"->("Fingerstache copper mug edison bulb, actually austin mustache chartreuse bicycle rights." +
+            " Plaid iceland artisan blog street art hammock, subway tile vice. Hammock put a bird on it pinterest tacos" +
+            " kitsch gastropub. Chicharrones food truck edison bulb meh. Cardigan aesthetic vegan kitsch. Hell of" +
+            " messenger bag chillwave hashtag, distillery thundercats aesthetic roof party lo-fi sustainable" +
+            " jean shorts single-origin coffee. Distillery ugh green juice, hammock marfa gastropub mlkshk" +
+            " chambray vegan aesthetic beard listicle skateboard ramps literally.")
+        ))
+        val expected = JsObject(Map(
+          "name" -> JsString(testWorkspace.name),
+          "namespace" -> JsString(testWorkspace.namespace),
+          "workspaceId" -> JsString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          indexableDocument(w)
+        }
+      }
+    }
+    "with mixed library and default attributes in workspace" - {
+      "should generate indexable document" in {
+        val w = testWorkspace.copy(attributes = Map(
+          "library:foo"->"foo",
+          "library:bar"->"bar",
+          "baz"->"defaultBaz",
+          "qux"->"defaultQux"
+        ))
+        val expected = JsObject(Map(
+          "library:foo" -> JsString("foo"),
+          "library:bar" -> JsString("bar"),
+          "name" -> JsString(testWorkspace.name),
+          "namespace" -> JsString(testWorkspace.namespace),
+          "workspaceId" -> JsString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          indexableDocument(w)
+        }
+      }
+    }
+    "with illegally-namespaced attributes in workspace" - {
+      "should generate indexable document" in {
+        val w = testWorkspace.copy(attributes = Map(
+          "library:foo"->"foo",
+          "library:bar"->"bar",
+          "baz"->"defaultBaz",
+          "qux"->"defaultQux",
+          "nope:foo"->"foo",
+          "default:bar"->"bar"
+        ))
+        val expected = JsObject(Map(
+          "library:foo" -> JsString("foo"),
+          "library:bar" -> JsString("bar"),
+          "name" -> JsString(testWorkspace.name),
+          "namespace" -> JsString(testWorkspace.namespace),
+          "workspaceId" -> JsString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          indexableDocument(w)
         }
       }
     }

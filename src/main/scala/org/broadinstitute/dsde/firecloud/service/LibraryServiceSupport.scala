@@ -49,7 +49,7 @@ trait LibraryServiceSupport {
 
   // TODO: support for boolean, numeric, array attributes
   def indexableDocument(workspace: RawlsWorkspace): JsObject = {
-    val attrfields = workspace.attributes map {
+    val attrfields = workspace.attributes collect {
       case (key, value) if key.startsWith("library:") => (key, JsString(value))
     }
     val idfields = Map(
