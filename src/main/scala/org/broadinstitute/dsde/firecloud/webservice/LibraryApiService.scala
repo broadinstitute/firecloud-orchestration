@@ -49,8 +49,8 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           } ~
-          path(Segment / Segment) { (namespace, name) =>
-            path( "metadata") {
+          pathPrefix(Segment / Segment) { (namespace, name) =>
+            path("metadata") {
               put {
                 entity(as[String]) { rawAttrsString => requestContext =>
                   perRequest(requestContext,
