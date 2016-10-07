@@ -5,16 +5,18 @@ import akka.pattern._
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsWorkspace
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{ErrorReport, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
+import spray.json.JsonParser.ParsingException
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by davidan on 9/23/16.
@@ -22,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object LibraryService {
   sealed trait LibraryServiceMessage
-  case class UpdateAttributes(ns: String, name: String, attrs: JsValue) extends LibraryServiceMessage
+  case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
@@ -42,28 +44,29 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   implicit val userInfo = argUserInfo
 
   override def receive = {
-    case UpdateAttributes(ns: String, name: String, attrs: JsValue) => asCurator {updateAttributes(ns, name, attrs)} pipeTo sender
+    case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => asCurator {updateAttributes(ns, name, attrsJsonString)} pipeTo sender
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
   }
 
-  def updateAttributes(ns: String, name: String, attrs: JsValue): Future[PerRequestMessage] = {
-    // spray routing can only (easily) make a JsValue; we need to work with a JsObject
-    // TODO: handle exceptions on this cast
+  def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
+    // we accept a string here, not a JsValue so we can most granularly handle json parsing
+    Try(attrsJsonString.parseJson.asJsObject) match {
+      case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid json supplied", ex))
+      case Failure(e) => Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
+      case Success(userAttrs) =>
+        // TODO: schema-validate user input
 
-    val userAttrs = attrs.asJsObject
-
-    // TODO: schema-validate user input
-
-    rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-      // verify owner on workspace
-      if (!workspaceResponse.accessLevel.contains("OWNER")) {
-        Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner"))
-      } else {
-        // this is technically vulnerable to a race condition in which the workspace attributes have changed
-        // between the time we retrieved them and here, where we update them.
-        val allOperations = generateAttributeOperations(workspaceResponse.workspace.get.attributes, userAttrs)
-        rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map (RequestComplete(_))
-      }
+        rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
+          // verify owner on workspace
+          if (!workspaceResponse.accessLevel.contains("OWNER")) {
+            Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner"))
+          } else {
+            // this is technically vulnerable to a race condition in which the workspace attributes have changed
+            // between the time we retrieved them and here, where we update them.
+            val allOperations = generateAttributeOperations(workspaceResponse.workspace.get.attributes, userAttrs)
+            rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map (RequestComplete(_))
+          }
+        }
     }
   }
 
