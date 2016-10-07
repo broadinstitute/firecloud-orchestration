@@ -210,8 +210,6 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   }
 
   def setAttributesOnWorkspace(pair: Seq[String]) = {
-
-
     EntityUpdateDefinition()
   }
 
@@ -286,6 +284,15 @@ All:
     "removeMember": "string"
   }
 }
+
+orch -
+
+
+rawls -
+Adding/Updating/Removing attributes:
+ api/workspaces/{workspaceNamespace}/{workspaceName}
+Getting workspace attributes
+ /api/workspaces/{workspaceNamespace}/{workspaceName}  - this gets all workspace details (worksapce as a json) - must get .attributes
  */
   private def importWorkspaceAttributeTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                                           workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
