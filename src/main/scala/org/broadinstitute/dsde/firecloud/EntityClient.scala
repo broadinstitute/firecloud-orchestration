@@ -146,6 +146,22 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     }
   }
 
+  def rawlsResponse(responseFuture: Future[HttpResponse], calls: Seq[EntityUpdateDefinition]): Future[PerRequestMessage] = {
+    responseFuture map { response =>
+      response.status match {
+        case NoContent =>
+          log.debug("OK response")
+          RequestComplete(OK, calls.head.entityType)
+        case _ =>
+          // Bubble up all other unmarshallable responses
+          log.warning("Unanticipated response: " + response.status.defaultMessage)
+          RequestComplete(response)
+      }
+    } recover {
+      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,  "Service API call failed", e)
+    }
+  }
+
   def batchCallToRawls(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition], endpoint: String ): Future[PerRequestMessage] = {
@@ -155,20 +171,17 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       Post(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/"+endpoint,
             HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
     }
+    rawlsResponse(responseFuture, calls)
+  }
 
-    responseFuture map { response =>
-      response.status match {
-          case NoContent =>
-            log.debug("OK response")
-            RequestComplete(OK, calls.head.entityType)
-          case _ =>
-            // Bubble up all other unmarshallable responses
-            log.warning("Unanticipated response: " + response.status.defaultMessage)
-            RequestComplete(response)
-      }
-    } recover {
-      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,  "Service API call failed", e)
+  // makes a patch call to rawls api/workspaces/{workspaceNamespace}/{workspaceName}
+  def patchCalltoRawlsWorkspaces(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
+                                 workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition], endpoint: String): Future[PerRequestMessage] = {
+    val responseFuture: Future[HttpResponse] = pipeline {
+      Patch(FireCloudConfig.Rawls.workspacesPath(workspaceNamespace, workspaceName) + endpoint,
+        HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
     }
+    rawlsResponse(responseFuture, calls)
   }
 
   val upsertAttrOperation = "op" -> AttributeString("AddUpdateAttribute")
@@ -182,17 +195,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?
-    val ops = for { (value,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !value.isEmpty } yield {
-      val nameEntry = "attributeName" -> AttributeString(attributeName)
-      def valEntry( attr: Attribute ) = "addUpdateAttribute" -> attr
-      refTypeOpt match {
-        case Some(refType) => Map(upsertAttrOperation,nameEntry,valEntry(AttributeReference(refType,value)))
-        case None => value match {
-          case "__DELETE__" => Map(removeAttrOperation,nameEntry)
-          case _ => Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value)))
-        }
-      }
-    }
+    val ops = getOps(row, colInfo)
 
     //If we're upserting a collection type entity, add an AddListMember( members_attr, null ) operation.
     //This will force the members_attr attribute to exist if it's being created for the first time.
@@ -206,11 +209,26 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     } else {
       None
     }
-    EntityUpdateDefinition(row.headOption.get,entityType,ops ++ collectionMemberAttrOp )
+    EntityUpdateDefinition(row.headOption.get, entityType, ops ++ collectionMemberAttrOp )
   }
 
-  def setAttributesOnWorkspace(pair: Seq[String]) = {
-    EntityUpdateDefinition()
+  def setAttributesOnWorkspace(row: Seq[String], colInfo: Seq[(String, Option[String])]) = {
+    val ops = getOps(row, colInfo)
+    EntityUpdateDefinition(row.headOption.get, "workspace", ops)
+  }
+
+  def getOps(row: Seq[String], colInfo: Seq[(String, Option[String])]) = {
+    for { (value,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !value.isEmpty } yield {
+      val nameEntry = "attributeName" -> AttributeString(attributeName)
+      def valEntry( attr: Attribute ) = "addUpdateAttribute" -> attr
+      refTypeOpt match {
+        case Some(refType) => Map(upsertAttrOperation,nameEntry,valEntry(AttributeReference(refType,value)))
+        case None => value match {
+          case "__DELETE__" => Map(removeAttrOperation,nameEntry)
+          case _ => Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value)))
+        }
+      }
+    }
   }
 
   private def validateMembershipTSV(tsv: TSVLoadFile, membersType: Option[String]) (op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
@@ -273,16 +291,6 @@ All:
     "op": "string",
     "attributeName": "string"
   },
-  "Example payload for AddListMember": {
-    "op": "string",
-    "attributeListName": "string",
-    "newMember": "string"
-  },
-  "Example payload for RemoveListMember": {
-    "op": "string",
-    "attributeListName": "string",
-    "removeMember": "string"
-  }
 }
 
 orch -
@@ -299,7 +307,7 @@ Getting workspace attributes
     checkFirstRowDistinct(tsv, "workspace") {
       val colInfo = colNamesToAttributeNames("workspace", tsv.headers, Map())
       //batchCallToRawls(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace("workspace", None, row, colInfo)), "updateAttributes")
-      batchCallToRawls(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace(row)), "updateAttributes")
+      patchCalltoRawlsWorkspaces(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace(row, colInfo)), "updateAttributes")
     }
   }
 

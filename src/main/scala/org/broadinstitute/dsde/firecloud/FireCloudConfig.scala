@@ -54,6 +54,7 @@ object FireCloudConfig {
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
     def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
     def overwriteGroupMembershipUrlFromGroupName(groupName: String) = authUrl + overwriteGroupMembershipPath.format(groupName)
+    def workspacesPath(namespace: String, name: String) = authUrl + workspacesPath.format(namespace, name)
   }
 
   object Thurloe {
