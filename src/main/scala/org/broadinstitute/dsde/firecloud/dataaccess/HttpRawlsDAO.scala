@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.Attribu
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.service.LibraryService
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
@@ -57,7 +58,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
         case Right(srw) =>
           logger.info("admin workspace list got: " + srw.length + " raw workspaces")
           val published = srw.collect {
-            case rw:RawlsWorkspace if rw.attributes.getOrElse("library:published", "false").toBoolean => rw
+            case rw:RawlsWorkspace if rw.attributes.getOrElse(LibraryService.publishedFlag, "false").toBoolean => rw
           }
           logger.info("admin workspace list collected: " + published.length + " published workspaces")
           published

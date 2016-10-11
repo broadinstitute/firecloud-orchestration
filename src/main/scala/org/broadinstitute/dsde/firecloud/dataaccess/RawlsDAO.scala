@@ -12,10 +12,10 @@ import scala.concurrent.Future
   */
 trait RawlsDAO extends LazyLogging {
 
-  lazy final val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
-  lazy final val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
-  lazy final val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
-  lazy final val rawlsAdminWorkspaces = FireCloudConfig.Rawls.authUrl + "/admin/workspaces"
+  lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
+  lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
+  lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
+  lazy val rawlsAdminWorkspaces = FireCloudConfig.Rawls.authUrl + "/admin/workspaces"
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 

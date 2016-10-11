@@ -12,14 +12,12 @@ trait Indexable {
   def content: JsObject
 }
 
-case class Document(val id: String, val content: JsObject) extends Indexable {
+case class Document(val id: String, val content: JsObject) extends Indexable
 
+object Document {
   def apply(id: String, valMap: Map[String, String]) = {
     val jsfields = valMap.map{ case(k:String, v:String)=>(k, JsString(v)) }
     new Document(id, JsObject(jsfields))
   }
   def apply(id: String, jsonStr: String) = new Document(id, jsonStr.parseJson.asJsObject)
-  def apply(id: String, content: JsObject) = new Document(id, content)
-
-
 }

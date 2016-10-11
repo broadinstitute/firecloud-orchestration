@@ -12,9 +12,6 @@ import spray.http.Uri.Authority
 
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by davidan on 10/5/16.
-  */
 trait ElasticSearchDAOSupport extends LazyLogging {
 
   def buildClient(servers:Seq[Authority]): TransportClient = {
@@ -54,7 +51,5 @@ trait ElasticSearchDAOSupport extends LazyLogging {
   private def executeESRequestTry[T <: ActionRequest[T], U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): Try[U] = {
     Try(req.get())
   }
-
-
 
 }

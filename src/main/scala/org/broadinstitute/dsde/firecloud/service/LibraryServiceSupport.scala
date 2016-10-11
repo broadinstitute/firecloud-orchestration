@@ -43,21 +43,19 @@ trait LibraryServiceSupport {
 
   def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
     // TODO: publish attribute can just be a boolean once we support boolean attributes
-    if (value) Seq(AddUpdateAttribute("library:published", AttributeString("true")))
-    else Seq(RemoveAttribute("library:published"))
+    if (value) Seq(AddUpdateAttribute(LibraryService.publishedFlag, AttributeString("true")))
+    else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
   // TODO: support for boolean, numeric, array attributes
   def indexableDocument(workspace: RawlsWorkspace): Document = {
-    val attrfields = workspace.attributes collect {
-      case (key, value) if key.startsWith("library:") => (key, JsString(value))
-    }
+    val attrfields = workspace.attributes.filter(_._1.startsWith("library:"))
     val idfields = Map(
-      "name" -> JsString(workspace.name),
-      "namespace" -> JsString(workspace.namespace),
-      "workspaceId" -> JsString(workspace.workspaceId)
+      "name" -> workspace.name,
+      "namespace" -> workspace.namespace,
+      "workspaceId" -> workspace.workspaceId
     )
-    new Document(workspace.workspaceId, JsObject(attrfields ++ idfields))
+    Document(workspace.workspaceId, attrfields ++ idfields)
   }
 
 }

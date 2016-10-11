@@ -10,7 +10,7 @@ class MockSearchDAO extends SearchDAO {
 
   override def initIndex = Unit
   override def recreateIndex = Unit
-  override def indexExists = Unit
+  override def indexExists = false
   override def createIndex = Unit
   override def deleteIndex = Unit
 

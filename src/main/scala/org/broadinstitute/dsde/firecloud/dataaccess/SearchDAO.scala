@@ -2,21 +2,17 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.Document
-import spray.json.JsObject
 
-/**
-  * Created by davidan on 9/28/16.
-  */
 trait SearchDAO extends LazyLogging {
 
-  def initIndex
-  def recreateIndex
-  def indexExists
-  def createIndex
-  def deleteIndex
+  def initIndex(): Unit
+  def recreateIndex(): Unit
+  def indexExists(): Boolean
+  def createIndex(): Unit
+  def deleteIndex(): Unit
 
-  def bulkIndex(docs: Seq[Document])
-  def indexDocument(doc: Document)
-  def deleteDocument(id: String)
+  def bulkIndex(docs: Seq[Document]): Unit
+  def indexDocument(doc: Document): Unit
+  def deleteDocument(id: String): Unit
 
 }

@@ -9,15 +9,13 @@ import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, Del
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
 import org.elasticsearch.client.transport.TransportClient
 import spray.http.Uri.Authority
-import spray.json.JsObject
 
-/**
-  * Created by davidan on 9/28/16.
-  */
 class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport {
 
   private val client: TransportClient = buildClient(servers)
   private final val datatype = "dataset"
+
+  initIndex
 
   // if the index does not exist, create it.
   override def initIndex = {
@@ -29,10 +27,10 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     _recreateIndex(true)
   }
 
-  override def indexExists = {
+  override def indexExists: Boolean = {
     executeESRequest[IndicesExistsRequest, IndicesExistsResponse, IndicesExistsRequestBuilder](
       client.admin.indices.prepareExists(indexName)
-    )
+    ).isExists
   }
 
   override def createIndex = {
@@ -79,22 +77,18 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     try {
       // check existence
       logger.info(s"Checking to see if ElasticSearch index '%s' exists ... ".format(indexName))
-      val exists = executeESRequest[IndicesExistsRequest, IndicesExistsResponse, IndicesExistsRequestBuilder](
-        client.admin.indices.prepareExists(indexName)
-      )
-      logger.info(s"... ES index '%s' exists: %s".format(indexName, exists.isExists.toString))
+      val exists = indexExists
+      logger.info(s"... ES index '%s' exists: %s".format(indexName, exists.toString))
       // delete the index, if it exists and the user asked to do so
-      if (deleteFirst && exists.isExists) {
+      if (deleteFirst && exists) {
         logger.info(s"Deleting ES index '%s' before recreation ...".format(indexName))
         deleteIndex
         logger.info(s"... ES index '%s' deleted.".format(indexName))
       }
       // create the index, if it didn't exist or the user asked to delete it first
-      if (deleteFirst || !exists.isExists) {
+      if (deleteFirst || !exists) {
         logger.info(s"Creating ES index '%s' ...".format(indexName))
-        executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
-          client.admin.indices.prepareCreate(indexName)
-        )
+        createIndex
         logger.info(s"... ES index '%s' created.".format(indexName))
       }
     } catch {
