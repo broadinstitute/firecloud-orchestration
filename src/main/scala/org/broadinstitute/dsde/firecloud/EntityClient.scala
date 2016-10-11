@@ -178,7 +178,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   def patchCalltoRawlsWorkspaces(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                                  workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition], endpoint: String): Future[PerRequestMessage] = {
     val responseFuture: Future[HttpResponse] = pipeline {
-      Patch(FireCloudConfig.Rawls.workspacesPath(workspaceNamespace, workspaceName) + endpoint,
+      Patch(FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint,
         HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
     }
     rawlsResponse(responseFuture, calls)
@@ -271,36 +271,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
 
 
 /*
-This is what eventually needs to be passed to rawls:
-[
-  {
-    "op": "AddUpdateAttribute",
-    "attributeName": "thisisthekey",
-    "addUpdateAttribute": "thisisthevalue"
-  }
-]
-
-All:
-{
-  "Example payload for AddUpdateAttribute": {
-    "op": "string",
-    "attributeName": "string",
-    "addUpdateAttribute": "string"
-  },
-  "Example payload for RemoveAttribute": {
-    "op": "string",
-    "attributeName": "string"
-  },
-}
-
-orch -
-
-
-rawls -
-Adding/Updating/Removing attributes:
- api/workspaces/{workspaceNamespace}/{workspaceName}
-Getting workspace attributes
- /api/workspaces/{workspaceNamespace}/{workspaceName}  - this gets all workspace details (worksapce as a json) - must get .attributes
+   Import attributes on a workspace from a TSV file
  */
   private def importWorkspaceAttributeTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                                           workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
