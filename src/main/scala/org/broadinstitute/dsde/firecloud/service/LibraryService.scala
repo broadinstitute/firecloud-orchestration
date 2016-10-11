@@ -52,7 +52,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
     case IndexAll => asAdmin {indexAll} pipeTo sender
   }
-  
+
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
     // we accept a string here, not a JsValue so we can most granularly handle json parsing
     Try(attrsJsonString.parseJson.asJsObject) match {
