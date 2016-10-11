@@ -1,10 +1,11 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import org.broadinstitute.dsde.firecloud.model.HttpResponseWithErrorReport
+import org.broadinstitute.dsde.firecloud.model.{ErrorReport, HttpResponseWithErrorReport}
 import org.broadinstitute.dsde.firecloud.service.PerRequest._
-import org.broadinstitute.dsde.firecloud.HttpClient
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, HttpClient}
 import spray.http.StatusCodes._
 import spray.http.{HttpHeader, HttpHeaders, HttpRequest, RequestProcessingException}
 import spray.httpx.marshalling.ToResponseMarshaller
@@ -41,6 +42,10 @@ trait PerRequest extends Actor {
     case RequestComplete_(response, marshaller) => complete(response)(marshaller)
     case RequestCompleteWithHeaders_(response, headers, marshaller) => complete(response, headers: _*)(marshaller)
     case ReceiveTimeout => complete(HttpResponseWithErrorReport(GatewayTimeout, "Request Timed Out"))
+    case Failure(t) =>
+      // failed Futures will end up in this case
+      handleException(t)
+      stop(self)
     case x =>
       val message = "Unsupported response message sent to PerRequest actor: " + Option(x).getOrElse("null").toString
       system.log.error(message)
@@ -77,6 +82,15 @@ trait PerRequest extends Actor {
         r.complete(HttpResponseWithErrorReport(InternalServerError, e))
         Stop
     }
+
+  def handleException(e: Throwable): Unit = {
+    import spray.httpx.SprayJsonSupport._
+    e match {
+      case e: FireCloudExceptionWithErrorReport =>
+        complete(HttpResponseWithErrorReport(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport.message, e))
+      case _ => complete(ErrorReport(InternalServerError, e))
+    }
+  }
 }
 
 

@@ -34,15 +34,19 @@ object ErrorReport extends ((String,String,Option[StatusCode],Seq[ErrorReport],S
   def apply(statusCode: StatusCode, message: String, throwable: Throwable) =
     new ErrorReport(SOURCE, message, Option(statusCode), causes(throwable), throwable.getStackTrace)
 
+  def apply(statusCode: StatusCode, message: String, cause: ErrorReport): ErrorReport =
+    new ErrorReport(SOURCE, message, Option(statusCode), Seq(cause), Seq.empty)
+
   def apply(statusCode: StatusCode, message: String, causes: Seq[ErrorReport]): ErrorReport =
     new ErrorReport(SOURCE, message, Option(statusCode), causes, Seq.empty)
 
   def apply(response: HttpResponse) = {
-    val causes = tryUnmarshal(response) match {
-      case Success(re) => Seq(re)
-      case _ => Seq.empty
+    import spray.httpx.unmarshalling._
+    val (message, causes) = response.entity.as[ErrorReport] match {
+      case Right(re) => (re.message, Seq(re))
+      case Left(err) => (response.entity.asString, Seq.empty)
     }
-    new ErrorReport(SOURCE, response.entity.asString, Option(response.status), causes, Seq.empty)
+    new ErrorReport(SOURCE, message, Option(response.status), causes, Seq.empty)
   }
 
   def tryUnmarshal(response: HttpResponse) =
@@ -92,5 +96,8 @@ object HttpResponseWithErrorReport {
 
   def apply(statusCode: StatusCode, throwable: Throwable) =
     HttpResponse(statusCode, ErrorReport(statusCode, throwable).toJson.compactPrint)
+
+  def apply(statusCode: StatusCode, message: String, throwable: Throwable) =
+    HttpResponse(statusCode, ErrorReport(statusCode, message, throwable).toJson.compactPrint)
 
 }
