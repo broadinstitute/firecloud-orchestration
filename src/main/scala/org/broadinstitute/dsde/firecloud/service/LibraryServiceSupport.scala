@@ -10,22 +10,26 @@ import spray.json.DefaultJsonProtocol._
   */
 trait LibraryServiceSupport {
 
+  final val libraryPrefix = "library:"
+  final val publishedKey = "published"
+
   /**
     * given a set of existing attributes and a set of new attributes, calculate the attribute operations
     * that need to be performed
     * TODO: existing model uses Map[String,String] which will not work with arrays, booleans, etc!
-    * TODO: define how to handle "library:" prefix - is that sent in the inbound request?
     */
   def generateAttributeOperations(existingAttrs: Map[String, String], newAttrs: JsObject): Seq[AttributeUpdateOperation] = {
-    val libraryAttrKeys = existingAttrs.keySet
+    // in this method, ONLY work with "library:" keys, and always ignore the "library:published" key
+    val oldKeys = existingAttrs.keySet.filter(k => k.startsWith(libraryPrefix) && !k.equals(libraryPrefix+publishedKey))
+    val newFields = newAttrs.fields.filter(k => k._1.startsWith(libraryPrefix) && !k._1.equals(libraryPrefix+publishedKey))
 
     // remove any attributes that currently exist on the workspace, but are not in the user's packet
     // for any array attributes, we remove them and recreate them entirely. Add the array attrs.
-    val keysToRemove = libraryAttrKeys.diff(newAttrs.fields.keySet) ++ newAttrs.fields.filter(_._2.isInstanceOf[JsArray]).keySet
+    val keysToRemove = oldKeys.diff(newFields.keySet) ++ newFields.filter(_._2.isInstanceOf[JsArray]).keySet
     val removeOperations = keysToRemove.map(RemoveAttribute(_)).toSeq
 
     // TODO: handle numeric/boolean values
-    val updateOperations = newAttrs.fields.toSeq flatMap {
+    val updateOperations = newFields.toSeq flatMap {
       // case (key, value:JsBoolean) => AddUpdateAttribute(key, AttributeString(value.toString()))
       // case (key, value:JsNumber) => AddUpdateAttribute(key, AttributeString(value.toString()))
       case (key, value:JsArray) => value.elements.map{x => AddListMember(key, AttributeString(x.convertTo[String]))}
