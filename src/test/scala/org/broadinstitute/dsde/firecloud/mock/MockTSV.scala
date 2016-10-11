@@ -155,6 +155,15 @@ object MockTSVStrings {
     List("update:sample_id", "participant_id", "some_attribute").mkString("\t"),
     List("sample_01", "part_01", "foo").mkString("\t"),
     List("sample_02", "part_02", "bar").mkString("\t")).mkString("\n")
+
+  val addNewWorkspaceAttributes = List(
+    List("workspace:attributeName1", "attributeName2", "attributeName3").mkString("\t"),
+    List("attributeValue1", "attributeValue2", "attributeValue3").mkString("\t")).mkString("\n")
+
+  val updateWorkspaceAttributes = List(
+    List("workspace:attributeName1", "attributeName2").mkString("\t"),
+    List("changedAttributeValue1", "changedAttributeValue2").mkString("\t")).mkString("\n")
+
 }
 
 object MockTSVLoadFiles {
@@ -201,4 +210,7 @@ object MockTSVFormData {
   val updateMissingRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.updateMissingRequiredAttrs)
   val updateWithRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAttrs)
   val updateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAndOptionalAttrs)
+
+  val addNewWorkspaceAttributes = wrapInMultipart("workspace", MockTSVStrings.addNewWorkspaceAttributes)
+  val updateWorkspaceAttributes = wrapInMultipart("workspace", MockTSVStrings.updateWorkspaceAttributes)
 }

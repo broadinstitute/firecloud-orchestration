@@ -81,7 +81,7 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
         } ~
         path("importAttributes"){
           post {
-            formFields( 'workspace ) { attributesTSV =>
+            formFields( 'attributes ) { attributesTSV =>
               respondWithJSON { requestContext =>
                 perRequest(requestContext, Props(new EntityClient(requestContext)),
                   EntityClient.ImportAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV))
