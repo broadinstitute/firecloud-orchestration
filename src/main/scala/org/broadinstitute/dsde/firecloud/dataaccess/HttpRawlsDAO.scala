@@ -8,8 +8,11 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import spray.client.pipelining._
+import spray.http.OAuth2BearerToken
 import spray.http.StatusCodes._
+import spray.httpx.unmarshalling._
 import spray.httpx.SprayJsonSupport._
+import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 
