@@ -27,7 +27,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
 
   def executeESRequest[T <: ActionRequest[T], U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): U = {
     val tick = System.currentTimeMillis
-    val responseTry = executeESRequestTry[T, U, V](req)
+    val responseTry = Try(req.get())
     val elapsed = System.currentTimeMillis - tick
     responseTry match {
       case Success(s) =>
@@ -37,23 +37,6 @@ trait ElasticSearchDAOSupport extends LazyLogging {
         logger.warn(s"ElasticSearch %s request failed in %s ms: %s".format(req.getClass.getName, elapsed, f.getMessage))
         throw new FireCloudException("ElasticSearch request failed", f)
     }
-  }
-  def executeESRequestOption[T <: ActionRequest[T], U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): Option[U] = {
-    val tick = System.currentTimeMillis
-    val responseTry = executeESRequestTry[T, U, V](req)
-    val elapsed = System.currentTimeMillis - tick
-    responseTry match {
-      case Success(s) =>
-        logger.debug("ElasticSearch %s request succeeded in %s ms.".format(req.getClass.getName, elapsed))
-        Some(s)
-      case Failure(f) =>
-        logger.debug("ElasticSearch %s request failed in %s ms: %s".format(req.getClass.getName, elapsed, f.getMessage))
-        None
-    }
-  }
-
-  private def executeESRequestTry[T <: ActionRequest[T], U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): Try[U] = {
-    Try(req.get())
   }
 
 }
