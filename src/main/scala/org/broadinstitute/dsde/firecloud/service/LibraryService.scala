@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsWorkspace
-import org.broadinstitute.dsde.firecloud.model.{ErrorReport, RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{Document, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
@@ -87,9 +87,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
 
   def indexAll: Future[PerRequestMessage] = {
     rawlsDAO.getAllLibraryPublishedWorkspaces map {workspaces =>
-      val toIndex:Seq[(String, JsObject)] = workspaces.map {workspace =>
-        (workspace.workspaceId, indexableDocument(workspace))
-      }
+      val toIndex:Seq[Document] = workspaces.map {workspace => indexableDocument(workspace)}
       searchDAO.recreateIndex
       val indexResult = searchDAO.bulkIndex(toIndex)
       RequestComplete(OK, indexResult.toString)

@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.broadinstitute.dsde.firecloud.model.Document
 import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
 import org.elasticsearch.action.admin.indices.delete.{DeleteIndexRequest, DeleteIndexRequestBuilder, DeleteIndexResponse}
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
@@ -46,10 +47,10 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     )
   }
 
-  override def bulkIndex(docs: Seq[(String, JsObject)]) = {
+  override def bulkIndex(docs: Seq[Document]) = {
     val bulkRequest = client.prepareBulk
     docs map {
-      case (id: String, doc: JsObject) => bulkRequest.add(client.prepareIndex(indexName, datatype, id).setSource(doc.compactPrint))
+      case (doc:Document) => bulkRequest.add(client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint))
     }
     val bulkResponse = executeESRequest[BulkRequest, BulkResponse, BulkRequestBuilder](bulkRequest)
 
@@ -60,9 +61,9 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
   }
 
   // TODO: untested and unused; remove this comment once you see this works
-  override def indexDocument(id: String, doc: JsObject) = {
+  override def indexDocument(doc: Document) = {
     executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder] (
-      client.prepareIndex(indexName, datatype, id).setSource(doc.compactPrint)
+      client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint)
     )
   }
 

@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import java.util.UUID
 
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
-import org.broadinstitute.dsde.firecloud.model.{AttributeString, RawlsWorkspace}
+import org.broadinstitute.dsde.firecloud.model.{AttributeString, Document, RawlsWorkspace}
 import org.scalatest.FreeSpec
 import spray.json.{JsString, _}
 
@@ -147,13 +147,13 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
           "library:foo"->"foo",
           "library:bar"->"bar"
         ))
-        val expected = JsObject(Map(
+        val expected = new Document(testUUID.toString, JsObject(Map(
           "library:foo" -> JsString("foo"),
           "library:bar" -> JsString("bar"),
           "name" -> JsString(testWorkspace.name),
           "namespace" -> JsString(testWorkspace.namespace),
           "workspaceId" -> JsString(testWorkspace.workspaceId)
-        ))
+        )))
         assertResult(expected) {
           indexableDocument(w)
         }
@@ -165,11 +165,11 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
           "baz"->"defaultBaz",
           "qux"->"defaultQux"
         ))
-        val expected = JsObject(Map(
+        val expected = new Document(testUUID.toString, JsObject(Map(
           "name" -> JsString(testWorkspace.name),
           "namespace" -> JsString(testWorkspace.namespace),
           "workspaceId" -> JsString(testWorkspace.workspaceId)
-        ))
+        )))
         assertResult(expected) {
           indexableDocument(w)
         }
@@ -180,11 +180,11 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         // the Map.empty below is currently the same as what's in testWorkspace;
         // include explicitly here in case testWorkspace changes later
         val w = testWorkspace.copy(attributes = Map.empty)
-        val expected = JsObject(Map(
+        val expected = new Document(testUUID.toString, JsObject(Map(
           "name" -> JsString(testWorkspace.name),
           "namespace" -> JsString(testWorkspace.namespace),
           "workspaceId" -> JsString(testWorkspace.workspaceId)
-        ))
+        )))
         assertResult(expected) {
           indexableDocument(w)
         }
@@ -201,11 +201,11 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
             " jean shorts single-origin coffee. Distillery ugh green juice, hammock marfa gastropub mlkshk" +
             " chambray vegan aesthetic beard listicle skateboard ramps literally.")
         ))
-        val expected = JsObject(Map(
+        val expected = new Document(testUUID.toString, JsObject(Map(
           "name" -> JsString(testWorkspace.name),
           "namespace" -> JsString(testWorkspace.namespace),
           "workspaceId" -> JsString(testWorkspace.workspaceId)
-        ))
+        )))
         assertResult(expected) {
           indexableDocument(w)
         }
@@ -219,13 +219,13 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
           "baz"->"defaultBaz",
           "qux"->"defaultQux"
         ))
-        val expected = JsObject(Map(
+        val expected = new Document(testUUID.toString, JsObject(Map(
           "library:foo" -> JsString("foo"),
           "library:bar" -> JsString("bar"),
           "name" -> JsString(testWorkspace.name),
           "namespace" -> JsString(testWorkspace.namespace),
           "workspaceId" -> JsString(testWorkspace.workspaceId)
-        ))
+        )))
         assertResult(expected) {
           indexableDocument(w)
         }
@@ -241,13 +241,13 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
           "nope:foo"->"foo",
           "default:bar"->"bar"
         ))
-        val expected = JsObject(Map(
+        val expected = new Document(testUUID.toString, JsObject(Map(
           "library:foo" -> JsString("foo"),
           "library:bar" -> JsString("bar"),
           "name" -> JsString(testWorkspace.name),
           "namespace" -> JsString(testWorkspace.namespace),
           "workspaceId" -> JsString(testWorkspace.workspaceId)
-        ))
+        )))
         assertResult(expected) {
           indexableDocument(w)
         }

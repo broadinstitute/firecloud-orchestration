@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.model.{AttributeString, RawlsWorkspace}
+import org.broadinstitute.dsde.firecloud.model.{AttributeString, Document, RawlsWorkspace}
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import spray.json.{JsArray, JsObject, JsString, JsValue}
 import spray.json.DefaultJsonProtocol._
@@ -48,7 +48,7 @@ trait LibraryServiceSupport {
   }
 
   // TODO: support for boolean, numeric, array attributes
-  def indexableDocument(workspace: RawlsWorkspace): JsObject = {
+  def indexableDocument(workspace: RawlsWorkspace): Document = {
     val attrfields = workspace.attributes collect {
       case (key, value) if key.startsWith("library:") => (key, JsString(value))
     }
@@ -57,7 +57,7 @@ trait LibraryServiceSupport {
       "namespace" -> JsString(workspace.namespace),
       "workspaceId" -> JsString(workspace.workspaceId)
     )
-    JsObject(attrfields ++ idfields)
+    new Document(workspace.workspaceId, JsObject(attrfields ++ idfields))
   }
 
 }
