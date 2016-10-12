@@ -134,4 +134,12 @@ object ModelJsonProtocol {
       complete(BadRequest, errorMsg)
   }
 
+  // See http://stackoverflow.com/questions/24526103/generic-spray-client and
+  // https://gist.github.com/mikemckibben/fad4328de85a79a06bf3
+  implicit def rootEitherFormat[A : RootJsonFormat, B : RootJsonFormat] = new RootJsonFormat[Either[A, B]] {
+    val format = DefaultJsonProtocol.eitherFormat[A, B]
+    def write(either: Either[A, B]) = format.write(either)
+    def read(value: JsValue) = format.read(value)
+  }
+
 }

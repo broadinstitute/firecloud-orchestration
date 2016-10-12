@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.firecloud.core
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
-
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.ACLNames._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -23,6 +22,8 @@ import scala.concurrent.Future
 object AgoraPermissionHandler {
   case class Get(url: String)
   case class Post(url: String, agoraPermissions: List[AgoraPermission])
+  case class Put(url: String, agoraPermission: AgoraPermission)
+  case class Delete(url: String)
   def props(requestContext: RequestContext): Props = Props(new GetEntitiesWithTypeActor(requestContext))
 
   // convenience method to translate a FireCloudPermission object to an AgoraPermission object
@@ -77,18 +78,28 @@ class AgoraPermissionActor (requestContext: RequestContext) extends Actor with F
       createAgoraResponse(pipeline { Get(url) }) pipeTo context.parent
     case AgoraPermissionHandler.Post(url: String, agoraPermissions: List[AgoraPermission]) =>
       createAgoraResponse(pipeline { Post(url, agoraPermissions) }) pipeTo context.parent
+    case AgoraPermissionHandler.Put(url: String, agoraPermission: AgoraPermission) =>
+      createAgoraResponse(pipeline { Put(url, agoraPermission) }) pipeTo context.parent
+    case AgoraPermissionHandler.Delete(url: String) =>
+      createAgoraResponse(pipeline { Delete(url) }) pipeTo context.parent
     case _ =>
       Future(RequestComplete(StatusCodes.BadRequest)) pipeTo context.parent
   }
 
-  def createAgoraResponse(permissionListFuture: Future[HttpResponse]): Future[PerRequestMessage] = {
-    permissionListFuture.map {response =>
+  def createAgoraResponse(permissionsFuture: Future[HttpResponse]): Future[PerRequestMessage] = {
+    permissionsFuture.map { response =>
         response.status match {
           case StatusCodes.OK =>
             try {
-              val agoraPermissions = unmarshal[List[AgoraPermission]].apply(response)
-              val fireCloudPermissions = agoraPermissions.map(x => x.toFireCloudPermission)
-              RequestComplete(OK, fireCloudPermissions)
+              val listOrPermission = unmarshal[Either[List[AgoraPermission], AgoraPermission]].apply(response)
+              listOrPermission match {
+                case Left(permissions) =>
+                  val permissionsEntity = permissions.map { x => x.toFireCloudPermission }
+                  RequestComplete(OK, permissionsEntity)
+                case Right(permission) =>
+                  val permissionsEntity = permission.toFireCloudPermission
+                  RequestComplete(OK, permissionsEntity)
+              }
             } catch {
               // TODO: more specific and graceful error-handling
               case e: Exception =>
