@@ -1,29 +1,32 @@
 package org.broadinstitute.dsde.firecloud
 
-import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, HttpRawlsDAO, RawlsDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
 import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
+import org.broadinstitute.dsde.firecloud.webservice.{LibraryApiService, NamespaceApiService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives with LibraryApiService {
+class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives with LibraryApiService
+  with NamespaceApiService {
   implicit val system = context.system
 
   trait ActorRefFactoryContext {
     def actorRefFactory = context
   }
 
+  val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora.authUrl)
   val rawlsDAO:RawlsDAO = new HttpRawlsDAO
   val searchDAO:SearchDAO = new ElasticSearchDAO(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.indexName)
 
-  val app:Application = new Application(rawlsDAO, searchDAO)
+  val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO)
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
+  val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
 
   // insecure cookie-authed routes
 
@@ -83,6 +86,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
         nihSyncService.routes ~
         healthService.routes ~
         libraryRoutes ~
+        namespaceRoutes ~
         pathPrefix("api") {
           routes
         } ~

@@ -54,7 +54,7 @@ object ModelJsonProtocol {
 
     override def read(json: JsValue): StatusCode = json match {
       case JsNumber(n) => n.intValue
-      case _ => throw new DeserializationException("unexpected json type")
+      case _ => throw DeserializationException("unexpected json type")
     }
   }
 
@@ -74,7 +74,7 @@ object ModelJsonProtocol {
       json.asJsObject.getFields(CLASS_NAME, METHOD_NAME, FILE_NAME, LINE_NUMBER) match {
         case Seq(JsString(className), JsString(methodName), JsString(fileName), JsNumber(lineNumber)) =>
           new StackTraceElement(className, methodName, fileName, lineNumber.toInt)
-        case _ => throw new DeserializationException("unable to deserialize StackTraceElement")
+        case _ => throw DeserializationException("unable to deserialize StackTraceElement")
       }
   }
 
@@ -93,7 +93,7 @@ object ModelJsonProtocol {
       case JsNull => AttributeNull()
       case JsString(s) => AttributeString(s)
       case JsObject(members) => AttributeReference(members("entityType").asInstanceOf[JsString].value, members("entityName").asInstanceOf[JsString].value)
-      case _ => throw new DeserializationException("unexpected json type")
+      case _ => throw DeserializationException("unexpected json type")
     }
   }
 
@@ -132,6 +132,14 @@ object ModelJsonProtocol {
   val entityExtractionRejectionHandler = RejectionHandler {
     case MalformedRequestContentRejection(errorMsg, _) :: _ =>
       complete(BadRequest, errorMsg)
+  }
+
+  // See http://stackoverflow.com/questions/24526103/generic-spray-client and
+  // https://gist.github.com/mikemckibben/fad4328de85a79a06bf3
+  implicit def rootEitherFormat[A : RootJsonFormat, B : RootJsonFormat] = new RootJsonFormat[Either[A, B]] {
+    val format = DefaultJsonProtocol.eitherFormat[A, B]
+    def write(either: Either[A, B]) = format.write(either)
+    def read(value: JsValue) = format.read(value)
   }
 
 }
