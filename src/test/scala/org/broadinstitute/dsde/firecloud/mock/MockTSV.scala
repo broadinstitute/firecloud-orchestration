@@ -211,6 +211,6 @@ object MockTSVFormData {
   val updateWithRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAttrs)
   val updateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAndOptionalAttrs)
 
-  val addNewWorkspaceAttributes = wrapInMultipart("workspace", MockTSVStrings.addNewWorkspaceAttributes)
+  val addNewWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.addNewWorkspaceAttributes)
   val updateWorkspaceAttributes = wrapInMultipart("workspace", MockTSVStrings.updateWorkspaceAttributes)
 }
