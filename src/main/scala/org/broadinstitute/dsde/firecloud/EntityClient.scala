@@ -283,7 +283,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       val colInfo = colNamesToAttributeNames("participant", tsv.headers, Map())
       log.info("COLINFO -  " + colInfo.toJson.toString())
       //batchCallToRawls(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace("workspace", None, row, colInfo)), "updateAttributes")
-      patchCalltoRawlsWorkspaces(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace(row, colInfo)), "updateAttributes")
+      patchCalltoRawlsWorkspaces(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace(row, colInfo)), "")
     }
   }
 
