@@ -148,7 +148,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   }
 
   def rawlsResponse(responseFuture: Future[HttpResponse], calls: Seq[EntityUpdateDefinition]): Future[PerRequestMessage] = {
-    log.info("rawlsResponse - CALLS: " + calls.toJson.toString())
+    log.info("rawlsResponse - CALLS: " + calls.toJson.toString() + responseFuture.toString)
     responseFuture map { response =>
       response.status match {
         case NoContent =>
@@ -184,7 +184,8 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       Patch(FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint,
         HttpEntity(MediaTypes.`application/json`,calls.map{ent => ent.operations}.toJson.toString))
     }
-    rawlsResponse(responseFuture, calls.map{ent => ent.operations})
+    log.info("We got the response future" + responseFuture.toString())
+    rawlsResponse(responseFuture, calls)
   }
 
   val upsertAttrOperation = "op" -> AttributeString("AddUpdateAttribute")
