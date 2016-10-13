@@ -19,12 +19,12 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
 
   // if the index does not exist, create it.
   override def initIndex = {
-    _recreateIndex(false)
+    conditionalRecreateIndex(false)
   }
 
   // delete an existing index, then re-create it.
   override def recreateIndex = {
-    _recreateIndex(true)
+    conditionalRecreateIndex(true)
   }
 
   override def indexExists: Boolean = {
@@ -73,19 +73,16 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
   }
 
 
-  private def _recreateIndex(deleteFirst: Boolean = false) = {
+  private def conditionalRecreateIndex(deleteFirst: Boolean = false) = {
     try {
-      // check existence
       logger.info(s"Checking to see if ElasticSearch index '%s' exists ... ".format(indexName))
       val exists = indexExists
       logger.info(s"... ES index '%s' exists: %s".format(indexName, exists.toString))
-      // delete the index, if it exists and the user asked to do so
       if (deleteFirst && exists) {
         logger.info(s"Deleting ES index '%s' before recreation ...".format(indexName))
         deleteIndex
         logger.info(s"... ES index '%s' deleted.".format(indexName))
       }
-      // create the index, if it didn't exist or the user asked to delete it first
       if (deleteFirst || !exists) {
         logger.info(s"Creating ES index '%s' ...".format(indexName))
         createIndex

@@ -3,10 +3,6 @@ package org.broadinstitute.dsde.firecloud.model
 import spray.json.JsObject
 import spray.json._
 
-/**
-  * Created by davidan on 10/11/16.
-  */
-
 trait Indexable {
   def id: String
   def content: JsObject
