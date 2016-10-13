@@ -2,16 +2,15 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockTSVFormData}
+import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
+import org.mockserver.model.HttpResponse._
 import org.scalatest.BeforeAndAfterEach
 import spray.http.HttpMethods
-
 import spray.http.StatusCodes._
 import spray.json._
 
@@ -148,6 +147,20 @@ class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService with Before
           .withHeaders(MockUtils.header)
           .withStatusCode(NoContent.intValue)
           .withBody(rawlsErrorReport(NoContent).toJson.compactPrint)
+      )
+
+
+    workspaceServer
+      .when(
+        request()
+          .withMethod("PATCH")
+          .withPath(s"${workspaceBasePath}/%s/%s"
+            .format(workspace.namespace.get, workspace.name.get))
+          .withHeader(authHeader))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(200)
       )
   }
 
