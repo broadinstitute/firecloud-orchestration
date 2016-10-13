@@ -160,7 +160,7 @@ class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService with Before
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
-          .withStatusCode(200)
+          .withStatusCode(NoContent.intValue)
       )
   }
 
