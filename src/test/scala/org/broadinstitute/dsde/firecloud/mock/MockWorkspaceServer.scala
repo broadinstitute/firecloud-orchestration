@@ -146,6 +146,20 @@ object MockWorkspaceServer {
           .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
       )
 
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("PATCH")
+          .withPath(s"${workspaceBasePath}/%s/%s"
+            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(200)
+      )
+
   }
 
 }

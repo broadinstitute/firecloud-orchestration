@@ -157,6 +157,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
         case _ =>
           // Bubble up all other unmarshallable responses
           log.warning("Unanticipated response: " + response.status.defaultMessage)
+          log.info(response.message.toString)
           RequestComplete(response)
       }
     } recover {
@@ -179,10 +180,10 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   // makes a patch call to rawls api/workspaces/{workspaceNamespace}/{workspaceName}
   def patchCalltoRawlsWorkspaces(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                                  workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition], endpoint: String): Future[PerRequestMessage] = {
-    log.info("patchCalltoRawls -  " + workspaceNamespace + " " + workspaceName + "; CALLs: " + calls.map{ent => ent.operations}.toJson.toString() + "; ENDPOINT: " + endpoint + "; API CALL: " + FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint)
+    log.info("patchCalltoRawls -  " + workspaceNamespace + " " + workspaceName + "; CALLs: " + calls.toJson.toString() + "; ENDPOINT: " + endpoint + "; API CALL: " + FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint)
     val responseFuture: Future[HttpResponse] = pipeline {
       Patch(FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint,
-        HttpEntity(MediaTypes.`application/json`,calls.map{ent => ent.operations}.toJson.toString))
+        HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
     }
     log.info("We got the response future" + responseFuture.toString())
     rawlsResponse(responseFuture, calls)
