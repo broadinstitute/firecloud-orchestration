@@ -168,7 +168,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition], endpoint: String ): Future[PerRequestMessage] = {
     log.info("TSV upload request received")
-
+    log.info("batchCalltoRawls -  " + workspaceNamespace + " " + workspaceName + "; CALLs: " + calls.toJson.toString() + "; ENDPOINT: " + endpoint)
     val responseFuture: Future[HttpResponse] = pipeline {
       Post(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/"+endpoint,
             HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
