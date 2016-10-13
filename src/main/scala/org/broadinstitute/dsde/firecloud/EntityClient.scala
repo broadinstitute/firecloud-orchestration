@@ -364,6 +364,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
    */
   def importAttributesFromTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                              workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
+    log.info("importAtt from TSV thing being kicked off")
     withTSVFile(tsvString) { tsv =>
       tsv.firstColumnHeader.split(":")(0)  match {
         case "workspace" =>
