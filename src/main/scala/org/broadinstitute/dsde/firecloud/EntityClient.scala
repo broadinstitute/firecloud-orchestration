@@ -148,7 +148,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   }
 
   def rawlsResponse(responseFuture: Future[HttpResponse], calls: Seq[EntityUpdateDefinition]): Future[PerRequestMessage] = {
-    log.info("rawlsResponse - RESPONSEFUTURE: " + responseFuture.toJson.toString + "; CALLS: " + calls.toJson.toString())
+    log.info("rawlsResponse - CALLS: " + calls.toJson.toString())
     responseFuture map { response =>
       response.status match {
         case NoContent =>
