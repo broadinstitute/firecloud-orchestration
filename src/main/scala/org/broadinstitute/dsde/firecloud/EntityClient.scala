@@ -184,7 +184,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       Patch(FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint,
         HttpEntity(MediaTypes.`application/json`,calls.map{ent => ent.operations}.toJson.toString))
     }
-    rawlsResponse(responseFuture, calls)
+    rawlsResponse(responseFuture, calls.map{ent => ent.operations})
   }
 
   val upsertAttrOperation = "op" -> AttributeString("AddUpdateAttribute")
