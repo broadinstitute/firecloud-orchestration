@@ -38,5 +38,7 @@ class MockRawlsDAO  extends RawlsDAO {
       realm = None))
   }
 
+  override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = Future(Seq.empty[RawlsWorkspace])
+
 
 }

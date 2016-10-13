@@ -71,6 +71,13 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                   LibraryService.SetPublishAttribute(namespace, name, false))
               }
             }
+          } ~
+          path("admin" / "reindex") {
+            post { requestContext =>
+              perRequest(requestContext,
+                LibraryService.props(libraryServiceConstructor, userInfo),
+                LibraryService.IndexAll)
+            }
           }
         }
       }

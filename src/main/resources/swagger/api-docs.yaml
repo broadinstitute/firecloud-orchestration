@@ -2155,6 +2155,29 @@ paths:
           - email
           - profile
           - https://www.googleapis.com/auth/devstorage.full_control
+  '/api/library/admin/reindex':
+    post:
+      tags:
+        - Library
+      operationId: reindexAll
+      summary: |
+        deletes and rebuilds the entire index of published library datasets
+      produces:
+      - text/plain
+      responses:
+        200:
+          description: Success
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      security:
+        - bearer:
+        - googleoauth:
+          - openid
+          - email
+          - profile
+          - https://www.googleapis.com/auth/devstorage.full_control
 
 ### GAWB-934 we're hiding billing endpoints for now
 #  /api/billing:
