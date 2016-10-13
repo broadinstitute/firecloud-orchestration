@@ -157,8 +157,8 @@ object MockTSVStrings {
     List("sample_02", "part_02", "bar").mkString("\t")).mkString("\n")
 
   val addNewWorkspaceAttributes = List(
-    List("entity:sample_id", "attributeName1", "attributeName2", "attributeName3").mkString("\t"),
-    List("test1","attributeValue1", "attributeValue2", "attributeValue3").mkString("\t")).mkString("\n")
+    List("workspace:attributeName1", "attributeName2", "attributeName3").mkString("\t"),
+    List("attributeValue1", "attributeValue2", "attributeValue3").mkString("\t")).mkString("\n")
 
   val updateWorkspaceAttributes = List(
     List("workspace:attributeName1", "attributeName2").mkString("\t"),
