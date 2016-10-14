@@ -65,8 +65,6 @@ libraryDependencies ++= {
     ("com.google.api-client" % "google-api-client" % "1.22.0").exclude("com.google.guava", "guava-jdk5"),
     "com.google.apis" % "google-api-services-storage" % "v1-rev58-1.21.0",
     "com.google.apis" % "google-api-services-compute" % "v1-rev120-1.22.0",
-    "joda-time"            % "joda-time"      % "2.9.1",
-    "org.joda"             % "joda-convert"   % "1.8.1",
     "com.jason-goodwin"   %% "authentikat-jwt" % "0.4.1",
     "org.ocpsoft.prettytime" % "prettytime" % "4.0.1.Final",
     "org.specs2"          %%  "specs2-core"   % "3.7"  % "test",
@@ -74,6 +72,13 @@ libraryDependencies ++= {
     "org.mock-server"      %  "mockserver-netty" % "3.10.2" % "test",
     "org.everit.json"      %  "org.everit.json.schema" % "1.4.0" % "test"
   )
+}
+
+assemblyMergeStrategy in assembly := {
+  case PathList("org", "joda", "time", "base", "BaseDateTime.class") => MergeStrategy.first
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
 }
 
 Revolver.settings.settings
@@ -112,7 +117,3 @@ testOptions in Test += Tests.Setup(classLoader =>
 
 // Build without running tests.
 test in assembly := {}
-
-assemblyShadeRules in assembly := Seq(
-  ShadeRule.rename("org.joda.time.**" -> "elasticsearch.org.joda.time.@1").inLibrary("org.elasticsearch" % "elasticsearch" % "2.4.1")
-)
