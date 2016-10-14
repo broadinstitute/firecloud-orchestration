@@ -772,7 +772,7 @@ paths:
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importAttributes:
       post:
         tags:
-          - workspace
+          - Workspaces
         operationId: importAttributes
         summary: Import workspace attributes from a tsv file
         consumes:
@@ -791,7 +791,7 @@ paths:
             type: string
             in: path
           - name: attributes
-            in: formData
+            in: formDatas
             description: A valid TSV import file
             required: true
             type: file
