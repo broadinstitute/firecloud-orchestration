@@ -67,7 +67,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
           published
         case Left(error) =>
           logger.warn("Could not unmarshal: " + error.toString)
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(response)) // replay the root exception
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "count not unmarshal: " + error.toString))
       }
     }
   }
