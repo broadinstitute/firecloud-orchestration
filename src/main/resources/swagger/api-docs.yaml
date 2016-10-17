@@ -356,6 +356,148 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /api/methods/{namespace}/permissions:
+    get:
+      tags:
+        - Method Repository
+      operationId: getMethodNamespaceACL
+      summary: get ACL permissions on a Method Repository Method Namespace
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method namespace
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: List of indicated method namespace ACL permissions
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodConfigACL'
+        404:
+          description: the indicated method namespace was not found
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
+    post:
+      tags:
+        - Method Repository
+      operationId: setMethodNamespaceACL
+      summary: set ACL permissions on a Method Repository Method Namespace
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method namespace
+          required: true
+          type: string
+          in: path
+        - name: payload
+          description: the ACLs to upsert
+          required: true
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodConfigACL'
+      responses:
+        200:
+          description: the indicated method namespace ACL permissions once the posted changes have been applied
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Bad Request
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
+  /api/configurations/{namespace}/permissions:
+    get:
+      tags:
+        - Method Repository
+      operationId: getConfigNamespaceACL
+      summary: get ACL permissions on a Method Repository Configuration Namespace
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method Configuration namespace
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: List of the indicated configuration namespace ACL permissions
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodConfigACL'
+        404:
+          description: the indicated configuration namespace was not found
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
+    post:
+      tags:
+        - Method Repository
+      operationId: setConfigNamespaceACL
+      summary: set ACL permissions on a Method Repository Configuration Namespace
+      produces:
+        - application/json
+      parameters:
+        - name: namespace
+          description: Method Configuration namespace
+          required: true
+          type: string
+          in: path
+        - name: payload
+          description: the ACLs to upsert
+          required: true
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodConfigACL'
+      responses:
+        200:
+          description: the indicated configuration ACL once the posted changes have been applied
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Bad Request
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:

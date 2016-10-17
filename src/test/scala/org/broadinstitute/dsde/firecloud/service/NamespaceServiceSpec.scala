@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
+import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
@@ -47,19 +48,6 @@ class NamespaceServiceSpec extends ServiceSpec with NamespaceService {
               .withBody(permissions.toJson.toString)
           )
 
-        methodsServer
-          .when(
-            request()
-              .withMethod("DELETE")
-              .withPath(url)
-              .withQueryStringParameter("user", "random@site.com"))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-              .withBody(
-                AgoraPermission(user = Some("random@site.com"), roles = Some(List.empty)).toJson.toString)
-          )
-
         // Pretty Print body content is required for this test since spray Post sends over a
         // pretty-print version of the HttpEntity passed into it.
         methodsServer
@@ -95,7 +83,7 @@ class NamespaceServiceSpec extends ServiceSpec with NamespaceService {
 
     "when calling GET on a namespace permissions path" - {
       "a valid list of FireCloud permissions is returned" in {
-        localUrls.map {
+        localUrls map {
           url =>
             Get(url) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
               status should equal(OK)
@@ -108,7 +96,7 @@ class NamespaceServiceSpec extends ServiceSpec with NamespaceService {
 
     "when calling GET on an invalid namespace permissions path" - {
       "a Not Found error is returned" in {
-        invalidLocalUrls.map {
+        invalidLocalUrls map {
           url =>
             Get(url) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
               status should be (NotFound)
@@ -117,34 +105,9 @@ class NamespaceServiceSpec extends ServiceSpec with NamespaceService {
       }
     }
 
-    "when calling Delete on a namespace permissions path" - {
-      "a FireCloud permission with No Access is returned" in {
-        localUrls.map {
-          url =>
-            Delete(url, deletePermission) ~> dummyUserIdHeaders("random@site.com") ~> sealRoute(routes) ~> check {
-              status should equal(OK)
-              val permission = responseAs[FireCloudPermission]
-              permission shouldNot be (None)
-              permission.role should be (ACLNames.NoAccess)
-            }
-        }
-      }
-    }
-
-    "when calling Delete on an invalid namespace permissions path" - {
-      "a Not Found response is returned" in {
-        invalidLocalUrls.map {
-          url =>
-            Delete(url, deletePermission) ~> dummyUserIdHeaders("random@site.com") ~> sealRoute(routes) ~> check {
-              status should equal(NotFound)
-            }
-        }
-      }
-    }
-
     "when calling POST on a namespace permissions path" - {
       "a valid FireCloud permission is returned" in {
-        localUrls.map {
+        localUrls map {
           url =>
             Post(url, fcPermissions) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
               status should equal(OK)
@@ -157,7 +120,7 @@ class NamespaceServiceSpec extends ServiceSpec with NamespaceService {
 
     "when calling POST on an invalid namespace permissions path" - {
       "a Not Found response is returned" in {
-        invalidLocalUrls.map {
+        invalidLocalUrls map {
           url =>
             Post(url, fcPermissions) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
               status should equal(NotFound)
@@ -166,12 +129,15 @@ class NamespaceServiceSpec extends ServiceSpec with NamespaceService {
       }
     }
 
-    "when calling PUT on a namespace permissions path" - {
+    "when calling PUT or DELETE on a namespace permissions path" - {
       "a Method Not Allowed response is returned" in {
-        invalidLocalUrls.map {
+        localUrls map {
           url =>
-            Put(url, fcPermissions) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-              status should equal(MethodNotAllowed)
+            List(HttpMethods.PUT, HttpMethods.DELETE) map {
+              method =>
+                new RequestBuilder(method)(url, fcPermissions) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+                  status should equal(MethodNotAllowed)
+                }
             }
         }
       }

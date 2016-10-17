@@ -27,13 +27,6 @@ trait NamespaceService extends HttpService with PerRequestCreator with FireCloud
           Props(new AgoraPermissionActor(requestContext)),
           AgoraPermissionHandler.Get(namespaceUrl))
       } ~
-      delete {
-        entity(as[FireCloudPermission]) { permission => requestContext =>
-          perRequest(requestContext,
-            Props(new AgoraPermissionActor(requestContext)),
-            AgoraPermissionHandler.Delete(namespaceUrl + deleteQueryParams(permission)))
-        }
-      } ~
       post {
         entity(as[List[FireCloudPermission]]) { permissions => requestContext =>
           val agoraPermissions = permissions.map(permission => AgoraPermissionHandler.toAgoraPermission(permission))
@@ -43,8 +36,11 @@ trait NamespaceService extends HttpService with PerRequestCreator with FireCloud
             AgoraPermissionHandler.Post(namespaceUrl, agoraPermissions))
         }
       } ~
-      // Put support is unnecessary.
+      // Put and delete support are unnecessary.
       // Post will perform insert, update, and delete operations on each change
+      delete {
+        complete(StatusCodes.MethodNotAllowed)
+      } ~
       put {
         complete(StatusCodes.MethodNotAllowed)
       }
