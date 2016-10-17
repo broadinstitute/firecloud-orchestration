@@ -62,7 +62,6 @@ trait LibraryServiceSupport {
     val rawSchema:JSONObject = new JSONObject(new JSONTokener(schemaStr))
     val schema:Schema = SchemaLoader.load(rawSchema)
     schema.validate(new JSONObject(data))
-
   }
 
 }

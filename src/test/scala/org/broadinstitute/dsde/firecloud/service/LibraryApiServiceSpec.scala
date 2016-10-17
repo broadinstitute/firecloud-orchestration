@@ -55,47 +55,5 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
         }
       }
     }
-    "when calling publish" - {
-      "POST on " + publishedPath - {
-        "should invoke indexDocument" in {
-          this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked = false
-          new RequestBuilder(HttpMethods.POST)(publishedPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked, "indexDocument should have been invoked")
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked == false, "deleteDocument should not have been invoked")
-            this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked = false
-          }
-        }
-      }
-      "DELETE on " + publishedPath - {
-        "should invoke deleteDocument" in {
-          this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked = false
-          new RequestBuilder(HttpMethods.DELETE)(publishedPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked, "deleteDocument should have been invoked")
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked ==  false, "indexDocument should not have been invoked")
-            this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked = false
-          }
-    "in its schema definition" - {
-      "has valid JSON" in {
-        val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val jsonVal:Try[JsValue] = Try(fileContents.parseJson)
-        assert(jsonVal.isSuccess, "Schema should be valid json")
-      }
-      "has valid JSON Schema" in {
-        val schemaStream = new URL("http://json-schema.org/draft-04/schema").openStream()
-
-        try {
-          val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-
-          val rawSchema:JSONObject = new JSONObject(new JSONTokener(schemaStream))
-          val schema:Schema = SchemaLoader.load(rawSchema)
-          schema.validate(new JSONObject(fileContents))
-
-        } finally {
-          schemaStream.close()
-        }
-      }
-    }
   }
 }
