@@ -41,6 +41,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
   val testLibraryMetadata =
     """
       |{
+<<<<<<< dfb6bd57fca7c6d8194fd391a9c951278c2bcb9f
       |  "description" : "some description",
       |  "userAttributeOne" : "one",
       |  "userAttributeTwo" : "two",
@@ -58,6 +59,26 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
       |  "library:studyDesign" : "study",
       |  "library:cellType" : "cell",
       |  "library:technology" : ["is an optional","array attribute"]
+=======
+      |  "workspaceId" : "11111111-2222-3333-4444-555555555555",
+      |  "workspaceName" : "x",
+      |  "workspaceNamespace" : "x",
+      |  "library:foo" : "bar",
+      |  "library:baz" : "qux",
+      |  "datasetName" : "x",
+      |  "datasetDescription" : "x",
+      |  "datasetCustodian" : "x",
+      |  "datasetDepositor" : "x",
+      |  "datasetOwner" : "x",
+      |  "institute" : ["x"],
+      |  "indication" : "x",
+      |  "numSubjects" : 123,
+      |  "projectName" : "x",
+      |  "datatype" : ["x"],
+      |  "dataUseRestriction" : "x",
+      |  "studyDesign" : "x",
+      |  "cellType" : "x"
+>>>>>>> unit tests for schema validation
       |}
     """.stripMargin
 
@@ -373,7 +394,6 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
       "validates on a complete metadata packet" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         validateJsonSchema(testLibraryMetadata, testSchema)
-
       }
     }
   }

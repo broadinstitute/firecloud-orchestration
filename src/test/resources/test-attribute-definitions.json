@@ -125,7 +125,6 @@
       "type": "string",
       "title": "Primary Disease Site"
     },
-
     "library:broadInternalResearchProjectID": {
       "type": "string",
       "title": "Research Project Broad Internal ID"
