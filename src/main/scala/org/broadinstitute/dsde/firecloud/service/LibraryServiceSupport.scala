@@ -8,6 +8,8 @@ import org.everit.json.schema.loader.SchemaLoader
 import org.json.{JSONObject, JSONTokener}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impAttributeFormat
+import org.parboiled.common.FileUtils
+import spray.json.JsObject
 
 /**
   * Created by davidan on 10/2/16.
@@ -53,10 +55,16 @@ trait LibraryServiceSupport {
     Document(workspace.workspaceId, attrfields ++ idfields)
   }
 
-  def schemaValidate(data: String, schemaStr: String) = {
+  def defaultSchema: String = FileUtils.readAllTextFromResource(LibraryService.schemaLocation)
+
+  def schemaValidate(data: String): Unit = validateJsonSchema(data, defaultSchema)
+  def schemaValidate(data: JsObject): Unit = validateJsonSchema(data.compactPrint, defaultSchema)
+
+  def validateJsonSchema(data: String, schemaStr: String): Unit = {
     val rawSchema:JSONObject = new JSONObject(new JSONTokener(schemaStr))
     val schema:Schema = SchemaLoader.load(rawSchema)
     schema.validate(new JSONObject(data))
+
   }
 
 }
