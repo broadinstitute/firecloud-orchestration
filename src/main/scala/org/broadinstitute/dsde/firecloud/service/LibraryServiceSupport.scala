@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
-import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString, JsValue}
+import spray.json.{JsArray}
 import spray.json.DefaultJsonProtocol._
 
 /**
@@ -11,14 +11,13 @@ import spray.json.DefaultJsonProtocol._
   */
 trait LibraryServiceSupport {
 
-  final val libraryPrefix = "library:"
   final val publishedKey = "published"
 
   /**
     * given a set of existing attributes and a set of new attributes, calculate the attribute operations
     * that need to be performed
     */
-  def generateAttributeOperations[T](existingAttrs: AttributeMap, newAttrs: AttributeMap): Seq[AttributeUpdateOperation] = {
+  def generateAttributeOperations(existingAttrs: AttributeMap, newAttrs: AttributeMap): Seq[AttributeUpdateOperation] = {
     // in this method, ONLY work with "library:" keys, and always ignore the "library:published" key
     val oldKeys = existingAttrs.keySet.filter(k => k.namespace == AttributeName.libraryNamespace && !(k.name == publishedKey))
     val newFields = newAttrs.seq.filter(k => k._1.namespace == AttributeName.libraryNamespace && !(k._1.name == publishedKey))
@@ -32,13 +31,7 @@ trait LibraryServiceSupport {
       case (key, value:AttributeValue) => Seq(AddUpdateAttribute(key, value))
       case (key, value:AttributeEntityReference) => Seq(AddUpdateAttribute(key, value))
 
-      case (key, value:AttributeList[T]) => Seq() //map, like below
-      //we don't need to check jsobject structure is valid any more because there's no jsobjects. that's done in deserialization
-
-      //handle lists. we don't need to check the elems are self-similar here because that's handled when they're popupated
-      case (key, value:JsArray) => value.elements.map{x => AddListMember(key, AttributeString(x.convertTo[String]))}
-
-      case (key, value:JsValue) => Seq(AddUpdateAttribute(key, AttributeString(value.toString))) // .toString on a JsString includes extra quotes
+      case (key, value:AttributeList[Attribute @unchecked]) => value.list.map(x => AddListMember(key, x))
     }
 
     // handle removals before upserts
@@ -46,9 +39,7 @@ trait LibraryServiceSupport {
   }
 
   def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
-    // TODO: publish attribute can just be a boolean once we support boolean attributes
-    if (value) Seq(AddUpdateAttribute(LibraryService.publishedFlag, AttributeString("true")))
-    else Seq(RemoveAttribute(LibraryService.publishedFlag))
+    Seq(AddUpdateAttribute(AttributeName(AttributeName.libraryNamespace, publishedKey), AttributeBoolean(value)))
   }
 
   // TODO: support for boolean, numeric, array attributes

@@ -90,41 +90,6 @@ trait TypedAttributeListSerializer extends AttributeListSerializer {
 
 object ModelJsonProtocol {
 
-  implicit val impMethod = jsonFormat8(MethodRepository.Method)
-  implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
-
-  implicit val impWorkspaceName = jsonFormat2(WorkspaceName)
-  implicit val impWorkspaceEntity = jsonFormat5(WorkspaceEntity)
-  implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate)
-  implicit val impRawlsWorkspaceCreate = jsonFormat4(RawlsWorkspaceCreate)
-
-  implicit val impSubmissionStats = jsonFormat3(SubmissionStats)
-  implicit val impRawlsWorkspace = jsonFormat11(RawlsWorkspace)
-  implicit val impRawlsWorkspaceResponse = jsonFormat4(RawlsWorkspaceResponse)
-  implicit val impUIWorkspace = jsonFormat12(UIWorkspace)
-  implicit val impUIWorkspaceResponse = jsonFormat4(UIWorkspaceResponse)
-
-  implicit val impEntity = jsonFormat5(Entity)
-  implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
-  implicit val impEntityWithType = jsonFormat3(EntityWithType)
-  implicit val impEntityCopyDefinition = jsonFormat3(EntityCopyDefinition)
-  implicit val impEntityCopyWithDestinationDefinition = jsonFormat4(EntityCopyWithDestinationDefinition)
-  implicit val impEntityId = jsonFormat2(EntityId)
-  implicit val impEntityDelete = jsonFormat2(EntityDeleteDefinition)
-
-  implicit val impDestination = jsonFormat3(MethodConfigurationId)
-  implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)
-  implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)
-  implicit val impMethodConfigurationPublish = jsonFormat3(MethodConfigurationPublish)
-  implicit val impPublishConfigurationIngest = jsonFormat4(PublishConfigurationIngest)
-
-  implicit val impFireCloudPermission = jsonFormat2(FireCloudPermission)
-  implicit val impAgoraPermission = jsonFormat2(AgoraPermission)
-
-  implicit val impEntityMetadata = jsonFormat4(EntityMetadata)
-  implicit val impModelSchema = jsonFormat1(EntityModel)
-  implicit val impSubmissionIngest = jsonFormat5(SubmissionIngest)
-
   implicit object impStatusCode extends JsonFormat[StatusCode] {
     override def write(code: StatusCode): JsValue = JsNumber(code.intValue)
 
@@ -156,6 +121,21 @@ object ModelJsonProtocol {
 
   // see https://github.com/spray/spray-json#jsonformats-for-recursive-types
   implicit val impErrorReport: RootJsonFormat[ErrorReport] = rootFormat(lazyFormat(jsonFormat5(ErrorReport)))
+
+  /*
+  implicit object AttributeMapFormat extends RootJsonFormat[AttributeMap] {
+    override def write(an: AttributeMap): JsValue = JsObject(an map { case (k: AttributeName, v :Attribute) =>
+      AttributeName.toDelimitedName(k) -> v.toJson
+    })
+
+    override def read(json: JsValue): AttributeMap = json match {
+      case JsObject(members) => members map { case (k: String, v: JsValue) =>
+          AttributeName.fromDelimitedName(k) -> v.convertTo[Attribute]
+      }
+      case _ => throw new DeserializationException("unexpected json type")
+    }
+  }
+  */
 
   implicit object AttributeNameFormat extends RootJsonFormat[AttributeName] {
     override def write(an: AttributeName): JsValue = JsString(AttributeName.toDelimitedName(an))
@@ -204,6 +184,42 @@ object ModelJsonProtocol {
   }
 
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with TypedAttributeListSerializer
+
+
+  implicit val impMethod = jsonFormat8(MethodRepository.Method)
+  implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
+
+  implicit val impWorkspaceName = jsonFormat2(WorkspaceName)
+  implicit val impWorkspaceEntity = jsonFormat5(WorkspaceEntity)
+  implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate)
+  implicit val impRawlsWorkspaceCreate = jsonFormat4(RawlsWorkspaceCreate)
+
+  implicit val impSubmissionStats = jsonFormat3(SubmissionStats)
+  implicit val impRawlsWorkspace = jsonFormat11(RawlsWorkspace)
+  implicit val impRawlsWorkspaceResponse = jsonFormat4(RawlsWorkspaceResponse)
+  implicit val impUIWorkspace = jsonFormat12(UIWorkspace)
+  implicit val impUIWorkspaceResponse = jsonFormat4(UIWorkspaceResponse)
+
+  implicit val impEntity = jsonFormat5(Entity)
+  implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
+  implicit val impEntityWithType = jsonFormat3(EntityWithType)
+  implicit val impEntityCopyDefinition = jsonFormat3(EntityCopyDefinition)
+  implicit val impEntityCopyWithDestinationDefinition = jsonFormat4(EntityCopyWithDestinationDefinition)
+  implicit val impEntityId = jsonFormat2(EntityId)
+  implicit val impEntityDelete = jsonFormat2(EntityDeleteDefinition)
+
+  implicit val impDestination = jsonFormat3(MethodConfigurationId)
+  implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)
+  implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)
+  implicit val impMethodConfigurationPublish = jsonFormat3(MethodConfigurationPublish)
+  implicit val impPublishConfigurationIngest = jsonFormat4(PublishConfigurationIngest)
+
+  implicit val impFireCloudPermission = jsonFormat2(FireCloudPermission)
+  implicit val impAgoraPermission = jsonFormat2(AgoraPermission)
+
+  implicit val impEntityMetadata = jsonFormat4(EntityMetadata)
+  implicit val impModelSchema = jsonFormat1(EntityModel)
+  implicit val impSubmissionIngest = jsonFormat5(SubmissionIngest)
 
   implicit val impEntityUpdateDefinition = jsonFormat3(EntityUpdateDefinition)
 

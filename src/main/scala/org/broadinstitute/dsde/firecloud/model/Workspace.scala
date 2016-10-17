@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import spray.json.JsObject
+import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 
 case class WorkspaceName(
   namespace: Option[String] = None,
@@ -12,18 +12,18 @@ case class WorkspaceEntity(
   name: Option[String] = None,
   createdDate: Option[String] = None,
   createdBy: Option[String] = None,
-  attributes: Option[JsObject] = None)
+  attributes: Option[AttributeMap] = None)
 
 case class WorkspaceCreate(
   namespace: String,
   name: String,
-  attributes: JsObject,
+  attributes: AttributeMap,
   isProtected: Option[Boolean] = Some(false))
 
 case class RawlsWorkspaceCreate(
   namespace: String,
   name: String,
-  attributes: JsObject,
+  attributes: AttributeMap,
   realm: Option[Map[String, String]] = None) {
   def this(wc: WorkspaceCreate) =
     this(wc.namespace, wc.name, wc.attributes,
@@ -46,7 +46,7 @@ case class RawlsWorkspace(
   createdBy: String,
   createdDate: String,
   lastModified: Option[String] = None,
-  attributes: JsObject,
+  attributes: AttributeMap,
   bucketName: String,
   accessLevels: Map[String, Map[String, String]],
   realm: Option[Map[String, String]])
@@ -73,7 +73,7 @@ case class UIWorkspace(
   createdBy: String,
   createdDate: String,
   lastModified: Option[String] = None,
-  attributes: JsObject,
+  attributes: AttributeMap,
   bucketName: String,
   accessLevels: Map[String, Map[String, String]],
   realm: Option[Map[String, String]],
