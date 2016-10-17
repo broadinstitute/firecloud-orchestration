@@ -35,24 +35,23 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
   val testLibraryMetadata =
     """
       |{
-      |  "workspaceId" : "11111111-2222-3333-4444-555555555555",
-      |  "workspaceName" : "x",
-      |  "workspaceNamespace" : "x",
-      |  "library:foo" : "bar",
-      |  "library:baz" : "qux",
-      |  "datasetName" : "x",
-      |  "datasetDescription" : "x",
-      |  "datasetCustodian" : "x",
-      |  "datasetDepositor" : "x",
-      |  "datasetOwner" : "x",
-      |  "institute" : ["x"],
-      |  "indication" : "x",
-      |  "numSubjects" : 123,
-      |  "projectName" : "x",
-      |  "datatype" : ["x"],
-      |  "dataUseRestriction" : "x",
-      |  "studyDesign" : "x",
-      |  "cellType" : "x"
+      |  "description" : "some description",
+      |  "userAttributeOne" : "one",
+      |  "userAttributeTwo" : "two",
+      |  "library:datasetName" : "name",
+      |  "library:datasetDescription" : "desc",
+      |  "library:datasetCustodian" : "cust",
+      |  "library:datasetDepositor" : "depo",
+      |  "library:datasetOwner" : "owner",
+      |  "library:institute" : ["inst","it","ute"],
+      |  "library:indication" : "indic",
+      |  "library:numSubjects" : 123,
+      |  "library:projectName" : "proj",
+      |  "library:datatype" : ["data","type"],
+      |  "library:dataUseRestriction" : "dur",
+      |  "library:studyDesign" : "study",
+      |  "library:cellType" : "cell",
+      |  "library:technology" : ["is an optional","array attribute"]
       |}
     """.stripMargin
 
@@ -307,22 +306,22 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(16){ex.getViolationCount}
+        assertResult(13){ex.getViolationCount}
       }
       "fails with one missing key" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
-        val sampleData = defaultData.copy(defaultData.fields-"workspaceName").compactPrint
+        val sampleData = defaultData.copy(defaultData.fields-"library:datasetName").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getMessage.contains("workspaceName"))
+        assert(ex.getMessage.contains("library:datasetName"))
       }
       "fails with two missing keys" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
-        val sampleData = defaultData.copy(defaultData.fields-"workspaceName"-"workspaceId").compactPrint
+        val sampleData = defaultData.copy(defaultData.fields-"library:datasetName"-"library:datasetOwner").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
@@ -331,32 +330,32 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
       "fails on a string that should be a number" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
-        val sampleData = defaultData.copy(defaultData.fields.updated("numSubjects", JsString("isString"))).compactPrint
+        val sampleData = defaultData.copy(defaultData.fields.updated("library:numSubjects", JsString("isString"))).compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getMessage.contains("numSubjects"))
+        assert(ex.getMessage.contains("library:numSubjects"))
       }
       "fails on a number out of bounds" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
-        val sampleData = defaultData.copy(defaultData.fields.updated("numSubjects", JsNumber(-1))).compactPrint
+        val sampleData = defaultData.copy(defaultData.fields.updated("library:numSubjects", JsNumber(-1))).compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getMessage.contains("numSubjects"))
+        assert(ex.getMessage.contains("library:numSubjects"))
       }
       "fails on a string that should be an array" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
-        val sampleData = defaultData.copy(defaultData.fields.updated("institute", JsString("isString"))).compactPrint
+        val sampleData = defaultData.copy(defaultData.fields.updated("library:institute", JsString("isString"))).compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getMessage.contains("institute"))
+        assert(ex.getMessage.contains("library:institute"))
       }
     }
   }
