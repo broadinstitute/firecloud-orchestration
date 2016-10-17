@@ -269,7 +269,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
 
         try {
-          schemaValidate(fileContents, schemaStr)
+          validateJsonSchema(fileContents, schemaStr)
         } finally {
           schemaStream.close()
         }
