@@ -4,7 +4,7 @@ import java.util.UUID
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
-import org.broadinstitute.dsde.firecloud.model.{AttributeString, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AttributeBoolean, AttributeName, AttributeString, UserInfo}
 import org.scalatest.FreeSpec
 import spray.json._
 import spray.json.DefaultJsonProtocol._
@@ -64,7 +64,14 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     }
     "when new attrs contain an array" - {
       "should calculate list updates" in {
-        val newAttrs = """{"library:keyone":"valoneNew", "library:keytwo":["valtwoA","valtwoB","valtwoC"]}""".parseJson.convertTo[AttributeMap]
+        val newAttrs =
+          """{"library:keyone":"valoneNew",
+            | "library:keytwo":
+            | {
+            |   "itemsType" : "AttributeValue",
+            |   "items" : ["valtwoA","valtwoB","valtwoC"]
+            | }
+            |}""".stripMargin.parseJson.convertTo[AttributeMap]
         val expected = Seq(
           RemoveAttribute(toName("library:keythree")),
           RemoveAttribute(toName("library:keyfour")),
@@ -93,7 +100,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     }
     "when new attrs include non-library" - {
       "should not touch new non-library attrs" in {
-        val newAttrs = """{"library:keyone":"valoneNew", "library:keytwo":"valtwoNew", "333":"three"), "444":"four")}""".parseJson.convertTo[AttributeMap]
+        val newAttrs = """{"library:keyone":"valoneNew", "library:keytwo":"valtwoNew", "333":"three", "444":"four"}""".parseJson.convertTo[AttributeMap]
         val expected = Seq(
           RemoveAttribute(toName("library:keythree")),
           RemoveAttribute(toName("library:keyfour")),
@@ -133,7 +140,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     }
     "when publishing a workspace" - {
       "should add a library:published attribute" in {
-        val expected = Seq(AddUpdateAttribute(toName("library:published"),AttributeString("true")))
+        val expected = Seq(AddUpdateAttribute(toName("library:published"),AttributeBoolean(true)))
         assertResult(expected) {
           updatePublishAttribute(true)
         }

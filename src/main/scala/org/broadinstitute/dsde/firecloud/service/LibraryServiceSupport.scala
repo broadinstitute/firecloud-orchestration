@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddLis
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import spray.json.{JsArray}
 import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impAttributeFormat
 
 /**
   * Created by davidan on 10/2/16.
@@ -24,7 +25,7 @@ trait LibraryServiceSupport {
 
     // remove any attributes that currently exist on the workspace, but are not in the user's packet
     // for any array attributes, we remove them and recreate them entirely. Add the array attrs.
-    val keysToRemove: Set[AttributeName] = oldKeys.diff(newFields.keySet) ++ newFields.filter(_._2.isInstanceOf[JsArray]).keySet
+    val keysToRemove: Set[AttributeName] = oldKeys.diff(newFields.keySet) ++ newFields.filter( _._2.isInstanceOf[AttributeList[_]] ).keySet
     val removeOperations = keysToRemove.map(RemoveAttribute).toSeq
 
     val updateOperations = newFields.toSeq flatMap {
@@ -39,7 +40,8 @@ trait LibraryServiceSupport {
   }
 
   def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
-    Seq(AddUpdateAttribute(AttributeName(AttributeName.libraryNamespace, publishedKey), AttributeBoolean(value)))
+    if (value) Seq(AddUpdateAttribute(AttributeName(AttributeName.libraryNamespace, publishedKey), AttributeBoolean(true)))
+    else Seq(RemoveAttribute(AttributeName(AttributeName.libraryNamespace, publishedKey)))
   }
 
   // TODO: support for boolean, numeric, array attributes
