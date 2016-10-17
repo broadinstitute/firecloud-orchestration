@@ -100,15 +100,7 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
     innerRoute(state, approvalPrompt)
   }
 
-  def withResourceFileContents(path: String)(innerRoute: String => Route): Route = {
-    val classLoader = actorSystem(actorRefFactory).dynamicAccess.classLoader
-    val inputStream = classLoader.getResource(path).openStream()
-    try {
-      innerRoute( FileUtils.readAllText(inputStream) )
-    } finally {
-      inputStream.close()
-    }
-  }
-
+  def withResourceFileContents(path: String)(innerRoute: String => Route): Route =
+    innerRoute( FileUtils.readAllTextFromResource(path) )
 
 }

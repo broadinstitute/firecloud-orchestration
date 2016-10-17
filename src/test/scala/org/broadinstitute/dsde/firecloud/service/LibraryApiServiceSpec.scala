@@ -70,28 +70,21 @@ class LibraryApiServiceSpec extends ServiceSpec with LibraryApiService {
 
     "in its schema definition" - {
       "has valid JSON" in {
-        val inputStream = getClass.getResource("/library/attribute-definitions.json").openStream()
-        try {
-          val fileContents = FileUtils.readAllText(inputStream)
-          val jsonVal:Try[JsValue] = Try(fileContents.parseJson)
-          assert(jsonVal.isSuccess, "Schema should be valid json")
-        } finally {
-          inputStream.close()
-        }
+        val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val jsonVal:Try[JsValue] = Try(fileContents.parseJson)
+        assert(jsonVal.isSuccess, "Schema should be valid json")
       }
       "has valid JSON Schema" in {
-        val inputStream = getClass.getResource("/library/attribute-definitions.json").openStream()
-        val schemaStream = new URL("http://json-schema.org/draft-04/schema").openStream();
+        val schemaStream = new URL("http://json-schema.org/draft-04/schema").openStream()
 
         try {
-          val fileContents = FileUtils.readAllText(inputStream)
+          val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
 
-          val rawSchema:JSONObject = new JSONObject(new JSONTokener(schemaStream));
-          val schema:Schema = SchemaLoader.load(rawSchema);
-          schema.validate(new JSONObject(fileContents));
+          val rawSchema:JSONObject = new JSONObject(new JSONTokener(schemaStream))
+          val schema:Schema = SchemaLoader.load(rawSchema)
+          schema.validate(new JSONObject(fileContents))
 
         } finally {
-          inputStream.close()
           schemaStream.close()
         }
       }
