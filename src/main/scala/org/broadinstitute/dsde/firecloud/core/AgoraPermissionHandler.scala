@@ -22,7 +22,6 @@ import scala.concurrent.Future
 object AgoraPermissionHandler {
   case class Get(url: String)
   case class Post(url: String, agoraPermissions: List[AgoraPermission])
-  case class Put(url: String, agoraPermission: AgoraPermission)
   case class Delete(url: String)
   def props(requestContext: RequestContext): Props = Props(new GetEntitiesWithTypeActor(requestContext))
 
@@ -78,8 +77,6 @@ class AgoraPermissionActor (requestContext: RequestContext) extends Actor with F
       createAgoraResponse(pipeline { Get(url) }) pipeTo context.parent
     case AgoraPermissionHandler.Post(url: String, agoraPermissions: List[AgoraPermission]) =>
       createAgoraResponse(pipeline { Post(url, agoraPermissions) }) pipeTo context.parent
-    case AgoraPermissionHandler.Put(url: String, agoraPermission: AgoraPermission) =>
-      createAgoraResponse(pipeline { Put(url, agoraPermission) }) pipeTo context.parent
     case AgoraPermissionHandler.Delete(url: String) =>
       createAgoraResponse(pipeline { Delete(url) }) pipeTo context.parent
     case _ =>

@@ -36,7 +36,7 @@ object MethodRepository {
       role.equals(ACLNames.NoAccess) || role.equals(ACLNames.Reader) || role.equals(ACLNames.Owner),
       s"role must be one of %s, %s, or %s".format(ACLNames.NoAccess, ACLNames.Reader, ACLNames.Owner)
     )
-    require( validateEmail(user), "user must be non-empty")
+    require(validatePublicOrEmail(user), "user must be non-empty or 'public'")
     def toAgoraPermission = AgoraPermissionHandler.toAgoraPermission(this)
 
   }
@@ -62,9 +62,9 @@ object MethodRepository {
     val ListAll = List("All")
   }
 
-  def validateEmail(email:String): Boolean = {
+  def validatePublicOrEmail(email:String): Boolean = {
     // TODO: real email address validation!
-    !email.trim.isEmpty
+    email.trim.equalsIgnoreCase("public") || !email.trim.isEmpty
   }
 
 
