@@ -67,10 +67,10 @@ libraryDependencies ++= {
     "com.google.apis" % "google-api-services-compute" % "v1-rev120-1.22.0",
     "com.jason-goodwin"   %% "authentikat-jwt" % "0.4.1",
     "org.ocpsoft.prettytime" % "prettytime" % "4.0.1.Final",
+    "org.everit.json"      %  "org.everit.json.schema" % "1.4.0",
     "org.specs2"          %%  "specs2-core"   % "3.7"  % "test",
     "org.scalatest"       %%  "scalatest"     % "2.2.6"   % "test",
-    "org.mock-server"      %  "mockserver-netty" % "3.10.2" % "test",
-    "org.everit.json"      %  "org.everit.json.schema" % "1.4.0" % "test"
+    "org.mock-server"      %  "mockserver-netty" % "3.10.2" % "test"
   )
 }
 

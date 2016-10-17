@@ -1,7 +1,13 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.io.InputStream
+
 import org.broadinstitute.dsde.firecloud.model.{AttributeString, Document, RawlsWorkspace}
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
+import org.everit.json.schema.Schema
+import org.everit.json.schema.loader.SchemaLoader
+import org.json.{JSONObject, JSONTokener}
+import org.parboiled.common.FileUtils
 import spray.json.{JsArray, JsObject, JsString, JsValue}
 import spray.json.DefaultJsonProtocol._
 
@@ -56,6 +62,12 @@ trait LibraryServiceSupport {
       "workspaceId" -> workspace.workspaceId
     )
     Document(workspace.workspaceId, attrfields ++ idfields)
+  }
+
+  def schemaValidate(data: String, schemaStr: String) = {
+    val rawSchema:JSONObject = new JSONObject(new JSONTokener(schemaStr))
+    val schema:Schema = SchemaLoader.load(rawSchema)
+    schema.validate(new JSONObject(data))
   }
 
 }

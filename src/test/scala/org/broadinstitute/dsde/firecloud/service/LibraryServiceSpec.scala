@@ -1,11 +1,15 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.net.URL
 import java.util.UUID
 
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
 import org.broadinstitute.dsde.firecloud.model.{AttributeString, Document, RawlsWorkspace}
+import org.parboiled.common.FileUtils
 import org.scalatest.FreeSpec
-import spray.json.{JsString, _}
+import spray.json._
+
+import scala.util.Try
 
 class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
 
@@ -250,6 +254,24 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         ))
         assertResult(expected) {
           indexableDocument(w)
+        }
+      }
+    }
+    "in its schema definition" - {
+      "has valid JSON" in {
+        val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val jsonVal:Try[JsValue] = Try(fileContents.parseJson)
+        assert(jsonVal.isSuccess, "Schema should be valid json")
+      }
+      "has valid JSON Schema" in {
+        val schemaStream = new URL("http://json-schema.org/draft-04/schema").openStream()
+        val schemaStr = FileUtils.readAllText(schemaStream)
+        val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+
+        try {
+          schemaValidate(fileContents, schemaStr)
+        } finally {
+          schemaStream.close()
         }
       }
     }
