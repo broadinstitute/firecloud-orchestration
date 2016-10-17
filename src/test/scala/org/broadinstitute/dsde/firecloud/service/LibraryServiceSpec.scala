@@ -6,7 +6,8 @@ import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
-import org.broadinstitute.dsde.firecloud.model.{AttributeBoolean, AttributeName, AttributeString, Document, RawlsWorkspace}
+import org.broadinstitute.dsde.firecloud.model.{AttributeString, Document, RawlsWorkspace}
+import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
 import org.scalatest.FreeSpec
 import spray.json._
@@ -36,6 +37,30 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     bucketName="bucketName",
     accessLevels=Map.empty,
     realm=None)
+
+  val testLibraryMetadata =
+    """
+      |{
+      |  "workspaceId" : "11111111-2222-3333-4444-555555555555",
+      |  "workspaceName" : "x",
+      |  "workspaceNamespace" : "x",
+      |  "library:foo" : "bar",
+      |  "library:baz" : "qux",
+      |  "datasetName" : "x",
+      |  "datasetDescription" : "x",
+      |  "datasetCustodian" : "x",
+      |  "datasetDepositor" : "x",
+      |  "datasetOwner" : "x",
+      |  "institute" : ["x"],
+      |  "indication" : "x",
+      |  "numSubjects" : 123,
+      |  "projectName" : "x",
+      |  "datatype" : ["x"],
+      |  "dataUseRestriction" : "x",
+      |  "studyDesign" : "x",
+      |  "cellType" : "x"
+      |}
+    """.stripMargin
 
   "LibraryService" - {
     "when new attrs are empty" - {
@@ -270,7 +295,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         }
       }
     }
-    "in its schema definition" - {
+    "in its runtime schema definition" - {
       "has valid JSON" in {
         val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         val jsonVal:Try[JsValue] = Try(fileContents.parseJson)
@@ -286,6 +311,65 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         } finally {
           schemaStream.close()
         }
+      }
+    }
+    "when validating JSON Schema" - {
+      "fails on an empty JsObject" in {
+        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val sampleData = "{}"
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        assertResult(16){ex.getViolationCount}
+      }
+      "fails with one missing key" in {
+        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields-"workspaceName").compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        assertResult(1){ex.getViolationCount}
+        assert(ex.getMessage.contains("workspaceName"))
+      }
+      "fails with two missing keys" in {
+        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields-"workspaceName"-"workspaceId").compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        assertResult(2){ex.getViolationCount}
+      }
+      "fails on a string that should be a number" in {
+        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields.updated("numSubjects", JsString("isString"))).compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        assertResult(1){ex.getViolationCount}
+        assert(ex.getMessage.contains("numSubjects"))
+      }
+      "fails on a number out of bounds" in {
+        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields.updated("numSubjects", JsNumber(-1))).compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        assertResult(1){ex.getViolationCount}
+        assert(ex.getMessage.contains("numSubjects"))
+      }
+      "fails on a string that should be an array" in {
+        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields.updated("institute", JsString("isString"))).compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        assertResult(1){ex.getViolationCount}
+        assert(ex.getMessage.contains("institute"))
       }
     }
   }
