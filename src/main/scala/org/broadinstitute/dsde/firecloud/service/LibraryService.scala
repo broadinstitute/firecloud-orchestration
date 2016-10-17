@@ -76,15 +76,10 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
           case Success(x) => {
             rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-              // verify owner on workspace
-              if (!workspaceResponse.accessLevel.contains("OWNER")) {
-                Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner"))
-              } else {
-                // this is technically vulnerable to a race condition in which the workspace attributes have changed
-                // between the time we retrieved them and here, where we update them.
-                val allOperations = generateAttributeOperations(workspaceResponse.workspace.get.attributes, userAttrs)
-                rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map (RequestComplete(_))
-              }
+              // this is technically vulnerable to a race condition in which the workspace attributes have changed
+              // between the time we retrieved them and here, where we update them.
+              val allOperations = generateAttributeOperations(workspaceResponse.workspace.get.attributes, userAttrs)
+              rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map (RequestComplete(_))
             }
           }
         }
