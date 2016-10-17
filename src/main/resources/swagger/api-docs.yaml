@@ -356,6 +356,54 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
+  /api/methods/permissions:
+    get:
+      tags:
+        - Method Repository
+      operationId: getMyMethodNamespaceACLs
+      summary: get My Method Repository Method Namespace Permissions
+      produces:
+        - application/json
+      responses:
+        200:
+          description: List of indicated method namespace permissions for the current user
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodConfigACL'
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
+  /api/configurations/permissions:
+    get:
+      tags:
+        - Method Repository
+      operationId: getMyConfigNamespaceACLs
+      summary: get My Method Repository Configuration Namespace Permissions
+      produces:
+        - application/json
+      responses:
+        200:
+          description: List of indicated configuration namespace permissions for the current user
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodConfigACL'
+        500:
+          description: Internal Server Error
+      security:
+        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
   /api/methods/{namespace}/permissions:
     get:
       tags:

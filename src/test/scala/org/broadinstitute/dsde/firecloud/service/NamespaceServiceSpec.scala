@@ -81,6 +81,18 @@ class NamespaceServiceSpec extends ServiceSpec with NamespaceService {
 
   "NamespaceService" - {
 
+    // TODO: When Agora can return all user permissions, update this test to reflect what is returned
+    "when calling GET on a permissions path" - {
+      "a valid list of FireCloud permissions is returned" in {
+        List("/methods/permissions", "/configurations/permissions") map {
+          url =>
+            Get(url) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+              status should equal(OK)
+            }
+        }
+      }
+    }
+
     "when calling GET on a namespace permissions path" - {
       "a valid list of FireCloud permissions is returned" in {
         localUrls map {
