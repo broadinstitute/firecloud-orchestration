@@ -11,10 +11,10 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impAttributeFor
  */
 object AttributeUpdateOperations {
   sealed trait AttributeUpdateOperation
-  case class AddUpdateAttribute(attributeName: String, addUpdateAttribute: Attribute) extends AttributeUpdateOperation
-  case class RemoveAttribute(attributeName: String) extends AttributeUpdateOperation
-  case class AddListMember(attributeListName: String, newMember: Attribute) extends AttributeUpdateOperation
-  case class RemoveListMember(attributeListName: String, removeMember: Attribute) extends AttributeUpdateOperation
+  case class AddUpdateAttribute(attributeName: AttributeName, addUpdateAttribute: Attribute) extends AttributeUpdateOperation
+  case class RemoveAttribute(attributeName: AttributeName) extends AttributeUpdateOperation
+  case class AddListMember(attributeListName: AttributeName, newMember: Attribute) extends AttributeUpdateOperation
+  case class RemoveListMember(attributeListName: AttributeName, removeMember: Attribute) extends AttributeUpdateOperation
 
   private val AddUpdateAttributeFormat = jsonFormat2(AddUpdateAttribute)
   private val RemoveAttributeFormat = jsonFormat1(RemoveAttribute)
