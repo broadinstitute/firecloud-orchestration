@@ -81,7 +81,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     }
     "when old attrs include non-library" - {
       "should not touch old non-library attrs" in {
-        val newAttrs = """{toName("library:keyone"):"valoneNew"}""".parseJson.convertTo[AttributeMap]
+        val newAttrs = """{"library:keyone":"valoneNew"}""".parseJson.convertTo[AttributeMap]
         val expected = Seq(
           RemoveAttribute(toName("library:keytwo")),
           AddUpdateAttribute(toName("library:keyone"),AttributeString("valoneNew"))
@@ -93,7 +93,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     }
     "when new attrs include non-library" - {
       "should not touch new non-library attrs" in {
-        val newAttrs = """{toName("library:keyone"):"valoneNew", toName("library:keytwo"):"valtwoNew", "333":"three"), "444":"four")}""".parseJson.convertTo[AttributeMap]
+        val newAttrs = """{"library:keyone":"valoneNew", "library:keytwo":"valtwoNew", "333":"three"), "444":"four")}""".parseJson.convertTo[AttributeMap]
         val expected = Seq(
           RemoveAttribute(toName("library:keythree")),
           RemoveAttribute(toName("library:keyfour")),
@@ -107,7 +107,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     }
     "when old attrs include published flag" - {
       "should not touch old published flag" in {
-        val newAttrs = """{toName("library:keyone"):"valoneNew"}""".parseJson.convertTo[AttributeMap]
+        val newAttrs = """{"library:keyone":"valoneNew"}""".parseJson.convertTo[AttributeMap]
         val expected = Seq(
           RemoveAttribute(toName("library:keytwo")),
           AddUpdateAttribute(toName("library:keyone"),AttributeString("valoneNew"))
@@ -119,7 +119,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     }
     "when new attrs include published flag" - {
       "should not touch old published flag" in {
-        val newAttrs = """{toName("library:published":"true",toName("library:keyone"):"valoneNew", toName("library:keytwo"):"valtwoNew"}""".parseJson.convertTo[AttributeMap]
+        val newAttrs = """{"library:published":"true","library:keyone":"valoneNew", "library:keytwo":"valtwoNew"}""".parseJson.convertTo[AttributeMap]
         val expected = Seq(
           RemoveAttribute(toName("library:keythree")),
           RemoveAttribute(toName("library:keyfour")),
