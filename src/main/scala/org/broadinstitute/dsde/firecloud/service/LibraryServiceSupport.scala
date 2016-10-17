@@ -1,8 +1,9 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.model.{AttributeString, Document, RawlsWorkspace}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
-import spray.json.{JsArray, JsObject, JsString, JsValue}
+import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString, JsValue}
 import spray.json.DefaultJsonProtocol._
 
 /**
@@ -16,24 +17,27 @@ trait LibraryServiceSupport {
   /**
     * given a set of existing attributes and a set of new attributes, calculate the attribute operations
     * that need to be performed
-    * TODO: existing model uses Map[String,String] which will not work with arrays, booleans, etc!
     */
-  def generateAttributeOperations(existingAttrs: Map[String, String], newAttrs: JsObject): Seq[AttributeUpdateOperation] = {
+  def generateAttributeOperations[T](existingAttrs: AttributeMap, newAttrs: AttributeMap): Seq[AttributeUpdateOperation] = {
     // in this method, ONLY work with "library:" keys, and always ignore the "library:published" key
-    val oldKeys = existingAttrs.keySet.filter(k => k.startsWith(libraryPrefix) && !k.equals(libraryPrefix+publishedKey))
-    val newFields = newAttrs.fields.filter(k => k._1.startsWith(libraryPrefix) && !k._1.equals(libraryPrefix+publishedKey))
+    val oldKeys = existingAttrs.keySet.filter(k => k.namespace == AttributeName.libraryNamespace && !(k.name == publishedKey))
+    val newFields = newAttrs.seq.filter(k => k._1.namespace == AttributeName.libraryNamespace && !(k._1.name == publishedKey))
 
     // remove any attributes that currently exist on the workspace, but are not in the user's packet
     // for any array attributes, we remove them and recreate them entirely. Add the array attrs.
-    val keysToRemove = oldKeys.diff(newFields.keySet) ++ newFields.filter(_._2.isInstanceOf[JsArray]).keySet
-    val removeOperations = keysToRemove.map(RemoveAttribute(_)).toSeq
+    val keysToRemove: Set[AttributeName] = oldKeys.diff(newFields.keySet) ++ newFields.filter(_._2.isInstanceOf[JsArray]).keySet
+    val removeOperations = keysToRemove.map(RemoveAttribute).toSeq
 
-    // TODO: handle numeric/boolean values
     val updateOperations = newFields.toSeq flatMap {
-      // case (key, value:JsBoolean) => AddUpdateAttribute(key, AttributeString(value.toString()))
-      // case (key, value:JsNumber) => AddUpdateAttribute(key, AttributeString(value.toString()))
+      case (key, value:AttributeValue) => Seq(AddUpdateAttribute(key, value))
+      case (key, value:AttributeEntityReference) => Seq(AddUpdateAttribute(key, value))
+
+      case (key, value:AttributeList[T]) => Seq() //map, like below
+      //we don't need to check jsobject structure is valid any more because there's no jsobjects. that's done in deserialization
+
+      //handle lists. we don't need to check the elems are self-similar here because that's handled when they're popupated
       case (key, value:JsArray) => value.elements.map{x => AddListMember(key, AttributeString(x.convertTo[String]))}
-      case (key, value:JsString) => Seq(AddUpdateAttribute(key, AttributeString(value.convertTo[String])))
+
       case (key, value:JsValue) => Seq(AddUpdateAttribute(key, AttributeString(value.toString))) // .toString on a JsString includes extra quotes
     }
 

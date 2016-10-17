@@ -9,6 +9,85 @@ import spray.json.DefaultJsonProtocol._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 
+//Mix in one of these with your AttributeFormat so you can serialize lists
+//This also needs mixing in with an AttributeFormat because they're symbiotic
+sealed trait AttributeListSerializer {
+  def writeListType(obj: Attribute): JsValue
+  def readListType(json: JsValue): Attribute
+
+  def writeAttribute(obj: Attribute): JsValue
+  def readAttribute(json: JsValue): Attribute
+}
+
+//Serializes attribute lists to e.g. [1,2,3]
+//When reading in JSON, assumes that [] is an empty value list, not an empty ref list
+trait PlainArrayAttributeListSerializer extends AttributeListSerializer {
+  override def writeListType(obj: Attribute): JsValue = obj match {
+    //lists
+    case AttributeValueEmptyList => JsArray()
+    case AttributeValueList(l) => JsArray(l.map(writeAttribute):_*)
+    case AttributeEntityReferenceEmptyList => JsArray()
+    case AttributeEntityReferenceList(l) => JsArray(l.map(writeAttribute):_*)
+  }
+
+  override def readListType(json: JsValue): Attribute = json match {
+    case JsArray(a) =>
+      val attrList: Seq[Attribute] = a.map(readAttribute)
+      attrList match {
+        case e: Seq[_] if e.isEmpty => AttributeValueEmptyList
+        case v: Seq[AttributeValue @unchecked] if attrList.map(_.isInstanceOf[AttributeValue]).reduce(_&&_) => AttributeValueList(v)
+        case r: Seq[AttributeEntityReference @unchecked] if attrList.map(_.isInstanceOf[AttributeEntityReference]).reduce(_&&_) => AttributeEntityReferenceList(r)
+        case _ => throw new DeserializationException("illegal array type")
+      }
+    case _ => throw new DeserializationException("unexpected json type")
+  }
+}
+
+//Serializes attribute lists to e.g. { "itemsType" : "AttributeValue", "items" : [1,2,3] }
+trait TypedAttributeListSerializer extends AttributeListSerializer {
+  val LIST_ITEMS_TYPE_KEY = "itemsType"
+  val LIST_ITEMS_KEY = "items"
+  val LIST_OBJECT_KEYS = Set(LIST_ITEMS_TYPE_KEY, LIST_ITEMS_KEY)
+
+  val VALUE_LIST_TYPE = "AttributeValue"
+  val REF_LIST_TYPE = "EntityReference"
+
+  def writeListType(obj: Attribute): JsValue = obj match {
+    //lists
+    case AttributeValueEmptyList => writeAttributeList(VALUE_LIST_TYPE, Seq.empty[AttributeValue])
+    case AttributeValueList(l) => writeAttributeList(VALUE_LIST_TYPE, l)
+    case AttributeEntityReferenceEmptyList => writeAttributeList(REF_LIST_TYPE, Seq.empty[AttributeEntityReference])
+    case AttributeEntityReferenceList(l) => writeAttributeList(REF_LIST_TYPE, l)
+  }
+
+  def readListType(json: JsValue): Attribute = json match {
+    case JsObject(members) if LIST_OBJECT_KEYS subsetOf members.keySet => readAttributeList(members)
+
+    case _ => throw new DeserializationException("unexpected json type")
+  }
+
+  def writeAttributeList[T <: Attribute](listType: String, list: Seq[T]): JsValue = {
+    JsObject( Map(LIST_ITEMS_TYPE_KEY -> JsString(listType), LIST_ITEMS_KEY -> JsArray(list.map( writeAttribute ).toSeq:_*)) )
+  }
+
+  def readAttributeList(jsMap: Map[String, JsValue]) = {
+    val attrList: Seq[Attribute] = jsMap(LIST_ITEMS_KEY) match {
+      case JsArray(elems) => elems.map(readAttribute)
+      case _ => throw new DeserializationException(s"the value of %s should be an array".format(LIST_ITEMS_KEY))
+    }
+
+    (jsMap(LIST_ITEMS_TYPE_KEY), attrList) match {
+      case (JsString(VALUE_LIST_TYPE), vals: Seq[AttributeValue @unchecked]) if vals.isEmpty => AttributeValueEmptyList
+      case (JsString(VALUE_LIST_TYPE), vals: Seq[AttributeValue @unchecked]) if vals.map(_.isInstanceOf[AttributeValue]).reduce(_&&_) => AttributeValueList(vals)
+
+      case (JsString(REF_LIST_TYPE), refs: Seq[AttributeEntityReference @unchecked]) if refs.isEmpty => AttributeEntityReferenceEmptyList
+      case (JsString(REF_LIST_TYPE), refs: Seq[AttributeEntityReference @unchecked]) if refs.map(_.isInstanceOf[AttributeEntityReference]).reduce(_&&_) => AttributeEntityReferenceList(refs)
+
+      case _ => throw new DeserializationException("illegal array type")
+    }
+  }
+}
+
 object ModelJsonProtocol {
 
   implicit val impMethod = jsonFormat8(MethodRepository.Method)
@@ -32,9 +111,6 @@ object ModelJsonProtocol {
   implicit val impEntityCopyWithDestinationDefinition = jsonFormat4(EntityCopyWithDestinationDefinition)
   implicit val impEntityId = jsonFormat2(EntityId)
   implicit val impEntityDelete = jsonFormat2(EntityDeleteDefinition)
-
-  implicit val impMethodConfiguration = jsonFormat8(MethodConfiguration)
-  implicit val impMethodConfigurationRename = jsonFormat3(MethodConfigurationRename)
 
   implicit val impDestination = jsonFormat3(MethodConfigurationId)
   implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)
@@ -81,21 +157,53 @@ object ModelJsonProtocol {
   // see https://github.com/spray/spray-json#jsonformats-for-recursive-types
   implicit val impErrorReport: RootJsonFormat[ErrorReport] = rootFormat(lazyFormat(jsonFormat5(ErrorReport)))
 
-  implicit object impAttributeFormat extends RootJsonFormat[Attribute] {
+  implicit object AttributeNameFormat extends RootJsonFormat[AttributeName] {
+    override def write(an: AttributeName): JsValue = JsString(AttributeName.toDelimitedName(an))
 
-    override def write(obj: Attribute): JsValue = obj match {
-      case AttributeNull() => JsNull
-      case AttributeString(s) => JsString(s)
-      case AttributeReference(entityType, entityName) => JsObject(Map("entityType" -> JsString(entityType), "entityName" -> JsString(entityName)))
-    }
-
-    override def read(json: JsValue): Attribute = json match {
-      case JsNull => AttributeNull()
-      case JsString(s) => AttributeString(s)
-      case JsObject(members) => AttributeReference(members("entityType").asInstanceOf[JsString].value, members("entityName").asInstanceOf[JsString].value)
-      case _ => throw DeserializationException("unexpected json type")
+    override def read(json: JsValue): AttributeName = json match {
+      case JsString(name) => AttributeName.fromDelimitedName(name)
+      case _ => throw new DeserializationException("unexpected json type")
     }
   }
+
+  trait AttributeFormat extends RootJsonFormat[Attribute] with AttributeListSerializer {
+    //Magic strings we use in JSON serialization
+
+    //Entity refs get serialized to e.g. { "entityType" : "sample", "entityName" : "theBestSample" }
+    val ENTITY_TYPE_KEY = "entityType"
+    val ENTITY_NAME_KEY = "entityName"
+    val ENTITY_OBJECT_KEYS = Set(ENTITY_TYPE_KEY, ENTITY_NAME_KEY)
+
+    override def write(obj: Attribute): JsValue = writeAttribute(obj)
+    def writeAttribute(obj: Attribute): JsValue = obj match {
+      //vals
+      case AttributeNull => JsNull
+      case AttributeBoolean(b) => JsBoolean(b)
+      case AttributeNumber(n) => JsNumber(n)
+      case AttributeString(s) => JsString(s)
+      //ref
+      case AttributeEntityReference(entityType, entityName) => JsObject(Map(ENTITY_TYPE_KEY -> JsString(entityType), ENTITY_NAME_KEY -> JsString(entityName)))
+      //list types
+      case x: AttributeList[_] => writeListType(x)
+
+      case _ => throw new SerializationException("AttributeFormat doesn't know how to write JSON for type " + obj.getClass.getSimpleName)
+    }
+
+    override def read(json: JsValue): Attribute = readAttribute(json)
+    def readAttribute(json: JsValue): Attribute = json match {
+      case JsNull => AttributeNull
+      case JsString(s) => AttributeString(s)
+      case JsBoolean(b) => AttributeBoolean(b)
+      case JsNumber(n) => AttributeNumber(n)
+
+      case JsObject(members) if ENTITY_OBJECT_KEYS subsetOf members.keySet =>
+        AttributeEntityReference(members(ENTITY_TYPE_KEY).asInstanceOf[JsString].value, members(ENTITY_NAME_KEY).asInstanceOf[JsString].value)
+
+      case _ => readListType(json)
+    }
+  }
+
+  implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with TypedAttributeListSerializer
 
   implicit val impEntityUpdateDefinition = jsonFormat3(EntityUpdateDefinition)
 
