@@ -156,6 +156,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   val upsertAttrOperation = "op" -> AttributeString("AddUpdateAttribute")
   val removeAttrOperation = "op" -> AttributeString("RemoveAttribute")
   val addListMemberOperation = "op" -> AttributeString("AddListMember")
+  val createRefListOperation = "op" -> AttributeString("CreateAttributeEntityReferenceList")
 
   /**
    * colInfo is a list of (headerName, refType), where refType is the type of the entity if the headerName is an AttributeRef
@@ -168,7 +169,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       val nameEntry = "attributeName" -> AttributeString(attributeName)
       def valEntry( attr: Attribute ) = "addUpdateAttribute" -> attr
       refTypeOpt match {
-        case Some(refType) => Map(upsertAttrOperation,nameEntry,valEntry(AttributeReference(refType,value)))
+        case Some(refType) => Map(upsertAttrOperation,nameEntry,valEntry(AttributeEntityReference(refType,value)))
         case None => value match {
           case "__DELETE__" => Map(removeAttrOperation,nameEntry)
           case _ => Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value)))
@@ -182,9 +183,8 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     if( ModelSchema.isCollectionType(entityType).getOrElse(false) ) {
       val membersAttributeName = ModelSchema.getPlural(memberTypeOpt.get).get
       Some(Map(
-        addListMemberOperation,
-        "attributeListName"->AttributeString(membersAttributeName),
-        "newMember"->AttributeNull()))
+        createRefListOperation,
+        "attributeListName"->AttributeString(membersAttributeName)))
     } else {
       None
     }
@@ -218,7 +218,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
           val rawlsCalls = tsv.tsvData groupBy(_(0)) map { case (entityName, rows) =>
             val ops = rows map { row =>
               //row(1) is the entity to add as a member of the entity in row.head
-              val attrRef = AttributeReference(memberTypeOpt.get,row(1))
+              val attrRef = AttributeEntityReference(memberTypeOpt.get,row(1))
               Map(addListMemberOperation,"attributeListName"->AttributeString(memberPlural),"newMember"->attrRef)
             }
             EntityUpdateDefinition(entityName,entityType,ops)

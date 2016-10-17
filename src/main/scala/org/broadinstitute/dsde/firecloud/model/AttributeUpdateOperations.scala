@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.model
 
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impAttributeFormat
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 /**
  * Created by mbemis on 7/23/15.
