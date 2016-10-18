@@ -640,7 +640,6 @@ paths:
             - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
     get:
-      type: EntityWithType
       tags:
       - Entities
       operationId: getEntitiesWithType
@@ -674,7 +673,6 @@ paths:
             - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities:
     get:
-      type: String
       tags:
       - Entities
       operationId: getEntityTypes
@@ -831,7 +829,6 @@ paths:
 #            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
-      type: Entity
       tags:
       - Entities
       operationId: getEntities
@@ -858,6 +855,10 @@ paths:
       responses:
         200:
           description: List of entities in workspace
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Entity'
         404:
           description: Workspace or entity type does not exist
         500:
@@ -870,7 +871,6 @@ paths:
             - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
-      type: file
       tags:
       - Entities
       operationId: downloadEntitiesTSV
@@ -897,6 +897,8 @@ paths:
       responses:
         200:
           description: Workspace entities of specified type in TSV format
+          schema:
+            type: file
         404:
           description: Workspace or entity type does not exist
         500:
@@ -995,7 +997,6 @@ paths:
 #            - https://www.googleapis.com/auth/devstorage.full_control
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
-      type: file
       tags:
       - Entities
       operationId: browserDownloadEntitiesTSV
@@ -1022,13 +1023,14 @@ paths:
       responses:
         200:
           description: Workspace entities of specified type in TSV format
+          schema:
+            type: file
         404:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
     get:
-      type: Entity
       tags:
         - Entities
       operationId: entityQuery
