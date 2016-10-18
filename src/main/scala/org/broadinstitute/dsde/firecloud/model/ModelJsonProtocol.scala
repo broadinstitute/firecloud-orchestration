@@ -122,21 +122,6 @@ object ModelJsonProtocol {
   // see https://github.com/spray/spray-json#jsonformats-for-recursive-types
   implicit val impErrorReport: RootJsonFormat[ErrorReport] = rootFormat(lazyFormat(jsonFormat5(ErrorReport)))
 
-  /*
-  implicit object AttributeMapFormat extends RootJsonFormat[AttributeMap] {
-    override def write(an: AttributeMap): JsValue = JsObject(an map { case (k: AttributeName, v :Attribute) =>
-      AttributeName.toDelimitedName(k) -> v.toJson
-    })
-
-    override def read(json: JsValue): AttributeMap = json match {
-      case JsObject(members) => members map { case (k: String, v: JsValue) =>
-          AttributeName.fromDelimitedName(k) -> v.convertTo[Attribute]
-      }
-      case _ => throw new DeserializationException("unexpected json type")
-    }
-  }
-  */
-
   implicit object AttributeNameFormat extends RootJsonFormat[AttributeName] {
     override def write(an: AttributeName): JsValue = JsString(AttributeName.toDelimitedName(an))
 
