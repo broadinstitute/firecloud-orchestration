@@ -2834,15 +2834,15 @@ definitions:
       isDbgapAuthorized:
         type: boolean
       lastLinkTime:
-        type: long
+        type: integer
         format: int64
         default: 0
       linkExpireTime:
-        type: long
+        type: integer
         format: int64
         default: 0
       secondsSinceLastLink:
-        type: long
+        type: integer
         format: int64
         default: 0
       descriptionSinceLastLink:
