@@ -2767,11 +2767,14 @@ definitions:
         type: string
         description: The root entity type that the method will be running on
       prerequisites:
-        $ref: ''
+        type: object
+        description: Map[String, String]
       inputs:
-        $ref: ''
+        type: object
+        description: Map[String, String]
       outputs:
-        $ref: ''
+        type: object
+        description: Map[String, String]
       methodRepoMethod:
         $ref: '#/definitions/MethodRepoMethod'
         description: The properties of the method from the method store that this config is associated with
@@ -2789,13 +2792,15 @@ definitions:
         items:
           type: string
       invalidInputs:
-        $ref: ''
+        type: object
+        description: Map[String, String]
       validOutputs:
         type: array
         items:
           type: string
       invalidOutputs:
-        $ref: ''
+        type: object
+        description: Map[String, String]
       methodConfiguration:
         $ref: '#/definitions/MethodConfiguration'
   Profile:
@@ -3029,13 +3034,13 @@ definitions:
         type: string
         description: The user who created the workspace
       attributes:
-        $ref: ''
+        type: object
         description: Map[String, Attribute]
       accessLevels:
-         $ref: ''
-         description: Map[String, RawlsGroupRef]
+        type: object
+        description: Map[String, RawlsGroupRef]
       realmACLs:
-         $ref: ''
+         type: object
          description: Map[String, RawlsGroupRef]
       isLocked:
         type: boolean
