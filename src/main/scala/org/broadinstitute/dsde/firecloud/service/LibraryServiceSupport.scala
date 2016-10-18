@@ -17,8 +17,8 @@ trait LibraryServiceSupport {
     */
   def generateAttributeOperations(existingAttrs: AttributeMap, newAttrs: AttributeMap): Seq[AttributeUpdateOperation] = {
     // in this method, ONLY work with "library:" keys, and always ignore the "library:published" key
-    val oldKeys = existingAttrs.keySet.filter(k => k.namespace == AttributeName.libraryNamespace && !(k.name == LibraryService.publishedFlag))
-    val newFields = newAttrs.seq.filter(k => k._1.namespace == AttributeName.libraryNamespace && !(k._1.name == LibraryService.publishedFlag))
+    val oldKeys = existingAttrs.keySet.filter( k => k.namespace == AttributeName.libraryNamespace && !(k.name == LibraryService.publishedFlag.name))
+    val newFields = newAttrs.seq.filter(k => k._1.namespace == AttributeName.libraryNamespace && !(k._1.name == LibraryService.publishedFlag.name))
 
     // remove any attributes that currently exist on the workspace, but are not in the user's packet
     // for any array attributes, we remove them and recreate them entirely. Add the array attrs.
