@@ -61,7 +61,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
         case Right(srw) =>
           logger.info("admin workspace list got: " + srw.length + " raw workspaces")
           val published = srw.collect {
-            case rw:RawlsWorkspace if rw.attributes.getOrElse(LibraryService.publishedFlag, "false").toBoolean => rw
+            case rw:RawlsWorkspace if rw.attributes.getOrElse(LibraryService.publishedFlag, AttributeBoolean(false)).asInstanceOf[AttributeBoolean].value => rw
           }
           logger.info("admin workspace list collected: " + published.length + " published workspaces")
           published
