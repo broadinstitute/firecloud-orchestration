@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import java.util.UUID
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
 import org.broadinstitute.dsde.firecloud.model.{AttributeBoolean, AttributeName, AttributeString, UserInfo}
 import org.scalatest.FreeSpec
@@ -28,7 +29,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     createdBy="createdBy",
     createdDate="createdDate",
     lastModified=None,
-    attributes=Map.empty[String,String],
+    attributes=Map.empty,
     bucketName="bucketName",
     accessLevels=Map.empty,
     realm=None)
@@ -157,15 +158,15 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     "with only library attributes in workspace" - {
       "should generate indexable document" in {
         val w = testWorkspace.copy(attributes = Map(
-          "library:foo"->"foo",
-          "library:bar"->"bar"
+          AttributeName("library","foo")->AttributeString("foo"),
+          AttributeName("library","bar")->AttributeString("bar")
         ))
         val expected = Document(testUUID.toString, Map(
-          "library:foo" -> "foo",
-          "library:bar" -> "bar",
-          "name" -> testWorkspace.name,
-          "namespace" -> testWorkspace.namespace,
-          "workspaceId" -> testWorkspace.workspaceId
+          AttributeName("library","foo")->AttributeString("foo"),
+          AttributeName("library","bar")->AttributeString("bar"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
@@ -175,13 +176,13 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     "with only default attributes in workspace" - {
       "should generate indexable document" in {
         val w = testWorkspace.copy(attributes = Map(
-          "baz"->"defaultBaz",
-          "qux"->"defaultQux"
+          AttributeName.withDefaultNS("baz")->AttributeString("defaultBaz"),
+          AttributeName.withDefaultNS("qux")->AttributeString("defaultQux")
         ))
         val expected = Document(testUUID.toString, Map(
-          "name" -> testWorkspace.name,
-          "namespace" -> testWorkspace.namespace,
-          "workspaceId" -> testWorkspace.workspaceId
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
@@ -194,9 +195,9 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         // include explicitly here in case testWorkspace changes later
         val w = testWorkspace.copy(attributes = Map.empty)
         val expected = Document(testUUID.toString, Map(
-          "name" -> testWorkspace.name,
-          "namespace" -> testWorkspace.namespace,
-          "workspaceId" -> testWorkspace.workspaceId
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
@@ -207,7 +208,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
       "should generate indexable document" in {
         // https://hipsum.co/
         val w = testWorkspace.copy(attributes = Map(
-          "description"->("Fingerstache copper mug edison bulb, actually austin mustache chartreuse bicycle rights." +
+          AttributeName.withDefaultNS("description")->AttributeString("Fingerstache copper mug edison bulb, actually austin mustache chartreuse bicycle rights." +
             " Plaid iceland artisan blog street art hammock, subway tile vice. Hammock put a bird on it pinterest tacos" +
             " kitsch gastropub. Chicharrones food truck edison bulb meh. Cardigan aesthetic vegan kitsch. Hell of" +
             " messenger bag chillwave hashtag, distillery thundercats aesthetic roof party lo-fi sustainable" +
@@ -215,9 +216,9 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
             " chambray vegan aesthetic beard listicle skateboard ramps literally.")
         ))
         val expected = Document(testUUID.toString, Map(
-          "name" -> testWorkspace.name,
-          "namespace" -> testWorkspace.namespace,
-          "workspaceId" -> testWorkspace.workspaceId
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
@@ -227,17 +228,17 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     "with mixed library and default attributes in workspace" - {
       "should generate indexable document" in {
         val w = testWorkspace.copy(attributes = Map(
-          "library:foo"->"foo",
-          "library:bar"->"bar",
-          "baz"->"defaultBaz",
-          "qux"->"defaultQux"
+          AttributeName("library","foo")->AttributeString("foo"),
+          AttributeName("library","bar")->AttributeString("bar"),
+          AttributeName.withDefaultNS("baz")->AttributeString("defaultBaz"),
+          AttributeName.withDefaultNS("qux")->AttributeString("defaultQux")
         ))
         val expected = Document(testUUID.toString, Map(
-          "library:foo" -> "foo",
-          "library:bar" -> "bar",
-          "name" -> testWorkspace.name,
-          "namespace" -> testWorkspace.namespace,
-          "workspaceId" -> testWorkspace.workspaceId
+          AttributeName("library","foo")->AttributeString("foo"),
+          AttributeName("library","bar")->AttributeString("bar"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
@@ -247,19 +248,19 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     "with illegally-namespaced attributes in workspace" - {
       "should generate indexable document" in {
         val w = testWorkspace.copy(attributes = Map(
-          "library:foo"->"foo",
-          "library:bar"->"bar",
-          "baz"->"defaultBaz",
-          "qux"->"defaultQux",
-          "nope:foo"->"foo",
-          "default:bar"->"bar"
+          AttributeName("library","foo")->AttributeString("foo"),
+          AttributeName("library","bar")->AttributeString("bar"),
+          AttributeName.withDefaultNS("baz")->AttributeString("defaultBaz"),
+          AttributeName.withDefaultNS("qux")->AttributeString("defaultQux"),
+          AttributeName("nope","foo")->AttributeString("foo"),
+          AttributeName("default","bar")->AttributeString("bar")
         ))
         val expected = Document(testUUID.toString, Map(
-          "library:foo" -> "foo",
-          "library:bar" -> "bar",
-          "name" -> testWorkspace.name,
-          "namespace" -> testWorkspace.namespace,
-          "workspaceId" -> testWorkspace.workspaceId
+          AttributeName("library","foo")->AttributeString("foo"),
+          AttributeName("library","bar")->AttributeString("bar"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
