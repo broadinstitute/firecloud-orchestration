@@ -2615,8 +2615,7 @@ definitions:
   CopyEntity:
     properties:
       sourceWorkspace:
-        schema:
-          $ref: '#/definitions/Namespace'
+        $ref: '#/definitions/Namespace'
         description: Source Workspace Namespace
       entityType:
         type: string
