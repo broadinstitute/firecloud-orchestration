@@ -49,9 +49,8 @@
         "plural": "pair_sets",
         "memberType": "pair"
     },
-    "workspace": {
+    "": {
         "requiredAttributes": {},
-        "attributeRenaming": {}
-
+        "plural": ""
     }
 } }

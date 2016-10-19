@@ -791,7 +791,7 @@ paths:
             type: string
             in: path
           - name: attributes
-            in: formDatas
+            in: formData
             description: A valid TSV import file
             required: true
             type: file

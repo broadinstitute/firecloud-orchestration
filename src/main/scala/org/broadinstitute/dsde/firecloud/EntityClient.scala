@@ -9,6 +9,7 @@ import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, PerRequestMessage}
 import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
@@ -33,11 +34,21 @@ object EntityClient {
                                      workspaceName: String,
                                      tsvString: String)
 
+  case class WorkspaceAttributeOperation(op: String,
+                                                   attributeName: String,
+                                                   addUpdateAttribute: Option[String])
+
+  implicit val workspaceAttributeAddUpdateOperationFormat = jsonFormat3(WorkspaceAttributeOperation)
   def props(requestContext: RequestContext): Props = Props(new EntityClient(requestContext))
 
   def colNamesToAttributeNames(entityType: String, headers: Seq[String], requiredAttributes: Map[String,String]) = {
     val renameMap = ModelSchema.getAttributeImportRenamingMap(entityType).get
     headers.tail map { colName => (renameMap.getOrElse(colName,colName), requiredAttributes.get(colName))}
+  }
+
+  def colNamesToWorkspaceAttributeNames(headers: Seq[String]): Seq[String] = {
+    val newHead = headers.head.stripPrefix("workspace:")
+    Seq(newHead) ++ headers.tail
   }
 
 }
@@ -53,6 +64,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   override def receive: Receive = {
     case ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
+      log.info("TSV thing recieved -  " + workspaceNamespace + " " + workspaceName + "TSVSTRING: " + tsvString)
       importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo context.parent
     case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
@@ -91,7 +103,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     }
   }
 
-  private def checkFirstRowDistinct( tsv: TSVLoadFile, tsvTypeName: String)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
+  private def checkFirstRowDistinct( tsv: TSVLoadFile)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
     val attributeNames = tsv.headers
     val distinctAttributes = attributeNames.distinct
     if (attributeNames.size != distinctAttributes.size) {
@@ -179,16 +191,34 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
 
   // makes a patch call to rawls api/workspaces/{workspaceNamespace}/{workspaceName}
   def patchCalltoRawlsWorkspaces(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-                                 workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition], endpoint: String): Future[PerRequestMessage] = {
-    log.info("patchCalltoRawls -  " + workspaceNamespace + " " + workspaceName + "; CALLs: " + calls.toJson.toString() + "; ENDPOINT: " + endpoint + "; API CALL: " + FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint)
+                                 workspaceNamespace: String, workspaceName: String, calls: Seq[WorkspaceAttributeOperation], endpoint: String): Future[PerRequestMessage] = {
+    log.info("patchCalltoRawls -  " + workspaceNamespace + " " + workspaceName + "; CALLs: " + "; ENDPOINT: " + endpoint + "; API CALL: " + FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint)
     val responseFuture: Future[HttpResponse] = pipeline {
       Patch(FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint,
         HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
     }
     log.info("We got the response future" + responseFuture.toString())
-    rawlsResponse(responseFuture, calls)
+    rawlsPatchResponse(responseFuture, calls)
   }
 
+
+  def rawlsPatchResponse(responseFuture: Future[HttpResponse], calls: Seq[WorkspaceAttributeOperation]): Future[PerRequestMessage] = {
+    log.info("rawlsResponse - CALLS: " + calls.toJson.toString() + responseFuture.toString)
+    responseFuture map { response =>
+      response.status match {
+        case NoContent =>
+          log.debug("OK response")
+          RequestComplete(OK, "workspace")
+        case _ =>
+          // Bubble up all other unmarshallable responses
+          log.warning("Unanticipated response: " + response.status.defaultMessage)
+          log.info(response.message.toString)
+          RequestComplete(response)
+      }
+    } recover {
+      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,  "Service API call failed", e)
+    }
+  }
   val upsertAttrOperation = "op" -> AttributeString("AddUpdateAttribute")
   val removeAttrOperation = "op" -> AttributeString("RemoveAttribute")
   val addListMemberOperation = "op" -> AttributeString("AddListMember")
@@ -280,13 +310,30 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
  */
   private def importWorkspaceAttributeTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                                           workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
-    checkFirstRowDistinct(tsv, "workspace") {
+    checkFirstRowDistinct(tsv) {
       log.info("checked that first row was distinct")
-      val colInfo = colNamesToAttributeNames("participant", tsv.headers, Map())
-      log.info("COLINFO -  " + colInfo.toJson.toString())
-      //batchCallToRawls(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace("workspace", None, row, colInfo)), "updateAttributes")
-      patchCalltoRawlsWorkspaces(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace(row, colInfo)), "")
+      log.info("\nTSV HEADERS: " + tsv.headers.mkString)
+      val calls = getWorkspaceAttributeCalls(tsv)
+      //patchCalltoRawlsWorkspaces(pipeline, workspaceNamespace, workspaceName, tsv.tsvData.map(row => setAttributesOnWorkspace(row, colInfo)), "")
+      patchCalltoRawlsWorkspaces(pipeline, workspaceNamespace, workspaceName, calls, "")
     }
+  }
+
+  private def getWorkspaceAttributeCalls(tsv: TSVLoadFile): Seq[WorkspaceAttributeOperation] = {
+    val keys = colNamesToWorkspaceAttributeNames(tsv.headers)
+    log.info("ALL THE DATA: " + tsv.tsvData.toString()) + "\n"
+    log.info("JUST THE HEADERS -  " + keys.toJson.toString())
+   // val testadd1 = new WorkspaceAttributeOperation("AddUpdateAttribute", "att11", Some("val11"))
+    //val testadd2 = new WorkspaceAttributeOperation("AddUpdateAttribute", "att12", Some("val12"))
+    //val testremove1 = new WorkspaceAttributeOperation("RemoveAttribute", "att8", None)
+    val values = tsv.tsvData.tail.head
+    log.info("JUST THE BODY -  " + keys.toJson.toString())
+    val thing = keys.zip(values).map(pair =>
+      if (pair._2.equals("__DELETE__")) {new WorkspaceAttributeOperation("RemoveAttribute", pair._1, None)}
+      else {new WorkspaceAttributeOperation("AddUpdateAttribute", pair._1, Some(pair._2))}
+    )
+    log.info("The Seq of Operations: " + thing.mkString)
+    thing
   }
 
   /**
@@ -300,6 +347,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
             val colInfo = colNamesToAttributeNames(entityType, tsv.headers, requiredAttributes)
+            log.info("COLINFO -  " + colInfo.toJson.toString())
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
             batchCallToRawls(pipeline, workspaceNamespace, workspaceName, rawlsCalls, "batchUpsert")
           }
@@ -372,7 +420,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
         case "workspace" =>
           log.info("importAttributesFromTSV case workspace")
           importWorkspaceAttributeTSV(pipeline, workspaceNamespace, workspaceName, tsv)
-        case _ =>
+        case _ => 
           Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header should start with \"workspace\""))
       }
     }
