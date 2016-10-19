@@ -2779,6 +2779,22 @@ definitions:
       methodRepoMethod:
         $ref: '#/definitions/MethodRepoMethod'
         description: The properties of the method from the method store that this config is associated with
+  MethodRepoMethod:
+    description: ''
+    required:
+      - methodNamespace
+      - methodName
+      - methodVersion
+    properties:
+      methodNamespace:
+        type: string
+        description: The namespace of method from method store
+      methodName:
+        type: string
+        description: The name of method from method store
+      methodVersion:
+        type: integer
+        description: The version of method from method store
   ValidatedMethodConfiguration:
     description: ''
     required:
