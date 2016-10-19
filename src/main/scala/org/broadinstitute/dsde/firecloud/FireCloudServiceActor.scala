@@ -86,8 +86,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
         nihSyncService.routes ~
         healthService.routes ~
         libraryRoutes ~
+        namespaceRoutes ~
         pathPrefix("api") {
-          routes ~ namespaceRoutes
+          routes
         } ~
         pathPrefix("cookie-authed") {
           cookieAuthedService.routes

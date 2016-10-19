@@ -52,7 +52,7 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
     Future(RequestComplete(OK, fcPermissions))
   }
 
-  private def convertPermissions(agoraPerms: Future[List[AgoraPermission]]): Future[List[FireCloudPermission]] = {
+  def convertPermissions(agoraPerms: Future[List[AgoraPermission]]): Future[List[FireCloudPermission]] = {
     agoraPerms map {
       permissions =>
         permissions.map {

@@ -7,7 +7,6 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermiss
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, NamespaceService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import spray.http.StatusCodes
 import spray.routing._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
@@ -23,34 +22,20 @@ trait NamespaceApiService extends HttpService with FireCloudRequestBuilding with
   val namespaceServiceConstructor: UserInfo => NamespaceService
 
   val namespaceRoutes: Route =
-    pathPrefix("configurations|methods".r) { (agoraEntity) =>
+    pathPrefix("api" / "methods|configurations".r / Segment / "permissions") { (agoraEntity, namespace) =>
       requireUserInfo() { userInfo =>
-        path(Segment / "permissions") { (namespace) =>
-
-          val namespaceUrl = s"${FireCloudConfig.Agora.authUrl}/$agoraEntity/$namespace/permissions"
-
-          get { requestContext =>
-            logger.debug("Get: " + requestContext.request.toString)
-            perRequest(requestContext,
+        val namespaceUrl = s"${FireCloudConfig.Agora.authUrl}/$agoraEntity/$namespace/permissions"
+        get { requestContext =>
+          perRequest(requestContext,
+            NamespaceService.props(namespaceServiceConstructor, userInfo),
+            NamespaceService.GetPermissions(namespace, "configurations"))
+        } ~
+        post {
+          entity(as[List[FireCloudPermission]]) { permissions => requestContext =>
+            perRequest(
+              requestContext,
               NamespaceService.props(namespaceServiceConstructor, userInfo),
-              NamespaceService.GetPermissions(namespace, agoraEntity))
-          } ~
-          post {
-            entity(as[List[FireCloudPermission]]) { permissions => requestContext =>
-              logger.debug("Post: " + requestContext.request.toString)
-              perRequest(
-                requestContext,
-                NamespaceService.props(namespaceServiceConstructor, userInfo),
-                NamespaceService.PostPermissions(namespaceUrl, agoraEntity, permissions))
-            }
-          } ~
-          // Put and delete support are unnecessary.
-          // Post will perform insert, update, and delete operations on each change
-          delete {
-            complete(StatusCodes.MethodNotAllowed)
-          } ~
-          put {
-            complete(StatusCodes.MethodNotAllowed)
+              NamespaceService.PostPermissions(namespaceUrl, "configurations", permissions))
           }
         }
       }
