@@ -365,16 +365,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -394,16 +386,8 @@ paths:
       operationId: deleteWorkspace
       summary: Delete workspace
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         202:
           description: Request Accepted
@@ -425,16 +409,8 @@ paths:
       summary: Read workspace bucket
       operationId: readBucket
       parameters:
-        - in: path
-          description: Workspace Namespace
-          name: workspaceNamespace
-          required: true
-          type: string
-        - in: path
-          description: Workspace Name
-          name: workspaceName
-          required: true
-          type: string
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -459,16 +435,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -490,16 +458,8 @@ paths:
       operationId: updateWorkspaceACL
       summary: Update workspace ACL
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: aclUpdates
           description: Series of ACL updates for workspace
           required: true
@@ -532,16 +492,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: workspace
           description: Cloned workspace information
           required: true
@@ -574,16 +526,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: No response was specified
@@ -610,16 +554,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: No response was specified
@@ -647,16 +583,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: List of entities
@@ -680,16 +608,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: List of entity types in workspace
@@ -836,16 +756,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: entityType
           description: Entity Type
           required: true
@@ -878,16 +790,8 @@ paths:
       produces:
         - text/plain
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: entityType
           description: Entity Type
           required: true
@@ -917,16 +821,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: entityType
           description: Entity Type
           required: true
@@ -1004,16 +900,8 @@ paths:
       produces:
         - text/plain
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: entityType
           description: Entity Type
           required: true
@@ -1037,16 +925,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: entityType
           description: Entity Type
           required: true
@@ -1104,16 +984,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: List of Method Configurations
@@ -1136,16 +1008,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: methodConfigJson
           description: Method Configuration contents
           required: true
@@ -1176,16 +1040,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configNamespace
           description: Configuration Namespace
           required: true
@@ -1217,16 +1073,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configNamespace
           description: Configuration Namespace
           required: true
@@ -1264,16 +1112,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configNamespace
           description: Configuration Namespace
           required: true
@@ -1314,16 +1154,8 @@ paths:
       summary: get syntax validation information for a method configuration
       operationId: validate_method_configuration
       parameters:
-        - in: path
-          description: Workspace Namespace
-          name: workspaceNamespace
-          required: true
-          type: string
-        - in: path
-          description: Workspace Name
-          name: workspaceName
-          required: true
-          type: string
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - in: path
           description: Method Configuration Namespace
           name: configNamespace
@@ -1349,16 +1181,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configNamespace
           description: Configuration Namespace
           required: true
@@ -1400,16 +1224,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configToCopy
           description: Method Configuration to Copy
           required: true
@@ -1443,16 +1259,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configToCopy
           description: Method Configuration to Copy
           required: true
@@ -1486,16 +1294,8 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: List of submissions
@@ -1518,16 +1318,8 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: submission
           description: Post Submission
           required: true
@@ -1561,16 +1353,8 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: submissionId
           description: Submission ID
           required: true
@@ -1598,16 +1382,8 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: submissionId
           description: Submission ID
           required: true
@@ -1636,16 +1412,8 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: submissionId
           description: Submission ID
           required: true
@@ -1697,16 +1465,8 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: workspaceUpdateJson
           description: Attribute operations
           required: true
@@ -1997,16 +1757,8 @@ paths:
       summary: |
         put the entire metadata for a library dataset
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: libraryMetadataJson
           description: Library metadata
           required: true
@@ -2037,16 +1789,8 @@ paths:
       summary: |
         publish the workspace in the Library
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: Success
@@ -2071,16 +1815,8 @@ paths:
       summary: |
         unpublish the workspace in the Library
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: Success
@@ -2426,6 +2162,19 @@ securityDefinitions:
       profile: profile authorization
       https://www.googleapis.com/auth/devstorage.full_control: GCS storage
       https://www.googleapis.com/auth/cloud-billing: GCS billing
+parameters:
+  workspaceNamespaceParam:
+    name: workspaceNamespace
+    description: Workspace Namespace
+    required: true
+    type: string
+    in: path
+  workspaceNameParam:
+    name: workspaceName
+    description: Workspace Name
+    required: true
+    type: string
+    in: path
 definitions:
   WorkspaceIngest:
     required:
