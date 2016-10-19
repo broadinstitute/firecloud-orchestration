@@ -811,6 +811,40 @@ paths:
               - email
               - profile
               - https://www.googleapis.com/auth/devstorage.full_control
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributes:
+      get:
+        type: file
+        tags:
+        - Workspaces
+        operationId: exportAttributes
+        summary: TSV file containing workspace attributes
+        produces:
+          - text/plain
+        parameters:
+          - name: workspaceNamespace
+            description: Workspace Namespace
+            required: true
+            type: string
+            in: path
+          - name: workspaceName
+            description: Workspace Name
+            required: true
+            type: string
+            in: path
+        responses:
+          200:
+            description: Workspace attributes in TSV format
+          404:
+            description: Workspace or entity type does not exist
+          500:
+            description: Internal Server Error
+        security:
+          - bearer:
+          - googleoauth:
+              - openid
+              - email
+              - profile
+              - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
     post:
       tags:

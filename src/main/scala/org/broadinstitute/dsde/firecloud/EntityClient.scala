@@ -104,8 +104,10 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   }
 
   private def checkFirstRowDistinct( tsv: TSVLoadFile)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
-    val attributeNames = tsv.headers
+    val attributeNames =  colNamesToWorkspaceAttributeNames(tsv.headers)
+    log.info("COLUMN NAMES TO COMPARE FOR DUPLICATE: " + attributeNames.toString())
     val distinctAttributes = attributeNames.distinct
+    log.info("DISTINCT NAMES: " + distinctAttributes.toString())
     if (attributeNames.size != distinctAttributes.size) {
       Future(RequestCompleteWithErrorReport(BadRequest,
         "Duplicated attribute keys are not allowed"))
@@ -197,6 +199,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       Patch(FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint,
         HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
     }
+    log.info("WHERE IS THIS EVEN GOING? --> " + FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName) + endpoint)
     log.info("We got the response future" + responseFuture.toString())
     rawlsPatchResponse(responseFuture, calls)
   }
@@ -321,13 +324,9 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
 
   private def getWorkspaceAttributeCalls(tsv: TSVLoadFile): Seq[WorkspaceAttributeOperation] = {
     val keys = colNamesToWorkspaceAttributeNames(tsv.headers)
-    log.info("ALL THE DATA: " + tsv.tsvData.toString()) + "\n"
-    log.info("JUST THE HEADERS -  " + keys.toJson.toString())
-   // val testadd1 = new WorkspaceAttributeOperation("AddUpdateAttribute", "att11", Some("val11"))
-    //val testadd2 = new WorkspaceAttributeOperation("AddUpdateAttribute", "att12", Some("val12"))
-    //val testremove1 = new WorkspaceAttributeOperation("RemoveAttribute", "att8", None)
-    val values = tsv.tsvData.tail.head
-    log.info("JUST THE BODY -  " + keys.toJson.toString())
+    log.info("JUST THE HEADERS -  " + keys.toJson.toString() + "\n")
+    log.info("JUST THE VALUES " + tsv.tsvData.toString() + "\n")
+    val values = tsv.tsvData.head
     val thing = keys.zip(values).map(pair =>
       if (pair._2.equals("__DELETE__")) {new WorkspaceAttributeOperation("RemoveAttribute", pair._1, None)}
       else {new WorkspaceAttributeOperation("AddUpdateAttribute", pair._1, Some(pair._2))}
@@ -420,7 +419,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
         case "workspace" =>
           log.info("importAttributesFromTSV case workspace")
           importWorkspaceAttributeTSV(pipeline, workspaceNamespace, workspaceName, tsv)
-        case _ => 
+        case _ =>
           Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header should start with \"workspace\""))
       }
     }
