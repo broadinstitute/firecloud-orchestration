@@ -11,6 +11,7 @@ import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
 import org.everit.json.schema.ValidationException
+import org.parboiled.common.FileUtils
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
@@ -34,6 +35,7 @@ object LibraryService {
   case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
   case object IndexAll extends LibraryServiceMessage
+  case object TestMappings extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
@@ -55,6 +57,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => asCurator {updateAttributes(ns, name, attrsJsonString)} pipeTo sender
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
     case IndexAll => asAdmin {indexAll} pipeTo sender
+    case TestMappings => printMappings pipeTo sender
   }
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
@@ -105,6 +108,11 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
       val indexResult = searchDAO.bulkIndex(toIndex)
       RequestComplete(OK, indexResult.toString)
     }
+  }
+
+  def printMappings: Future[PerRequestMessage] = {
+    val jsonContents = FileUtils.readAllTextFromResource(schemaLocation)
+      Future.successful(RequestComplete(OK, searchDAO.makeESMapping(jsonContents)))
   }
 
 }
