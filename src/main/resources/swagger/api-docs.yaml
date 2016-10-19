@@ -1970,9 +1970,11 @@ paths:
   '/api/library/user/role/curator':
     get:
       responses:
-        '200':
-          schema: {"properties": {"curator": {type: "boolean"}}}
-        '500':
+        200:
+          description: are you a curator?
+          schema:
+            $ref: '#/definitions/CuratorStatus'
+        500:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
@@ -3062,5 +3064,11 @@ definitions:
       accessLevel:
         type: string
         description: The access level to grant to this user or group (OWNER, READER, WRITER, NO ACCESS)
-
+  CuratorStatus:
+    description: is the user a curator?
+    required:
+      - curator
+    properties:
+      curator:
+        type: boolean
 
