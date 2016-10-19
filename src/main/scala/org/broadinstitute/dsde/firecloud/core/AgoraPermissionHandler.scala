@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.core
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
+
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.ACLNames._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -80,20 +81,14 @@ class AgoraPermissionActor (requestContext: RequestContext) extends Actor with F
       Future(RequestComplete(StatusCodes.BadRequest)) pipeTo context.parent
   }
 
-  def createAgoraResponse(permissionsFuture: Future[HttpResponse]): Future[PerRequestMessage] = {
-    permissionsFuture.map { response =>
+  def createAgoraResponse(permissionListFuture: Future[HttpResponse]): Future[PerRequestMessage] = {
+    permissionListFuture.map {response =>
         response.status match {
           case StatusCodes.OK =>
             try {
-              val listOrPermission = unmarshal[Either[List[AgoraPermission], AgoraPermission]].apply(response)
-              listOrPermission match {
-                case Left(permissions) =>
-                  val permissionsEntity = permissions.map { x => x.toFireCloudPermission }
-                  RequestComplete(OK, permissionsEntity)
-                case Right(permission) =>
-                  val permissionsEntity = permission.toFireCloudPermission
-                  RequestComplete(OK, permissionsEntity)
-              }
+              val agoraPermissions = unmarshal[List[AgoraPermission]].apply(response)
+              val fireCloudPermissions = agoraPermissions.map(x => x.toFireCloudPermission)
+              RequestComplete(OK, fireCloudPermissions)
             } catch {
               // TODO: more specific and graceful error-handling
               case e: Exception =>

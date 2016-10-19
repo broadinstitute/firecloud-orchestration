@@ -356,54 +356,6 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
-  /api/methods/permissions:
-    get:
-      tags:
-        - Method Repository
-      operationId: getMyMethodNamespaceACLs
-      summary: get My Method Repository Method Namespace Permissions
-      produces:
-        - application/json
-      responses:
-        200:
-          description: List of indicated method namespace permissions for the current user
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/MethodConfigACL'
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/configurations/permissions:
-    get:
-      tags:
-        - Method Repository
-      operationId: getMyConfigNamespaceACLs
-      summary: get My Method Repository Configuration Namespace Permissions
-      produces:
-        - application/json
-      responses:
-        200:
-          description: List of indicated configuration namespace permissions for the current user
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/MethodConfigACL'
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/methods/{namespace}/permissions:
     get:
       tags:
@@ -422,11 +374,9 @@ paths:
         200:
           description: List of indicated method namespace ACL permissions
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/MethodConfigACL'
-        404:
-          description: the indicated method namespace was not found
+            $ref: '#/definitions/MethodConfigACL'
+        403:
+          description: user does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
       security:
@@ -454,16 +404,12 @@ paths:
           required: true
           in: body
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/MethodConfigACL'
+            $ref: '#/definitions/MethodConfigACL'
       responses:
         200:
           description: the indicated method namespace ACL permissions once the posted changes have been applied
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/MethodConfigACL'
+            $ref: '#/definitions/MethodConfigACL'
         400:
           description: Bad Request
         500:
@@ -493,11 +439,9 @@ paths:
         200:
           description: List of the indicated configuration namespace ACL permissions
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/MethodConfigACL'
-        404:
-          description: the indicated configuration namespace was not found
+            $ref: '#/definitions/MethodConfigACL'
+        403:
+          description: user does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
       security:
@@ -525,9 +469,7 @@ paths:
           required: true
           in: body
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/MethodConfigACL'
+            $ref: '#/definitions/MethodConfigACL'
       responses:
         200:
           description: the indicated configuration ACL once the posted changes have been applied
