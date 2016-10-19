@@ -1707,9 +1707,10 @@ paths:
         - name: workspaceUpdateJson
           description: Attribute operations
           required: true
-          type: array
-          items:
-            $ref: '#/definitions/AttributeUpdateOperation'
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/AttributeUpdateOperation'
           in: body
       responses:
         200:
