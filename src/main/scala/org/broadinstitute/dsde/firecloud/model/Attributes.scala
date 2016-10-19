@@ -38,8 +38,9 @@ object AttributeName {
 }
 
 sealed trait Attribute
-sealed trait AttributeValue extends Attribute
-sealed trait AttributeList[T <: Attribute] extends Attribute { val list: Seq[T] }
+sealed trait AttributeListElementable extends Attribute //terrible name for "this type can legally go in an attribute list"
+sealed trait AttributeValue extends AttributeListElementable
+sealed trait AttributeList[T <: AttributeListElementable] extends Attribute { val list: Seq[T] }
 case object AttributeNull extends AttributeValue
 case class AttributeString(val value: String) extends AttributeValue
 case class AttributeNumber(val value: BigDecimal) extends AttributeValue
@@ -48,5 +49,5 @@ case object AttributeValueEmptyList extends AttributeList[AttributeValue] { val 
 case object AttributeEntityReferenceEmptyList extends AttributeList[AttributeEntityReference] { val list = Seq.empty }
 case class AttributeValueList(val list: Seq[AttributeValue]) extends AttributeList[AttributeValue]
 case class AttributeEntityReferenceList(val list: Seq[AttributeEntityReference]) extends AttributeList[AttributeEntityReference]
-case class AttributeEntityReference(val entityType: String, val entityName: String) extends Attribute
+case class AttributeEntityReference(val entityType: String, val entityName: String) extends AttributeListElementable
 
