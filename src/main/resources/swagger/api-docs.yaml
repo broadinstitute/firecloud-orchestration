@@ -1175,7 +1175,8 @@ paths:
         - Method Configurations
       operationId: getWorkspaceMethodConfig
       summary: Get a method configuration in a workspace
-      produces: application/json
+      produces:
+        - application/json
       parameters:
         - name: workspaceNamespace
           description: Workspace Namespace
@@ -1215,7 +1216,8 @@ paths:
         - Method Configurations
       operationId: updateWorkspaceMethodConfig
       summary: Update a method configuration in a workspace
-      produces: application/json
+      produces:
+        - application/json
       parameters:
         - name: workspaceNamespace
           description: Workspace Namespace
@@ -1262,7 +1264,8 @@ paths:
         - Method Configurations
       operationId: deleteWorkspaceMethodConfig
       summary: Delete a method configuration in a workspace
-      produces: application/json
+      produces:
+        - application/json
       parameters:
         - name: workspaceNamespace
           description: Workspace Namespace
@@ -1346,7 +1349,8 @@ paths:
         - Method Configurations
       operationId: renameWorkspaceMethodConfig
       summary: Rename a method configuration in a workspace
-      produces: application/json
+      produces:
+        - application/json
       parameters:
         - name: workspaceNamespace
           description: Workspace Namespace
@@ -1397,7 +1401,8 @@ paths:
         - Method Repository
       operationId: copyFromMethodRepo
       summary: Copy a Method Repository Configuration into a workspace
-      produces: application/json
+      produces:
+        - application/json
       parameters:
         - name: workspaceNamespace
           description: Workspace Namespace
@@ -1440,7 +1445,8 @@ paths:
         - Method Repository
       operationId: copyToMethodRepo
       summary: Copy a Method Config in a workspace to the Method Repository
-      produces: application/json
+      produces:
+        - application/json
       parameters:
         - name: workspaceNamespace
           description: Workspace Namespace
@@ -1831,7 +1837,8 @@ paths:
         - Profile
       operationId: me
       summary: Returns registration and activation status for the current user
-      produces: application/json
+      produces:
+        - application/json
       responses:
         200:
           description: OK
@@ -1859,7 +1866,8 @@ paths:
         - Profile
       operationId: getUserStatus
       summary: Passes through to the Rawls userinfo API and returns its response
-      produces: application/json
+      produces:
+        - application/json
       responses:
         200:
           description: OK
@@ -1955,7 +1963,8 @@ paths:
       summary: Passes through to Google's userinfo API and returns its response
       description: See https://developers.google.com/+/web/api/rest/openidconnect/getOpenIdConnect for response info.
         Userinfo endpoint lives at https://www.googleapis.com/oauth2/v3/userinfo.
-      produces: application/json
+      produces:
+        - application/json
       responses:
         200:
           description: OK
@@ -2380,7 +2389,8 @@ paths:
         - NIH
       operationId: NIHStatus
       summary: "Retrieves info about a user's NIH link"
-      produces: application/json
+      produces:
+        - application/json
       responses:
         200:
           description: Successfully retrieved NIH status
