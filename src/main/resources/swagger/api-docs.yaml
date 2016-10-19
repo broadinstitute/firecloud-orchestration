@@ -2493,20 +2493,20 @@ definitions:
         type: string
         description: Root entity type
       workspaceName:
-        type: Map[String, String]
-        description: Map with corresponding workspace-related information - name and namespace
+        type: object
+        description: Map[String, String] with corresponding workspace-related information - name and namespace
       methodRepoMethod:
-        type: Map[String, String]
-        description: Map with corresponding method-related information
+        type: object
+        description: Map[String, String] with corresponding method-related information
       outputs:
-        type: Map[String, String]
-        description: Map with outputs information
+        type: object
+        description: Map[String, String] with outputs information
       inputs:
-        type: Map[String, String]
-        description: Map with inputs information
+        type: object
+        description: Map[String, String] with inputs information
       prerequisites:
-        type: Map[String, String]
-        description: Map of prerequisites (keys unused, will be removed in the future)
+        type: object
+        description: Map[String, String] of prerequisites (keys unused, will be removed in the future)
     required:
       - namespace
       - name
@@ -2525,8 +2525,8 @@ definitions:
         type: string
         description: Method configuration name
       workspaceName:
-        type: Map[String, String]
-        description: Map with corresponding workspace-related information - name and namespace
+        type: object
+        description: Map[String, String] with corresponding workspace-related information - name and namespace
     required:
       - namespace
       - name
@@ -2566,17 +2566,17 @@ definitions:
         type: string
         description: Method configuration root entity type
       inputs:
-        type: Map[string, string]
-        description: Input map
+        type: object
+        description: Input map - Map[string, string]
       outputs:
-        type: Map[string, string]
-        description: Output map
+        type: object
+        description: Output map - Map[string, string]
       prerequisites:
-        type: Map[string, string]
-        description: Prerequisites map
+        type: object
+        description: Prerequisites map - Map[string, string]
       methodRepoMethod:
-        type: Map
-        description: Method ID
+        type: object
+        description: Method ID - Map
     required:
       - namespace
       - name
@@ -2676,7 +2676,7 @@ definitions:
         type: string
         description: The type of the entity
       attributes:
-        type: ''
+        type: object
         description: Map[String,Attribute]
   EntityQueryParameters:
     description: ''
@@ -2741,7 +2741,7 @@ definitions:
         type: string
         description: Method name
       methodVersion:
-        type: int
+        type: integer
         default: 0
         description: Method version
     required:
