@@ -23,7 +23,6 @@ trait NamespaceApiService extends HttpService with FireCloudRequestBuilding with
   val namespaceRoutes: Route =
     pathPrefix("api" / "methods|configurations".r / Segment / "permissions") { (agoraEntity, namespace) =>
       requireUserInfo() { userInfo =>
-        val namespaceUrl = s"${FireCloudConfig.Agora.authUrl}/$agoraEntity/$namespace/permissions"
         get { requestContext =>
           perRequest(requestContext,
             NamespaceService.props(namespaceServiceConstructor, userInfo),
@@ -34,7 +33,7 @@ trait NamespaceApiService extends HttpService with FireCloudRequestBuilding with
             perRequest(
               requestContext,
               NamespaceService.props(namespaceServiceConstructor, userInfo),
-              NamespaceService.PostPermissions(namespaceUrl, "configurations", permissions))
+              NamespaceService.PostPermissions(namespace, "configurations", permissions))
           }
         }
       }
