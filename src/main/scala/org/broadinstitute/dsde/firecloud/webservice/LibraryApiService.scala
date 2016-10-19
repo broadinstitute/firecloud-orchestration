@@ -31,9 +31,14 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
           }
         }
       }
-    } ~
-    pathPrefix("api") {
+    } ~ pathPrefix("api") {
       requireUserInfo() { userInfo =>
+        path ("mapping-json") {
+          get { requestContext =>
+            perRequest(requestContext,
+              LibraryService.props(libraryServiceConstructor, userInfo),
+              LibraryService.TestMappings)}
+        } ~
         pathPrefix("library") {
           path("user" / "role" / "curator") {
             get { requestContext =>
