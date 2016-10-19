@@ -43,7 +43,6 @@ paths:
         - name: workspace
           description: New workspace information
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/WorkspaceIngest'
@@ -112,7 +111,6 @@ paths:
         - name: methodName
           description: name of Method to use for template
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/MethodID'
@@ -143,7 +141,6 @@ paths:
         - name: methodName
           description: name of Method to look up
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/MethodID'
@@ -545,7 +542,6 @@ paths:
         - name: workspace
           description: Cloned workspace information
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/WorkspaceIngest'
@@ -1150,7 +1146,6 @@ paths:
         - name: methodConfigJson
           description: Method Configuration contents
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/NewMethodConfigIngest'
@@ -1242,7 +1237,6 @@ paths:
         - name: body
           description: Method Config to Update
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/ConfigurationIngest'
@@ -1375,7 +1369,6 @@ paths:
         - name: rename
           description: Method Config Rename
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/MethodConfigRename'
@@ -1417,7 +1410,6 @@ paths:
         - name: configToCopy
           description: Method Configuration to Copy
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/CopyConfigurationIngest'
@@ -1461,7 +1453,6 @@ paths:
         - name: configToCopy
           description: Method Configuration to Copy
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/PublishConfigurationIngest'
@@ -1537,7 +1528,6 @@ paths:
         - name: submission
           description: Post Submission
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/SubmissionIngest'
@@ -1938,7 +1928,6 @@ paths:
       parameters:
       - name: profile
         description: A complete profile
-        type: string
         in: body
         schema:
           $ref: '#/definitions/Profile'
@@ -2364,7 +2353,6 @@ paths:
         - name: jwt
           description: JWT from NIH login
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/JWTWrapper'
