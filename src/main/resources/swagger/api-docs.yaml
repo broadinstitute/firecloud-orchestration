@@ -2954,7 +2954,7 @@ definitions:
     description: ''
     required:
       - projectName
-      - BillingAccount
+      - billingAccount
     properties:
       projectName:
         type: string
