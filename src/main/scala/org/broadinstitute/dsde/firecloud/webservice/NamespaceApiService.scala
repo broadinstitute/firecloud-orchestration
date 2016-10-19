@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
@@ -15,7 +14,7 @@ import spray.json._
 import scala.concurrent.ExecutionContext
 
 trait NamespaceApiService extends HttpService with FireCloudRequestBuilding with FireCloudDirectives
-  with LazyLogging with StandardUserInfoDirectives {
+  with StandardUserInfoDirectives {
 
   private implicit val ec: ExecutionContext = actorRefFactory.dispatcher
 

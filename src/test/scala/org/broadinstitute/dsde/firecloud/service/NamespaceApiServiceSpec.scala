@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{ACLNames, AgoraPermission, FireCloudPermission}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -13,7 +12,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService with LazyLogging {
+class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
 
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
 

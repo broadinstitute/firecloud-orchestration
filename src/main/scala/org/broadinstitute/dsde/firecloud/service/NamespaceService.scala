@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
 import akka.pattern._
-import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
@@ -32,7 +31,7 @@ object NamespaceService {
 }
 
 class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit protected val executionContext: ExecutionContext)
-  extends Actor with SprayJsonSupport with LazyLogging {
+  extends Actor with SprayJsonSupport {
 
   implicit val userInfo = argUserInfo
 
