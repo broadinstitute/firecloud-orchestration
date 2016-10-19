@@ -503,7 +503,10 @@ paths:
         - name: aclUpdates
           description: Series of ACL updates for workspace
           required: true
-          type: List[Map[string, string]]
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceACLUpdate'
           in: body
       responses:
         200:
@@ -3045,4 +3048,17 @@ definitions:
       groupName:
         type: string
         description: ''
+  WorkspaceACLUpdate:
+    description: ''
+    required:
+      - email
+      - accessLevel
+    properties:
+      email:
+        type: string
+        description: email address of the user or group whose permissions will be changed
+      accessLevel:
+        type: string
+        description: The access level to grant to this user or group (OWNER, READER, WRITER, NO ACCESS)
+
 
