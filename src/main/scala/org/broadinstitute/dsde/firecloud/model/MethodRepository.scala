@@ -64,7 +64,7 @@ object MethodRepository {
 
   def validatePublicOrEmail(email:String): Boolean = {
     // TODO: real email address validation!
-    email.trim.equalsIgnoreCase("public") || !email.trim.isEmpty
+    !email.trim.isEmpty || email.trim.equalsIgnoreCase("public")
   }
 
 

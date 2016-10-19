@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
 import akka.pattern._
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
@@ -41,14 +41,23 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
   }
 
   def getFireCloudPermissions(ns: String, entity: String): Future[PerRequestMessage] = {
-    val fcPermissions = convertPermissions(agoraDAO.getNamespacePermissions(ns, entity))
-    Future(RequestComplete(OK, fcPermissions))
+    val agoraPermissions = agoraDAO.getNamespacePermissions(ns, entity)
+    delegatePermissionsResponse(agoraPermissions)
   }
 
   def postFireCloudPermissions(ns: String, entity: String, permissions: List[FireCloudPermission]): Future[PerRequestMessage] = {
     val agoraPermissions = permissions map { permission => AgoraPermissionHandler.toAgoraPermission(permission) }
-    val fcPermissions = convertPermissions(agoraDAO.postNamespacePermissions(ns, entity, agoraPermissions))
-    Future(RequestComplete(OK, fcPermissions))
+    delegatePermissionsResponse(Future(agoraPermissions))
+  }
+
+  private def delegatePermissionsResponse(agoraPerms: Future[List[AgoraPermission]]): Future[PerRequestMessage] = {
+    try {
+      val fcPermissions = convertPermissions(agoraPerms)
+      Future(RequestComplete(OK, fcPermissions))
+    } catch {
+      case e: FireCloudExceptionWithErrorReport => Future(RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e))
+      case e: Throwable => Future(RequestComplete(InternalServerError, e))
+    }
   }
 
   def convertPermissions(agoraPerms: Future[List[AgoraPermission]]): Future[List[FireCloudPermission]] = {

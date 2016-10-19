@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.UserInfo
