@@ -56,7 +56,7 @@ libraryDependencies ++= {
     "io.spray"            %%  "spray-json"    % "1.3.2",
     "io.spray"            %%  "spray-client"  % sprayV,
     "io.spray"            %%  "spray-testkit" % sprayV    % "test",
-    "org.webjars"          %  "swagger-ui"    % "2.1.4",
+    "org.webjars"          %  "swagger-ui"    % "2.2.5",
     "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"  % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV     % "test",
