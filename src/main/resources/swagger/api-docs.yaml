@@ -380,7 +380,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -415,7 +414,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -445,7 +443,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -482,7 +479,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
