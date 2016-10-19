@@ -2458,8 +2458,8 @@ definitions:
           type: string
           description: one of "NO ACCESS", "READER", or "OWNER"
       required:
-        - userId
-        - accessLevel
+        - user
+        - role
   SubmissionIngest:
     properties:
       methodConfigurationNamespace:
