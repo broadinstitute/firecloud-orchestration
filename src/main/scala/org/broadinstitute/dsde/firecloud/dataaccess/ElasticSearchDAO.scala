@@ -70,6 +70,11 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     )
   }
 
+  override def makeESMapping(json_definition: String) = {
+    // TODO: learn how to import from file
+    mapping(json_definition)
+  }
+
 
   private def conditionalRecreateIndex(deleteFirst: Boolean = false) = {
     try {

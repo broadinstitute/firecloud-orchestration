@@ -15,4 +15,6 @@ trait SearchDAO extends LazyLogging {
   def indexDocument(doc: Document): Unit
   def deleteDocument(id: String): Unit
 
+  def makeESMapping(json_definition: String): String
+
 }

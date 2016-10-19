@@ -241,6 +241,13 @@ object ModelJsonProtocol {
 
   implicit val impGoogleObjectMetadata = jsonFormat15(ObjectMetadata)
 
+  implicit val AttributeDetailFormat = jsonFormat1(AttributeDetail.apply)
+  implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition.apply)
+
+  implicit val ESDetailFormat = jsonFormat1(ESDetail.apply)
+  implicit val ESPropertyFormat = jsonFormat1(ESProperty.apply)
+  implicit val ESMappingFormat = jsonFormat1(ESMapping.apply)
+
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
     case MalformedRequestContentRejection(errorMsg, _) :: _ =>
