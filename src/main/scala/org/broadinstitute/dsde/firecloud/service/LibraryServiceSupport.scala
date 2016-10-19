@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
-import spray.json.{JsArray}
+import spray.json.JsArray
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impAttributeFormat
 
