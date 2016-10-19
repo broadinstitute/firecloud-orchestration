@@ -2005,11 +2005,13 @@ paths:
           required: true
           type: string
           in: path
-        - name: workspaceUpdateJson
-          description: Attribute operations
+        - name: libraryMetadataJson
+          description: Library metadata
           required: true
-          type: object
           in: body
+          schema:
+            type: object
+            title: JsObject of metadata to update
       responses:
         200:
           description: Success
