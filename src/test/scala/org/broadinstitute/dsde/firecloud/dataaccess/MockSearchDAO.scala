@@ -25,4 +25,6 @@ class MockSearchDAO extends SearchDAO {
     deleteDocumentInvoked = true
   }
 
+  override def makeESMapping(json_definition: String) = "" // or should this just be String??
+
 }
