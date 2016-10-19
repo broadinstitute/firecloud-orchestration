@@ -2700,7 +2700,7 @@ definitions:
         description: asc or desc
       filterTerms:
         type: string
-        descriptions: terms to filter results by
+        description: terms to filter results by
   EntityQueryResultMetadata:
     description: ''
     required:
@@ -2781,11 +2781,11 @@ definitions:
   ValidatedMethodConfiguration:
     description: ''
     required:
-      -methodConfiguration
-      -validInputs
-      -invalidInputs
-      -validOutputs
-      -invalidOutputs
+      - methodConfiguration
+      - validInputs
+      - invalidInputs
+      - validOutputs
+      - invalidOutputs
     properties:
       validInputs:
         type: array
