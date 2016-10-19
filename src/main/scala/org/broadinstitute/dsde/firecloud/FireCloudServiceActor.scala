@@ -154,6 +154,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
             .replace("your-realms", FireCloudConfig.Auth.swaggerRealm)
             .replace("your-app-name", FireCloudConfig.Auth.swaggerRealm)
             .replace("scopeSeparator: \",\"", "scopeSeparator: \" \"")
+            .replace("jsonEditor: false,", "jsonEditor: false, validatorUrl: null,")
             .replace("url = \"http://petstore.swagger.io/v2/swagger.json\";",
               "url = '/api-docs';")
         )

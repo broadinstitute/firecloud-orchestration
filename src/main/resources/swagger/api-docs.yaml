@@ -27,7 +27,6 @@ paths:
         200:
           description: List of workspaces.
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -44,7 +43,6 @@ paths:
         - name: workspace
           description: New workspace information
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/WorkspaceIngest'
@@ -60,7 +58,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -79,7 +76,6 @@ paths:
         200:
           description: List of Method Repository methods.
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -98,7 +94,6 @@ paths:
         200:
           description: List of Method Repository configurations.
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -116,7 +111,6 @@ paths:
         - name: methodName
           description: name of Method to use for template
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/MethodID'
@@ -130,7 +124,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -148,7 +141,6 @@ paths:
         - name: methodName
           description: name of Method to look up
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/MethodID'
@@ -162,7 +154,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -198,7 +189,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -236,7 +226,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -281,7 +270,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -319,7 +307,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -364,7 +351,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -379,16 +365,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -397,7 +375,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -409,16 +386,8 @@ paths:
       operationId: deleteWorkspace
       summary: Delete workspace
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         202:
           description: Request Accepted
@@ -427,7 +396,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -441,16 +409,8 @@ paths:
       summary: Read workspace bucket
       operationId: readBucket
       parameters:
-        - in: path
-          description: Workspace Namespace
-          name: workspaceNamespace
-          required: true
-          type: string
-        - in: path
-          description: Workspace Name
-          name: workspaceName
-          required: true
-          type: string
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -461,7 +421,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -476,16 +435,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -496,7 +447,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -508,20 +458,15 @@ paths:
       operationId: updateWorkspaceACL
       summary: Update workspace ACL
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: aclUpdates
           description: Series of ACL updates for workspace
           required: true
-          type: List[Map[string, string]]
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceACLUpdate'
           in: body
       responses:
         200:
@@ -533,7 +478,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -548,20 +492,11 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: workspace
           description: Cloned workspace information
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/WorkspaceIngest'
@@ -577,7 +512,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -592,16 +526,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: No response was specified
@@ -614,7 +540,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -629,16 +554,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: No response was specified
@@ -651,7 +568,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -659,7 +575,6 @@ paths:
             - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
     get:
-      type: EntityWithType
       tags:
       - Entities
       operationId: getEntitiesWithType
@@ -668,16 +583,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: List of entities
@@ -686,7 +593,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -694,7 +600,6 @@ paths:
             - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities:
     get:
-      type: String
       tags:
       - Entities
       operationId: getEntityTypes
@@ -703,16 +608,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: List of entity types in workspace
@@ -721,7 +618,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -763,7 +659,6 @@ paths:
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -807,7 +702,6 @@ paths:
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -847,7 +741,6 @@ paths:
 #        500:
 #          description: Internal Server Error
 #      security:
-#        - bearer:
 #        - googleoauth:
 #            - openid
 #            - email
@@ -855,7 +748,6 @@ paths:
 #            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
-      type: Entity
       tags:
       - Entities
       operationId: getEntities
@@ -864,16 +756,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: entityType
           description: Entity Type
           required: true
@@ -882,12 +766,15 @@ paths:
       responses:
         200:
           description: List of entities in workspace
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Entity'
         404:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -895,7 +782,6 @@ paths:
             - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
-      type: file
       tags:
       - Entities
       operationId: downloadEntitiesTSV
@@ -904,16 +790,8 @@ paths:
       produces:
         - text/plain
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: entityType
           description: Entity Type
           required: true
@@ -922,12 +800,13 @@ paths:
       responses:
         200:
           description: Workspace entities of specified type in TSV format
+          schema:
+            type: file
         404:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -942,16 +821,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: entityType
           description: Entity Type
           required: true
@@ -970,7 +841,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1015,7 +885,6 @@ paths:
 #        500:
 #          description: Internal Server Error
 #      security:
-#        - bearer:
 #        - googleoauth:
 #            - openid
 #            - email
@@ -1023,7 +892,6 @@ paths:
 #            - https://www.googleapis.com/auth/devstorage.full_control
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
-      type: file
       tags:
       - Entities
       operationId: browserDownloadEntitiesTSV
@@ -1032,16 +900,8 @@ paths:
       produces:
         - text/plain
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: entityType
           description: Entity Type
           required: true
@@ -1050,13 +910,14 @@ paths:
       responses:
         200:
           description: Workspace entities of specified type in TSV format
+          schema:
+            type: file
         404:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
     get:
-      type: Entity
       tags:
         - Entities
       operationId: entityQuery
@@ -1064,16 +925,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: entityType
           description: Entity Type
           required: true
@@ -1116,7 +969,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1132,16 +984,8 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: List of Method Configurations
@@ -1150,7 +994,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1165,20 +1008,11 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: methodConfigJson
           description: Method Configuration contents
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/NewMethodConfigIngest'
@@ -1192,7 +1026,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1204,18 +1037,11 @@ paths:
         - Method Configurations
       operationId: getWorkspaceMethodConfig
       summary: Get a method configuration in a workspace
-      produces: application/json
+      produces:
+        - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configNamespace
           description: Configuration Namespace
           required: true
@@ -1234,7 +1060,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1245,18 +1070,11 @@ paths:
         - Method Configurations
       operationId: updateWorkspaceMethodConfig
       summary: Update a method configuration in a workspace
-      produces: application/json
+      produces:
+        - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configNamespace
           description: Configuration Namespace
           required: true
@@ -1270,7 +1088,6 @@ paths:
         - name: body
           description: Method Config to Update
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/ConfigurationIngest'
@@ -1282,7 +1099,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1293,18 +1109,11 @@ paths:
         - Method Configurations
       operationId: deleteWorkspaceMethodConfig
       summary: Delete a method configuration in a workspace
-      produces: application/json
+      produces:
+        - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configNamespace
           description: Configuration Namespace
           required: true
@@ -1323,7 +1132,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1346,16 +1154,8 @@ paths:
       summary: get syntax validation information for a method configuration
       operationId: validate_method_configuration
       parameters:
-        - in: path
-          description: Workspace Namespace
-          name: workspaceNamespace
-          required: true
-          type: string
-        - in: path
-          description: Workspace Name
-          name: workspaceName
-          required: true
-          type: string
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - in: path
           description: Method Configuration Namespace
           name: configNamespace
@@ -1367,7 +1167,6 @@ paths:
           required: true
           type: string
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1379,18 +1178,11 @@ paths:
         - Method Configurations
       operationId: renameWorkspaceMethodConfig
       summary: Rename a method configuration in a workspace
-      produces: application/json
+      produces:
+        - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configNamespace
           description: Configuration Namespace
           required: true
@@ -1404,7 +1196,6 @@ paths:
         - name: rename
           description: Method Config Rename
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/MethodConfigRename'
@@ -1418,7 +1209,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1431,22 +1221,14 @@ paths:
         - Method Repository
       operationId: copyFromMethodRepo
       summary: Copy a Method Repository Configuration into a workspace
-      produces: application/json
+      produces:
+        - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configToCopy
           description: Method Configuration to Copy
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/CopyConfigurationIngest'
@@ -1462,7 +1244,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1475,22 +1256,14 @@ paths:
         - Method Repository
       operationId: copyToMethodRepo
       summary: Copy a Method Config in a workspace to the Method Repository
-      produces: application/json
+      produces:
+        - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: configToCopy
           description: Method Configuration to Copy
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/PublishConfigurationIngest'
@@ -1506,7 +1279,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1522,16 +1294,8 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: List of submissions
@@ -1540,7 +1304,6 @@ paths:
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1555,20 +1318,11 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: submission
           description: Post Submission
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/SubmissionIngest'
@@ -1584,7 +1338,6 @@ paths:
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1600,16 +1353,8 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: submissionId
           description: Submission ID
           required: true
@@ -1623,7 +1368,6 @@ paths:
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1638,16 +1382,8 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: submissionId
           description: Submission ID
           required: true
@@ -1661,7 +1397,6 @@ paths:
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1677,16 +1412,8 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: submissionId
           description: Submission ID
           required: true
@@ -1705,7 +1432,6 @@ paths:
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1724,7 +1450,6 @@ paths:
       summary: workflow queue status
       operationId: workflowQueueStatus
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1740,22 +1465,15 @@ paths:
       produces:
       - application/json
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: workspaceUpdateJson
           description: Attribute operations
           required: true
-          type: array
-          items:
-            $ref: '#/definitions/AttributeUpdateOperation'
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/AttributeUpdateOperation'
           in: body
       responses:
         200:
@@ -1767,7 +1485,6 @@ paths:
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1782,20 +1499,17 @@ paths:
         Returns the workspace service url, methods repository url, and the current timestamp.
       produces:
       - application/json
-      parameters:
       responses:
         200:
           description: Success
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
-        - bearer:
   /api/status/ping:
     get:
       tags:
@@ -1805,20 +1519,17 @@ paths:
         Returns the current timestamp.
       produces:
       - text/plain
-      parameters:
       responses:
         200:
           description: Success
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
-        - bearer:
   /health:
     get:
       tags:
@@ -1869,7 +1580,6 @@ paths:
         500:
           description: Internal Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1881,11 +1591,11 @@ paths:
         - Profile
       operationId: me
       summary: Returns registration and activation status for the current user
+      produces:
+        - application/json
       responses:
         200:
           description: OK
-          produces:
-          - application/json
           schema:
             $ref: '#/definitions/Me'
         401:
@@ -1899,7 +1609,6 @@ paths:
         503:
           description: Service Unavailable. Could not reach underlying services to determine user status.
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1911,11 +1620,11 @@ paths:
         - Profile
       operationId: getUserStatus
       summary: Passes through to the Rawls userinfo API and returns its response
+      produces:
+        - application/json
       responses:
         200:
           description: OK
-          produces:
-          - application/json
           schema:
             $ref: '#/definitions/RawlsMe'
         404:
@@ -1923,7 +1632,6 @@ paths:
         500:
           description: Internal Server Error determining Rawls user status.
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1935,12 +1643,12 @@ paths:
         - Profile
       operationId: getAll
       summary: Returns a list of all keys and values stored in the user profile service for the currently logged-in user.
-      parameters:
+      produces:
+        - application/json
+        - text/plain
       responses:
         200:
           description: OK
-          produces:
-          - application/json
           schema:
             {
               "properties": {
@@ -1968,9 +1676,7 @@ paths:
             }
         500:
           description: Internal server error
-          produces: text/plain
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -1986,7 +1692,6 @@ paths:
       parameters:
       - name: profile
         description: A complete profile
-        type: string
         in: body
         schema:
           $ref: '#/definitions/Profile'
@@ -1998,7 +1703,6 @@ paths:
         500:
           description: Internal server error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -2012,13 +1716,12 @@ paths:
       summary: Passes through to Google's userinfo API and returns its response
       description: See https://developers.google.com/+/web/api/rest/openidconnect/getOpenIdConnect for response info.
         Userinfo endpoint lives at https://www.googleapis.com/oauth2/v3/userinfo.
+      produces:
+        - application/json
       responses:
         200:
           description: OK
-          produces:
-          - application/json
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -2027,9 +1730,11 @@ paths:
   '/api/library/user/role/curator':
     get:
       responses:
-        '200':
-          schema: {"properties": {"curator": {type: "boolean"}}}
-        '500':
+        200:
+          description: are you a curator?
+          schema:
+            $ref: '#/definitions/CuratorStatus'
+        500:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
@@ -2039,7 +1744,6 @@ paths:
       summary: Query to see if you're a library curator
       operationId: isCurator
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -2053,21 +1757,15 @@ paths:
       summary: |
         put the entire metadata for a library dataset
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: libraryMetadataJson
+          description: Library metadata
           required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: workspaceUpdateJson
-          description: Attribute operations
-          required: true
-          type: object
           in: body
+          schema:
+            type: object
+            title: JsObject of metadata to update
       responses:
         200:
           description: Success
@@ -2078,7 +1776,6 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -2092,16 +1789,8 @@ paths:
       summary: |
         publish the workspace in the Library
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: Success
@@ -2114,7 +1803,6 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
       security:
-        - bearer:
         - googleoauth:
           - openid
           - email
@@ -2127,16 +1815,8 @@ paths:
       summary: |
         unpublish the workspace in the Library
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
           description: Success
@@ -2149,7 +1829,6 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
       security:
-        - bearer:
         - googleoauth:
           - openid
           - email
@@ -2172,7 +1851,6 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
       security:
-        - bearer:
         - googleoauth:
           - openid
           - email
@@ -2206,7 +1884,6 @@ paths:
 #      summary: create billing project in firecloud and google
 #      operationId: createBillingProjectFull
 #      security:
-#        - bearer:
 #        - googleoauth:
 #            - openid
 #            - email
@@ -2237,7 +1914,6 @@ paths:
 #      summary: list members of billing project the caller owns
 #      operationId: listBillingProjectMembers
 #      security:
-#        - bearer:
 #        - googleoauth:
 #            - openid
 #            - email
@@ -2276,7 +1952,6 @@ paths:
 #      summary: add user to billing project the caller owns
 #      operationId: addUserToBillingProject
 #      security:
-#        - bearer:
 #        - googleoauth:
 #            - openid
 #            - email
@@ -2314,7 +1989,6 @@ paths:
 #      summary: remove user from billing project the caller owns
 #      operationId: removeUserFromBillingProject
 #      security:
-#        - bearer:
 #        - googleoauth:
 #            - openid
 #            - email
@@ -2325,11 +1999,12 @@ paths:
         - Profile
       operationId: billing
       summary: List billing projects for a user
+      produces:
+        - application/json
       responses:
         200:
           description: OK
-          produces:
-          - application/json
+
           schema:
             type: array
             items:
@@ -2339,7 +2014,6 @@ paths:
         500:
           description: Internal Server Error
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -2369,7 +2043,6 @@ paths:
 #        500:
 #          description: Internal Server Error
 #      security:
-#        - bearer:
 #        - googleoauth:
 #            - openid
 #            - email
@@ -2424,7 +2097,6 @@ paths:
         - name: jwt
           description: JWT from NIH login
           required: true
-          type: string
           in: body
           schema:
             $ref: '#/definitions/JWTWrapper'
@@ -2438,7 +2110,6 @@ paths:
         500:
           description: Internal server error saving NIH link to profile
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -2450,12 +2121,11 @@ paths:
         - NIH
       operationId: NIHStatus
       summary: "Retrieves info about a user's NIH link"
-      parameters:
+      produces:
+        - application/json
       responses:
         200:
           description: Successfully retrieved NIH status
-          produces:
-            - application/json
           schema:
             $ref: '#/definitions/NIHStatus'
         204:
@@ -2465,7 +2135,6 @@ paths:
         500:
           description: Internal server error retrieving NIH status
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
@@ -2493,10 +2162,19 @@ securityDefinitions:
       profile: profile authorization
       https://www.googleapis.com/auth/devstorage.full_control: GCS storage
       https://www.googleapis.com/auth/cloud-billing: GCS billing
-  bearer:
-    type: apiKey
-    name: Authorization
-    in: header
+parameters:
+  workspaceNamespaceParam:
+    name: workspaceNamespace
+    description: Workspace Namespace
+    required: true
+    type: string
+    in: path
+  workspaceNameParam:
+    name: workspaceName
+    description: Workspace Name
+    required: true
+    type: string
+    in: path
 definitions:
   WorkspaceIngest:
     required:
@@ -2529,8 +2207,8 @@ definitions:
           type: string
           description: one of "NO ACCESS", "READER", or "OWNER"
       required:
-        - userId
-        - accessLevel
+        - user
+        - role
   SubmissionIngest:
     properties:
       methodConfigurationNamespace:
@@ -2566,20 +2244,20 @@ definitions:
         type: string
         description: Root entity type
       workspaceName:
-        type: Map[String, String]
-        description: Map with corresponding workspace-related information - name and namespace
+        type: object
+        description: Map[String, String] with corresponding workspace-related information - name and namespace
       methodRepoMethod:
-        type: Map[String, String]
-        description: Map with corresponding method-related information
+        type: object
+        description: Map[String, String] with corresponding method-related information
       outputs:
-        type: Map[String, String]
-        description: Map with outputs information
+        type: object
+        description: Map[String, String] with outputs information
       inputs:
-        type: Map[String, String]
-        description: Map with inputs information
+        type: object
+        description: Map[String, String] with inputs information
       prerequisites:
-        type: Map[String, String]
-        description: Map of prerequisites (keys unused, will be removed in the future)
+        type: object
+        description: Map[String, String] of prerequisites (keys unused, will be removed in the future)
     required:
       - namespace
       - name
@@ -2598,8 +2276,8 @@ definitions:
         type: string
         description: Method configuration name
       workspaceName:
-        type: Map[String, String]
-        description: Map with corresponding workspace-related information - name and namespace
+        type: object
+        description: Map[String, String] with corresponding workspace-related information - name and namespace
     required:
       - namespace
       - name
@@ -2639,17 +2317,17 @@ definitions:
         type: string
         description: Method configuration root entity type
       inputs:
-        type: Map[string, string]
-        description: Input map
+        type: object
+        description: Input map - Map[string, string]
       outputs:
-        type: Map[string, string]
-        description: Output map
+        type: object
+        description: Output map - Map[string, string]
       prerequisites:
-        type: Map[string, string]
-        description: Prerequisites map
+        type: object
+        description: Prerequisites map - Map[string, string]
       methodRepoMethod:
-        type: Map
-        description: Method ID
+        type: object
+        description: Method ID - Map
     required:
       - namespace
       - name
@@ -2694,8 +2372,7 @@ definitions:
   CopyEntity:
     properties:
       sourceWorkspace:
-        schema:
-          $ref: '#/definitions/Namespace'
+        $ref: '#/definitions/Namespace'
         description: Source Workspace Namespace
       entityType:
         type: string
@@ -2749,7 +2426,7 @@ definitions:
         type: string
         description: The type of the entity
       attributes:
-        type: ''
+        type: object
         description: Map[String,Attribute]
   EntityQueryParameters:
     description: ''
@@ -2773,7 +2450,7 @@ definitions:
         description: asc or desc
       filterTerms:
         type: string
-        descriptions: terms to filter results by
+        description: terms to filter results by
   EntityQueryResultMetadata:
     description: ''
     required:
@@ -2814,7 +2491,7 @@ definitions:
         type: string
         description: Method name
       methodVersion:
-        type: int
+        type: integer
         default: 0
         description: Method version
     required:
@@ -2840,35 +2517,56 @@ definitions:
         type: string
         description: The root entity type that the method will be running on
       prerequisites:
-        $ref: ''
+        type: object
+        description: Map[String, String]
       inputs:
-        $ref: ''
+        type: object
+        description: Map[String, String]
       outputs:
-        $ref: ''
+        type: object
+        description: Map[String, String]
       methodRepoMethod:
         $ref: '#/definitions/MethodRepoMethod'
         description: The properties of the method from the method store that this config is associated with
+  MethodRepoMethod:
+    description: ''
+    required:
+      - methodNamespace
+      - methodName
+      - methodVersion
+    properties:
+      methodNamespace:
+        type: string
+        description: The namespace of method from method store
+      methodName:
+        type: string
+        description: The name of method from method store
+      methodVersion:
+        type: integer
+        description: The version of method from method store
   ValidatedMethodConfiguration:
     description: ''
     required:
-      -methodConfiguration
-      -validInputs
-      -invalidInputs
-      -validOutputs
-      -invalidOutputs
+      - methodConfiguration
+      - validInputs
+      - invalidInputs
+      - validOutputs
+      - invalidOutputs
     properties:
       validInputs:
         type: array
         items:
           type: string
       invalidInputs:
-        $ref: ''
+        type: object
+        description: Map[String, String]
       validOutputs:
         type: array
         items:
           type: string
       invalidOutputs:
-        $ref: ''
+        type: object
+        description: Map[String, String]
       methodConfiguration:
         $ref: '#/definitions/MethodConfiguration'
   Profile:
@@ -2902,15 +2600,15 @@ definitions:
       isDbgapAuthorized:
         type: boolean
       lastLinkTime:
-        type: long
+        type: integer
         format: int64
         default: 0
       linkExpireTime:
-        type: long
+        type: integer
         format: int64
         default: 0
       secondsSinceLastLink:
-        type: long
+        type: integer
         format: int64
         default: 0
       descriptionSinceLastLink:
@@ -3005,7 +2703,7 @@ definitions:
     description: ''
     required:
       - projectName
-      - BillingAccount
+      - billingAccount
     properties:
       projectName:
         type: string
@@ -3102,13 +2800,13 @@ definitions:
         type: string
         description: The user who created the workspace
       attributes:
-        $ref: ''
+        type: object
         description: Map[String, Attribute]
       accessLevels:
-         $ref: ''
-         description: Map[String, RawlsGroupRef]
+        type: object
+        description: Map[String, RawlsGroupRef]
       realmACLs:
-         $ref: ''
+         type: object
          description: Map[String, RawlsGroupRef]
       isLocked:
         type: boolean
@@ -3119,4 +2817,23 @@ definitions:
       groupName:
         type: string
         description: ''
+  WorkspaceACLUpdate:
+    description: ''
+    required:
+      - email
+      - accessLevel
+    properties:
+      email:
+        type: string
+        description: email address of the user or group whose permissions will be changed
+      accessLevel:
+        type: string
+        description: The access level to grant to this user or group (OWNER, READER, WRITER, NO ACCESS)
+  CuratorStatus:
+    description: is the user a curator?
+    required:
+      - curator
+    properties:
+      curator:
+        type: boolean
 
