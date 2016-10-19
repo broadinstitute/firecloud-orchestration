@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
@@ -28,6 +29,7 @@ trait PlainArrayAttributeListSerializer extends AttributeListSerializer {
     case AttributeValueList(l) => JsArray(l.map(writeAttribute):_*)
     case AttributeEntityReferenceEmptyList => JsArray()
     case AttributeEntityReferenceList(l) => JsArray(l.map(writeAttribute):_*)
+    case _ => throw new FireCloudException("you can't pass a non-list to writeListType")
   }
 
   override def readListType(json: JsValue): Attribute = json match {
@@ -58,6 +60,7 @@ trait TypedAttributeListSerializer extends AttributeListSerializer {
     case AttributeValueList(l) => writeAttributeList(VALUE_LIST_TYPE, l)
     case AttributeEntityReferenceEmptyList => writeAttributeList(REF_LIST_TYPE, Seq.empty[AttributeEntityReference])
     case AttributeEntityReferenceList(l) => writeAttributeList(REF_LIST_TYPE, l)
+    case _ => throw new FireCloudException("you can't pass a non-list to writeListType")
   }
 
   def readListType(json: JsValue): Attribute = json match {
