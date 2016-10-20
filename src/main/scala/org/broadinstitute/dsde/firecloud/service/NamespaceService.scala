@@ -19,8 +19,10 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import scala.concurrent.{ExecutionContext, Future}
 
 object NamespaceService {
-  case class GetPermissions(ns: String, entity: String)
-  case class PostPermissions(ns: String, entity: String, permissions: List[FireCloudPermission])
+
+  sealed trait NamespaceServiceMessage
+  case class GetPermissions(ns: String, entity: String) extends NamespaceServiceMessage
+  case class PostPermissions(ns: String, entity: String, permissions: List[FireCloudPermission]) extends NamespaceServiceMessage
 
   def props(namespaceService: UserInfo => NamespaceService, userInfo: UserInfo): Props = {
     Props(namespaceService(userInfo))
