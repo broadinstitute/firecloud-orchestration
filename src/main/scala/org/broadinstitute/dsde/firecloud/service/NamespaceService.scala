@@ -52,22 +52,20 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
   }
 
   private def delegatePermissionsResponse(agoraPerms: Future[List[AgoraPermission]]): Future[PerRequestMessage] = {
-    try {
-      val fcPermissions = convertPermissions(agoraPerms)
-      Future(RequestComplete(OK, fcPermissions))
-    } catch {
-      case e: FireCloudExceptionWithErrorReport => Future(RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e))
-      case e: Throwable => Future(RequestComplete(InternalServerError, e))
+    agoraPerms map {
+      perms =>
+        val fcPermissions = convertPermissions(perms)
+        RequestComplete(OK, fcPermissions)
+    } recover {
+      case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e)
+      case e: Throwable => RequestComplete(InternalServerError, e)
     }
   }
 
-  def convertPermissions(agoraPerms: Future[List[AgoraPermission]]): Future[List[FireCloudPermission]] = {
+  def convertPermissions(agoraPerms: List[AgoraPermission]): List[FireCloudPermission] = {
     agoraPerms map {
-      permissions =>
-        permissions.map {
-          permission =>
-            AgoraPermissionHandler.toFireCloudPermission(permission)
-        }
+      permission =>
+        AgoraPermissionHandler.toFireCloudPermission(permission)
     }
   }
 

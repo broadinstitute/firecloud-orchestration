@@ -25,14 +25,14 @@ trait NamespaceApiService extends HttpService with FireCloudRequestBuilding with
         get { requestContext =>
           perRequest(requestContext,
             NamespaceService.props(namespaceServiceConstructor, userInfo),
-            NamespaceService.GetPermissions(namespace, "configurations"))
+            NamespaceService.GetPermissions(namespace, agoraEntity))
         } ~
         post {
           entity(as[List[FireCloudPermission]]) { permissions => requestContext =>
             perRequest(
               requestContext,
               NamespaceService.props(namespaceServiceConstructor, userInfo),
-              NamespaceService.PostPermissions(namespace, "configurations", permissions))
+              NamespaceService.PostPermissions(namespace, agoraEntity, permissions))
           }
         }
       }
