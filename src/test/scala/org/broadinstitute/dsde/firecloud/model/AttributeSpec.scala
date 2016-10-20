@@ -461,7 +461,7 @@ class AttributeSpec extends FreeSpec with Assertions {
             |    {"entityType":"pair","entityName":"MyPairName"}
             |  ]}
             |}
-          """.stripMargin.trim.replace(" ", "").replace("\n","")
+          """.stripMargin.trim.replace(" ", "").replace("\n","").replace("\r","")
 
         val actual = testData.toJson.compactPrint
         // we can't test the two strings directly, because AttributeMap doesn't preserve order,
