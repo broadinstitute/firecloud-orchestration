@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model.{ModelJsonProtocol, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, NamespaceService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.routing._
@@ -28,11 +28,14 @@ trait NamespaceApiService extends HttpService with FireCloudRequestBuilding with
             NamespaceService.GetPermissions(namespace, agoraEntity))
         } ~
         post {
-          entity(as[List[FireCloudPermission]]) { permissions => requestContext =>
-            perRequest(
-              requestContext,
-              NamespaceService.props(namespaceServiceConstructor, userInfo),
-              NamespaceService.PostPermissions(namespace, agoraEntity, permissions))
+          // explicitly pull in the json-extraction error handler from ModelJsonProtocol
+          handleRejections(entityExtractionRejectionHandler) {
+            entity(as[List[FireCloudPermission]]) { permissions => requestContext =>
+              perRequest(
+                requestContext,
+                NamespaceService.props(namespaceServiceConstructor, userInfo),
+                NamespaceService.PostPermissions(namespace, agoraEntity, permissions))
+            }
           }
         }
       }

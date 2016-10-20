@@ -409,8 +409,10 @@ paths:
           description: the indicated method namespace ACL permissions once the posted changes have been applied
           schema:
             $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Invalid content format
         403:
-          description: user does not have correct permissions to manage namespace permissions or the indicated namespace was not found
+          description: User does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
       security:
@@ -474,8 +476,10 @@ paths:
             type: array
             items:
               $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Invalid content format
         403:
-          description: user does not have correct permissions to manage namespace permissions or the indicated namespace was not found
+          description: User does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
       security:
