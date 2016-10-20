@@ -193,10 +193,7 @@ class AttributeSpec extends FreeSpec with Assertions {
         ))
         assertResult(expected) { attr }
       }
-
-      // TODO: either re-enable these tests once target code throws a better exception,
-      // TODO: or change the tests to intercept ClassCastException
-      "should fail if entity reference list contains values" ignore {
+      "should fail if entity reference list contains values" in {
         val testData =
           """
             | {"testKey" : {
@@ -204,11 +201,11 @@ class AttributeSpec extends FreeSpec with Assertions {
             |   "items" : [ 123, 456, 789 ]
             | }}
           """.stripMargin
-        intercept[FireCloudException] {
+        intercept[DeserializationException] {
           testData.parseJson.convertTo[AttributeMap]
         }
       }
-      "should fail if value list contains entities" ignore {
+      "should fail if value list contains entities" in {
         val testData =
           """
             | {"testKey" : {
@@ -220,13 +217,10 @@ class AttributeSpec extends FreeSpec with Assertions {
             |   ]
             | }}
           """.stripMargin
-        intercept[FireCloudException] {
+        intercept[DeserializationException] {
           testData.parseJson.convertTo[AttributeMap]
         }
       }
-      // TODO: end ignored tests
-
-      // TODO: should this next case work as well as it does?
       "should work even if value list contains mixed types" in {
         val testData =
           """
@@ -244,7 +238,6 @@ class AttributeSpec extends FreeSpec with Assertions {
         ))
         assertResult(expected) { attr }
       }
-      // TODO: should this next case throw DeserializationException or something else?
       "should fail if list specifies unknown type" in {
         val testData =
           """
@@ -257,7 +250,6 @@ class AttributeSpec extends FreeSpec with Assertions {
           testData.parseJson.convertTo[AttributeMap]
         }
       }
-      // TODO: should this next case throw DeserializationException or something else?
       "should fail if list omits type" in {
         val testData =
           """
@@ -269,7 +261,6 @@ class AttributeSpec extends FreeSpec with Assertions {
           testData.parseJson.convertTo[AttributeMap]
         }
       }
-      // TODO: should this next case throw DeserializationException or something else?
       "should fail if entity reference list contains list" in {
         val testData =
           """
@@ -289,7 +280,6 @@ class AttributeSpec extends FreeSpec with Assertions {
           testData.parseJson.convertTo[AttributeMap]
         }
       }
-      // TODO: should this next case throw DeserializationException or something else?
       "should fail if value list contains list" in {
         val testData =
           """
@@ -478,11 +468,11 @@ class AttributeSpec extends FreeSpec with Assertions {
         // and therefore we don't know in which order the keys will appear. So, jump through a
         // few hoops to validate.
         assertResult(expected.length) { actual.length }
-        // strip off the first and last { and }, then check that each key exists
-        val subStrings = expected.substring(1,expected.length-1).split(",")
-        subStrings.foreach { sub =>
-          assert(actual.contains(sub), s"doesn't contain [%s]".format(sub))
-        }
+        // strip off the first and last { and }, which gives us each individual key/value pair,
+        // sort, and compare the sorted results
+        val expectedSubStrings = expected.substring(1,expected.length-1).split(",").sorted
+        val actualSubStrings = actual.substring(1,actual.length-1).split(",").sorted
+        assertResult(expectedSubStrings) { actualSubStrings }
       }
     }
   }
