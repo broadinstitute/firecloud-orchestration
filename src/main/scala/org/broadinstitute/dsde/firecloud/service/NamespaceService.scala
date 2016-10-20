@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErr
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.NamespaceService.{GetPermissions, PostPermissions}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import spray.http.StatusCodes._
@@ -57,8 +57,10 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
         val fcPermissions = convertPermissions(perms)
         RequestComplete(OK, fcPermissions)
     } recover {
-      case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e)
-      case e: Throwable => RequestComplete(InternalServerError, e)
+      case e: FireCloudExceptionWithErrorReport =>
+        RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport)
+      case e: Throwable =>
+        RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
     }
   }
 
