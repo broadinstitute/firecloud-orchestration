@@ -34,7 +34,6 @@ object LibraryService {
   case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
   case object IndexAll extends LibraryServiceMessage
-  case object TestMappings extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
@@ -56,7 +55,6 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => asCurator {updateAttributes(ns, name, attrsJsonString)} pipeTo sender
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
     case IndexAll => asAdmin {indexAll} pipeTo sender
-    case TestMappings => printMappings pipeTo sender
   }
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
@@ -111,11 +109,6 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
         RequestComplete(OK, indexResult.toString)
       }
     }
-  }
-
-  def printMappings: Future[PerRequestMessage] = {
-    val jsonContents = FileUtils.readAllTextFromResource(schemaLocation)
-      Future.successful(RequestComplete(OK, searchDAO.makeESMapping(jsonContents)))
   }
 
 }
