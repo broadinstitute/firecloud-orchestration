@@ -1,16 +1,16 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{ACLNames, AgoraPermission, FireCloudPermission}
+import org.broadinstitute.dsde.firecloud.dataaccess.MockAgoraDAO
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.webservice.NamespaceApiService
-import org.mockserver.model.HttpRequest._
+
 import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
-import spray.json._
 
 class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
 
@@ -20,12 +20,7 @@ class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
 
   val urls = List("/api/methods/namespace/permissions", "/api/configurations/namespace/permissions")
 
-  val agoraPermission = AgoraPermission(
-    user = Some("random@site.com"),
-    roles = Some(ACLNames.ListOwner)
-  )
-
-  val fcPermissions = List(AgoraPermissionHandler.toFireCloudPermission(agoraPermission))
+  val fcPermissions = List(AgoraPermissionHandler.toFireCloudPermission(MockAgoraDAO.agoraPermission))
 
   "NamespaceApiService" - {
 
@@ -35,8 +30,9 @@ class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
           url =>
             Get(url) ~> dummyUserIdHeaders("1234") ~> sealRoute(namespaceRoutes) ~> check {
               status should equal(OK)
-              val permission = responseAs[List[FireCloudPermission]]
-              permission shouldNot be (None)
+              val permissions = responseAs[List[FireCloudPermission]]
+              permissions shouldNot be (None)
+              permissions should be (fcPermissions)
             }
         }
       }
@@ -48,8 +44,8 @@ class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
           url =>
             Post(url, fcPermissions) ~> dummyUserIdHeaders("1234") ~> sealRoute(namespaceRoutes) ~> check {
               status should equal(OK)
-              val permission = responseAs[List[FireCloudPermission]]
-              permission shouldNot be (None)
+              val permissions = responseAs[List[FireCloudPermission]]
+              permissions should be (fcPermissions)
             }
         }
       }
