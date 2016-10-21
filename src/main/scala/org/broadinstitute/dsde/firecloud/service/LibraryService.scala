@@ -104,7 +104,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   def indexAll: Future[PerRequestMessage] = {
     rawlsDAO.getAllLibraryPublishedWorkspaces map {workspaces =>
       val toIndex:Seq[Document] = workspaces.map {workspace => indexableDocument(workspace)}
-      searchDAO.recreateIndex
+      searchDAO.recreateIndex()
       val indexResult = searchDAO.bulkIndex(toIndex)
       RequestComplete(OK, indexResult.toString)
     }
