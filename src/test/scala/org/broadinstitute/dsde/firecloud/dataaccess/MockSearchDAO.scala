@@ -18,6 +18,4 @@ class MockSearchDAO extends SearchDAO {
   override def indexDocument(doc: Document) = Unit
   override def deleteDocument(id: String) = Unit
 
-  override def makeESMapping(json_definition: String) = "" // or should this just be String??
-
 }
