@@ -36,7 +36,7 @@ object MethodRepository {
       role.equals(ACLNames.NoAccess) || role.equals(ACLNames.Reader) || role.equals(ACLNames.Owner),
       s"role must be one of %s, %s, or %s".format(ACLNames.NoAccess, ACLNames.Reader, ACLNames.Owner)
     )
-    require(validatePublicOrEmail(user), "user must be non-empty or 'public'")
+    require(validatePublicOrEmail(user), "user must be a valid email address or 'public'")
     def toAgoraPermission = AgoraPermissionHandler.toAgoraPermission(this)
 
   }
@@ -63,8 +63,14 @@ object MethodRepository {
   }
 
   def validatePublicOrEmail(email:String): Boolean = {
-    // TODO: real email address validation!
-    !email.trim.isEmpty || email.trim.equalsIgnoreCase("public")
+    val emailRegex = """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
+    email match {
+      case null => false
+      case x if x.trim.isEmpty => false
+      case x if emailRegex.findFirstMatchIn(x).isDefined => true
+      case x if x.equalsIgnoreCase("public") => true
+      case _ => false
+    }
   }
 
 
