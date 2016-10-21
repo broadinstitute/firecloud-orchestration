@@ -76,13 +76,31 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
+    println("in setWorkspaceIsPublished")
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
       // verify owner on workspace
       if (!workspaceResponse.accessLevel.contains("OWNER")) {
         Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner"))
       } else {
         val operations = updatePublishAttribute(value)
-        rawlsDAO.patchWorkspaceAttributes(ns, name, operations) map (RequestComplete(_))
+        val wsfuture = rawlsDAO.patchWorkspaceAttributes(ns, name, operations)
+        val response = if (value) {
+          wsfuture map { newws =>
+            searchDAO.indexDocument(indexableDocument(newws))
+          }
+          //wsfuture
+          true
+        }
+        else {
+          wsfuture map { newws =>
+            searchDAO.deleteDocument(newws.workspaceId)
+          }
+          //wsfuture
+          true
+        }
+//        println(response)
+//        Future(RequestComplete(wsfuture))
+        wsfuture map (RequestComplete(_))
       }
     }
   }

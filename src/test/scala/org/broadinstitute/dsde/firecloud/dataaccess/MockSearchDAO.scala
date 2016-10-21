@@ -14,8 +14,17 @@ class MockSearchDAO extends SearchDAO {
   override def createIndex = Unit
   override def deleteIndex = Unit
 
+  var indexDocumentInvoked = false
+  var deleteDocumentInvoked = false
+
   override def bulkIndex(docs: Seq[Document]) = Unit
-  override def indexDocument(doc: Document) = Unit
-  override def deleteDocument(id: String) = Unit
+  override def indexDocument(doc: Document) = {
+    println("called mock index document")
+    indexDocumentInvoked = true
+  }
+  override def deleteDocument(id: String) = {
+    println("called mock delete document")
+    deleteDocumentInvoked = true
+  }
 
 }

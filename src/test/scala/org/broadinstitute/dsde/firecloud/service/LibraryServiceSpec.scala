@@ -1,7 +1,9 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import java.util.UUID
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+
+import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
@@ -10,7 +12,7 @@ import org.scalatest.FreeSpec
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.ExecutionContext
 
 class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
@@ -33,6 +35,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     bucketName="bucketName",
     accessLevels=Map.empty,
     realm=None)
+
 
   "LibraryService" - {
     "when new attrs are empty" - {
@@ -146,6 +149,32 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
           updatePublishAttribute(true)
         }
       }
+//      "should invoke indexDocumemnt" in {
+//        val agoraDAO:AgoraDAO = new MockAgoraDAO
+//        val rawlsDAO:RawlsDAO = new MockRawlsDAO
+//        val searchDAO:SearchDAO = new MockSearchDAO
+//        val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO)
+//        LibraryService.constructor(app)(null)
+//        //LibraryService.props(libraryServiceConstructor, null)
+//        //var libraryService = new LibraryService(null, rawlsDAO, searchDAO)
+//
+//        assertResult(false) {
+//          searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked
+//        }
+//        searchDAO.deleteDocument("id")
+//        assertResult(true) {
+//          searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked
+//        }
+//        LibraryService.SetPublishAttribute(testWorkspace.namespace, testWorkspace.name, true)
+////        libraryService.setWorkspaceIsPublished(testWorkspace.namespace, testWorkspace.name, true)
+//        assertResult(true) {
+//          searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked
+//        }
+//        assertResult(false) {
+//          searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked
+//        }
+//        LibraryService.searchDAO=new MockSearchDAO
+//      }
     }
     "when unpublishing a workspace" - {
       "should remove the library:published attribute" in {
