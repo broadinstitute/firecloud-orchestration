@@ -58,15 +58,15 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     bulkResponse.buildFailureMessage
   }
 
-  // TODO: untested and unused; remove this comment once you see this works
   override def indexDocument(doc: Document) = {
+    //println("invoking indexDocument in ES")
     executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder] (
       client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint)
     )
   }
 
-  // TODO: untested and unused; remove this comment once you see this works
   override def deleteDocument(id: String) = {
+    //println("invoking deleteDocument in ES")
     executeESRequest[DeleteRequest, DeleteResponse, DeleteRequestBuilder] (
       client.prepareDelete(indexName, datatype, id)
     )
