@@ -6,10 +6,11 @@ import java.util.zip.{ZipEntry, ZipOutputStream}
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
+import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.core.ExportEntitiesByType.{ProcessEntities, ProcessWorkspaceAttributes}
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{ModelSchema, RequestCompleteWithErrorReport}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
@@ -26,10 +27,18 @@ import spray.routing.RequestContext
 
 import scala.concurrent.Future
 import scala.util.Success
+import akka.actor.{Actor, Props}
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpRawlsDAO
+import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import spray.json.DefaultJsonProtocol._
+import spray.http.HttpEntity
+import spray.httpx.unmarshalling._
+import spray.httpx.SprayJsonSupport._
 
 object ExportEntitiesByType {
   case class ProcessEntities(baseEntityUrl: String, filename: String, entityType: String)
-  case class ProcessWorkspaceAttributes(baseWorkspaceUrl: String, filename: String)
+  case class ProcessWorkspaceAttributes(baseWorkspaceUrl: String, workspaceNamespace: String, workspaceName: String, filename: String/*, rawlsDAO: HttpRawlsDAO*/)
   def props(requestContext: RequestContext): Props = Props(new ExportEntitiesByTypeActor(requestContext))
 }
 
@@ -42,15 +51,38 @@ class ExportEntitiesByTypeActor(requestContext: RequestContext) extends Actor wi
   override def receive: Receive = {
     case ProcessEntities(baseEntityUrl: String, filename: String, entityType: String) =>
       processEntities(baseEntityUrl, filename, entityType)
-    case ProcessWorkspaceAttributes(baseWorkspaceUrl: String, filename: String) =>
-      processWorkspaceAttributes(baseWorkspaceUrl, filename)
+    case ProcessWorkspaceAttributes(baseWorkspaceUrl: String, workspaceNamespace: String, workspaceName: String, filename: String/*, rawlsDAO: HttpRawlsDAO*/) =>
+      processWorkspaceAttributes(baseWorkspaceUrl, workspaceNamespace, workspaceName, filename/*, rawlsDAO*/)
     case _ =>
       Future(RequestComplete(StatusCodes.BadRequest)) pipeTo context.parent
   }
 
-  def processWorkspaceAttributes(baseWorkspaceUrl: String, filename: String) = {
+  def processWorkspaceAttributes(baseWorkspaceUrl: String, workspaceNamespace: String, workspaceName: String, filename: String/*, rawlsDAO: HttpRawlsDAO*/) = {
+    log.info("We're in Process Workspace Attributes!")
     val pipeline = authHeaders(requestContext) ~> addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
-
+    pipeline { Get(baseWorkspaceUrl)} map {
+      response =>
+        log.info("There was some kind of response")
+        response.status match {
+          case OK =>
+            log.info("We got an OK response!")
+            log.info("RESPONSE: " + response.toString)
+            log.debug("RESPONSE.ENTITY: " + response.entity.toString)
+            log.info("RESPONSE.HEADERS: " + response.headers.toString())
+            //val entities = unmarshal[RawlsWorkspaceResponse].apply(response)
+            val workspace = response.entity.as[RawlsWorkspaceResponse] match {
+              case Right(rwr) => rwr
+              case Left(error) => throw new FireCloudExceptionWithErrorReport(ErrorReport(response)) // replay the root exception
+            }
+            /*rawlsDAO.getWorkspace(workspaceNamespace, workspaceName).map{ workspaceResponse =>
+              log.info(workspaceResponse.workspace.head.attributes.toString())
+            }*/
+            log.info("Do we even get here?")
+            //log.info("ENTITIES: " + workspace.toString())
+          case _ =>
+            RequestCompleteWithErrorReport(response.status, response.entity.asString)
+        }
+    }
   }
 
   def processEntities(baseEntityUrl: String, filename: String, entityType: String) = {
@@ -59,7 +91,11 @@ class ExportEntitiesByTypeActor(requestContext: RequestContext) extends Actor wi
       response =>
         response.status match {
           case OK =>
+            log.info("UMMMM RESPONSE: " + response.toString)
+            log.info("RESPONSE.ENTITY: " + response.entity.data.toString)
+            log.info("RESPONSE.HEADERS: " + response.headers.toString())
             val entities = unmarshal[List[EntityWithType]].apply(response)
+            log.info("ENTITIES: " + entities.toString())
             ModelSchema.getCollectionMemberType(entityType) match {
               case Success(collectionType) if collectionType.isDefined =>
                 val collectionMemberType = ModelSchema.getPlural(collectionType.get)

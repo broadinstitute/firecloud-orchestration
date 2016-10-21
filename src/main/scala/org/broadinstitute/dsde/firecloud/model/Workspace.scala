@@ -32,28 +32,31 @@ case class RawlsWorkspaceCreate(
 }
 
 case class RawlsWorkspaceResponse(
-  accessLevel: Option[String] = None,
-  workspace: Option[RawlsWorkspace] = None,
-  workspaceSubmissionStats: Option[SubmissionStats] = None,
-  owners: Option[List[String]] = None)
+  accessLevel: Option[String],
+  workspace: Option[RawlsWorkspace],
+  workspaceSubmissionStats: Option[SubmissionStats],
+  owners: List[String])
 
 case class RawlsWorkspace(
   workspaceId: String,
-  namespace: String,
   name: String,
-  isLocked: Option[Boolean] = None,
-  createdBy: String,
-  createdDate: String,
-  lastModified: Option[String] = None,
+  isLocked: Boolean,
+  lastModified: String,
+  realmACLs: Option[Map[String, Map[String, String]]],
   attributes: Map[String, String],
+  createdBy: String,
   bucketName: String,
-  accessLevels: Map[String, Map[String, String]],
-  realm: Option[Map[String, String]])
+  namespace: String,
+  createdDate: String,
+  accessLevels: Map[String, Map[String, String]]
+)
+
 
 case class SubmissionStats(
-  lastSuccessDate: Option[String] = None,
-  lastFailureDate: Option[String] = None,
-  runningSubmissionsCount: Int)
+  lastSuccessDate: Option[String],
+  lastFailureDate: Option[String],
+  runningSubmissionsCount: Int
+)
 
 case class UIWorkspaceResponse(
   accessLevel: Option[String] = None,
@@ -61,7 +64,7 @@ case class UIWorkspaceResponse(
   workspaceSubmissionStats: Option[SubmissionStats] = None,
   owners: Option[List[String]] = None) {
   def this(rwr: RawlsWorkspaceResponse) =
-    this(rwr.accessLevel, rwr.workspace.map(new UIWorkspace(_)), rwr.workspaceSubmissionStats, rwr.owners)
+    this(rwr.accessLevel, rwr.workspace.map(new UIWorkspace(_)), rwr.workspaceSubmissionStats, Option(rwr.owners))
 }
 
 case class UIWorkspace(
@@ -75,12 +78,12 @@ case class UIWorkspace(
   attributes: Map[String, String],
   bucketName: String,
   accessLevels: Map[String, Map[String, String]],
-  realm: Option[Map[String, String]],
+  realm: Option[Map[String, Map[String, String]]],
   isProtected: Boolean) {
   def this(rw: RawlsWorkspace) =
-    this(rw.workspaceId, rw.namespace, rw.name, rw.isLocked, rw.createdBy, rw.createdDate,
-      rw.lastModified, rw.attributes, rw.bucketName, rw.accessLevels, rw.realm,
-      rw.realm.flatMap(_.get("groupName").map(_ == FireCloudConfig.Nih.rawlsGroupName)).getOrElse(false))
+    this(rw.workspaceId, rw.namespace, rw.name, Option(rw.isLocked), rw.createdBy, rw.createdDate,
+      Option(rw.lastModified), rw.attributes, rw.bucketName, rw.accessLevels, rw.realmACLs,
+      rw.realmACLs.flatMap(_.get("groupName").map(_ == FireCloudConfig.Nih.rawlsGroupName)).getOrElse(false))
 }
 
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)

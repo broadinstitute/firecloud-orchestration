@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.core.{ExportEntitiesByType, ExportEntitiesByTypeActor}
+import org.broadinstitute.dsde.firecloud.dataaccess.{HttpRawlsDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
@@ -27,6 +28,8 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
 
   lazy val log = LoggerFactory.getLogger(getClass)
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
+
+ /* val rawlsDAO:RawlsDAO = new HttpRawlsDAO*/
 
   def transformSingleWorkspaceRequest(entity: HttpEntity): HttpEntity = {
     entity.as[RawlsWorkspaceResponse] match {
@@ -91,12 +94,10 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
           }
         } ~
         path("exportAttributes") { requestContext =>
-         // mapHttpResponseEntity(transformSingleWorkspaceRequest) {
-          //  passthrough(workspacePath, HttpMethods.GET)
-          //} ~
           val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
+          log.info("On the right path!")
           perRequest(requestContext, Props(new ExportEntitiesByTypeActor(requestContext)),
-            ExportEntitiesByType.ProcessWorkspaceAttributes(FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName), filename))
+            ExportEntitiesByType.ProcessWorkspaceAttributes(FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName), workspaceNamespace, workspaceName, filename/*, rawlsDAO*/))
         } ~
         path("updateAttributes") {
           passthrough(workspacePath, HttpMethods.PATCH)
