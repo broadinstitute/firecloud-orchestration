@@ -23,16 +23,13 @@ import org.everit.json.schema.loader.SchemaLoader
 import org.json.JSONObject
 import org.json.JSONTokener
 
-class LibraryApiServiceSpec extends ServiceSpec with LibraryApiService {
+class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
 
   def actorRefFactory = system
   var workspaceServer: ClientAndServer = _
 
   lazy val isCuratorPath = "/api/library/user/role/curator"
 
-  val rawlsDAO:RawlsDAO = new MockRawlsDAO
-  val searchDAO:SearchDAO = new MockSearchDAO
-  val app:Application = new Application(rawlsDAO, searchDAO)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
   override def beforeAll(): Unit = {
