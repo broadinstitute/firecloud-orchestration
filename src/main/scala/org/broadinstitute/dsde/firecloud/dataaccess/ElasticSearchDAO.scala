@@ -75,10 +75,6 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     )
   }
 
-  override def makeESMapping(json_definition: String) = {
-    make_mapping(json_definition)
-  }
-
   private def conditionalRecreateIndex(deleteFirst: Boolean = false) = {
     try {
       logger.info(s"Checking to see if ElasticSearch index '%s' exists ... ".format(indexName))
