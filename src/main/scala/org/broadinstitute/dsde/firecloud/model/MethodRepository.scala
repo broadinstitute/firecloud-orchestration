@@ -1,6 +1,10 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import javax.mail.internet.InternetAddress
+
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
+
+import scala.util.Try
 
 object MethodRepository {
 
@@ -63,14 +67,7 @@ object MethodRepository {
   }
 
   def validatePublicOrEmail(email:String): Boolean = {
-    val emailRegex = """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
-    email match {
-      case null => false
-      case x if x.trim.isEmpty => false
-      case x if emailRegex.findFirstMatchIn(x).isDefined => true
-      case x if x.equalsIgnoreCase("public") => true
-      case _ => false
-    }
+    "public".equals(email) || Try(new InternetAddress(email).validate()).isSuccess
   }
 
 

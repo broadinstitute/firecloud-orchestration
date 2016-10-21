@@ -31,7 +31,6 @@ class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
             Get(url) ~> dummyUserIdHeaders("1234") ~> sealRoute(namespaceRoutes) ~> check {
               status should equal(OK)
               val permissions = responseAs[List[FireCloudPermission]]
-              permissions shouldNot be (None)
               permissions should be (fcPermissions)
             }
         }
