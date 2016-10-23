@@ -66,7 +66,7 @@ libraryDependencies ++= {
     "com.google.apis" % "google-api-services-storage" % "v1-rev58-1.21.0",
     "com.google.apis" % "google-api-services-compute" % "v1-rev120-1.22.0",
     "com.jason-goodwin"   %% "authentikat-jwt" % "0.4.1",
-    "javax.mail"           % "javax.mail-api" % "1.5.6",
+    "com.sun.mail"         % "javax.mail" % "1.5.6",
     "org.ocpsoft.prettytime" % "prettytime" % "4.0.1.Final",
     "org.specs2"          %%  "specs2-core"   % "3.7"  % "test",
     "org.scalatest"       %%  "scalatest"     % "2.2.6"   % "test",
