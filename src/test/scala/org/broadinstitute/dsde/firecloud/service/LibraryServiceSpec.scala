@@ -3,8 +3,9 @@ package org.broadinstitute.dsde.firecloud.service
 import java.net.URL
 import java.util.UUID
 
+import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOSupport
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
-import org.broadinstitute.dsde.firecloud.model.{AttributeString, Document, RawlsWorkspace}
+import org.broadinstitute.dsde.firecloud.model._
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
 import org.scalatest.FreeSpec
@@ -12,25 +13,25 @@ import spray.json._
 
 import scala.util.Try
 
-class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
+class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with ElasticSearchDAOSupport {
 
-  val existingLibraryAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "library:keythree"->"valthree", "library:keyfour"->"valfour")
-  val existingMixedAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "keythree"->"valthree", "keyfour"->"valfour")
-  val existingPublishedAttrs = Map("library:published"->"true", "library:keytwo"->"valtwo", "keythree"->"valthree", "keyfour"->"valfour")
+  val existingLibraryAttrs = Map("library:keyone" -> "valone", "library:keytwo" -> "valtwo", "library:keythree" -> "valthree", "library:keyfour" -> "valfour")
+  val existingMixedAttrs = Map("library:keyone" -> "valone", "library:keytwo" -> "valtwo", "keythree" -> "valthree", "keyfour" -> "valfour")
+  val existingPublishedAttrs = Map("library:published" -> "true", "library:keytwo" -> "valtwo", "keythree" -> "valthree", "keyfour" -> "valfour")
 
   val testUUID = UUID.randomUUID()
 
-  val testWorkspace = new RawlsWorkspace(workspaceId=testUUID.toString,
-    namespace="testWorkspaceNamespace",
-    name="testWorkspaceName",
-    isLocked=Some(false),
-    createdBy="createdBy",
-    createdDate="createdDate",
-    lastModified=None,
-    attributes=Map.empty[String,String],
-    bucketName="bucketName",
-    accessLevels=Map.empty,
-    realm=None)
+  val testWorkspace = new RawlsWorkspace(workspaceId = testUUID.toString,
+    namespace = "testWorkspaceNamespace",
+    name = "testWorkspaceName",
+    isLocked = Some(false),
+    createdBy = "createdBy",
+    createdDate = "createdDate",
+    lastModified = None,
+    attributes = Map.empty[String, String],
+    bucketName = "bucketName",
+    accessLevels = Map.empty,
+    realm = None)
 
   val testLibraryMetadata =
     """
@@ -76,8 +77,8 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val expected = Seq(
           RemoveAttribute("library:keythree"),
           RemoveAttribute("library:keyfour"),
-          AddUpdateAttribute("library:keyone",AttributeString("valoneNew")),
-          AddUpdateAttribute("library:keytwo",AttributeString("valtwoNew"))
+          AddUpdateAttribute("library:keyone", AttributeString("valoneNew")),
+          AddUpdateAttribute("library:keytwo", AttributeString("valtwoNew"))
         )
         assertResult(expected) {
           generateAttributeOperations(existingLibraryAttrs, newAttrs.asJsObject)
@@ -106,7 +107,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val newAttrs = """{"library:keyone":"valoneNew"}""".parseJson
         val expected = Seq(
           RemoveAttribute("library:keytwo"),
-          AddUpdateAttribute("library:keyone",AttributeString("valoneNew"))
+          AddUpdateAttribute("library:keyone", AttributeString("valoneNew"))
         )
         assertResult(expected) {
           generateAttributeOperations(existingMixedAttrs, newAttrs.asJsObject)
@@ -119,8 +120,8 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val expected = Seq(
           RemoveAttribute("library:keythree"),
           RemoveAttribute("library:keyfour"),
-          AddUpdateAttribute("library:keyone",AttributeString("valoneNew")),
-          AddUpdateAttribute("library:keytwo",AttributeString("valtwoNew"))
+          AddUpdateAttribute("library:keyone", AttributeString("valoneNew")),
+          AddUpdateAttribute("library:keytwo", AttributeString("valtwoNew"))
         )
         assertResult(expected) {
           generateAttributeOperations(existingLibraryAttrs, newAttrs.asJsObject)
@@ -132,7 +133,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val newAttrs = """{"library:keyone":"valoneNew"}""".parseJson
         val expected = Seq(
           RemoveAttribute("library:keytwo"),
-          AddUpdateAttribute("library:keyone",AttributeString("valoneNew"))
+          AddUpdateAttribute("library:keyone", AttributeString("valoneNew"))
         )
         assertResult(expected) {
           generateAttributeOperations(existingPublishedAttrs, newAttrs.asJsObject)
@@ -145,8 +146,8 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val expected = Seq(
           RemoveAttribute("library:keythree"),
           RemoveAttribute("library:keyfour"),
-          AddUpdateAttribute("library:keyone",AttributeString("valoneNew")),
-          AddUpdateAttribute("library:keytwo",AttributeString("valtwoNew"))
+          AddUpdateAttribute("library:keyone", AttributeString("valoneNew")),
+          AddUpdateAttribute("library:keytwo", AttributeString("valtwoNew"))
         )
         assertResult(expected) {
           generateAttributeOperations(existingLibraryAttrs, newAttrs.asJsObject)
@@ -155,7 +156,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     }
     "when publishing a workspace" - {
       "should add a library:published attribute" in {
-        val expected = Seq(AddUpdateAttribute("library:published",AttributeString("true")))
+        val expected = Seq(AddUpdateAttribute("library:published", AttributeString("true")))
         assertResult(expected) {
           updatePublishAttribute(true)
         }
@@ -172,8 +173,8 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     "with only library attributes in workspace" - {
       "should generate indexable document" in {
         val w = testWorkspace.copy(attributes = Map(
-          "library:foo"->"foo",
-          "library:bar"->"bar"
+          "library:foo" -> "foo",
+          "library:bar" -> "bar"
         ))
         val expected = Document(testUUID.toString, Map(
           "library:foo" -> "foo",
@@ -190,8 +191,8 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     "with only default attributes in workspace" - {
       "should generate indexable document" in {
         val w = testWorkspace.copy(attributes = Map(
-          "baz"->"defaultBaz",
-          "qux"->"defaultQux"
+          "baz" -> "defaultBaz",
+          "qux" -> "defaultQux"
         ))
         val expected = Document(testUUID.toString, Map(
           "name" -> testWorkspace.name,
@@ -222,7 +223,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
       "should generate indexable document" in {
         // https://hipsum.co/
         val w = testWorkspace.copy(attributes = Map(
-          "description"->("Fingerstache copper mug edison bulb, actually austin mustache chartreuse bicycle rights." +
+          "description" -> ("Fingerstache copper mug edison bulb, actually austin mustache chartreuse bicycle rights." +
             " Plaid iceland artisan blog street art hammock, subway tile vice. Hammock put a bird on it pinterest tacos" +
             " kitsch gastropub. Chicharrones food truck edison bulb meh. Cardigan aesthetic vegan kitsch. Hell of" +
             " messenger bag chillwave hashtag, distillery thundercats aesthetic roof party lo-fi sustainable" +
@@ -242,10 +243,10 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     "with mixed library and default attributes in workspace" - {
       "should generate indexable document" in {
         val w = testWorkspace.copy(attributes = Map(
-          "library:foo"->"foo",
-          "library:bar"->"bar",
-          "baz"->"defaultBaz",
-          "qux"->"defaultQux"
+          "library:foo" -> "foo",
+          "library:bar" -> "bar",
+          "baz" -> "defaultBaz",
+          "qux" -> "defaultQux"
         ))
         val expected = Document(testUUID.toString, Map(
           "library:foo" -> "foo",
@@ -262,12 +263,12 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     "with illegally-namespaced attributes in workspace" - {
       "should generate indexable document" in {
         val w = testWorkspace.copy(attributes = Map(
-          "library:foo"->"foo",
-          "library:bar"->"bar",
-          "baz"->"defaultBaz",
-          "qux"->"defaultQux",
-          "nope:foo"->"foo",
-          "default:bar"->"bar"
+          "library:foo" -> "foo",
+          "library:bar" -> "bar",
+          "baz" -> "defaultBaz",
+          "qux" -> "defaultQux",
+          "nope:foo" -> "foo",
+          "default:bar" -> "bar"
         ))
         val expected = Document(testUUID.toString, Map(
           "library:foo" -> "foo",
@@ -284,7 +285,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     "in its runtime schema definition" - {
       "has valid JSON" in {
         val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val jsonVal:Try[JsValue] = Try(fileContents.parseJson)
+        val jsonVal: Try[JsValue] = Try(fileContents.parseJson)
         assert(jsonVal.isSuccess, "Schema should be valid json")
       }
       "has valid JSON Schema" in {
@@ -306,26 +307,32 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(13){ex.getViolationCount}
+        assertResult(13) {
+          ex.getViolationCount
+        }
       }
       "fails with one missing key" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
-        val sampleData = defaultData.copy(defaultData.fields-"library:datasetName").compactPrint
+        val sampleData = defaultData.copy(defaultData.fields - "library:datasetName").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(1){ex.getViolationCount}
+        assertResult(1) {
+          ex.getViolationCount
+        }
         assert(ex.getMessage.contains("library:datasetName"))
       }
       "fails with two missing keys" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
-        val sampleData = defaultData.copy(defaultData.fields-"library:datasetName"-"library:datasetOwner").compactPrint
+        val sampleData = defaultData.copy(defaultData.fields - "library:datasetName" - "library:datasetOwner").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(2){ex.getViolationCount}
+        assertResult(2) {
+          ex.getViolationCount
+        }
       }
       "fails on a string that should be a number" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
@@ -334,7 +341,9 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(1){ex.getViolationCount}
+        assertResult(1) {
+          ex.getViolationCount
+        }
         assert(ex.getMessage.contains("library:numSubjects"))
       }
       "fails on a number out of bounds" in {
@@ -344,7 +353,9 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(1){ex.getViolationCount}
+        assertResult(1) {
+          ex.getViolationCount
+        }
         assert(ex.getMessage.contains("library:numSubjects"))
       }
       "fails on a string that should be an array" in {
@@ -354,8 +365,37 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(1){ex.getViolationCount}
+        assertResult(1) {
+          ex.getViolationCount
+        }
         assert(ex.getMessage.contains("library:institute"))
+      }
+    }
+    "when creating schema mappings" - {
+      "works for string type" in {
+        val label = "library:attr"
+        val `type` = "string"
+        val expected = Map(label -> Left(ESDetail(`type`)))
+        assertResult(expected) {
+          detailFromAttribute(label, AttributeDetail(`type`))
+        }
+      }
+      "works for array type" in {
+        val label = "library:attr"
+        val `type` = "array"
+        val subtype = "string"
+        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
+        val expected = Map(label -> Right(ESArray(ESItem(ESDetail(subtype)))))
+        assertResult(expected) {
+          detailFromAttribute(label, detail)
+        }
+      }
+      "mapping has valid json" in {
+        val attrJson = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val testJson = makeMapping(attrJson)
+        val jsonVal: Try[JsValue] = Try(testJson.parseJson)
+        assert(jsonVal.isSuccess, "Mapping should be valid json")
+        println(testJson)
       }
     }
   }
