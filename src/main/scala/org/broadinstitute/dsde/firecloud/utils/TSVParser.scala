@@ -1,4 +1,5 @@
 package org.broadinstitute.dsde.firecloud.utils
+import akka.event.Logging
 
 /**
  * Created with IntelliJ IDEA.
@@ -28,6 +29,7 @@ object TSVParser {
        throw new RuntimeException("TSV parsing error: no header")
      }
 
+    //Is the header too few or is the problem with the data line?
     val headers = tsvIt.next().split("\t", -1)
     val nCols = headers.length
     val tsvData = tsvIt.zipWithIndex.map { case (line, idx) => parseLine( line, idx, nCols ) }

@@ -3,13 +3,15 @@ package org.broadinstitute.dsde.firecloud.service
 import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
+import org.broadinstitute.dsde.firecloud.core.{ExportEntitiesByType, ExportEntitiesByTypeActor}
+import org.broadinstitute.dsde.firecloud.dataaccess.{HttpRawlsDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.slf4j.LoggerFactory
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import spray.http.{HttpMethods, HttpEntity}
+import spray.http.{HttpEntity, HttpMethods}
 import spray.httpx.unmarshalling._
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
@@ -26,6 +28,8 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
 
   lazy val log = LoggerFactory.getLogger(getClass)
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
+
+ /* val rawlsDAO:RawlsDAO = new HttpRawlsDAO*/
 
   def transformSingleWorkspaceRequest(entity: HttpEntity): HttpEntity = {
     entity.as[RawlsWorkspaceResponse] match {
@@ -78,6 +82,22 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
               }
             }
           }
+        } ~
+        path("importAttributes"){
+          post {
+            formFields( 'attributes ) { attributesTSV =>
+              respondWithJSON { requestContext =>
+                perRequest(requestContext, Props(new EntityClient(requestContext)),
+                  EntityClient.ImportAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV))
+              }
+            }
+          }
+        } ~
+        path("exportAttributes") { requestContext =>
+          val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
+          log.info("On the right path!")
+          perRequest(requestContext, Props(new ExportEntitiesByTypeActor(requestContext)),
+            ExportEntitiesByType.ProcessWorkspaceAttributes(FireCloudConfig.Rawls.workspacesPathFromWorkspace(workspaceNamespace, workspaceName), workspaceNamespace, workspaceName, filename/*, rawlsDAO*/))
         } ~
         path("updateAttributes") {
           passthrough(workspacePath, HttpMethods.PATCH)

@@ -48,5 +48,9 @@
         },
         "plural": "pair_sets",
         "memberType": "pair"
+    },
+    "": {
+        "requiredAttributes": {},
+        "plural": ""
     }
 } }

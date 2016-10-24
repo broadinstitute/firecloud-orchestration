@@ -37,6 +37,7 @@ object FireCloudConfig {
     lazy val authPrefix = workspace.getString("authPrefix")
     lazy val authUrl = baseUrl + authPrefix
     lazy val workspacesPath = workspace.getString("workspacesPath")
+    lazy val workspacesEditablePath = workspace.getString("workspacesEditablePath")
     lazy val workspacesUrl = authUrl + workspacesPath
     lazy val entitiesPath = workspace.getString("entitiesPath")
     lazy val entityQueryPath = workspace.getString("entityQueryPath")
@@ -54,6 +55,7 @@ object FireCloudConfig {
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
     def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
     def overwriteGroupMembershipUrlFromGroupName(groupName: String) = authUrl + overwriteGroupMembershipPath.format(groupName)
+    def workspacesPathFromWorkspace(namespace: String, name: String) = authUrl + workspacesEditablePath.format(namespace, name)
   }
 
   object Thurloe {
