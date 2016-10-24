@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 
 case class WorkspaceName(
   namespace: Option[String] = None,
@@ -11,18 +12,18 @@ case class WorkspaceEntity(
   name: Option[String] = None,
   createdDate: Option[String] = None,
   createdBy: Option[String] = None,
-  attributes: Option[Map[String, String]] = None)
+  attributes: Option[AttributeMap] = None)
 
 case class WorkspaceCreate(
   namespace: String,
   name: String,
-  attributes: Map[String, String],
+  attributes: AttributeMap,
   isProtected: Option[Boolean] = Some(false))
 
 case class RawlsWorkspaceCreate(
   namespace: String,
   name: String,
-  attributes: Map[String, String],
+  attributes: AttributeMap,
   realm: Option[Map[String, String]] = None) {
   def this(wc: WorkspaceCreate) =
     this(wc.namespace, wc.name, wc.attributes,
@@ -45,7 +46,7 @@ case class RawlsWorkspace(
   createdBy: String,
   createdDate: String,
   lastModified: Option[String] = None,
-  attributes: Map[String, String],
+  attributes: AttributeMap,
   bucketName: String,
   accessLevels: Map[String, Map[String, String]],
   realm: Option[Map[String, String]])
@@ -72,7 +73,7 @@ case class UIWorkspace(
   createdBy: String,
   createdDate: String,
   lastModified: Option[String] = None,
-  attributes: Map[String, String],
+  attributes: AttributeMap,
   bucketName: String,
   accessLevels: Map[String, Map[String, String]],
   realm: Option[Map[String, String]],
@@ -100,21 +101,6 @@ case class EntityCopyWithDestinationDefinition(
 
 case class EntityId(entityType: String, entityName: String)
 case class EntityDeleteDefinition(recursive: Boolean, entities: Seq[EntityId])
-
-case class MethodConfiguration(
-  name: Option[String] = None,
-  namespace: Option[String] = None,
-  rootEntityType: Option[String] = None,
-  workspaceName: Option[Map[String, String]] = None,
-  methodRepoMethod: Option[Map[String, String]] = None,
-  outputs: Option[Map[String, String]] = None,
-  inputs: Option[Map[String, String]] = None,
-  prerequisites: Option[Map[String, String]] = None)
-
-case class MethodConfigurationRename(
-  name: Option[String] = None,
-  namespace: Option[String] = None,
-  workspaceName: Option[Map[String, String]] = None)
 
 case class MethodConfigurationId(
   name: Option[String] = None,

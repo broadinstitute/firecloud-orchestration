@@ -1,7 +1,10 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import spray.json.JsObject
 import spray.json._
+import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 trait Indexable {
   def id: String
@@ -11,9 +14,8 @@ trait Indexable {
 case class Document(val id: String, val content: JsObject) extends Indexable
 
 object Document {
-  def apply(id: String, valMap: Map[String, String]) = {
-    val jsfields = valMap.map{ case(k:String, v:String)=>(k, JsString(v)) }
-    new Document(id, JsObject(jsfields))
+  def apply(id: String, valMap: AttributeMap) = {
+    new Document(id, valMap.toJson.asJsObject)
   }
   def apply(id: String, jsonStr: String) = new Document(id, jsonStr.parseJson.asJsObject)
 }

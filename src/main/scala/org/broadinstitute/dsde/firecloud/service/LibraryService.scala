@@ -5,8 +5,8 @@ import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsWorkspace
-import org.broadinstitute.dsde.firecloud.model.{Document, RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.firecloud.model.{AttributeName, Document, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
@@ -15,6 +15,8 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json.JsonParser.ParsingException
 import spray.json._
+import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -24,7 +26,7 @@ import scala.util.{Failure, Success, Try}
   */
 
 object LibraryService {
-  final val publishedFlag = "library:published"
+  final val publishedFlag = AttributeName("library","published")
 
   sealed trait LibraryServiceMessage
   case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
@@ -55,12 +57,10 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
     // we accept a string here, not a JsValue so we can most granularly handle json parsing
-    Try(attrsJsonString.parseJson.asJsObject) match {
+    Try(attrsJsonString.parseJson.asJsObject.convertTo[AttributeMap]) match {
       case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid json supplied", ex))
       case Failure(e) => Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
       case Success(userAttrs) =>
-        // TODO: schema-validate user input
-
         rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
           // verify owner on workspace
           if (!workspaceResponse.accessLevel.contains("OWNER")) {
