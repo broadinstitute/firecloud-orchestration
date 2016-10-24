@@ -36,8 +36,7 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
   }
 
   override def createIndex = {
-    val mapping = make_mapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
-    logger.info(s"Creating index %s with mapping".format(indexName))
+    val mapping = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
     executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
       client.admin.indices.prepareCreate(indexName).addMapping(datatype, mapping)
     )
