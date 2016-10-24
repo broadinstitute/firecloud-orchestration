@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.net.URL
 import java.util.UUID
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAOSupport, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOSupport
@@ -386,6 +386,33 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Elasti
       "validates on a complete metadata packet" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         validateJsonSchema(testLibraryMetadata, testSchema)
+      }
+    }
+    "when creating schema mappings" - {
+      "works for string type" in {
+        val label = "library:attr"
+        val `type` = "string"
+        val expected = Map(label -> Left(ESDetail(`type`)))
+        assertResult(expected) {
+          detailFromAttribute(label, AttributeDetail(`type`))
+        }
+      }
+      "works for array type" in {
+        val label = "library:attr"
+        val `type` = "array"
+        val subtype = "string"
+        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
+        val expected = Map(label -> Right(ESArray(ESItem(ESDetail(subtype)))))
+        assertResult(expected) {
+          detailFromAttribute(label, detail)
+        }
+      }
+      "mapping has valid json" in {
+        val attrJson = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val testJson = makeMapping(attrJson)
+        val jsonVal: Try[JsValue] = Try(testJson.parseJson)
+        assert(jsonVal.isSuccess, "Mapping should be valid json")
+        println(testJson)
       }
     }
     "when creating schema mappings" - {

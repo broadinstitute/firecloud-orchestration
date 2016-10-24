@@ -17,7 +17,7 @@ import scala.util.{Failure, Success, Try}
 
 trait ElasticSearchDAOSupport extends LazyLogging {
 
-  def buildClient(servers:Seq[Authority]): TransportClient = {
+  def buildClient(servers: Seq[Authority]): TransportClient = {
     // cluster name is constant across environments; no need to add it to config
     val settings = Settings.settingsBuilder
       .put("cluster.name", "firecloud-elasticsearch")
