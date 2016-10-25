@@ -2,7 +2,8 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.net.URL
 
-import org.broadinstitute.dsde.firecloud.Application
+import akka.actor.Props
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudServiceActor}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
@@ -24,6 +25,9 @@ import scala.util.Try
 class OauthApiServiceSpec extends ServiceSpec with OAuthService {
 
   def actorRefFactory = system
+  trait ActorRefFactoryContext {
+    def actorRefFactory = system
+  }
   var workspaceServer: ClientAndServer = _
 
   lazy val isCuratorPath = "/api/library/user/role/curator"
@@ -50,7 +54,21 @@ class OauthApiServiceSpec extends ServiceSpec with OAuthService {
 
   "OauthService" - {
 
-    /* Handle passthrough handlers here */
+    "when handling routes" - {
+      "should do the right thing" in {
+        actorRefFactory.actorOf(Props[FireCloudServiceActor])
+        val methodsService = new MethodsService with ActorRefFactoryContext
+        val oAuthService = new OAuthService with ActorRefFactoryContext
+        val nihSyncService = new NIHSyncService with ActorRefFactoryContext
+        val routes = methodsService.routes ~ oAuthService.routes ~ nihSyncService.routes
+        new RequestBuilder(HttpMethods.GET)("/handle-oauth-code") ~> sealRoute(routes) ~> check {
+          status should equal(MethodNotAllowed)
+        }
+        new RequestBuilder(HttpMethods.GET)("/handle-oauth-codes") ~> sealRoute(routes) ~> check {
+          status should equal(NotFound)
+        }
+      }
+    }
 
     "when calling the /handle-oauth-code endpoint" - {
       "GET, PUT, DELETE" - {

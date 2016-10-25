@@ -46,7 +46,7 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
   val routes: Route =
     path("handle-oauth-code") {
       post { requestContext =>
-        requestContext.complete("Hello world!")
+        requestContext.complete("Hello world!\n")
 //        val params = requestContext.request.entity.data.asString.parseJson.convertTo[Map[String, String]]
 //        val code = params("code")
 //        println(code)

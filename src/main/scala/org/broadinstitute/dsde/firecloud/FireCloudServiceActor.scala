@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.webservice._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
 
 class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives with LibraryApiService
   with WorkspaceApiService
@@ -59,7 +60,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
     route(requestContext)
   }
   val appendTimestamp = mapHttpResponse { response =>
-    response
     if (response.status.isFailure) {
       try {
         import spray.json._
@@ -81,7 +81,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
   def receive = runRoute(
     appendTimestamp {
       logRequests {
-        swaggerCorsService ~
         swaggerUiService ~
         testNihService ~
         oAuthService.routes ~
@@ -107,35 +106,29 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
   private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/2.2.5"
 
   val swaggerUiService = {
-    get {
-      optionalHeaderValueByName("X-Forwarded-Host") { forwardedHost =>
-        pathPrefix("") {
-          pathEnd {
-            parameter("url") {urlparam =>
-              requestUri {uri =>
-                redirect(uri.withQuery(Map.empty[String,String]), MovedPermanently)
-              }
-            } ~
-            serveIndex()
+    optionalHeaderValueByName("X-Forwarded-Host") { forwardedHost =>
+      path("") {
+        get {
+          parameter("url") {urlparam =>
+            requestUri {uri =>
+              redirect(uri.withQuery(Map.empty[String,String]), MovedPermanently)
+            }
           } ~
-            pathSuffix("api-docs") {
-              withResourceFileContents("swagger/api-docs.yaml") { apiDocs =>
-                complete(apiDocs)
-              }
-            } ~
-            getFromResourceDirectory(swaggerUiPath)
+          serveIndex()
         }
-      }
-    }
-  }
-
-  val swaggerCorsService = {
-    options{
-      optionalHeaderValueByName("Referer") { refer =>
-        refer match {
-          // at some point in the future, we may want to support additional referers; careful of hardcoding!
-          case Some("https://swagger.dsde-dev.broadinstitute.org/") => complete(OK)
-          case _ => reject
+      } ~
+      path("api-docs") {
+        get {
+          withResourceFileContents("swagger/api-docs.yaml") { apiDocs =>
+            complete(apiDocs)
+          }
+        }
+      } ~
+      (pathSuffixTest("o2c.html") | pathSuffixTest("swagger-ui.js")
+          | pathPrefixTest("css" /) | pathPrefixTest("fonts" /) | pathPrefixTest("images" /)
+          | pathPrefixTest("lang" /) | pathPrefixTest("lib" /)) {
+        get {
+          getFromResourceDirectory(swaggerUiPath)
         }
       }
     }

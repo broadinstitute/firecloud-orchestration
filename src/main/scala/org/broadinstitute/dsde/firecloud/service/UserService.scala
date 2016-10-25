@@ -117,7 +117,6 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         }
       }
     } ~
-    requireUserInfo() { userInfo =>
     pathPrefix("api") {
       path("profile" / "billing") {
         passthrough(UserService.billingUrl, HttpMethods.GET)
@@ -161,21 +160,24 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         // GET /profile - get all keys for current user
         pathEnd {
           get {
-            mapRequest(addFireCloudCredentials) {
-              passthrough(UserService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
+            requireUserInfo() { userInfo =>
+              mapRequest(addFireCloudCredentials) {
+                passthrough(UserService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
+              }
             }
           } ~
           post {
-            entity(as[BasicProfile]) {
-              profileData => requestContext =>
-                perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
-                  ProfileClient.UpdateProfile(userInfo, profileData))
+            requireUserInfo() { userInfo =>
+              entity(as[BasicProfile]) {
+                profileData => requestContext =>
+                  perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
+                    ProfileClient.UpdateProfile(userInfo, profileData))
+              }
             }
           }
         }
       }
     }
-  }
 
   private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext) = {
     requestContext.complete(statusCode, ErrorReport(statusCode=statusCode, message=message))
