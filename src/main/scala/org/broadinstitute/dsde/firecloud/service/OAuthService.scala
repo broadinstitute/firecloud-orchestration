@@ -1,19 +1,29 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.io.StringReader
+
 import akka.actor.Props
+import com.google.api.client.auth.oauth2.TokenResponseException
+import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets}
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.client.json.jackson2.JacksonFactory
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{UserInfo, RawlsTokenDate, RawlsToken, OAuthException}
-import org.joda.time.{Days, DateTime}
+import org.broadinstitute.dsde.firecloud.model.{OAuthException, RawlsToken, RawlsTokenDate, UserInfo}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
+import org.joda.time.{DateTime, Days}
 import org.slf4j.LoggerFactory
 import spray.http.Uri._
-import spray.http.{HttpResponse, OAuth2BearerToken, StatusCodes, Uri}
+import spray.http._
+import spray.json._
+import spray.json.DefaultJsonProtocol._
 import spray.routing._
 import spray.client.pipelining._
 import spray.httpx.SprayJsonSupport._
 
+import scala.collection.JavaConversions._
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -34,6 +44,37 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
   lazy val log = LoggerFactory.getLogger(getClass)
 
   val routes: Route =
+    path("handle-oauth-code") {
+      post { requestContext =>
+        requestContext.complete("Hello world!")
+//        val params = requestContext.request.entity.data.asString.parseJson.convertTo[Map[String, String]]
+//        val code = params("code")
+//        println(code)
+//        val httpTransport = GoogleNetHttpTransport.newTrustedTransport
+//        val jsonFactory = JacksonFactory.getDefaultInstance
+//        val clientSecrets = GoogleClientSecrets.load(jsonFactory, new StringReader(FireCloudConfig.Auth.googleSecretJson))
+//        //    println(clientSecrets)
+//        var authScopes = Seq("profile", "email")
+//        //    authScopes ++= Seq(StorageScopes.DEVSTORAGE_FULL_CONTROL, ComputeScopes.COMPUTE)
+//        val flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport, jsonFactory, clientSecrets, authScopes).build
+//        val request = flow.newTokenRequest(code.toString)
+//        // This isn't used, so any valid value will do.
+////        request.setRedirectUri(clientSecrets.getWeb.getRedirectUris.get(0))
+//        request.setRedirectUri("http://locals.broadinstitute.org")
+////        request.setGrantType("authorization_code")
+//        try {
+//          val response = request.execute
+//          //        response.getRefreshToken
+//          println(response)
+//          requestContext.complete(HttpResponse(StatusCodes.NoContent))
+//        } catch {
+//          case e: TokenResponseException =>
+//            requestContext.complete(HttpResponse(StatusCodes.BadRequest, e.getContent))
+//          case e: Exception =>
+//            requestContext.complete(StatusCodes.InternalServerError, e.toString)
+//        }
+      }
+    } ~
     path("login") {
       get {
         oauthParams { (state, approvalPrompt) => requestContext =>

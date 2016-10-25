@@ -59,13 +59,15 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
     route(requestContext)
   }
   val appendTimestamp = mapHttpResponse { response =>
+    response
     if (response.status.isFailure) {
       try {
         import spray.json._
         import spray.json.DefaultJsonProtocol._
         val dataMap = response.entity.asString.parseJson.convertTo[Map[String, JsValue]]
         val withTimestamp = dataMap + ("timestamp" -> JsNumber(System.currentTimeMillis()))
-        response.withEntity(HttpEntity(withTimestamp.toJson.prettyPrint))
+        val contentType = response.header[HttpHeaders.`Content-Type`].map{_.contentType}.getOrElse(ContentTypes.`application/json`)
+        response.withEntity(HttpEntity(contentType, withTimestamp.toJson.prettyPrint + "\n"))
       } catch {
         // usually a failure to parse, if the response isn't JSON (e.g. HTML responses from Google)
         case e: Exception => response
