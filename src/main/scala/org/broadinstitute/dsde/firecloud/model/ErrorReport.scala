@@ -25,6 +25,9 @@ object ErrorReport extends ((String,String,Option[StatusCode],Seq[ErrorReport],S
   def apply(throwable: Throwable) =
     new ErrorReport(SOURCE, message(throwable), None, causes(throwable), throwable.getStackTrace)
 
+  def apply(message: String) =
+    new ErrorReport(SOURCE, message, None, Seq.empty, Seq.empty)
+
   def apply(statusCode: StatusCode, throwable: Throwable) =
     new ErrorReport(SOURCE, message(throwable), Option(statusCode), causes(throwable), throwable.getStackTrace)
 

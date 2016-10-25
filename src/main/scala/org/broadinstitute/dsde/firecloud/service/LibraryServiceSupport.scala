@@ -3,9 +3,11 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
-import spray.json.JsArray
-import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impAttributeFormat
+import org.everit.json.schema.Schema
+import org.everit.json.schema.loader.SchemaLoader
+import org.json.{JSONObject, JSONTokener}
+import org.parboiled.common.FileUtils
+import spray.json.JsObject
 
 /**
   * Created by davidan on 10/2/16.
@@ -33,7 +35,7 @@ trait LibraryServiceSupport {
     }
 
     // handle removals before upserts
-    (removeOperations ++ updateOperations)
+    removeOperations ++ updateOperations
   }
 
   def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
@@ -49,6 +51,18 @@ trait LibraryServiceSupport {
       AttributeName.withDefaultNS("workspaceId") -> AttributeString(workspace.workspaceId)
     )
     Document(workspace.workspaceId, attrfields ++ idfields)
+  }
+
+  def defaultSchema: String = FileUtils.readAllTextFromResource(LibraryService.schemaLocation)
+
+  def schemaValidate(data: String): Unit = validateJsonSchema(data, defaultSchema)
+  def schemaValidate(data: JsObject): Unit = validateJsonSchema(data.compactPrint, defaultSchema)
+
+  def validateJsonSchema(data: String, schemaStr: String): Unit = {
+    val rawSchema:JSONObject = new JSONObject(new JSONTokener(schemaStr))
+    val schema:Schema = SchemaLoader.load(rawSchema)
+    schema.validate(new JSONObject(data))
+
   }
 
 }

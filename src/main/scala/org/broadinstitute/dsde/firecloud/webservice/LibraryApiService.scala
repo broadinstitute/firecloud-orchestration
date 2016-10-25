@@ -26,7 +26,7 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
     pathPrefix("schemas") {
       path("library-attributedefinitions-v1") {
         respondWithJSON {
-          withResourceFileContents("library/attribute-definitions.json") { jsonContents =>
+          withResourceFileContents(LibraryService.schemaLocation) { jsonContents =>
             complete(OK, jsonContents)
           }
         }
