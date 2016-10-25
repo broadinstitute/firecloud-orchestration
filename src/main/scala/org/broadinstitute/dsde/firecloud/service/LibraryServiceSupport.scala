@@ -6,8 +6,6 @@ import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.everit.json.schema.Schema
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.{JSONObject, JSONTokener}
-import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impAttributeFormat
 import org.parboiled.common.FileUtils
 import spray.json.JsObject
 
@@ -37,7 +35,7 @@ trait LibraryServiceSupport {
     }
 
     // handle removals before upserts
-    (removeOperations ++ updateOperations)
+    removeOperations ++ updateOperations
   }
 
   def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {

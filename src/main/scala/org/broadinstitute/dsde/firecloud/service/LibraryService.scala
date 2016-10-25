@@ -7,8 +7,8 @@ import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
 
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsWorkspace
 import org.broadinstitute.dsde.firecloud.model.{AttributeName, Document, ErrorReport, RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsWorkspace
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
@@ -24,11 +24,6 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-
-
-/**
-  * Created by davidan on 9/23/16.
-  */
 
 object LibraryService {
   final val publishedFlag = AttributeName("library","published")

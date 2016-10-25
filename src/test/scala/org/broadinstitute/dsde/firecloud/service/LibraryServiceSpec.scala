@@ -370,6 +370,11 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         assertResult(1){ex.getViolationCount}
         assert(ex.getMessage.contains("library:institute"))
       }
+      "validates on a complete metadata packet" in {
+        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        validateJsonSchema(testLibraryMetadata, testSchema)
+
+      }
     }
   }
 }
