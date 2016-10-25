@@ -13,7 +13,6 @@ import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
 import org.everit.json.schema.ValidationException
-import org.parboiled.common.FileUtils
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
