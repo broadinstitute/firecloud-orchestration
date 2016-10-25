@@ -1974,10 +1974,17 @@ paths:
       summary: |
         deletes and rebuilds the entire index of published library datasets
       produces:
-      - text/plain
+        - text/plain
+        - application/json
       responses:
         200:
-          description: Success
+          description: List of errors if partial success, "()" if all datasets indexed successfully
+          schema:
+            type: string
+        204:
+          description: No published datasets exist to index
+          schema:
+            type: string
         500:
           description: Rawls Internal Error
           schema:
