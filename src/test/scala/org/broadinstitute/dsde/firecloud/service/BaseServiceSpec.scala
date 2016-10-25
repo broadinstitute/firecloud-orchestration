@@ -8,6 +8,7 @@ class BaseServiceSpec extends ServiceSpec {
   val agoraDAO:AgoraDAO = new MockAgoraDAO
   val rawlsDAO:RawlsDAO = new MockRawlsDAO
   val searchDAO:SearchDAO = new MockSearchDAO
-  val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO)
+  val thurloeDAO:ThurloeDAO = new MockThurloeDAO
+  val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO, thurloeDAO)
 
 }

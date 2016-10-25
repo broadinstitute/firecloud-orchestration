@@ -39,6 +39,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   private final val tsvImportPath = "/" + workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace.get, workspace.name.get)
 
+  val workspaceServiceConstructor: (UserInfo) => WorkspaceService = WorkspaceService.constructor(app)
+
   var workspaceServer: ClientAndServer = _
 
   override def beforeEach(): Unit = {
@@ -161,7 +163,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, DELETE methods" in {
         List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)("/workspaces") ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/workspaces") ~> sealRoute(workspaceRoutes) ~> check {
+              println(response)
               status should equal(MethodNotAllowed)
             }
         }
@@ -172,7 +175,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, POST methods" in {
         List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.POST) map {
           method =>
-            new RequestBuilder(method)("/workspaces/namespace/name") ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/workspaces/namespace/name") ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -183,7 +186,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, DELETE methods" in {
         List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)("/workspaces/namespace/name/methodconfigs") ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/workspaces/namespace/name/methodconfigs") ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -194,7 +197,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, POST, GET, DELETE methods" in {
         List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)("/workspaces/namespace/name/updateAttributes") ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/workspaces/namespace/name/updateAttributes") ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -205,7 +208,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, POST, DELETE methods" in {
         List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)("/workspaces/namespace/name/acl") ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/workspaces/namespace/name/acl") ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -216,7 +219,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, GET, DELETE methods" in {
         List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)("/workspaces/namespace/name/clone") ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/workspaces/namespace/name/clone") ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -227,7 +230,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP POST, PATCH, GET, DELETE methods" in {
         List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)("/workspaces/namespace/name/lock") ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/workspaces/namespace/name/lock") ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -238,7 +241,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP POST, PATCH, GET, DELETE methods" in {
         List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)("/workspaces/namespace/name/unlock") ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/workspaces/namespace/name/unlock") ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -249,7 +252,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP POST, PATCH, PUT, DELETE methods" in {
         List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)("/workspaces/namespace/name/checkBucketReadAccess") ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/workspaces/namespace/name/checkBucketReadAccess") ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -264,7 +267,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is not returned for HTTP GET and POST methods" in {
         List(HttpMethods.GET, HttpMethods.POST) map {
           method =>
-            new RequestBuilder(method)(workspacesRoot) ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)(workspacesRoot) ~> sealRoute(workspaceRoutes) ~> check {
               status shouldNot equal(MethodNotAllowed)
             }
         }
@@ -276,7 +279,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is not returned for HTTP GET and DELETE methods" in {
         List(HttpMethods.GET, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)(workspacesRoot) ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)(workspacesRoot) ~> sealRoute(workspaceRoutes) ~> check {
               status shouldNot equal(MethodNotAllowed)
             }
         }
@@ -288,7 +291,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is not returned for HTTP GET and POST methods" in {
         List(HttpMethods.GET, HttpMethods.POST) map {
           method =>
-            new RequestBuilder(method)(methodconfigsPath) ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)(methodconfigsPath) ~> sealRoute(workspaceRoutes) ~> check {
               status shouldNot equal(MethodNotAllowed)
             }
         }
@@ -298,7 +301,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/%s/%s/updateAttributes path" - {
       "MethodNotAllowed error is not returned for HTTP PATCH method" in {
-        Patch(updateAttributesPath) ~> sealRoute(routes) ~> check {
+        Patch(updateAttributesPath) ~> sealRoute(workspaceRoutes) ~> check {
           status shouldNot equal(MethodNotAllowed)
         }
       }
@@ -309,7 +312,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is not returned for HTTP GET and PATCH methods" in {
         List(HttpMethods.GET, HttpMethods.PATCH) map {
           method =>
-            new RequestBuilder(method)(aclPath) ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)(aclPath) ~> sealRoute(workspaceRoutes) ~> check {
               status shouldNot equal(MethodNotAllowed)
             }
         }
@@ -319,7 +322,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/%s/%s/clone path" - {
       "MethodNotAllowed error is not returned for POST method" in {
-        Post(clonePath) ~> sealRoute(routes) ~> check {
+        Post(clonePath) ~> sealRoute(workspaceRoutes) ~> check {
           status shouldNot equal(MethodNotAllowed)
         }
       }
@@ -328,7 +331,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/%s/%s/lock path" - {
       "MethodNotAllowed error is not returned for PUT method" in {
-        Put(lockPath) ~> sealRoute(routes) ~> check {
+        Put(lockPath) ~> sealRoute(workspaceRoutes) ~> check {
           status shouldNot equal(MethodNotAllowed)
         }
       }
@@ -337,7 +340,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/%s/%s/unlock path" - {
       "MethodNotAllowed error is not returned for PUT method" in {
-        Put(unlockPath) ~> sealRoute(routes) ~> check {
+        Put(unlockPath) ~> sealRoute(workspaceRoutes) ~> check {
           status shouldNot equal(MethodNotAllowed)
         }
       }
@@ -346,7 +349,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/%s/%s/checkBucketReadAccess path" - {
       "MethodNotAllowed error is not returned for GET method" in {
-        Get(bucketPath) ~> sealRoute(routes) ~> check {
+        Get(bucketPath) ~> sealRoute(workspaceRoutes) ~> check {
           status shouldNot equal(MethodNotAllowed)
         }
       }
@@ -360,7 +363,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "should receive a MethodNotAllowed error" in {
         List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)(tsvImportPath, MockTSVFormData.membershipValid) ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)(tsvImportPath, MockTSVFormData.membershipValid) ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -371,7 +374,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "should 400 Bad Request if the TSV type is missing" in {
         (Post(tsvImportPath, MockTSVFormData.missingTSVType)
           ~> dummyAuthHeaders
-          ~> sealRoute(routes)) ~> check {
+          ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
           errorReportCheck("FireCloud", BadRequest)
         }
@@ -380,7 +383,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "should 400 Bad Request if the TSV type is nonsense" in {
         (Post(tsvImportPath, MockTSVFormData.nonexistentTSVType)
           ~> dummyAuthHeaders
-          ~> sealRoute(routes)) ~> check {
+          ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
           errorReportCheck("FireCloud", BadRequest)
         }
@@ -389,7 +392,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "should 400 Bad Request if the TSV entity type doesn't end in _id" in {
         (Post(tsvImportPath, MockTSVFormData.malformedEntityType)
           ~> dummyAuthHeaders
-          ~> sealRoute(routes)) ~> check {
+          ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
           errorReportCheck("FireCloud", BadRequest)
         }
@@ -399,7 +402,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if the entity type is unknown" in {
           (Post(tsvImportPath, MockTSVFormData.membershipUnknownFirstColumnHeader)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -408,7 +411,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if the entity type is not a collection type" in {
           (Post(tsvImportPath, MockTSVFormData.membershipNotCollectionType)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -417,7 +420,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if the collection members header is missing" in {
           (Post(tsvImportPath, MockTSVFormData.membershipMissingMembersHeader)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -426,7 +429,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if it contains other headers than its collection members" in {
           (Post(tsvImportPath, MockTSVFormData.membershipExtraAttributes)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -435,7 +438,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 200 OK if it has the correct headers and valid internals" in {
           (Post(tsvImportPath, MockTSVFormData.membershipValid)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
           }
         }
@@ -445,7 +448,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if the entity type is unknown" in {
           (Post(tsvImportPath, MockTSVFormData.entityUnknownFirstColumnHeader)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -454,7 +457,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if it contains duplicated entities to update" in {
           (Post(tsvImportPath, MockTSVFormData.entityHasDupes)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -463,7 +466,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if it contains collection member headers" in {
           (Post(tsvImportPath, MockTSVFormData.entityHasCollectionMembers)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -472,7 +475,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if it is missing required attribute headers" in {
           (Post(tsvImportPath, MockTSVFormData.entityUpdateMissingRequiredAttrs)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -481,7 +484,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 200 OK if it has the full set of required attribute headers" in {
           (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAttrs)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
           }
         }
@@ -489,7 +492,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
           (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAndOptionalAttrs)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
           }
         }
@@ -499,7 +502,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if the entity type is unknown" in {
           (Post(tsvImportPath, MockTSVFormData.updateUnknownFirstColumnHeader)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -508,7 +511,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if it contains duplicated entities to update" in {
           (Post(tsvImportPath, MockTSVFormData.updateHasDupes)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -517,7 +520,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 400 Bad Request if it contains collection member headers" in {
           (Post(tsvImportPath, MockTSVFormData.updateHasCollectionMembers)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
@@ -526,7 +529,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 200 OK even if it is missing required attribute headers" in {
           (Post(tsvImportPath, MockTSVFormData.updateMissingRequiredAttrs)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
           }
         }
@@ -534,7 +537,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 200 OK if it has the full set of required attribute headers" in {
           (Post(tsvImportPath, MockTSVFormData.updateWithRequiredAttrs)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
           }
         }
@@ -542,7 +545,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
           (Post(tsvImportPath, MockTSVFormData.updateWithRequiredAndOptionalAttrs)
             ~> dummyAuthHeaders
-            ~> sealRoute(routes)) ~> check {
+            ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
           }
         }
