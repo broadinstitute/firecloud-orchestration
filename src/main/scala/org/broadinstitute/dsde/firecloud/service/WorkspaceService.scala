@@ -1,107 +1,65 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import java.text.SimpleDateFormat
-
-import akka.actor.{Actor, Props}
+import akka.actor._
+import akka.pattern._
+import akka.event.Logging
+import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
-import org.slf4j.LoggerFactory
+import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
+import org.broadinstitute.dsde.firecloud.service.WorkspaceService.UpdateWorkspaceACL
+import spray.http.StatusCodes
+import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import spray.http.{HttpMethods, HttpEntity}
-import spray.httpx.unmarshalling._
-import spray.httpx.SprayJsonSupport._
-import spray.routing._
+import scala.concurrent.{ExecutionContext, Future}
 
-class WorkspaceServiceActor extends Actor with WorkspaceService {
-  def actorRefFactory = context
-  def receive = runRoute(routes)
+/**
+ * Created by mbemis on 10/19/16.
+ */
+object WorkspaceService {
+  case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: List[WorkspaceACLUpdate], originEmail: String)
+
+  def props(workspaceServiceConstructor: UserInfo => WorkspaceService, userInfo: UserInfo): Props = {
+    Props(workspaceServiceConstructor(userInfo))
+  }
+
+  def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
+    new WorkspaceService(userInfo, app.rawlsDAO, app.thurloeDAO)
 }
 
-trait WorkspaceService extends HttpService with PerRequestCreator with FireCloudDirectives {
+class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor {
 
-  private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-  private implicit val executionContext = actorRefFactory.dispatcher
+  implicit val system = context.system
+  import system.dispatcher
+  val log = Logging(system, getClass)
 
-  lazy val log = LoggerFactory.getLogger(getClass)
-  lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
+  implicit val userInfo = argUserInfo
 
-  def transformSingleWorkspaceRequest(entity: HttpEntity): HttpEntity = {
-    entity.as[RawlsWorkspaceResponse] match {
-      case Right(rwr) => new UIWorkspaceResponse(rwr).toJson.prettyPrint
-      case Left(error) =>
-        log.error("Unable to unmarshal entity -- " + error.toString)
-        entity
-    }
+  override def receive: Receive = {
+
+    case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: List[WorkspaceACLUpdate], originEmail: String) =>
+      updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail) pipeTo sender
+
   }
 
-  def transformListWorkspaceRequest(entity: HttpEntity): HttpEntity = {
-    entity.as[List[RawlsWorkspaceResponse]] match {
-      case Right(lrwr) => lrwr.map(new UIWorkspaceResponse(_)).toJson.prettyPrint
-      case Left(error) =>
-        log.error("Unable to unmarshal entity -- " + error.toString)
-        entity
-    }
-  }
+  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: List[WorkspaceACLUpdate], originEmail: String) = {
 
-  val routes: Route =
-    pathPrefix("workspaces") {
-      pathEnd {
-        mapHttpResponseEntity(transformListWorkspaceRequest) {
-          passthrough(rawlsWorkspacesRoot, HttpMethods.GET)
-        } ~
-        post {
-          entity(as[WorkspaceCreate]) { createRequest => requestContext =>
-            val extReq = Post(FireCloudConfig.Rawls.workspacesUrl, new RawlsWorkspaceCreate(createRequest))
-            externalHttpPerRequest(requestContext, extReq)
-          }
-        }
-      } ~
-      pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
-        val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
-        pathEnd {
-          mapHttpResponseEntity(transformSingleWorkspaceRequest) {
-            passthrough(workspacePath, HttpMethods.GET)
-          } ~
-          passthrough(workspacePath, HttpMethods.DELETE)
-        } ~
-        path("methodconfigs") {
-          passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
-        } ~
-        path("importEntities") {
-          post {
-            formFields( 'entities ) { entitiesTSV =>
-              respondWithJSON { requestContext =>
-                perRequest(requestContext, Props(new EntityClient(requestContext)),
-                  EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
-              }
-            }
-          }
-        } ~
-        path("updateAttributes") {
-          passthrough(workspacePath, HttpMethods.PATCH)
-        } ~
-        path("acl") {
-          passthrough(workspacePath + "/acl", HttpMethods.GET, HttpMethods.PATCH)
-        } ~
-        path("checkBucketReadAccess") {
-          passthrough(workspacePath + "/checkBucketReadAccess", HttpMethods.GET)
-        } ~
-        path("clone") {
-          post {
-            entity(as[WorkspaceCreate]) { createRequest => requestContext =>
-              val extReq = Post(workspacePath + "/clone", new RawlsWorkspaceCreate(createRequest))
-              externalHttpPerRequest(requestContext, extReq)
-            }
-          }
-        } ~
-        path ("lock") {
-          passthrough(workspacePath + "/lock", HttpMethods.PUT)
-        } ~
-        path ("unlock") {
-          passthrough(workspacePath + "/unlock", HttpMethods.PUT)
-        }
+    val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates)
+    aclUpdate flatMap { actualUpdates =>
+
+      val (addedNotifications, removedNotifications) = actualUpdates.partition(!_.accessLevel.equals(WorkspaceAccessLevels.NoAccess)) match { case (added, removed) =>
+        (added.map(u => WorkspaceAddedNotification(u.email, u.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)),
+          removed.map(u => WorkspaceRemovedNotification(u.email, u.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)))
       }
+
+      val allNotifications = addedNotifications ++ removedNotifications
+
+      thurloeDAO.sendNotifications(allNotifications)
+
+      aclUpdate map(RequestComplete(_))
     }
+  }
+
 }

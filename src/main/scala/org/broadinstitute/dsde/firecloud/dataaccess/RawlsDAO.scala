@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
-import org.broadinstitute.dsde.firecloud.model.{RawlsWorkspace, RawlsWorkspaceResponse, UserInfo, WorkspaceName}
+import org.broadinstitute.dsde.firecloud.model._
 
 import scala.concurrent.Future
 
@@ -16,6 +16,7 @@ trait RawlsDAO extends LazyLogging {
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
   lazy val rawlsAdminWorkspaces = FireCloudConfig.Rawls.authUrl + "/admin/workspaces"
+  lazy val rawlsWorkspaceACLUrl = FireCloudConfig.Rawls.workspacesUrl + "/%s/%s/acl"
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
@@ -26,5 +27,7 @@ trait RawlsDAO extends LazyLogging {
   def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userInfo: UserInfo): Future[RawlsWorkspace]
 
   def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]]
+
+  def patchWorkspaceACL(ns: String, name: String, aclUpdates: List[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[List[WorkspaceACLUpdate]]
 
 }

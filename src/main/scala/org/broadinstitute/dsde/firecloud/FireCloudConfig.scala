@@ -72,6 +72,7 @@ object FireCloudConfig {
   object FireCloud {
     lazy val baseUrl = sys.env.get("FIRECLOUD_URL_ROOT").get
     lazy val fireCloudId = sys.env.get("FIRE_CLOUD_ID").get
+    lazy val fireCloudPortalUrl = sys.env.get("FIRECLOUD_PORTAL_ROOT").get
   }
 
   object Shibboleth {
@@ -90,6 +91,8 @@ object FireCloudConfig {
     //we must lazily evaluate this setting so we don't get "configuration not found" errors
     lazy private val notification = config.getConfig("notification")
     lazy val activationTemplateId = sys.env.get("ACTIVATION_TEMPLATE_ID").getOrElse(notification.getString("activationTemplateId"))
+    lazy val workspaceAddedTemplateId = sys.env.get("WORKSPACE_ADDED_TEMPLATE_ID").getOrElse(notification.getString("workspaceAddedTemplateId"))
+    lazy val workspaceRemovedTemplateId = sys.env.get("WORKSPACE_REMOVED_TEMPLATE_ID").getOrElse(notification.getString("workspaceRemovedTemplateId"))
   }
 
   object ElasticSearch {
