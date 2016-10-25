@@ -83,24 +83,13 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
         Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner"))
       } else {
         val operations = updatePublishAttribute(value)
-        val wsfuture = rawlsDAO.patchWorkspaceAttributes(ns, name, operations)
-        val response = if (value) {
-          wsfuture map { newws =>
+        rawlsDAO.patchWorkspaceAttributes(ns, name, operations) map { newws =>
+          if (value)
             searchDAO.indexDocument(indexableDocument(newws))
-          }
-          //wsfuture
-          true
-        }
-        else {
-          wsfuture map { newws =>
+          else
             searchDAO.deleteDocument(newws.workspaceId)
-          }
-          //wsfuture
-          true
+          RequestComplete(newws)
         }
-//        println(response)
-//        Future(RequestComplete(wsfuture))
-        wsfuture map (RequestComplete(_))
       }
     }
   }
