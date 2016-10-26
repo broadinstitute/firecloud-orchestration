@@ -19,7 +19,7 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
-class WorkspaceAttributeApiServiceSpec extends BaseServiceSpec with NamespaceApiService  {
+class WorkspaceAttributeApiServiceSpec extends BaseServiceSpec with WorkspaceAttributeApiService  {
 
   val workspaceAttributeServiceConstructor: (UserInfo) => WorkspaceAttributeService = WorkspaceAttributeService.constructor(app)
 
