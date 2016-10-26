@@ -59,14 +59,12 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
   }
 
   override def indexDocument(doc: Document) = {
-    logger.info("invoking indexDocument in ES")
     executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder] (
       client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint)
     )
   }
 
   override def deleteDocument(id: String) = {
-    logger.info("invoking deleteDocument in ES")
     executeESRequest[DeleteRequest, DeleteResponse, DeleteRequestBuilder] (
       client.prepareDelete(indexName, datatype, id)
     )
