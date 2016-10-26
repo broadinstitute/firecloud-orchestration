@@ -75,13 +75,6 @@ class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService with Before
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
     }
-    // workspaces/%s/%s/updateAttributes
-    workspaceServer
-      .when(request().withMethod("PATCH").withPath(updateAttributesPath))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-      )
     // workspaces/%s/%s/acl
     List(HttpMethods.GET, HttpMethods.PATCH) map {
       method =>
