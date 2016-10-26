@@ -56,20 +56,6 @@ class WorkspaceAttributeApiServiceSpec extends BaseServiceSpec with NamespaceApi
   val fcPermissions = List(AgoraPermissionHandler.toFireCloudPermission(MockAgoraDAO.agoraPermission))
   var workspaceServer: ClientAndServer = _
 
-  override def beforeAll(): Unit = {
-
-    workspaceServer = startClientAndServer(workspaceServerPort)
-    workspaceServer
-      .when(request.withMethod("GET").withPath(isCuratorPath))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-      )
-  }
-
-  override def afterAll(): Unit = {
-    workspaceServer.stop()
-  }
 
   workspaceServer
     .when(
