@@ -7,12 +7,12 @@ import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
 import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.webservice.{LibraryApiService, NamespaceApiService}
+import org.broadinstitute.dsde.firecloud.webservice.{LibraryApiService, NamespaceApiService, WorkspaceAttributeApiService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives with LibraryApiService
-  with NamespaceApiService {
+  with NamespaceApiService with WorkspaceAttributeApiService {
   implicit val system = context.system
 
   trait ActorRefFactoryContext {
@@ -27,6 +27,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
+  val workspaceAttributeServiceConstructor: (UserInfo) => WorkspaceAttributeService = WorkspaceAttributeService.constructor(app)
 
   // insecure cookie-authed routes
 
@@ -52,7 +53,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
   val nihSyncService = new NIHSyncService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
 
-  lazy val log = LoggerFactory.getLogger(getClass)
+  override lazy val log = LoggerFactory.getLogger(getClass)
   val logRequests = mapInnerRoute { route => requestContext =>
     log.debug(requestContext.request.toString)
     route(requestContext)
@@ -87,6 +88,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
         healthService.routes ~
         libraryRoutes ~
         namespaceRoutes ~
+        workspaceAttributeRoutes ~
         pathPrefix("api") {
           routes
         } ~
