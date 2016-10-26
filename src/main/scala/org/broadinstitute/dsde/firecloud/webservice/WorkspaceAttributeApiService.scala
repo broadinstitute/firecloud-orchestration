@@ -17,8 +17,6 @@ trait WorkspaceAttributeApiService extends HttpService with FireCloudRequestBuil
 
   private implicit val ec: ExecutionContext = actorRefFactory.dispatcher
 
-  lazy val log = LoggerFactory.getLogger(getClass)
-
   val workspaceAttributeServiceConstructor: UserInfo => WorkspaceAttributeService
 
   val workspaceAttributeRoutes: Route =
