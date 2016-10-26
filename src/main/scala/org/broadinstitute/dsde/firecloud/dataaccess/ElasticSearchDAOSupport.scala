@@ -52,9 +52,8 @@ trait ElasticSearchDAOSupport extends LazyLogging {
 
   def detailFromAttribute(label: String, detail: AttributeDetail) = {
     detail match {
-      // weirdness for when we have an array type: https://www.elastic.co/guide/en/elasticsearch/reference/1.4/mapping-array-type.html
-      case AttributeDetail(t, Some(items)) => assert(t == "array"); Map(label -> Right(ESArray(ESItem(ESDetail(items.`type`)))))
-      case AttributeDetail(t, None) => Map(label -> Left(ESDetail(detail.`type`)))
+      case AttributeDetail("array", Some(items)) => Map(label -> ESDetail(items.`type`))
+      case AttributeDetail(t, None) => Map(label -> ESDetail(detail.`type`))
     }
   }
 
