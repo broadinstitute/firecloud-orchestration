@@ -5,10 +5,8 @@ import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
-
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.firecloud.model.{AttributeName, Document, ErrorReport, RequestCompleteWithErrorReport, UserInfo}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsWorkspace
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
@@ -57,6 +55,9 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
+    // attributes come in as standard json so we can use json schema for validation. Thus,
+    // we need to use the plain-array deserialization.
+    implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
     // we accept a string here, not a JsValue so we can most granularly handle json parsing
     Try(attrsJsonString.parseJson.asJsObject.convertTo[AttributeMap]) match {
       case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid json supplied", ex))
