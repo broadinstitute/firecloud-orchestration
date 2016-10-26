@@ -47,7 +47,7 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
   def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: List[WorkspaceACLUpdate], originEmail: String) = {
 
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates)
-    aclUpdate flatMap { actualUpdates =>
+    aclUpdate map { actualUpdates =>
 
       val (addedNotifications, removedNotifications) = actualUpdates.partition(!_.accessLevel.equals(WorkspaceAccessLevels.NoAccess)) match { case (added, removed) =>
         (added.map(u => WorkspaceAddedNotification(u.email, u.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)),
@@ -58,7 +58,7 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
 
       thurloeDAO.sendNotifications(allNotifications)
 
-      aclUpdate map(RequestComplete(_))
+      RequestComplete(actualUpdates)
     }
   }
 
