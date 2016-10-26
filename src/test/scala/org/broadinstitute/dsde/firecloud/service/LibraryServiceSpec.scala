@@ -175,32 +175,6 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
           updatePublishAttribute(true)
         }
       }
-//      "should invoke indexDocumemnt" in {
-//        val agoraDAO:AgoraDAO = new MockAgoraDAO
-//        val rawlsDAO:RawlsDAO = new MockRawlsDAO
-//        val searchDAO:SearchDAO = new MockSearchDAO
-//        val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO)
-//        LibraryService.constructor(app)(null)
-//        //LibraryService.props(libraryServiceConstructor, null)
-//        //var libraryService = new LibraryService(null, rawlsDAO, searchDAO)
-//
-//        assertResult(false) {
-//          searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked
-//        }
-//        searchDAO.deleteDocument("id")
-//        assertResult(true) {
-//          searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked
-//        }
-//        LibraryService.SetPublishAttribute(testWorkspace.namespace, testWorkspace.name, true)
-////        libraryService.setWorkspaceIsPublished(testWorkspace.namespace, testWorkspace.name, true)
-//        assertResult(true) {
-//          searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked
-//        }
-//        assertResult(false) {
-//          searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked
-//        }
-//        LibraryService.searchDAO=new MockSearchDAO
-//      }
     }
     "when unpublishing a workspace" - {
       "should remove the library:published attribute" in {
