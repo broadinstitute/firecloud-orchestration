@@ -9,6 +9,8 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model.{AttributeName, Document, ErrorReport, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsWorkspace
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.{AttributeName, Document, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
@@ -16,10 +18,9 @@ import org.everit.json.schema.ValidationException
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
+import spray.json.DefaultJsonProtocol._
 import spray.json.JsonParser.ParsingException
 import spray.json._
-import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}

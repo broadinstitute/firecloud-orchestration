@@ -18,8 +18,6 @@ import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import scala.util.Try
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.ExecutionContext
 
 class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
   def toName(s:String) = AttributeName.fromDelimitedName(s)

@@ -6,6 +6,9 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.{RawlsWorkspace, UserInfo}
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
+import org.everit.json.schema.Schema
+import org.everit.json.schema.loader.SchemaLoader
+import org.json.{JSONObject, JSONTokener}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -78,7 +81,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             assert(this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked ==  false, "indexDocument should not have been invoked")
             this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked = false
           }
-       }
+        }
       }
     }
   }
