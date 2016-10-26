@@ -392,7 +392,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport  with Elast
       "works for string type" in {
         val label = "library:attr"
         val `type` = "string"
-        val expected = Map(label -> ESDetail(`type`))
+        val expected = label -> ESDetail(`type`)
         assertResult(expected) {
           detailFromAttribute(label, AttributeDetail(`type`))
         }
@@ -402,7 +402,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport  with Elast
         val `type` = "array"
         val subtype = "string"
         val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
-        val expected = Map(label -> ESDetail(subtype))
+        val expected = label -> ESDetail(subtype)
         assertResult(expected) {
           detailFromAttribute(label, detail)
         }

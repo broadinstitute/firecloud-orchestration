@@ -44,7 +44,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
 
   def makeMapping(attributeJson: String): String = {
     val definition = attributeJson.parseJson.convertTo[AttributeDefinition]
-    val maps = definition.properties flatMap { case (label: String, detail: AttributeDetail) =>
+    val maps = definition.properties map { case (label: String, detail: AttributeDetail) =>
       detailFromAttribute(label, detail)
     }
     ESDatasetProperty(maps).toJson.prettyPrint
@@ -52,8 +52,8 @@ trait ElasticSearchDAOSupport extends LazyLogging {
 
   def detailFromAttribute(label: String, detail: AttributeDetail) = {
     detail match {
-      case AttributeDetail("array", Some(items)) => Map(label -> ESDetail(items.`type`))
-      case AttributeDetail(t, None) => Map(label -> ESDetail(detail.`type`))
+      case AttributeDetail("array", Some(items)) => label -> ESDetail(items.`type`)
+      case AttributeDetail(t, None) => label -> ESDetail(detail.`type`)
     }
   }
 

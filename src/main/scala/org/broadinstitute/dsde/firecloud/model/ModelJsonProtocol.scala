@@ -244,11 +244,8 @@ object ModelJsonProtocol {
   implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat2(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
-
   implicit val ESDetailFormat = jsonFormat1(ESDetail)
   implicit val ESDatasetPropertyFormat = jsonFormat1(ESDatasetProperty)
-  implicit val ESDatasetFormat = jsonFormat1(ESDataset)
-  implicit val ESMappingFormat = jsonFormat1(ESMapping)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
