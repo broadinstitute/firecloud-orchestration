@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{RawlsWorkspace, UserInfo, WorkspaceEntity}
-import org.broadinstitute.dsde.firecloud.webservice.NamespaceApiService
+import org.broadinstitute.dsde.firecloud.webservice.{NamespaceApiService, WorkspaceAttributeApiService}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -76,7 +76,7 @@ class WorkspaceAttributeApiServiceSpec extends BaseServiceSpec with WorkspaceAtt
       "should 200 OK if it has the correct headers and valid internals" in {
         (Post(tsvImportPath, MockTSVFormData.addNewWorkspaceAttributes)
           ~> dummyAuthHeaders
-          ~> sealRoute(namespaceRoutes) ~> check {
+          ~> sealRoute(workspaceAttributeRoutes) ~> check {
           status should equal(OK)
         })
       }
