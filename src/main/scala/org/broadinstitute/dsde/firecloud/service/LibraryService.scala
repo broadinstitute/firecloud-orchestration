@@ -6,6 +6,7 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AttributeName, Document, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -13,10 +14,9 @@ import org.broadinstitute.dsde.firecloud.utils.RoleSupport
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
+import spray.json.DefaultJsonProtocol._
 import spray.json.JsonParser.ParsingException
 import spray.json._
-import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -74,7 +74,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
         }
     }
   }
-  
+
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
       // verify owner on workspace

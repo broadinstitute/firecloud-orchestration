@@ -2,26 +2,23 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.net.URL
 
-import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.model.{RawlsWorkspace, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
+import org.everit.json.schema.Schema
+import org.everit.json.schema.loader.SchemaLoader
+import org.json.{JSONObject, JSONTokener}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import org.parboiled.common.FileUtils
-
-import scala.util.Try
 import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.json._
-import spray.util._
-import org.everit.json.schema.Schema
-import org.everit.json.schema.loader.SchemaLoader
-import org.json.JSONObject
-import org.json.JSONTokener
+
+import scala.util.Try
 
 class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
 
