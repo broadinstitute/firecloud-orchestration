@@ -19,6 +19,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
   var workspaceServer: ClientAndServer = _
 
   lazy val isCuratorPath = "/api/library/user/role/curator"
+  private final val publishedPath = "/api/library/%s/%s/published".format("namespace", "name")
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
@@ -50,6 +51,31 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
                 System.out.println(response)
                 status should equal(MethodNotAllowed)
               }
+          }
+        }
+      }
+    }
+
+    "when calling publish" - {
+      "POST on " + publishedPath - {
+        "should invoke indexDocument" in {
+          this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked = false
+          new RequestBuilder(HttpMethods.POST)(publishedPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            assert(this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked, "indexDocument should have been invoked")
+            assert(this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked == false, "deleteDocument should not have been invoked")
+            this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked = false
+          }
+        }
+      }
+      "DELETE on " + publishedPath - {
+        "should invoke deleteDocument" in {
+          this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked = false
+          new RequestBuilder(HttpMethods.DELETE)(publishedPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            assert(this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked, "deleteDocument should have been invoked")
+            assert(this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked ==  false, "indexDocument should not have been invoked")
+            this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked = false
           }
         }
       }
