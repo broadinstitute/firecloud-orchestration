@@ -2,11 +2,10 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.net.URL
 import java.util.UUID
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAOSupport, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
-import org.broadinstitute.dsde.firecloud.model.{AttributeString, Document, RawlsWorkspace}
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
 import org.scalatest.FreeSpec
@@ -17,7 +16,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import scala.util.Try
 
-class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
+class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with ElasticSearchDAOSupport {
   def toName(s:String) = AttributeName.fromDelimitedName(s)
 
   val existingLibraryAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "library:keythree"->"valthree", "library:keyfour"->"valfour").toJson.convertTo[AttributeMap]
@@ -374,6 +373,32 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         validateJsonSchema(testLibraryMetadata, testSchema)
 
+      }
+    }
+    "when creating schema mappings" - {
+      "works for string type" in {
+        val label = "library:attr"
+        val `type` = "string"
+        val expected = label -> ESDetail(`type`)
+        assertResult(expected) {
+          detailFromAttribute(label, AttributeDetail(`type`))
+        }
+      }
+      "works for array type" in {
+        val label = "library:attr"
+        val `type` = "array"
+        val subtype = "string"
+        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
+        val expected = label -> ESDetail(subtype)
+        assertResult(expected) {
+          detailFromAttribute(label, detail)
+        }
+      }
+      "mapping has valid json" in {
+        val attrJson = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val testJson = makeMapping(attrJson)
+        val jsonVal: Try[JsValue] = Try(testJson.parseJson)
+        assert(jsonVal.isSuccess, "Mapping should be valid json")
       }
     }
   }
