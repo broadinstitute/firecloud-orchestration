@@ -4,11 +4,14 @@ import java.net.InetAddress
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.elasticsearch.action.{ActionRequest, ActionRequestBuilder, ActionResponse}
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import spray.http.Uri.Authority
+import spray.json._
 
 import scala.util.{Failure, Success, Try}
 
@@ -36,6 +39,21 @@ trait ElasticSearchDAOSupport extends LazyLogging {
       case Failure(f) =>
         logger.warn(s"ElasticSearch %s request failed in %s ms: %s".format(req.getClass.getName, elapsed, f.getMessage))
         throw new FireCloudException("ElasticSearch request failed", f)
+    }
+  }
+
+  def makeMapping(attributeJson: String): String = {
+    val definition = attributeJson.parseJson.convertTo[AttributeDefinition]
+    val maps = definition.properties map { case (label: String, detail: AttributeDetail) =>
+      detailFromAttribute(label, detail)
+    }
+    ESDatasetProperty(maps).toJson.prettyPrint
+  }
+
+  def detailFromAttribute(label: String, detail: AttributeDetail) = {
+    detail match {
+      case AttributeDetail("array", Some(items)) => label -> ESDetail(items.`type`)
+      case AttributeDetail(t, None) => label -> ESDetail(detail.`type`)
     }
   }
 

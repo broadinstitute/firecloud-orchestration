@@ -15,6 +15,7 @@ case class Document(val id: String, val content: JsObject) extends Indexable
 
 object Document {
   def apply(id: String, valMap: AttributeMap) = {
+    implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
     new Document(id, valMap.toJson.asJsObject)
   }
   def apply(id: String, jsonStr: String) = new Document(id, jsonStr.parseJson.asJsObject)

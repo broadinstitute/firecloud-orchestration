@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.model.Document
+import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
 import org.elasticsearch.action.admin.indices.delete.{DeleteIndexRequest, DeleteIndexRequestBuilder, DeleteIndexResponse}
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
@@ -8,6 +9,7 @@ import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkRespo
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
 import org.elasticsearch.client.transport.TransportClient
+import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 
 class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport {
@@ -34,8 +36,9 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
   }
 
   override def createIndex = {
+    val mapping = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
     executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
-      client.admin.indices.prepareCreate(indexName)
+      client.admin.indices.prepareCreate(indexName).addMapping(datatype, mapping)
     )
   }
   // will throw an error if index does not exist
