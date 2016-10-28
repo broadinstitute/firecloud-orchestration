@@ -415,32 +415,5 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Elasti
         println(testJson)
       }
     }
-    "when creating schema mappings" - {
-      "works for string type" in {
-        val label = "library:attr"
-        val `type` = "string"
-        val expected = Map(label -> Left(ESDetail(`type`)))
-        assertResult(expected) {
-          detailFromAttribute(label, AttributeDetail(`type`))
-        }
-      }
-      "works for array type" in {
-        val label = "library:attr"
-        val `type` = "array"
-        val subtype = "string"
-        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
-        val expected = Map(label -> Right(ESArray(ESItem(ESDetail(subtype)))))
-        assertResult(expected) {
-          detailFromAttribute(label, detail)
-        }
-      }
-      "mapping has valid json" in {
-        val attrJson = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
-        val testJson = makeMapping(attrJson)
-        val jsonVal: Try[JsValue] = Try(testJson.parseJson)
-        assert(jsonVal.isSuccess, "Mapping should be valid json")
-        println(testJson)
-      }
-    }
   }
 }
