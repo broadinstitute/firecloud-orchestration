@@ -2,11 +2,12 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.net.URL
 import java.util.UUID
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAOSupport, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOSupport
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
-import org.broadinstitute.dsde.firecloud.model.{AttributeString, Document, RawlsWorkspace}
+import org.broadinstitute.dsde.firecloud.model._
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
 import org.scalatest.FreeSpec
@@ -17,7 +18,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import scala.util.Try
 
-class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
+class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with ElasticSearchDAOSupport {
   def toName(s:String) = AttributeName.fromDelimitedName(s)
 
   val existingLibraryAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "library:keythree"->"valthree", "library:keyfour"->"valfour").toJson.convertTo[AttributeMap]
@@ -297,7 +298,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
     "in its runtime schema definition" - {
       "has valid JSON" in {
         val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val jsonVal:Try[JsValue] = Try(fileContents.parseJson)
+        val jsonVal: Try[JsValue] = Try(fileContents.parseJson)
         assert(jsonVal.isSuccess, "Schema should be valid json")
       }
       "has valid JSON Schema" in {
@@ -319,26 +320,32 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(13){ex.getViolationCount}
+        assertResult(13) {
+          ex.getViolationCount
+        }
       }
       "fails with one missing key" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
-        val sampleData = defaultData.copy(defaultData.fields-"library:datasetName").compactPrint
+        val sampleData = defaultData.copy(defaultData.fields - "library:datasetName").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(1){ex.getViolationCount}
+        assertResult(1) {
+          ex.getViolationCount
+        }
         assert(ex.getMessage.contains("library:datasetName"))
       }
       "fails with two missing keys" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
-        val sampleData = defaultData.copy(defaultData.fields-"library:datasetName"-"library:datasetOwner").compactPrint
+        val sampleData = defaultData.copy(defaultData.fields - "library:datasetName" - "library:datasetOwner").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(2){ex.getViolationCount}
+        assertResult(2) {
+          ex.getViolationCount
+        }
       }
       "fails on a string that should be a number" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
@@ -347,7 +354,9 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(1){ex.getViolationCount}
+        assertResult(1) {
+          ex.getViolationCount
+        }
         assert(ex.getMessage.contains("library:numSubjects"))
       }
       "fails on a number out of bounds" in {
@@ -357,7 +366,9 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(1){ex.getViolationCount}
+        assertResult(1) {
+          ex.getViolationCount
+        }
         assert(ex.getMessage.contains("library:numSubjects"))
       }
       "fails on a string that should be an array" in {
@@ -367,13 +378,40 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport {
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(1){ex.getViolationCount}
+        assertResult(1) {
+          ex.getViolationCount
+        }
         assert(ex.getMessage.contains("library:institute"))
       }
       "validates on a complete metadata packet" in {
         val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
         validateJsonSchema(testLibraryMetadata, testSchema)
-
+      }
+    }
+    "when creating schema mappings" - {
+      "works for string type" in {
+        val label = "library:attr"
+        val `type` = "string"
+        val expected = label -> ESDetail(`type`)
+        assertResult(expected) {
+          detailFromAttribute(label, AttributeDetail(`type`))
+        }
+      }
+      "works for array type" in {
+        val label = "library:attr"
+        val `type` = "array"
+        val subtype = "string"
+        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
+        val expected = label -> ESDetail(subtype)
+        assertResult(expected) {
+          detailFromAttribute(label, detail)
+        }
+      }
+      "mapping has valid json" in {
+        val attrJson = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val testJson = makeMapping(attrJson)
+        val jsonVal: Try[JsValue] = Try(testJson.parseJson)
+        assert(jsonVal.isSuccess, "Mapping should be valid json")
       }
     }
   }
