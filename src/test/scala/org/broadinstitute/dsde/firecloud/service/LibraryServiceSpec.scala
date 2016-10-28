@@ -412,7 +412,6 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Elasti
         val testJson = makeMapping(attrJson)
         val jsonVal: Try[JsValue] = Try(testJson.parseJson)
         assert(jsonVal.isSuccess, "Mapping should be valid json")
-        println(testJson)
       }
     }
   }
