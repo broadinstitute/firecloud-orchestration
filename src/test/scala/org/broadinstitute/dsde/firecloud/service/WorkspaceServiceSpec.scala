@@ -34,6 +34,7 @@ class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService with Before
   private final val lockPath = workspacesRoot + "/%s/%s/lock".format(workspace.namespace.get, workspace.name.get)
   private final val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace.get, workspace.name.get)
   private final val bucketPath = workspacesRoot + "/%s/%s/checkBucketReadAccess".format(workspace.namespace.get, workspace.name.get)
+  private final val bucketUsagePath = workspacesRoot + "/%s/%s/bucketUsage".format(workspace.namespace.get, workspace.name.get)
 
   private final val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   private final val tsvImportPath = "/" + workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace.get, workspace.name.get)
@@ -116,6 +117,13 @@ class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService with Before
     // workspaces/%s/%s/checkBucketReadAccess
     workspaceServer
       .when(request().withMethod("GET").withPath(bucketPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+    // workspaces/%s/%s/bucketUsage
+    workspaceServer
+      .when(request().withMethod("GET").withPath(bucketUsagePath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -255,6 +263,17 @@ class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService with Before
       }
     }
 
+    "Passthrough tests on the /workspaces/segment/segment/bucketUsage path" - {
+      "MethodNotAllowed error is returned for HTTP POST, PATCH, PUT, DELETE methods" in {
+        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)("/workspaces/namespace/name/bucketUsage") ~> sealRoute(routes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
+        }
+      }
+    }
+
   }
 
   "WorkspaceService Passthrough Tests" - {
@@ -346,6 +365,15 @@ class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService with Before
     "Passthrough tests on the /workspaces/%s/%s/checkBucketReadAccess path" - {
       "MethodNotAllowed error is not returned for GET method" in {
         Get(bucketPath) ~> sealRoute(routes) ~> check {
+          status shouldNot equal(MethodNotAllowed)
+        }
+      }
+    }
+
+
+    "Passthrough tests on the /workspaces/%s/%s/bucketUsage path" - {
+      "MethodNotAllowed error is not returned for GET method" in {
+        Get(bucketUsagePath) ~> sealRoute(routes) ~> check {
           status shouldNot equal(MethodNotAllowed)
         }
       }

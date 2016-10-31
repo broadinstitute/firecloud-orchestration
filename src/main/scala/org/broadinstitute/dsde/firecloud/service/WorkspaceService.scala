@@ -101,6 +101,9 @@ trait WorkspaceService extends HttpService with PerRequestCreator with FireCloud
         } ~
         path ("unlock") {
           passthrough(workspacePath + "/unlock", HttpMethods.PUT)
+        } ~
+        path ("bucketUsage") {
+          passthrough(workspacePath + "/bucketUsage", HttpMethods.GET)
         }
       }
     }
