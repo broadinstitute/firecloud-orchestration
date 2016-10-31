@@ -24,7 +24,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   val fireCloudHeader = HttpHeaders.RawHeader("X-FireCloud-Id", FireCloudConfig.FireCloud.fireCloudId)
   val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
 
-  override def sendNotifications(notifications: List[Notification]): Future[Boolean] = {
+  override def sendNotifications(notifications: Seq[Notification]): Future[Boolean] = {
 
     val notificationPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> addHeader(fireCloudHeader) ~> sendReceive
     val thurloeNotifications = notifications.map(n => ThurloeNotification(n.userId, n.replyTo, n.notificationId, n.toMap))

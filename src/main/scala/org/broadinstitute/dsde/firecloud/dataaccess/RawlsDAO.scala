@@ -28,6 +28,6 @@ trait RawlsDAO extends LazyLogging {
 
   def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]]
 
-  def patchWorkspaceACL(ns: String, name: String, aclUpdates: List[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[List[WorkspaceACLUpdate]]
+  def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[Seq[WorkspaceACLUpdate]]
 
 }

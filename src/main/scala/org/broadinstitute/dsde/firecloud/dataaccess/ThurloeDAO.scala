@@ -10,6 +10,6 @@ import scala.concurrent.Future
  */
 trait ThurloeDAO extends LazyLogging {
 
-  def sendNotifications(notifications: List[Notification]): Future[Boolean]
+  def sendNotifications(notifications: Seq[Notification]): Future[Boolean]
 
 }

@@ -14,6 +14,6 @@ import scala.concurrent.Future
  */
 class MockThurloeDAO extends ThurloeDAO {
 
-  override def sendNotifications(notifications: List[Notification]): Future[Boolean] = Future(true)
+  override def sendNotifications(notifications: Seq[Notification]): Future[Boolean] = Future(true)
 
 }

@@ -40,7 +40,7 @@ class MockRawlsDAO  extends RawlsDAO {
 
   override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = Future(Seq.empty[RawlsWorkspace])
 
-  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: List[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[List[WorkspaceACLUpdate]] = {
+  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[Seq[WorkspaceACLUpdate]] = {
     Future(aclUpdates)
   }
 

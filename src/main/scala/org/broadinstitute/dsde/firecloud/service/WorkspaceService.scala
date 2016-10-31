@@ -20,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 object WorkspaceService {
   sealed trait WorkspaceServiceMessage
-  case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: List[WorkspaceACLUpdate], originEmail: String) extends WorkspaceServiceMessage
+  case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) extends WorkspaceServiceMessage
 
   def props(workspaceServiceConstructor: UserInfo => WorkspaceService, userInfo: UserInfo): Props = {
     Props(workspaceServiceConstructor(userInfo))
@@ -40,12 +40,12 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
 
   override def receive: Receive = {
 
-    case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: List[WorkspaceACLUpdate], originEmail: String) =>
+    case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) =>
       updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail) pipeTo sender
 
   }
 
-  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: List[WorkspaceACLUpdate], originEmail: String) = {
+  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) = {
 
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates)
     aclUpdate map { actualUpdates =>

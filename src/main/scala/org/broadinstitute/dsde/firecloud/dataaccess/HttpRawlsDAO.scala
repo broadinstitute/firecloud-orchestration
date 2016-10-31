@@ -53,8 +53,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     requestToObject[RawlsWorkspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 
-  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: List[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[List[WorkspaceACLUpdate]] =
-    requestToObject[List[WorkspaceACLUpdate]]( Patch(patchWorkspaceAclUrl(ns, name), aclUpdates) )
+  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[Seq[WorkspaceACLUpdate]] =
+    requestToObject[Seq[WorkspaceACLUpdate]]( Patch(patchWorkspaceAclUrl(ns, name), aclUpdates) )
 
   // TODO: use rawls query-by-attribute once that exists
   override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = {
