@@ -75,7 +75,7 @@ class WorkspaceServiceSpec extends ServiceSpec with WorkspaceService with Before
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
     }
-    // workspaces/%s/%s/updateAttributes
+    // workspaces/%s/%s/updateAttributes		
     workspaceServer
       .when(request().withMethod("PATCH").withPath(updateAttributesPath))
       .respond(
