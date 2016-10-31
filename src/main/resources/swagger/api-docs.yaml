@@ -2279,17 +2279,6 @@ paths:
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
-  /sync_whitelist:
-    post:
-      tags:
-        - NIH
-      operationId: NIHSyncWhitelist
-      summary: Downloads the NIH Whitelist and Updates Rawls groups approrpriately
-      responses:
-        204:
-          description: Successfully synced NIH whitelist
-        500:
-          description: Internal server error syncing NIH whitelist
 securityDefinitions:
   googleoauth:
     type: oauth2
