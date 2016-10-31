@@ -19,7 +19,8 @@ import scala.concurrent.{ExecutionContext, Future}
  * Created by mbemis on 10/19/16.
  */
 object WorkspaceService {
-  case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: List[WorkspaceACLUpdate], originEmail: String)
+  sealed trait WorkspaceServiceMessage
+  case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: List[WorkspaceACLUpdate], originEmail: String) extends WorkspaceServiceMessage
 
   def props(workspaceServiceConstructor: UserInfo => WorkspaceService, userInfo: UserInfo): Props = {
     Props(workspaceServiceConstructor(userInfo))
@@ -49,12 +50,10 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates)
     aclUpdate map { actualUpdates =>
 
-      val (addedNotifications, removedNotifications) = actualUpdates.partition(!_.accessLevel.equals(WorkspaceAccessLevels.NoAccess)) match { case (added, removed) =>
-        (added.map(u => WorkspaceAddedNotification(u.email, u.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)),
-          removed.map(u => WorkspaceRemovedNotification(u.email, u.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)))
+      val allNotifications = actualUpdates.map {
+        case removed if removed.accessLevel.equals(WorkspaceAccessLevels.NoAccess) => WorkspaceRemovedNotification(removed.email, removed.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
+        case added => WorkspaceAddedNotification(added.email, added.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
       }
-
-      val allNotifications = addedNotifications ++ removedNotifications
 
       thurloeDAO.sendNotifications(allNotifications)
 

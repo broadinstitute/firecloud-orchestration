@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.model.{ThurloeNotification, Notification}
 import org.broadinstitute.dsde.firecloud.service.UserService
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
@@ -29,8 +29,11 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     val notificationPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> addHeader(fireCloudHeader) ~> sendReceive
     val thurloeNotifications = notifications.map(n => ThurloeNotification(n.userId, n.replyTo, n.notificationId, n.toMap))
 
-    notificationPipeline(Post(UserService.remotePostNotifyURL, thurloeNotifications)).flatMap { response =>
-      Future.successful(response.status.isSuccess)
+    notificationPipeline(Post(UserService.remotePostNotifyURL, thurloeNotifications)).map { response =>
+      if(response.status.isFailure) {
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+      }
+      else response.status.isSuccess
     }
   }
 
