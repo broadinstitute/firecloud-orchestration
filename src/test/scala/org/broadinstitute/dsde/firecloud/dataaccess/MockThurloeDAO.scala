@@ -4,6 +4,7 @@ import org.broadinstitute.dsde.firecloud.model.Notification
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.{Success, Try}
 
 
 /**
@@ -14,6 +15,6 @@ import scala.concurrent.Future
  */
 class MockThurloeDAO extends ThurloeDAO {
 
-  override def sendNotifications(notifications: Seq[Notification]): Future[Boolean] = Future(true)
+  override def sendNotifications(notifications: Seq[Notification]): Future[Try[Unit]] = Future(Success(()))
 
 }

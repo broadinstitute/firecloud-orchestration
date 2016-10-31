@@ -24,15 +24,17 @@ object WorkspaceAccessLevels {
   case object Read extends WorkspaceAccessLevel
   case object Write extends WorkspaceAccessLevel
   case object Owner extends WorkspaceAccessLevel
+  case object ProjectOwner extends WorkspaceAccessLevel
 
-  val all = Seq(NoAccess, Read, Write, Owner)
-  val groupAccessLevelsAscending = Seq(Read, Write, Owner)
+  val all = Seq(NoAccess, Read, Write, Owner, ProjectOwner)
+  val groupAccessLevelsAscending = Seq(Read, Write, Owner, ProjectOwner)
 
   // note that the canonical string must match the format for GCS ACL roles,
   // because we use it to set the role of entities in the ACL.
   // (see https://cloud.google.com/storage/docs/json_api/v1/bucketAccessControls)
   def toString(v: WorkspaceAccessLevel): String = {
     v match {
+      case ProjectOwner => "PROJECT_OWNER"
       case Owner => "OWNER"
       case Write => "WRITER"
       case Read => "READER"
@@ -43,6 +45,7 @@ object WorkspaceAccessLevels {
 
   def withName(s: String): WorkspaceAccessLevel = {
     s match {
+      case "PROJECT_OWNER" => ProjectOwner
       case "OWNER" => Owner
       case "WRITER" => Write
       case "READER" => Read
