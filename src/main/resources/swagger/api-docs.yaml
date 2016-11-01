@@ -1033,11 +1033,7 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-        - name: submissionId
-          description: Submission ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/submissionIdParam'
       responses:
         204:
           description: successful deletion
@@ -1054,11 +1050,7 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-        - name: submissionId
-          description: Submission ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/submissionIdParam'
       responses:
         200:
           description: monitor a submission status
@@ -1076,16 +1068,8 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-        - name: submissionId
-          description: Submission ID
-          required: true
-          type: string
-          in: path
-        - name: workflowId
-          description: Workflow ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/submissionIdParam'
+        - $ref: '#/parameters/workflowIdParam'
       responses:
         200:
           description: Get workflow outputs
@@ -1752,6 +1736,18 @@ parameters:
   entityTypeParam:
     name: entityType
     description: Entity Type
+    required: true
+    type: string
+    in: path
+  submissionIdParam:
+    name: submissionId
+    description: Submission ID
+    required: true
+    type: string
+    in: path
+  workflowIdParam:
+    name: workflowId
+    description: Workflow ID
     required: true
     type: string
     in: path
