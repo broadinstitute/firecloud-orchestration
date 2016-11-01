@@ -72,7 +72,7 @@ object FireCloudConfig {
   object FireCloud {
     lazy val baseUrl = sys.env.get("FIRECLOUD_URL_ROOT").get
     lazy val fireCloudId = sys.env.get("FIRE_CLOUD_ID").get
-    lazy val fireCloudPortalUrl = sys.env.get("FIRECLOUD_PORTAL_ROOT").get
+    lazy val fireCloudPortalUrl = sys.env.get("PORTAL_URL_ROOT").get
   }
 
   object Shibboleth {
