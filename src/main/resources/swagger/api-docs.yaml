@@ -26,12 +26,6 @@ paths:
       responses:
         200:
           description: List of workspaces.
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Workspaces
@@ -57,12 +51,6 @@ paths:
           description: Workspace by that name already exists
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/methods:
     get:
       tags:
@@ -75,12 +63,6 @@ paths:
       responses:
         200:
           description: List of Method Repository methods.
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/configurations:
     get:
       tags:
@@ -93,12 +75,6 @@ paths:
       responses:
         200:
           description: List of Method Repository configurations.
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/template:
     post:
       tags:
@@ -123,12 +99,6 @@ paths:
           description: No Such Method
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/inputsOutputs:
     post:
       tags:
@@ -153,12 +123,6 @@ paths:
           description: No Such Method
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
       tags:
@@ -188,12 +152,6 @@ paths:
           description: Method Repository configuration detail
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/methods/{namespace}/{name}/{snapshotId}/permissions:
     get:
       tags:
@@ -225,12 +183,6 @@ paths:
             $ref: '#/definitions/MethodConfigACL'
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Method Repository
@@ -269,12 +221,6 @@ paths:
           description: Bad Request
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/configurations/{namespace}/{name}/{snapshotId}/permissions:
     get:
       tags:
@@ -306,12 +252,6 @@ paths:
             $ref: '#/definitions/MethodConfigACL'
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Method Repository
@@ -350,12 +290,6 @@ paths:
           description: Bad Request
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/methods/{namespace}/permissions:
     get:
       tags:
@@ -379,12 +313,6 @@ paths:
           description: user does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Method Repository
@@ -415,12 +343,6 @@ paths:
           description: User does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/configurations/{namespace}/permissions:
     get:
       tags:
@@ -444,12 +366,6 @@ paths:
           description: user does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Method Repository
@@ -482,12 +398,6 @@ paths:
           description: User does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:
@@ -506,12 +416,6 @@ paths:
           description: Workspace does not exist
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     delete:
       tags:
         - Workspaces
@@ -527,12 +431,6 @@ paths:
           description: Workspace does not exist
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/checkBucketReadAccess:
     get:
       description: Read a workspace bucket
@@ -552,12 +450,6 @@ paths:
           description: Workspace Not Found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/acl:
     get:
       tags:
@@ -578,12 +470,6 @@ paths:
           description: Workspace not found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     patch:
       tags:
         - Workspaces
@@ -609,12 +495,6 @@ paths:
           description: Workspace not found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/clone:
     post:
       tags:
@@ -643,12 +523,6 @@ paths:
           description: Destination workspace already exists
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/lock:
     put:
       tags:
@@ -671,12 +545,6 @@ paths:
           description: Workspace Not Found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
     put:
       tags:
@@ -699,12 +567,6 @@ paths:
           description: Workspace Not Found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
     get:
       tags:
@@ -724,12 +586,6 @@ paths:
           description: Workspace or entities not found.
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities:
     get:
       tags:
@@ -749,12 +605,6 @@ paths:
           description: Workspace does not exist
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importEntities:
     post:
       tags:
@@ -790,12 +640,6 @@ paths:
           description: Source Workspace not found
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
     post:
       tags:
@@ -833,12 +677,6 @@ paths:
           description: One or more entities of that name/type already exist
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
 # Entity delete endpoint commented out until GAWB-422 is complete
 #  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
 #    post:
@@ -872,12 +710,6 @@ paths:
 #          description: Malformed Request
 #        500:
 #          description: Internal Server Error
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
       tags:
@@ -906,12 +738,6 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       tags:
@@ -938,12 +764,6 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}:
     get:
       tags:
@@ -972,12 +792,6 @@ paths:
           description: Workspace or Entity does not exist
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
 # Entity delete endpoint commented out until GAWB-422 is complete
 #    delete:
 #      tags:
@@ -1016,12 +830,6 @@ paths:
 #          description: Workspace or Entity does not exist
 #        500:
 #          description: Internal Server Error
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#            - https://www.googleapis.com/auth/devstorage.full_control
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       tags:
@@ -1048,6 +856,7 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
+      security: []
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
     get:
       tags:
@@ -1100,12 +909,6 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
     get:
       tags:
@@ -1125,12 +928,6 @@ paths:
           description: Workspace does not exist
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Method Configurations
@@ -1157,12 +954,6 @@ paths:
           description: Method Configuration already exists
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}:
     get:
       tags:
@@ -1191,12 +982,6 @@ paths:
           description: Workspace or Method Configuration not found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     put:
       tags:
         - Method Configurations
@@ -1230,12 +1015,6 @@ paths:
           description: Workspace or Method Configuration not found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     delete:
       tags:
         - Method Configurations
@@ -1263,12 +1042,6 @@ paths:
           description: Workspace or Method Configuration not found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}/validate:
     get:
       responses:
@@ -1298,12 +1071,6 @@ paths:
           name: configName
           required: true
           type: string
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/rename:
     post:
       tags:
@@ -1340,12 +1107,6 @@ paths:
           description: Method Configuration with that name already exists
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
     post:
       tags:
@@ -1375,12 +1136,6 @@ paths:
           description: Error parsing source method configuration
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyToMethodRepo:
     post:
       tags:
@@ -1410,12 +1165,6 @@ paths:
           description: Error parsing source method configuration
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
       tags:
@@ -1435,12 +1184,6 @@ paths:
           description: Workspace not found
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
       - Submissions
@@ -1469,12 +1212,6 @@ paths:
           description: Method Configuration failed to resolve input expressions with the supplied Entity
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
     delete:
       tags:
@@ -1499,12 +1236,6 @@ paths:
           description: Submission not found
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     get:
       tags:
       - Submissions
@@ -1528,12 +1259,6 @@ paths:
           description: Submission not found
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
     get:
       tags:
@@ -1563,12 +1288,6 @@ paths:
           description: Submission or Workflow not found
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/submissions/queueStatus:
     get:
       responses:
@@ -1581,12 +1300,6 @@ paths:
         - Submissions
       summary: workflow queue status
       operationId: workflowQueueStatus
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/updateAttributes:
     patch:
       tags:
@@ -1616,12 +1329,6 @@ paths:
           description: Workspace not found
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/status:
     get:
       tags:
@@ -1636,12 +1343,6 @@ paths:
           description: Success
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/status/ping:
     get:
       tags:
@@ -1656,12 +1357,6 @@ paths:
           description: Success
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /health:
     get:
       tags:
@@ -1672,6 +1367,7 @@ paths:
       responses:
         200:
           description: Success
+      security: []
   /error:
     get:
       tags:
@@ -1682,6 +1378,7 @@ paths:
       responses:
         503:
           description: Service Unavailable
+      security: []
   /api/storage/{bucket}/{object}:
     get:
       tags:
@@ -1711,12 +1408,6 @@ paths:
           description: Not Found
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /me:
     get:
       tags:
@@ -1740,12 +1431,6 @@ paths:
           description: Internal Server Error determining user status.
         503:
           description: Service Unavailable. Could not reach underlying services to determine user status.
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /register:
     get:
       tags:
@@ -1763,12 +1448,6 @@ paths:
           description: User Not Found.
         500:
           description: Internal Server Error determining Rawls user status.
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /register/profile:
     get:
       tags:
@@ -1808,12 +1487,6 @@ paths:
             }
         500:
           description: Internal server error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Profile
@@ -1834,12 +1507,6 @@ paths:
           description: Bad request
         500:
           description: Internal server error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /register/userinfo:
     get:
       tags:
@@ -1853,12 +1520,6 @@ paths:
       responses:
         200:
           description: OK
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   '/api/library/user/role/curator':
     get:
       responses:
@@ -1875,12 +1536,6 @@ paths:
         - Profile
       summary: Query to see if you're a library curator
       operationId: isCurator
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   '/api/library/{workspaceNamespace}/{workspaceName}/metadata':
     put:
       tags:
@@ -1907,12 +1562,6 @@ paths:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   '/api/library/{workspaceNamespace}/{workspaceName}/published':
     post:
       tags:
@@ -1934,12 +1583,6 @@ paths:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-      security:
-        - googleoauth:
-          - openid
-          - email
-          - profile
-          - https://www.googleapis.com/auth/devstorage.full_control
     delete:
       tags:
         - Library
@@ -1960,12 +1603,6 @@ paths:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-      security:
-        - googleoauth:
-          - openid
-          - email
-          - profile
-          - https://www.googleapis.com/auth/devstorage.full_control
   '/api/library/admin/reindex':
     post:
       tags:
@@ -1989,12 +1626,6 @@ paths:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-      security:
-        - googleoauth:
-          - openid
-          - email
-          - profile
-          - https://www.googleapis.com/auth/devstorage.full_control
 
 ### GAWB-934 we're hiding billing endpoints for now
 #  /api/billing:
@@ -2152,12 +1783,6 @@ paths:
           description: User Not Found
         500:
           description: Internal Server Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
 #  /api/profile/billingAccounts:
 #    get:
 #      tags:
@@ -2226,6 +1851,7 @@ paths:
           description: Unauthorized
         500:
           description: Internal server error
+      security: []
   /api/nih/callback:
     post:
       tags:
@@ -2248,12 +1874,6 @@ paths:
           description: Unauthorized
         500:
           description: Internal server error saving NIH link to profile
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/nih/status:
     get:
       tags:
@@ -2273,12 +1893,6 @@ paths:
           description: linkedNihUsername key missing from status
         500:
           description: Internal server error retrieving NIH status
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
 securityDefinitions:
   googleoauth:
     type: oauth2
@@ -2290,6 +1904,12 @@ securityDefinitions:
       profile: profile authorization
       https://www.googleapis.com/auth/devstorage.full_control: GCS storage
       https://www.googleapis.com/auth/cloud-billing: GCS billing
+security:
+  - googleoauth:
+      - openid
+      - email
+      - profile
+      - https://www.googleapis.com/auth/devstorage.full_control
 parameters:
   workspaceNamespaceParam:
     name: workspaceNamespace
