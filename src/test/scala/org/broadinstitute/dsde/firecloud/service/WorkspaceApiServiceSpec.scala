@@ -45,8 +45,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val methodconfigsPath = workspacesRoot + "/%s/%s/methodconfigs".format(workspace.namespace.get, workspace.name.get)
   private final val updateAttributesPath = workspacesRoot + "/%s/%s/updateAttributes".format(workspace.namespace.get, workspace.name.get)
   private final val aclPath = workspacesRoot + "/%s/%s/acl".format(workspace.namespace.get, workspace.name.get)
-  private final val tsvAttributesImportPath = FireCloudConfig.Rawls.importWorkspaceAttributes(workspace.namespace.get, workspace.name.get)
-  private final val tsvAttributesExportPath = FireCloudConfig.Rawls.exportWorkspaceAttributes(workspace.namespace.get, workspace.name.get)
+  private final val tsvAttributesImportPath = "/" + workspacesRoot + "/%s/%s/importAttributes".format(workspace.namespace.get, workspace.name.get)
+  private final val tsvAttributesExportPath = "/" + workspacesRoot + "/%s/%s/exportAttributes".format(workspace.namespace.get, workspace.name.get)
   private final val clonePath = workspacesRoot + "/%s/%s/clone".format(workspace.namespace.get, workspace.name.get)
   private final val lockPath = workspacesRoot + "/%s/%s/lock".format(workspace.namespace.get, workspace.name.get)
   private final val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace.get, workspace.name.get)
@@ -146,7 +146,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       .when(
         request()
             .withMethod("PATCH")
-        .withPath(s"${workspaceBasePath}/%s/%s".format(workspace.namespace.get, workspace.name.get))
+        .withPath(s"${workspaceBasePath}/${workspace.namespace.get}/${workspace.name.get}")
         .withHeader(authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
@@ -579,15 +579,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
 
-        "when calling POST on the workspaces/*/*/importAttributes path" - {
-          "should 200 OK if it has the correct headers and valid internals" in {
+      "when calling POST on the workspaces/*/*/importAttributes path" - {
+        "should 200 OK if it has the correct headers and valid internals" in {
             (Post(tsvAttributesImportPath, MockTSVFormData.addNewWorkspaceAttributes)
-              ~> dummyAuthHeaders
+              ~> dummyUserIdHeaders("1234")
               ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(OK)
             })
           }
-        }
+      }
 
     }
   }
