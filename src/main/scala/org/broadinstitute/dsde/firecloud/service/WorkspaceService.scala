@@ -26,7 +26,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object WorkspaceService {
   sealed trait WorkspaceServiceMessage
   case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) extends WorkspaceServiceMessage
-  case class ExportWorkspaceAttributes(baseWorkspaceUrl: String, workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
+  case class ExportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
   case class ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) extends WorkspaceServiceMessage
 
   def props(workspaceServiceConstructor: UserInfo => WorkspaceService, userInfo: UserInfo): Props = {
@@ -49,8 +49,8 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
 
     case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) =>
       updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail) pipeTo sender
-    case ExportWorkspaceAttributes(baseWorkspaceUrl: String, workspaceNamespace: String, workspaceName: String, filename: String) =>
-      exportWorkspaceAttributes(baseWorkspaceUrl, workspaceNamespace, workspaceName, filename) pipeTo sender
+    case ExportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String) =>
+      exportWorkspaceAttributes(workspaceNamespace, workspaceName, filename) pipeTo sender
     case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString) pipeTo sender
 
@@ -71,7 +71,7 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
     }
   }
 
-  def exportWorkspaceAttributes(baseWorkspaceUrl: String, workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
+  def exportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
     Try(rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)) match {
       case Failure(regret) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
       case Success(workspaceFuture) => workspaceFuture map { workspaceResponse =>

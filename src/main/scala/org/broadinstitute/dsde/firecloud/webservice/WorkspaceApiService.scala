@@ -90,7 +90,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   get { requestContext =>
                       perRequest(requestContext,
                           WorkspaceService.props(workspaceServiceConstructor, userInfo),
-                          WorkspaceService.ExportWorkspaceAttributes(FireCloudConfig.Rawls.exportWorkspaceAttributes(workspaceNamespace, workspaceName), workspaceNamespace, workspaceName, filename))
+                          WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, filename))
                     }
                 } ~
                 path("importAttributes") {
