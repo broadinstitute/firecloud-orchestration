@@ -123,21 +123,9 @@ paths:
       operationId: getMethodRepositoryConfiguration
       summary: Get a Method Repository configuration
       parameters:
-        - name: namespace
-          description: Method Configuration namespace
-          required: true
-          type: string
-          in: path
-        - name: name
-          description: Method Configuration name
-          required: true
-          type: string
-          in: path
-        - name: snapshotId
-          description: Method Configuration snapshot ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/configNamespaceParam'
+        - $ref: '#/parameters/configNameParam'
+        - $ref: '#/parameters/configSnapshotId'
       responses:
         200:
           description: Method Repository configuration detail
@@ -150,21 +138,9 @@ paths:
       operationId: getMethodACL
       summary: get ACL permissions on a Method Repository method
       parameters:
-        - name: namespace
-          description: Method namespace
-          required: true
-          type: string
-          in: path
-        - name: name
-          description: Method name
-          required: true
-          type: string
-          in: path
-        - name: snapshotId
-          description: Method snapshot ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
       responses:
         200:
           description: the indicated method ACL
@@ -178,21 +154,9 @@ paths:
       operationId: setMethodACL
       summary: set ACL permissions on a Method Repository method
       parameters:
-        - name: namespace
-          description: Method namespace
-          required: true
-          type: string
-          in: path
-        - name: name
-          description: Method name
-          required: true
-          type: string
-          in: path
-        - name: snapshotId
-          description: Method snapshot ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
         - name: payload
           description: the ACLs to upsert
           required: true
@@ -215,21 +179,9 @@ paths:
       operationId: getConfigACL
       summary: get ACL permissions on a Method Repository configuration
       parameters:
-        - name: namespace
-          description: Method Configuration namespace
-          required: true
-          type: string
-          in: path
-        - name: name
-          description: Method Configuration name
-          required: true
-          type: string
-          in: path
-        - name: snapshotId
-          description: Method Configuration snapshot ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/configNamespaceParam'
+        - $ref: '#/parameters/configNameParam'
+        - $ref: '#/parameters/configSnapshotId'
       responses:
         200:
           description: the indicated configuration ACL
@@ -243,21 +195,9 @@ paths:
       operationId: setConfigACL
       summary: set ACL permissions on a Method Repository configuration
       parameters:
-        - name: namespace
-          description: Method Configuration namespace
-          required: true
-          type: string
-          in: path
-        - name: name
-          description: Method Configuration name
-          required: true
-          type: string
-          in: path
-        - name: snapshotId
-          description: Method Configuration snapshot ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/configNamespaceParam'
+        - $ref: '#/parameters/configNameParam'
+        - $ref: '#/parameters/configSnapshotId'
         - name: payload
           description: the ACLs to upsert
           required: true
@@ -280,11 +220,7 @@ paths:
       operationId: getMethodNamespaceACL
       summary: get ACL permissions on a Method Repository Method Namespace
       parameters:
-        - name: namespace
-          description: Method namespace
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/methodNamespaceParam'
       responses:
         200:
           description: List of indicated method namespace ACL permissions
@@ -300,11 +236,7 @@ paths:
       operationId: setMethodNamespaceACL
       summary: set ACL permissions on a Method Repository Method Namespace
       parameters:
-        - name: namespace
-          description: Method namespace
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/methodNamespaceParam'
         - name: payload
           description: the ACLs to upsert
           required: true
@@ -329,11 +261,7 @@ paths:
       operationId: getConfigNamespaceACL
       summary: get ACL permissions on a Method Repository Configuration Namespace
       parameters:
-        - name: namespace
-          description: Method Configuration namespace
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/configNamespaceParam'
       responses:
         200:
           description: List of the indicated configuration namespace ACL permissions
@@ -349,11 +277,7 @@ paths:
       operationId: setConfigNamespaceACL
       summary: set ACL permissions on a Method Repository Configuration Namespace
       parameters:
-        - name: namespace
-          description: Method Configuration namespace
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/configNamespaceParam'
         - name: payload
           description: the ACLs to upsert
           required: true
@@ -1819,6 +1743,42 @@ parameters:
   workspaceNameParam:
     name: workspaceName
     description: Workspace Name
+    required: true
+    type: string
+    in: path
+  methodNamespaceParam:
+    name: namespace
+    description: Method Namespace
+    required: true
+    type: string
+    in: path
+  methodNameParam:
+    name: name
+    description: Method Name
+    required: true
+    type: string
+    in: path
+  methodSnapshotId:
+    name: snapshotId
+    description: Method snapshot ID
+    required: true
+    type: string
+    in: path
+  configNamespaceParam:
+    name: namespace
+    description: Method Configuration Namespace
+    required: true
+    type: string
+    in: path
+  configNameParam:
+    name: name
+    description: Method Configuration Name
+    required: true
+    type: string
+    in: path
+  configSnapshotId:
+    name: snapshotId
+    description: Method Configuration snapshot ID
     required: true
     type: string
     in: path
