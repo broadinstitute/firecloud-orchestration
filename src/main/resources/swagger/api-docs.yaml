@@ -4,7 +4,7 @@ info:
   title: FireCloud
   description: |
     Genome analysis execution service.
-  version: "0.0.1"
+  version: "0.1"
   license:
     name: BSD
     url: http://opensource.org/licenses/BSD-3-Clause
