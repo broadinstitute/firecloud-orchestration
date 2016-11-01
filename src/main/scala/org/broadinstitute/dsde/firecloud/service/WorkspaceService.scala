@@ -1,5 +1,4 @@
 package org.broadinstitute.dsde.firecloud.service
-import akka.actor.FSM.Failure
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.service.WorkspaceService.{ExportWorkspaceAttributes, ImportAttributesFromTSV, UpdateWorkspaceACL}
