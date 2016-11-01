@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWit
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import spray.client.pipelining._
@@ -52,6 +53,9 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     requestToObject[RawlsWorkspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 
+  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[Seq[WorkspaceACLUpdate]] =
+    requestToObject[Seq[WorkspaceACLUpdate]]( Patch(patchWorkspaceAclUrl(ns, name), aclUpdates) )
+
   // TODO: use rawls query-by-attribute once that exists
   override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = {
     val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
@@ -81,6 +85,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
+  private def patchWorkspaceAclUrl(ns: String, name: String) = rawlsWorkspaceACLUrl.format(ns, name)
 
 
 }

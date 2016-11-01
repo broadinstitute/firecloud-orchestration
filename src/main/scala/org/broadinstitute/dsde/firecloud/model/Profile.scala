@@ -12,6 +12,7 @@ case class ThurloeKeyValue(
 
 case class ThurloeNotification(
   userId: String,
+  replyTo: Option[String],
   notificationId: String,
   substitutions: Map[String, String])
 
