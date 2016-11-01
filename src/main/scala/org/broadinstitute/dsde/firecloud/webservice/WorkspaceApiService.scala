@@ -85,6 +85,26 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                     }
                   }
                 } ~
+                path("exportAttributes") {
+                  val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
+                  get { requestContext =>
+                      perRequest(requestContext,
+                          WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                          WorkspaceService.ExportWorkspaceAttributes(FireCloudConfig.Rawls.exportWorkspaceAttributes(workspaceNamespace, workspaceName), workspaceNamespace, workspaceName, filename))
+                    }
+                } ~
+                path("importAttributes") {
+                  post {
+                    formFields('attributes) { attributesTSV =>
+                      respondWithJSON {requestContext =>
+                        perRequest(requestContext,
+                          WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                          WorkspaceService.ImportAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV)
+                          )
+                      }
+                    }
+                  }
+                }
                 path("updateAttributes") {
                   passthrough(workspacePath, HttpMethods.PATCH)
                 } ~
