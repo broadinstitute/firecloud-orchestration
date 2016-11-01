@@ -1,3 +1,4 @@
+package org.broadinstitute.dsde.firecloud.service
 import WorkspaceService.{ExportWorkspaceAttributes, ImportAttributesFromTSV, UpdateWorkspaceACL}
 import akka.actor._
 import akka.pattern._
@@ -17,7 +18,6 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsonParser.ParsingException
-import spray.routing.RequestContext
 
 
 import scala.util.{Failure, Success, Try}
