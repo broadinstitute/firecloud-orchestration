@@ -1,23 +1,27 @@
-package org.broadinstitute.dsde.firecloud.service
-import akka.event.Logging
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
-import org.broadinstitute.dsde.firecloud.service.WorkspaceService.{ExportWorkspaceAttributes, ImportAttributesFromTSV, UpdateWorkspaceACL}
-import org.broadinstitute.dsde.firecloud.utils.{RoleSupport, TSVLoadFile, TSVParser}
-import akka.actor.{Actor, Props}
+import WorkspaceService.{ExportWorkspaceAttributes, ImportAttributesFromTSV, UpdateWorkspaceACL}
+import akka.actor._
 import akka.pattern._
+import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.model.Attributable._
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import spray.http.StatusCodes._
+import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport}
+import spray.http.StatusCodes
+import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsonParser.ParsingException
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import spray.routing.RequestContext
 
-import scala.concurrent.{ExecutionContext, Future}
+
 import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Created by mbemis on 10/19/16.
@@ -72,26 +76,26 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
 
   def exportWorkspaceAttributes(baseWorkspaceUrl: String, workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
     Try(rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)) match {
-      case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
+      case Failure(regret) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
       case Success(workspaceFuture) => workspaceFuture map { workspaceResponse =>
           val headerString = "workspace:" + (workspaceResponse.workspace.get.attributes map { attribute =>
                 attribute._1.name}).mkString("\t").replaceAll("description\t", "")
           val valueString = (workspaceResponse.workspace.get.attributes map { attribute =>
               impAttributeFormat.write(attribute._2).toString().replaceAll("\"","")}).mkString("\t").replaceAll("null\t", "")
-          RequestComplete(OK, headerString + "\n" + valueString)
+          RequestComplete(StatusCodes.OK, headerString + "\n" + valueString)
         }
     }
   }
 
   def importAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
     Try(TSVParser.parse(tsvString)) match {
-      case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
+      case Failure(regret) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
       case Success(tsv) =>
           tsv.firstColumnHeader.split(":")(0)  match {
             case "workspace" =>
                 importWorkspaceAttributeTSV(workspaceNamespace, workspaceName, tsv)
             case _ =>
-                Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header should start with \"workspace\""))
+                Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid first column header should start with \"workspace\""))
         }
     }
   }
@@ -103,8 +107,8 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
     checkFirstRowDistinct(tsv) {
         val attributePairs = colNamesToWorkspaceAttributeNames(tsv.headers).zip(tsv.tsvData.head)
         Try(scala.util.parsing.json.JSONObject(attributePairs.toMap).toString().parseJson.asJsObject.convertTo[AttributeMap]) match {
-          case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid json supplied", ex))
-          case Failure(e) => Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
+          case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid json supplied", ex))
+          case Failure(e) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, StatusCodes.BadRequest.defaultMessage, e))
           case Success(attrs) =>
               rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
                   val allOperations = getWorkspaceAttributeCalls(attributePairs)
@@ -130,7 +134,7 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
     val attributeNames =  colNamesToWorkspaceAttributeNames(tsv.headers)
     val distinctAttributes = attributeNames.distinct
     if (attributeNames.size != distinctAttributes.size) {
-          Future(RequestCompleteWithErrorReport(BadRequest,
+          Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
                 "Duplicated attribute keys are not allowed"))
       } else {
           op
