@@ -18,14 +18,11 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsonParser.ParsingException
-
-
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
- * Created by mbemis on 10/19/16.
- */
+
+
 object WorkspaceService {
   sealed trait WorkspaceServiceMessage
   case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) extends WorkspaceServiceMessage
