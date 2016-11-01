@@ -1525,13 +1525,10 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-        - name: workspaceUpdateJson
-          description: Attribute operations
+        - name: newAttributes
+          description: New attribute values, as Map[String, Attribute]
           required: true
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/AttributeUpdateOperation'
+          type: object
           in: body
       responses:
         200:
