@@ -599,11 +599,7 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-        - name: entityType
-          description: Entity Type
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/entityTypeParam'
       responses:
         200:
           description: List of entities in workspace
@@ -627,11 +623,7 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-        - name: entityType
-          description: Entity Type
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/entityTypeParam'
       responses:
         200:
           description: Workspace entities of specified type in TSV format
@@ -650,11 +642,7 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-        - name: entityType
-          description: Entity Type
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/entityTypeParam'
         - name: entityName
           description: Entity Name
           required: true
@@ -715,11 +703,7 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-        - name: entityType
-          description: Entity Type
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/entityTypeParam'
       responses:
         200:
           description: Workspace entities of specified type in TSV format
@@ -739,11 +723,7 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-        - name: entityType
-          description: Entity Type
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/entityTypeParam'
         - name: page
           description: Page number, 1-indexed (default 1)
           default: 1
@@ -1779,6 +1759,12 @@ parameters:
   configSnapshotId:
     name: snapshotId
     description: Method Configuration snapshot ID
+    required: true
+    type: string
+    in: path
+  entityTypeParam:
+    name: entityType
+    description: Entity Type
     required: true
     type: string
     in: path
