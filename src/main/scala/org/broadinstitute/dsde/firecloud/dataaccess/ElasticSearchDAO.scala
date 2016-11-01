@@ -8,14 +8,19 @@ import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsReque
 import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkResponse}
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
+import org.elasticsearch.action.search.{SearchRequest, SearchResponse, SearchRequestBuilder}
 import org.elasticsearch.client.transport.TransportClient
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
+
+import scala.concurrent.Future
 
 class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport {
 
   private val client: TransportClient = buildClient(servers)
   private final val datatype = "dataset"
+  private final val findAll = "{ \"query\": { \"match_all\" : {}}}"
+  private final val queryStr = "{ \"query\": { \"wildcard\" : { \"_all\" : \"*%s*\"}}}"
 
   initIndex
 
@@ -92,5 +97,30 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     } catch {
       case e: Exception => logger.warn(s"ES index '%s' could not be recreated and may be in an unstable state.".format(indexName))
     }
+  }
+
+
+
+  def findDocuments(term: String, from: Int = 0, size: Int = 10) : String = {
+    val fullstr = {
+      if ("".equals(term)) findAll
+      else String.format(queryStr, term)
+    }
+    val searchReq = client.prepareSearch(indexName).setQuery(fullstr)
+    searchReq.setFrom(from)
+    searchReq.setSize(size)
+    val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
+    var sb = new StringBuilder()
+    sb.append("{\"total\":")
+    sb.append(searchResults.getHits.totalHits())
+    sb.append(", \"results\":[")
+    val stringResults = searchResults.getHits.hits map { hit =>
+      //println("the hits keep coming" + hit.sourceAsString())
+      sb.append(hit.sourceAsString() + ",");
+    }
+    sb.deleteCharAt(sb.size-1)
+    sb.append("]}")
+    //println(sb.toString())
+    sb.toString()
   }
 }

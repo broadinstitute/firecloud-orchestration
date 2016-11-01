@@ -1501,6 +1501,49 @@ paths:
           description: Method Configuration failed to resolve input expressions with the supplied Entity
         500:
           description: Internal Error
+  '/api/libraries':
+    get:
+      tags:
+        - Library
+      operationId: FindDocuments
+      summary: |
+        lists published library datasets
+      produces:
+        - text/plain
+        - application/json
+      parameters:
+        - in: query
+          description: which result to start at (for pagination)
+          name: from
+          type: integer
+          required: false
+        - in: query
+          description: how many results to return
+          name: size
+          type: integer
+          required: false
+      responses:
+        200:
+          description: All published datasets
+    post:
+      tags:
+        - Library
+      operationId: FindDocuments
+      summary: |
+        searches published library datasets
+      parameters:
+        - in: body
+          description: term to search
+          name: searchTerm
+          required: true
+          schema:
+            $ref: '#/definitions/SearchTerm'
+      produces:
+        - text/plain
+        - application/json
+      responses:
+        200:
+          description: Matching datasets
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
     delete:
@@ -2635,6 +2678,19 @@ definitions:
       groupName:
         type: string
         description: ''
+  SearchTerm:
+    required:
+      - searchTerm
+    properties:
+      searchTerm:
+        type: string
+        description: The term to search for
+      from:
+        type: integer
+        description: Where in the results list to start (used for pagination)
+      size:
+        type: integer
+        description: How many results to return
 
   RawlsMe:
     properties:
