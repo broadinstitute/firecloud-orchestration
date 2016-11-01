@@ -5,10 +5,11 @@ import akka.pattern._
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
-import org.broadinstitute.dsde.firecloud.service.WorkspaceService.UpdateWorkspaceACL
 import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport._
 import spray.json._
@@ -20,6 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 object WorkspaceService {
   sealed trait WorkspaceServiceMessage
+  case class UpdateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) extends WorkspaceServiceMessage
   case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) extends WorkspaceServiceMessage
 
   def props(workspaceServiceConstructor: UserInfo => WorkspaceService, userInfo: UserInfo): Props = {
@@ -30,7 +32,7 @@ object WorkspaceService {
     new WorkspaceService(userInfo, app.rawlsDAO, app.thurloeDAO)
 }
 
-class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor {
+class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with WorkspaceServiceSupport {
 
   implicit val system = context.system
   import system.dispatcher
@@ -38,11 +40,24 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
 
   implicit val userInfo = argUserInfo
 
+  import WorkspaceService._
+
   override def receive: Receive = {
 
+    case UpdateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =>
+      updateWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes) pipeTo sender
     case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) =>
       updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail) pipeTo sender
 
+  }
+
+  def updateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) = {
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
+      // this is technically vulnerable to a race condition in which the workspace attributes have changed
+      // between the time we retrieved them and here, where we update them.
+      val allOperations = generateAttributeOperations(workspaceResponse.workspace.get.attributes, newAttributes)
+      rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
+    }
   }
 
   def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) = {

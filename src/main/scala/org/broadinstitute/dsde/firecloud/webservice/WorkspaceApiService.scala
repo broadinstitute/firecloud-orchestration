@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
+import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
@@ -57,67 +58,74 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             mapHttpResponseEntity(transformListWorkspaceRequest) {
               passthrough(rawlsWorkspacesRoot, HttpMethods.GET)
             } ~
+            post {
+              entity(as[WorkspaceCreate]) { createRequest => requestContext =>
+                val extReq = Post(FireCloudConfig.Rawls.workspacesUrl, new RawlsWorkspaceCreate(createRequest))
+                externalHttpPerRequest(requestContext, extReq)
+              }
+            }
+          } ~
+          pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
+            val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
+            pathEnd {
+              mapHttpResponseEntity(transformSingleWorkspaceRequest) {
+                passthrough(workspacePath, HttpMethods.GET)
+              } ~
+              passthrough(workspacePath, HttpMethods.DELETE)
+            } ~
+            path("methodconfigs") {
+              passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
+            } ~
+            path("importEntities") {
+              post {
+                formFields('entities) { entitiesTSV =>
+                  respondWithJSON { requestContext =>
+                    perRequest(requestContext, Props(new EntityClient(requestContext)),
+                      EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
+                  }
+                }
+              }
+            } ~
+            path("updateAttributes") {
+              patch {
+                implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
+                entity(as[AttributeMap]) { newAttributes => requestContext =>
+                  perRequest(requestContext,
+                    WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                    WorkspaceService.UpdateWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes))
+                }
+              }
+            } ~
+            path("acl") {
+              patch {
+                entity(as[List[WorkspaceACLUpdate]]) { aclUpdates => requestContext =>
+                  perRequest(requestContext,
+                    WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                    WorkspaceService.UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail))
+                }
+              } ~
+              get {
+                passthrough(workspacePath + "/acl", HttpMethods.GET)
+              }
+            } ~
+            path("checkBucketReadAccess") {
+              passthrough(workspacePath + "/checkBucketReadAccess", HttpMethods.GET)
+            } ~
+            path("clone") {
               post {
                 entity(as[WorkspaceCreate]) { createRequest => requestContext =>
-                  val extReq = Post(FireCloudConfig.Rawls.workspacesUrl, new RawlsWorkspaceCreate(createRequest))
+                  val extReq = Post(workspacePath + "/clone", new RawlsWorkspaceCreate(createRequest))
                   externalHttpPerRequest(requestContext, extReq)
                 }
               }
-          } ~
-            pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
-              val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
-              pathEnd {
-                mapHttpResponseEntity(transformSingleWorkspaceRequest) {
-                  passthrough(workspacePath, HttpMethods.GET)
-                } ~
-                  passthrough(workspacePath, HttpMethods.DELETE)
-              } ~
-                path("methodconfigs") {
-                  passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
-                } ~
-                path("importEntities") {
-                  post {
-                    formFields('entities) { entitiesTSV =>
-                      respondWithJSON { requestContext =>
-                        perRequest(requestContext, Props(new EntityClient(requestContext)),
-                          EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
-                      }
-                    }
-                  }
-                } ~
-                path("updateAttributes") {
-                  passthrough(workspacePath, HttpMethods.PATCH)
-                } ~
-                path("acl") {
-                  patch {
-                    entity(as[List[WorkspaceACLUpdate]]) { aclUpdates => requestContext =>
-                      perRequest(requestContext,
-                        WorkspaceService.props(workspaceServiceConstructor, userInfo),
-                        WorkspaceService.UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail))
-                    }
-                  } ~
-                    get {
-                      passthrough(workspacePath + "/acl", HttpMethods.GET)
-                    }
-                } ~
-                path("checkBucketReadAccess") {
-                  passthrough(workspacePath + "/checkBucketReadAccess", HttpMethods.GET)
-                } ~
-                path("clone") {
-                  post {
-                    entity(as[WorkspaceCreate]) { createRequest => requestContext =>
-                      val extReq = Post(workspacePath + "/clone", new RawlsWorkspaceCreate(createRequest))
-                      externalHttpPerRequest(requestContext, extReq)
-                    }
-                  }
-                } ~
-                path("lock") {
-                  passthrough(workspacePath + "/lock", HttpMethods.PUT)
-                } ~
-                path("unlock") {
-                  passthrough(workspacePath + "/unlock", HttpMethods.PUT)
-                }
+            } ~
+            path("lock") {
+              passthrough(workspacePath + "/lock", HttpMethods.PUT)
+            } ~
+            path("unlock") {
+              passthrough(workspacePath + "/unlock", HttpMethods.PUT)
             }
+          }
         }
       }
     }
