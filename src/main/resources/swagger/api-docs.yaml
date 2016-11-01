@@ -157,12 +157,7 @@ paths:
         - $ref: '#/parameters/methodNamespaceParam'
         - $ref: '#/parameters/methodNameParam'
         - $ref: '#/parameters/methodSnapshotId'
-        - name: payload
-          description: the ACLs to upsert
-          required: true
-          in: body
-          schema:
-            $ref: '#/definitions/MethodConfigACL'
+        - $ref: '#/parameters/configACLPayload'
       responses:
         200:
           description: the indicated method ACL once the posted changes have been applied
@@ -198,12 +193,7 @@ paths:
         - $ref: '#/parameters/configNamespaceParam'
         - $ref: '#/parameters/configNameParam'
         - $ref: '#/parameters/configSnapshotId'
-        - name: payload
-          description: the ACLs to upsert
-          required: true
-          in: body
-          schema:
-            $ref: '#/definitions/MethodConfigACL'
+        - $ref: '#/parameters/configACLPayload'
       responses:
         200:
           description: the indicated configuration ACL once the posted changes have been applied
@@ -237,12 +227,7 @@ paths:
       summary: set ACL permissions on a Method Repository Method Namespace
       parameters:
         - $ref: '#/parameters/methodNamespaceParam'
-        - name: payload
-          description: the ACLs to upsert
-          required: true
-          in: body
-          schema:
-            $ref: '#/definitions/MethodConfigACL'
+        - $ref: '#/parameters/configACLPayload'
       responses:
         200:
           description: the indicated method namespace ACL permissions once the posted changes have been applied
@@ -278,12 +263,7 @@ paths:
       summary: set ACL permissions on a Method Repository Configuration Namespace
       parameters:
         - $ref: '#/parameters/configNamespaceParam'
-        - name: payload
-          description: the ACLs to upsert
-          required: true
-          in: body
-          schema:
-            $ref: '#/definitions/MethodConfigACL'
+        - $ref: '#/parameters/configACLPayload'
       responses:
         200:
           description: the indicated configuration ACL once the posted changes have been applied
@@ -1762,6 +1742,13 @@ parameters:
     required: true
     type: string
     in: path
+  configACLPayload:
+    name: payload
+    description: the ACLs to upsert
+    required: true
+    in: body
+    schema:
+      $ref: '#/definitions/MethodConfigACL'
   entityTypeParam:
     name: entityType
     description: Entity Type
