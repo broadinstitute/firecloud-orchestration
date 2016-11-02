@@ -49,6 +49,8 @@ libraryDependencies ++= {
   val sprayV = "1.3.3"
   val jacksonV = "2.8.4"
   Seq(
+    // proactively pull in latest versions of Jackson libs, instead of relying on the versions
+    // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
