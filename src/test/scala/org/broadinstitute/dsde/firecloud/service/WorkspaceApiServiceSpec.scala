@@ -586,50 +586,48 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
           })
-          }
+        }
       }
 
-        "should 400 Bad Request if first row does not start with \"workspace\"" in {
-          (Post(tsvAttributesImportPath, MockTSVFormData.wrongHeaderWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
-            ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(BadRequest)
-          })
-        }
+      "should 400 Bad Request if first row does not start with \"workspace\"" in {
+        (Post(tsvAttributesImportPath, MockTSVFormData.wrongHeaderWorkspaceAttributes)
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(BadRequest)
+        })
+      }
 
-        "should 400 Bad Request if there are more names than values" in {
-          (Post(tsvAttributesImportPath, MockTSVFormData.tooManyNamesWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
-            ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(BadRequest)
-          })
-        }
+      "should 400 Bad Request if there are more names than values" in {
+        (Post(tsvAttributesImportPath, MockTSVFormData.tooManyNamesWorkspaceAttributes)
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(BadRequest)
+        })
+      }
 
-        "should 400 Bad Request if there are more values than names" in {
-          (Post(tsvAttributesImportPath, MockTSVFormData.tooManyValuesWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
-            ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(BadRequest)
-          })
-        }
+      "should 400 Bad Request if there are more values than names" in {
+        (Post(tsvAttributesImportPath, MockTSVFormData.tooManyValuesWorkspaceAttributes)
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(BadRequest)
+        })
+      }
 
-        "should 400 Bad Request if there are more than 2 rows" in {
-          (Post(tsvAttributesImportPath, MockTSVFormData.tooManyRowsWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
-            ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(BadRequest)
-          })
-        }
+      "should 400 Bad Request if there are more than 2 rows" in {
+        (Post(tsvAttributesImportPath, MockTSVFormData.tooManyRowsWorkspaceAttributes)
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(BadRequest)
+        })
+      }
 
-        "should 400 Bad Request if there are fewer than 2 rows" in {
-          (Post(tsvAttributesImportPath, MockTSVFormData.tooFewRowsWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
-            ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(BadRequest)
-          })
-        }
+      "should 400 Bad Request if there are fewer than 2 rows" in {
+        (Post(tsvAttributesImportPath, MockTSVFormData.tooFewRowsWorkspaceAttributes)
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(BadRequest)
+        })
       }
     }
   }
-
 }
