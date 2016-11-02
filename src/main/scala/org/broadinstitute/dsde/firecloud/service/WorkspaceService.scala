@@ -32,7 +32,7 @@ object WorkspaceService {
     new WorkspaceService(userInfo, app.rawlsDAO, app.thurloeDAO)
 }
 
-class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with WorkspaceServiceSupport {
+class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with AttributeSupport {
 
   implicit val system = context.system
   import system.dispatcher
@@ -55,7 +55,7 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
       // this is technically vulnerable to a race condition in which the workspace attributes have changed
       // between the time we retrieved them and here, where we update them.
-      val allOperations = generateAttributeOperations(workspaceResponse.workspace.get.attributes, newAttributes)
+      val allOperations = generateAttributeOperations(workspaceResponse.workspace.get.attributes, newAttributes, _.namespace != AttributeName.libraryNamespace)
       rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
     }
   }

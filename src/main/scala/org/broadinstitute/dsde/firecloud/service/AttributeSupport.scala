@@ -14,7 +14,7 @@ trait AttributeSupport {
     */
   def generateAttributeOperations(existingAttrs: AttributeMap, newAttrs: AttributeMap, attributeFilter: AttributeName => Boolean): Seq[AttributeUpdateOperation] = {
     val oldKeys = existingAttrs.keySet.filter(attributeFilter)
-    val newFields = newAttrs.seq.filterKeys(attributeFilter)
+    val newFields = newAttrs.filter { case (name: AttributeName, _) => attributeFilter(name) }
 
     // remove any attributes that currently exist on the workspace, but are not in the user's packet
     // for any array attributes, we remove them and recreate them entirely. Add the array attrs.

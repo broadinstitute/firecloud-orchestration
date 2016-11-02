@@ -12,10 +12,7 @@ import spray.json.JsObject
 /**
   * Created by davidan on 10/2/16.
   */
-trait LibraryServiceSupport extends AttributeSupport {
-  def generateAttributeOperations(existingAttrs: AttributeMap, newAttrs: AttributeMap): Seq[AttributeUpdateOperation] = {
-    generateAttributeOperations(existingAttrs, newAttrs, k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
-  }
+trait LibraryServiceSupport {
 
   def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
     if (value) Seq(AddUpdateAttribute(LibraryService.publishedFlag, AttributeBoolean(true)))
