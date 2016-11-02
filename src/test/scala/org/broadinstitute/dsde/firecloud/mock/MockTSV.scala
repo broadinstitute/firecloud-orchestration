@@ -160,10 +160,29 @@ object MockTSVStrings {
     List("workspace:attributeName1", "attributeName2", "attributeName3").mkString("\t"),
     List("attributeValue1", "attributeValue2", "attributeValue3").mkString("\t")).mkString("\n")
 
-  val updateWorkspaceAttributes = List(
-    List("workspace:attributeName1", "attributeName2").mkString("\t"),
-    List("changedAttributeValue1", "changedAttributeValue2").mkString("\t")).mkString("\n")
+  val duplicateKeysWorkspaceAttributes = List(
+    List("workspace:a1", "a1").mkString("\t"),
+    List("v1", "v2").mkString("\t")).mkString("\n")
 
+  val wrongHeaderWorkspaceAttributes = List(
+    List("a3", "a4").mkString("\t"),
+    List("v3", "v4").mkString("\t")).mkString("\n")
+
+  val tooManyNamesWorkspaceAttributes = List(
+    List("workspace:a5", "a6", "a7").mkString("\t"),
+    List("v5", "v6").mkString("\t")).mkString("\n")
+
+  val tooManyValuesWorkspaceAttributes = List(
+    List("workspace:a5", "a6").mkString("\t"),
+    List("v5", "v6", "v7").mkString("\t")).mkString("\n")
+
+  val tooManyRowsWorkspaceAttributes = List(
+    List("workspace:a5", "a6").mkString("\t"),
+    List("v5", "v6", "v7").mkString("\t"),
+    List("v8", "v9", "v10").mkString("\t")).mkString("\n")
+
+  val tooFewRowsWorkspaceAttributes = List(
+    List("workspace:a5", "a6").mkString("\t")).mkString("\n")
 }
 
 object MockTSVLoadFiles {
@@ -212,5 +231,11 @@ object MockTSVFormData {
   val updateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAndOptionalAttrs)
 
   val addNewWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.addNewWorkspaceAttributes)
-  val updateWorkspaceAttributes = wrapInMultipart("workspace", MockTSVStrings.updateWorkspaceAttributes)
+  val duplicateKeysWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.duplicateKeysWorkspaceAttributes)
+  val wrongHeaderWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.wrongHeaderWorkspaceAttributes)
+  val tooManyNamesWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.tooManyNamesWorkspaceAttributes)
+  val tooManyValuesWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.tooManyValuesWorkspaceAttributes)
+  val tooManyRowsWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.tooManyRowsWorkspaceAttributes)
+  val tooFewRowsWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.tooFewRowsWorkspaceAttributes)
+
 }

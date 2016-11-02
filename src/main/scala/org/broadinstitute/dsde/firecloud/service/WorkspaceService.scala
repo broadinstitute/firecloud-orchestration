@@ -101,41 +101,54 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
   Import attributes on a workspace from a TSV file
   */
   private def importWorkspaceAttributeTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
-    checkFirstRowDistinct(tsv) {
+    checkIf2Rows(tsv) {
+      checkFirstRowDistinct(tsv) {
         val attributePairs = colNamesToWorkspaceAttributeNames(tsv.headers).zip(tsv.tsvData.head)
         Try(scala.util.parsing.json.JSONObject(attributePairs.toMap).toString().parseJson.asJsObject.convertTo[AttributeMap]) match {
-          case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid json supplied", ex))
+          case Failure(ex: ParsingException) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid json supplied", ex))
           case Failure(e) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, StatusCodes.BadRequest.defaultMessage, e))
           case Success(attrs) =>
-              rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-                  val allOperations = getWorkspaceAttributeCalls(attributePairs)
-                  rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
-                }
+            rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
+              val allOperations = getWorkspaceAttributeCalls(attributePairs)
+              rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
+            }
         }
       }
+    }
   }
 
   private def getWorkspaceAttributeCalls(attributePairs: Seq[(String,String)]): Seq[AttributeUpdateOperation] = {
-    attributePairs.map(pair =>
-      if (pair._2.equals("__DELETE__")) {new RemoveAttribute(new AttributeName("default", pair._1))}
-      else {new AddUpdateAttribute(new AttributeName("default", pair._1), new AttributeString(pair._2))}
-    )
+    attributePairs.map { case (name, value) =>
+      if (value.equals("__DELETE__"))
+        new RemoveAttribute(new AttributeName("default", name))
+      else
+        new AddUpdateAttribute(new AttributeName("default", name), new AttributeString(value))
+    }
   }
 
   private def colNamesToWorkspaceAttributeNames(headers: Seq[String]): Seq[String] = {
-      val newHead = headers.head.stripPrefix("workspace:")
-      Seq(newHead) ++ headers.tail
+    val newHead = headers.head.stripPrefix("workspace:")
+    Seq(newHead) ++ headers.tail
+  }
+
+  private def checkIf2Rows(tsv: TSVLoadFile)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
+    log.info(tsv.tsvData.toString())
+    if (tsv.tsvData.length != 1) {
+      Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
+        "Your file does not have the correct number of rows. There should be 2."))
+    } else {
+      op
+    }
   }
 
   private def checkFirstRowDistinct(tsv: TSVLoadFile)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
     val attributeNames =  colNamesToWorkspaceAttributeNames(tsv.headers)
     val distinctAttributes = attributeNames.distinct
     if (attributeNames.size != distinctAttributes.size) {
-          Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
-                "Duplicated attribute keys are not allowed"))
-      } else {
-          op
-      }
+      Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Duplicated attribute keys are not allowed"))
+    } else {
+        op
+    }
   }
 
 }
