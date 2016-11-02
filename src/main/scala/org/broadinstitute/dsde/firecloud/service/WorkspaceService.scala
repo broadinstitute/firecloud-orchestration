@@ -104,7 +104,7 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
     checkFirstRowDistinct(tsv) {
         val attributePairs = colNamesToWorkspaceAttributeNames(tsv.headers).zip(tsv.tsvData.head)
         Try(scala.util.parsing.json.JSONObject(attributePairs.toMap).toString().parseJson.asJsObject.convertTo[AttributeMap]) match {
-          case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid json supplied", ex))
+          case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Could not parse file because of incorrect format.", ex))
           case Failure(e) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, StatusCodes.BadRequest.defaultMessage, e))
           case Success(attrs) =>
               rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
@@ -116,12 +116,14 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
   }
 
   private def getWorkspaceAttributeCalls(attributePairs: Seq[(String,String)]): Seq[AttributeUpdateOperation] = {
-    attributePairs.map(pair =>
-      if (pair._2.equals("__DELETE__")) {new RemoveAttribute(new AttributeName("default", pair._1))}
-      else {new AddUpdateAttribute(new AttributeName("default", pair._1), new AttributeString(pair._2))}
-    )
+    attributePairs.map { case (name, value) =>
+      if (value.equals("__DELETE__"))
+        new RemoveAttribute(new AttributeName("default", name))
+      else
+        new AddUpdateAttribute(new AttributeName("default", name), new AttributeString(value))
+    }
   }
-
+  
   private def colNamesToWorkspaceAttributeNames(headers: Seq[String]): Seq[String] = {
       val newHead = headers.head.stripPrefix("workspace:")
       Seq(newHead) ++ headers.tail
