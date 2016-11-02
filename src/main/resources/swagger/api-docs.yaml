@@ -1233,6 +1233,8 @@ paths:
         - Profile
       operationId: getAll
       summary: Returns a list of all keys and values stored in the user profile service for the currently logged-in user.
+      produces:
+        - application/json
         - text/plain
       responses:
         200:
