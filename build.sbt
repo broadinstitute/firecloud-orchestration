@@ -47,7 +47,11 @@ scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf
 libraryDependencies ++= {
   val akkaV = "2.4.1"
   val sprayV = "1.3.3"
+  val jacksonV = "2.8.4"
   Seq(
+    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
+    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonV,
+    "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
     "ch.qos.logback" % "logback-classic" % "1.1.3",
     "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
     "org.broadinstitute.dsde.vault" %%  "vault-common"  % "0.1-19-ca8b927",
