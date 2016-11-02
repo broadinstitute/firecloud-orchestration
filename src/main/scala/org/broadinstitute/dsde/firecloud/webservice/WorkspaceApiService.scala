@@ -3,16 +3,17 @@ package org.broadinstitute.dsde.firecloud.webservice
 import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
+import org.broadinstitute.dsde.firecloud.core.{ExportEntitiesByType, ExportEntitiesByTypeActor}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
-import org.broadinstitute.dsde.firecloud.service.{WorkspaceService, FireCloudDirectives, FireCloudRequestBuilding}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, WorkspaceService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.slf4j.LoggerFactory
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import spray.http.{HttpMethods, HttpEntity}
+import spray.http.{HttpEntity, HttpMethods, OAuth2BearerToken}
 import spray.httpx.unmarshalling._
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
@@ -51,6 +52,21 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
 
   val workspaceRoutes: Route =
     requireUserInfo() { userInfo =>
+      pathPrefix("cookie-authed") {
+        path("workspaces" / Segment / Segment / "exportAttributes") {
+          (workspaceNamespace, workspaceName) =>
+            cookie("FCtoken") { tokenCookie =>
+              mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
+                val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
+                get { requestContext =>
+                  perRequest(requestContext,
+                    WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                    WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, filename))
+                }
+              }
+            }
+        }
+      } ~
       pathPrefix("api") {
         pathPrefix("workspaces") {
           pathEnd {

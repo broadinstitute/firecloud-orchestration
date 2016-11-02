@@ -72,6 +72,7 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
   }
 
   def exportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
+    log.info("WE'RE DOING STUFF!!!")
     Try(rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)) match {
       case Failure(regret) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
       case Success(workspaceFuture) => workspaceFuture map { workspaceResponse =>

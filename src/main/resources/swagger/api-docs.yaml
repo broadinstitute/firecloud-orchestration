@@ -1075,6 +1075,27 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
+  /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributes:
+     get:
+       tags:
+       - Workspaces
+       operationId: browserDownloadAttributes
+       summary: |
+         TSV file containing workspace attributes (allows cookie-based authentication)
+       produces:
+       - text/plain
+       parameters:
+          - $ref: '#/parameters/workspaceNamespaceParam'
+          - $ref: '#/parameters/workspaceNameParam'
+       responses:
+         200:
+           description: Workspace attributes in TSV format
+           schema:
+             type: file
+         404:
+           description: Workspace or entity type does not exist
+         500:
+           description: Internal Server Error
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
     get:
       tags:
