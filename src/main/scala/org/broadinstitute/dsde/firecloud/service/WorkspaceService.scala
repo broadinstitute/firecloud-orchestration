@@ -72,12 +72,11 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
   }
 
   def exportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
-    log.info("WE'RE DOING STUFF!!!")
     Try(rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)) match {
       case Failure(regret) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
       case Success(workspaceFuture) => workspaceFuture map { workspaceResponse =>
-          val headerString = "workspace:" + (workspaceResponse.workspace.get.attributes map { attribute =>
-                attribute._1.name}).mkString("\t").replaceAll("description\t", "")
+          val headerString = "workspace:" + (workspaceResponse.workspace.get.attributes map { case (attName, attValue) =>
+                attName.name}).mkString("\t").replaceAll("description\t", "")
           val valueString = (workspaceResponse.workspace.get.attributes map { attribute =>
               impAttributeFormat.write(attribute._2).toString().replaceAll("\"","")}).mkString("\t").replaceAll("null\t", "")
           RequestComplete(StatusCodes.OK, headerString + "\n" + valueString)
@@ -133,7 +132,6 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
   }
 
   private def checkIf2Rows(tsv: TSVLoadFile)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
-    log.info(tsv.tsvData.toString())
     if (tsv.tsvData.length != 1) {
       Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
         "Your file does not have the correct number of rows. There should be 2."))
