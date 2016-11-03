@@ -30,6 +30,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val workspacesPath = workspacesRoot + "/%s/%s".format(workspace.namespace.get, workspace.name.get)
   private final val methodconfigsPath = workspacesRoot + "/%s/%s/methodconfigs".format(workspace.namespace.get, workspace.name.get)
   private final val updateAttributesPath = workspacesRoot + "/%s/%s/updateAttributes".format(workspace.namespace.get, workspace.name.get)
+  private final val setAttributesPath = workspacesRoot + "/%s/%s/setAttributes".format(workspace.namespace.get, workspace.name.get)
   private final val aclPath = workspacesRoot + "/%s/%s/acl".format(workspace.namespace.get, workspace.name.get)
   private final val clonePath = workspacesRoot + "/%s/%s/clone".format(workspace.namespace.get, workspace.name.get)
   private final val lockPath = workspacesRoot + "/%s/%s/lock".format(workspace.namespace.get, workspace.name.get)
@@ -81,6 +82,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     // workspaces/%s/%s/updateAttributes
     workspaceServer
       .when(request().withMethod("PATCH").withPath(updateAttributesPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+    // workspaces/%s/%s/setAttributes
+    workspaceServer
+      .when(request().withMethod("PATCH").withPath(setAttributesPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -547,6 +555,40 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
           }
+        }
+      }
+    }
+  }
+
+  "Workspace setAttributes tests" - {
+    "when calling any method other than PATCH on workspaces/*/*/setAttributes path" - {
+      "should receive a MethodNotAllowed error" in {
+        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)(setAttributesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
+        }
+      }
+    }
+
+    "when calling PATCH on workspaces/*/*/setAttributes path" - {
+      "should 400 Bad Request if the payload is malformed" in {
+        (Patch(setAttributesPath, "{{{")
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+
+      "should 200 OK if the payload is ok" in {
+        (Patch(setAttributesPath,
+          """{"description": "something",
+            | "array": [1, 2, 3]
+            | }""".stripMargin)
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(OK)
         }
       }
     }

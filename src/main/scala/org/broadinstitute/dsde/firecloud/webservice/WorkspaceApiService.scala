@@ -87,12 +87,15 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               }
             } ~
             path("updateAttributes") {
+              passthrough(workspacePath, HttpMethods.PATCH)
+            } ~
+            path("setAttributes") {
               patch {
                 implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
                 entity(as[AttributeMap]) { newAttributes => requestContext =>
                   perRequest(requestContext,
                     WorkspaceService.props(workspaceServiceConstructor, userInfo),
-                    WorkspaceService.UpdateWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes))
+                    WorkspaceService.SetWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes))
                 }
               }
             } ~

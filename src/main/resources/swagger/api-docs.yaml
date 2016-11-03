@@ -1525,6 +1525,41 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
+        - name: workspaceUpdateJson
+          description: Attribute operations
+          required: true
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/AttributeUpdateOperation'
+          in: body
+      responses:
+        200:
+          description: Success
+        400:
+          description: Invalid operation
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/setAttributes:
+    patch:
+      tags:
+      - Workspaces
+      operationId: setAttributes
+      summary: |
+        Set attributes on a workspace.
+      produces:
+      - application/json
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - name: newAttributes
           description: New attribute values, as Map[String, Attribute]
           required: true
@@ -1534,7 +1569,7 @@ paths:
         200:
           description: Success
         400:
-          description: Invalid operation
+          description: Malformed request
         404:
           description: Workspace not found
         500:

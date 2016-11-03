@@ -16,8 +16,10 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import scala.util.Try
 
-class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with ElasticSearchDAOSupport {
+class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
   def toName(s:String) = AttributeName.fromDelimitedName(s)
+
+  val libraryAttributePredicate = (k: AttributeName) => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name
 
   val existingLibraryAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "library:keythree"->"valthree", "library:keyfour"->"valfour").toJson.convertTo[AttributeMap]
   val existingMixedAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "keythree"->"valthree", "keyfour"->"valfour").toJson.convertTo[AttributeMap]
@@ -71,7 +73,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Elasti
           RemoveAttribute(toName("library:keyfour"))
         )
         assertResult(expected) {
-          generateAttributeOperations(existingLibraryAttrs, newAttrs)
+          generateAttributeOperations(existingLibraryAttrs, newAttrs, libraryAttributePredicate)
         }
       }
     }
@@ -85,7 +87,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Elasti
           AddUpdateAttribute(toName("library:keytwo"),AttributeString("valtwoNew"))
         )
         assertResult(expected) {
-          generateAttributeOperations(existingLibraryAttrs, newAttrs)
+          generateAttributeOperations(existingLibraryAttrs, newAttrs, libraryAttributePredicate)
         }
       }
     }
@@ -109,7 +111,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Elasti
           AddListMember(toName("library:keytwo"), AttributeString("valtwoC"))
         )
         assertResult(expected) {
-          generateAttributeOperations(existingLibraryAttrs, newAttrs)
+          generateAttributeOperations(existingLibraryAttrs, newAttrs, libraryAttributePredicate)
         }
       }
     }
@@ -121,7 +123,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Elasti
           AddUpdateAttribute(toName("library:keyone"),AttributeString("valoneNew"))
         )
         assertResult(expected) {
-          generateAttributeOperations(existingMixedAttrs, newAttrs)
+          generateAttributeOperations(existingMixedAttrs, newAttrs, libraryAttributePredicate)
         }
       }
     }
@@ -135,7 +137,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Elasti
           AddUpdateAttribute(toName("library:keytwo"),AttributeString("valtwoNew"))
         )
         assertResult(expected) {
-          generateAttributeOperations(existingLibraryAttrs, newAttrs)
+          generateAttributeOperations(existingLibraryAttrs, newAttrs, libraryAttributePredicate)
         }
       }
     }
@@ -147,7 +149,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Elasti
           AddUpdateAttribute(toName("library:keyone"),AttributeString("valoneNew"))
         )
         assertResult(expected) {
-          generateAttributeOperations(existingPublishedAttrs, newAttrs)
+          generateAttributeOperations(existingPublishedAttrs, newAttrs, libraryAttributePredicate)
         }
       }
     }
@@ -161,7 +163,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Elasti
           AddUpdateAttribute(toName("library:keytwo"),AttributeString("valtwoNew"))
         )
         assertResult(expected) {
-          generateAttributeOperations(existingLibraryAttrs, newAttrs)
+          generateAttributeOperations(existingLibraryAttrs, newAttrs, libraryAttributePredicate)
         }
       }
     }
