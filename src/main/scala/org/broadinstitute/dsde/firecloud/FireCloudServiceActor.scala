@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud
 
+import akka.actor.ActorContext
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
 import org.slf4j.LoggerFactory
@@ -12,7 +13,9 @@ import org.broadinstitute.dsde.firecloud.webservice._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 
+
 class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives with LibraryApiService
+  with OauthApiService
   with WorkspaceApiService
   with NamespaceApiService
   with CookieAuthedApiService
@@ -32,6 +35,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
 
   val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO, thurloeDAO)
 
+  //  val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
@@ -49,7 +53,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
     methodConfigurationService.routes ~ submissionsService.routes ~
     statusService.routes ~ nihService.routes ~ billingService.routes
 
-  val oAuthService = new OAuthService with ActorRefFactoryContext
   val userService = new UserService with ActorRefFactoryContext
   val nihSyncService = new NIHSyncService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
@@ -83,7 +86,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
       logRequests {
         swaggerUiService ~
         testNihService ~
-        oAuthService.routes ~
+        oauthRoutes ~
         userService.routes ~
         nihSyncService.routes ~
         healthService.routes ~

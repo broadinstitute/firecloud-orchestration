@@ -34,8 +34,6 @@ class OauthApiServiceSpec extends ServiceSpec with OAuthService {
 
   val rawlsDAO:RawlsDAO = new MockRawlsDAO
   val searchDAO:SearchDAO = new MockSearchDAO
-  val app:Application = new Application(rawlsDAO, searchDAO)
-  val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
 //  override def beforeAll(): Unit = {
 //
@@ -56,7 +54,7 @@ class OauthApiServiceSpec extends ServiceSpec with OAuthService {
 
     "when handling routes" - {
       "should do the right thing" in {
-        actorRefFactory.actorOf(Props[FireCloudServiceActor])
+//        actorRefFactory.actorOf(Props[FireCloudServiceActor])
         val methodsService = new MethodsService with ActorRefFactoryContext
         val oAuthService = new OAuthService with ActorRefFactoryContext
         val nihSyncService = new NIHSyncService with ActorRefFactoryContext
