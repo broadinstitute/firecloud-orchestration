@@ -35,7 +35,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
 
   val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO, thurloeDAO)
 
-  //  val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
+  val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)

@@ -76,7 +76,7 @@ trait OauthApiService extends HttpService with FireCloudRequestBuilding
         requireUserInfo() { userInfo => rc =>
           perRequest(rc,
             OAuthService.props(oauthServiceConstructor),
-            OAuthService.GetRefreshTokenStatus()
+            OAuthService.GetRefreshTokenStatus(userInfo)
           )
         }
       }

@@ -13,9 +13,10 @@ import com.google.api.services.storage.StorageScopes
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
+import org.broadinstitute.dsde.firecloud.dataaccess.ThurloeDAO
 import org.broadinstitute.dsde.firecloud.model.{RawlsToken, RawlsTokenDate, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.service.OAuthService.HandleOauthCode
+import org.broadinstitute.dsde.firecloud.service.OAuthService.{GetRefreshTokenStatus, HandleOauthCode}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.joda.time.{DateTime, Days}
 import org.slf4j.LoggerFactory
@@ -42,17 +43,17 @@ object OAuthService {
 
   sealed trait OauthServiceMessage
   case class HandleOauthCode(code: String, redirectUri: String) extends OauthServiceMessage
-  case class GetRefreshTokenStatus() extends OauthServiceMessage
+  case class GetRefreshTokenStatus(userInfo: UserInfo) extends OauthServiceMessage
 
   def props(oauthService: () => OAuthService): Props = {
     Props(oauthService())
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new OAuthService()
+    new OAuthService(app.thurloeDAO)
 }
 
-class OAuthService()(implicit protected val executionContext: ExecutionContext) extends Actor
+class OAuthService(val thurloeDao: ThurloeDAO)(implicit protected val executionContext: ExecutionContext) extends Actor
   with LazyLogging {
 
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -62,6 +63,7 @@ class OAuthService()(implicit protected val executionContext: ExecutionContext) 
     case HandleOauthCode(code: String, redirectUri: String) => {
       handleOauthCode(code, redirectUri)
     } pipeTo sender
+    case GetRefreshTokenStatus(userInfo) => getRefreshTokenStatus(userInfo) pipeTo sender
   }
 
   def handleOauthCode(code: String, redirectUri: String): Future[PerRequestMessage] = {
@@ -92,7 +94,7 @@ class OAuthService()(implicit protected val executionContext: ExecutionContext) 
     }
   }
 
-  def getRefreshTokenStatus(): Future[PerRequestMessage] = {
+  def getRefreshTokenStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
     val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
     val tokenDateReq = Get(OAuthService.remoteTokenDateUrl)
     val tokenDateFuture: Future[HttpResponse] = pipeline {
@@ -143,8 +145,7 @@ class OAuthService()(implicit protected val executionContext: ExecutionContext) 
   private def updateNihStatus(subjectId: String, accessToken: String) = {
     val userInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, subjectId)
     val dummyRequestContext = RequestContext(HttpRequest(), null, Uri.Path.SingleSlash)
-    perRequest(dummyRequestContext, Props(new ProfileClientActor(dummyRequestContext)),
-      ProfileClient.GetAndUpdateNIHStatus(userInfo))
+    thurloeDao.getProfile(userInfo, updateExpiration = true)
   }
 
   private def completeWithRefreshToken(accessToken: String, refreshToken: String): Future[PerRequestMessage] = {
