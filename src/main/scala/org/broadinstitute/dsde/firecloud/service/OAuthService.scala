@@ -93,49 +93,39 @@ class OAuthService(val thurloeDao: ThurloeDAO)(implicit protected val executionC
   def getRefreshTokenStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
     val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
     val tokenDateReq = Get(OAuthService.remoteTokenDateUrl)
-    val tokenDateFuture: Future[HttpResponse] = pipeline {
-      tokenDateReq
+    val tokenDateFuture: Future[HttpResponse] = pipeline { tokenDateReq }
+    tokenDateFuture.map { response =>
+      response.status match {
+        case StatusCodes.OK =>
+          // rawls found a refresh token; check its date
+          val tokenDate = unmarshal[RawlsTokenDate].apply(response)
+          val howOld = Days.daysBetween(
+            DateTime.parse(tokenDate.refreshTokenUpdatedDate), DateTime.now)
+          howOld.getDays match {
+            case x if x < 90 =>
+              log.debug(s"User's refresh token is $x days old; all good!")
+              RequestComplete(StatusCodes.NoContent)
+            case x =>
+              log.info(s"User's refresh token is $x days old; requesting a new one.")
+              RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
+          }
+        case StatusCodes.BadRequest =>
+          log.info(s"User has an illegal refresh token; requesting a new one.")
+          // rawls has a bad refresh token, restart auth.
+          RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
+        case StatusCodes.NotFound =>
+          log.info(s"User does not already have a refresh token; requesting a new one.")
+          // rawls does not have a refresh token for us. restart auth.
+          RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
+        case x =>
+          log.warn("Unexpected response code when querying rawls for existence of refresh token: "
+            + x.value + " " + x.reason)
+          RequestComplete(
+            StatusCodes.InternalServerError,
+            Map("error" -> Map("value" -> x.value, "reason" -> x.reason))
+          )
+      }
     }
-    tokenDateFuture onComplete {
-      case Success(response) =>
-        response.status match {
-          case StatusCodes.OK =>
-            // rawls found a refresh token; check its date
-            val tokenDate = unmarshal[RawlsTokenDate].apply(response)
-            val howOld = Days.daysBetween(
-              DateTime.parse(tokenDate.refreshTokenUpdatedDate), DateTime.now)
-            howOld.getDays match {
-              case x if x < 90 =>
-                log.debug(s"User's refresh token is $x days old; all good!")
-                RequestComplete(StatusCodes.NoContent)
-              case x =>
-                log.info(s"User's refresh token is $x days old; requesting a new one.")
-                RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
-            }
-          case StatusCodes.BadRequest =>
-            log.info(s"User has an illegal refresh token; requesting a new one.")
-            // rawls has a bad refresh token, restart auth.
-            RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
-          case StatusCodes.NotFound =>
-            log.info(s"User does not already have a refresh token; requesting a new one.")
-            // rawls does not have a refresh token for us. restart auth.
-            RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
-          case x =>
-            log.warn("Unexpected response code when querying rawls for existence of refresh token: "
-              + x.value + " " + x.reason)
-            RequestComplete(
-              StatusCodes.InternalServerError,
-              Map("error" -> Map("value" -> x.value, "reason" -> x.reason))
-            )
-        }
-      case Failure(error) =>
-        log.warn("Could not query rawls for existence of refresh token: " + error.getMessage)
-        RequestComplete(
-          StatusCodes.InternalServerError,
-          Map("error" -> Map("message" -> error.getMessage))
-        )
-    }
-    throw new RuntimeException("This code isn't written correctly.")
   }
 
   private def updateNihStatus(subjectId: String, accessToken: String) = {
