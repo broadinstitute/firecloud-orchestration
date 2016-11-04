@@ -1,21 +1,19 @@
 package org.broadinstitute.dsde.firecloud.core
 
-import akka.actor.{ActorRefFactory, Actor, Props}
+import akka.actor.{Actor, ActorRefFactory, Props}
 import akka.event.Logging
 import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-
 import org.broadinstitute.dsde.firecloud.core.ProfileClient._
-import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{HttpGoogleServicesDAO, HttpThurloeDAO}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{UserService, FireCloudRequestBuilding}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudRequestBuilding, UserService}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
-
 import spray.client.pipelining._
-import spray.http.{Uri, HttpRequest, HttpResponse}
+import spray.http.{HttpRequest, HttpResponse, Uri}
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
@@ -23,7 +21,7 @@ import spray.routing.RequestContext
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object ProfileClient {
   case class UpdateProfile(userInfo: UserInfo, profile: BasicProfile)
@@ -54,6 +52,9 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
+
+  // TODO(dmohs): This should be passed like other actors.
+  val temporaryThurloeDao = new HttpThurloeDAO
 
   override def receive: Receive = {
 
@@ -105,86 +106,12 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       }
 
     case GetNIHStatus(userInfo: UserInfo) =>
-      val profileResponse = getProfile(userInfo, false)
+      val profileResponse = temporaryThurloeDao.getProfile(userInfo, updateExpiration = false)
       profileResponse pipeTo context.parent
 
     case SyncWhitelist =>
       syncWhitelist() pipeTo context.parent
 
-  }
-
-  def getProfile(userInfo: UserInfo, updateExpiration: Boolean): Future[PerRequestMessage] = {
-    val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
-    val profileReq = Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))
-
-    pipeline(profileReq) flatMap { response: HttpResponse =>
-      response.status match {
-        case OK =>
-          val profileEither = response.entity.as[ProfileWrapper]
-          profileEither match {
-            case Right(profileWrapper) =>
-              val profile = Profile(profileWrapper)
-              profile.linkedNihUsername match {
-                case Some(nihUsername) =>
-                  // we have a linked profile.
-
-                  // get the current link expiration time
-                  val profileExpiration = profile.linkExpireTime.getOrElse(0L)
-
-                  // calculate the possible new link expiration time
-                  val linkExpireSeconds = if (updateExpiration) {
-                    calculateExpireTime(profile)
-                  } else {
-                    profileExpiration
-                  }
-
-                  // if the link expiration time needs updating (i.e. is different than what's in the profile), do the updating
-                  if (linkExpireSeconds != profileExpiration) {
-                    val expireKVP = FireCloudKeyValue(Some("linkExpireTime"), Some(linkExpireSeconds.toString))
-                    val expirePayload = ThurloeKeyValue(Some(userInfo.getUniqueId), Some(expireKVP))
-
-                    val postPipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
-                    val updateReq = Post(UserService.remoteSetKeyURL, expirePayload)
-
-                    postPipeline(updateReq) map { response: HttpResponse =>
-                      response.status match {
-                        case OK => log.info(s"User with linked NIH account [%s] now has 24 hours to re-link.".format(nihUsername))
-                        case x =>
-                          log.warning(s"User with linked NIH account [%s] requires re-link within 24 hours, ".format(nihUsername) +
-                            s"but the system encountered a failure updating link expiration: " + response.toString)
-                      }
-                    } recover {
-                      case e: Throwable =>
-                        // TODO: COULD NOT UPDATE link expire in Thurloe
-                        log.warning(s"User with linked NIH account [%s] requires re-link within 24 hours, ".format(nihUsername) +
-                          s"but the system encountered an unexpected error updating link expiration: " + e.getMessage, e)
-                    }
-                  }
-
-                  val howSoonExpire = DateUtils.secondsSince(linkExpireSeconds)
-
-                  // if the user's link has expired, the user must re-link.
-                  // NB: we use a separate val here in case we need to change the logic. For instance, we could
-                  // change the logic later to be "link has expired OR user hasn't logged in within 24 hours"
-                  val loginRequired = (howSoonExpire >= 0)
-
-                  getNIHStatusResponse(pipeline, loginRequired, profile, linkExpireSeconds)
-
-                case _ =>
-                  Future(RequestComplete(NotFound, "Linked NIH username not found"))
-              }
-            case Left(err) =>
-              Future(RequestCompleteWithErrorReport(InternalServerError,
-                "Could not unmarshal profile response: " + err.toString, Seq()))
-          }
-        case x =>
-          // request for profile returned non-200
-          Future(RequestCompleteWithErrorReport(x, response.toString, Seq()))
-      }
-    } recover {
-      // unexpected error retrieving profile
-      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
-    }
   }
 
   def getNIHStatusResponse(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
