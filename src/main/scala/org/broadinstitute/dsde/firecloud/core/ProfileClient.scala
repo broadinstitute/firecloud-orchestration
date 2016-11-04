@@ -29,7 +29,6 @@ object ProfileClient {
   case class UpdateProfile(userInfo: UserInfo, profile: BasicProfile)
   case class UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink)
   case class GetNIHStatus(userInfo: UserInfo)
-  case class GetAndUpdateNIHStatus(userInfo: UserInfo)
   case object SyncWhitelist
 
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
@@ -108,10 +107,6 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
     case GetNIHStatus(userInfo: UserInfo) =>
       val profileResponse = getProfile(userInfo, false)
       profileResponse pipeTo context.parent
-
-    case GetAndUpdateNIHStatus(userInfo: UserInfo) =>
-      getProfile(userInfo, true)
-      // do NOT pipe the response back to the parent!
 
     case SyncWhitelist =>
       syncWhitelist() pipeTo context.parent

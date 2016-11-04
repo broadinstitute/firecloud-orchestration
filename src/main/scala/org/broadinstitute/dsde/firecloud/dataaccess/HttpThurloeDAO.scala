@@ -5,8 +5,7 @@ import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.{Notification, Profile, ThurloeNotification, _}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudRequestBuilding, UserService}
 import org.broadinstitute.dsde.firecloud.utils.{DateUtils, RestJsonClient}
-import spray.http.{HttpHeaders, HttpRequest, HttpResponse, OAuth2BearerToken}
-import spray.httpx.TransformerPipelineSupport.WithTransformerConcatenation
+import spray.http.{HttpRequest, HttpResponse, OAuth2BearerToken}
 import spray.client.pipelining._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._

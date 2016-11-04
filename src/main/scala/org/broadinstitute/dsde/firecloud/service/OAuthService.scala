@@ -12,7 +12,6 @@ import com.google.api.services.compute.ComputeScopes
 import com.google.api.services.storage.StorageScopes
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
 import org.broadinstitute.dsde.firecloud.dataaccess.ThurloeDAO
 import org.broadinstitute.dsde.firecloud.model.{RawlsToken, RawlsTokenDate, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -24,9 +23,6 @@ import spray.client.pipelining._
 import spray.http._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
-import spray.json.JsonParser.ParsingException
-import spray.json._
-import spray.routing._
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
@@ -144,7 +140,6 @@ class OAuthService(val thurloeDao: ThurloeDAO)(implicit protected val executionC
 
   private def updateNihStatus(subjectId: String, accessToken: String) = {
     val userInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, subjectId)
-    val dummyRequestContext = RequestContext(HttpRequest(), null, Uri.Path.SingleSlash)
     thurloeDao.getProfile(userInfo, updateExpiration = true)
   }
 
