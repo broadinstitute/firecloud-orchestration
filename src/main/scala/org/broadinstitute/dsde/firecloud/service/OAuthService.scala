@@ -83,8 +83,8 @@ trait OAuthService extends HttpService with PerRequestCreator with FireCloudDire
             // update the NIH link expiration time, as applicable
             gcsTokenResponse.subject_id match {
               case Some(sub) =>
-                // NB: we use dummy values in the UserInfo object for email addr and expire time; these are irrelevant
-                val userInfo:UserInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, sub)
+                // NB: we use null values in the UserInfo object for email addr and expire time; these are irrelevant
+                val userInfo:UserInfo = UserInfo(null, OAuth2BearerToken(accessToken), null, null)
                 perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
                   ProfileClient.GetAndUpdateNIHStatus(userInfo))
               case None =>

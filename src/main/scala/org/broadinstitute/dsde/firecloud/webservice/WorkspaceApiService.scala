@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
-import org.broadinstitute.dsde.firecloud.core.{ExportEntitiesByType, ExportEntitiesByTypeActor}
+import org.broadinstitute.dsde.firecloud.core.{ExportEntities, ExportEntitiesActor}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
@@ -51,22 +51,22 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
   }
 
   val workspaceRoutes: Route =
-    requireUserInfo() { userInfo =>
-      pathPrefix("cookie-authed") {
-        path("workspaces" / Segment / Segment / "exportAttributes") {
-          (workspaceNamespace, workspaceName) =>
-            cookie("FCtoken") { tokenCookie =>
-              mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
-                val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
-                get { requestContext =>
-                  perRequest(requestContext,
-                    WorkspaceService.props(workspaceServiceConstructor, userInfo),
-                    WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, filename))
-                }
+   pathPrefix("cookie-authed") {
+      path("workspaces" / Segment / Segment / "exportAttributes") {
+        (workspaceNamespace, workspaceName) =>
+          cookie("FCtoken") { tokenCookie =>
+            mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
+              val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
+              get { requestContext =>
+                perRequest(requestContext,
+                  WorkspaceService.props(workspaceServiceConstructor, new UserInfo(null, OAuth2BearerToken(tokenCookie.content), null, null)),
+                  WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, filename))
               }
             }
-        }
-      } ~
+          }
+      }
+    } ~
+    requireUserInfo() { userInfo =>
       pathPrefix("api") {
         pathPrefix("workspaces") {
           pathEnd {
@@ -129,7 +129,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                     entity(as[List[WorkspaceACLUpdate]]) { aclUpdates => requestContext =>
                       perRequest(requestContext,
                         WorkspaceService.props(workspaceServiceConstructor, userInfo),
-                        WorkspaceService.UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail))
+                        WorkspaceService.UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail.get))
                     }
                   } ~
                     get {

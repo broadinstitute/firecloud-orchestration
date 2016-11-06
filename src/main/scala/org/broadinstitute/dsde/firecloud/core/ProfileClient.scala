@@ -61,7 +61,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
     case UpdateProfile(userInfo: UserInfo, profile: BasicProfile) =>
       val parent = context.parent
       val pipeline = authHeaders(requestContext) ~> sendReceive
-      val profilePropertyMap = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
+      val profilePropertyMap = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail.get)
       val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
       val profileResponse: Future[PerRequestMessage] = propertyUpdates flatMap { responses =>
         val allSucceeded = responses.forall { _.status.isSuccess }
@@ -69,11 +69,11 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
           case true =>
             val kv2 = FireCloudKeyValue(Some("isRegistrationComplete"), Some(Profile.currentVersion.toString))
             val completionUpdate = pipeline {
-              Post(UserService.remoteSetKeyURL, ThurloeKeyValue(Some(userInfo.getUniqueId), Some(kv2)))
+              Post(UserService.remoteSetKeyURL, ThurloeKeyValue(Some(userInfo.getUniqueId.get), Some(kv2)))
             }
             completionUpdate.flatMap { response =>
               response.status match {
-                case x if x.isSuccess => checkUserInRawls(pipeline, requestContext, userInfo.getUniqueId)
+                case x if x.isSuccess => checkUserInRawls(pipeline, requestContext, userInfo.getUniqueId.get)
                 case _ => Future(RequestCompleteWithErrorReport(response.status,
                                   "Profile partially saved, but error completing profile", Seq(ErrorReport(response))))
               }
@@ -88,7 +88,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
     case UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) =>
       val parent = context.parent
-      val syncWhiteListResult = syncWhitelist(Some(userInfo.getUniqueId))
+      val syncWhiteListResult = syncWhitelist(Some(userInfo.getUniqueId.get))
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = nihLink.propertyValueMap
       val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
@@ -146,7 +146,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                   // if the link expiration time needs updating (i.e. is different than what's in the profile), do the updating
                   if (linkExpireSeconds != profileExpiration) {
                     val expireKVP = FireCloudKeyValue(Some("linkExpireTime"), Some(linkExpireSeconds.toString))
-                    val expirePayload = ThurloeKeyValue(Some(userInfo.getUniqueId), Some(expireKVP))
+                    val expirePayload = ThurloeKeyValue(Some(userInfo.getUniqueId.get), Some(expireKVP))
 
                     val postPipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
                     val updateReq = Post(UserService.remoteSetKeyURL, expirePayload)
@@ -228,7 +228,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
         pipeline {
           Post(UserService.remoteSetKeyURL,
             ThurloeKeyValue(
-              Some(userInfo.getUniqueId),
+              Some(userInfo.getUniqueId.get),
               Some(FireCloudKeyValue(Some(key), Some(value)))
           ))
         }

@@ -64,8 +64,8 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
           } ~
           path("tsv") { requestContext =>
             val filename = entityType + ".txt"
-            perRequest(requestContext, Props(new ExportEntitiesByTypeActor(requestContext)),
-              ExportEntitiesByType.ProcessEntities(baseRawlsEntitiesUrl, filename, entityType))
+            perRequest(requestContext, Props(new ExportEntitiesActor(requestContext)),
+              ExportEntities.ProcessEntities(baseRawlsEntitiesUrl, filename, entityType))
           } ~
           path(Segment) { entityName =>
             passthrough(requestCompression = true, entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)

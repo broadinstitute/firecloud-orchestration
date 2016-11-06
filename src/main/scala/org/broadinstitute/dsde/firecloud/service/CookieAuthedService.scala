@@ -28,8 +28,8 @@ trait CookieAuthedService extends HttpService with PerRequestCreator with FireCl
           mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
             val baseRawlsEntitiesUrl = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
             val filename = entityType + ".txt"
-            perRequest(requestContext, Props(new ExportEntitiesByTypeActor(requestContext)),
-              ExportEntitiesByType.ProcessEntities(baseRawlsEntitiesUrl, filename, entityType))
+            perRequest(requestContext, Props(new ExportEntitiesActor(requestContext)),
+              ExportEntities.ProcessEntities(baseRawlsEntitiesUrl, filename, entityType))
           }
         }
     } ~

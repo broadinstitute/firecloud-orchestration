@@ -6,15 +6,14 @@ import java.util.zip.{ZipEntry, ZipOutputStream}
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
-
-import org.broadinstitute.dsde.firecloud.core.ExportEntitiesByType.ProcessEntities
+import org.broadinstitute.dsde.firecloud.core.ExportEntities.ProcessEntities
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, RequestCompleteWithErrorReport}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
+import org.broadinstitute.dsde.firecloud.service.WorkspaceService.ExportWorkspaceAttributes
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
-
 import spray.client.pipelining._
 import spray.http.HttpEncodings._
 import spray.http.HttpHeaders.`Accept-Encoding`
@@ -27,20 +26,24 @@ import spray.json.DefaultJsonProtocol._
 import spray.routing.RequestContext
 
 import scala.concurrent.Future
-import scala.util.Success
+import scala.util.{Failure, Success, Try}
 
-object ExportEntitiesByType {
+object ExportEntities {
   case class ProcessEntities(baseEntityUrl: String, filename: String, entityType: String)
-  def props(requestContext: RequestContext): Props = Props(new ExportEntitiesByTypeActor(requestContext))
+  //case class ExportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String)
+  def props(requestContext: RequestContext): Props = Props(new ExportEntitiesActor(requestContext))
+
 }
 
-class ExportEntitiesByTypeActor(requestContext: RequestContext) extends Actor with FireCloudRequestBuilding  {
+class ExportEntitiesActor(requestContext: RequestContext) extends Actor with FireCloudRequestBuilding  {
 
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
 
   override def receive: Receive = {
+    /*case ExportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String) =>
+      exportWorkspaceAttributes(workspaceNamespace, workspaceName, filename) pipeTo sender*/
     case ProcessEntities(baseEntityUrl: String, filename: String, entityType: String) =>
       val pipeline = authHeaders(requestContext) ~> addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
       pipeline { Get(baseEntityUrl + "/" + entityType) } map {
@@ -85,5 +88,20 @@ class ExportEntitiesByTypeActor(requestContext: RequestContext) extends Actor wi
     zos.finish()
     bos.toByteArray
   }
+
+/*
+  def exportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
+    Try(rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)) match {
+      case Failure(regret) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
+      case Success(workspaceFuture) => workspaceFuture map { workspaceResponse =>
+        val headerString = "workspace:" + (workspaceResponse.workspace.get.attributes map { case (attName, attValue) =>
+          attName.name}).mkString("\t").replaceAll("description\t", "")
+        val valueString = (workspaceResponse.workspace.get.attributes map { attribute =>
+          impAttributeFormat.write(attribute._2).toString().replaceAll("\"","")}).mkString("\t").replaceAll("null\t", "")
+        RequestComplete(StatusCodes.OK, headerString + "\n" + valueString)
+      }
+    }
+  }*/
+
 
 }

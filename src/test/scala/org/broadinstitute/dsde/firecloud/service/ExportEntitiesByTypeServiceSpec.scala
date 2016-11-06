@@ -11,7 +11,7 @@ import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
+class ExportEntitiesServiceSpec extends ServiceSpec with EntityService {
 
   def actorRefFactory = system
 
@@ -70,7 +70,7 @@ class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
     workspaceServer.stop()
   }
 
-  "EntityService-ExportEntitiesByType" - {
+  "EntityService-ExportEntities" - {
 
     "when calling GET on exporting a valid entity type" - {
       "OK response is returned" in {

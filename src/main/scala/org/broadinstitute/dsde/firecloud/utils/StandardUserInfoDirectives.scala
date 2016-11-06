@@ -26,7 +26,7 @@ trait StandardUserInfoDirectives extends UserInfoDirectives {
         userEmail <- emailHeaderDirective;
         accessTokenExpiresIn <- accessTokenExpiresInHeaderDirective;
         id <- idHeaderDirective
-    ) yield UserInfo(userEmail, OAuth2BearerToken(accessToken), accessTokenExpiresIn.toLong, id)
+    ) yield UserInfo(Option(userEmail), OAuth2BearerToken(accessToken), Option(accessTokenExpiresIn.toLong), Option(id))
   }
 
   private def accessTokenHeaderDirective: Directive1[String] = headerValueByName("OIDC_access_token")
