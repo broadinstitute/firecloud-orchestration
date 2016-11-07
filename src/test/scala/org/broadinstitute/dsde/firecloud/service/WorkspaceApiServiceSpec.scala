@@ -11,7 +11,7 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import org.scalatest.BeforeAndAfterEach
-import spray.http.HttpMethods
+import spray.http.{MediaTypes, HttpEntity, HttpMethods}
 
 import spray.http.StatusCodes._
 import spray.json._
@@ -26,6 +26,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   )
 
   // Mock remote endpoints
+  // TODO: This root is incorrect!  It needs to start with "/"
   private final val workspacesRoot = "api/workspaces"
   private final val workspacesPath = workspacesRoot + "/%s/%s".format(workspace.namespace.get, workspace.name.get)
   private final val methodconfigsPath = workspacesRoot + "/%s/%s/methodconfigs".format(workspace.namespace.get, workspace.name.get)
@@ -563,9 +564,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   "Workspace setAttributes tests" - {
     "when calling any method other than PATCH on workspaces/*/*/setAttributes path" - {
       "should receive a MethodNotAllowed error" in {
-        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
+        List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)(setAttributesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            new RequestBuilder(method)("/" + setAttributesPath, HttpEntity(MediaTypes.`application/json`, "{}")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -574,7 +575,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "when calling PATCH on workspaces/*/*/setAttributes path" - {
       "should 400 Bad Request if the payload is malformed" in {
-        (Patch(setAttributesPath, "{{{")
+        (Patch("/" + setAttributesPath, HttpEntity(MediaTypes.`application/json`, "{{{"))
           ~> dummyUserIdHeaders("1234")
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
@@ -582,10 +583,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 200 OK if the payload is ok" in {
-        (Patch(setAttributesPath,
-          """{"description": "something",
-            | "array": [1, 2, 3]
-            | }""".stripMargin)
+        (Patch("/" + setAttributesPath,
+          HttpEntity(MediaTypes.`application/json`, """{"description": "something",
+                                                      | "array": [1, 2, 3]
+                                                      | }""".stripMargin))
           ~> dummyUserIdHeaders("1234")
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
