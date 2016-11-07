@@ -99,33 +99,6 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
   }
 
-  def getNIHStatusResponse(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    loginRequired: Boolean, profile: Profile, linkExpireSeconds: Long): Future[PerRequestMessage] = {
-    val dbGapUrl = UserService.groupUrl(FireCloudConfig.Nih.rawlsGroupName)
-    val isDbGapAuthorizedRequest = Get(dbGapUrl)
-
-    pipeline(isDbGapAuthorizedRequest) map { response: HttpResponse =>
-      val authorized: Boolean = response.status match {
-        case x if x == OK => true
-        case _ => false
-      }
-      RequestComplete(OK,
-        NIHStatus(
-          loginRequired,
-          linkedNihUsername = profile.linkedNihUsername,
-          isDbgapAuthorized = Some(authorized),
-          lastLinkTime = Some(profile.lastLinkTime.getOrElse(0L)),
-          linkExpireTime = Some(linkExpireSeconds),
-          descriptionSinceLastLink = Some(DateUtils.prettySince(profile.lastLinkTime.getOrElse(0L))),
-          descriptionUntilExpires = Some(DateUtils.prettySince(linkExpireSeconds))
-        )
-      )
-    } recover {
-      // unexpected error retrieving dbgap group status
-      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
-    }
-  }
-
   def updateUserProperties(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     userInfo: UserInfo,
@@ -198,6 +171,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                                       "Profile saved, but unexpected error registering user", e) }
   }
 
+  // TODO(dmohs): DRY
   def sendNotification(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     notification: Notification) = {
     pipeline {
