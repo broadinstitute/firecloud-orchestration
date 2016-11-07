@@ -109,30 +109,28 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
   private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/2.2.5"
 
   val swaggerUiService = {
-    optionalHeaderValueByName("X-Forwarded-Host") { forwardedHost =>
-      path("") {
-        get {
-          parameter("url") {urlparam =>
-            requestUri {uri =>
-              redirect(uri.withQuery(Map.empty[String,String]), MovedPermanently)
-            }
-          } ~
-          serveIndex()
-        }
-      } ~
-      path("api-docs") {
-        get {
-          withResourceFileContents("swagger/api-docs.yaml") { apiDocs =>
-            complete(apiDocs)
+    path("") {
+      get {
+        parameter("url") {urlparam =>
+          requestUri {uri =>
+            redirect(uri.withQuery(Map.empty[String,String]), MovedPermanently)
           }
+        } ~
+        serveIndex()
+      }
+    } ~
+    path("api-docs") {
+      get {
+        withResourceFileContents("swagger/api-docs.yaml") { apiDocs =>
+          complete(apiDocs)
         }
-      } ~
-      (pathSuffixTest("o2c.html") | pathSuffixTest("swagger-ui.js")
-          | pathPrefixTest("css" /) | pathPrefixTest("fonts" /) | pathPrefixTest("images" /)
-          | pathPrefixTest("lang" /) | pathPrefixTest("lib" /)) {
-        get {
-          getFromResourceDirectory(swaggerUiPath)
-        }
+      }
+    } ~
+    (pathSuffixTest("o2c.html") | pathSuffixTest("swagger-ui.js")
+        | pathPrefixTest("css" /) | pathPrefixTest("fonts" /) | pathPrefixTest("images" /)
+        | pathPrefixTest("lang" /) | pathPrefixTest("lib" /)) {
+      get {
+        getFromResourceDirectory(swaggerUiPath)
       }
     }
   }
