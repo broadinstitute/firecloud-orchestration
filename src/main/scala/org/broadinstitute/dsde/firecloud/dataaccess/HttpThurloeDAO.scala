@@ -56,7 +56,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
 
                   // calculate the possible new link expiration time
                   val linkExpireSeconds = if (updateExpiration) {
-                    calculateExpireTime(profile)
+                    HttpThurloeDAO.calculateExpireTime(profile)
                   } else {
                     profileExpiration
                   }
@@ -136,8 +136,11 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
       case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
     }
   }
+}
 
-  private def calculateExpireTime(profile:Profile): Long = {
+object HttpThurloeDAO {
+  // Not private to allow this to be called by tests.
+  def calculateExpireTime(profile:Profile): Long = {
     (profile.lastLinkTime, profile.linkExpireTime) match {
       case (Some(lastLink), Some(expire)) if (lastLink < DateUtils.nowMinus24Hours && expire > DateUtils.nowPlus24Hours) =>
         // The user has not logged in to FireCloud within 24 hours, AND the user's expiration is

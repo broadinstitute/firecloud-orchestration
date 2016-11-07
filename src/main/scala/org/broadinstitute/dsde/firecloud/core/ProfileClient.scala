@@ -30,21 +30,6 @@ object ProfileClient {
   case object SyncWhitelist
 
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
-
-  def calculateExpireTime(profile:Profile): Long = {
-    (profile.lastLinkTime, profile.linkExpireTime) match {
-      case (Some(lastLink), Some(expire)) if (lastLink < DateUtils.nowMinus24Hours && expire > DateUtils.nowPlus24Hours) =>
-        // The user has not logged in to FireCloud within 24 hours, AND the user's expiration is
-        // more than 24 hours in the future. Reset the user's expiration.
-        DateUtils.nowPlus24Hours
-      case (Some(lastLink), Some(expire)) =>
-        // User in good standing; return the expire time unchanged
-        expire
-      case _ =>
-        // Either last-link or expire is missing. Reset the user's expiration.
-        DateUtils.nowPlus24Hours
-    }
-  }
 }
 
 class ProfileClientActor(requestContext: RequestContext) extends Actor with FireCloudRequestBuilding {

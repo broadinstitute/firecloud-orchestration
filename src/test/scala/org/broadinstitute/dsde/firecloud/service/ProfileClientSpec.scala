@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.model.Profile
-import org.broadinstitute.dsde.firecloud.core.ProfileClient
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpThurloeDAO
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.scalatest.FreeSpec
 
@@ -48,7 +48,7 @@ class ProfileClientSpec extends FreeSpec {
         val expire = DateUtils.nowPlus30Days
 
         val profile = makeProfile(Some(lastLink), Some(expire))
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
 
         assertExpireTimeWasUpdated(calculatedExpire)
       }
@@ -60,7 +60,7 @@ class ProfileClientSpec extends FreeSpec {
         val expire = DateUtils.nowPlus1Hour
 
         val profile = makeProfile(Some(lastLink), Some(expire))
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
         assertResult(expire) { calculatedExpire }
       }
     }
@@ -71,7 +71,7 @@ class ProfileClientSpec extends FreeSpec {
         val expire = DateUtils.nowMinus30Days
 
         val profile = makeProfile(Some(lastLink), Some(expire))
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
         assertResult(expire) { calculatedExpire }
       }
     }
@@ -82,7 +82,7 @@ class ProfileClientSpec extends FreeSpec {
         val expire = DateUtils.nowMinus1Hour
 
         val profile = makeProfile(Some(lastLink), Some(expire))
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
         assertResult(expire) { calculatedExpire }
       }
     }
@@ -95,7 +95,7 @@ class ProfileClientSpec extends FreeSpec {
         val expire = DateUtils.nowPlus30Days
 
         val profile = makeProfile(Some(lastLink), Some(expire))
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
         assertResult(expire) { calculatedExpire }
       }
     }
@@ -106,7 +106,7 @@ class ProfileClientSpec extends FreeSpec {
         val expire = DateUtils.nowPlus1Hour
 
         val profile = makeProfile(Some(lastLink), Some(expire))
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
         assertResult(expire) { calculatedExpire }
       }
     }
@@ -117,7 +117,7 @@ class ProfileClientSpec extends FreeSpec {
         val expire = DateUtils.nowMinus30Days
 
         val profile = makeProfile(Some(lastLink), Some(expire))
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
         assertResult(expire) { calculatedExpire }
       }
     }
@@ -128,7 +128,7 @@ class ProfileClientSpec extends FreeSpec {
         val expire = DateUtils.nowMinus1Hour
 
         val profile = makeProfile(Some(lastLink), Some(expire))
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
         assertResult(expire) { calculatedExpire }
       }
     }
@@ -136,7 +136,7 @@ class ProfileClientSpec extends FreeSpec {
     "No lastLink or expire time" - {
       "should return expire as now+24hours" in {
         val profile = makeProfile()
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
 
         assertExpireTimeWasUpdated(calculatedExpire)
       }
@@ -146,7 +146,7 @@ class ProfileClientSpec extends FreeSpec {
       "should return expire as now+24hours" in {
         val expire = DateUtils.nowPlus1Hour
         val profile = makeProfile(None, Some(expire))
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
 
         assertExpireTimeWasUpdated(calculatedExpire)
       }
@@ -156,7 +156,7 @@ class ProfileClientSpec extends FreeSpec {
       "should return expire as now+24hours" in {
         val lastLink = DateUtils.nowMinus1Hour
         val profile = makeProfile(Some(lastLink), None)
-        val calculatedExpire = ProfileClient.calculateExpireTime(profile)
+        val calculatedExpire = HttpThurloeDAO.calculateExpireTime(profile)
 
         assertExpireTimeWasUpdated(calculatedExpire)
       }
