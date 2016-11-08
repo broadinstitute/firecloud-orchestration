@@ -20,7 +20,12 @@ class MockRawlsDAO  extends RawlsDAO {
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = Future(true)
 
   override def getWorkspace(ns: String, name: String)(implicit userInfo: UserInfo): Future[RawlsWorkspaceResponse] = {
-    Future(RawlsWorkspaceResponse(Some("OWNER")))
+    ns match {
+      case "projectowner" => Future(RawlsWorkspaceResponse(Some("PROJECT_OWNER")))
+      case "reader" => Future(RawlsWorkspaceResponse(Some("READER")))
+      case _ => Future(RawlsWorkspaceResponse(Some("OWNER")))
+    }
+
   }
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userInfo: UserInfo): Future[RawlsWorkspace] = {
