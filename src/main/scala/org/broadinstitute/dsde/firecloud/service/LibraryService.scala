@@ -89,7 +89,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
       // verify owner on workspace
-      if (!workspaceResponse.accessLevel.contains("OWNER")) {
+      if (!workspaceResponse.accessLevel.contains("OWNER") && !workspaceResponse.accessLevel.contains("PROJECT_OWNER")) {
         Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner"))
       } else {
         val operations = updatePublishAttribute(value)
