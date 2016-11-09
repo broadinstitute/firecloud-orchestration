@@ -15,6 +15,28 @@ basePath: /
 produces:
   - application/json
 
+security:
+  - googleoauth:
+      - openid
+      - email
+      - profile
+      - https://www.googleapis.com/auth/devstorage.full_control
+
+securityDefinitions:
+  googleoauth:
+    type: oauth2
+    authorizationUrl: 'https://accounts.google.com/o/oauth2/auth'
+    flow: implicit
+    scopes:
+      openid: open id authorization
+      email: email authorization
+      profile: profile authorization
+      https://www.googleapis.com/auth/devstorage.full_control: GCS storage
+      https://www.googleapis.com/auth/cloud-billing: GCS billing
+
+##########################################################################################
+## PATHS
+##########################################################################################
 paths:
   /api/workspaces:
     get:
@@ -1662,23 +1684,12 @@ paths:
           description: linkedNihUsername key missing from status
         500:
           description: Internal server error retrieving NIH status
-securityDefinitions:
-  googleoauth:
-    type: oauth2
-    authorizationUrl: 'https://accounts.google.com/o/oauth2/auth'
-    flow: implicit
-    scopes:
-      openid: open id authorization
-      email: email authorization
-      profile: profile authorization
-      https://www.googleapis.com/auth/devstorage.full_control: GCS storage
-      https://www.googleapis.com/auth/cloud-billing: GCS billing
-security:
-  - googleoauth:
-      - openid
-      - email
-      - profile
-      - https://www.googleapis.com/auth/devstorage.full_control
+
+
+
+##########################################################################################
+## PARAMETERS
+##########################################################################################
 parameters:
   workspaceNamespaceParam:
     name: workspaceNamespace
@@ -1753,6 +1764,10 @@ parameters:
     required: true
     type: string
     in: path
+
+##########################################################################################
+## DEFINITIONS
+##########################################################################################
 definitions:
   WorkspaceIngest:
     required:
