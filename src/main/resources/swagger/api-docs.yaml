@@ -38,52 +38,146 @@ securityDefinitions:
 ## PATHS
 ##########################################################################################
 paths:
-  /api/workspaces:
-    get:
-      tags:
-      - Workspaces
-      operationId: listWorkspaces
-      summary: |
-        Lists workspaces.
-      produces:
-        - application/json
-        - text/plain
-      responses:
-        200:
-          description: List of workspaces.
-    post:
-      tags:
-        - Workspaces
-      operationId: createWorkspace
-      summary: Create workspace
-      parameters:
-        - name: workspace
-          description: New workspace information
-          required: true
-          in: body
-          schema:
-            $ref: '#/definitions/WorkspaceIngest'
-      responses:
-        200:
-          description: No response was specified
-        201:
-          description: Successful Request
-        403:
-          description: Unable to create bucket for workspace
-        409:
-          description: Workspace by that name already exists
-        500:
-          description: Internal Server Error
-  /api/methods:
-    get:
-      tags:
-      - Method Repository
-      operationId: listMethodRepositoryMethods
-      summary: |
-        Lists Method Repository methods.
-      responses:
-        200:
-          description: List of Method Repository methods.
+
+### GAWB-934 we're hiding billing endpoints for now
+#  /api/billing:
+#    post:
+#      responses:
+#        '204':
+#          description: Successfully Created Billing Project in FireCloud and Google
+#        '400':
+#          description: firecloud billing user must be an administrator of the billing account
+#        '403':
+#          description: You must be an administrator of the google billing account
+#        '409':
+#          description: project already exists in firecloud or google
+#        '500':
+#          description: Rawls Internal Error
+#      description: create new billing project in firecloud and google
+#      parameters:
+#        - in: body
+#          description: create project request
+#          name: createProjectRequest
+#          required: true
+#          schema:
+#            $ref: '#/definitions/CreateRawlsBillingProjectFullRequest'
+#      tags:
+#        - Billing
+#      summary: create billing project in firecloud and google
+#      operationId: createBillingProjectFull
+#      security:
+#        - googleoauth:
+#            - openid
+#            - email
+#            - profile
+#            - https://www.googleapis.com/auth/cloud-billing
+#
+#  '/api/billing/{projectId}/members':
+#    get:
+#      responses:
+#        '200':
+#          description: Success
+#          schema:
+#            type: array
+#            items:
+#              $ref: '#/definitions/BillingProjectMember'
+#        '403':
+#          description: You must be a project owner to view the members of a project
+#        '500':
+#          description: Rawls Internal Error
+#      description: list members of billing project the caller owns
+#      parameters:
+#        - in: path
+#          description: Project ID
+#          name: projectId
+#          required: true
+#          type: string
+#      tags:
+#        - Billing
+#      summary: list members of billing project the caller owns
+#      operationId: listBillingProjectMembers
+#      security:
+#        - googleoauth:
+#            - openid
+#            - email
+#            - profile
+#
+#  '/api/billing/{projectId}/{role}/{userEmail}':
+#    put:
+#      responses:
+#        '200':
+#          description: Successfully Added User To Billing Project
+#        '403':
+#          description: You must be a project owner to add a user to a billing project
+#        '404':
+#          description: User not found
+#        '500':
+#          description: Rawls Internal Error
+#      description: add user to billing project the caller owns
+#      parameters:
+#        - in: path
+#          description: Project ID
+#          name: projectId
+#          required: true
+#          type: string
+#        - in: path
+#          description: role of user for project
+#          name: role
+#          required: true
+#          type: string
+#          enum: ["user", "owner"]
+#        - in: path
+#          description: User Email
+#          name: userEmail
+#          required: true
+#          type: string
+#      tags:
+#        - Billing
+#      summary: add user to billing project the caller owns
+#      operationId: addUserToBillingProject
+#      security:
+#        - googleoauth:
+#            - openid
+#            - email
+#            - profile
+#    delete:
+#      responses:
+#        '200':
+#          description: Successfully Removed User From Billing Project
+#        '403':
+#          description: You must be a project owner to add a user to a billing project
+#        '404':
+#          description: User not found
+#        '500':
+#          description: Rawls Internal Error
+#      description: remove user from billing project the caller owns
+#      parameters:
+#        - in: path
+#          description: Project ID
+#          name: projectId
+#          required: true
+#          type: string
+#        - in: path
+#          description: role of user for project
+#          name: role
+#          required: true
+#          type: string
+#          enum: ["user", "owner"]
+#        - in: path
+#          description: User Email
+#          name: userEmail
+#          required: true
+#          type: string
+#      tags:
+#        - Billing
+#      summary: remove user from billing project the caller owns
+#      operationId: removeUserFromBillingProject
+#      security:
+#        - googleoauth:
+#            - openid
+#            - email
+#            - profile
+
   /api/configurations:
     get:
       tags:
@@ -94,50 +188,7 @@ paths:
       responses:
         200:
           description: List of Method Repository configurations.
-  /api/template:
-    post:
-      tags:
-        - Method Repository
-      operationId: createMethodTemplate
-      summary: Create a Method Configuration template from a Method
-      parameters:
-        - name: methodName
-          description: name of Method to use for template
-          required: true
-          in: body
-          schema:
-            $ref: '#/definitions/MethodID'
-      responses:
-        200:
-          description: Method Configuration template
-        400:
-          description: Method WDL can't be parsed
-        404:
-          description: No Such Method
-        500:
-          description: Internal Server Error
-  /api/inputsOutputs:
-    post:
-      tags:
-        - Method Repository
-      operationId: getMethodIO
-      summary: Get information about a method's inputs and outputs
-      parameters:
-        - name: methodName
-          description: name of Method to look up
-          required: true
-          in: body
-          schema:
-            $ref: '#/definitions/MethodID'
-      responses:
-        200:
-          description: Method Configuration inputs and outputs
-        400:
-          description: Method WDL can't be parsed
-        404:
-          description: No Such Method
-        500:
-          description: Internal Server Error
+
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
       tags:
@@ -153,42 +204,7 @@ paths:
           description: Method Repository configuration detail
         500:
           description: Internal Server Error
-  /api/methods/{namespace}/{name}/{snapshotId}/permissions:
-    get:
-      tags:
-        - Method Repository
-      operationId: getMethodACL
-      summary: get ACL permissions on a Method Repository method
-      parameters:
-        - $ref: '#/parameters/methodNamespaceParam'
-        - $ref: '#/parameters/methodNameParam'
-        - $ref: '#/parameters/methodSnapshotId'
-      responses:
-        200:
-          description: the indicated method ACL
-          schema:
-            $ref: '#/definitions/MethodConfigACL'
-        500:
-          description: Internal Server Error
-    post:
-      tags:
-        - Method Repository
-      operationId: setMethodACL
-      summary: set ACL permissions on a Method Repository method
-      parameters:
-        - $ref: '#/parameters/methodNamespaceParam'
-        - $ref: '#/parameters/methodNameParam'
-        - $ref: '#/parameters/methodSnapshotId'
-        - $ref: '#/parameters/configACLPayload'
-      responses:
-        200:
-          description: the indicated method ACL once the posted changes have been applied
-          schema:
-            $ref: '#/definitions/MethodConfigACL'
-        400:
-          description: Bad Request
-        500:
-          description: Internal Server Error
+
   /api/configurations/{namespace}/{name}/{snapshotId}/permissions:
     get:
       tags:
@@ -225,42 +241,7 @@ paths:
           description: Bad Request
         500:
           description: Internal Server Error
-  /api/methods/{namespace}/permissions:
-    get:
-      tags:
-        - Method Repository
-      operationId: getMethodNamespaceACL
-      summary: get ACL permissions on a Method Repository Method Namespace
-      parameters:
-        - $ref: '#/parameters/methodNamespaceParam'
-      responses:
-        200:
-          description: List of indicated method namespace ACL permissions
-          schema:
-            $ref: '#/definitions/MethodConfigACL'
-        403:
-          description: user does not have correct permissions to manage namespace permissions or the indicated namespace was not found
-        500:
-          description: Internal Server Error
-    post:
-      tags:
-        - Method Repository
-      operationId: setMethodNamespaceACL
-      summary: set ACL permissions on a Method Repository Method Namespace
-      parameters:
-        - $ref: '#/parameters/methodNamespaceParam'
-        - $ref: '#/parameters/configACLPayload'
-      responses:
-        200:
-          description: the indicated method namespace ACL permissions once the posted changes have been applied
-          schema:
-            $ref: '#/definitions/MethodConfigACL'
-        400:
-          description: Invalid content format
-        403:
-          description: User does not have correct permissions to manage namespace permissions or the indicated namespace was not found
-        500:
-          description: Internal Server Error
+
   /api/configurations/{namespace}/permissions:
     get:
       tags:
@@ -299,6 +280,428 @@ paths:
           description: User does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
+
+  /api/inputsOutputs:
+    post:
+      tags:
+        - Method Repository
+      operationId: getMethodIO
+      summary: Get information about a method's inputs and outputs
+      parameters:
+        - name: methodName
+          description: name of Method to look up
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/MethodID'
+      responses:
+        200:
+          description: Method Configuration inputs and outputs
+        400:
+          description: Method WDL can't be parsed
+        404:
+          description: No Such Method
+        500:
+          description: Internal Server Error
+
+  /api/library/admin/reindex:
+    post:
+      tags:
+        - Library
+      operationId: reindexAll
+      summary: |
+        deletes and rebuilds the entire index of published library datasets
+      produces:
+        - text/plain
+        - application/json
+      responses:
+        200:
+          description: List of errors if partial success, "()" if all datasets indexed successfully
+          schema:
+            type: string
+        204:
+          description: No published datasets exist to index
+          schema:
+            type: string
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
+  /api/library/user/role/curator:
+    get:
+      responses:
+        200:
+          description: are you a curator?
+          schema:
+            $ref: '#/definitions/CuratorStatus'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: "gets the curator status of a user"
+      tags:
+        - Profile
+      summary: Query to see if you're a library curator
+      operationId: isCurator
+
+  /api/library/{workspaceNamespace}/{workspaceName}/metadata:
+    put:
+      tags:
+        - Library
+      operationId: putLibraryMetadata
+      summary: |
+        put the entire metadata for a library dataset
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: libraryMetadataJson
+          description: Library metadata
+          required: true
+          in: body
+          schema:
+            type: object
+            title: JsObject of metadata to update
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/Workspace'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
+  /api/library/{workspaceNamespace}/{workspaceName}/published:
+    post:
+      tags:
+        - Library
+      operationId: publishLibraryWorkspace
+      summary: |
+        publish the workspace in the Library
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/Workspace'
+        403:
+          description: You must be the workspace owner and library curator to publish a workspace to the library
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+    delete:
+      tags:
+        - Library
+      operationId: unpublishLibraryWorkspace
+      summary: |
+        unpublish the workspace in the Library
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/Workspace'
+        403:
+          description: You must be the workspace owner and library curator to unpublish a workspace from the library
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
+  /api/methods:
+    get:
+      tags:
+      - Method Repository
+      operationId: listMethodRepositoryMethods
+      summary: |
+        Lists Method Repository methods.
+      responses:
+        200:
+          description: List of Method Repository methods.
+
+  /api/methods/{namespace}/{name}/{snapshotId}/permissions:
+    get:
+      tags:
+        - Method Repository
+      operationId: getMethodACL
+      summary: get ACL permissions on a Method Repository method
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
+      responses:
+        200:
+          description: the indicated method ACL
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: setMethodACL
+      summary: set ACL permissions on a Method Repository method
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
+        - $ref: '#/parameters/configACLPayload'
+      responses:
+        200:
+          description: the indicated method ACL once the posted changes have been applied
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Bad Request
+        500:
+          description: Internal Server Error
+
+  /api/methods/{namespace}/permissions:
+    get:
+      tags:
+        - Method Repository
+      operationId: getMethodNamespaceACL
+      summary: get ACL permissions on a Method Repository Method Namespace
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+      responses:
+        200:
+          description: List of indicated method namespace ACL permissions
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        403:
+          description: user does not have correct permissions to manage namespace permissions or the indicated namespace was not found
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: setMethodNamespaceACL
+      summary: set ACL permissions on a Method Repository Method Namespace
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/configACLPayload'
+      responses:
+        200:
+          description: the indicated method namespace ACL permissions once the posted changes have been applied
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Invalid content format
+        403:
+          description: User does not have correct permissions to manage namespace permissions or the indicated namespace was not found
+        500:
+          description: Internal Server Error
+
+  /api/nih/callback:
+    post:
+      tags:
+        - NIH
+      operationId: NIHCallback
+      summary: Updates a user's NIH link from a JWT
+      parameters:
+        - name: jwt
+          description: JWT from NIH login
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/JWTWrapper'
+      responses:
+        200:
+          description: Successfully updated NIH link
+        400:
+          description: Invalid or malformed JWT
+        401:
+          description: Unauthorized
+        500:
+          description: Internal server error saving NIH link to profile
+
+  /api/nih/status:
+    get:
+      tags:
+        - NIH
+      operationId: NIHStatus
+      summary: "Retrieves info about a user's NIH link"
+      responses:
+        200:
+          description: Successfully retrieved NIH status
+          schema:
+            $ref: '#/definitions/NIHStatus'
+        204:
+          description: isDbgapAuthorized key missing from status
+        404:
+          description: linkedNihUsername key missing from status
+        500:
+          description: Internal server error retrieving NIH status
+
+  /api/profile/billing:
+    get:
+      tags:
+        - Profile
+      operationId: billing
+      summary: List billing projects for a user
+      responses:
+        200:
+          description: OK
+
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BillingProjectMembership'
+        404:
+          description: User Not Found
+        500:
+          description: Internal Server Error
+
+#  /api/profile/billingAccounts:
+#    get:
+#      tags:
+#        - Profile
+#      operationId: billingAccounts
+#      summary: List billing accounts for a user
+#      responses:
+#        200:
+#          description: OK
+#          schema:
+#            type: array
+#            items:
+#              $ref: '#/definitions/BillingAccount'
+#        403:
+#          description: Forbidden - redirect to Google to enable appropriate scopes
+#          schema:
+#            $ref: '#/definitions/BillingAccountRedirect'
+#        500:
+#          description: Internal Server Error
+#      security:
+#        - googleoauth:
+#            - openid
+#            - email
+#            - profile
+#            - https://www.googleapis.com/auth/devstorage.full_control
+#            - https://www.googleapis.com/auth/cloud-billing
+
+  /api/status:
+    get:
+      tags:
+      - Status
+      operationId: status
+      summary: |
+        Returns the workspace service url, methods repository url, and the current timestamp.
+      responses:
+        200:
+          description: Success
+        500:
+          description: Internal Error
+
+  /api/status/ping:
+    get:
+      tags:
+      - Status
+      operationId: ping
+      summary: |
+        Returns the current timestamp.
+      produces:
+        - text/plain
+      responses:
+        200:
+          description: Success
+        500:
+          description: Internal Error
+
+  /api/storage/{bucket}/{object}:
+    get:
+      tags:
+      - Storage
+      operationId: getMetadata
+      summary: |
+        Get metadata about an object stored in GCS.
+      description: |
+        Mirror of Google's Cloud Storage json API. See https://cloud.google.com/storage/docs/json_api/v1/objects/get
+      parameters:
+        - name: bucket
+          description: Name of the bucket in which the object resides.
+          required: true
+          type: string
+          in: path
+        - name: object
+          description: Name of the object. (be sure to urlencode)
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Success
+        404:
+          description: Not Found
+        500:
+          description: Internal Error
+
+  /api/template:
+    post:
+      tags:
+        - Method Repository
+      operationId: createMethodTemplate
+      summary: Create a Method Configuration template from a Method
+      parameters:
+        - name: methodName
+          description: name of Method to use for template
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/MethodID'
+      responses:
+        200:
+          description: Method Configuration template
+        400:
+          description: Method WDL can't be parsed
+        404:
+          description: No Such Method
+        500:
+          description: Internal Server Error
+
+  /api/workspaces:
+    get:
+      tags:
+      - Workspaces
+      operationId: listWorkspaces
+      summary: |
+        Lists workspaces.
+      produces:
+        - application/json
+        - text/plain
+      responses:
+        200:
+          description: List of workspaces.
+    post:
+      tags:
+        - Workspaces
+      operationId: createWorkspace
+      summary: Create workspace
+      parameters:
+        - name: workspace
+          description: New workspace information
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/WorkspaceIngest'
+      responses:
+        200:
+          description: No response was specified
+        201:
+          description: Successful Request
+        403:
+          description: Unable to create bucket for workspace
+        409:
+          description: Workspace by that name already exists
+        500:
+          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:
@@ -330,25 +733,7 @@ paths:
           description: Workspace does not exist
         500:
           description: Internal Server Error
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/checkBucketReadAccess:
-    get:
-      description: Read a workspace bucket
-      tags:
-        - Workspaces
-      summary: Read workspace bucket
-      operationId: readBucket
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-      responses:
-        200:
-          description: Successful Request
-        403:
-          description: Insufficient permissions to access workspace bucket
-        404:
-          description: Workspace Not Found
-        500:
-          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/acl:
     get:
       tags:
@@ -392,6 +777,27 @@ paths:
           description: Workspace not found
         500:
           description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/checkBucketReadAccess:
+    get:
+      description: Read a workspace bucket
+      tags:
+        - Workspaces
+      summary: Read workspace bucket
+      operationId: readBucket
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Successful Request
+        403:
+          description: Insufficient permissions to access workspace bucket
+        404:
+          description: Workspace Not Found
+        500:
+          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/clone:
     post:
       tags:
@@ -418,63 +824,7 @@ paths:
           description: Destination workspace already exists
         500:
           description: Internal Server Error
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/lock:
-    put:
-      tags:
-        - Workspaces
-      operationId: lockWorkspace
-      summary: Lock Workspace
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-      responses:
-        200:
-          description: No response was specified
-        204:
-          description: Successful Request
-        403:
-          description: Not Owner
-        404:
-          description: Workspace Not Found
-        500:
-          description: Internal Server Error
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
-    put:
-      tags:
-        - Workspaces
-      operationId: unlockWorkspace
-      summary: Unlock Workspace
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-      responses:
-        200:
-          description: No response was specified
-        204:
-          description: Successful Request
-        403:
-          description: Not Owner
-        404:
-          description: Workspace Not Found
-        500:
-          description: Internal Server Error
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
-    get:
-      tags:
-      - Entities
-      operationId: getEntitiesWithType
-      summary: |
-        List of entities in a workspace with type and attribute information
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-      responses:
-        200:
-          description: List of entities
-        404:
-          description: Workspace or entities not found.
-        500:
-          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities:
     get:
       tags:
@@ -492,39 +842,25 @@ paths:
           description: Workspace does not exist
         500:
           description: Internal Server Error
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/importEntities:
-    post:
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
+    get:
       tags:
-        - Entities
-      operationId: importEntities
-      summary: Import entities from a tsv file
-      consumes:
-        - multipart/form-data
+      - Entities
+      operationId: getEntitiesWithType
+      summary: |
+        List of entities in a workspace with type and attribute information
       parameters:
-        - name: workspaceNamespace
-          description: Destination Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Destination Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: entities
-          in: formData
-          description: A valid TSV import file
-          required: true
-          type: file
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
-          description: Successful Request
-        400:
-          description: Bad Request
+          description: List of entities
         404:
-          description: Source Workspace not found
+          description: Workspace or entities not found.
         500:
-          description: Internal Error
+          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
     post:
       tags:
@@ -560,6 +896,7 @@ paths:
           description: One or more entities of that name/type already exist
         500:
           description: Internal Error
+
 # Entity delete endpoint commented out until GAWB-422 is complete
 #  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
 #    post:
@@ -591,6 +928,7 @@ paths:
 #          description: Malformed Request
 #        500:
 #          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
       tags:
@@ -613,28 +951,7 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
-    get:
-      tags:
-      - Entities
-      operationId: downloadEntitiesTSV
-      summary: |
-        TSV file containing workspace entities of the specified type
-      produces:
-        - text/plain
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-        - $ref: '#/parameters/entityTypeParam'
-      responses:
-        200:
-          description: Workspace entities of specified type in TSV format
-          schema:
-            type: file
-        404:
-          description: Workspace or entity type does not exist
-        500:
-          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}:
     get:
       tags:
@@ -693,13 +1010,14 @@ paths:
 #          description: Workspace or Entity does not exist
 #        500:
 #          description: Internal Server Error
-  /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       tags:
       - Entities
-      operationId: browserDownloadEntitiesTSV
+      operationId: downloadEntitiesTSV
       summary: |
-        TSV file containing workspace entities of the specified type (allows cookie-based authentication)
+        TSV file containing workspace entities of the specified type
       produces:
         - text/plain
       parameters:
@@ -715,7 +1033,7 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
-      security: []
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
     get:
       tags:
@@ -762,47 +1080,62 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
-    get:
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importEntities:
+    post:
       tags:
-        - Method Configurations
+        - Entities
+      operationId: importEntities
+      summary: Import entities from a tsv file
+      consumes:
+        - multipart/form-data
+      parameters:
+        - name: workspaceNamespace
+          description: Destination Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Destination Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entities
+          in: formData
+          description: A valid TSV import file
+          required: true
+          type: file
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Bad Request
+        404:
+          description: Source Workspace not found
+        500:
+          description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/lock:
+    put:
+      tags:
         - Workspaces
-      operationId: listWorkspaceMethodConfigs
-      summary: List of Method Configurations in a workspace
+      operationId: lockWorkspace
+      summary: Lock Workspace
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
-          description: List of Method Configurations
-        404:
-          description: Workspace does not exist
-        500:
-          description: Internal Server Error
-    post:
-      tags:
-        - Method Configurations
-        - Workspaces
-      operationId: postWorkspaceMethodConfig
-      summary: Create a Method Configuration in a workspace
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-        - name: methodConfigJson
-          description: Method Configuration contents
-          required: true
-          in: body
-          schema:
-            $ref: '#/definitions/NewMethodConfigIngest'
-      responses:
-        201:
+          description: No response was specified
+        204:
           description: Successful Request
+        403:
+          description: Not Owner
         404:
-          description: Workspace not found
-        409:
-          description: Method Configuration already exists
+          description: Workspace Not Found
         500:
           description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}:
     get:
       tags:
@@ -885,35 +1218,7 @@ paths:
           description: Workspace or Method Configuration not found
         500:
           description: Internal Server Error
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}/validate:
-    get:
-      responses:
-        '200':
-          description: Successful Request
-          schema:
-            $ref: '#/definitions/ValidatedMethodConfiguration'
-        '404':
-          description: Workspace or Method Configuration does not exist
-        '500':
-          description: Rawls Internal Error
-      description: ''
-      tags:
-        - Method Configurations
-      summary: get syntax validation information for a method configuration
-      operationId: validate_method_configuration
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-        - in: path
-          description: Method Configuration Namespace
-          name: configNamespace
-          required: true
-          type: string
-        - in: path
-          description: Method Configuration Name
-          name: configName
-          required: true
-          type: string
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/rename:
     post:
       tags:
@@ -948,6 +1253,7 @@ paths:
           description: Method Configuration with that name already exists
         500:
           description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
     post:
       tags:
@@ -975,6 +1281,7 @@ paths:
           description: Error parsing source method configuration
         500:
           description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyToMethodRepo:
     post:
       tags:
@@ -1002,6 +1309,79 @@ paths:
           description: Error parsing source method configuration
         500:
           description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
+    get:
+      tags:
+        - Method Configurations
+        - Workspaces
+      operationId: listWorkspaceMethodConfigs
+      summary: List of Method Configurations in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: List of Method Configurations
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Configurations
+        - Workspaces
+      operationId: postWorkspaceMethodConfig
+      summary: Create a Method Configuration in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: methodConfigJson
+          description: Method Configuration contents
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/NewMethodConfigIngest'
+      responses:
+        201:
+          description: Successful Request
+        404:
+          description: Workspace not found
+        409:
+          description: Method Configuration already exists
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}/validate:
+    get:
+      responses:
+        '200':
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/ValidatedMethodConfiguration'
+        '404':
+          description: Workspace or Method Configuration does not exist
+        '500':
+          description: Rawls Internal Error
+      description: ''
+      tags:
+        - Method Configurations
+      summary: get syntax validation information for a method configuration
+      operationId: validate_method_configuration
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: path
+          description: Method Configuration Namespace
+          name: configNamespace
+          required: true
+          type: string
+        - in: path
+          description: Method Configuration Name
+          name: configName
+          required: true
+          type: string
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
       tags:
@@ -1045,6 +1425,7 @@ paths:
           description: Method Configuration failed to resolve input expressions with the supplied Entity
         500:
           description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
     delete:
       tags:
@@ -1080,6 +1461,7 @@ paths:
           description: Submission not found
         500:
           description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
     get:
       tags:
@@ -1111,6 +1493,28 @@ paths:
         - Submissions
       summary: workflow queue status
       operationId: workflowQueueStatus
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
+    put:
+      tags:
+        - Workspaces
+      operationId: unlockWorkspace
+      summary: Unlock Workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: No response was specified
+        204:
+          description: Successful Request
+        403:
+          description: Not Owner
+        404:
+          description: Workspace Not Found
+        500:
+          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/updateAttributes:
     patch:
       tags:
@@ -1138,43 +1542,31 @@ paths:
           description: Workspace not found
         500:
           description: Internal Error
-  /api/status:
+
+  /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       tags:
-      - Status
-      operationId: status
+      - Entities
+      operationId: browserDownloadEntitiesTSV
       summary: |
-        Returns the workspace service url, methods repository url, and the current timestamp.
-      responses:
-        200:
-          description: Success
-        500:
-          description: Internal Error
-  /api/status/ping:
-    get:
-      tags:
-      - Status
-      operationId: ping
-      summary: |
-        Returns the current timestamp.
+        TSV file containing workspace entities of the specified type (allows cookie-based authentication)
       produces:
         - text/plain
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/entityTypeParam'
       responses:
         200:
-          description: Success
+          description: Workspace entities of specified type in TSV format
+          schema:
+            type: file
+        404:
+          description: Workspace or entity type does not exist
         500:
-          description: Internal Error
-  /health:
-    get:
-      tags:
-      - Status
-      operationId: health
-      summary: |
-        A health status endpoint for load balancing purposes
-      responses:
-        200:
-          description: Success
+          description: Internal Server Error
       security: []
+
   /error:
     get:
       tags:
@@ -1186,33 +1578,56 @@ paths:
         503:
           description: Service Unavailable
       security: []
-  /api/storage/{bucket}/{object}:
+
+  /health:
     get:
       tags:
-      - Storage
-      operationId: getMetadata
+      - Status
+      operationId: health
       summary: |
-        Get metadata about an object stored in GCS.
-      description: |
-        Mirror of Google's Cloud Storage json API. See https://cloud.google.com/storage/docs/json_api/v1/objects/get
-      parameters:
-        - name: bucket
-          description: Name of the bucket in which the object resides.
-          required: true
-          type: string
-          in: path
-        - name: object
-          description: Name of the object. (be sure to urlencode)
-          required: true
-          type: string
-          in: path
+        A health status endpoint for load balancing purposes
       responses:
         200:
           description: Success
-        404:
-          description: Not Found
+      security: []
+
+  /login:
+    get:
+      tags:
+        - OAuth
+      operationId: login
+      summary: Starts the authentication flow for a user
+      description: This is an unauthenticated endpoint at /login (not /api/login) that initiates the OAuth flow.
+        Authentication cannot be initiated from within swagger, because auth requires the entire browser
+        to redirect, and swagger uses ajax. To test, fill in your desired query params, then copy and paste the
+        request url into your browser address bar.
+      parameters:
+      - name: path
+        in: query
+        description: The url fragment to use after finishing authentication
+        required: false
+        type: string
+      - name: prompt
+        in: query
+        description: use "force" to always request a new refresh token
+        required: false
+        type: string
+        enum: ["auto","force"]
+        default: "auto"
+      - name: callback
+        in: query
+        description: The host to use after finishing authentication. Include the scheme, but no trailing slash, e.g. https://firecloud.broadinstitute.org
+        required: false
+        type: string
+      responses:
+        307:
+          description: Successful redirect after authentication
+        401:
+          description: Unauthorized
         500:
-          description: Internal Error
+          description: Internal server error
+      security: []
+
   /me:
     get:
       tags:
@@ -1234,6 +1649,7 @@ paths:
           description: Internal Server Error determining user status.
         503:
           description: Service Unavailable. Could not reach underlying services to determine user status.
+
   /register:
     get:
       tags:
@@ -1249,6 +1665,7 @@ paths:
           description: User Not Found.
         500:
           description: Internal Server Error determining Rawls user status.
+
   /register/profile:
     get:
       tags:
@@ -1308,6 +1725,7 @@ paths:
           description: Bad request
         500:
           description: Internal server error
+
   /register/userinfo:
     get:
       tags:
@@ -1319,373 +1737,6 @@ paths:
       responses:
         200:
           description: OK
-  '/api/library/user/role/curator':
-    get:
-      responses:
-        200:
-          description: are you a curator?
-          schema:
-            $ref: '#/definitions/CuratorStatus'
-        500:
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-      description: "gets the curator status of a user"
-      tags:
-        - Profile
-      summary: Query to see if you're a library curator
-      operationId: isCurator
-  '/api/library/{workspaceNamespace}/{workspaceName}/metadata':
-    put:
-      tags:
-        - Library
-      operationId: putLibraryMetadata
-      summary: |
-        put the entire metadata for a library dataset
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-        - name: libraryMetadataJson
-          description: Library metadata
-          required: true
-          in: body
-          schema:
-            type: object
-            title: JsObject of metadata to update
-      responses:
-        200:
-          description: Success
-          schema:
-            $ref: '#/definitions/Workspace'
-        500:
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-  '/api/library/{workspaceNamespace}/{workspaceName}/published':
-    post:
-      tags:
-        - Library
-      operationId: publishLibraryWorkspace
-      summary: |
-        publish the workspace in the Library
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-      responses:
-        200:
-          description: Success
-          schema:
-            $ref: '#/definitions/Workspace'
-        403:
-          description: You must be the workspace owner and library curator to publish a workspace to the library
-        500:
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-    delete:
-      tags:
-        - Library
-      operationId: unpublishLibraryWorkspace
-      summary: |
-        unpublish the workspace in the Library
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-      responses:
-        200:
-          description: Success
-          schema:
-            $ref: '#/definitions/Workspace'
-        403:
-          description: You must be the workspace owner and library curator to unpublish a workspace from the library
-        500:
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-  '/api/library/admin/reindex':
-    post:
-      tags:
-        - Library
-      operationId: reindexAll
-      summary: |
-        deletes and rebuilds the entire index of published library datasets
-      produces:
-        - text/plain
-        - application/json
-      responses:
-        200:
-          description: List of errors if partial success, "()" if all datasets indexed successfully
-          schema:
-            type: string
-        204:
-          description: No published datasets exist to index
-          schema:
-            type: string
-        500:
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-
-### GAWB-934 we're hiding billing endpoints for now
-#  /api/billing:
-#    post:
-#      responses:
-#        '204':
-#          description: Successfully Created Billing Project in FireCloud and Google
-#        '400':
-#          description: firecloud billing user must be an administrator of the billing account
-#        '403':
-#          description: You must be an administrator of the google billing account
-#        '409':
-#          description: project already exists in firecloud or google
-#        '500':
-#          description: Rawls Internal Error
-#      description: create new billing project in firecloud and google
-#      parameters:
-#        - in: body
-#          description: create project request
-#          name: createProjectRequest
-#          required: true
-#          schema:
-#            $ref: '#/definitions/CreateRawlsBillingProjectFullRequest'
-#      tags:
-#        - Billing
-#      summary: create billing project in firecloud and google
-#      operationId: createBillingProjectFull
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#            - https://www.googleapis.com/auth/cloud-billing
-#  '/api/billing/{projectId}/members':
-#    get:
-#      responses:
-#        '200':
-#          description: Success
-#          schema:
-#            type: array
-#            items:
-#              $ref: '#/definitions/BillingProjectMember'
-#        '403':
-#          description: You must be a project owner to view the members of a project
-#        '500':
-#          description: Rawls Internal Error
-#      description: list members of billing project the caller owns
-#      parameters:
-#        - in: path
-#          description: Project ID
-#          name: projectId
-#          required: true
-#          type: string
-#      tags:
-#        - Billing
-#      summary: list members of billing project the caller owns
-#      operationId: listBillingProjectMembers
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#  '/api/billing/{projectId}/{role}/{userEmail}':
-#    put:
-#      responses:
-#        '200':
-#          description: Successfully Added User To Billing Project
-#        '403':
-#          description: You must be a project owner to add a user to a billing project
-#        '404':
-#          description: User not found
-#        '500':
-#          description: Rawls Internal Error
-#      description: add user to billing project the caller owns
-#      parameters:
-#        - in: path
-#          description: Project ID
-#          name: projectId
-#          required: true
-#          type: string
-#        - in: path
-#          description: role of user for project
-#          name: role
-#          required: true
-#          type: string
-#          enum: ["user", "owner"]
-#        - in: path
-#          description: User Email
-#          name: userEmail
-#          required: true
-#          type: string
-#      tags:
-#        - Billing
-#      summary: add user to billing project the caller owns
-#      operationId: addUserToBillingProject
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#    delete:
-#      responses:
-#        '200':
-#          description: Successfully Removed User From Billing Project
-#        '403':
-#          description: You must be a project owner to add a user to a billing project
-#        '404':
-#          description: User not found
-#        '500':
-#          description: Rawls Internal Error
-#      description: remove user from billing project the caller owns
-#      parameters:
-#        - in: path
-#          description: Project ID
-#          name: projectId
-#          required: true
-#          type: string
-#        - in: path
-#          description: role of user for project
-#          name: role
-#          required: true
-#          type: string
-#          enum: ["user", "owner"]
-#        - in: path
-#          description: User Email
-#          name: userEmail
-#          required: true
-#          type: string
-#      tags:
-#        - Billing
-#      summary: remove user from billing project the caller owns
-#      operationId: removeUserFromBillingProject
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-  /api/profile/billing:
-    get:
-      tags:
-        - Profile
-      operationId: billing
-      summary: List billing projects for a user
-      responses:
-        200:
-          description: OK
-
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/BillingProjectMembership'
-        404:
-          description: User Not Found
-        500:
-          description: Internal Server Error
-#  /api/profile/billingAccounts:
-#    get:
-#      tags:
-#        - Profile
-#      operationId: billingAccounts
-#      summary: List billing accounts for a user
-#      responses:
-#        200:
-#          description: OK
-#          schema:
-#            type: array
-#            items:
-#              $ref: '#/definitions/BillingAccount'
-#        403:
-#          description: Forbidden - redirect to Google to enable appropriate scopes
-#          schema:
-#            $ref: '#/definitions/BillingAccountRedirect'
-#        500:
-#          description: Internal Server Error
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#            - https://www.googleapis.com/auth/devstorage.full_control
-#            - https://www.googleapis.com/auth/cloud-billing
-
-
-
-  /login:
-    get:
-      tags:
-        - OAuth
-      operationId: login
-      summary: Starts the authentication flow for a user
-      description: This is an unauthenticated endpoint at /login (not /api/login) that initiates the OAuth flow.
-        Authentication cannot be initiated from within swagger, because auth requires the entire browser
-        to redirect, and swagger uses ajax. To test, fill in your desired query params, then copy and paste the
-        request url into your browser address bar.
-      parameters:
-      - name: path
-        in: query
-        description: The url fragment to use after finishing authentication
-        required: false
-        type: string
-      - name: prompt
-        in: query
-        description: use "force" to always request a new refresh token
-        required: false
-        type: string
-        enum: ["auto","force"]
-        default: "auto"
-      - name: callback
-        in: query
-        description: The host to use after finishing authentication. Include the scheme, but no trailing slash, e.g. https://firecloud.broadinstitute.org
-        required: false
-        type: string
-      responses:
-        307:
-          description: Successful redirect after authentication
-        401:
-          description: Unauthorized
-        500:
-          description: Internal server error
-      security: []
-  /api/nih/callback:
-    post:
-      tags:
-        - NIH
-      operationId: NIHCallback
-      summary: Updates a user's NIH link from a JWT
-      parameters:
-        - name: jwt
-          description: JWT from NIH login
-          required: true
-          in: body
-          schema:
-            $ref: '#/definitions/JWTWrapper'
-      responses:
-        200:
-          description: Successfully updated NIH link
-        400:
-          description: Invalid or malformed JWT
-        401:
-          description: Unauthorized
-        500:
-          description: Internal server error saving NIH link to profile
-  /api/nih/status:
-    get:
-      tags:
-        - NIH
-      operationId: NIHStatus
-      summary: "Retrieves info about a user's NIH link"
-      responses:
-        200:
-          description: Successfully retrieved NIH status
-          schema:
-            $ref: '#/definitions/NIHStatus'
-        204:
-          description: isDbgapAuthorized key missing from status
-        404:
-          description: linkedNihUsername key missing from status
-        500:
-          description: Internal server error retrieving NIH status
-
-
 
 ##########################################################################################
 ## PARAMETERS
