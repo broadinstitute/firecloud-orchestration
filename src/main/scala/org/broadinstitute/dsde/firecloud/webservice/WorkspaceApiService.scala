@@ -57,7 +57,6 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
          cookie("FCtoken") { tokenCookie =>
            mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
              val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
-             log.info("TOKEN CONTENT: " tokenCookie.content)
              perRequest(requestContext,
                WorkspaceService.props(workspaceServiceConstructor, new UserInfo("", OAuth2BearerToken(tokenCookie.content), 0, "")),
                WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, filename))
@@ -101,7 +100,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   }
                 } ~
                 path("exportAttributes") {
-                  val filename = workspaceName  "-WORKSPACE-ATTRIBUTES.txt"
+                  val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
                   get { requestContext =>
                         perRequest(requestContext,
                               WorkspaceService.props(workspaceServiceConstructor, userInfo),
