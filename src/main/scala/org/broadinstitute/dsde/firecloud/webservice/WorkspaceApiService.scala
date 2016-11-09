@@ -27,7 +27,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
 
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
 
-  lazy val log = LoggerFactory.getLogger(getClass)
+  override lazy val log = LoggerFactory.getLogger(getClass)
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
 
   val workspaceServiceConstructor: UserInfo => WorkspaceService
@@ -57,16 +57,15 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
           cookie("FCtoken") { tokenCookie =>
             mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
               val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
-              get { requestContext =>
-                perRequest(requestContext,
-                  WorkspaceService.props(workspaceServiceConstructor, new UserInfo(null, OAuth2BearerToken(tokenCookie.content), null, null)),
-                  WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, filename))
-              }
+              log.info("TOKEN CONTENT: " + tokenCookie.content)
+              perRequest(requestContext,
+                WorkspaceService.props(workspaceServiceConstructor, new UserInfo("", OAuth2BearerToken(tokenCookie.content), 0, "")),
+                WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, filename))
             }
           }
       }
-    } ~
-    requireUserInfo() { userInfo =>
+   } ~
+   requireUserInfo() { userInfo =>
       pathPrefix("api") {
         pathPrefix("workspaces") {
           pathEnd {
@@ -129,7 +128,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                     entity(as[List[WorkspaceACLUpdate]]) { aclUpdates => requestContext =>
                       perRequest(requestContext,
                         WorkspaceService.props(workspaceServiceConstructor, userInfo),
-                        WorkspaceService.UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail.get))
+                        WorkspaceService.UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail))
                     }
                   } ~
                     get {

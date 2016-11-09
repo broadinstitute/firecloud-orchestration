@@ -9,7 +9,7 @@ import spray.routing._
 trait NIHSyncService extends HttpService with PerRequestCreator with FireCloudDirectives with StandardUserInfoDirectives {
 
   private implicit val executionContext = actorRefFactory.dispatcher
-  lazy val log = LoggerFactory.getLogger(getClass)
+  override lazy val log = LoggerFactory.getLogger(getClass)
 
   val routes: Route =
     post {

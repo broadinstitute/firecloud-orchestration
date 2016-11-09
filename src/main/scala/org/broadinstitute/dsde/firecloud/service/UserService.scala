@@ -62,7 +62,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
 
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  lazy val log = LoggerFactory.getLogger(getClass)
+  override lazy val log = LoggerFactory.getLogger(getClass)
 
   val routes =
     path("me") {

@@ -15,7 +15,7 @@ import spray.http.OAuth2BearerToken
  */
 
 //abstract class UserIdentity
-case class UserInfo(userEmail: Option[String], accessToken: OAuth2BearerToken, accessTokenExpiresIn: Option[Long], id: Option[String]) {
+case class UserInfo(userEmail: String, accessToken: OAuth2BearerToken, accessTokenExpiresIn: Long, id: String) {
   def getUniqueId = id
 }
 

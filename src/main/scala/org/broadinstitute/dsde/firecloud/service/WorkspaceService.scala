@@ -9,15 +9,17 @@ import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
-import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport}
-import spray.http.StatusCodes
+import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
+import spray.http.MediaTypes._
+import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsonParser.ParsingException
+
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -75,12 +77,16 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
     Try(rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)) match {
       case Failure(regret) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
       case Success(workspaceFuture) => workspaceFuture map { workspaceResponse =>
-          val headerString = "workspace:" + (workspaceResponse.workspace.get.attributes map { case (attName, attValue) =>
-                attName.name}).mkString("\t").replaceAll("description\t", "")
-          val valueString = (workspaceResponse.workspace.get.attributes map { attribute =>
-              impAttributeFormat.write(attribute._2).toString().replaceAll("\"","")}).mkString("\t").replaceAll("null\t", "")
-          RequestComplete(StatusCodes.OK, headerString + "\n" + valueString)
-        }
+        val headerString = "workspace:" + (workspaceResponse.workspace.get.attributes map { case (attName, attValue) =>
+          attName.name
+        }).mkString("\t").replaceAll("description\t", "")
+        val valueString = (workspaceResponse.workspace.get.attributes map { attribute =>
+          impAttributeFormat.write(attribute._2).toString().replaceAll("\"", "")
+        }).mkString("\t").replaceAll("null\t", "")
+        RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
+          HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
+          HttpHeaders.`Content-Type`(`text/plain`))
+      }
     }
   }
 

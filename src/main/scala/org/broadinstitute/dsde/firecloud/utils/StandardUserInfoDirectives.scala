@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.vault.common.util.ImplicitMagnet
+import org.slf4j.LoggerFactory
 import spray.http.{HttpHeader, OAuth2BearerToken}
 import spray.routing.Directive1
 import spray.routing.Directives._
@@ -20,13 +21,19 @@ import scala.concurrent.ExecutionContext
  */
 trait StandardUserInfoDirectives extends UserInfoDirectives {
 
+  lazy val log = LoggerFactory.getLogger(getClass)
+
   def requireUserInfo(magnet: ImplicitMagnet[ExecutionContext]): Directive1[UserInfo] = {
     implicit val ec = magnet.value
+    log.info("TOKEN CONTENT IN STDUserInfoDir: " + accessTokenHeaderDirective.toString)
     for(accessToken <- accessTokenHeaderDirective;
         userEmail <- emailHeaderDirective;
         accessTokenExpiresIn <- accessTokenExpiresInHeaderDirective;
         id <- idHeaderDirective
-    ) yield UserInfo(Option(userEmail), OAuth2BearerToken(accessToken), Option(accessTokenExpiresIn.toLong), Option(id))
+    ) yield {
+      UserInfo(userEmail, OAuth2BearerToken(accessToken), accessTokenExpiresIn.toLong, id)
+    }
+
   }
 
   private def accessTokenHeaderDirective: Directive1[String] = headerValueByName("OIDC_access_token")
