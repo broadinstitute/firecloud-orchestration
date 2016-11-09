@@ -642,6 +642,23 @@ paths:
         500:
           description: Internal Error
 
+  /api/submissions/queueStatus:
+    get:
+      responses:
+        '200':
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkflowQueueStatusResponse'
+        '500':
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: List workflow counts by queueing state
+      tags:
+        - Submissions
+      summary: workflow queue status
+      operationId: workflowQueueStatus
+
   /api/template:
     post:
       tags:
@@ -1545,18 +1562,6 @@ paths:
           description: Submission or Workflow not found
         500:
           description: Internal Error
-  /api/submissions/queueStatus:
-    get:
-      responses:
-        '200':
-          description: Successful Request
-        '500':
-          description: Internal Error
-      description: List workflow counts by queueing state
-      tags:
-        - Submissions
-      summary: workflow queue status
-      operationId: workflowQueueStatus
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
     put:
@@ -2675,6 +2680,23 @@ definitions:
         description: Map[String, String]
       methodConfiguration:
         $ref: '#/definitions/MethodConfiguration'
+
+  WorkflowQueueStatusResponse:
+    description: Information about the status of workflows and the workflow queue
+    required:
+      - estimatedQueueTimeMS
+      - workflowsBeforeNextUserWorkflow
+      - workflowCountsByStatus
+    properties:
+      estimatedQueueTimeMS:
+        type: integer
+        description: estimated milliseconds until the current queue is submitted
+      workflowsBeforeNextUserWorkflow:
+        type: integer
+        description: the number of workflows in the queue ahead of the user's first workflow
+      workflowCountsByStatus:
+        type: object
+        description: Map[String,Int]
 
   Workspace:
     description: ''
