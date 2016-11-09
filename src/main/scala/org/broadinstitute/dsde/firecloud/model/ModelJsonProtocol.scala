@@ -248,6 +248,7 @@ object ModelJsonProtocol {
   implicit val ESDatasetPropertyFormat = jsonFormat1(ESDatasetProperty)
 
   implicit val impLibrarySearch = jsonFormat3(LibrarySearchParams)
+  implicit val impLibrarySearchResponse = jsonFormat2(LibrarySearchResponse)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

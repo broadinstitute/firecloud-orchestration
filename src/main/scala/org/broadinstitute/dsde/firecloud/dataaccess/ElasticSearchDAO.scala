@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.model.Document
+import  org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
 import org.elasticsearch.action.admin.indices.delete.{DeleteIndexRequest, DeleteIndexRequestBuilder, DeleteIndexResponse}
@@ -12,6 +13,7 @@ import org.elasticsearch.action.search.{SearchRequest, SearchResponse, SearchReq
 import org.elasticsearch.client.transport.TransportClient
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
+import spray.json._
 
 import scala.concurrent.Future
 
@@ -101,7 +103,7 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
 
 
 
-  def findDocuments(term: String, from: Int = 0, size: Int = 10) : String = {
+  def findDocuments(term: String, from: Int = 0, size: Int = 10) : LibrarySearchResponse = {
     val fullstr = {
       if ("".equals(term)) findAll
       else String.format(queryStr, term)
@@ -110,17 +112,10 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     searchReq.setFrom(from)
     searchReq.setSize(size)
     val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
-    var sb = new StringBuilder()
-    sb.append("{\"total\":")
-    sb.append(searchResults.getHits.totalHits())
-    sb.append(", \"results\":[")
-    val stringResults = searchResults.getHits.hits map { hit =>
-      //println("the hits keep coming" + hit.sourceAsString())
-      sb.append(hit.sourceAsString() + ",");
+
+    val results = searchResults.getHits.hits map { hit =>
+       hit.getSourceAsString.parseJson.asJsObject
     }
-    sb.deleteCharAt(sb.size-1)
-    sb.append("]}")
-    //println(sb.toString())
-    sb.toString()
+    LibrarySearchResponse(searchResults.getHits.totalHits().toInt, results)
   }
 }

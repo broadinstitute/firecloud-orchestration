@@ -1,13 +1,18 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import spray.json.JsObject
+
 /**
   * Created by ahaessly on 11/2/16.
   */
 
   case class LibrarySearchParams(
     searchTerm: String,
-    from: Option[Int] = Some(0),
-    size: Option[Int] = Some(10))
+    from: Int = 0,
+    size: Int = 10)
 
+  case class LibrarySearchResponse(
+    total: Int,
+    results: Array[JsObject])
 
 
