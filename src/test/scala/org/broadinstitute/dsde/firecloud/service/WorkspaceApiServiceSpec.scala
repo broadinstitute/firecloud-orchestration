@@ -1,18 +1,18 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.util.UUID
+
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockTSVFormData}
+import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
-
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import org.scalatest.BeforeAndAfterEach
 import spray.http.HttpMethods
-
 import spray.http.StatusCodes._
 import spray.json._
 
@@ -25,12 +25,28 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Some("name")
   )
 
+  val testUUID = UUID.randomUUID()
+
+  val testWorkspace = new RawlsWorkspace(workspaceId = testUUID.toString,
+    namespace = "testWorkspaceNamespace",
+    name = "testWorkspaceName",
+    isLocked = Some(false),
+    createdBy = "createdBy",
+    createdDate = "createdDate",
+    lastModified = None,
+    attributes = Map.empty,
+    bucketName = "bucketName",
+    accessLevels = Map.empty,
+    realm = None)
+
   // Mock remote endpoints
   private final val workspacesRoot = "api/workspaces"
   private final val workspacesPath = workspacesRoot + "/%s/%s".format(workspace.namespace.get, workspace.name.get)
   private final val methodconfigsPath = workspacesRoot + "/%s/%s/methodconfigs".format(workspace.namespace.get, workspace.name.get)
   private final val updateAttributesPath = workspacesRoot + "/%s/%s/updateAttributes".format(workspace.namespace.get, workspace.name.get)
   private final val aclPath = workspacesRoot + "/%s/%s/acl".format(workspace.namespace.get, workspace.name.get)
+  private final val tsvAttributesImportPath = "/" + workspacesRoot + "/%s/%s/importAttributes".format(workspace.namespace.get, workspace.name.get)
+  private final val tsvAttributesExportPath = "/" + workspacesRoot + "/%s/%s/exportAttributes".format(workspace.namespace.get, workspace.name.get)
   private final val clonePath = workspacesRoot + "/%s/%s/clone".format(workspace.namespace.get, workspace.name.get)
   private final val lockPath = workspacesRoot + "/%s/%s/lock".format(workspace.namespace.get, workspace.name.get)
   private final val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace.get, workspace.name.get)
@@ -125,6 +141,18 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       )
 
     // Entity responders
+    workspaceServer
+      .when(
+        request()
+          .withMethod("PATCH")
+          .withPath(s"${workspaceBasePath}/${workspace.namespace.get}/${workspace.name.get}")
+          .withHeader(authHeader))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(NoContent.intValue)
+          .withBody(rawlsErrorReport(NoContent).toJson.compactPrint)
+      )
 
     workspaceServer
       .when(
@@ -550,6 +578,56 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
     }
-  }
 
+    "when calling POST on the workspaces/*/*/importAttributes path" - {
+      "should 200 OK if it has the correct headers and valid internals" in {
+        (Post(tsvAttributesImportPath, MockTSVFormData.addNewWorkspaceAttributes)
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+        })
+      }
+    }
+
+    "should 400 Bad Request if first row does not start with \"workspace\"" in {
+      (Post(tsvAttributesImportPath, MockTSVFormData.wrongHeaderWorkspaceAttributes)
+        ~> dummyUserIdHeaders("1234")
+        ~> sealRoute(workspaceRoutes) ~> check {
+        status should equal(BadRequest)
+      })
+    }
+
+    "should 400 Bad Request if there are more names than values" in {
+      (Post(tsvAttributesImportPath, MockTSVFormData.tooManyNamesWorkspaceAttributes)
+        ~> dummyUserIdHeaders("1234")
+        ~> sealRoute(workspaceRoutes) ~> check {
+        status should equal(BadRequest)
+      })
+    }
+
+    "should 400 Bad Request if there are more values than names" in {
+      (Post(tsvAttributesImportPath, MockTSVFormData.tooManyValuesWorkspaceAttributes)
+        ~> dummyUserIdHeaders("1234")
+        ~> sealRoute(workspaceRoutes) ~> check {
+        status should equal(BadRequest)
+      })
+    }
+
+    "should 400 Bad Request if there are more than 2 rows" in {
+      (Post(tsvAttributesImportPath, MockTSVFormData.tooManyRowsWorkspaceAttributes)
+        ~> dummyUserIdHeaders("1234")
+        ~> sealRoute(workspaceRoutes) ~> check {
+        status should equal(BadRequest)
+      })
+    }
+
+    "should 400 Bad Request if there are fewer than 2 rows" in {
+      (Post(tsvAttributesImportPath, MockTSVFormData.tooFewRowsWorkspaceAttributes)
+        ~> dummyUserIdHeaders("1234")
+        ~> sealRoute(workspaceRoutes) ~> check {
+        status should equal(BadRequest)
+      })
+    }
+  }
 }
+
