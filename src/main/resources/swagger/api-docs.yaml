@@ -1271,6 +1271,36 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/validate:
+    get:
+      responses:
+        '200':
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/ValidatedMethodConfiguration'
+        '404':
+          description: Workspace or Method Configuration does not exist
+        '500':
+          description: Rawls Internal Error
+      description: ''
+      tags:
+        - Method Configurations
+      summary: get syntax validation information for a method configuration
+      operationId: validate_method_configuration
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: path
+          description: Method Configuration Namespace
+          name: configNamespace
+          required: true
+          type: string
+        - in: path
+          description: Method Configuration Name
+          name: configName
+          required: true
+          type: string
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
     post:
       tags:
@@ -1368,36 +1398,6 @@ paths:
           description: Method Configuration already exists
         500:
           description: Internal Server Error
-
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}/validate:
-    get:
-      responses:
-        '200':
-          description: Successful Request
-          schema:
-            $ref: '#/definitions/ValidatedMethodConfiguration'
-        '404':
-          description: Workspace or Method Configuration does not exist
-        '500':
-          description: Rawls Internal Error
-      description: ''
-      tags:
-        - Method Configurations
-      summary: get syntax validation information for a method configuration
-      operationId: validate_method_configuration
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-        - in: path
-          description: Method Configuration Namespace
-          name: configNamespace
-          required: true
-          type: string
-        - in: path
-          description: Method Configuration Name
-          name: configName
-          required: true
-          type: string
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
