@@ -1462,6 +1462,44 @@ paths:
         500:
           description: Internal Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/validate:
+    post:
+      responses:
+        '200':
+          description: Validation Response
+          schema:
+            $ref: '#/definitions/SubmissionValidationReport'
+        '400':
+          description: Expression evaluation failed or entities are not of type required by method config
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        '404':
+          description: Workspace, Method Configuration or Entity not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        '500':
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        '502':
+          description: Trouble talking to Agora
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: Validate expression syntax for a submission
+      tags:
+        - Submissions
+      summary: Validate submission
+      operationId: validateSubmission
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: body
+          description: Description of a submission.
+          name: submission
+          required: true
+          schema:
+            $ref: '#/definitions/SubmissionRequest'
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
     get:
       tags:
@@ -2397,6 +2435,112 @@ definitions:
       - methodConfigurationName
       - entityType
       - entityName
+
+  SubmissionRequest:
+    description: ''
+    required:
+      - methodConfigurationNamespace
+      - methodConfigurationName
+      - entityType
+      - entityName
+    properties:
+      methodConfigurationNamespace:
+        type: string
+        description: Namespace of the method configuration to execute.
+      methodConfigurationName:
+        type: string
+        description: Name of the method configuration to execute.
+      entityType:
+        type: string
+        description: Type of root entity for expression.
+      entityName:
+        type: string
+        description: Name of root entity for expression.
+      expression:
+        type: string
+        description: Expression that resolves to one or more entities matching the entity type in the method configuration.
+
+  SubmissionValidationEntityInputs:
+    description: the results of parsing each of the inputs for one entity
+    required:
+      - entityName
+      - inputResolutions
+    properties:
+      entityName:
+        type: string
+        description: name of entity
+      inputResolutions:
+        type: array
+        description: input resolution
+        items:
+          $ref: '#/definitions/SubmissionValidationValue'
+
+  SubmissionValidationHeader:
+    description: common values for all the entities -- the entity type and the input descriptions
+    required:
+      - entityType
+      - inputExpressions
+    properties:
+      entityType:
+        type: string
+        description: type of entity
+      inputExpressions:
+        type: array
+        description: input descriptions
+        items:
+          $ref: '#/definitions/SubmissionValidationInput'
+
+  SubmissionValidationInput:
+    description: 'method configuration input parameter, it''s name and the associated expression from the method config'
+    required:
+      - wdlName
+      - expression
+    properties:
+      wdlName:
+        type: string
+        description: name of input
+      expression:
+        type: string
+        description: expression for input
+
+  SubmissionValidationReport:
+    description: the results of parsing each input for each entity
+    required:
+      - request
+      - header
+      - validEntities
+      - invalidEntities
+    properties:
+      header:
+        $ref: '#/definitions/SubmissionValidationHeader'
+        description: common values for all entities
+      validEntities:
+        type: array
+        description: runnable entities
+        items:
+          $ref: '#/definitions/SubmissionValidationEntityInputs'
+      invalidEntities:
+        type: array
+        description: non-runnable entities
+        items:
+          $ref: '#/definitions/SubmissionValidationEntityInputs'
+      request:
+        $ref: '#/definitions/SubmissionRequest'
+
+  SubmissionValidationValue:
+    description: result of an expression parse for one of the inputs
+    required:
+      - inputName
+    properties:
+      value:
+        type: string
+        description: the value of the input expression for the specified entity
+      error:
+        type: string
+        description: parsing error(s)
+      inputName:
+        type: string
+        description: name of input
 
   UserInfo:
     properties:
