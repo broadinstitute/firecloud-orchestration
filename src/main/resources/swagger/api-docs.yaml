@@ -979,11 +979,7 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
         - $ref: '#/parameters/entityTypeParam'
-        - name: entityName
-          description: Entity Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/entityNameParam'
       responses:
         200:
           description: Success
@@ -991,6 +987,44 @@ paths:
           description: Workspace or Entity does not exist
         500:
           description: Internal Server Error
+    patch:
+      responses:
+        '200':
+          description: Entity updated
+          schema:
+            $ref: '#/definitions/Entity'
+        '400':
+          description: Attribute does not exist
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        '403':
+          description: User does not have permission to update attributes in the namespace
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        '404':
+          description: Workspace or Entity not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        '500':
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: Update an entity
+      tags:
+        - Entities
+      summary: Update entity in a workspace
+      operationId: update_entity
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/entityTypeParam'
+        - $ref: '#/parameters/entityNameParam'
+        - in: body
+          description: Update operations for attributes
+          name: attributeUpdateJson
+          required: false
+          schema:
+            $ref: '#/definitions/AttributeUpdateOperation'
 # Entity delete endpoint commented out until GAWB-422 is complete
 #    delete:
 #      tags:
@@ -1869,6 +1903,12 @@ parameters:
   entityTypeParam:
     name: entityType
     description: Entity Type
+    required: true
+    type: string
+    in: path
+  entityNameParam:
+    name: entityName
+    description: Entity Name
     required: true
     type: string
     in: path
