@@ -1769,62 +1769,74 @@ parameters:
 ## DEFINITIONS
 ##########################################################################################
 definitions:
-  WorkspaceIngest:
-    required:
-      - namespace
-      - name
-      - attributes
+
+  AttributeUpdateOperation:
     properties:
-      namespace:
+      op:
         type: string
-        description: New workspace namespace
-      name:
+        description: Operation to perform on the attribute
+      attributeName:
         type: string
-        description: New workspace name
-      attributes:
-        type: object
-        additionalProperties:
-          type: string
-        description: Map of attributes
-      isProtected:
+        description: The name of the attribute
+      addUpdateAttribute:
+        type: string
+        description: The value of the attribute (if adding/updating)
+    required:
+      - op
+      - attributeName
+
+  BillingAccount:
+    description: 'Details for a single billing account'
+    required:
+      - accountName
+      - firecloudHasAccess
+      - displayName
+    properties:
+      accountName:
+        type: string
+        description: name of billing account
+      firecloudHasAccess:
         type: boolean
-        description: Whether or not the data should be restricted to dbGaP-enabled users.  Optional, default false.
-  MethodConfigACL:
-    type: array
-    items:
-      properties:
-        user:
-          type: string
-          description: a user's ID or "public"
-        role:
-          type: string
-          description: one of "NO ACCESS", "READER", or "OWNER"
-      required:
-        - user
-        - role
-  SubmissionIngest:
-    properties:
-      methodConfigurationNamespace:
+        description: whether the Firecloud service has been given access to this billing account
+      displayName:
         type: string
-        description: Namespace of the method configuration to execute.
-      methodConfigurationName:
-        type: string
-        description: Name of the method configuration to execute.
-      entityType:
-        type: string
-        description: Type of root entity for expression.
-      entityName:
-        type: string
-        description: Name of root entity for expression.
-      expression:
-        type: string
-        description: Expression that resolves to one or more entities matching the entity type
-          in the method configuration. Leave blank for default.
+        description: display name of billing account
+
+  BillingAccountRedirect:
+    description: 'Google redirect URL to enable appropriate scopes'
     required:
-      - methodConfigurationNamespace
-      - methodConfigurationName
-      - entityType
-      - entityName
+      - redirect
+    properties:
+      redirect:
+        type: string
+        description: URL to redirect to
+
+  BillingProjectMember:
+    description: ''
+    required:
+      - email
+      - role
+    properties:
+      email:
+        type: string
+        description: the email of the user
+      role:
+        type: string
+        description: the role of the user in the project
+
+  BillingProjectMembership:
+    description: ''
+    required:
+      - projectName
+      - role
+    properties:
+      projectName:
+        type: string
+        description: the name of the project to create
+      role:
+        type: string
+        description: the role of the current user in the project
+
   ConfigurationIngest:
     properties:
       namespace:
@@ -1860,21 +1872,7 @@ definitions:
       - outputs
       - inputs
       - prerequisites
-  MethodConfigRename:
-    properties:
-      namespace:
-        type: string
-        description: Method configuration namespace
-      name:
-        type: string
-        description: Method configuration name
-      workspaceName:
-        type: object
-        description: Map[String, String] with corresponding workspace-related information - name and namespace
-    required:
-      - namespace
-      - name
-      - workspaceName
+
   CopyConfigurationIngest:
     properties:
       configurationNamespace:
@@ -1898,6 +1896,305 @@ definitions:
       - configurationSnapshotId
       - destinationNamespace
       - destinationName
+
+  CopyEntity:
+    properties:
+      sourceWorkspace:
+        $ref: '#/definitions/Namespace'
+        description: Source Workspace Namespace
+      entityType:
+        type: string
+        description: Entity Type
+      entityNames:
+        type: array
+        items:
+          type: string
+        description: List of entity names to be copied
+
+  CreateRawlsBillingProjectFullRequest:
+    description: ''
+    required:
+      - projectName
+      - billingAccount
+    properties:
+      projectName:
+        type: string
+        description: the name of the project to create
+      billingAccount:
+        type: string
+        description: the id of the billing account to use, must start with 'billingAccounts/'
+
+  CuratorStatus:
+    description: is the user a curator?
+    required:
+      - curator
+    properties:
+      curator:
+        type: boolean
+
+  DeleteEntities:
+    properties:
+      recursive:
+        type: boolean
+        default: false
+        description: Whether or not to recursively delete (currently unimplemented)
+      entities:
+        type: array
+        items:
+          $ref: '#/definitions/EntityID'
+        description: List of entities to be deleted
+    required:
+      - recursive
+      - entities
+
+  Enabled:
+    properties:
+      google:
+        type: boolean
+        description: User enabled via Google?
+      ldap:
+        type: boolean
+        description: User enabled in LDAP?
+      allUsersGroup:
+        type: boolean
+        description: User is a member of the "All Users" group?
+
+  Entity:
+    description: ''
+    required:
+      - name
+      - entityType
+      - attributes
+    properties:
+      name:
+        type: string
+        description: The name of the entity
+      entityType:
+        type: string
+        description: The type of the entity
+      attributes:
+        type: object
+        description: Map[String,Attribute]
+
+  EntityID:
+    properties:
+      entityType:
+        type: string
+        description: Entity Type
+      entityName:
+        type: string
+        description: Entity Name
+
+  EntityQueryParameters:
+    description: ''
+    required:
+      - page
+      - pageSize
+      - sortField
+      - sortDirection
+    properties:
+      page:
+        type: number
+        description: page number, 1-indexed positive integer
+      pageSize:
+        type: number
+        description: count of items per page, positive integer
+      sortField:
+        type: string
+        description: field to sort by
+      sortDirection:
+        type: string
+        description: asc or desc
+      filterTerms:
+        type: string
+        description: terms to filter results by
+
+  EntityQueryResponse:
+    description: ''
+    required:
+      - parameters
+      - resultMetadata
+      - results
+    properties:
+      parameters:
+        $ref: '#/definitions/EntityQueryParameters'
+      resultMetadata:
+        $ref: '#/definitions/EntityQueryResultMetadata'
+      results:
+        type: array
+        items:
+          $ref: '#/definitions/Entity'
+
+  EntityQueryResultMetadata:
+    description: ''
+    required:
+      - unfilteredCount
+      - filteredCount
+      - filteredPageCount
+    properties:
+      unfilteredCount:
+        type: number
+        description: count of results before filtering
+      filteredCount:
+        type: number
+        description: count of results after filtering
+      filteredPageCount:
+        type: number
+        description: count of pages after filtering; honors pageSize parameter
+
+  ErrorReport:
+    description: ''
+    required:
+      - source
+      - message
+      - causes
+      - stackTrace
+    properties:
+      source:
+        type: string
+        description: service causing error
+      message:
+        type: string
+        description: what went wrong
+      statusCode:
+        type: integer
+        description: HTTP status code
+      causes:
+        type: array
+        description: errors triggering this one
+        items:
+          $ref: '#/definitions/ErrorReport'
+      stackTrace:
+        type: array
+        description: stack trace
+        items:
+          $ref: '#/definitions/StackTraceElement'
+
+  ExtendedEnabled:
+    allOf:
+      - $ref: '#/definitions/Enabled'
+    properties:
+      allUsersGroup:
+        type: boolean
+        description: User is a member of the "All Users" group?
+
+  JWTWrapper:
+    properties:
+      jwt:
+        type: string
+        description: the encoded/signed JWT
+
+  Me:
+    properties:
+      userInfo:
+        $ref: '#/definitions/UserInfo'
+      enabled:
+        $ref: '#/definitions/Enabled'
+
+  MethodConfigACL:
+    type: array
+    items:
+      properties:
+        user:
+          type: string
+          description: a user's ID or "public"
+        role:
+          type: string
+          description: one of "NO ACCESS", "READER", or "OWNER"
+      required:
+        - user
+        - role
+
+  MethodConfigRename:
+    properties:
+      namespace:
+        type: string
+        description: Method configuration namespace
+      name:
+        type: string
+        description: Method configuration name
+      workspaceName:
+        type: object
+        description: Map[String, String] with corresponding workspace-related information - name and namespace
+    required:
+      - namespace
+      - name
+      - workspaceName
+
+  MethodConfiguration:
+    description: ''
+    required:
+      - namespace
+      - name
+      - rootEntityType
+      - inputs
+      - methodRepoMethod
+    properties:
+      namespace:
+        type: string
+        description: 'This method configuration''s namespace'
+      name:
+        type: string
+        description: The name of the method configuration
+      rootEntityType:
+        type: string
+        description: The root entity type that the method will be running on
+      prerequisites:
+        type: object
+        description: Map[String, String]
+      inputs:
+        type: object
+        description: Map[String, String]
+      outputs:
+        type: object
+        description: Map[String, String]
+      methodRepoMethod:
+        $ref: '#/definitions/MethodRepoMethod'
+        description: The properties of the method from the method store that this config is associated with
+
+  MethodID:
+    properties:
+      methodNamespace:
+        type: string
+        description: Method namespace
+      methodName:
+        type: string
+        description: Method name
+      methodVersion:
+        type: integer
+        default: 0
+        description: Method version
+    required:
+      - methodNamespace
+      - methodName
+      - methodVersion
+
+  MethodRepoMethod:
+    description: ''
+    required:
+      - methodNamespace
+      - methodName
+      - methodVersion
+    properties:
+      methodNamespace:
+        type: string
+        description: The namespace of method from method store
+      methodName:
+        type: string
+        description: The name of method from method store
+      methodVersion:
+        type: integer
+        description: The version of method from method store
+
+  Namespace:
+    properties:
+      namespace:
+        type: string
+        description: Entity namespace
+      name:
+        type: string
+        description: Entity name
+
   NewMethodConfigIngest:
     properties:
       namespace:
@@ -1929,258 +2226,7 @@ definitions:
       - outputs
       - prerequisites
       - methodRepoMethod
-  PublishConfigurationIngest:
-    properties:
-      configurationNamespace:
-        type: string
-        description: Method configuration namespace
-      configurationName:
-        type: string
-        description: Method configuration name
-      sourceNamespace:
-        type: string
-        description: Method configuration source namespace
-      sourceName:
-        type: string
-        description: Method configuration source name
-    required:
-      - configurationNamespace
-      - configurationName
-      - sourceNamespace
-      - sourceName
-  AttributeUpdateOperation:
-    properties:
-      op:
-        type: string
-        description: Operation to perform on the attribute
-      attributeName:
-        type: string
-        description: The name of the attribute
-      addUpdateAttribute:
-        type: string
-        description: The value of the attribute (if adding/updating)
-    required:
-      - op
-      - attributeName
-  CopyEntity:
-    properties:
-      sourceWorkspace:
-        $ref: '#/definitions/Namespace'
-        description: Source Workspace Namespace
-      entityType:
-        type: string
-        description: Entity Type
-      entityNames:
-        type: array
-        items:
-          type: string
-        description: List of entity names to be copied
-  Namespace:
-    properties:
-      namespace:
-        type: string
-        description: Entity namespace
-      name:
-        type: string
-        description: Entity name
-  DeleteEntities:
-    properties:
-      recursive:
-        type: boolean
-        default: false
-        description: Whether or not to recursively delete (currently unimplemented)
-      entities:
-        type: array
-        items:
-          $ref: '#/definitions/EntityID'
-        description: List of entities to be deleted
-    required:
-      - recursive
-      - entities
-  EntityID:
-    properties:
-      entityType:
-        type: string
-        description: Entity Type
-      entityName:
-        type: string
-        description: Entity Name
-  Entity:
-    description: ''
-    required:
-      - name
-      - entityType
-      - attributes
-    properties:
-      name:
-        type: string
-        description: The name of the entity
-      entityType:
-        type: string
-        description: The type of the entity
-      attributes:
-        type: object
-        description: Map[String,Attribute]
-  EntityQueryParameters:
-    description: ''
-    required:
-      - page
-      - pageSize
-      - sortField
-      - sortDirection
-    properties:
-      page:
-        type: number
-        description: page number, 1-indexed positive integer
-      pageSize:
-        type: number
-        description: count of items per page, positive integer
-      sortField:
-        type: string
-        description: field to sort by
-      sortDirection:
-        type: string
-        description: asc or desc
-      filterTerms:
-        type: string
-        description: terms to filter results by
-  EntityQueryResultMetadata:
-    description: ''
-    required:
-      - unfilteredCount
-      - filteredCount
-      - filteredPageCount
-    properties:
-      unfilteredCount:
-        type: number
-        description: count of results before filtering
-      filteredCount:
-        type: number
-        description: count of results after filtering
-      filteredPageCount:
-        type: number
-        description: count of pages after filtering; honors pageSize parameter
-  EntityQueryResponse:
-    description: ''
-    required:
-      - parameters
-      - resultMetadata
-      - results
-    properties:
-      parameters:
-        $ref: '#/definitions/EntityQueryParameters'
-      resultMetadata:
-        $ref: '#/definitions/EntityQueryResultMetadata'
-      results:
-        type: array
-        items:
-          $ref: '#/definitions/Entity'
-  MethodID:
-    properties:
-      methodNamespace:
-        type: string
-        description: Method namespace
-      methodName:
-        type: string
-        description: Method name
-      methodVersion:
-        type: integer
-        default: 0
-        description: Method version
-    required:
-      - methodNamespace
-      - methodName
-      - methodVersion
-  MethodConfiguration:
-    description: ''
-    required:
-      - namespace
-      - name
-      - rootEntityType
-      - inputs
-      - methodRepoMethod
-    properties:
-      namespace:
-        type: string
-        description: 'This method configuration''s namespace'
-      name:
-        type: string
-        description: The name of the method configuration
-      rootEntityType:
-        type: string
-        description: The root entity type that the method will be running on
-      prerequisites:
-        type: object
-        description: Map[String, String]
-      inputs:
-        type: object
-        description: Map[String, String]
-      outputs:
-        type: object
-        description: Map[String, String]
-      methodRepoMethod:
-        $ref: '#/definitions/MethodRepoMethod'
-        description: The properties of the method from the method store that this config is associated with
-  MethodRepoMethod:
-    description: ''
-    required:
-      - methodNamespace
-      - methodName
-      - methodVersion
-    properties:
-      methodNamespace:
-        type: string
-        description: The namespace of method from method store
-      methodName:
-        type: string
-        description: The name of method from method store
-      methodVersion:
-        type: integer
-        description: The version of method from method store
-  ValidatedMethodConfiguration:
-    description: ''
-    required:
-      - methodConfiguration
-      - validInputs
-      - invalidInputs
-      - validOutputs
-      - invalidOutputs
-    properties:
-      validInputs:
-        type: array
-        items:
-          type: string
-      invalidInputs:
-        type: object
-        description: Map[String, String]
-      validOutputs:
-        type: array
-        items:
-          type: string
-      invalidOutputs:
-        type: object
-        description: Map[String, String]
-      methodConfiguration:
-        $ref: '#/definitions/MethodConfiguration'
-  Profile:
-    properties:
-      name:
-        type: string
-        description: User's full name
-      email:
-        type: string
-        description: User's email address
-      institution:
-        type: string
-        description: User's home institution
-      pi:
-        type: string
-        description: Primary Investigator
-  JWTWrapper:
-    properties:
-      jwt:
-        type: string
-        description: the encoded/signed JWT
+
   NIHStatus:
     required:
       - loginRequired
@@ -2206,132 +2252,55 @@ definitions:
         default: 0
       descriptionSinceLastLink:
         type: string
-  Enabled:
+
+  Profile:
     properties:
-      google:
-        type: boolean
-        description: User enabled via Google?
-      ldap:
-        type: boolean
-        description: User enabled in LDAP?
-      allUsersGroup:
-        type: boolean
-        description: User is a member of the "All Users" group?
-  UserInfo:
-    properties:
-      userSubjectId:
+      name:
         type: string
-        description: Subject ID (from Google)
-      userEmail:
+        description: User's full name
+      email:
         type: string
-        description: User's email
-  Me:
+        description: User's email address
+      institution:
+        type: string
+        description: User's home institution
+      pi:
+        type: string
+        description: Primary Investigator
+
+  PublishConfigurationIngest:
     properties:
-      userInfo:
-        $ref: '#/definitions/UserInfo'
-      enabled:
-        $ref: '#/definitions/Enabled'
-  ExtendedEnabled:
-    allOf:
-      - $ref: '#/definitions/Enabled'
+      configurationNamespace:
+        type: string
+        description: Method configuration namespace
+      configurationName:
+        type: string
+        description: Method configuration name
+      sourceNamespace:
+        type: string
+        description: Method configuration source namespace
+      sourceName:
+        type: string
+        description: Method configuration source name
+    required:
+      - configurationNamespace
+      - configurationName
+      - sourceNamespace
+      - sourceName
+
+  RawlsGroupRef:
+    description: a reference to a group
     properties:
-      allUsersGroup:
-        type: boolean
-        description: User is a member of the "All Users" group?
+      groupName:
+        type: string
+        description: ''
+
   RawlsMe:
     properties:
       userInfo:
         $ref: '#/definitions/UserInfo'
       enabled:
         $ref: '#/definitions/ExtendedEnabled'
-  BillingAccountRedirect:
-    description: 'Google redirect URL to enable appropriate scopes'
-    required:
-      - redirect
-    properties:
-      redirect:
-        type: string
-        description: URL to redirect to
-  BillingAccount:
-    description: 'Details for a single billing account'
-    required:
-      - accountName
-      - firecloudHasAccess
-      - displayName
-    properties:
-      accountName:
-        type: string
-        description: name of billing account
-      firecloudHasAccess:
-        type: boolean
-        description: whether the Firecloud service has been given access to this billing account
-      displayName:
-        type: string
-        description: display name of billing account
-  BillingProjectMembership:
-    description: ''
-    required:
-      - projectName
-      - role
-    properties:
-      projectName:
-        type: string
-        description: the name of the project to create
-      role:
-        type: string
-        description: the role of the current user in the project
-  BillingProjectMember:
-    description: ''
-    required:
-      - email
-      - role
-    properties:
-      email:
-        type: string
-        description: the email of the user
-      role:
-        type: string
-        description: the role of the user in the project
-  CreateRawlsBillingProjectFullRequest:
-    description: ''
-    required:
-      - projectName
-      - billingAccount
-    properties:
-      projectName:
-        type: string
-        description: the name of the project to create
-      billingAccount:
-        type: string
-        description: the id of the billing account to use, must start with 'billingAccounts/'
-
-  ErrorReport:
-    description: ''
-    required:
-      - source
-      - message
-      - causes
-      - stackTrace
-    properties:
-      source:
-        type: string
-        description: service causing error
-      message:
-        type: string
-        description: what went wrong
-      statusCode:
-        type: integer
-        description: HTTP status code
-      causes:
-        type: array
-        description: errors triggering this one
-        items:
-          $ref: '#/definitions/ErrorReport'
-      stackTrace:
-        type: array
-        description: stack trace
-        items:
-          $ref: '#/definitions/StackTraceElement'
 
   StackTraceElement:
     description: ''
@@ -2353,6 +2322,65 @@ definitions:
       lineNumber:
         type: integer
         description: line number
+
+  SubmissionIngest:
+    properties:
+      methodConfigurationNamespace:
+        type: string
+        description: Namespace of the method configuration to execute.
+      methodConfigurationName:
+        type: string
+        description: Name of the method configuration to execute.
+      entityType:
+        type: string
+        description: Type of root entity for expression.
+      entityName:
+        type: string
+        description: Name of root entity for expression.
+      expression:
+        type: string
+        description: Expression that resolves to one or more entities matching the entity type
+          in the method configuration. Leave blank for default.
+    required:
+      - methodConfigurationNamespace
+      - methodConfigurationName
+      - entityType
+      - entityName
+
+  UserInfo:
+    properties:
+      userSubjectId:
+        type: string
+        description: Subject ID (from Google)
+      userEmail:
+        type: string
+        description: User's email
+
+  ValidatedMethodConfiguration:
+    description: ''
+    required:
+      - methodConfiguration
+      - validInputs
+      - invalidInputs
+      - validOutputs
+      - invalidOutputs
+    properties:
+      validInputs:
+        type: array
+        items:
+          type: string
+      invalidInputs:
+        type: object
+        description: Map[String, String]
+      validOutputs:
+        type: array
+        items:
+          type: string
+      invalidOutputs:
+        type: object
+        description: Map[String, String]
+      methodConfiguration:
+        $ref: '#/definitions/MethodConfiguration'
 
   Workspace:
     description: ''
@@ -2404,12 +2432,7 @@ definitions:
       isLocked:
         type: boolean
         description: Can the Workspace currently be modified?
-  RawlsGroupRef:
-    description: a reference to a group
-    properties:
-      groupName:
-        type: string
-        description: ''
+
   WorkspaceACLUpdate:
     description: ''
     required:
@@ -2422,11 +2445,24 @@ definitions:
       accessLevel:
         type: string
         description: The access level to grant to this user or group (OWNER, READER, WRITER, NO ACCESS)
-  CuratorStatus:
-    description: is the user a curator?
-    required:
-      - curator
-    properties:
-      curator:
-        type: boolean
 
+  WorkspaceIngest:
+    required:
+      - namespace
+      - name
+      - attributes
+    properties:
+      namespace:
+        type: string
+        description: New workspace namespace
+      name:
+        type: string
+        description: New workspace name
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
+        description: Map of attributes
+      isProtected:
+        type: boolean
+        description: Whether or not the data should be restricted to dbGaP-enabled users.  Optional, default false.
