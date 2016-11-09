@@ -1500,6 +1500,32 @@ paths:
           schema:
             $ref: '#/definitions/SubmissionRequest'
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}:
+    get:
+      responses:
+        '200':
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/ExecutionMetadata'
+        '404':
+          description: Workspace, Submission or Workflow not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        '500':
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: Get call-level metadata for workflow
+      tags:
+        - Submissions
+      summary: Get call-level metadata for workflow
+      operationId: workflowMetadata
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/submissionIdParam'
+        - $ref: '#/parameters/workflowIdParam'
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
     get:
       tags:
@@ -1926,6 +1952,48 @@ definitions:
         type: string
         description: the role of the current user in the project
 
+  CallMetadata:
+    description: Stuff you need to know about calls
+    properties:
+      inputs:
+        type: object
+        description: map from input names onto resolved values
+      executionStatus:
+        type: string
+        description: status of call
+      backendStatus:
+        type: string
+        description: status of the backend
+      backendLogs:
+        type: object
+        description: map of log files from backend
+      outputs:
+        type: object
+        description: map from output names to local files
+      start:
+        type: string
+        format: date-time
+        description: starting time of call
+      end:
+        type: string
+        format: date-time
+        description: ending time of call
+      jobId:
+        type: string
+        description: unique ID of job
+      returnCode:
+        type: integer
+        description: result code
+      backend:
+        type: string
+        description: type of backend executing the call
+      stdout:
+        type: string
+        description: location of stdout
+      stderr:
+        type: string
+        description: location of stderr
+
   ConfigurationIngest:
     properties:
       namespace:
@@ -2158,6 +2226,37 @@ definitions:
         description: stack trace
         items:
           $ref: '#/definitions/StackTraceElement'
+
+  ExecutionMetadata:
+    description: Stuff you need to know about a workflow
+    properties:
+      id:
+        type: string
+        description: The identifier of the workflow
+      status:
+        type: string
+        description: Workflow status
+      submission:
+        type: string
+        format: date-time
+        description: Data and time the workflow was submitted
+      start:
+        type: string
+        format: date-time
+        description: Date and time the workflow started execution
+      end:
+        type: string
+        format: date-time
+        description: Date and time the workflow ended execution
+      inputs:
+        type: object
+        description: map of workflow input names onto resolved values
+      outputs:
+        type: object
+        description: map of workflow output names onto local files
+      calls:
+        description: map from call names onto call metadata
+        $ref: '#/definitions/CallMetadata'
 
   ExtendedEnabled:
     allOf:
