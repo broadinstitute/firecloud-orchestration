@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.Document
+import org.broadinstitute.dsde.firecloud.model.{Document, LibrarySearchResponse}
 import spray.json.JsObject
 
 /**
@@ -16,6 +16,7 @@ class MockSearchDAO extends SearchDAO {
 
   var indexDocumentInvoked = false
   var deleteDocumentInvoked = false
+  var findDocumentsInvoked = false
 
   override def bulkIndex(docs: Seq[Document]) = Unit
   override def indexDocument(doc: Document) = {
@@ -23,6 +24,11 @@ class MockSearchDAO extends SearchDAO {
   }
   override def deleteDocument(id: String) = {
     deleteDocumentInvoked = true
+  }
+
+  override def findDocuments(term: String, from: Int, size: Int): LibrarySearchResponse = {
+    findDocumentsInvoked = true
+    LibrarySearchResponse(0, Array[JsObject]())
   }
 
 }

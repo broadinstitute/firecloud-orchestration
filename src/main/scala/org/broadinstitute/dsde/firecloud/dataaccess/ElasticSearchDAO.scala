@@ -80,7 +80,6 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     )
   }
 
-
   private def conditionalRecreateIndex(deleteFirst: Boolean = false) = {
     try {
       logger.info(s"Checking to see if ElasticSearch index '%s' exists ... ".format(indexName))
@@ -101,9 +100,7 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     }
   }
 
-
-
-  def findDocuments(term: String, from: Int = 0, size: Int = 10) : LibrarySearchResponse = {
+  override def findDocuments(term: String, from: Int = 0, size: Int = 10) : LibrarySearchResponse = {
     val fullstr = {
       if ("".equals(term)) findAll
       else String.format(queryStr, term)

@@ -121,7 +121,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def findDocuments(term: String, from: Int, size: Int) : Future[PerRequestMessage] = {
-    val results = searchDAO.asInstanceOf[ElasticSearchDAO].findDocuments(term, from, size)
+    val results = searchDAO.findDocuments(term, from, size)
     Future(RequestComplete(results))
   }
 

@@ -4,14 +4,16 @@ import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model.{LibrarySearchResponse, UserInfo}
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-
-import spray.http.HttpMethods
+import spray.http._
 import spray.http.StatusCodes._
+import spray.json._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+
 
 class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
 
@@ -21,6 +23,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
   lazy val isCuratorPath = "/api/library/user/role/curator"
   private def publishedPath(ns:String="namespace", name:String="name") =
     "/api/library/%s/%s/published".format(ns, name)
+  private final val librariesPath = "/api/libraries"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
@@ -96,8 +99,35 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
           new RequestBuilder(HttpMethods.DELETE)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked, "deleteDocument should have been invoked")
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked ==  false, "indexDocument should not have been invoked")
+            assert(this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked == false, "indexDocument should not have been invoked")
             this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked = false
+          }
+        }
+      }
+    }
+
+    "when retrieving datasets" - {
+      "GET on " + librariesPath - {
+        "should retrieve all datasets" in {
+          this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked = false
+          new RequestBuilder(HttpMethods.GET)(librariesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            assert(this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked, "indexDocument should have been invoked")
+            this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
+          }
+        }
+      }
+      "POST on " + librariesPath - {
+        "should search for datasets" in {
+          this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
+          val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
+          new RequestBuilder(HttpMethods.POST)(librariesPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            assert(this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked, "findDocuments should have been invoked")
+            val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
+            assert(respdata.total == 0, "total results should be 0")
+            assert(respdata.results.size == 0, "results array should be empty")
+            this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
           }
         }
       }
