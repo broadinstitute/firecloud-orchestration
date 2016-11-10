@@ -1671,13 +1671,47 @@ paths:
         500:
           description: Internal Error
 
+  /cookie-authed/download/b/{bucket}/o/{object}:
+    get:
+      tags:
+      - Storage
+      operationId: getStorageDownload
+      summary: |
+        Download GCS object using a cookie token
+      description: |
+        **Important**: this file download does not work within the swagger UI. It is here for documentation
+        purposes. You can fill in the fields and submit; once you do so, you will get an error, but swagger
+        will populate the "Request URL" field. You can then copy and paste that field into a new tab to
+        achieve your download.
+      parameters:
+        - name: bucket
+          description: Name of the bucket in which the object resides.
+          required: true
+          type: string
+          in: path
+        - name: object
+          description: Name of the object. (be sure to urlencode)
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Success
+          schema:
+            type: file
+        404:
+          description: Not Found
+        500:
+          description: Internal Error
+      security: []
+
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       tags:
       - Entities
       operationId: browserDownloadEntitiesTSV
       summary: |
-        TSV file containing workspace entities of the specified type (allows cookie-based authentication)
+        TSV file containing workspace entities of the specified type (requires cookie-based authentication)
       produces:
         - text/plain
       parameters:
