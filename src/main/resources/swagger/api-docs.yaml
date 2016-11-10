@@ -1542,12 +1542,6 @@ paths:
           description: Workspace not found
         500:
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
   /api/workspaces/{workspaceNamespace}/{workspaceName}/setAttributes:
     patch:
       tags:
@@ -1555,8 +1549,6 @@ paths:
       operationId: setAttributes
       summary: |
         Set attributes on a workspace.
-      produces:
-      - application/json
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
