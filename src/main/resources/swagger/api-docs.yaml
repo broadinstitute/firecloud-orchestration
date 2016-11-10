@@ -1542,6 +1542,30 @@ paths:
           description: Workspace not found
         500:
           description: Internal Error
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/setAttributes:
+    patch:
+      tags:
+      - Workspaces
+      operationId: setAttributes
+      summary: |
+        Set attributes on a workspace.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: newAttributes
+          description: New attribute values, as Map[String, Attribute]
+          required: true
+          type: object
+          in: body
+      responses:
+        200:
+          description: Success
+        400:
+          description: Malformed request
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
 
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
