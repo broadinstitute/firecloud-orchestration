@@ -23,7 +23,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   extends ThurloeDAO with RestJsonClient {
 
   val fireCloudHeader = HttpHeaders.RawHeader("X-FireCloud-Id", FireCloudConfig.FireCloud.fireCloudId)
-  val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
+  def adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
 
   override def sendNotifications(notifications: Seq[Notification]): Future[Try[Unit]] = {
 
