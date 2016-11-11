@@ -247,8 +247,16 @@ object ModelJsonProtocol {
   implicit val ESDetailFormat = jsonFormat1(ESDetail)
   implicit val ESDatasetPropertyFormat = jsonFormat1(ESDatasetProperty)
 
+  implicit val impESMatchAll = jsonFormat1(ESMatchAll)
+  implicit val impESAllQuery = jsonFormat1(ESAllQuery)
+
+//  implicit val impESWildcardSearchTerm = jsonFormat1(ESWildcardSearchTerm)
+  implicit val impESWildcard = jsonFormat1(ESWildcard)
+  implicit val impESSearchQuery = jsonFormat1(ESSearchQuery)
+
   implicit val impLibrarySearch = jsonFormat3(LibrarySearchParams)
-  implicit val impLibrarySearchResponse = jsonFormat2(LibrarySearchResponse)
+  implicit val impLibrarySearchResponse = jsonFormat5(LibrarySearchResponse)
+
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

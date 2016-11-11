@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.Document
-import  org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
 import org.elasticsearch.action.admin.indices.delete.{DeleteIndexRequest, DeleteIndexRequestBuilder, DeleteIndexResponse}
@@ -9,20 +9,22 @@ import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsReque
 import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkResponse}
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
-import org.elasticsearch.action.search.{SearchRequest, SearchResponse, SearchRequestBuilder}
+import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.client.transport.TransportClient
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
+import spray.json.DefaultJsonProtocol._
 
-import scala.concurrent.Future
+
+//import scala.concurrent.ExecutionContext
+//import scala.concurrent.ExecutionContext.Implicits.global
+//import spray.httpx.SprayJsonSupport._
 
 class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport {
 
   private val client: TransportClient = buildClient(servers)
   private final val datatype = "dataset"
-  private final val findAll = "{ \"query\": { \"match_all\" : {}}}"
-  private final val queryStr = "{ \"query\": { \"wildcard\" : { \"_all\" : \"*%s*\"}}}"
 
   initIndex
 
@@ -100,19 +102,20 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     }
   }
 
-  override def findDocuments(term: String, from: Int = 0, size: Int = 10) : LibrarySearchResponse = {
-    val fullstr = {
-      if ("".equals(term)) findAll
-      else String.format(queryStr, term)
-    }
-    val searchReq = client.prepareSearch(indexName).setQuery(fullstr)
-    searchReq.setFrom(from)
-    searchReq.setSize(size)
+  override def findDocuments(criteria: LibrarySearchParams) : LibrarySearchResponse = {
+    val searchReq =
+      criteria.searchTerm match {
+        case None => client.prepareSearch(indexName).setQuery(ESAllQuery.toJson.prettyPrint)
+        case Some(searchTerm:String) => client.prepareSearch(indexName).setQuery(new ESSearchQuery(searchTerm).toJson.prettyPrint)
+      }
+    searchReq.setFrom(criteria.from)
+    searchReq.setSize(criteria.size)
     val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
 
-    val results = searchResults.getHits.hits map { hit =>
-       hit.getSourceAsString.parseJson.asJsObject
+    val sourceDocuments = searchResults.getHits.hits map { hit =>
+      hit.getSource.asInstanceOf[Map[String,Object]]
     }
-    LibrarySearchResponse(searchResults.getHits.totalHits().toInt, results)
+
+    new LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments)
   }
 }

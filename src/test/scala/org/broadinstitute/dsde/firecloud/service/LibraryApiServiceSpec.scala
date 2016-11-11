@@ -109,10 +109,10 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
     "when retrieving datasets" - {
       "GET on " + librariesPath - {
         "should retrieve all datasets" in {
-          this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked = false
+          this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
           new RequestBuilder(HttpMethods.GET)(librariesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked, "indexDocument should have been invoked")
+            assert(this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked, "findDocuments should have been invoked")
             this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
           }
         }

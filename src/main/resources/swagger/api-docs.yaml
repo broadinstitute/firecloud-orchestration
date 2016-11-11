@@ -304,6 +304,44 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/libraries:
+    get:
+      tags:
+        - Library
+      operationId: FindDocuments
+      summary: |
+        lists published library datasets
+      parameters:
+        - in: query
+          description: which result to start at (for pagination)
+          name: from
+          type: integer
+          required: false
+        - in: query
+          description: how many results to return
+          name: size
+          type: integer
+          required: false
+      responses:
+        200:
+          description: All published datasets
+    post:
+      tags:
+        - Library
+      operationId: FindDocuments
+      summary: |
+        searches published library datasets
+      parameters:
+        - in: body
+          description: term to search
+          name: searchTerm
+          required: true
+          schema:
+            $ref: '#/definitions/SearchTerm'
+      responses:
+        200:
+          description: Matching datasets
+
   /api/library/admin/reindex:
     post:
       tags:
@@ -1501,49 +1539,6 @@ paths:
           description: Method Configuration failed to resolve input expressions with the supplied Entity
         500:
           description: Internal Error
-  '/api/libraries':
-    get:
-      tags:
-        - Library
-      operationId: FindDocuments
-      summary: |
-        lists published library datasets
-      produces:
-        - text/plain
-        - application/json
-      parameters:
-        - in: query
-          description: which result to start at (for pagination)
-          name: from
-          type: integer
-          required: false
-        - in: query
-          description: how many results to return
-          name: size
-          type: integer
-          required: false
-      responses:
-        200:
-          description: All published datasets
-    post:
-      tags:
-        - Library
-      operationId: FindDocuments
-      summary: |
-        searches published library datasets
-      parameters:
-        - in: body
-          description: term to search
-          name: searchTerm
-          required: true
-          schema:
-            $ref: '#/definitions/SearchTerm'
-      produces:
-        - text/plain
-        - application/json
-      responses:
-        200:
-          description: Matching datasets
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
     delete:
@@ -2678,6 +2673,14 @@ definitions:
       groupName:
         type: string
         description: ''
+
+  RawlsMe:
+    properties:
+      userInfo:
+        $ref: '#/definitions/UserInfo'
+      enabled:
+        $ref: '#/definitions/ExtendedEnabled'
+
   SearchTerm:
     required:
       - searchTerm
@@ -2687,17 +2690,12 @@ definitions:
         description: The term to search for
       from:
         type: integer
+        default: 0
         description: Where in the results list to start (used for pagination)
       size:
         type: integer
+        default: 10
         description: How many results to return
-
-  RawlsMe:
-    properties:
-      userInfo:
-        $ref: '#/definitions/UserInfo'
-      enabled:
-        $ref: '#/definitions/ExtendedEnabled'
 
   StackTraceElement:
     description: ''

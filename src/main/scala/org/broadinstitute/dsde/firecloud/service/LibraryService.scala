@@ -15,9 +15,9 @@ import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json.JsonParser.ParsingException
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
@@ -31,7 +31,7 @@ object LibraryService {
   case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
   case object IndexAll extends LibraryServiceMessage
-  case class FindDocuments(term: String, from: Int, size: Int) extends LibraryServiceMessage
+  case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
@@ -53,7 +53,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => asCurator {updateAttributes(ns, name, attrsJsonString)} pipeTo sender
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
     case IndexAll => asAdmin {indexAll} pipeTo sender
-    case FindDocuments(term: String, from: Int, size: Int) => asCurator {findDocuments(term, from, size)} pipeTo sender
+    case FindDocuments(criteria: LibrarySearchParams) => asCurator {findDocuments(criteria)} pipeTo sender
   }
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
@@ -120,8 +120,8 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     }
   }
 
-  def findDocuments(term: String, from: Int, size: Int) : Future[PerRequestMessage] = {
-    val results = searchDAO.findDocuments(term, from, size)
+  def findDocuments(criteria: LibrarySearchParams) : Future[PerRequestMessage] = {
+    val results: LibrarySearchResponse = searchDAO.findDocuments(criteria)
     Future(RequestComplete(results))
   }
 

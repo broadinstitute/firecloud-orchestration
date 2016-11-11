@@ -11,7 +11,6 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
-import spray.httpx.SprayJsonSupport.sprayJsonUnmarshaller
 
 import scala.concurrent.ExecutionContext
 
@@ -83,24 +82,26 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
           }
         } ~
         pathPrefix("libraries") {
-          post {
-            respondWithJSON {
-              entity(as[LibrarySearchParams]) { params => requestContext =>
-                perRequest(requestContext,
-                  LibraryService.props(libraryServiceConstructor, userInfo),
-                  LibraryService.FindDocuments(params.searchTerm, params.from, params.size))
-              }
-            }
-          } ~
-          get {
-            respondWithJSON {
-              parameters('from ? 0, 'size ? 10) { (from, size ) =>
-                requestContext =>
+          pathEndOrSingleSlash {
+            post {
+              respondWithJSON {
+                entity(as[LibrarySearchParams]) { params => requestContext =>
                   perRequest(requestContext,
                     LibraryService.props(libraryServiceConstructor, userInfo),
-                    LibraryService.FindDocuments("", from, size))
+                    LibraryService.FindDocuments(params))
+                }
               }
             }
+//            get {
+//              respondWithJSON {
+//                parameters('from ? 0, 'size ? 10) { (from, size) =>
+//                  requestContext =>
+//                    perRequest(requestContext,
+//                      LibraryService.props(libraryServiceConstructor, userInfo),
+//                      LibraryService.FindDocuments(None, from, size))
+//                }
+//              }
+//            }
           }
         }
       }
