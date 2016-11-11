@@ -2065,6 +2065,11 @@ definitions:
       executionStatus:
         type: string
         description: status of call
+      executionEvents:
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ExecutionEvent'
       backendStatus:
         type: string
         description: status of the backend
@@ -2097,6 +2102,9 @@ definitions:
       stderr:
         type: string
         description: location of stderr
+      shardIndex:
+        type: integer
+        description: index of execution cluster instance
 
   ConfigurationIngest:
     properties:
@@ -2330,6 +2338,22 @@ definitions:
         description: stack trace
         items:
           $ref: '#/definitions/StackTraceElement'
+
+  ExecutionEvent:
+    description: ''
+    required:
+      - description
+      - startTime
+    properties:
+      description:
+        type: string
+        description: Description of the event
+      startTime:
+        type: date-time
+        description: When the event started
+      endTime:
+        type: date-time
+        description: When the event finished
 
   ExecutionMetadata:
     description: Stuff you need to know about a workflow
