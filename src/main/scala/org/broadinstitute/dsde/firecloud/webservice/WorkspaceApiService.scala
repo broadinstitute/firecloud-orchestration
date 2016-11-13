@@ -30,7 +30,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
   lazy val log = LoggerFactory.getLogger(getClass)
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
 
-  val workspaceServiceConstructor: UserInfo => WorkspaceService
+  val workspaceServiceConstructor: WithAccessToken => WorkspaceService
 
   def transformSingleWorkspaceRequest(entity: HttpEntity): HttpEntity = {
     entity.as[RawlsWorkspaceResponse] match {
@@ -50,16 +50,17 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
     }
   }
 
+  private val filename = "-workspace-attributes.tsv"
+
   val workspaceRoutes: Route =
    pathPrefix("cookie-authed") {
      path("workspaces" / Segment / Segment / "exportAttributes") {
        (workspaceNamespace, workspaceName) =>
          cookie("FCtoken") { tokenCookie =>
            mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
-             val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
              perRequest(requestContext,
-               WorkspaceService.props(workspaceServiceConstructor, new UserInfo("", OAuth2BearerToken(tokenCookie.content), 0, "")),
-               WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, filename))
+               WorkspaceService.props(workspaceServiceConstructor, new AccessToken(OAuth2BearerToken(tokenCookie.content))),
+               WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceName + filename))
            }
          }
      }
@@ -100,11 +101,10 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   }
                 } ~
                 path("exportAttributes") {
-                  val filename = workspaceName + "-WORKSPACE-ATTRIBUTES.txt"
                   get { requestContext =>
                         perRequest(requestContext,
                               WorkspaceService.props(workspaceServiceConstructor, userInfo),
-                              WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, filename))
+                              WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceName + filename))
                       }
                 } ~
                 path("importAttributes") {

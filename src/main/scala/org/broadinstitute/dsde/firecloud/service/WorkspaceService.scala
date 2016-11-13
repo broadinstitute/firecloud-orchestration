@@ -35,15 +35,15 @@ object WorkspaceService {
   case class ExportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
   case class ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) extends WorkspaceServiceMessage
 
-  def props(workspaceServiceConstructor: UserInfo => WorkspaceService, userInfo: UserInfo): Props = {
+  def props(workspaceServiceConstructor: WithAccessToken => WorkspaceService, userInfo: WithAccessToken): Props = {
     Props(workspaceServiceConstructor(userInfo))
   }
 
-  def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
+  def constructor(app: Application)(userInfo: WithAccessToken)(implicit executionContext: ExecutionContext) =
     new WorkspaceService(userInfo, app.rawlsDAO, app.thurloeDAO)
 }
 
-class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor {
+class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor {
 
   implicit val system = context.system
   import system.dispatcher
@@ -78,14 +78,11 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
 
   def exportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
     Try(rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)) match {
-      case Failure(regret) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
+      case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
       case Success(workspaceFuture) => workspaceFuture map { workspaceResponse =>
-        val headerString = "workspace:" + (workspaceResponse.workspace.get.attributes map { case (attName, attValue) =>
-          attName.name
-        }).mkString("\t").replaceAll("description\t", "")
-        val valueString = (workspaceResponse.workspace.get.attributes map { attribute =>
-          impAttributeFormat.write(attribute._2).toString().replaceAll("\"", "")
-        }).mkString("\t").replaceAll("null\t", "")
+        val attributes = workspaceResponse.workspace.get.attributes.filterKeys(_ != AttributeName("default","description"))
+        val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name}).mkString("\t")
+        val valueString = (attributes map { case (attName, attValue) => impAttributeFormat.write(attValue)}).mkString("\t")
         RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
           HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
           HttpHeaders.`Content-Type`(`text/plain`))
@@ -95,13 +92,13 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
 
   def importAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
     Try(TSVParser.parse(tsvString)) match {
-      case Failure(regret) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
+      case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
       case Success(tsv) =>
         tsv.firstColumnHeader.split(":")(0) match {
           case "workspace" =>
             importWorkspaceAttributeTSV(workspaceNamespace, workspaceName, tsv)
           case _ =>
-            Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid first column header should start with \"workspace\""))
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid first column header should start with \"workspace\""))
         }
     }
   }
@@ -110,14 +107,9 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
     checkIf2Rows(tsv) {
       checkFirstRowDistinct(tsv) {
         val attributePairs = colNamesToWorkspaceAttributeNames(tsv.headers).zip(tsv.tsvData.head)
-        Try(scala.util.parsing.json.JSONObject(attributePairs.toMap).toString().parseJson.asJsObject.convertTo[AttributeMap]) match {
-          case Failure(ex: ParsingException) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid json supplied", ex))
-          case Failure(e) => Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, StatusCodes.BadRequest.defaultMessage, e))
-          case Success(attrs) =>
-            rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-              val allOperations = getWorkspaceAttributeCalls(attributePairs)
-              rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
-            }
+        rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
+          val allOperations = getWorkspaceAttributeCalls(attributePairs)
+          rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
         }
       }
     }
@@ -127,8 +119,10 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
     attributePairs.map { case (name, value) =>
       if (value.equals("__DELETE__"))
         new RemoveAttribute(new AttributeName("default", name))
-      else
-        new AddUpdateAttribute(new AttributeName("default", name), new AttributeString(value))
+      else {
+        log.info(value.parseJson.toString()) 
+        new AddUpdateAttribute(new AttributeName("default", name), impAttributeFormat.read(value.parseJson))
+      }
     }
   }
 
