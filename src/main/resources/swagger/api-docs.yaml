@@ -1033,6 +1033,27 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributes/tsv:
+     get:
+       tags:
+       - Workspaces
+       operationId: exportAttributes
+       summary: |
+         TSV file containing workspace attributes
+       produces:
+         - text/plain
+       parameters:
+         - $ref: '#/parameters/workspaceNamespaceParam'
+         - $ref: '#/parameters/workspaceNameParam'
+       responses:
+         200:
+           description: Workspace attributes in TSV format
+           schema:
+             type: file
+         404:
+           description: Workspace or entity type does not exist
+         500:
+           description: Internal Server Error
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
     get:
@@ -1114,6 +1135,34 @@ paths:
           description: Source Workspace not found
         500:
           description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importAttributes:
+     post:
+       tags:
+       - Workspaces
+       operationId: importAttributes
+       summary: Import workspace attributes from a tsv file
+       consumes:
+         - multipart/form-data
+       produces:
+         - application/json
+       parameters:
+         - $ref: '#/parameters/workspaceNamespaceParam'
+         - $ref: '#/parameters/workspaceNameParam'
+         - name: attributes
+           in: formData
+           description: A valid TSV import file
+           required: true
+           type: file
+       responses:
+         200:
+           description: Successful Request
+         400:
+           description: Bad Request
+         404:
+           description: Source Workspace not found
+         500:
+           description: Internal Error
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/lock:
     put:
@@ -1590,6 +1639,29 @@ paths:
         500:
           description: Internal Server Error
       security: []
+
+  /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributes/tsv:
+     get:
+       tags:
+       - Workspaces
+       operationId: browserDownloadAttributes
+       summary: |
+         TSV file containing workspace attributes (allows cookie-based authentication)
+       produces:
+       - text/plain
+       parameters:
+          - $ref: '#/parameters/workspaceNamespaceParam'
+          - $ref: '#/parameters/workspaceNameParam'
+       responses:
+         200:
+           description: Workspace attributes in TSV format
+           schema:
+             type: file
+         404:
+           description: Workspace or entity type does not exist
+         500:
+           description: Internal Server Error
+       security: []
 
   /error:
     get:

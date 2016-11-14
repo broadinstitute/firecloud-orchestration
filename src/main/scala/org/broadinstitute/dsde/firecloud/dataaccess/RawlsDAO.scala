@@ -22,12 +22,12 @@ trait RawlsDAO extends LazyLogging {
 
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
 
-  def getWorkspace(ns: String, name: String)(implicit userInfo: UserInfo): Future[RawlsWorkspaceResponse]
+  def getWorkspace(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsWorkspaceResponse]
 
-  def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userInfo: UserInfo): Future[RawlsWorkspace]
+  def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userInfo: WithAccessToken): Future[RawlsWorkspace]
 
   def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]]
 
-  def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[Seq[WorkspaceACLUpdate]]
+  def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceACLUpdate]]
 
 }

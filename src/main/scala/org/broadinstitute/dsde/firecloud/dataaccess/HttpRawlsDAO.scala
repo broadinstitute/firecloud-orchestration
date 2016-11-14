@@ -44,16 +44,16 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
-  override def getWorkspace(ns: String, name: String)(implicit userInfo: UserInfo): Future[RawlsWorkspaceResponse] =
+  override def getWorkspace(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsWorkspaceResponse] =
     requestToObject[RawlsWorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
 
-  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userInfo: UserInfo): Future[RawlsWorkspace] = {
+  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userInfo: WithAccessToken): Future[RawlsWorkspace] = {
     import spray.json.DefaultJsonProtocol._
     import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperationFormat
     requestToObject[RawlsWorkspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 
-  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[Seq[WorkspaceACLUpdate]] =
+  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceACLUpdate]] =
     requestToObject[Seq[WorkspaceACLUpdate]]( Patch(patchWorkspaceAclUrl(ns, name), aclUpdates) )
 
   // TODO: use rawls query-by-attribute once that exists

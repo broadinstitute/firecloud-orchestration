@@ -1,19 +1,30 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import WorkspaceService.{ExportWorkspaceAttributes, ImportAttributesFromTSV, UpdateWorkspaceACL}
 import akka.actor._
 import akka.pattern._
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
+import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import spray.http.StatusCodes
+import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
+import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
+import spray.http.MediaTypes._
+import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import spray.json.JsonParser.ParsingException
+import scala.util.{Failure, Success, Try}
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -23,16 +34,18 @@ object WorkspaceService {
   sealed trait WorkspaceServiceMessage
   case class SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) extends WorkspaceServiceMessage
   case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) extends WorkspaceServiceMessage
+  case class ExportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
+  case class ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) extends WorkspaceServiceMessage
 
-  def props(workspaceServiceConstructor: UserInfo => WorkspaceService, userInfo: UserInfo): Props = {
+  def props(workspaceServiceConstructor: WithAccessToken => WorkspaceService, userInfo: WithAccessToken): Props = {
     Props(workspaceServiceConstructor(userInfo))
   }
 
-  def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
+  def constructor(app: Application)(userInfo: WithAccessToken)(implicit executionContext: ExecutionContext) =
     new WorkspaceService(userInfo, app.rawlsDAO, app.thurloeDAO)
 }
 
-class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with AttributeSupport {
+class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with AttributeSupport {
 
   implicit val system = context.system
   import system.dispatcher
@@ -48,6 +61,10 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
       setWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes) pipeTo sender
     case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) =>
       updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail) pipeTo sender
+    case ExportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String) =>
+      exportWorkspaceAttributes(workspaceNamespace, workspaceName, filename) pipeTo sender
+    case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
+      importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString) pipeTo sender
 
   }
 
@@ -73,6 +90,80 @@ class WorkspaceService(protected val argUserInfo: UserInfo, val rawlsDAO: RawlsD
       thurloeDAO.sendNotifications(allNotifications)
 
       RequestComplete(actualUpdates)
+    }
+  }
+
+  def exportWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
+    Try(rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)) match {
+      case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
+      case Success(workspaceFuture) => workspaceFuture map { workspaceResponse =>
+        val attributes = workspaceResponse.workspace.get.attributes.filterKeys(_ != AttributeName("default", "description"))
+        val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
+        val valueString = (attributes map { case (attName, attValue) => impAttributeFormat.write(attValue) }).mkString("\t")
+        RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
+        HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
+        HttpHeaders.`Content-Type`(`text/plain`))
+      }
+    }
+  }
+
+  def importAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
+    Try(TSVParser.parse(tsvString)) match {
+      case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
+      case Success(tsv) =>
+        tsv.firstColumnHeader.split(":")(0) match {
+          case "workspace" =>
+            importWorkspaceAttributeTSV(workspaceNamespace, workspaceName, tsv)
+          case _ =>
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid first column header should start with \"workspace\""))
+        }
+    }
+  }
+
+  private def importWorkspaceAttributeTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
+    checkIf2Rows(tsv) {
+      checkFirstRowDistinct(tsv) {
+        val attributePairs = colNamesToWorkspaceAttributeNames(tsv.headers).zip(tsv.tsvData.head)
+        rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
+          val allOperations = getWorkspaceAttributeCalls(attributePairs)
+          rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
+        }
+      }
+    }
+  }
+
+  private def getWorkspaceAttributeCalls(attributePairs: Seq[(String,String)]): Seq[AttributeUpdateOperation] = {
+    attributePairs.map { case (name, value) =>
+      if (value.equals("__DELETE__"))
+        new RemoveAttribute(new AttributeName("default", name))
+      else {
+        log.info(value.parseJson.toString())
+        new AddUpdateAttribute(new AttributeName("default", name), impAttributeFormat.read(value.parseJson))
+      }
+    }
+  }
+
+  private def colNamesToWorkspaceAttributeNames(headers: Seq[String]): Seq[String] = {
+    val newHead = headers.head.stripPrefix("workspace:")
+    Seq(newHead) ++ headers.tail
+  }
+
+  private def checkIf2Rows(tsv: TSVLoadFile)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
+    if (tsv.tsvData.length != 1) {
+      Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
+        "Your file does not have the correct number of rows. There should be 2."))
+    } else {
+      op
+    }
+  }
+
+  private def checkFirstRowDistinct(tsv: TSVLoadFile)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
+    val attributeNames = colNamesToWorkspaceAttributeNames(tsv.headers)
+    val distinctAttributes = attributeNames.distinct
+    if (attributeNames.size != distinctAttributes.size) {
+      Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Duplicated attribute keys are not allowed"))
+    } else {
+      op
     }
   }
 

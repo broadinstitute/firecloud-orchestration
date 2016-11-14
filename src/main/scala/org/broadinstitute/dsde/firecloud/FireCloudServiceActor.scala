@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud
 
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
@@ -30,7 +30,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
-  val workspaceServiceConstructor: (UserInfo) => WorkspaceService = WorkspaceService.constructor(app)
+  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
   // insecure cookie-authed routes
 
