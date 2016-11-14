@@ -250,13 +250,10 @@ object ModelJsonProtocol {
   implicit val impLibrarySearchResponse = jsonFormat5(LibrarySearchResponse)
   implicit val impLibrarySearch = jsonFormat3(LibrarySearchParams)
 
-  implicit val impESMatchAll = jsonFormat1(ESMatchAll)
-  implicit val impESAllQuery = jsonFormat1(ESAllQuery)
-
   implicit val impESWildcardSearchTerm = jsonFormat1(ESWildcardSearchTerm)
-  implicit val impESWildcard = jsonFormat1(ESWildcard)
-  implicit val impESSearchQuery = jsonFormat1(ESSearchQuery)
-
+  implicit val impESMatchAll: RootJsonFormat[ESMatchAll] = jsonFormat1(ESMatchAll)
+  implicit val impESWildcard: RootJsonFormat[ESWildcard] = jsonFormat1(ESWildcard)
+  implicit val impESQuery = jsonFormat1(ESQuery)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

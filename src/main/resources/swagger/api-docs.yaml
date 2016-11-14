@@ -305,26 +305,6 @@ paths:
           description: Internal Server Error
 
   /api/libraries:
-    get:
-      tags:
-        - Library
-      operationId: FindDocuments
-      summary: |
-        lists published library datasets
-      parameters:
-        - in: query
-          description: which result to start at (for pagination)
-          name: from
-          type: integer
-          required: false
-        - in: query
-          description: how many results to return
-          name: size
-          type: integer
-          required: false
-      responses:
-        200:
-          description: All published datasets
     post:
       tags:
         - Library
@@ -333,11 +313,10 @@ paths:
         searches published library datasets
       parameters:
         - in: body
-          description: term to search
-          name: searchTerm
-          required: true
+          name: searchParams
+          description: Search terms and pagination parameters
           schema:
-            $ref: '#/definitions/SearchTerm'
+            $ref: '#/definitions/SearchTermRef'
       responses:
         200:
           description: Matching datasets
@@ -2681,9 +2660,7 @@ definitions:
       enabled:
         $ref: '#/definitions/ExtendedEnabled'
 
-  SearchTerm:
-    required:
-      - searchTerm
+  SearchTermRef:
     properties:
       searchTerm:
         type: string
