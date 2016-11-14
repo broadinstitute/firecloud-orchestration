@@ -64,9 +64,9 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
     case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) =>
       updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail) pipeTo sender
     case ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) =>
+      log.info("We're in export")
       exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, filename) pipeTo sender
     case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
-      log.info("We're in")
       importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString) pipeTo sender
 
   }
@@ -97,10 +97,12 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
   }
 
   def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
+    log.info("Found it")
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
       val attributes = workspaceResponse.workspace.get.attributes.filterKeys(_ != AttributeName("default", "description"))
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
       val valueString = (attributes map { case (attName, attValue) => impAttributeFormat.write(attValue) }).mkString("\t")
+      log.info("Can we get here at least?")
       RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
         HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
         HttpHeaders.`Content-Type`(`text/plain`))
@@ -124,15 +126,17 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
   private def importWorkspaceAttributeTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
     if (tsv.tsvData.length != 1) {
       Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Your file does not have the correct number of rows. There should be 2."))
-    }
-    val attributeNames = Seq(tsv.headers.head.stripPrefix("workspace:")) ++ tsv.headers.tail
-    val distinctAttributes = attributeNames.distinct
-    if (attributeNames.size != distinctAttributes.size) {
-      Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Duplicated attribute keys are not allowed"))
-    }
-    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-      val allOperations = getWorkspaceAttributeCalls(attributeNames.zip(tsv.tsvData.head))
-      rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
+    } else {
+      val attributeNames = Seq(tsv.headers.head.stripPrefix("workspace:")) ++ tsv.headers.tail
+      val distinctAttributes = attributeNames.distinct
+      if (attributeNames.size != distinctAttributes.size) {
+        Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Duplicated attribute keys are not allowed"))
+      } else {
+        rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
+          val allOperations = getWorkspaceAttributeCalls(attributeNames.zip(tsv.tsvData.head))
+          rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
+        }
+      }
     }
   }
 
