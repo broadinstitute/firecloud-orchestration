@@ -55,13 +55,13 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
 
   val workspaceRoutes: Route =
     pathPrefix("cookie-authed") {
-      path("workspaces" / Segment / Segment / "exportAttributes") {
+      path("workspaces" / Segment / Segment / "exportAttributes/tsv") {
         (workspaceNamespace, workspaceName) =>
           cookie("FCtoken") { tokenCookie =>
             mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
               perRequest(requestContext,
                 WorkspaceService.props(workspaceServiceConstructor, new AccessToken(OAuth2BearerToken(tokenCookie.content))),
-                WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceName + filename))
+                WorkspaceService.ExportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename))
             }
           }
       }
@@ -114,14 +114,14 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                 }
               }
             } ~
-            path("exportAttributes") {
+            path("exportAttributes/tsv") {
               get { requestContext =>
                 perRequest(requestContext,
                   WorkspaceService.props(workspaceServiceConstructor, userInfo),
-                  WorkspaceService.ExportWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceName + filename))
+                  WorkspaceService.ExportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename))
               }
             } ~
-            path("importAttributes") {
+            path("importAttributes/tsv") {
               post {
                 formFields('attributes) { attributesTSV =>
                   respondWithJSON { requestContext =>
