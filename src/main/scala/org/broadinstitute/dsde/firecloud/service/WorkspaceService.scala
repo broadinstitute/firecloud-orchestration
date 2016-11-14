@@ -57,6 +57,8 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
 
   import WorkspaceService._
 
+  private implicit val impPlainAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
+
   override def receive: Receive = {
 
     case SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =>
@@ -99,7 +101,7 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
       val attributes = workspaceResponse.workspace.get.attributes.filterKeys(_ != AttributeName("default", "description"))
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
-      val valueString = (attributes map { case (attName, attValue) => impAttributeFormat.write(attValue) }).mkString("\t")
+      val valueString = (attributes map { case (attName, attValue) => impPlainAttributeFormat.write(attValue) }).mkString("\t")
       RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
         HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
         HttpHeaders.`Content-Type`(`text/plain`))
@@ -144,7 +146,7 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
       if (value.equals("__DELETE__"))
         new RemoveAttribute(new AttributeName("default", name))
       else {
-        new AddUpdateAttribute(new AttributeName("default", name), impAttributeFormat.read(value.parseJson))
+        new AddUpdateAttribute(new AttributeName("default", name), impPlainAttributeFormat.read(value.parseJson))
       }
     }
   }
