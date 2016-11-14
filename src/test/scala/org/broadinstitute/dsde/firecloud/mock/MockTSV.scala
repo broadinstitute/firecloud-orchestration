@@ -159,7 +159,7 @@ object MockTSVStrings {
 
   val addNewWorkspaceAttributes = List(
       List("workspace:attributeName1", "attributeName2", "attributeName3").mkString("\t"),
-      List("attributeValue1", "attributeValue2", "attributeValue3").mkString("\t")).mkString("\n")
+      List("\"attributeValue1\"", "true", "800").mkString("\t")).mkString("\n")
 
   val duplicateKeysWorkspaceAttributes = List(
     List("workspace:a1", "a1").mkString("\t"),

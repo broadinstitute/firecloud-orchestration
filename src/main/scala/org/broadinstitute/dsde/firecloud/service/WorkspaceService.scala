@@ -122,9 +122,7 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
   }
 
   private def importWorkspaceAttributeTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
-    if (tsv.tsvData.length != 1) {
-      Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Your file does not have the correct number of rows. There should be 2."))
-    } else {
+    checkNumberOfRows(tsv, 2) {
       val attributeNames = Seq(tsv.headers.head.stripPrefix("workspace:")) ++ tsv.headers.tail
       val distinctAttributes = attributeNames.distinct
       if (attributeNames.size != distinctAttributes.size) {
@@ -139,6 +137,15 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
         }
       }
     }
+  }
+
+  private def checkNumberOfRows(tsv: TSVLoadFile, rows: Int)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
+    if ((tsv.tsvData.length + (if (tsv.headers.isEmpty) 0 else 1)) != rows) {
+        Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
+            "Your file does not have the correct number of rows. There should be " + rows.toString))
+      } else {
+        op
+      }
   }
 
   private def getWorkspaceAttributeCalls(attributePairs: Seq[(String,String)]): Seq[AttributeUpdateOperation] = {
