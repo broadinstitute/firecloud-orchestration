@@ -6,7 +6,6 @@ import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockTSVFormData}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
-import java.util.UUID
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -24,20 +23,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Some("namespace"),
     Some("name")
   )
-
-  val testUUID = UUID.randomUUID()
-
-  val testWorkspace = new RawlsWorkspace(workspaceId = testUUID.toString,
-    namespace = "testWorkspaceNamespace",
-    name = "testWorkspaceName",
-    isLocked = Some(false),
-    createdBy = "createdBy",
-    createdDate = "createdDate",
-    lastModified = None,
-    attributes = Map.empty,
-    bucketName = "bucketName",
-    accessLevels = Map.empty,
-    realm = None)
 
   // Mock remote endpoints
   // TODO: This root is incorrect!  It needs to start with "/"
