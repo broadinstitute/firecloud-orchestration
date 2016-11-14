@@ -1,5 +1,8 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import spray.json._
+import spray.json.DefaultJsonProtocol._
 
 /**
   * Created by ahaessly on 11/2/16.
@@ -15,7 +18,7 @@ package org.broadinstitute.dsde.firecloud.model
     from: Int,
     size: Int,
     total: Int,
-    results: Array[Map[String,Object]]) {
-    def this (params: LibrarySearchParams, total: Int, results: Array[Map[String,Object]]) =
+    results: Array[JsValue]) {
+    def this (params: LibrarySearchParams, total: Int, results: Array[JsValue]) =
       this(params.searchTerm, params.from, params.size, total, results)
   }

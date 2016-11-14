@@ -105,7 +105,7 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
   override def findDocuments(criteria: LibrarySearchParams) : LibrarySearchResponse = {
     val searchReq =
       criteria.searchTerm match {
-        case None => client.prepareSearch(indexName).setQuery(ESAllQuery.toJson.prettyPrint)
+        case None => client.prepareSearch(indexName).setQuery(ESAllQuery(new ESMatchAll).toJson.prettyPrint)
         case Some(searchTerm:String) => client.prepareSearch(indexName).setQuery(new ESSearchQuery(searchTerm).toJson.prettyPrint)
       }
     searchReq.setFrom(criteria.from)
@@ -113,7 +113,7 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
 
     val sourceDocuments = searchResults.getHits.hits map { hit =>
-      hit.getSource.asInstanceOf[Map[String,Object]]
+      hit.getSourceAsString.parseJson
     }
 
     new LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments)

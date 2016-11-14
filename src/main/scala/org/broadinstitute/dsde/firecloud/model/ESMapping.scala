@@ -27,13 +27,13 @@ case class ESSearchQuery(query: ESWildcard) {
   def this(term: String) = this(ESWildcardObj(term))
 }
 
-case class ESWildcard(wildcard: Map[String,String]) { //extends QueryMap {
+case class ESWildcard(wildcard: ESWildcardSearchTerm) { //extends QueryMap {
 }
 
 object ESWildcardObj {
-  def apply (term: String) :ESWildcard = ESWildcard(Map("_all" -> new String("*"+term+"*")))
+  def apply (term: String) :ESWildcard = ESWildcard(ESWildcardSearchTerm("*"+term+"*"))
 }
 
-//case class ESWildcardSearchTerm(term: String) {
-//}
+case class ESWildcardSearchTerm(_all: String) {
+}
 
