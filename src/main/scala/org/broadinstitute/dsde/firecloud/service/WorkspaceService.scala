@@ -64,7 +64,6 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
     case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) =>
       updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail) pipeTo sender
     case ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) =>
-      log.info("We're in export")
       exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, filename) pipeTo sender
     case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString) pipeTo sender
@@ -97,12 +96,10 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
   }
 
   def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
-    log.info("Found it")
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
       val attributes = workspaceResponse.workspace.get.attributes.filterKeys(_ != AttributeName("default", "description"))
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
       val valueString = (attributes map { case (attName, attValue) => impAttributeFormat.write(attValue) }).mkString("\t")
-      log.info("Can we get here at least?")
       RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
         HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
         HttpHeaders.`Content-Type`(`text/plain`))
@@ -110,7 +107,6 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
   }
 
   def importAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
-    log.info("We're here")
     Try(TSVParser.parse(tsvString)) match {
       case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
       case Success(tsv) =>
@@ -145,7 +141,6 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
       if (value.equals("__DELETE__"))
         new RemoveAttribute(new AttributeName("default", name))
       else {
-        log.info(value.parseJson.toString())
         new AddUpdateAttribute(new AttributeName("default", name), impAttributeFormat.read(value.parseJson))
       }
     }
