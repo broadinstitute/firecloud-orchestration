@@ -129,8 +129,11 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
         Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Duplicated attribute keys are not allowed"))
       } else {
         rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-          val allOperations = getWorkspaceAttributeCalls(attributeNames.zip(tsv.tsvData.head))
-          rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
+          Try(getWorkspaceAttributeCalls(attributeNames.zip(tsv.tsvData.head))) match {
+            case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
+              "One or more of your values are not in the correct format"))
+            case Success(attributeCalls) => rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attributeCalls) map (RequestComplete(_))
+          }
         }
       }
     }
