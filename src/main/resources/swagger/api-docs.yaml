@@ -1033,11 +1033,11 @@ paths:
           description: Workspace or entity type does not exist
         500:
           description: Internal Server Error
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributes/tsv:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
      get:
        tags:
        - Workspaces
-       operationId: exportAttributes
+       operationId: exportAttributesTSV
        summary: |
          TSV file containing workspace attributes
        produces:
@@ -1136,11 +1136,11 @@ paths:
         500:
           description: Internal Error
 
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/importAttributes/tsv:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importAttributesTSV:
      post:
        tags:
        - Workspaces
-       operationId: importAttributes
+       operationId: importAttributesTSV
        summary: Import workspace attributes from a tsv file
        consumes:
          - multipart/form-data
@@ -1640,7 +1640,7 @@ paths:
           description: Internal Server Error
       security: []
 
-  /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributes/tsv:
+  /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
      get:
        tags:
        - Workspaces
