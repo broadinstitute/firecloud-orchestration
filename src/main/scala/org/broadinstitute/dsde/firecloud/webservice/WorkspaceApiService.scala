@@ -122,11 +122,11 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               }
             } ~
             path("importAttributes/tsv") {
+              log.info("Found path")
               post {
                 formFields('attributes) { attributesTSV =>
                   respondWithJSON { requestContext =>
-                    perRequest(requestContext,
-                      WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                    perRequest(requestContext, WorkspaceService.props(workspaceServiceConstructor, userInfo),
                       WorkspaceService.ImportAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV)
                     )
                   }

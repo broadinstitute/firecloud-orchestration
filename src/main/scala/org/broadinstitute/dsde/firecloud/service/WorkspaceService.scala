@@ -66,6 +66,7 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
     case ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) =>
       exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, filename) pipeTo sender
     case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
+      log.info("We're in")
       importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString) pipeTo sender
 
   }
@@ -107,6 +108,7 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
   }
 
   def importAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
+    log.info("We're here")
     Try(TSVParser.parse(tsvString)) match {
       case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
       case Success(tsv) =>

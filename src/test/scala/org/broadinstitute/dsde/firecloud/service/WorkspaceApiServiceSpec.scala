@@ -46,8 +46,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val methodconfigsPath = workspacesRoot + "/%s/%s/methodconfigs".format(workspace.namespace.get, workspace.name.get)
   private final val updateAttributesPath = workspacesRoot + "/%s/%s/updateAttributes".format(workspace.namespace.get, workspace.name.get)
   private final val setAttributesPath = workspacesRoot + "/%s/%s/setAttributes".format(workspace.namespace.get, workspace.name.get)
-  private final val tsvAttributesImportPath = "/" + workspacesRoot + "/%s/%s/importAttributes".format(workspace.namespace.get, workspace.name.get)
-  private final val tsvAttributesExportPath = "/" + workspacesRoot + "/%s/%s/exportAttributes".format(workspace.namespace.get, workspace.name.get)
+  private final val tsvAttributesImportPath = "/" + workspacesRoot + "/%s/%s/importAttributes/tsv".format(workspace.namespace.get, workspace.name.get)
+  private final val tsvAttributesExportPath = "/" + workspacesRoot + "/%s/%s/exportAttributes/tsv".format(workspace.namespace.get, workspace.name.get)
   private final val aclPath = workspacesRoot + "/%s/%s/acl".format(workspace.namespace.get, workspace.name.get)
   private final val clonePath = workspacesRoot + "/%s/%s/clone".format(workspace.namespace.get, workspace.name.get)
   private final val lockPath = workspacesRoot + "/%s/%s/lock".format(workspace.namespace.get, workspace.name.get)
@@ -623,7 +623,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
   }
 
-  "when calling POST on the workspaces/*/*/importAttributes path" - {
+  "when calling POST on the workspaces/*/*/importAttributes/tsv path" - {
     "should 200 OK if it has the correct headers and valid internals" in {
       (Post(tsvAttributesImportPath, MockTSVFormData.addNewWorkspaceAttributes)
         ~> dummyUserIdHeaders("1234")
