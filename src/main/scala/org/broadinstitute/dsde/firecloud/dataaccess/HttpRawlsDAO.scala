@@ -71,12 +71,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
       response.entity.as[Seq[RawlsWorkspace]] match {
         case Right(srw) =>
-          logger.info("admin workspace list got: " + srw.length + " raw workspaces")
-          val published = srw.collect {
-            case rw:RawlsWorkspace if isPublished(rw) => rw
-          }
-          logger.info("admin workspace list collected: " + published.length + " published workspaces")
-          published
+          logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
+          srw
         case Left(error) =>
           logger.warn("Could not unmarshal: " + error.toString)
           throw new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "Could not unmarshal: " + error.toString))
