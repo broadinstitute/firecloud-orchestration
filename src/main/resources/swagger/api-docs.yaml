@@ -2066,10 +2066,9 @@ definitions:
         type: string
         description: status of call
       executionEvents:
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/ExecutionEvent'
+        type: array
+        items:
+          $ref: '#/definitions/ExecutionEvent'
       backendStatus:
         type: string
         description: status of the backend
@@ -2104,7 +2103,7 @@ definitions:
         description: location of stderr
       shardIndex:
         type: integer
-        description: call index within a scatter block, as reported by execution service
+        description: index of execution cluster instance
 
   ConfigurationIngest:
     properties:
@@ -2349,10 +2348,12 @@ definitions:
         type: string
         description: Description of the event
       startTime:
-        type: date-time
+        type: string
+        format: date-time
         description: When the event started
       endTime:
-        type: date-time
+        type: string
+        format: date-time
         description: When the event finished
 
   ExecutionMetadata:
