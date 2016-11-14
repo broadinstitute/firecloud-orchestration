@@ -2103,7 +2103,7 @@ definitions:
         description: location of stderr
       shardIndex:
         type: integer
-        description: index of execution cluster instance
+        description: call index within a scatter block, as reported by execution service
 
   ConfigurationIngest:
     properties:
