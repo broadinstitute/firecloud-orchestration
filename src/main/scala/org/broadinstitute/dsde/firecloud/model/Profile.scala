@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.utils.DateUtils
+
 import scala.language.postfixOps
 
 case class FireCloudKeyValue(
@@ -105,6 +107,7 @@ object Profile {
         case Some(time) => Some(time.toLong)
         case _ => None
       },
+      // TODO(dmohs): Now we always get this from the authoritative source (Google).
       isDbgapAuthorized = mappedKVPs.get("isDbgapAuthorized") match {
         case Some(auth) => Some(auth.toBoolean)
         case _ => None
@@ -126,6 +129,25 @@ case class NIHStatus(
     descriptionSinceLastLink: Option[String] = None,
     descriptionUntilExpires: Option[String] = None
 )
+
+object NIHStatus {
+
+  def apply(profile: Profile): NIHStatus = {
+    apply(profile, profile.isDbgapAuthorized)
+  }
+
+  def apply(profile: Profile, isDbGapAuthorized: Option[Boolean]): NIHStatus = {
+    val linkExpireSeconds = profile.linkExpireTime.getOrElse(0L)
+    val howSoonExpire = DateUtils.secondsSince(linkExpireSeconds)
+    new NIHStatus(
+      loginRequired = howSoonExpire >= 0,
+      profile.linkedNihUsername,
+      isDbGapAuthorized,
+      profile.lastLinkTime,
+      profile.linkExpireTime
+    )
+  }
+}
 
 object ProfileValidator {
   private val emailRegex = """^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$""".r

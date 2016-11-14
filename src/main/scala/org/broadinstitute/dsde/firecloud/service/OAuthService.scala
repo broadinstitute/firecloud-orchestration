@@ -11,32 +11,23 @@ import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.compute.ComputeScopes
 import com.google.api.services.storage.StorageScopes
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.dataaccess.ThurloeDAO
-import org.broadinstitute.dsde.firecloud.model.{RawlsToken, RawlsTokenDate, UserInfo}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.OAuthService.{GetRefreshTokenStatus, HandleOauthCode}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.joda.time.{DateTime, Days}
 import org.slf4j.LoggerFactory
-import spray.client.pipelining._
 import spray.http._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 // see https://developers.google.com/identity/protocols/OAuth2WebServer
 
 object OAuthService {
-  val remoteTokenPutPath = FireCloudConfig.Rawls.authPrefix + "/user/refreshToken"
-  val remoteTokenPutUrl = FireCloudConfig.Rawls.baseUrl + remoteTokenPutPath
-
-  val remoteTokenDatePath = FireCloudConfig.Rawls.authPrefix + "/user/refreshTokenDate"
-  val remoteTokenDateUrl = FireCloudConfig.Rawls.baseUrl + remoteTokenDatePath
-
   sealed trait OauthServiceMessage
   case class HandleOauthCode(code: String, redirectUri: String) extends OauthServiceMessage
   case class GetRefreshTokenStatus(userInfo: UserInfo) extends OauthServiceMessage
@@ -46,23 +37,22 @@ object OAuthService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new OAuthService(app.thurloeDAO)
+    new OAuthService(app.rawlsDAO, app.thurloeDAO)
 }
 
-class OAuthService(val thurloeDao: ThurloeDAO)(implicit protected val executionContext: ExecutionContext) extends Actor
+class OAuthService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
+  (implicit protected val executionContext: ExecutionContext) extends Actor
   with LazyLogging {
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
 
   override def receive = {
-    case HandleOauthCode(code: String, redirectUri: String) => {
-      handleOauthCode(code, redirectUri)
-    } pipeTo sender
+    case HandleOauthCode(code, redirectUri) => handleOauthCode(code, redirectUri) pipeTo sender
     case GetRefreshTokenStatus(userInfo) => getRefreshTokenStatus(userInfo) pipeTo sender
   }
 
-  def handleOauthCode(code: String, redirectUri: String): Future[PerRequestMessage] = {
+  private def handleOauthCode(code: String, redirectUri: String): Future[PerRequestMessage] = {
     val httpTransport = GoogleNetHttpTransport.newTrustedTransport
     val jsonFactory = JacksonFactory.getDefaultInstance
     val clientSecrets = GoogleClientSecrets.load(
@@ -79,9 +69,13 @@ class OAuthService(val thurloeDao: ThurloeDAO)(implicit protected val executionC
       val idToken = response.parseIdToken()
       val accessToken = response.getAccessToken
       val refreshToken = Option(response.getRefreshToken)
-      updateNihStatus(idToken.getPayload.getSubject, accessToken)
+      val userInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, idToken.getPayload.getSubject)
+      thurloeDao.getProfile(userInfo) map {
+        _.map { thurloeDao.maybeUpdateNihLinkExpiration(userInfo, _) }
+      }
       refreshToken match {
-        case Some(x) => completeWithRefreshToken(accessToken, x)
+        case Some(x) =>
+          rawlsDao.saveRefreshToken(accessToken, x) map { _ => RequestComplete(StatusCodes.NoContent)}
         case None => Future(RequestComplete(StatusCodes.NoContent))
       }
     } catch {
@@ -90,67 +84,20 @@ class OAuthService(val thurloeDao: ThurloeDAO)(implicit protected val executionC
     }
   }
 
-  def getRefreshTokenStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
-    val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
-    val tokenDateReq = Get(OAuthService.remoteTokenDateUrl)
-    val tokenDateFuture: Future[HttpResponse] = pipeline { tokenDateReq }
-    tokenDateFuture.map { response =>
-      response.status match {
-        case StatusCodes.OK =>
-          // rawls found a refresh token; check its date
-          val tokenDate = unmarshal[RawlsTokenDate].apply(response)
-          val howOld = Days.daysBetween(
-            DateTime.parse(tokenDate.refreshTokenUpdatedDate), DateTime.now)
-          howOld.getDays match {
-            case x if x < 90 =>
-              log.debug(s"User's refresh token is $x days old; all good!")
-              RequestComplete(StatusCodes.NoContent)
-            case x =>
-              log.info(s"User's refresh token is $x days old; requesting a new one.")
-              RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
-          }
-        case StatusCodes.BadRequest =>
-          log.info(s"User has an illegal refresh token; requesting a new one.")
-          // rawls has a bad refresh token, restart auth.
-          RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
-        case StatusCodes.NotFound =>
-          log.info(s"User does not already have a refresh token; requesting a new one.")
-          // rawls does not have a refresh token for us. restart auth.
-          RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
-        case x =>
-          log.warn("Unexpected response code when querying rawls for existence of refresh token: "
-            + x.value + " " + x.reason)
-          RequestComplete(
-            StatusCodes.InternalServerError,
-            Map("error" -> Map("value" -> x.value, "reason" -> x.reason))
-          )
-      }
-    }
-  }
-
-  private def updateNihStatus(subjectId: String, accessToken: String) = {
-    val userInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, subjectId)
-    thurloeDao.getProfile(userInfo, updateExpiration = true)
-  }
-
-  private def completeWithRefreshToken(accessToken: String, refreshToken: String): Future[PerRequestMessage] = {
-    val pipeline = addCredentials(OAuth2BearerToken(accessToken)) ~> sendReceive
-    val tokenReq = Put(OAuthService.remoteTokenPutUrl, RawlsToken(refreshToken))
-    val tokenStoreFuture: Future[HttpResponse] = pipeline {
-      tokenReq
-    }
-
-    // we intentionally don't gate the login process on storage of the refresh token. Token storage
-    // will happen async. If token storage fails, we rely on underlying services to notice the
-    // missing token and re-initiate the oauth grants.
-    tokenStoreFuture onComplete {
-      case Success(response) =>
-        response.status match {
-          case StatusCodes.Created => log.info("successfully stored refresh token")
-          case x => log.warn(s"failed to store refresh token (status code $x): " + response.entity)
+  private def getRefreshTokenStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
+    rawlsDao.getRefreshTokenStatus(userInfo) map {
+      case Some(tokenDate) =>
+        val ageDaysCount = Days.daysBetween(tokenDate, DateTime.now).getDays
+        ageDaysCount match {
+          case x if x < 90 =>
+            log.debug(s"User's refresh token is $x days old; all good!")
+            RequestComplete(StatusCodes.NoContent)
+          case x =>
+            log.info(s"User's refresh token is $x days old; requesting a new one.")
+            RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
         }
-      case Failure(error) => log.warn("failed to store refresh token: " + error.getMessage)
+      case None =>
+        RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
     }
-    Future(RequestComplete(HttpResponse(StatusCodes.NoContent)))
   }
 }

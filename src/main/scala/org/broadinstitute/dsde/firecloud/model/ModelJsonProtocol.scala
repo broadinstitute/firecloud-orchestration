@@ -272,7 +272,7 @@ object ModelJsonProtocol {
   implicit val impRawlsTokenDate = jsonFormat1(RawlsTokenDate)
 
   implicit val impJWTWrapper = jsonFormat1(JWTWrapper)
-  implicit val impNihStatus = jsonFormat7(NIHStatus)
+  implicit val impNihStatus = jsonFormat7(NIHStatus.apply)
 
   implicit val impOAuthUser = jsonFormat2(OAuthUser)
 

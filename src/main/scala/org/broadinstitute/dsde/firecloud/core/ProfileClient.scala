@@ -5,18 +5,18 @@ import akka.event.Logging
 import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.ProfileClient._
-import org.broadinstitute.dsde.firecloud.dataaccess.{HttpGoogleServicesDAO, HttpThurloeDAO}
-import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.dataaccess.{HttpGoogleServicesDAO, HttpRawlsDAO, HttpThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudRequestBuilding, UserService}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudRequestBuilding, UserService}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import spray.client.pipelining._
-import spray.http.{HttpRequest, HttpResponse, Uri}
 import spray.http.StatusCodes._
+import spray.http.{HttpRequest, HttpResponse, StatusCodes, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
+import spray.json.DefaultJsonProtocol._
 import spray.routing.RequestContext
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -40,6 +40,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
 
   // TODO(dmohs): This should be passed like other actors.
   val temporaryThurloeDao = new HttpThurloeDAO
+  val temporaryRawlsDao = new HttpRawlsDAO
 
   override def receive: Receive = {
 
@@ -91,12 +92,24 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       }
 
     case GetNIHStatus(userInfo: UserInfo) =>
-      val profileResponse = temporaryThurloeDao.getProfile(userInfo, updateExpiration = false)
-      profileResponse pipeTo context.parent
+      temporaryThurloeDao.getProfile(userInfo) flatMap {
+        case Some(profile) =>
+          profile.linkedNihUsername match {
+            case Some(_) =>
+              temporaryRawlsDao.isDbGapAuthorized(userInfo.accessToken) map {
+                case true =>
+                  RequestComplete(NIHStatus(profile, Some(true)))
+                case false =>
+                  RequestComplete(NIHStatus(profile, Some(false)))
+              }
+            case None =>
+              Future.successful(RequestComplete(StatusCodes.NotFound))
+          }
+        case None => Future.successful(RequestComplete(StatusCodes.NotFound))
+      } pipeTo context.parent
 
     case SyncWhitelist =>
       syncWhitelist() pipeTo context.parent
-
   }
 
   def updateUserProperties(

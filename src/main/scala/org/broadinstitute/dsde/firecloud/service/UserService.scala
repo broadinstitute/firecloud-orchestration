@@ -3,19 +3,19 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
-import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{HttpGoogleServicesDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
-import spray.http.{HttpCredentials, HttpMethods, StatusCode}
 import spray.http.HttpHeaders.Authorization
 import spray.http.StatusCodes._
+import spray.http.{HttpCredentials, HttpMethods, StatusCode}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
-import spray.routing._
 import spray.json._
+import spray.routing._
 
 import scala.util.{Failure, Success, Try}
 
@@ -144,7 +144,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         }
       } ~
       path("profile" / "refreshTokenDate") {
-        passthrough(OAuthService.remoteTokenDateUrl, HttpMethods.GET)
+        passthrough(RawlsDAO.pathToUrl(RawlsDAO.refreshTokenDatePath), HttpMethods.GET)
       }
     } ~
     pathPrefix("register") {

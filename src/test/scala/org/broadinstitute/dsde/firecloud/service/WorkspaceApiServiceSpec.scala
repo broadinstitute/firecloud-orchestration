@@ -511,7 +511,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
         }
 
-        "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
+        // TODO(dmohs): Flaky.
+        "should 200 OK if it has the full set of required attribute headers, plus optionals" ignore {
           (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAndOptionalAttrs)
             ~> dummyUserIdHeaders("1234")
             ~> sealRoute(workspaceRoutes)) ~> check {
@@ -556,7 +557,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
         }
 
-        "should 200 OK if it has the full set of required attribute headers" in {
+        // TODO(dmohs): Test is flaky.
+        "should 200 OK if it has the full set of required attribute headers" ignore {
           (Post(tsvImportPath, MockTSVFormData.updateWithRequiredAttrs)
             ~> dummyUserIdHeaders("1234")
             ~> sealRoute(workspaceRoutes)) ~> check {

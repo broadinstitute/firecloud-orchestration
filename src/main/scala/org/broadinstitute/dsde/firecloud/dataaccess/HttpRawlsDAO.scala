@@ -1,21 +1,21 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
-import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
-import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
+import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.joda.time.DateTime
 import spray.client.pipelining._
-import spray.http.OAuth2BearerToken
 import spray.http.StatusCodes._
-import spray.httpx.unmarshalling._
+import spray.http.{HttpResponse, OAuth2BearerToken}
 import spray.httpx.SprayJsonSupport._
+import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
 
-import scala.Option
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -30,6 +30,16 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
         case OK => true
         case NotFound => false
         case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+      }
+    }
+  }
+
+  override def isDbGapAuthorized(accessToken: OAuth2BearerToken): Future[Boolean] = {
+    val pipeline = addCredentials(accessToken) ~> sendReceive
+    pipeline(Get(RawlsDAO.pathToUrl(RawlsDAO.groupPath(FireCloudConfig.Nih.rawlsGroupName)))) map {
+      response => response.status match {
+        case x if x == OK => true
+        case _ => false
       }
     }
   }
@@ -50,6 +60,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[RawlsWorkspace] = {
     import spray.json.DefaultJsonProtocol._
     import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperationFormat
+    import spray.json.DefaultJsonProtocol._
     requestToObject[RawlsWorkspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 
@@ -79,5 +90,25 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
   private def patchWorkspaceAclUrl(ns: String, name: String) = rawlsWorkspaceACLUrl.format(ns, name)
 
+  override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
+    val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
+    pipeline(Get(RawlsDAO.pathToUrl(RawlsDAO.refreshTokenDatePath))) map { response =>
+      response.status match {
+        case OK =>
+          Some(DateTime.parse(unmarshal[RawlsTokenDate].apply(response).refreshTokenUpdatedDate))
+        case NotFound | BadRequest => None
+        case _ => throwBadResponse(response)
+      }
+    }
+  }
 
+  override def saveRefreshToken(accessToken: String, refreshToken: String): Future[Unit] = {
+    val pipeline = addCredentials(OAuth2BearerToken(accessToken)) ~> sendReceive
+    pipeline(Put(RawlsDAO.pathToUrl(RawlsDAO.refreshTokenPath), RawlsToken(refreshToken))) map
+      { _ => () }
+  }
+
+  private def throwBadResponse(response: HttpResponse) = {
+    throw new FireCloudExceptionWithErrorReport(ErrorReport("Rawls", response))
+  }
 }

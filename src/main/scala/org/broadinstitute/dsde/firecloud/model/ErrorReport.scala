@@ -1,16 +1,15 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import spray.client.pipelining._
 import spray.http.MediaTypes._
 import spray.http._
+import spray.httpx.SprayJsonSupport._
+import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 
-import scala.util.{Success, Try}
-
-import spray.httpx.SprayJsonSupport._
-import ModelJsonProtocol._
-import spray.json._
+import scala.util.Try
 
 case class ErrorReport (
   source: String,
@@ -43,13 +42,17 @@ object ErrorReport extends ((String,String,Option[StatusCode],Seq[ErrorReport],S
   def apply(statusCode: StatusCode, message: String, causes: Seq[ErrorReport]): ErrorReport =
     new ErrorReport(SOURCE, message, Option(statusCode), causes, Seq.empty)
 
-  def apply(response: HttpResponse) = {
+  def apply(source: String, response: HttpResponse): ErrorReport = {
     import spray.httpx.unmarshalling._
     val (message, causes) = response.entity.as[ErrorReport] match {
       case Right(re) => (re.message, Seq(re))
       case Left(err) => (response.entity.asString, Seq.empty)
     }
-    new ErrorReport(SOURCE, message, Option(response.status), causes, Seq.empty)
+    new ErrorReport(source, message, Option(response.status), causes, Seq.empty)
+  }
+
+  def apply(response: HttpResponse): ErrorReport = {
+    apply(SOURCE, response)
   }
 
   def tryUnmarshal(response: HttpResponse) =

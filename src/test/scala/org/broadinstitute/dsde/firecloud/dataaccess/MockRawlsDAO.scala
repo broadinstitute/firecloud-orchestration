@@ -3,6 +3,8 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.firecloud.model._
+import org.joda.time.DateTime
+import spray.http.OAuth2BearerToken
 import spray.http.StatusCodes
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -12,12 +14,12 @@ import scala.concurrent.Future
 /**
   * Created by davidan on 9/28/16.
   *
-  * Not currently used; serves as example code only
-  *
   */
 class MockRawlsDAO  extends RawlsDAO {
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future(true)
+
+  override def isDbGapAuthorized(accessToken: OAuth2BearerToken): Future[Boolean] = Future(true)
 
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = Future(true)
 
@@ -80,6 +82,14 @@ class MockRawlsDAO  extends RawlsDAO {
 
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userToken: WithAccessToken): Future[Seq[WorkspaceACLUpdate]] = {
     Future(aclUpdates)
+  }
+
+  override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
+    Future(None)
+  }
+
+  override def saveRefreshToken(accessToken: String, refreshToken: String): Future[Unit] = {
+    Future(())
   }
 
   override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[RawlsEntity]] = {
