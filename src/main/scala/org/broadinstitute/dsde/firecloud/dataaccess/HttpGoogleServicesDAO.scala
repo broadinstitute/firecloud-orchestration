@@ -10,8 +10,8 @@ import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.compute.ComputeScopes
 import com.google.api.services.storage.{Storage, StorageScopes}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.{OAuthException, OAuthTokens, OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
+import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
@@ -95,36 +95,6 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
 
     // TODO: login hint?
   }
-
-  /**
-   * third step of OAuth dance: exchange an auth code for access/refresh tokens
-   */
-  def getTokens(actualState: String,  expectedState: String, authCode: String): OAuthTokens = {
-
-    if ( actualState != expectedState ) throw new OAuthException(
-      "State mismatch: this authentication request cannot be completed.")
-
-    val gcsTokenResponse = flow.newTokenRequest(authCode)
-      .setRedirectUri(callbackUri.toString)
-      .execute()
-
-    OAuthTokens(gcsTokenResponse)
-  }
-
-  // check the requested UI redirect against the list of allowed JS origins
-  def whitelistRedirect(userUri:String) = {
-    userUri match {
-      case "" => ""
-      case x if origins.contains(x) => x
-      case _ =>
-        log.warn("User requested a redirect to " + userUri + ", but that url does not exist in whitelist.")
-        ""
-    }
-  }
-
-  def randomStateString = randomString(24)
-
-  def randomString(length: Int) = scala.util.Random.alphanumeric.take(length).mkString
 
   def getAdminUserAccessToken = {
     val googleCredential = new GoogleCredential.Builder()
@@ -239,8 +209,8 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
       userResponse.status match {
         case OK =>
           // user is known to Google. Extract the user's email and SID from the response, for logging
-          import spray.json._
           import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOAuthUser
+          import spray.json._
           val oauthUser:Try[OAuthUser] = Try(userResponse.entity.asString.parseJson.convertTo[OAuthUser])
           val userStr = (oauthUser getOrElse userResponse.entity).toString
           // Does the user have access to the target file?
