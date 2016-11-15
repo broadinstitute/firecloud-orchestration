@@ -30,7 +30,7 @@ import scala.concurrent.Future
 import scala.util.Success
 
 object ExportEntitiesByType {
-  case class ProcessEntities(baseEntityUrl: String, filename: String, entityType: String)
+  case class ProcessEntities(baseEntityUrl: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]])
   def props(requestContext: RequestContext): Props = Props(new ExportEntitiesByTypeActor(requestContext))
 }
 
@@ -41,7 +41,7 @@ class ExportEntitiesByTypeActor(requestContext: RequestContext) extends Actor wi
   val log = Logging(system, getClass)
 
   override def receive: Receive = {
-    case ProcessEntities(baseEntityUrl: String, filename: String, entityType: String) =>
+    case ProcessEntities(baseEntityUrl, filename, entityType, attributeNames) =>
       val pipeline = authHeaders(requestContext) ~> addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
       pipeline { Get(baseEntityUrl + "/" + entityType) } map {
         response =>
@@ -49,9 +49,9 @@ class ExportEntitiesByTypeActor(requestContext: RequestContext) extends Actor wi
             case OK =>
               val entities = unmarshal[List[EntityWithType]].apply(response)
               ModelSchema.getCollectionMemberType(entityType) match {
-                case Success(collectionType) if collectionType.isDefined =>
-                  val collectionMemberType = ModelSchema.getPlural(collectionType.get)
-                  val entityData = TSVFormatter.makeEntityTsvString(entities, entityType)
+                case Success(Some(collectionType)) =>
+                  val collectionMemberType = ModelSchema.getPlural(collectionType)
+                  val entityData = TSVFormatter.makeEntityTsvString(entities, entityType, attributeNames)
                   val membershipData = TSVFormatter.makeMembershipTsvString(entities, entityType, collectionMemberType.get)
                   val zipBytes: Array[Byte] = getZipBytes(entityType, membershipData, entityData)
                   val zippedFileName = entityType + ".zip"
@@ -59,7 +59,7 @@ class ExportEntitiesByTypeActor(requestContext: RequestContext) extends Actor wi
                     HttpEntity(ContentTypes.`application/octet-stream`, zipBytes),
                     HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> zippedFileName)))
                 case _ =>
-                  val data = TSVFormatter.makeEntityTsvString(entities, entityType)
+                  val data = TSVFormatter.makeEntityTsvString(entities, entityType, attributeNames)
                   RequestCompleteWithHeaders(
                     (OK, data),
                     HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),

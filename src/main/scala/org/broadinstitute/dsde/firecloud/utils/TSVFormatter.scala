@@ -38,33 +38,38 @@ object TSVFormatter {
     exportToString(headers, rows.toIndexedSeq)
   }
 
-  def makeEntityTsvString(entities: List[EntityWithType], entityType: String): String = {
+  def makeEntityTsvString(entities: List[EntityWithType], entityType: String, requestedHeaders: Option[IndexedSeq[String]]): String = {
     val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeExportRenamingMap(entityType).getOrElse(Map.empty[String, String])
     val entityHeader = "entity:" + entityType + "_id"
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
     val memberType = ModelSchema.getCollectionMemberType(entityType)
     val filteredEntities = memberType match {
-      case Success(collectionType) if collectionType.isDefined =>
-        ModelSchema.getPlural(collectionType.get) match {
+      case Success(Some(collectionType)) =>
+        ModelSchema.getPlural(collectionType) match {
           case Success(attributeName) => filterAttributeFromEntities(entities, attributeName)
           case _ => entities
         }
       case _ => entities
     }
 
-    val headers: immutable.IndexedSeq[String] = entityHeader +: filteredEntities.
-      filter { _.entityType == entityType }.
-      map { _.attributes.getOrElse(Map.empty) }.
-      flatMap(_.keySet).
-      distinct.
-      map { key => headerRenamingMap.getOrElse(key, key) }.
-      toIndexedSeq
-    val rows: immutable.IndexedSeq[IndexedSeq[String]] = filteredEntities.filter { _.entityType == entityType }
+    // entity id always needs to be first and is handled differently so remove it from requestedHeaders
+    val requestedHeadersSansId = requestedHeaders.map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
+
+    val headers: IndexedSeq[String] = entityHeader +: requestedHeadersSansId.getOrElse(defaultHeaders(entityType, filteredEntities, headerRenamingMap))
+    val rows: IndexedSeq[IndexedSeq[String]] = filteredEntities.filter { _.entityType == entityType }
       .map { entity =>
         makeRow(entity, headers, headerRenamingMap)
       }.toIndexedSeq
     exportToString(headers, rows)
+  }
+
+  def defaultHeaders(entityType: String, filteredEntities: List[EntityWithType], headerRenamingMap: Map[String, String]) = {
+    val attributeNames = filteredEntities.collect {
+      case EntityWithType(_, `entityType`, attributes) => attributes.getOrElse(Map.empty).keySet
+    }.flatten.distinct
+
+    attributeNames.map { key => headerRenamingMap.getOrElse(key, key) }.toIndexedSeq
   }
 
   private def exportToString(headers: IndexedSeq[String], rows: IndexedSeq[IndexedSeq[String]]): String = {

@@ -34,7 +34,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
           EntityWithType("sample_set_3", "sample_set", Some(
             Map("baz" -> "?#*".toJson, "samples" -> samples.toJson)
           )))
-        testEntityDataSet("sample_set", sampleSetList)
+        testEntityDataSet("sample_set", sampleSetList, None)
         testMembershipDataSet("sample_set", sampleSetList, sampleSetList.size * samples.size)
       }
     }
@@ -67,9 +67,18 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
           EntityWithType("sample_03", "sample", Some(sampleAtts)),
           EntityWithType("sample_04", "sample", Some(sampleAtts))
         )
-        val expectedHeaders = ("entity:sample_id", Set("sample_type", "header_1", "header_2", "participant_id"))
-        assertResult(expectedHeaders) {
-          testEntityDataSet("sample", sampleList)
+
+        val results = testEntityDataSet("sample", sampleList, None)
+        results should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant_id")
+        results.head should be ("entity:sample_id")
+
+        Seq(
+          IndexedSeq("header_2", "does_not_exist", "header_1"),
+          IndexedSeq("header_2", "sample_id", "header_1"),
+          IndexedSeq("header_1", "header_2")
+        ).foreach { requestedHeaders =>
+          val resultsWithSpecificHeaders = testEntityDataSet("sample", sampleList, Option(requestedHeaders))
+          resultsWithSpecificHeaders should contain theSameElementsInOrderAs Seq("entity:sample_id") ++ requestedHeaders.filterNot(_.equals("sample_id"))
         }
       }
 
@@ -106,10 +115,9 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         val participantList = List(EntityWithType("1143", "participant", Some(participantAtts1)),
           EntityWithType("1954", "participant", Some(participantAtts2)))
 
-        val expectedHeaders = ("entity:participant_id", Set("participant_id", "gender", "age"))
-        assertResult(expectedHeaders) {
-          testEntityDataSet("participant", participantList)
-        }
+        val results = testEntityDataSet("participant", participantList, None)
+        results should contain theSameElementsAs Seq("entity:participant_id", "participant_id", "gender", "age")
+        results.head should be ("entity:participant_id")
       }
 
       "Set Data" in {
@@ -145,10 +153,9 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         val pairList = List(EntityWithType("1", "pair", Some(pairAtts1)),
           EntityWithType("2", "pair", Some(pairAtts2)))
 
-        val expectedHeaders = ("entity:pair_id", Set("case_sample_id", "control_sample_id", "participant_id", "header_1"))
-        assertResult(expectedHeaders) {
-          testEntityDataSet("pair", pairList)
-        }
+        val results = testEntityDataSet("pair", pairList, None)
+        results should contain theSameElementsAs Seq("entity:pair_id", "case_sample_id", "control_sample_id", "participant_id", "header_1")
+        results.head should be ("entity:pair_id")
       }
 
       "Set data" in {
@@ -164,10 +171,10 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
   }
 
-  private def testEntityDataSet(entityType: String, entities: List[EntityWithType]) = {
+  private def testEntityDataSet(entityType: String, entities: List[EntityWithType], requestedHeaders: Option[IndexedSeq[String]]) = {
     val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeExportRenamingMap(entityType)
       .getOrElse(Map.empty[String, String])
-    val tsv = TSVFormatter.makeEntityTsvString(entities, entityType)
+    val tsv = TSVFormatter.makeEntityTsvString(entities, entityType, requestedHeaders)
 
     tsv shouldNot be(empty)
 
@@ -190,9 +197,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
     // Check that all lines have the same number of columns as the header.
     lines foreach( _.split("\t", -1).size should equal(headers.size) )
 
-    // header order is arbitrary except for the first column
-    val headersToCheck = (headers.head, headers.tail.toSet)
-    headersToCheck
+    headers
   }
 
   private def testMembershipDataSet(
