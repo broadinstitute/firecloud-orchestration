@@ -37,7 +37,7 @@ trait TSVFileSupport extends Actor {
     }
   }
 
-  def checkRowDistinct( tsv: TSVLoadFile )(op: => Future[PerRequestMessage])(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
+  def checkFirstRowDistinct( tsv: TSVLoadFile )(op: => Future[PerRequestMessage])(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
     val attributeNames = Seq(tsv.headers.head.stripPrefix("workspace:")) ++ tsv.headers.tail
     if (attributeNames.size != attributeNames.distinct.size) {
       Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Duplicated attribute keys are not allowed"))
@@ -49,7 +49,7 @@ trait TSVFileSupport extends Actor {
   /**
     * Bail with a 400 Bad Request if the first column of the tsv has duplicate values.
     * Otherwise, carry on. */
-  def checkFirstColumnsDistinct( tsv: TSVLoadFile )(op: => Future[PerRequestMessage])(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
+  def checkFirstColumnDistinct( tsv: TSVLoadFile )(op: => Future[PerRequestMessage])(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
     val entitiesToUpdate = tsv.tsvData.map(_.headOption.get)
     val distinctEntities = entitiesToUpdate.distinct
     if ( entitiesToUpdate.size != distinctEntities.size ) {

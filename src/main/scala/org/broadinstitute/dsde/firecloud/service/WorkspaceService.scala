@@ -113,7 +113,7 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
 
   private def importWorkspaceAttributeTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
     checkNumberOfRows(tsv, 2) {
-      checkRowDistinct(tsv) {
+      checkFirstRowDistinct(tsv) {
         rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
           Try(getWorkspaceAttributeCalls(tsv)) match {
             case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest,

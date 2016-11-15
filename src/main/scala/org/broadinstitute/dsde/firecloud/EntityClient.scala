@@ -169,7 +169,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
-    checkFirstColumnsDistinct(tsv) {
+    checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType) { memberTypeOpt =>
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
@@ -188,7 +188,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
-    checkFirstColumnsDistinct(tsv) {
+    checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType) { memberTypeOpt =>
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
           ModelSchema.getRequiredAttributes(entityType) match {
