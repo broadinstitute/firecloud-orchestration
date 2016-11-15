@@ -33,6 +33,9 @@ trait OauthApiService extends HttpService with FireCloudRequestBuilding
     Map("error" -> Map("summary" -> s"Invalid value for '$key'", "detail" -> message))
   )
 
+  case class HandleOauthCodeParams(code: String, redirectUri: String)
+  implicit val impHandleOathCodeParams = jsonFormat2(HandleOauthCodeParams)
+
   val oauthRoutes: Route =
     path("handle-oauth-code") {
       post { requestContext =>
@@ -71,6 +74,16 @@ trait OauthApiService extends HttpService with FireCloudRequestBuilding
         }
       }
     } ~
+      path("handle-oauth-code-v2") {
+        post {
+          entity(as[HandleOauthCodeParams]) { params => requestContext =>
+            perRequest(requestContext,
+              OAuthService.props(oauthServiceConstructor),
+              OAuthService.HandleOauthCode(params.code, params.redirectUri)
+            )
+          }
+        }
+      } ~
     path("api" / "refresh-token-status") {
       get {
         requireUserInfo() { userInfo => rc =>
