@@ -56,16 +56,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[Seq[WorkspaceACLUpdate]] =
     requestToObject[Seq[WorkspaceACLUpdate]]( Patch(patchWorkspaceAclUrl(ns, name), aclUpdates) )
 
-  // TODO: use rawls query-by-attribute once that exists
   override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = {
     val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
-
-    def isPublished(rw:RawlsWorkspace) = {
-      rw.attributes.get(LibraryService.publishedFlag) match {
-        case Some(AttributeBoolean(true)) => true
-        case _ => false
-      }
-    }
 
     val allPublishedPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> sendReceive
     allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
