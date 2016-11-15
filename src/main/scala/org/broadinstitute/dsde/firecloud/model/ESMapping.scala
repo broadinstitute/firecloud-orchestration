@@ -38,6 +38,11 @@ case class LibrarySearchParams(
                                 size: Option[Int]) {
 }
 
+object LibrarySearchConstants {
+  val defaultFrom = 0
+  val defaultSize = 10
+}
+
 case class LibrarySearchResponse(
                                   searchTerm: Option[String],
                                   from: Int,
@@ -45,7 +50,7 @@ case class LibrarySearchResponse(
                                   total: Int,
                                   results: Array[JsValue]) {
   def this (params: LibrarySearchParams, total: Int, results: Array[JsValue]) =
-    this(params.searchTerm, params.from.getOrElse(0), params.size.getOrElse(10), total, results)
+    this(params.searchTerm, params.from.getOrElse(LibrarySearchConstants.defaultFrom), params.size.getOrElse(LibrarySearchConstants.defaultSize), total, results)
 }
 
 

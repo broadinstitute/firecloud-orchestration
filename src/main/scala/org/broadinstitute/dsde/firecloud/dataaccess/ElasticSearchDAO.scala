@@ -17,10 +17,6 @@ import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 
-//import scala.concurrent.ExecutionContext
-//import scala.concurrent.ExecutionContext.Implicits.global
-//import spray.httpx.SprayJsonSupport._
-
 class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport {
 
   private val client: TransportClient = buildClient(servers)
@@ -109,8 +105,8 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
         case Some(searchTerm:String) => ESQuery(Right(ESWildcardObj(searchTerm))).toJson.prettyPrint
       }
     val searchReq = client.prepareSearch(indexName).setQuery(searchStr)
-    searchReq.setFrom(criteria.from.getOrElse(0))
-    searchReq.setSize(criteria.size.getOrElse(10))
+    searchReq.setFrom(criteria.from.getOrElse(LibrarySearchConstants.defaultFrom))
+    searchReq.setSize(criteria.size.getOrElse(LibrarySearchConstants.defaultSize))
     val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
 
     val sourceDocuments = searchResults.getHits.hits map { hit =>

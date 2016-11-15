@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.{Document, LibrarySearchResponse}
-import spray.json.JsObject
+import org.broadinstitute.dsde.firecloud.model.{Document, LibrarySearchParams, LibrarySearchResponse}
+import spray.json.JsValue
 
 /**
   * Created by davidan on 10/6/16.
@@ -26,9 +26,9 @@ class MockSearchDAO extends SearchDAO {
     deleteDocumentInvoked = true
   }
 
-  override def findDocuments(term: String, from: Int, size: Int): LibrarySearchResponse = {
+  override def findDocuments(librarySearchParams: LibrarySearchParams): LibrarySearchResponse = {
     findDocumentsInvoked = true
-    LibrarySearchResponse(0, Array[JsObject]())
+    new LibrarySearchResponse(librarySearchParams, 0, Array[JsValue]())
   }
 
 }
