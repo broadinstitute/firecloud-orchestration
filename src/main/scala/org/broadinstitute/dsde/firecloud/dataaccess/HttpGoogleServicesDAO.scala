@@ -46,29 +46,13 @@ import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol.
 
 object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
 
-  val baseUrl = FireCloudConfig.FireCloud.baseUrl
-  val callbackPath = "/callback"
-
-  // this needs to match a value in the "Authorized redirect URIs" section of the Google credential in use
-  val callbackUri = Uri(s"${baseUrl}${callbackPath}")
-
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
-  // the scopes we request for the end user during interactive login. TODO: remove compute?
-  val userLoginScopes = Seq(StorageScopes.DEVSTORAGE_FULL_CONTROL, ComputeScopes.COMPUTE) ++ authScopes
 
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
   val jsonFactory = JacksonFactory.getDefaultInstance
-
-  val clientSecrets = GoogleClientSecrets.load(jsonFactory, new StringReader(FireCloudConfig.Auth.googleSecretJson))
-
-  // Google Java Client doesn't offer direct access to the allowed origins, so we have to jump through a couple hoops
-  val origins:List[String] = (clientSecrets.getDetails.get("javascript_origins").asInstanceOf[java.util.ArrayList[String]]).toList
-
-  val flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport,
-    jsonFactory, clientSecrets, userLoginScopes).build()
 
   val pemFile = FireCloudConfig.Auth.pemFile
   val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
@@ -77,24 +61,6 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
   val rawlsPemFileClientId = FireCloudConfig.Auth.rawlsPemFileClientId
 
   lazy val log = LoggerFactory.getLogger(getClass)
-
-  /**
-   * first step of OAuth dance: redirect the browser to Google's login page
-   */
-  def getGoogleRedirectURI(state: String, approvalPrompt: String = "auto", overrideScopes: Option[Seq[String]] = None): String = {
-    val urlBuilder = flow.newAuthorizationUrl()
-      .setRedirectUri(callbackUri.toString)
-      .setState(state)
-      .setAccessType("offline")   // enables refresh token
-      .setApprovalPrompt(approvalPrompt) // "force" to get a new refresh token
-
-    overrideScopes match {
-      case Some(newScopes) => urlBuilder.setScopes(newScopes).build()
-      case _ => urlBuilder.build()
-    }
-
-    // TODO: login hint?
-  }
 
   def getAdminUserAccessToken = {
     val googleCredential = new GoogleCredential.Builder()

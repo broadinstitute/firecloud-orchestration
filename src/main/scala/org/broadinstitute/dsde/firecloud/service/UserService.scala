@@ -122,7 +122,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         passthrough(UserService.billingUrl, HttpMethods.GET)
       } ~
       path("profile" / "billingAccounts") {
-        oauthParams { (state, _) => requestContext =>
+        get { requestContext =>
           val pipeline = authHeaders(requestContext) ~> sendReceive
           val extReq = Get(UserService.billingAccountsUrl)
           pipeline(extReq) onComplete {
@@ -132,9 +132,8 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
               }
               tryParseScopes match {
                 case Success(scopes) =>
-                  // user does not have appropriate scopes.  Ask user to enable them via OAuth
-                  val redirectURI = HttpGoogleServicesDAO.getGoogleRedirectURI(state, "auto", Option(scopes.requiredScopes ++ HttpGoogleServicesDAO.userLoginScopes))
-                  requestContext.complete(Forbidden, ErrorReport(Forbidden, BillingAccountRedirect(redirectURI).toJson.toString))
+                  // user does not have appropriate scopes.
+                  requestContext.complete(Forbidden)
                 case _ =>
                   requestContext.complete(Forbidden, response.entity)
               }
