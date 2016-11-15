@@ -1,29 +1,21 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import WorkspaceService.{ExportWorkspaceAttributesTSV, ImportAttributesFromTSV, UpdateWorkspaceACL}
 import akka.actor._
 import akka.pattern._
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
-import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
-import spray.http.StatusCodes
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
-import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
+import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
 import spray.http.MediaTypes._
 import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
-import spray.json._
 import spray.json.DefaultJsonProtocol._
-import spray.json.JsonParser.ParsingException
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -45,7 +37,7 @@ object WorkspaceService {
     new WorkspaceService(userInfo, app.rawlsDAO, app.thurloeDAO)
 }
 
-class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with AttributeSupport {
+class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with AttributeSupport with TSVFileSupport {
 
   implicit val system = context.system
 
@@ -109,51 +101,26 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
   }
 
   def importAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
-    Try(TSVParser.parse(tsvString)) match {
-      case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, regret.getMessage))
-      case Success(tsv) =>
-        tsv.firstColumnHeader.split(":")(0) match {
-          case "workspace" =>
-            importWorkspaceAttributeTSV(workspaceNamespace, workspaceName, tsv)
-          case _ =>
-            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid first column header should start with \"workspace\""))
-        }
+    withTSVFile(tsvString) { tsv =>
+      tsv.firstColumnHeader.split(":")(0) match {
+        case "workspace" =>
+          importWorkspaceAttributeTSV(workspaceNamespace, workspaceName, tsv)
+        case _ =>
+          Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid first column header should start with \"workspace\""))
+      }
     }
   }
 
   private def importWorkspaceAttributeTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
     checkNumberOfRows(tsv, 2) {
-      val attributeNames = Seq(tsv.headers.head.stripPrefix("workspace:")) ++ tsv.headers.tail
-      val distinctAttributes = attributeNames.distinct
-      if (attributeNames.size != distinctAttributes.size) {
-        Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Duplicated attribute keys are not allowed"))
-      } else {
+      checkRowDistinct(tsv) {
         rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-          Try(getWorkspaceAttributeCalls(attributeNames.zip(tsv.tsvData.head))) match {
+          Try(getWorkspaceAttributeCalls(tsv)) match {
             case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
               "One or more of your values are not in the correct format"))
             case Success(attributeCalls) => rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attributeCalls) map (RequestComplete(_))
           }
         }
-      }
-    }
-  }
-
-  private def checkNumberOfRows(tsv: TSVLoadFile, rows: Int)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
-    if ((tsv.tsvData.length + (if (tsv.headers.isEmpty) 0 else 1)) != rows) {
-        Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
-            "Your file does not have the correct number of rows. There should be " + rows.toString))
-      } else {
-        op
-      }
-  }
-
-  private def getWorkspaceAttributeCalls(attributePairs: Seq[(String,String)]): Seq[AttributeUpdateOperation] = {
-    attributePairs.map { case (name, value) =>
-      if (value.equals("__DELETE__"))
-        new RemoveAttribute(new AttributeName("default", name))
-      else {
-        new AddUpdateAttribute(new AttributeName("default", name), impPlainAttributeFormat.read(value.parseJson))
       }
     }
   }
