@@ -21,7 +21,7 @@ import scala.util.{Failure, Success, Try}
 class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
   extends ThurloeDAO with FireCloudRequestBuilding with RestJsonClient {
 
-  val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
+  def adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
 
   override def sendNotifications(notifications: Seq[Notification]): Future[Try[Unit]] = {
 
