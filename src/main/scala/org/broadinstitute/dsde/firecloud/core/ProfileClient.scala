@@ -85,9 +85,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
         "Unexpected error updating NIH link", e) }
       // Complete syncWhitelist and ignore as neither success nor failure are useful to the client
-      syncWhiteListResult onComplete {
-        case _ => profileResponse pipeTo sender
-      }
+      syncWhiteListResult pipeTo sender
 
     case GetNIHStatus(userInfo: UserInfo) =>
       temporaryThurloeDao.getProfile(userInfo) flatMap {
