@@ -17,11 +17,30 @@ import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
+import spray.json._
 import spray.routing.RequestContext
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+
+/** Result from Google's pricing calculator price list
+  * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
+  */
+case class GooglePriceList(prices: GooglePrices, version: String, updated: String)
+
+/** Partial price list. Attributes can be added as needed to import prices for more products. */
+case class GooglePrices(cpBigstoreStorage: UsPriceItem)
+
+/** Price item containing only US currency. */
+case class UsPriceItem(us: BigDecimal)
+
+object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
+  implicit val UsPriceItemFormat = jsonFormat1(UsPriceItem)
+  implicit val GooglePricesFormat = jsonFormat(GooglePrices, "CP-BIGSTORE-STORAGE")
+  implicit val GooglePriceListFormat = jsonFormat(GooglePriceList, "gcp_price_list", "version", "updated")
+}
+import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
 object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
 
@@ -281,4 +300,10 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
     }
   }
 
+  /** Fetch the latest price list from Google. Returns only the subset of prices that we find we have use for. */
+  def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
+    val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
+    val response: Future[HttpResponse] = pipeline(Get("https://cloudpricingcalculator.appspot.com/static/data/pricelist.json"))
+    response map { r => r.entity.asString.parseJson.convertTo[GooglePriceList] }
+  }
 }
