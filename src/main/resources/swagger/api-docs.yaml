@@ -1721,6 +1721,7 @@ paths:
           description: Workspace not found
         500:
           description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/setAttributes:
     patch:
       tags:
@@ -1734,7 +1735,8 @@ paths:
         - name: newAttributes
           description: New attribute values, as Map[String, Attribute]
           required: true
-          type: object
+          schema:
+            type: object
           in: body
       responses:
         200:
