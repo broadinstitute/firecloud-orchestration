@@ -39,39 +39,44 @@ securityDefinitions:
 ##########################################################################################
 paths:
 
-### GAWB-934 we're hiding billing endpoints for now
-#  /api/billing:
-#    post:
-#      responses:
-#        '204':
-#          description: Successfully Created Billing Project in FireCloud and Google
-#        '400':
-#          description: firecloud billing user must be an administrator of the billing account
-#        '403':
-#          description: You must be an administrator of the google billing account
-#        '409':
-#          description: project already exists in firecloud or google
-#        '500':
-#          description: Rawls Internal Error
-#      description: create new billing project in firecloud and google
-#      parameters:
-#        - in: body
-#          description: create project request
-#          name: createProjectRequest
-#          required: true
-#          schema:
-#            $ref: '#/definitions/CreateRawlsBillingProjectFullRequest'
-#      tags:
-#        - Billing
-#      summary: create billing project in firecloud and google
-#      operationId: createBillingProjectFull
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#            - https://www.googleapis.com/auth/cloud-billing
-#
+  /api/billing:
+    post:
+      responses:
+        204:
+          description: Successfully Created Billing Project in FireCloud and Google
+        400:
+          description: FireCloud billing user must be an administrator of the billing account
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        403:
+          description: You must be an administrator of the google billing account
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        409:
+          description: project already exists in FireCloud or google
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: create new billing project in FireCloud and google
+      parameters:
+        - in: body
+          description: create project request
+          name: createProjectRequest
+          required: true
+          schema:
+            $ref: '#/definitions/CreateRawlsBillingProjectFullRequest'
+      tags:
+        - Billing
+      summary: create billing project in FireCloud and google
+      operationId: createBillingProjectFull
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/cloud-billing
+
 #  '/api/billing/{projectId}/members':
 #    get:
 #      responses:
