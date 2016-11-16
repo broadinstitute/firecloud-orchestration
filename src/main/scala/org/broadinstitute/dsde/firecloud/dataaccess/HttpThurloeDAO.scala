@@ -38,7 +38,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
     pipeline(Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))) map { response =>
       response.status match {
-        case StatusCodes.OK => Some(Profile(unmarshal[ProfileWrapper].apply(response)))
+        case StatusCodes.OK => Option(Profile(unmarshal[ProfileWrapper].apply(response)))
         case StatusCodes.NotFound => None
         case _ => throwBadResponse(response)
       }
@@ -49,7 +49,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     val pipeline = addFireCloudCredentials ~> addCredentials(accessToken) ~> sendReceive
     pipeline(Get(UserService.groupUrl(FireCloudConfig.Nih.rawlsGroupName))) map { response =>
       response.status match {
-        case x if x == OK => true
+        case OK => true
         case _ => false
       }
     }

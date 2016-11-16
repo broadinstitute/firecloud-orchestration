@@ -38,7 +38,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     val pipeline = addCredentials(accessToken) ~> sendReceive
     pipeline(Get(RawlsDAO.pathToUrl(RawlsDAO.groupPath(FireCloudConfig.Nih.rawlsGroupName)))) map {
       response => response.status match {
-        case x if x == OK => true
+        case OK => true
         case _ => false
       }
     }
@@ -95,7 +95,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     pipeline(Get(RawlsDAO.pathToUrl(RawlsDAO.refreshTokenDatePath))) map { response =>
       response.status match {
         case OK =>
-          Some(DateTime.parse(unmarshal[RawlsTokenDate].apply(response).refreshTokenUpdatedDate))
+          Option(DateTime.parse(unmarshal[RawlsTokenDate].apply(response).refreshTokenUpdatedDate))
         case NotFound | BadRequest => None
         case _ => throwBadResponse(response)
       }
