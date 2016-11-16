@@ -273,6 +273,40 @@ paths:
           schema:
             type: object
             $ref: '#/definitions/Error'
+    post:
+      summary: Add a Method.
+      description: |
+        Inserts a method into the method repository and
+        gives the owner full access permissions. Must supply a namespace
+        name, payload, and entityType. Cannot supply a snapshotId
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          description: Agora Entity
+          required: false
+          schema:
+            type: object
+            $ref: '#/definitions/ConfigurationQuery'
+      tags:
+        - Method Repository
+      responses:
+        '201':
+          description: Method successfully added.
+          schema:
+            type: object
+            $ref: '#/definitions/ConfigurationResponse'
+        '400':
+          description: Malformed input.
+          schema:
+            type: object
+            $ref: '#/definitions/Error'
+        '500':
+          description: Internal error.
+          schema:
+            type: object
+            $ref: '#/definitions/Error'
 
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
@@ -2326,6 +2360,37 @@ definitions:
       - outputs
       - inputs
       - prerequisites
+
+  ConfigurationQuery:
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: Namespace which contains Configuration.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the Configuration.
+        default: quick-BWA-config
+      synopsis:
+        type: string
+        description: Synopsis which contains Configuration.
+        default: Quick synopsis of configuration.
+      documentation:
+        type: string
+        description: Documentation of the Configuration.
+        default: |
+          Example configuraion with an associated method.
+      payload:
+        type: string
+        description: Payload of method -- must be in WDL format
+        default: >
+          { "methodRepoMethod": { "methodNamespace": "YOUR_NAMESPACE",
+          "methodName": "BWA", "methodVersion": 1}}
+      entityType:
+        type: string
+        description: Can only be Configuration.
+        default: Configuration
 
   ConfigurationResponse:
     type: object
