@@ -53,7 +53,9 @@ sbt
 ## Testing
 
 ```
-sbt test
+AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' \
+    THURLOE_URL_ROOT='http://localhost:8991' FIRECLOUD_URL_ROOT='https://local.broadinstitute.org' \
+    FIRE_CLOUD_ID='123' sbt test
 ```
 
 ## Debugging

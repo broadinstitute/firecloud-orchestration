@@ -586,31 +586,6 @@ paths:
 #            - https://www.googleapis.com/auth/devstorage.full_control
 #            - https://www.googleapis.com/auth/cloud-billing
 
-  /api/profile/refreshTokenDate:
-    get:
-      responses:
-        '200':
-          description: Successful Request
-          schema:
-            $ref: '#/definitions/UserRefreshTokenDate'
-        '400':
-          description: Token for the user is invalid
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '404':
-          description: There is no refresh token for the user
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '500':
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-      description: "get the date the refresh token last updated"
-      tags:
-        - Profile
-      summary: Get refresh token date
-      operationId: refreshTokenDate
-
   /api/status:
     get:
       tags:
@@ -666,23 +641,6 @@ paths:
           description: Not Found
         500:
           description: Internal Error
-
-  /api/submissions/queueStatus:
-    get:
-      responses:
-        '200':
-          description: Successful Request
-          schema:
-            $ref: '#/definitions/WorkflowQueueStatusResponse'
-        '500':
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-      description: List workflow counts by queueing state
-      tags:
-        - Submissions
-      summary: workflow queue status
-      operationId: workflowQueueStatus
 
   /api/template:
     post:
@@ -1004,7 +962,11 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
         - $ref: '#/parameters/entityTypeParam'
-        - $ref: '#/parameters/entityNameParam'
+        - name: entityName
+          description: Entity Name
+          required: true
+          type: string
+          in: path
       responses:
         200:
           description: Success
@@ -1012,44 +974,6 @@ paths:
           description: Workspace or Entity does not exist
         500:
           description: Internal Server Error
-    patch:
-      responses:
-        '200':
-          description: Entity updated
-          schema:
-            $ref: '#/definitions/Entity'
-        '400':
-          description: Attribute does not exist
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '403':
-          description: User does not have permission to update attributes in the namespace
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '404':
-          description: Workspace or Entity not found
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '500':
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-      description: Update an entity
-      tags:
-        - Entities
-      summary: Update entity in a workspace
-      operationId: update_entity
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-        - $ref: '#/parameters/entityTypeParam'
-        - $ref: '#/parameters/entityNameParam'
-        - in: body
-          description: Update operations for attributes
-          name: attributeUpdateJson
-          required: false
-          schema:
-            $ref: '#/definitions/AttributeUpdateOperation'
 # Entity delete endpoint commented out until GAWB-422 is complete
 #    delete:
 #      tags:
@@ -1379,36 +1303,6 @@ paths:
         500:
           description: Internal Server Error
 
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/validate:
-    get:
-      responses:
-        '200':
-          description: Successful Request
-          schema:
-            $ref: '#/definitions/ValidatedMethodConfiguration'
-        '404':
-          description: Workspace or Method Configuration does not exist
-        '500':
-          description: Rawls Internal Error
-      description: ''
-      tags:
-        - Method Configurations
-      summary: get syntax validation information for a method configuration
-      operationId: validate_method_configuration
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-        - in: path
-          description: Method Configuration Namespace
-          name: configNamespace
-          required: true
-          type: string
-        - in: path
-          description: Method Configuration Name
-          name: configName
-          required: true
-          type: string
-
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
     post:
       tags:
@@ -1507,6 +1401,36 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}/validate:
+    get:
+      responses:
+        '200':
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/ValidatedMethodConfiguration'
+        '404':
+          description: Workspace or Method Configuration does not exist
+        '500':
+          description: Rawls Internal Error
+      description: ''
+      tags:
+        - Method Configurations
+      summary: get syntax validation information for a method configuration
+      operationId: validate_method_configuration
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: path
+          description: Method Configuration Namespace
+          name: configNamespace
+          required: true
+          type: string
+        - in: path
+          description: Method Configuration Name
+          name: configName
+          required: true
+          type: string
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
       tags:
@@ -1587,70 +1511,6 @@ paths:
         500:
           description: Internal Error
 
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/validate:
-    post:
-      responses:
-        '200':
-          description: Validation Response
-          schema:
-            $ref: '#/definitions/SubmissionValidationReport'
-        '400':
-          description: Expression evaluation failed or entities are not of type required by method config
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '404':
-          description: Workspace, Method Configuration or Entity not found
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '500':
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '502':
-          description: Trouble talking to Agora
-          schema:
-            $ref: '#/definitions/ErrorReport'
-      description: Validate expression syntax for a submission
-      tags:
-        - Submissions
-      summary: Validate submission
-      operationId: validateSubmission
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-        - in: body
-          description: Description of a submission.
-          name: submission
-          required: true
-          schema:
-            $ref: '#/definitions/SubmissionRequest'
-
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}:
-    get:
-      responses:
-        '200':
-          description: Successful Request
-          schema:
-            $ref: '#/definitions/ExecutionMetadata'
-        '404':
-          description: Workspace, Submission or Workflow not found
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '500':
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-      description: Get call-level metadata for workflow
-      tags:
-        - Submissions
-      summary: Get call-level metadata for workflow
-      operationId: workflowMetadata
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-        - $ref: '#/parameters/submissionIdParam'
-        - $ref: '#/parameters/workflowIdParam'
-
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
     get:
       tags:
@@ -1670,6 +1530,18 @@ paths:
           description: Submission or Workflow not found
         500:
           description: Internal Error
+  /api/submissions/queueStatus:
+    get:
+      responses:
+        '200':
+          description: Successful Request
+        '500':
+          description: Internal Error
+      description: List workflow counts by queueing state
+      tags:
+        - Submissions
+      summary: workflow queue status
+      operationId: workflowQueueStatus
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
     put:
@@ -1744,47 +1616,13 @@ paths:
         500:
           description: Internal Error
 
-  /cookie-authed/download/b/{bucket}/o/{object}:
-    get:
-      tags:
-      - Storage
-      operationId: getStorageDownload
-      summary: |
-        Download GCS object using a cookie token
-      description: |
-        **Important**: this file download does not work within the swagger UI. It is here for documentation
-        purposes. You can fill in the fields and submit; once you do so, you will get an error, but swagger
-        will populate the "Request URL" field. You can then copy and paste that field into a new tab to
-        achieve your download.
-      parameters:
-        - name: bucket
-          description: Name of the bucket in which the object resides.
-          required: true
-          type: string
-          in: path
-        - name: object
-          description: Name of the object. (be sure to urlencode)
-          required: true
-          type: string
-          in: path
-      responses:
-        200:
-          description: Success
-          schema:
-            type: file
-        404:
-          description: Not Found
-        500:
-          description: Internal Error
-      security: []
-
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       tags:
       - Entities
       operationId: browserDownloadEntitiesTSV
       summary: |
-        TSV file containing workspace entities of the specified type (requires cookie-based authentication)
+        TSV file containing workspace entities of the specified type (allows cookie-based authentication)
       produces:
         - text/plain
       parameters:
@@ -2061,12 +1899,6 @@ parameters:
     required: true
     type: string
     in: path
-  entityNameParam:
-    name: entityName
-    description: Entity Name
-    required: true
-    type: string
-    in: path
   submissionIdParam:
     name: submissionId
     description: Submission ID
@@ -2151,55 +1983,6 @@ definitions:
       role:
         type: string
         description: the role of the current user in the project
-
-  CallMetadata:
-    description: Stuff you need to know about calls
-    properties:
-      inputs:
-        type: object
-        description: map from input names onto resolved values
-      executionStatus:
-        type: string
-        description: status of call
-      executionEvents:
-        type: array
-        items:
-          $ref: '#/definitions/ExecutionEvent'
-      backendStatus:
-        type: string
-        description: status of the backend
-      backendLogs:
-        type: object
-        description: map of log files from backend
-      outputs:
-        type: object
-        description: map from output names to local files
-      start:
-        type: string
-        format: date-time
-        description: starting time of call
-      end:
-        type: string
-        format: date-time
-        description: ending time of call
-      jobId:
-        type: string
-        description: unique ID of job
-      returnCode:
-        type: integer
-        description: result code
-      backend:
-        type: string
-        description: type of backend executing the call
-      stdout:
-        type: string
-        description: location of stdout
-      stderr:
-        type: string
-        description: location of stderr
-      shardIndex:
-        type: integer
-        description: call index within a scatter block, as reported by execution service
 
   ConfigurationIngest:
     properties:
@@ -2433,55 +2216,6 @@ definitions:
         description: stack trace
         items:
           $ref: '#/definitions/StackTraceElement'
-
-  ExecutionEvent:
-    description: ''
-    required:
-      - description
-      - startTime
-    properties:
-      description:
-        type: string
-        description: Description of the event
-      startTime:
-        type: string
-        format: date-time
-        description: When the event started
-      endTime:
-        type: string
-        format: date-time
-        description: When the event finished
-
-  ExecutionMetadata:
-    description: Stuff you need to know about a workflow
-    properties:
-      id:
-        type: string
-        description: The identifier of the workflow
-      status:
-        type: string
-        description: Workflow status
-      submission:
-        type: string
-        format: date-time
-        description: Data and time the workflow was submitted
-      start:
-        type: string
-        format: date-time
-        description: Date and time the workflow started execution
-      end:
-        type: string
-        format: date-time
-        description: Date and time the workflow ended execution
-      inputs:
-        type: object
-        description: map of workflow input names onto resolved values
-      outputs:
-        type: object
-        description: map of workflow output names onto local files
-      calls:
-        description: map from call names onto call metadata
-        $ref: '#/definitions/CallMetadata'
 
   ExtendedEnabled:
     allOf:
@@ -2760,112 +2494,6 @@ definitions:
       - entityType
       - entityName
 
-  SubmissionRequest:
-    description: ''
-    required:
-      - methodConfigurationNamespace
-      - methodConfigurationName
-      - entityType
-      - entityName
-    properties:
-      methodConfigurationNamespace:
-        type: string
-        description: Namespace of the method configuration to execute.
-      methodConfigurationName:
-        type: string
-        description: Name of the method configuration to execute.
-      entityType:
-        type: string
-        description: Type of root entity for expression.
-      entityName:
-        type: string
-        description: Name of root entity for expression.
-      expression:
-        type: string
-        description: Expression that resolves to one or more entities matching the entity type in the method configuration.
-
-  SubmissionValidationEntityInputs:
-    description: the results of parsing each of the inputs for one entity
-    required:
-      - entityName
-      - inputResolutions
-    properties:
-      entityName:
-        type: string
-        description: name of entity
-      inputResolutions:
-        type: array
-        description: input resolution
-        items:
-          $ref: '#/definitions/SubmissionValidationValue'
-
-  SubmissionValidationHeader:
-    description: common values for all the entities -- the entity type and the input descriptions
-    required:
-      - entityType
-      - inputExpressions
-    properties:
-      entityType:
-        type: string
-        description: type of entity
-      inputExpressions:
-        type: array
-        description: input descriptions
-        items:
-          $ref: '#/definitions/SubmissionValidationInput'
-
-  SubmissionValidationInput:
-    description: 'method configuration input parameter, it''s name and the associated expression from the method config'
-    required:
-      - wdlName
-      - expression
-    properties:
-      wdlName:
-        type: string
-        description: name of input
-      expression:
-        type: string
-        description: expression for input
-
-  SubmissionValidationReport:
-    description: the results of parsing each input for each entity
-    required:
-      - request
-      - header
-      - validEntities
-      - invalidEntities
-    properties:
-      header:
-        $ref: '#/definitions/SubmissionValidationHeader'
-        description: common values for all entities
-      validEntities:
-        type: array
-        description: runnable entities
-        items:
-          $ref: '#/definitions/SubmissionValidationEntityInputs'
-      invalidEntities:
-        type: array
-        description: non-runnable entities
-        items:
-          $ref: '#/definitions/SubmissionValidationEntityInputs'
-      request:
-        $ref: '#/definitions/SubmissionRequest'
-
-  SubmissionValidationValue:
-    description: result of an expression parse for one of the inputs
-    required:
-      - inputName
-    properties:
-      value:
-        type: string
-        description: the value of the input expression for the specified entity
-      error:
-        type: string
-        description: parsing error(s)
-      inputName:
-        type: string
-        description: name of input
-
   UserInfo:
     properties:
       userSubjectId:
@@ -2874,13 +2502,6 @@ definitions:
       userEmail:
         type: string
         description: User's email
-
-  UserRefreshTokenDate:
-    description: date a refresh token was stored
-    properties:
-      refreshTokenUpdatedDate:
-        type: string
-        format: date-time
 
   ValidatedMethodConfiguration:
     description: ''
@@ -2907,23 +2528,6 @@ definitions:
         description: Map[String, String]
       methodConfiguration:
         $ref: '#/definitions/MethodConfiguration'
-
-  WorkflowQueueStatusResponse:
-    description: Information about the status of workflows and the workflow queue
-    required:
-      - estimatedQueueTimeMS
-      - workflowsBeforeNextUserWorkflow
-      - workflowCountsByStatus
-    properties:
-      estimatedQueueTimeMS:
-        type: integer
-        description: estimated milliseconds until the current queue is submitted
-      workflowsBeforeNextUserWorkflow:
-        type: integer
-        description: the number of workflows in the queue ahead of the user's first workflow
-      workflowCountsByStatus:
-        type: object
-        description: Map[String,Int]
 
   Workspace:
     description: ''
