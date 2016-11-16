@@ -303,7 +303,7 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
   /** Fetch the latest price list from Google. Returns only the subset of prices that we find we have use for. */
   def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
-    val response: Future[HttpResponse] = pipeline(Get("https://cloudpricingcalculator.appspot.com/static/data/pricelist.json"))
+    val response: Future[HttpResponse] = pipeline(Get(FireCloudConfig.GoogleCloud.priceListUrl))
     response map { r => r.entity.asString.parseJson.convertTo[GooglePriceList] }
   }
 }
