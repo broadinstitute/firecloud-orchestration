@@ -25,6 +25,7 @@
   * Submitter **reassigns to LR** for further feedback
 - [ ] **TL** sign off
 - [ ] **LR** sign off
+- [ ] **Product Owner** sign off
 - [ ] **Assign to submitter** to finalize
 - [ ] **Submitter**: Verify all tests go green, including CI tests
 - [ ] **Submitter**: Squash commits and merge to develop
