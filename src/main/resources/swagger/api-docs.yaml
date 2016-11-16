@@ -77,36 +77,40 @@ paths:
             - profile
             - https://www.googleapis.com/auth/cloud-billing
 
-#  '/api/billing/{projectId}/members':
-#    get:
-#      responses:
-#        '200':
-#          description: Success
-#          schema:
-#            type: array
-#            items:
-#              $ref: '#/definitions/BillingProjectMember'
-#        '403':
-#          description: You must be a project owner to view the members of a project
-#        '500':
-#          description: Rawls Internal Error
-#      description: list members of billing project the caller owns
-#      parameters:
-#        - in: path
-#          description: Project ID
-#          name: projectId
-#          required: true
-#          type: string
-#      tags:
-#        - Billing
-#      summary: list members of billing project the caller owns
-#      operationId: listBillingProjectMembers
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#
+  /api/billing/{projectId}/members:
+    get:
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BillingProjectMember'
+        403:
+          description: You must be a project owner to view the members of a project
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: list members of billing project the caller owns
+      parameters:
+        - in: path
+          description: Project ID
+          name: projectId
+          required: true
+          type: string
+      tags:
+        - Billing
+      summary: list members of billing project the caller owns
+      operationId: listBillingProjectMembers
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
 #  '/api/billing/{projectId}/{role}/{userEmail}':
 #    put:
 #      responses:
