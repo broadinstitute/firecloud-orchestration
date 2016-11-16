@@ -60,6 +60,35 @@ trait TSVFileSupport extends Actor {
     }
   }
 
+  /**
+    * Bail with a 400 Bad Request if the tsv is trying to set members on a collection type.
+    * Otherwise, carry on. */
+  def checkNoCollectionMemberAttribute( tsv: TSVLoadFile, memberTypeOpt: Option[String] )(op: => Future[PerRequestMessage])(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
+    if( memberTypeOpt.isDefined && tsv.headers.contains(memberTypeOpt.get + "_id") ) {
+      Future( RequestCompleteWithErrorReport(BadRequest,
+        "Can't set collection members along with other attributes; please use two-column TSV format or remove " +
+          memberTypeOpt.get + "_id from your tsv.") )
+    } else {
+      op
+    }
+  }
+
+  def validateMembershipTSV(tsv: TSVLoadFile, membersType: Option[String]) (op: => Future[PerRequestMessage])(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
+    //This magical list of conditions determines whether the TSV is populating the "members" attribute of a collection type entity.
+    if( membersType.isEmpty ) {
+      Future(
+        RequestCompleteWithErrorReport(BadRequest,"Invalid membership TSV. Entity type must be a collection type") )
+    } else if( tsv.headers.length != 2 ){
+      Future(
+        RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Must have exactly two columns") )
+    } else if( tsv.headers != Seq(tsv.firstColumnHeader, membersType.get + "_id") ) {
+      Future(
+        RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Second column header should be " + membersType.get + "_id") )
+    } else {
+      op
+    }
+  }
+
   def getWorkspaceAttributeCalls(tsv: TSVLoadFile): Seq[AttributeUpdateOperation] = {
     val attributePairs = (Seq(tsv.headers.head.stripPrefix("workspace:")) ++ tsv.headers.tail).zip(tsv.tsvData.head)
     attributePairs.map { case (name, value) =>

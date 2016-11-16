@@ -70,19 +70,6 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   }
 
   /**
-   * Bail with a 400 Bad Request if the tsv is trying to set members on a collection type.
-   * Otherwise, carry on. */
-  private def checkNoCollectionMemberAttribute( tsv: TSVLoadFile, memberTypeOpt: Option[String] )(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
-    if( memberTypeOpt.isDefined && tsv.headers.contains(memberTypeOpt.get + "_id") ) {
-      Future( RequestCompleteWithErrorReport(BadRequest,
-        "Can't set collection members along with other attributes; please use two-column TSV format or remove " +
-          memberTypeOpt.get + "_id from your tsv.") )
-    } else {
-      op
-    }
-  }
-
-  /**
    * Verifies that the provided list of headers includes all attributes required by the schema for this entity type.
    * Bails with a 400 Bad Request if the entity type is unknown or if some attributes are missing.
    * Returns the list of required attributes if all is well. */
@@ -124,22 +111,6 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     }
   }
 
-
-  private def validateMembershipTSV(tsv: TSVLoadFile, membersType: Option[String]) (op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
-    //This magical list of conditions determines whether the TSV is populating the "members" attribute of a collection type entity.
-    if( membersType.isEmpty ) {
-      Future(
-        RequestCompleteWithErrorReport(BadRequest,"Invalid membership TSV. Entity type must be a collection type") )
-    } else if( tsv.headers.length != 2 ){
-      Future(
-        RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Must have exactly two columns") )
-    } else if( tsv.headers != Seq(tsv.firstColumnHeader, membersType.get + "_id") ) {
-      Future(
-        RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Second column header should be " + membersType.get + "_id") )
-    } else {
-      op
-    }
-  }
 
   /**
    * Imports collection members into a collection type entity. */
