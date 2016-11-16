@@ -1,25 +1,21 @@
 package org.broadinstitute.dsde.firecloud
 
 import java.text.SimpleDateFormat
-
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
-
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, PerRequestMessage}
+import org.broadinstitute.dsde.firecloud.service.{AttributeSupport, FireCloudRequestBuilding, TSVFileSupport}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
-
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.routing.RequestContext
-
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
@@ -38,7 +34,7 @@ object EntityClient {
 
 }
 
-class EntityClient (requestContext: RequestContext) extends Actor with FireCloudRequestBuilding {
+class EntityClient (requestContext: RequestContext) extends Actor with FireCloudRequestBuilding with AttributeSupport with TSVFileSupport {
 
   import system.dispatcher
 
@@ -50,16 +46,6 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     case ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
       importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo context.parent
-  }
-
-  /**
-   * Attempts to parse a string into a TSVLoadFile.
-   * Bails with a 400 Bad Request if the TSV is invalid. */
-  private def withTSVFile(tsvString:String)(op: (TSVLoadFile => Future[PerRequestMessage])): Future[PerRequestMessage] = {
-    Try(TSVParser.parse(tsvString)) match {
-      case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
-      case Success(tsvFile) => op(tsvFile)
-    }
   }
 
   /**
@@ -80,34 +66,6 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     ModelSchema.getPlural(entityType) match {
       case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
       case Success(plural) => op(plural)
-    }
-  }
-
-  /**
-   * Bail with a 400 Bad Request if the first column of the tsv has duplicate values.
-   * Otherwise, carry on. */
-  private def checkFirstColumnsDistinct( tsv: TSVLoadFile, tsvTypeName: String )(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
-    val entitiesToUpdate = tsv.tsvData.map(_.headOption.get)
-    val distinctEntities = entitiesToUpdate.distinct
-    if ( entitiesToUpdate.size != distinctEntities.size ) {
-      Future( RequestCompleteWithErrorReport(BadRequest,
-        "Duplicated entities are not allowed in an " + tsvTypeName +
-          " TSV: " + entitiesToUpdate.diff(distinctEntities).distinct.mkString(", ")) )
-    } else {
-      op
-    }
-  }
-
-  /**
-   * Bail with a 400 Bad Request if the tsv is trying to set members on a collection type.
-   * Otherwise, carry on. */
-  private def checkNoCollectionMemberAttribute( tsv: TSVLoadFile, memberTypeOpt: Option[String] )(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
-    if( memberTypeOpt.isDefined && tsv.headers.contains(memberTypeOpt.get + "_id") ) {
-      Future( RequestCompleteWithErrorReport(BadRequest,
-        "Can't set collection members along with other attributes; please use two-column TSV format or remove " +
-          memberTypeOpt.get + "_id from your tsv.") )
-    } else {
-      op
     }
   }
 
@@ -153,59 +111,6 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     }
   }
 
-  val upsertAttrOperation = "op" -> AttributeString("AddUpdateAttribute")
-  val removeAttrOperation = "op" -> AttributeString("RemoveAttribute")
-  val addListMemberOperation = "op" -> AttributeString("AddListMember")
-  val createRefListOperation = "op" -> AttributeString("CreateAttributeEntityReferenceList")
-
-  /**
-   * colInfo is a list of (headerName, refType), where refType is the type of the entity if the headerName is an AttributeRef
-   * e.g. on TCGA Pairs, there's a header called case_sample_id where the refType would be Sample */
-  def setAttributesOnEntity(entityType: String, memberTypeOpt: Option[String], row: Seq[String], colInfo: Seq[(String,Option[String])]) = {
-    //Iterate over the attribute names and their values
-    //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
-    //string gets passed to Rawls, which should error as they're required?
-    val ops = for { (value,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !value.isEmpty } yield {
-      val nameEntry = "attributeName" -> AttributeString(attributeName)
-      def valEntry( attr: Attribute ) = "addUpdateAttribute" -> attr
-      refTypeOpt match {
-        case Some(refType) => Map(upsertAttrOperation,nameEntry,valEntry(AttributeEntityReference(refType,value)))
-        case None => value match {
-          case "__DELETE__" => Map(removeAttrOperation,nameEntry)
-          case _ => Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value)))
-        }
-      }
-    }
-
-    //If we're upserting a collection type entity, add an AddListMember( members_attr, null ) operation.
-    //This will force the members_attr attribute to exist if it's being created for the first time.
-    val collectionMemberAttrOp: Option[Map[String, Attribute]] =
-    if( ModelSchema.isCollectionType(entityType).getOrElse(false) ) {
-      val membersAttributeName = ModelSchema.getPlural(memberTypeOpt.get).get
-      Some(Map(
-        createRefListOperation,
-        "attributeListName"->AttributeString(membersAttributeName)))
-    } else {
-      None
-    }
-    EntityUpdateDefinition(row.headOption.get,entityType,ops ++ collectionMemberAttrOp )
-  }
-
-  private def validateMembershipTSV(tsv: TSVLoadFile, membersType: Option[String]) (op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
-    //This magical list of conditions determines whether the TSV is populating the "members" attribute of a collection type entity.
-    if( membersType.isEmpty ) {
-      Future(
-        RequestCompleteWithErrorReport(BadRequest,"Invalid membership TSV. Entity type must be a collection type") )
-    } else if( tsv.headers.length != 2 ){
-      Future(
-        RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Must have exactly two columns") )
-    } else if( tsv.headers != Seq(tsv.firstColumnHeader, membersType.get + "_id") ) {
-      Future(
-        RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Second column header should be " + membersType.get + "_id") )
-    } else {
-      op
-    }
-  }
 
   /**
    * Imports collection members into a collection type entity. */
@@ -235,7 +140,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
-    checkFirstColumnsDistinct(tsv, "entity") {
+    checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType) { memberTypeOpt =>
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
@@ -254,7 +159,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
-    checkFirstColumnsDistinct(tsv, "entity") {
+    checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType) { memberTypeOpt =>
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
           ModelSchema.getRequiredAttributes(entityType) match {
