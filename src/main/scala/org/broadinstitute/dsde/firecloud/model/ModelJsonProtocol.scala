@@ -104,6 +104,22 @@ object ModelJsonProtocol {
     }
   }
 
+  implicit object impQueryMap extends JsonFormat[QueryMap] {
+    override def write(inputmap: QueryMap): JsValue = inputmap match {
+      case _ : ESMatchAll => inputmap.asInstanceOf[ESMatchAll].toJson
+      case _ : ESWildcard => inputmap.asInstanceOf[ESWildcard].toJson
+    }
+
+    override def read(json: JsValue): QueryMap = {
+      val qmap = json.asJsObject
+      qmap.fields.keys.head match {
+        case "match_all" => impESMatchAll.read(json)
+        case "wildcard" => impESWildcard.read(json)
+        case _ => throw DeserializationException("unexpected json type")
+      }
+    }
+  }
+
   implicit object impStackTraceElement extends RootJsonFormat[StackTraceElement] {
     val CLASS_NAME = "className"
     val METHOD_NAME = "methodName"
@@ -247,13 +263,13 @@ object ModelJsonProtocol {
   implicit val ESDetailFormat = jsonFormat1(ESDetail)
   implicit val ESDatasetPropertyFormat = jsonFormat1(ESDatasetProperty)
 
-  implicit val impLibrarySearchResponse = jsonFormat5(LibrarySearchResponse)
   implicit val impLibrarySearch = jsonFormat3(LibrarySearchParams)
+  implicit val impLibrarySearchResponse = jsonFormat3(LibrarySearchResponse)
 
-  implicit val impESWildcardSearchTerm = jsonFormat1(ESWildcardSearchTerm)
-  implicit val impESMatchAll: RootJsonFormat[ESMatchAll] = jsonFormat1(ESMatchAll)
-  implicit val impESWildcard: RootJsonFormat[ESWildcard] = jsonFormat1(ESWildcard)
   implicit val impESQuery = jsonFormat1(ESQuery)
+  implicit val impESWildcardSearchTerm = jsonFormat1(ESWildcardSearchTerm)
+  implicit val impESMatchAll = jsonFormat1(ESMatchAll)
+  implicit val impESWildcard = jsonFormat1(ESWildcard)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

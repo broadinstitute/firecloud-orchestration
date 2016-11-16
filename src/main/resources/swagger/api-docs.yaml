@@ -304,23 +304,6 @@ paths:
         500:
           description: Internal Server Error
 
-  /api/libraries:
-    post:
-      tags:
-        - Library
-      operationId: FindDocuments
-      summary: |
-        searches published library datasets
-      parameters:
-        - in: body
-          name: searchParams
-          description: Search terms and pagination parameters
-          schema:
-            $ref: '#/definitions/SearchTermRef'
-      responses:
-        200:
-          description: Matching datasets
-
   /api/library/admin/reindex:
     post:
       tags:
@@ -344,6 +327,23 @@ paths:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
+
+  /api/library/search:
+    post:
+      tags:
+        - Library
+      operationId: FindDocuments
+      summary: |
+        searches published library datasets
+      parameters:
+        - in: body
+          name: searchParams
+          description: Search terms and pagination parameters
+          schema:
+            $ref: '#/definitions/SearchTermRef'
+      responses:
+        200:
+          description: Matching datasets
 
   /api/library/user/role/curator:
     get:
