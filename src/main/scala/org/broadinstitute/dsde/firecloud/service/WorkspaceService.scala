@@ -18,7 +18,7 @@ import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-
+import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -100,7 +100,7 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
       rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
         val attributes = workspaceResponse.workspace.get.attributes.filterKeys(_ != AttributeName("default", "description"))
         val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
-        val valueString = (attributes map { case (attName, attValue) => impPlainAttributeFormat.write(attValue) }).mkString("\t")
+        val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(impPlainAttributeFormat.write(attValue)) }).mkString("\t")
         RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
           HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
           HttpHeaders.`Content-Type`(`text/plain`))
@@ -118,18 +118,17 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
       }
     }
 
-  private def importWorkspaceAttributeTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
-    checkNumberOfRows(tsv, 2) {
-      checkFirstRowDistinct(tsv) {
-        rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-          Try(getWorkspaceAttributeCalls(tsv)) match {
-            case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
-              "One or more of your values are not in the correct format"))
-            case Success(attributeCalls) => rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attributeCalls) map (RequestComplete(_))
+    private def importWorkspaceAttributeTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
+      checkNumberOfRows(tsv, 2) {
+        checkFirstRowDistinct(tsv) {
+          rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
+            Try(getWorkspaceAttributeCalls(tsv)) match {
+              case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
+                "One or more of your values are not in the correct format"))
+              case Success(attributeCalls) => rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attributeCalls) map (RequestComplete(_))
+            }
           }
         }
       }
     }
-  }
-
 }

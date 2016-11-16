@@ -16,7 +16,6 @@ import spray.json._
   */
 trait TSVFileSupport extends Actor {
 
-  private implicit val impPlainAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
   /**
     * Attempts to parse a string into a TSVLoadFile.
@@ -104,9 +103,9 @@ trait TSVFileSupport extends Actor {
     val attributePairs = (Seq(tsv.headers.head.stripPrefix("workspace:")) ++ tsv.headers.tail).zip(tsv.tsvData.head)
     attributePairs.map { case (name, value) =>
       if (value.equals("__DELETE__"))
-        new RemoveAttribute(new AttributeName("default", name))
+        new RemoveAttribute(AttributeName.fromDelimitedName(name))
       else {
-        new AddUpdateAttribute(new AttributeName("default", name), impPlainAttributeFormat.read(value.parseJson))
+        new AddUpdateAttribute(AttributeName.fromDelimitedName(name), new AttributeString(StringContext.treatEscapes(value)))
       }
     }
   }
@@ -135,6 +134,7 @@ trait TSVFileSupport extends Actor {
         }
       }
     }
+    ops
 
     //If we're upserting a collection type entity, add an AddListMember( members_attr, null ) operation.
     //This will force the members_attr attribute to exist if it's being created for the first time.
