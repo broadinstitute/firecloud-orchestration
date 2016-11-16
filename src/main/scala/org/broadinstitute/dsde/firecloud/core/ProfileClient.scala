@@ -45,7 +45,6 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   override def receive: Receive = {
 
     case UpdateProfile(userInfo: UserInfo, profile: BasicProfile) =>
-      val parent = context.parent
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
       val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
@@ -70,10 +69,9 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
                                         "Unexpected error saving profile", e) }
 
-      profileResponse pipeTo context.parent
+      profileResponse pipeTo sender
 
     case UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) =>
-      val parent = context.parent
       val syncWhiteListResult = syncWhitelist(Some(userInfo.getUniqueId))
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = nihLink.propertyValueMap
@@ -88,7 +86,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
         "Unexpected error updating NIH link", e) }
       // Complete syncWhitelist and ignore as neither success nor failure are useful to the client
       syncWhiteListResult onComplete {
-        case _ => profileResponse pipeTo parent
+        case _ => profileResponse pipeTo sender
       }
 
     case GetNIHStatus(userInfo: UserInfo) =>
@@ -106,10 +104,10 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
               Future.successful(RequestComplete(StatusCodes.NotFound))
           }
         case None => Future.successful(RequestComplete(StatusCodes.NotFound))
-      } pipeTo context.parent
+      } pipeTo sender
 
     case SyncWhitelist =>
-      syncWhitelist() pipeTo context.parent
+      syncWhitelist() pipeTo sender
   }
 
   def updateUserProperties(
