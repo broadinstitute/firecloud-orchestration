@@ -13,9 +13,14 @@ import spray.http.OAuth2BearerToken
  * orchestration and rawls as clean as possible.
  *
  */
-case class UserInfo(userEmail: String, accessToken: OAuth2BearerToken, accessTokenExpiresIn: Long, id: String) {
+
+trait WithAccessToken { val accessToken : OAuth2BearerToken }
+
+case class UserInfo(userEmail: String, accessToken: OAuth2BearerToken, accessTokenExpiresIn: Long, id: String) extends WithAccessToken {
   def getUniqueId = id
 }
+
+case class AccessToken(accessToken: OAuth2BearerToken) extends WithAccessToken
 
 // response from Google has other fields, but these are the ones we care about
 case class OAuthUser(sub: String, email: String)
