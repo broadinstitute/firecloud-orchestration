@@ -106,8 +106,9 @@ object ModelJsonProtocol {
 
   implicit object impQueryMap extends JsonFormat[QueryMap] {
     override def write(inputmap: QueryMap): JsValue = inputmap match {
-      case _ : ESMatchAll => inputmap.asInstanceOf[ESMatchAll].toJson
-      case _ : ESWildcard => inputmap.asInstanceOf[ESWildcard].toJson
+      case matchall : ESMatchAll => matchall.toJson
+      case wildcard : ESWildcard => wildcard.toJson
+      case _ => throw new SerializationException("unexpected QueryMap type")
     }
 
     override def read(json: JsValue): QueryMap = {
@@ -117,6 +118,27 @@ object ModelJsonProtocol {
         case "wildcard" => impESWildcard.read(json)
         case _ => throw DeserializationException("unexpected json type")
       }
+    }
+  }
+
+  implicit object impLibrarySearchParams extends RootJsonFormat[LibrarySearchParams] {
+    override def write(params: LibrarySearchParams): JsValue = jsonFormat3(LibrarySearchParams).write(params: LibrarySearchParams)
+
+    override def read(json: JsValue): LibrarySearchParams = {
+      val fields = json.asJsObject.fields
+      val from = fields.get("from") match {
+        case Some(x:JsNumber) => x.value.toInt
+        case _ => LibrarySearchConstants.defaultFrom
+      }
+      val size = fields.get("size") match {
+        case Some(x:JsNumber) => x.value.toInt
+        case _ => LibrarySearchConstants.defaultSize
+      }
+      val searchTerm = fields.get("searchTerm") match {
+        case Some(s:JsString) => Some(s.value)
+        case _ => None
+      }
+      LibrarySearchParams(searchTerm, from, size)
     }
   }
 
@@ -263,7 +285,6 @@ object ModelJsonProtocol {
   implicit val ESDetailFormat = jsonFormat1(ESDetail)
   implicit val ESDatasetPropertyFormat = jsonFormat1(ESDatasetProperty)
 
-  implicit val impLibrarySearch = jsonFormat3(LibrarySearchParams)
   implicit val impLibrarySearchResponse = jsonFormat3(LibrarySearchResponse)
 
   implicit val impESQuery = jsonFormat1(ESQuery)
