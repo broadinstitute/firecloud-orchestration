@@ -206,9 +206,73 @@ paths:
       operationId: listMethodRepositoryConfigurations
       summary: |
         List Method Repository configurations.
+# GAWB-1303
+#      description: |
+#        The configurations endpoint returns all configurations the requester
+#        has permissions to read that fit the filter criteria.
+#      parameters:
+#        - name: namespace
+#         in: query
+#          description: Namespace of method.
+#          required: false
+#          type: string
+#        - name: name
+#          in: query
+#          description: Name of method.
+#          required: false
+#          type: string
+#        - name: snapshotId
+#          in: query
+#          description: Snapshot ID of method.
+#          required: false
+#          type: number
+#        - name: synopsis
+#          in: query
+#          description: Synopsis of method.
+#          required: false
+#          type: string
+#        - name: documentation
+#          in: query
+#          description: Documentation of method.
+#          required: false
+#          type: string
+#        - name: owner
+#          in: query
+#          description: Owner of method.
+#          required: false
+#          type: string
+#        - name: payload
+#          in: query
+#          description: Payload of method in WDL.
+#          required: false
+#          type: string
+#        - name: entityType
+#          in: query
+#          description: Type of Method - Task or Workflow
+#          required: false
+#          type: string
+#        - name: excludedFields
+#          in: query
+#          description: Fields to exclude in JSON response.
+#          required: false
+#          type: string
+#        - name: includedFields
+#          in: query
+#          description: Fields to include in JSON response
+#          required: false
+#          type: string
       responses:
-        200:
-          description: List of Method Repository configurations.
+        '200':
+          description: An array of configurations.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ConfigurationResponse'
+        default:
+          description: Unexpected error
+          schema:
+            type: object
+            $ref: '#/definitions/Error'
 
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
@@ -2263,6 +2327,50 @@ definitions:
       - inputs
       - prerequisites
 
+  ConfigurationResponse:
+    type: object
+    properties:
+      method:
+        type: object
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      snapshotId:
+        type: integer
+        description: SnapshotId of AgoraEntity
+      synopsis:
+        type: string
+        description: Synopsis which contains AgoraEntity.
+        default: Quickly aligns short nucleotide sequences.
+      documentation:
+        type: string
+        description: Documentation of the AgoraEntity. MUST BE REQUESTED EXPLICITLY.
+        default: |
+          BWA is a software package for mapping low-divergent sequences
+          against a large reference genome, such as the human genome.
+          It consists of three algorithms: BWA-backtrack, BWA-SW and BWA-MEM.
+      createDate:
+        type: string
+        description: Timestamp of creation
+      url:
+        type: string
+        description: URL where resource can be accessed.
+      payload:
+        type: string
+        description: Payload of method -- must be in WDL format. MUST BE REQUESTED EXPLICITLY.
+        default: >
+          { "methodRepoMethod": { "methodNamespace": "YOUR_NAMESPACE",
+          "methodName": "BWA", "methodVersion": 1}}
+      entityType:
+        type: string
+        description: Type of the AgoraEntity -- Task or Workflow.
+        default: Task
+
   CopyConfigurationIngest:
     properties:
       configurationNamespace:
@@ -2431,6 +2539,16 @@ definitions:
       filteredPageCount:
         type: number
         description: count of pages after filtering; honors pageSize parameter
+
+  Error:
+    type: object
+    properties:
+      code:
+        type: integer
+        default: 500
+      message:
+        type: string
+        default: Internal Server Error
 
   ErrorReport:
     description: ''
