@@ -38,8 +38,8 @@ object Document {
 // classes to convert from json body and to json response
 case class LibrarySearchParams(
   searchTerm: Option[String],
-  from: Option[Int],
-  size: Option[Int]) {
+  from: Int = LibrarySearchConstants.defaultFrom,
+  size: Int = LibrarySearchConstants.defaultSize) {
 }
 
 object LibrarySearchConstants {

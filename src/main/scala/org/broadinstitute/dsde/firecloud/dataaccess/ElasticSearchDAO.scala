@@ -105,8 +105,8 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
       case Some(searchTerm:String) => ESQuery(new ESWildcard(searchTerm)).toJson.compactPrint
     }
     val searchReq = client.prepareSearch(indexName).setQuery(searchStr)
-      .setFrom(criteria.from.getOrElse(LibrarySearchConstants.defaultFrom))
-      .setSize(criteria.size.getOrElse(LibrarySearchConstants.defaultSize))
+      .setFrom(criteria.from)
+      .setSize(criteria.size)
     val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
 
     val sourceDocuments = searchResults.getHits.getHits.toList map { hit =>
