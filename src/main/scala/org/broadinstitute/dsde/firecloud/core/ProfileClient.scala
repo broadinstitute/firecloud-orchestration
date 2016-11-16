@@ -38,7 +38,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   import system.dispatcher
   val log = Logging(system, getClass)
 
-  // TODO(dmohs): This should be passed like other actors.
+  // GAWB-1286
   val temporaryThurloeDao = new HttpThurloeDAO
   val temporaryRawlsDao = new HttpRawlsDAO
 
@@ -184,7 +184,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                                       "Profile saved, but unexpected error registering user", e) }
   }
 
-  // TODO(dmohs): DRY
+  // GAWB-1314
   def sendNotification(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     notification: Notification) = {
     pipeline {
