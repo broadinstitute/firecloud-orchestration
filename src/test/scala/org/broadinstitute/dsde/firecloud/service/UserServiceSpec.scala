@@ -68,7 +68,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
       )
 
     workspaceServer
-      .when(request.withMethod("GET").withPath(RawlsDAO.refreshTokenDatePath))
+      .when(request.withMethod("GET").withPath(RawlsDAO.refreshTokenDateUrl))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)

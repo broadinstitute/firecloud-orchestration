@@ -36,7 +36,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   override def isDbGapAuthorized(accessToken: OAuth2BearerToken): Future[Boolean] = {
     val pipeline = addCredentials(accessToken) ~> sendReceive
-    pipeline(Get(RawlsDAO.pathToUrl(RawlsDAO.groupPath(FireCloudConfig.Nih.rawlsGroupName)))) map {
+    pipeline(Get(RawlsDAO.groupUrl(FireCloudConfig.Nih.rawlsGroupName))) map {
       response => response.status match {
         case OK => true
         case _ => false
@@ -92,7 +92,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
     val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
-    pipeline(Get(RawlsDAO.pathToUrl(RawlsDAO.refreshTokenDatePath))) map { response =>
+    pipeline(Get(RawlsDAO.refreshTokenDateUrl)) map { response =>
       response.status match {
         case OK =>
           Option(DateTime.parse(unmarshal[RawlsTokenDate].apply(response).refreshTokenUpdatedDate))
@@ -104,7 +104,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   override def saveRefreshToken(accessToken: String, refreshToken: String): Future[Unit] = {
     val pipeline = addCredentials(OAuth2BearerToken(accessToken)) ~> sendReceive
-    pipeline(Put(RawlsDAO.pathToUrl(RawlsDAO.refreshTokenPath), RawlsToken(refreshToken))) map
+    pipeline(Put(RawlsDAO.refreshTokenUrl, RawlsToken(refreshToken))) map
       { _ => () }
   }
 

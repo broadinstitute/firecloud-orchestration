@@ -14,11 +14,12 @@ import scala.concurrent.Future
   */
 
 object RawlsDAO {
-  lazy val refreshTokenPath = FireCloudConfig.Rawls.authPrefix + "/user/refreshToken"
-  lazy val refreshTokenDatePath = FireCloudConfig.Rawls.authPrefix + "/user/refreshTokenDate"
+  lazy val refreshTokenUrl = authedUrl("/user/refreshToken")
+  lazy val refreshTokenDateUrl = authedUrl("/user/refreshTokenDate")
 
-  def pathToUrl(path: String) = FireCloudConfig.Rawls.baseUrl + path
-  def groupPath(group: String): String = FireCloudConfig.Rawls.authPrefix + s"/user/group/$group"
+  def groupUrl(group: String): String = authedUrl(s"/user/group/$group")
+  private def authedUrl(path: String) = pathToUrl(FireCloudConfig.Rawls.authPrefix + path)
+  private def pathToUrl(path: String) = FireCloudConfig.Rawls.baseUrl + path
 }
 
 trait RawlsDAO extends LazyLogging {

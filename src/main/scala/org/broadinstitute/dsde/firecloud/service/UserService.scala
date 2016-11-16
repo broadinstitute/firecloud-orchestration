@@ -143,7 +143,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         }
       } ~
       path("profile" / "refreshTokenDate") {
-        passthrough(RawlsDAO.pathToUrl(RawlsDAO.refreshTokenDatePath), HttpMethods.GET)
+        passthrough(RawlsDAO.refreshTokenDateUrl, HttpMethods.GET)
       }
     } ~
     pathPrefix("register") {
