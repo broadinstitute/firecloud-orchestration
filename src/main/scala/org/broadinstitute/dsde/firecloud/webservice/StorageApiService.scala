@@ -11,11 +11,13 @@ trait StorageApiService extends HttpService with PerRequestCreator with FireClou
   private implicit val executionContext = actorRefFactory.dispatcher
 
   val storageRoutes: Route =
-    pathPrefix(ApiPrefix) {
-      // call Google's storage REST API for info about this object
-      path(Segment / Rest) { (bucket,obj) => requestContext =>
-        val extReq = Get( HttpGoogleServicesDAO.getObjectResourceUrl(bucket, obj.toString) )
-        externalHttpPerRequest(requestContext, extReq)
+    pathPrefix("api") {
+      pathPrefix(ApiPrefix) {
+        // call Google's storage REST API for info about this object
+        path(Segment / Rest) { (bucket, obj) => requestContext =>
+          val extReq = Get(HttpGoogleServicesDAO.getObjectResourceUrl(bucket, obj.toString))
+          externalHttpPerRequest(requestContext, extReq)
+        }
       }
     }
 }
