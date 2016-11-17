@@ -38,14 +38,8 @@ object Document {
 // classes to convert from json body and to json response
 case class LibrarySearchParams(
   searchTerm: Option[String],
-  from: Option[Int],
-  size: Option[Int]) {
-}
-
-object LibrarySearchConstants {
-  val defaultFrom = 0
-  val defaultSize = 10
-}
+  from: Int = 0,
+  size: Int = 10)
 
 case class LibrarySearchResponse(
   searchParams: LibrarySearchParams,
@@ -55,7 +49,8 @@ case class LibrarySearchResponse(
 
 
 // classes to create the ES queries in json format
-
+// {"query":{"match_all":{}}}"
+// {"query":{"wildcard":{"_all":"%s"}}}"
 trait QueryMap
 
 case class ESQuery(query: QueryMap)
@@ -67,6 +62,7 @@ case class ESMatchAll(match_all: Map[String,String]) extends QueryMap {
 case class ESWildcard(wildcard: ESWildcardSearchTerm) extends QueryMap {
   def this (term: String) = this(ESWildcardSearchTerm(term))
 }
+
 case class ESWildcardSearchTerm(_all: String)
 
 

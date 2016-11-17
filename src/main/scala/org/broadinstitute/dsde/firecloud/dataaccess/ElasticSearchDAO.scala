@@ -102,11 +102,12 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     val searchStr =
     criteria.searchTerm match {
       case None | Some("") => ESQuery(new ESMatchAll).toJson.compactPrint
-      case Some(searchTerm:String) => ESQuery(new ESWildcard(searchTerm)).toJson.compactPrint
+      case Some(searchTerm:String) => ESQuery(new ESWildcard(searchTerm.toLowerCase)).toJson.compactPrint
     }
+
     val searchReq = client.prepareSearch(indexName).setQuery(searchStr)
-      .setFrom(criteria.from.getOrElse(LibrarySearchConstants.defaultFrom))
-      .setSize(criteria.size.getOrElse(LibrarySearchConstants.defaultSize))
+      .setFrom(criteria.from)
+      .setSize(criteria.size)
     val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
 
     val sourceDocuments = searchResults.getHits.getHits.toList map { hit =>
