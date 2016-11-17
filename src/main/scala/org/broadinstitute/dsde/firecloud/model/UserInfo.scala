@@ -12,8 +12,11 @@ import spray.http.OAuth2BearerToken
  * use those in orchestration. However, they're quite lightweight, and I've left them in to keep diffs between
  * orchestration and rawls as clean as possible.
  *
+  * Amended 11/16/2016:
+  *  Added trait WithAccessToken, which is extended by the existing UserInfo class as well as a new AccessToken class
+  *  This is so that we can use AccessToken for cookies we get from the browser, which do not come with the fields in
+  *  UserInfo.
  */
-
 trait WithAccessToken { val accessToken : OAuth2BearerToken }
 
 case class UserInfo(userEmail: String, accessToken: OAuth2BearerToken, accessTokenExpiresIn: Long, id: String) extends WithAccessToken {

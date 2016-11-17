@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
-import org.broadinstitute.dsde.firecloud.model.{ErrorReport, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{ErrorReport, WithAccessToken}
 import spray.client.pipelining._
 import spray.http.{HttpRequest, HttpResponse}
 import spray.httpx.unmarshalling._

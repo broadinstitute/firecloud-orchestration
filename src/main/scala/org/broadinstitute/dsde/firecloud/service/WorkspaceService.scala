@@ -34,15 +34,15 @@ object WorkspaceService {
   case class ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) extends WorkspaceServiceMessage
 
 
-  def props(workspaceServiceConstructor: WithAccessToken => WorkspaceService, userInfo: WithAccessToken): Props = {
-    Props(workspaceServiceConstructor(userInfo))
+  def props(workspaceServiceConstructor: WithAccessToken => WorkspaceService, userToken: WithAccessToken): Props = {
+    Props(workspaceServiceConstructor(userToken))
   }
 
-  def constructor(app: Application)(userInfo: WithAccessToken)(implicit executionContext: ExecutionContext) =
-    new WorkspaceService(userInfo, app.rawlsDAO, app.thurloeDAO)
+  def constructor(app: Application)(userToken: WithAccessToken)(implicit executionContext: ExecutionContext) =
+    new WorkspaceService(userToken, app.rawlsDAO, app.thurloeDAO)
 }
 
-class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with AttributeSupport with TSVFileSupport {
+class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with AttributeSupport with TSVFileSupport {
 
   implicit val system = context.system
 
@@ -50,7 +50,7 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
 
   val log = Logging(system, getClass)
 
-  implicit val userInfo = argUserInfo
+  implicit val userToken = argUserToken
 
   import WorkspaceService._
 
@@ -96,39 +96,40 @@ class WorkspaceService(protected val argUserInfo: WithAccessToken, val rawlsDAO:
   }
 
 
-    def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
-      rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
-        val attributes = workspaceResponse.workspace.get.attributes.filterKeys(_ != AttributeName("default", "description"))
-        val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
-        val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(impPlainAttributeFormat.write(attValue)) }).mkString("\t")
-        RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
-          HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
-          HttpHeaders.`Content-Type`(`text/plain`))
+  def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
+      val attributes = workspaceResponse.workspace.get.attributes.filterKeys(_ != AttributeName("default", "description"))
+      val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
+      val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(impPlainAttributeFormat.write(attValue)) }).mkString("\t")
+      RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
+        HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
+        HttpHeaders.`Content-Type`(`text/plain`))
+    }
+  }
+
+  def importAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
+    withTSVFile(tsvString) { tsv =>
+      tsv.firstColumnHeader.split(":")(0) match {
+        case "workspace" =>
+          importWorkspaceAttributeTSV(workspaceNamespace, workspaceName, tsv)
+        case _ =>
+          Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid TSV. First column header should start with \"workspace\""))
       }
     }
+  }
 
-    def importAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
-      withTSVFile(tsvString) { tsv =>
-        tsv.firstColumnHeader.split(":")(0) match {
-          case "workspace" =>
-            importWorkspaceAttributeTSV(workspaceNamespace, workspaceName, tsv)
-          case _ =>
-            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid first column header should start with \"workspace\""))
-        }
-      }
-    }
-
-    private def importWorkspaceAttributeTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
-      checkNumberOfRows(tsv, 2) {
-        checkFirstRowDistinct(tsv) {
-          rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-            Try(getWorkspaceAttributeCalls(tsv)) match {
-              case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
-                "One or more of your values are not in the correct format"))
-              case Success(attributeCalls) => rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attributeCalls) map (RequestComplete(_))
-            }
+  private def importWorkspaceAttributeTSV(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile): Future[PerRequestMessage] = {
+    checkNumberOfRows(tsv, 2) {
+      checkFirstRowDistinct(tsv) {
+        rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
+          Try(getWorkspaceAttributeCalls(tsv)) match {
+            case Failure(regret) => Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
+              "One or more of your values are not in the correct format"))
+            case Success(attributeCalls) => rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attributeCalls) map (RequestComplete(_))
           }
         }
       }
     }
+  }
+
 }

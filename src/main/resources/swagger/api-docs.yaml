@@ -1105,7 +1105,7 @@ paths:
           schema:
             type: file
         404:
-          description: Workspace or entity type does not exist
+          description: Workspace does not exist
         500:
           description: Internal Server Error
 
@@ -1797,7 +1797,7 @@ paths:
           schema:
             type: file
         404:
-          description: Workspace or entity type does not exist
+          description: Workspace does not exist
         500:
           description: Internal Server Error
       security: []

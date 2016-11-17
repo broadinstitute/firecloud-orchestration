@@ -184,6 +184,8 @@ object MockTSVStrings {
 
   val tooFewRowsWorkspaceAttributes = List(
     List("workspace:a5", "a6").mkString("\t")).mkString("\n")
+
+
 }
 
 object MockTSVLoadFiles {
@@ -198,6 +200,14 @@ object MockTSVLoadFiles {
     Seq(
       Seq("woop", "de", "doo"),
       Seq("hip", "hip", "hooray")))
+
+  val validWorkspaceAttributes = TSVLoadFile("workspace", Seq("a1", "a2", "a3"), Seq(Seq("v1", "2", "[1,2,3]")))
+  val validOneWorkspaceAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("v1")))
+  val validEmptyStrWSAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("")))
+  val validRemoveWSAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("__DELETE__")))
+  val validRemoveAddAttribute = TSVLoadFile("workspace", Seq("a1", "a2"), Seq(Seq("__DELETE__", "v2")))
+
+
 }
 
 object MockTSVFormData {

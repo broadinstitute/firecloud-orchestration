@@ -14,7 +14,7 @@ import spray.json._
 /**
   * Created by ansingh on 11/14/16.
   */
-trait TSVFileSupport extends Actor {
+trait TSVFileSupport {
 
 
   /**
@@ -99,6 +99,9 @@ trait TSVFileSupport extends Actor {
     }
   }
 
+  /*
+  Takes a TSVLoadFile for **workspace attributes** and turns it into sequence of AttributeUpdateOperation
+   */
   def getWorkspaceAttributeCalls(tsv: TSVLoadFile): Seq[AttributeUpdateOperation] = {
     val attributePairs = (Seq(tsv.headers.head.stripPrefix("workspace:")) ++ tsv.headers.tail).zip(tsv.tsvData.head)
     attributePairs.map { case (name, value) =>
@@ -134,7 +137,6 @@ trait TSVFileSupport extends Actor {
         }
       }
     }
-    ops
 
     //If we're upserting a collection type entity, add an AddListMember( members_attr, null ) operation.
     //This will force the members_attr attribute to exist if it's being created for the first time.
