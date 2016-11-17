@@ -33,10 +33,10 @@ case class RawlsWorkspaceCreate(
 }
 
 case class RawlsWorkspaceResponse(
-  accessLevel: Option[String] = None,
-  workspace: Option[RawlsWorkspace] = None,
-  workspaceSubmissionStats: Option[SubmissionStats] = None,
-  owners: Option[List[String]] = None)
+  accessLevel: String,
+  workspace: RawlsWorkspace,
+  workspaceSubmissionStats: SubmissionStats,
+  owners: List[String])
 
 case class RawlsWorkspace(
   workspaceId: String,
@@ -51,6 +51,8 @@ case class RawlsWorkspace(
   accessLevels: Map[String, Map[String, String]],
   realm: Option[Map[String, String]])
 
+case class RawlsEntity(name: String, entityType: String, attributes: AttributeMap)
+
 case class SubmissionStats(
   lastSuccessDate: Option[String] = None,
   lastFailureDate: Option[String] = None,
@@ -62,7 +64,7 @@ case class UIWorkspaceResponse(
   workspaceSubmissionStats: Option[SubmissionStats] = None,
   owners: Option[List[String]] = None) {
   def this(rwr: RawlsWorkspaceResponse) =
-    this(rwr.accessLevel, rwr.workspace.map(new UIWorkspace(_)), rwr.workspaceSubmissionStats, rwr.owners)
+    this(Option(rwr.accessLevel), Option(new UIWorkspace(rwr.workspace)), Option(rwr.workspaceSubmissionStats), Option(rwr.owners))
 }
 
 case class UIWorkspace(

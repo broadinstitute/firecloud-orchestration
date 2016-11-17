@@ -1,8 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -13,9 +13,11 @@ import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
-class EntitiesWithTypeServiceSpec extends ServiceSpec with EntityService {
+class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityService {
 
   def actorRefFactory = system
+
+  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
 
   // Due to the large volume of service specific test cases, generate them here to prevent the
   // extra clutter
@@ -24,18 +26,18 @@ class EntitiesWithTypeServiceSpec extends ServiceSpec with EntityService {
   val validFireCloudPath = workspacesBase + "/broad-dsde-dev/valid/"
   val invalidFireCloudPath = workspacesBase + "/broad-dsde-dev/invalid/"
   val sampleAtts = Map(
-    "sample_type" -> "Blood".toJson,
-    "ref_fasta" -> "gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta".toJson,
-    "ref_dict" -> "gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.dict".toJson,
-    "participant_id" -> """{"entityType":"participant","entityName":"subject_HCC1143"}""".toJson
+    AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
+    AttributeName.withDefaultNS("ref_fasta") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta"),
+    AttributeName.withDefaultNS("ref_dict") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.dict"),
+    AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "subject_HCC1143")
   )
-  val validSampleEntities = List(EntityWithType("sample_01", "sample", Some(sampleAtts)))
+  val validSampleEntities = List(RawlsEntity("sample_01", "sample", sampleAtts))
   val participantAtts = Map(
-    "tumor_platform" -> "illumina".toJson,
-    "ref_fasta" -> "gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta".toJson,
-    "tumor_strip_unpaired" -> "TRUE".toJson
+    AttributeName.withDefaultNS("tumor_platform") -> AttributeString("illumina"),
+    AttributeName.withDefaultNS("ref_fasta") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta"),
+    AttributeName.withDefaultNS("tumor_strip_unpaired") -> AttributeString("TRUE")
   )
-  val validParticipants = List(EntityWithType("subject_HCC1143", "participant", Some(participantAtts)))
+  val validParticipants = List(RawlsEntity("subject_HCC1143", "participant", participantAtts))
 
   override def beforeAll(): Unit = {
 
@@ -98,9 +100,9 @@ class EntitiesWithTypeServiceSpec extends ServiceSpec with EntityService {
     "when calling GET on a valid entities_with_type path" - {
       "valid list of entity types are returned" in {
         val path = validFireCloudPath + "entities_with_type"
-        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(OK)
-          val entities = responseAs[List[EntityWithType]]
+          val entities = responseAs[List[RawlsEntity]]
           entities shouldNot be(empty)
         }
       }
@@ -109,7 +111,7 @@ class EntitiesWithTypeServiceSpec extends ServiceSpec with EntityService {
     "when calling GET on an invalid entities_with_type path" - {
       "server error is returned" in {
         val path = invalidFireCloudPath + "entities_with_type"
-        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(InternalServerError)
           errorReportCheck("FireCloud", InternalServerError)
         }

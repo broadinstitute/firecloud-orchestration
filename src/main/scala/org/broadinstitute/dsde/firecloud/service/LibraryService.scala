@@ -78,7 +78,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
             rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
               // this is technically vulnerable to a race condition in which the workspace attributes have changed
               // between the time we retrieved them and here, where we update them.
-              val allOperations = generateAttributeOperations(workspaceResponse.workspace.get.attributes, userAttrs,
+              val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
                 k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
               rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map (RequestComplete(_))
             }
