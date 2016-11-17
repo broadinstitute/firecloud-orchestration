@@ -15,7 +15,7 @@ trait RawlsDAO extends LazyLogging {
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
-  lazy val rawlsAdminWorkspaces = FireCloudConfig.Rawls.authUrl + "/admin/workspaces"
+  lazy val rawlsAdminWorkspaces = FireCloudConfig.Rawls.authUrl + "/admin/workspaces?attributeName=library:published&valueBoolean=true"
   lazy val rawlsWorkspaceACLUrl = FireCloudConfig.Rawls.workspacesUrl + "/%s/%s/acl"
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]

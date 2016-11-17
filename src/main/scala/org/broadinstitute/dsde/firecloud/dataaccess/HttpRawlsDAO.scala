@@ -56,27 +56,15 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[Seq[WorkspaceACLUpdate]] =
     requestToObject[Seq[WorkspaceACLUpdate]]( Patch(patchWorkspaceAclUrl(ns, name), aclUpdates) )
 
-  // TODO: use rawls query-by-attribute once that exists
   override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = {
     val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
-
-    def isPublished(rw:RawlsWorkspace) = {
-      rw.attributes.get(LibraryService.publishedFlag) match {
-        case Some(AttributeBoolean(true)) => true
-        case _ => false
-      }
-    }
 
     val allPublishedPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> sendReceive
     allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
       response.entity.as[Seq[RawlsWorkspace]] match {
         case Right(srw) =>
-          logger.info("admin workspace list got: " + srw.length + " raw workspaces")
-          val published = srw.collect {
-            case rw:RawlsWorkspace if isPublished(rw) => rw
-          }
-          logger.info("admin workspace list collected: " + published.length + " published workspaces")
-          published
+          logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
+          srw
         case Left(error) =>
           logger.warn("Could not unmarshal: " + error.toString)
           throw new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "Could not unmarshal: " + error.toString))
