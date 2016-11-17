@@ -1139,6 +1139,10 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
         - $ref: '#/parameters/entityTypeParam'
+        - name: attributeNames
+          description: comma separated list of ordered attribute names to be in downloaded tsv
+          type: string
+          in: query
       responses:
         200:
           description: Workspace entities of specified type in TSV format
@@ -1833,6 +1837,10 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
         - $ref: '#/parameters/entityTypeParam'
+        - name: attributeNames
+          description: comma separated list of ordered attribute names to be in downloaded tsv
+          type: string
+          in: query
       responses:
         200:
           description: Workspace entities of specified type in TSV format
