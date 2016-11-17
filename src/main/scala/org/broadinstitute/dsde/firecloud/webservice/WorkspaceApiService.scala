@@ -187,6 +187,13 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
           path("unlock") {
             requireUserInfo() { _ =>
               passthrough(workspacePath + "/unlock", HttpMethods.PUT)
+            } ~
+            path("storageCostEstimate") {
+              get { requestContext =>
+                perRequest(requestContext,
+                  WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                  WorkspaceService.GetStorageCostEstimate(workspaceNamespace, workspaceName))
+              }
             }
           }
         }
