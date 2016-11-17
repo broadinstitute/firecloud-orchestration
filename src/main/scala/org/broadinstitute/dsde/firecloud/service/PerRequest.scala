@@ -87,8 +87,8 @@ trait PerRequest extends Actor {
     import spray.httpx.SprayJsonSupport._
     e match {
       case e: FireCloudExceptionWithErrorReport =>
-        complete(HttpResponseWithErrorReport(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport.message, e))
-      case _ => complete(ErrorReport(InternalServerError, e))
+        complete((e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport))
+      case _ => complete((InternalServerError, ErrorReport(InternalServerError, e)))
     }
   }
 }

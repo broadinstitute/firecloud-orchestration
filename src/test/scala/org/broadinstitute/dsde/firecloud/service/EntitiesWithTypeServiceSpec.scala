@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -13,9 +14,11 @@ import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
-class EntitiesWithTypeServiceSpec extends ServiceSpec with EntityService {
+class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityService {
 
   def actorRefFactory = system
+
+  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
 
   // Due to the large volume of service specific test cases, generate them here to prevent the
   // extra clutter
@@ -98,7 +101,7 @@ class EntitiesWithTypeServiceSpec extends ServiceSpec with EntityService {
     "when calling GET on a valid entities_with_type path" - {
       "valid list of entity types are returned" in {
         val path = validFireCloudPath + "entities_with_type"
-        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(OK)
           val entities = responseAs[List[EntityWithType]]
           entities shouldNot be(empty)
@@ -109,7 +112,7 @@ class EntitiesWithTypeServiceSpec extends ServiceSpec with EntityService {
     "when calling GET on an invalid entities_with_type path" - {
       "server error is returned" in {
         val path = invalidFireCloudPath + "entities_with_type"
-        Get(path) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(InternalServerError)
           errorReportCheck("FireCloud", InternalServerError)
         }

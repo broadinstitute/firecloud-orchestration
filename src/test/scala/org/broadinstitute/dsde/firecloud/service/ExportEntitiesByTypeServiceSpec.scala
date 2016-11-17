@@ -4,6 +4,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -11,9 +12,11 @@ import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
+class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with EntityService {
 
   def actorRefFactory = system
+
+  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
 
   var workspaceServer: ClientAndServer = _
   val validFireCloudEntitiesSampleTSVPath = "/workspaces/broad-dsde-dev/valid/entities/sample/tsv"
@@ -74,7 +77,7 @@ class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
 
     "when calling GET on exporting a valid entity type" - {
       "OK response is returned" in {
-        Get(validFireCloudEntitiesSampleTSVPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(validFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(OK)
           response.entity shouldNot be(empty)
         }
@@ -83,7 +86,7 @@ class ExportEntitiesByTypeServiceSpec extends ServiceSpec with EntityService {
 
     "when calling GET on exporting an invalid entity type" - {
       "NotFound response is returned" in {
-        Get(invalidFireCloudEntitiesSampleTSVPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(invalidFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(NotFound)
           errorReportCheck("FireCloud", NotFound)
         }

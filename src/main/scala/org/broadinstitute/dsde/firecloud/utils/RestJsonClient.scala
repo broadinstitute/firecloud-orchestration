@@ -4,7 +4,10 @@ import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.{ErrorReport, WithAccessToken}
 import spray.client.pipelining._
+import spray.http.HttpEncodings._
+import spray.http.HttpHeaders.`Accept-Encoding`
 import spray.http.{HttpRequest, HttpResponse}
+import spray.httpx.encoding.Gzip
 import spray.httpx.unmarshalling._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,13 +20,17 @@ trait RestJsonClient {
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
 
-  def userAuthedRequest(req: HttpRequest)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
-    val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
+  def userAuthedRequest(req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
+    val pipeline = if (compressed) {
+      addCredentials(userInfo.accessToken) ~> addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
+    } else {
+      addCredentials(userInfo.accessToken) ~> sendReceive
+    }
     pipeline(req)
   }
 
-  def requestToObject[T](req: HttpRequest)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
-    userAuthedRequest( req ) map {response =>
+  def requestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
+    userAuthedRequest( req, compressed ) map {response =>
       response.status match {
         case s if s.isSuccess =>
           response.entity.as[T] match {

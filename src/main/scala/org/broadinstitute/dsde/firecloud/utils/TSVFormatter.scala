@@ -11,9 +11,9 @@ import spray.json.JsValue
 
 object TSVFormatter {
 
-  def makeMembershipTsvString(entities: List[EntityWithType], entityType: String, collectionMemberType: String): String = {
+  def makeMembershipTsvString(entities: Seq[EntityWithType], entityType: String, collectionMemberType: String): String = {
     val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq("membership:" + entityType + "_id", entityType.replace("_set", "_id"))
-    val rows: List[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
+    val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
       entity =>
         entity.attributes.getOrElse(Map.empty).filter {
           // To make the membership file, we need the array of elements that correspond to the set type.
@@ -38,7 +38,7 @@ object TSVFormatter {
     exportToString(headers, rows.toIndexedSeq)
   }
 
-  def makeEntityTsvString(entities: List[EntityWithType], entityType: String, requestedHeaders: Option[IndexedSeq[String]]): String = {
+  def makeEntityTsvString(entities: Seq [EntityWithType], entityType: String, requestedHeaders: Option[IndexedSeq[String]]): String = {
     val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeExportRenamingMap(entityType).getOrElse(Map.empty[String, String])
     val entityHeader = "entity:" + entityType + "_id"
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
@@ -64,7 +64,7 @@ object TSVFormatter {
     exportToString(headers, rows)
   }
 
-  def defaultHeaders(entityType: String, filteredEntities: List[EntityWithType], headerRenamingMap: Map[String, String]) = {
+  def defaultHeaders(entityType: String, filteredEntities: Seq[EntityWithType], headerRenamingMap: Map[String, String]) = {
     val attributeNames = filteredEntities.collect {
       case EntityWithType(_, `entityType`, attributes) => attributes.getOrElse(Map.empty).keySet
     }.flatten.distinct
@@ -84,7 +84,7 @@ object TSVFormatter {
     * @param entities Initial list of EntityWithType
     * @return new list of EntityWithType
     */
-  private def filterAttributeFromEntities(entities: List[EntityWithType], attributeName: String): List[EntityWithType] = {
+  private def filterAttributeFromEntities(entities: Seq[EntityWithType], attributeName: String): Seq[EntityWithType] = {
     entities map {
       entity =>
         val attributes = entity.attributes.getOrElse(Map.empty) filterNot {
