@@ -1529,6 +1529,23 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
+    get:
+      tags:
+      - Workspaces
+      operationId: getStorageCostEstimate
+      summary: Calculate an estimate of the monthly storage cost for the workspace bucket
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Storage cost estimate
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
       tags:

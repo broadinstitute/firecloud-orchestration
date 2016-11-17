@@ -14,6 +14,7 @@ import org.scalatest.BeforeAndAfterEach
 import spray.http.{MediaTypes, HttpEntity, HttpMethods}
 
 import spray.http.StatusCodes._
+import spray.httpx.SprayJsonSupport._
 import spray.json._
 
 class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
@@ -42,6 +43,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   private final val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   private final val tsvImportPath = "/" + workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace.get, workspace.name.get)
+  private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
@@ -660,4 +662,25 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
   }
 
+  "Workspace storage cost estimate tests" - {
+    "when calling any method other than GET on workspaces/*/*/storageCostEstimate" - {
+      "should return 405 Method Not Allowed for anything other than GET" in {
+        List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.PATCH, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)(s"/$storageCostEstimatePath") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+              status should be (MethodNotAllowed)
+            }
+        }
+      }
+    }
+
+    "when calling GET on workspaces/*/*/storageCostEstimate" - {
+      "should return 200 with result for good request" in {
+        Get(s"/$storageCostEstimatePath") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should be (OK)
+          responseAs[WorkspaceStorageCostEstimate].estimate should be ("$2.56")
+        }
+      }
+    }
+  }
 }

@@ -145,3 +145,7 @@ case class RawlsGroupMemberList(
   subGroupEmails: Option[Seq[String]] = None,
   userSubjectIds: Option[Seq[String]] = None,
   subGroupNames: Option[Seq[String]] = None)
+
+case class RawlsBucketUsageResponse(usageInBytes: BigInt)
+
+case class WorkspaceStorageCostEstimate(estimate: String)
