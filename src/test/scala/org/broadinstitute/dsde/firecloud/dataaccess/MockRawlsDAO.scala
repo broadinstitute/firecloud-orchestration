@@ -1,7 +1,10 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
+import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
-import org.broadinstitute.dsde.firecloud.model.{WorkspaceACLUpdate, RawlsWorkspace, RawlsWorkspaceResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model._
+import spray.http.StatusCodes
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -21,15 +24,19 @@ class MockRawlsDAO  extends RawlsDAO {
 
   override def getWorkspace(ns: String, name: String)(implicit userInfo: UserInfo): Future[RawlsWorkspaceResponse] = {
     ns match {
-      case "projectowner" => Future(RawlsWorkspaceResponse(Some("PROJECT_OWNER")))
-      case "reader" => Future(RawlsWorkspaceResponse(Some("READER")))
-      case _ => Future(RawlsWorkspaceResponse(Some("OWNER")))
+      case "projectowner" => Future(RawlsWorkspaceResponse("PROJECT_OWNER", newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
+      case "reader" => Future(RawlsWorkspaceResponse("READER", newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
+      case _ => Future(RawlsWorkspaceResponse("OWNER", newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
     }
 
   }
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userInfo: UserInfo): Future[RawlsWorkspace] = {
-    Future(new RawlsWorkspace(
+    Future.successful(newWorkspace)
+  }
+
+  private def newWorkspace: RawlsWorkspace = {
+    new RawlsWorkspace(
       workspaceId = "workspaceId",
       namespace = "namespace",
       name = "name",
@@ -40,7 +47,7 @@ class MockRawlsDAO  extends RawlsDAO {
       attributes = Map(),
       bucketName = "bucketName",
       accessLevels = Map(),
-      realm = None))
+      realm = None)
   }
 
   override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = Future(Seq.empty[RawlsWorkspace])
@@ -49,4 +56,11 @@ class MockRawlsDAO  extends RawlsDAO {
     Future(aclUpdates)
   }
 
+  override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[EntityWithType]] = {
+    if (workspaceName == "invalid") {
+      Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "not found")))
+    } else {
+      Future.successful(Seq.empty)
+    }
+  }
 }

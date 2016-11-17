@@ -1,20 +1,16 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.Actor
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, PerRequestCreator}
 import spray.routing._
 
-class StorageServiceActor extends Actor with StorageService {
-  def actorRefFactory = context
-  def receive = runRoute(routes)
-}
-
-trait StorageService extends HttpService with PerRequestCreator with FireCloudDirectives {
+trait StorageApiService extends HttpService with PerRequestCreator with FireCloudDirectives {
 
   private final val ApiPrefix = "storage"
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  val routes: Route =
+  val storageRoutes: Route =
     pathPrefix(ApiPrefix) {
       // call Google's storage REST API for info about this object
       path(Segment / Rest) { (bucket,obj) => requestContext =>

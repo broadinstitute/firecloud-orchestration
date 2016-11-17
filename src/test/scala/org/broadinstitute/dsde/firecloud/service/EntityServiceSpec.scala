@@ -15,9 +15,11 @@ import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
-class EntityServiceSpec extends ServiceSpec with EntityService {
+class EntityServiceSpec extends BaseServiceSpec with EntityService {
 
   def actorRefFactory = system
+
+  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
 
   var workspaceServer: ClientAndServer = _
   val validFireCloudEntitiesPath = "/workspaces/broad-dsde-dev/valid/entities"
@@ -163,7 +165,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling GET on valid entity type" - {
       "OK response is returned" in {
-        Get(validFireCloudEntitiesSamplePath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(validFireCloudEntitiesSamplePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(OK)
           response.entity shouldNot be(empty)
         }
@@ -172,7 +174,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling GET on valid entities" - {
       "OK response is returned" in {
-        Get(validFireCloudEntitiesPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(validFireCloudEntitiesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(OK)
         }
       }
@@ -180,7 +182,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling GET on valid entityQuery with no params" - {
       "OK response is returned" in {
-        Get(validFireCloudEntityQuerySamplePath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(validFireCloudEntityQuerySamplePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(OK)
         }
       }
@@ -188,7 +190,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling GET on valid entityQuery with params" - {
       "OK response is returned" in {
-        Get(validFireCloudEntityQuerySamplePath + "?page=1&pageSize=1") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(validFireCloudEntityQuerySamplePath + "?page=1&pageSize=1") ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(OK)
         }
       }
@@ -196,7 +198,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling POST on valid copy entities" - {
       "Created response is returned" in {
-        Post(validFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post(validFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(Created)
         }
       }
@@ -204,7 +206,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling POST on invalid copy entities" - {
       "NotFound response is returned" in {
-        Post(validFireCloudEntitiesCopyPath, invalidEntityCopy) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post(validFireCloudEntitiesCopyPath, invalidEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
@@ -213,7 +215,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling GET on an entity type in an unknown workspace" - {
       "NotFound response is returned with an ErrorReport" in {
-        Get(invalidFireCloudEntitiesSamplePath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(invalidFireCloudEntitiesSamplePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
@@ -222,7 +224,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling GET on entities in an unknown workspace" - {
       "NotFound response is returned with an ErrorReport" in {
-        Get(invalidFireCloudEntitiesPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(invalidFireCloudEntitiesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
@@ -231,7 +233,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling POST on copy entities in an unknown workspace" - {
       "NotFound response is returned with an ErrorReport" in {
-        Post(invalidFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post(invalidFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
@@ -240,7 +242,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling bulk entity delete" - {
       "response is OK" ignore {
-        Post(validFireCloudEntitiesBulkDeletePath, validEntityDelete) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post(validFireCloudEntitiesBulkDeletePath, validEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(OK)
         }
       }
@@ -248,7 +250,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling bulk entity delete with an invalid payload" - {
       "BadRequest is returned" ignore {
-        Post(validFireCloudEntitiesBulkDeletePath, invalidEntityDelete) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post(validFireCloudEntitiesBulkDeletePath, invalidEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(BadRequest)
         }
       }
@@ -256,7 +258,7 @@ class EntityServiceSpec extends ServiceSpec with EntityService {
 
     "when calling bulk entity delete and expecting mixed success/fail" - {
       "InternalServerError is returned with an ErrorReport" ignore {
-        Post(validFireCloudEntitiesBulkDeletePath, mixedFailEntityDelete) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post(validFireCloudEntitiesBulkDeletePath, mixedFailEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(InternalServerError)
           errorReportCheck("FireCloud", InternalServerError)
         }
