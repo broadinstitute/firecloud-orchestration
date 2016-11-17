@@ -22,9 +22,8 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityService {
   // Due to the large volume of service specific test cases, generate them here to prevent the
   // extra clutter
   var workspaceServer: ClientAndServer = _
-  val workspacesBase = FireCloudConfig.Rawls.workspacesPath
-  val validFireCloudPath = workspacesBase + "/broad-dsde-dev/valid/"
-  val invalidFireCloudPath = workspacesBase + "/broad-dsde-dev/invalid/"
+  val validFireCloudPath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath + "/broad-dsde-dev/valid/"
+  val invalidFireCloudPath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath + "/broad-dsde-dev/invalid/"
   val sampleAtts = Map(
     AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
     AttributeName.withDefaultNS("ref_fasta") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta"),
@@ -46,21 +45,21 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityService {
     // Valid cases
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + validFireCloudPath + "entities").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(validFireCloudPath + "entities").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(Map("participant"->1, "sample"->1).toJson.compactPrint).withStatusCode(OK.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + validFireCloudPath + "entities/sample").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(validFireCloudPath + "entities/sample").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(validSampleEntities.toJson.compactPrint).withStatusCode(OK.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + validFireCloudPath + "entities/participant").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(validFireCloudPath + "entities/participant").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(validParticipants.toJson.compactPrint).withStatusCode(OK.intValue)
@@ -69,21 +68,21 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityService {
     // Invalid cases:
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + invalidFireCloudPath + "entities").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(invalidFireCloudPath + "entities").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(List("participant", "sample").toJson.compactPrint).withStatusCode(OK.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + invalidFireCloudPath + "entities/sample").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(invalidFireCloudPath + "entities/sample").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody("Error").withStatusCode(InternalServerError.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(FireCloudConfig.Rawls.authPrefix + invalidFireCloudPath + "entities/participant").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(invalidFireCloudPath + "entities/participant").withHeader(MockUtils.authHeader))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody("Error").withStatusCode(InternalServerError.intValue)

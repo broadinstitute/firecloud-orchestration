@@ -18,8 +18,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with EntityService
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
 
   var workspaceServer: ClientAndServer = _
-  val validFireCloudEntitiesSampleTSVPath = "/workspaces/broad-dsde-dev/valid/entities/sample/tsv"
-  val invalidFireCloudEntitiesSampleTSVPath = "/workspaces/broad-dsde-dev/invalid/entities/sample/tsv"
+  val validFireCloudEntitiesSampleTSVPath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath + "/broad-dsde-dev/valid/entities/sample/tsv"
+  val invalidFireCloudEntitiesSampleTSVPath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath + "/broad-dsde-dev/invalid/entities/sample/tsv"
 
   val sampleAtts = {
     Map(

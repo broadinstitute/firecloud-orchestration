@@ -21,14 +21,15 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
 
   var workspaceServer: ClientAndServer = _
-  val validFireCloudEntitiesPath = "/workspaces/broad-dsde-dev/valid/entities"
-  val validFireCloudEntitiesSamplePath = "/workspaces/broad-dsde-dev/valid/entities/sample"
-  val validFireCloudEntityQuerySamplePath = "/workspaces/broad-dsde-dev/valid/entityQuery/sample"
-  val validFireCloudEntitiesCopyPath = "/workspaces/broad-dsde-dev/valid/entities/copy"
-  val validFireCloudEntitiesBulkDeletePath = "/workspaces/broad-dsde-dev/valid/entities/delete"
-  val invalidFireCloudEntitiesPath = "/workspaces/broad-dsde-dev/invalid/entities"
-  val invalidFireCloudEntitiesSamplePath = "/workspaces/broad-dsde-dev/invalid/entities/sample"
-  val invalidFireCloudEntitiesCopyPath = "/workspaces/broad-dsde-dev/invalid/entities/copy"
+  val apiPrefix = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
+  val validFireCloudEntitiesPath = apiPrefix + "/broad-dsde-dev/valid/entities"
+  val validFireCloudEntitiesSamplePath = apiPrefix + "/broad-dsde-dev/valid/entities/sample"
+  val validFireCloudEntityQuerySamplePath = apiPrefix + "/broad-dsde-dev/valid/entityQuery/sample"
+  val validFireCloudEntitiesCopyPath = apiPrefix + "/broad-dsde-dev/valid/entities/copy"
+  val validFireCloudEntitiesBulkDeletePath = apiPrefix + "/broad-dsde-dev/valid/entities/delete"
+  val invalidFireCloudEntitiesPath = apiPrefix + "/broad-dsde-dev/invalid/entities"
+  val invalidFireCloudEntitiesSamplePath = apiPrefix + "/broad-dsde-dev/invalid/entities/sample"
+  val invalidFireCloudEntitiesCopyPath = apiPrefix + "/broad-dsde-dev/invalid/entities/copy"
 
   val validEntityCopy = EntityCopyDefinition(
     sourceWorkspace = WorkspaceName(namespace=Some("broad-dsde-dev"), name=Some("other-ws")),
