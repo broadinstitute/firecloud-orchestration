@@ -42,8 +42,14 @@ object TSVFormatter {
       case _ => entities
     }
 
-    // entity id always needs to be first and is handled differently so remove it from requestedHeaders
-    val requestedHeadersSansId = requestedHeaders.map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
+
+    val requestedHeadersSansId = requestedHeaders.
+      // remove empty strings
+      map(_.filter(_.length > 0)).
+      // handle empty requested headers as no requested headers
+      flatMap(rh => if (rh.isEmpty) None else Option(rh)).
+      // entity id always needs to be first and is handled differently so remove it from requestedHeaders
+      map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
 
     val headers: IndexedSeq[String] = entityHeader +: requestedHeadersSansId.getOrElse(defaultHeaders(entityType, filteredEntities, headerRenamingMap))
     val rows: IndexedSeq[IndexedSeq[String]] = filteredEntities.filter { _.entityType == entityType }

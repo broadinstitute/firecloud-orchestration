@@ -56,6 +56,14 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         results should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant_id")
         results.head should be ("entity:sample_id")
 
+        val results2 = testEntityDataSet("sample", sampleList, Option(IndexedSeq.empty))
+        results2 should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant_id")
+        results2.head should be ("entity:sample_id")
+
+        val results3 = testEntityDataSet("sample", sampleList, Option(IndexedSeq("")))
+        results3 should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant_id")
+        results3.head should be ("entity:sample_id")
+
         Seq(
           IndexedSeq("header_2", "does_not_exist", "header_1"),
           IndexedSeq("header_2", "sample_id", "header_1"),
