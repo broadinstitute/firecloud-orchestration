@@ -1,10 +1,9 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -24,18 +23,18 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with EntityService
 
   val sampleAtts = {
     Map(
-      "sample_type" -> "Blood".toJson,
-      "header_1" -> MockUtils.randomAlpha().toJson,
-      "header_2" -> MockUtils.randomAlpha().toJson,
-      "participant_id" -> """{"entityType":"participant","entityName":"participant_name"}""".parseJson
+      AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
+      AttributeName.withDefaultNS("header_1") -> AttributeString(MockUtils.randomAlpha()),
+      AttributeName.withDefaultNS("header_2") -> AttributeString(MockUtils.randomAlpha()),
+      AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "participant_name")
     )
   }
 
   val validSampleEntities = List(
-    EntityWithType("sample_01", "sample", Some(sampleAtts)),
-    EntityWithType("sample_02", "sample", Some(sampleAtts)),
-    EntityWithType("sample_03", "sample", Some(sampleAtts)),
-    EntityWithType("sample_04", "sample", Some(sampleAtts))
+    RawlsEntity("sample_01", "sample", sampleAtts),
+    RawlsEntity("sample_02", "sample", sampleAtts),
+    RawlsEntity("sample_03", "sample", sampleAtts),
+    RawlsEntity("sample_04", "sample", sampleAtts)
   )
 
   override def beforeAll(): Unit = {

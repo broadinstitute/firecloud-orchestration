@@ -51,3 +51,15 @@ case class AttributeValueList(val list: Seq[AttributeValue]) extends AttributeLi
 case class AttributeEntityReferenceList(val list: Seq[AttributeEntityReference]) extends AttributeList[AttributeEntityReference]
 case class AttributeEntityReference(val entityType: String, val entityName: String) extends AttributeListElementable
 
+object AttributeStringifier {
+  def apply(attribute: Attribute): String = {
+    attribute match {
+      case AttributeNull => ""
+      case AttributeString(value) => value
+      case AttributeNumber(value) => value.toString()
+      case AttributeBoolean(value) => value.toString()
+      case AttributeEntityReference(t, name) => name
+      case al: AttributeList[_] => al.list.map(apply).mkString(" ")
+    }
+  }
+}
