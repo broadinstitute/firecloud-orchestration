@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.{FireCloudException, model}
-import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
@@ -239,7 +238,7 @@ object ModelJsonProtocol {
 
   implicit val impEntity = jsonFormat5(Entity)
   implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
-  implicit val impEntityWithType = jsonFormat3(EntityWithType)
+  implicit val impRawlsEntity = jsonFormat3(RawlsEntity)
   implicit val impEntityCopyDefinition = jsonFormat3(EntityCopyDefinition)
   implicit val impEntityCopyWithDestinationDefinition = jsonFormat4(EntityCopyWithDestinationDefinition)
   implicit val impEntityId = jsonFormat2(EntityId)

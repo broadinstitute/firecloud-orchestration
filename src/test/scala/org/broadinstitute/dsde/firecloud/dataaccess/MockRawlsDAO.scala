@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
-import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.firecloud.model._
 import spray.http.StatusCodes
@@ -83,7 +82,7 @@ class MockRawlsDAO  extends RawlsDAO {
     Future(aclUpdates)
   }
 
-  override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[EntityWithType]] = {
+  override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[RawlsEntity]] = {
     if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "not found")))
     } else {
