@@ -99,8 +99,7 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
   }
 
   override def findDocuments(criteria: LibrarySearchParams) : LibrarySearchResponse = {
-    val searchStr =
-    criteria.searchTerm match {
+    val searchStr = criteria.searchTerm match {
       case None | Some("") => ESQuery(new ESMatchAll).toJson.compactPrint
       case Some(searchTerm:String) => ESQuery(new ESWildcard(searchTerm.toLowerCase)).toJson.compactPrint
     }

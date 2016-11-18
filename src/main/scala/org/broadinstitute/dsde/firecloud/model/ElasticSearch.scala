@@ -66,7 +66,7 @@ case class ESMatchAll(match_all: Map[String,String]) extends QueryMap {
 }
 
 case class ESWildcard(wildcard: ESWildcardSearchTerm) extends QueryMap {
-  def this (term: String) = this(ESWildcardSearchTerm(term))
+  def this(term: String) = this(ESWildcardSearchTerm(term))
 }
 
 case class ESWildcardSearchTerm(_all: String)
