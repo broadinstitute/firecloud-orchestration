@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
+import spray.httpx.SprayJsonSupport._
 import spray.httpx.encoding.Gzip
 import spray.json._
 import spray.routing.RequestContext
@@ -303,8 +304,7 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
 
   /** Fetch the latest price list from Google. Returns only the subset of prices that we find we have use for. */
   def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
-    val pipeline: HttpRequest => Future[HttpResponse] = sendReceive ~> decode(Gzip)
-    val response: Future[HttpResponse] = pipeline(Get(FireCloudConfig.GoogleCloud.priceListUrl))
-    response map { r => r.entity.asString.parseJson.convertTo[GooglePriceList] }
+    val pipeline: HttpRequest => Future[GooglePriceList] = sendReceive ~> decode(Gzip) ~> unmarshal[GooglePriceList]
+    pipeline(Get(FireCloudConfig.GoogleCloud.priceListUrl))
   }
 }

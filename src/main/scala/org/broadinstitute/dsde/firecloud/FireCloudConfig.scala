@@ -109,7 +109,7 @@ object FireCloudConfig {
   }
 
   object GoogleCloud {
-    private val gc = config.getConfig("gc")
-    val priceListUrl = gc.getString("priceListUrl")
+    private val googlecloud = config.getConfig("googlecloud")
+    val priceListUrl = googlecloud.getString("priceListUrl")
   }
 }
