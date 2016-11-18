@@ -117,7 +117,8 @@ object ModelJsonProtocol {
     override def read(json: JsValue): LibrarySearchParams = {
       val data = json.asJsObject.fields
       val term = data.getOrElse(SEARCH_TERM, None) match {
-        case JsString(str) => Some(str)
+        case JsString(str) if str.trim == "" => None
+        case JsString(str) => Some(str.trim)
         case None => None
         case _ => throw DeserializationException("unexpected json type for " + SEARCH_TERM)
       }
