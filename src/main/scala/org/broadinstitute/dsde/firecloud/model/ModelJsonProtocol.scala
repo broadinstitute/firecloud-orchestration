@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.{FireCloudException, model}
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
@@ -101,6 +101,54 @@ object ModelJsonProtocol {
     override def read(json: JsValue): StatusCode = json match {
       case JsNumber(n) => n.intValue
       case _ => throw DeserializationException("unexpected json type")
+    }
+  }
+
+  implicit object impLibrarySearchParams extends RootJsonFormat[LibrarySearchParams] {
+    val SEARCH_TERM = "searchTerm"
+    val FROM = "from"
+    val SIZE = "size"
+
+    override def write(params: LibrarySearchParams): JsValue = params.searchTerm match {
+      case None => JsObject(Map(FROM -> JsNumber(params.from), SIZE -> JsNumber(params.size)))
+      case Some(term) => JsObject(Map(SEARCH_TERM -> JsString(term), FROM -> JsNumber(params.from), SIZE -> JsNumber(params.size)))
+    }
+
+    override def read(json: JsValue): LibrarySearchParams = {
+      val data = json.asJsObject.fields
+      val term = data.getOrElse(SEARCH_TERM, None) match {
+        case JsString(str) if str.trim == "" => None
+        case JsString(str) => Some(str.trim)
+        case None => None
+        case _ => throw DeserializationException("unexpected json type for " + SEARCH_TERM)
+      }
+      val from: Option[Int] = data.getOrElse(FROM, None) match {
+        case JsNumber(f) => Some(f.intValue)
+        case None => None
+        case _ => throw DeserializationException("unexpected json type for " + FROM)
+      }
+      val size: Option[Int] = data.getOrElse(SIZE, None) match {
+        case JsNumber(s) => Some(s.intValue)
+        case None => None
+        case _ => throw DeserializationException("unexpected json type for " + SIZE)
+      }
+      LibrarySearchParams(term, from, size)
+    }
+  }
+
+  implicit object impQueryMap extends JsonFormat[QueryMap] {
+    override def write(inputmap: QueryMap): JsValue = inputmap match {
+      case matchall : ESMatchAll => matchall.toJson
+      case wildcard : ESWildcard => wildcard.toJson
+      case _ => throw new SerializationException("unexpected QueryMap type")
+    }
+
+    override def read(json: JsValue): QueryMap = {
+      json.asJsObject.fields.keys.head match {
+        case "match_all" => impESMatchAll.read(json)
+        case "wildcard" => impESWildcard.read(json)
+        case _ => throw DeserializationException("unexpected json type")
+      }
     }
   }
 
@@ -246,6 +294,13 @@ object ModelJsonProtocol {
 
   implicit val ESDetailFormat = jsonFormat1(ESDetail)
   implicit val ESDatasetPropertyFormat = jsonFormat1(ESDatasetProperty)
+
+  implicit val impLibrarySearchResponse = jsonFormat3(LibrarySearchResponse)
+
+  implicit val impESQuery = jsonFormat1(ESQuery)
+  implicit val impESWildcardSearchTerm = jsonFormat1(ESWildcardSearchTerm)
+  implicit val impESMatchAll = jsonFormat1(ESMatchAll)
+  implicit val impESWildcard = jsonFormat1(ESWildcard)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

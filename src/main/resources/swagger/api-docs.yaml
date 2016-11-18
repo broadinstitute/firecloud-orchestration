@@ -328,6 +328,23 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
 
+  /api/library/search:
+    post:
+      tags:
+        - Library
+      operationId: FindDocuments
+      summary: |
+        searches published library datasets
+      parameters:
+        - in: body
+          name: searchParams
+          description: Search terms and pagination parameters
+          schema:
+            $ref: '#/definitions/SearchTermRef'
+      responses:
+        200:
+          description: Matching datasets
+
   /api/library/user/role/curator:
     get:
       responses:
@@ -2716,6 +2733,20 @@ definitions:
         $ref: '#/definitions/UserInfo'
       enabled:
         $ref: '#/definitions/ExtendedEnabled'
+
+  SearchTermRef:
+    properties:
+      searchTerm:
+        type: string
+        description: The term to search for
+      from:
+        type: integer
+        default: 0
+        description: Where in the results list to start (used for pagination)
+      size:
+        type: integer
+        default: 10
+        description: How many results to return
 
   StackTraceElement:
     description: ''

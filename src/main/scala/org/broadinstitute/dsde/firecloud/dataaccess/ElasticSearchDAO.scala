@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.Document
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
 import org.elasticsearch.action.admin.indices.delete.{DeleteIndexRequest, DeleteIndexRequestBuilder, DeleteIndexResponse}
@@ -8,9 +9,13 @@ import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsReque
 import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkResponse}
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
+import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.client.transport.TransportClient
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
+import spray.json._
+import spray.json.DefaultJsonProtocol._
+
 
 class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport {
 
@@ -73,7 +78,6 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     )
   }
 
-
   private def conditionalRecreateIndex(deleteFirst: Boolean = false) = {
     try {
       logger.info(s"Checking to see if ElasticSearch index '%s' exists ... ".format(indexName))
@@ -92,5 +96,22 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     } catch {
       case e: Exception => logger.warn(s"ES index '%s' could not be recreated and may be in an unstable state.".format(indexName))
     }
+  }
+
+  override def findDocuments(criteria: LibrarySearchParams) : LibrarySearchResponse = {
+    val searchStr = criteria.searchTerm match {
+      case None | Some("") => ESQuery(new ESMatchAll).toJson.compactPrint
+      case Some(searchTerm:String) => ESQuery(new ESWildcard(searchTerm.toLowerCase)).toJson.compactPrint
+    }
+
+    val searchReq = client.prepareSearch(indexName).setQuery(searchStr)
+      .setFrom(criteria.from)
+      .setSize(criteria.size)
+    val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
+
+    val sourceDocuments = searchResults.getHits.getHits.toList map { hit =>
+      hit.getSourceAsString.parseJson
+    }
+    new LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments)
   }
 }

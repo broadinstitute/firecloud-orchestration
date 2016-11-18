@@ -1,7 +1,8 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impCurator
+import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{Curator, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, LibraryService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -78,9 +79,21 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                 LibraryService.props(libraryServiceConstructor, userInfo),
                 LibraryService.IndexAll)
             }
+          } ~
+          pathPrefix("search") {
+            pathEndOrSingleSlash {
+              post {
+                respondWithJSON {
+                  entity(as[LibrarySearchParams]) { params => requestContext =>
+                    perRequest(requestContext,
+                      LibraryService.props(libraryServiceConstructor, userInfo),
+                      LibraryService.FindDocuments(params))
+                  }
+                }
+              }
+            }
           }
         }
       }
     }
-
 }
