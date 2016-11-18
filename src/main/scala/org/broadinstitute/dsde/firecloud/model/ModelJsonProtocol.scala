@@ -131,13 +131,7 @@ object ModelJsonProtocol {
         case None => None
         case _ => throw DeserializationException("unexpected json type for " + SIZE)
       }
-
-      (from, size) match {
-        case (None, None) => LibrarySearchParams(term)
-        case (Some(f), None) => LibrarySearchParams(term, f)
-        case (None, Some(s)) => LibrarySearchParams(term, size=s)
-        case (Some(f), Some(s)) => LibrarySearchParams(term, f, s)
-      }
+      LibrarySearchParams(term, from, size)
     }
   }
 

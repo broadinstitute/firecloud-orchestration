@@ -41,6 +41,12 @@ case class LibrarySearchParams(
   from: Int = 0,
   size: Int = 10)
 
+object LibrarySearchParams {
+  def apply(searchTerm: Option[String], from: Option[Int], size: Option[Int]) = {
+    new LibrarySearchParams(searchTerm, from.getOrElse(0), size.getOrElse(10))
+  }
+}
+
 case class LibrarySearchResponse(
   searchParams: LibrarySearchParams,
   total: Int,
