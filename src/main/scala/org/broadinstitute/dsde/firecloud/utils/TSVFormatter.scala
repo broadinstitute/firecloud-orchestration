@@ -130,7 +130,7 @@ object TSVFormatter {
     * @param value The JsValue to remove leading and trailing quotes from.
     * @return Trimmed string value
     */
-  private def cleanValue(value: JsValue): String = {
+  def cleanValue(value: JsValue): String = {
     val regex = "^\"|\"$".r
     regex.replaceAllIn(value.toString(), "")
   }

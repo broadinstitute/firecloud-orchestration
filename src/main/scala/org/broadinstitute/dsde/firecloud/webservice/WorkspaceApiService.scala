@@ -7,13 +7,13 @@ import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
-import org.broadinstitute.dsde.firecloud.service.{WorkspaceService, FireCloudDirectives, FireCloudRequestBuilding}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, WorkspaceService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.slf4j.LoggerFactory
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import spray.http.{HttpMethods, HttpEntity}
+import spray.http.{HttpEntity, HttpMethods, OAuth2BearerToken}
 import spray.httpx.unmarshalling._
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
@@ -30,7 +30,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
   lazy val log = LoggerFactory.getLogger(getClass)
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
 
-  val workspaceServiceConstructor: UserInfo => WorkspaceService
+  val workspaceServiceConstructor: WithAccessToken => WorkspaceService
 
   def transformSingleWorkspaceRequest(entity: HttpEntity): HttpEntity = {
     entity.as[RawlsWorkspaceResponse] match {
@@ -50,7 +50,21 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
     }
   }
 
+  private val filename = "-workspace-attributes.tsv"
+
   val workspaceRoutes: Route =
+    pathPrefix("cookie-authed") {
+      path("workspaces" / Segment / Segment / "exportAttributesTSV") {
+          (workspaceNamespace, workspaceName) =>
+            cookie("FCtoken") { tokenCookie =>
+                mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
+                    perRequest(requestContext,
+                        WorkspaceService.props(workspaceServiceConstructor, new AccessToken(OAuth2BearerToken(tokenCookie.content))),
+                        WorkspaceService.ExportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename))
+                  }
+              }
+        }
+    } ~
     requireUserInfo() { userInfo =>
       pathPrefix("api") {
         pathPrefix("workspaces") {
@@ -96,6 +110,24 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   perRequest(requestContext,
                     WorkspaceService.props(workspaceServiceConstructor, userInfo),
                     WorkspaceService.SetWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes))
+                }
+              }
+            } ~
+            path("exportAttributesTSV") {
+              get { requestContext =>
+                  perRequest(requestContext,
+                      WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                      WorkspaceService.ExportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename))
+                }
+            } ~
+            path("importAttributesTSV") {
+              post {
+                formFields('attributes) { attributesTSV =>
+                  respondWithJSON { requestContext =>
+                    perRequest(requestContext, WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                      WorkspaceService.ImportAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV)
+                    )
+                  }
                 }
               }
             } ~

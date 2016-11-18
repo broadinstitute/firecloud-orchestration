@@ -44,16 +44,16 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
-  override def getWorkspace(ns: String, name: String)(implicit userInfo: UserInfo): Future[RawlsWorkspaceResponse] =
+  override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[RawlsWorkspaceResponse] =
     requestToObject[RawlsWorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
 
-  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userInfo: UserInfo): Future[RawlsWorkspace] = {
+  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[RawlsWorkspace] = {
     import spray.json.DefaultJsonProtocol._
     import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperationFormat
     requestToObject[RawlsWorkspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 
-  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userInfo: UserInfo): Future[Seq[WorkspaceACLUpdate]] =
+  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userToken: WithAccessToken): Future[Seq[WorkspaceACLUpdate]] =
     requestToObject[Seq[WorkspaceACLUpdate]]( Patch(patchWorkspaceAclUrl(ns, name), aclUpdates) )
 
   override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = {

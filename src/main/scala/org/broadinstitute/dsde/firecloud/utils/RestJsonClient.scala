@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
-import org.broadinstitute.dsde.firecloud.model.{ErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{ErrorReport, WithAccessToken}
 import spray.client.pipelining._
 import spray.http.{HttpRequest, HttpResponse}
 import spray.httpx.unmarshalling._
@@ -17,12 +17,12 @@ trait RestJsonClient {
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
 
-  def userAuthedRequest(req: HttpRequest)(implicit userInfo: UserInfo): Future[HttpResponse] = {
+  def userAuthedRequest(req: HttpRequest)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
     val pipeline = addCredentials(userInfo.accessToken) ~> sendReceive
     pipeline(req)
   }
 
-  def requestToObject[T](req: HttpRequest)(implicit userInfo: UserInfo, unmarshaller: Unmarshaller[T]): Future[T] = {
+  def requestToObject[T](req: HttpRequest)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
     userAuthedRequest( req ) map {response =>
       response.status match {
         case s if s.isSuccess =>
