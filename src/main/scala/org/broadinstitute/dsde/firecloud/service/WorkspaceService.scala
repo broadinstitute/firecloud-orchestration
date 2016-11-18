@@ -98,7 +98,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
-      val attributes = workspaceResponse.workspace.get.attributes.filterKeys(_ != AttributeName("default", "description"))
+      val attributes = workspaceResponse.workspace.attributes.filterKeys(_ != AttributeName.withDefaultNS("description"))
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
       val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(impPlainAttributeFormat.write(attValue)) }).mkString("\t")
       RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
