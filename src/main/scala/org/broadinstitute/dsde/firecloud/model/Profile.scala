@@ -107,7 +107,6 @@ object Profile {
         case Some(time) => Some(time.toLong)
         case _ => None
       },
-      // TODO(dmohs): Now we always get this from the authoritative source (Google).
       isDbgapAuthorized = mappedKVPs.get("isDbgapAuthorized") match {
         case Some(auth) => Some(auth.toBoolean)
         case _ => None
