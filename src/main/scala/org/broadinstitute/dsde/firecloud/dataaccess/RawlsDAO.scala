@@ -38,7 +38,7 @@ trait RawlsDAO extends LazyLogging {
 
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
 
-  def getBucketUsage(ns: String, name: String)(implicit userInfo: UserInfo): Future[RawlsBucketUsageResponse]
+  def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsBucketUsageResponse]
 
   def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[RawlsWorkspaceResponse]
 
