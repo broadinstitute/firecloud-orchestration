@@ -44,7 +44,7 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
-class HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding {
+object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding {
 
   val baseUrl = FireCloudConfig.FireCloud.baseUrl
   val callbackPath = "/callback"
@@ -308,5 +308,3 @@ class HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuild
     pipeline(Get(FireCloudConfig.GoogleCloud.priceListUrl))
   }
 }
-
-object HttpGoogleServicesDAO extends HttpGoogleServicesDAO
