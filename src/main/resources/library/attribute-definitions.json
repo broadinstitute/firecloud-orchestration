@@ -4,14 +4,16 @@
   "title": "Library attribute definitions, v1",
   "description": "Constraints, facet definitions, and display definitions for FireCloud Library",
   "type": "object",
-  "required": ["library:datasetName", "library:datasetDescription", "library:datasetCustodian",
-               "library:datasetDepositor", "library:datasetOwner", "library:institute", "library:indication", "library:numSubjects", "library:projectName", "library:datatype",
+  "required": ["library:datasetName", "library:datasetDescription", "library:datasetCustodian", "library:datasetDepositor",
+               "library:datasetOwner", "library:institute", "library:numSubjects", "library:projectName", "library:datatype",
                "library:dataUseRestriction", "library:studyDesign", "library:cellType"],
-  "propertyOrder": ["library:datasetName", "library:datasetDescription", "library:datasetCustodian",
-                    "library:datasetDepositor", "library:datasetOwner", "library:institute", "library:indication", "library:numSubjects", "library:projectName", "library:datatype",
-                    "library:reference", "library:dataFileFormats", "library:technology", "library:profilingProtocol", "library:dataUseRestriction",
-                    "library:dataUseORSPConsentGroupNumber", "library:dataUseBSPSampleCollectionID", "library:studyDesign", "library:cellType", "library:coverage",
-                    "library:ethnicity", "library:primaryDiseaseSite", "library:broadInternalResearchProjectID", "library:broadInternalResearchProjectName",
+  "propertyOrder": ["library:numSubjects", "library:datatype", "library:dataUseRestriction", "library:diseaseOntology",
+                    "library:indication", "library:datasetName", "library:datasetDescription", "library:datasetCustodian",
+                    "library:datasetDepositor", "library:datasetOwner", "library:institute",  "library:projectName",
+                    "library:reference", "library:dataFileFormats", "library:technology", "library:profilingProtocol",
+                    "library:dataUseORSPConsentGroupNumber", "library:dataUseBSPSampleCollectionID", "library:studyDesign",
+                    "library:cellType", "library:coverage", "library:ethnicity", "library:primaryDiseaseSite",
+                    "library:broadInternalResearchProjectID", "library:broadInternalResearchProjectName",
                     "library:broadInternalCohortName", "library:broadInternalSeqProjectNumbers"],
   "properties": {
     "library:datasetName": {
@@ -43,9 +45,18 @@
       "items": { "type": "string" },
       "title": "Research Institute"
     },
+    "library:diseaseOntologyDOID": {
+      "type": "string",
+      "hidden": true
+    },
+    "library:diseaseOntology": {
+      "type": "string",
+      "title": "Cohort Phenotypic Inclusion Criteria (Disease Ontology)",
+      "typeahead": "ontology"
+    },
     "library:indication": {
       "type": "string",
-      "title": "Cohort Phenotype/Indication",
+      "title": "Cohort Phenotypic Inclusion Criteria (Free Text)",
       "description": "The phenotype/indication criteria for being included as a subject in the cohort"
     },
     "library:numSubjects": {

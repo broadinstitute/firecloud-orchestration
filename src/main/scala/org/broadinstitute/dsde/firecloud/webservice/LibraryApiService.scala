@@ -20,10 +20,17 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
   private implicit val ec: ExecutionContext = actorRefFactory.dispatcher
 
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
+  val duosAutocompleteUrl = FireCloudConfig.Duos.baseUrl + "/autocomplete?types=disease&q=%s"
 
   val libraryServiceConstructor: UserInfo => LibraryService
 
   val libraryRoutes: Route =
+    path("duos-autocomplete" / Segment) { (searchTerm) =>
+      get { requestContext =>
+        val extReq = Get(duosAutocompleteUrl.format(searchTerm))
+        externalHttpPerRequest(requestContext, extReq)
+      }
+    } ~
     pathPrefix("schemas") {
       path("library-attributedefinitions-v1") {
         respondWithJSON {
