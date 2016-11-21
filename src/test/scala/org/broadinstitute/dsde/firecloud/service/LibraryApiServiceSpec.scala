@@ -52,7 +52,6 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
           List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map {
             method =>
               new RequestBuilder(method)(isCuratorPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-                System.out.println(response)
                 status should equal(MethodNotAllowed)
               }
           }

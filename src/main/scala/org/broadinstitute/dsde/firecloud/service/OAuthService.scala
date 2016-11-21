@@ -75,7 +75,7 @@ class OAuthService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
       }
       refreshToken match {
         case Some(x) =>
-          rawlsDao.saveRefreshToken(accessToken, x) map { _ => RequestComplete(StatusCodes.NoContent)}
+          rawlsDao.saveRefreshToken(userInfo, x) map { _ => RequestComplete(StatusCodes.NoContent)}
         case None => Future(RequestComplete(StatusCodes.NoContent))
       }
     } catch {

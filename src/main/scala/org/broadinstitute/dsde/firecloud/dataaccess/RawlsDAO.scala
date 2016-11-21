@@ -33,7 +33,7 @@ trait RawlsDAO extends LazyLogging {
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
-  def isDbGapAuthorized(accessToken: OAuth2BearerToken): Future[Boolean]
+  def isDbGapAuthorized(userInfo: UserInfo): Future[Boolean]
 
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
 
@@ -49,5 +49,5 @@ trait RawlsDAO extends LazyLogging {
 
   def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]]
 
-  def saveRefreshToken(accessToken: String, refreshToken: String): Future[Unit]
+  def saveRefreshToken(userInfo: UserInfo, refreshToken: String): Future[Unit]
 }

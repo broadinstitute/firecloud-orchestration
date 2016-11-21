@@ -19,7 +19,7 @@ class MockRawlsDAO  extends RawlsDAO {
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future(true)
 
-  override def isDbGapAuthorized(accessToken: OAuth2BearerToken): Future[Boolean] = Future(true)
+  override def isDbGapAuthorized(userInfo: UserInfo): Future[Boolean] = Future(true)
 
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = Future(true)
 
@@ -88,7 +88,7 @@ class MockRawlsDAO  extends RawlsDAO {
     Future(None)
   }
 
-  override def saveRefreshToken(accessToken: String, refreshToken: String): Future[Unit] = {
+  override def saveRefreshToken(userInfo: UserInfo, refreshToken: String): Future[Unit] = {
     Future(())
   }
 

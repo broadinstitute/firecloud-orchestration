@@ -45,16 +45,6 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     }
   }
 
-  def getIsDbGapAuthorized(accessToken: OAuth2BearerToken): Future[Boolean] = {
-    val pipeline = addFireCloudCredentials ~> addCredentials(accessToken) ~> sendReceive
-    pipeline(Get(UserService.groupUrl(FireCloudConfig.Nih.rawlsGroupName))) map { response =>
-      response.status match {
-        case OK => true
-        case _ => false
-      }
-    }
-  }
-
   override def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit] = {
     val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~>
       sendReceive

@@ -92,7 +92,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
         case Some(profile) =>
           profile.linkedNihUsername match {
             case Some(_) =>
-              temporaryRawlsDao.isDbGapAuthorized(userInfo.accessToken) map {
+              temporaryRawlsDao.isDbGapAuthorized(userInfo) map {
                 case true =>
                   RequestComplete(NIHStatus(profile, Some(true)))
                 case false =>
