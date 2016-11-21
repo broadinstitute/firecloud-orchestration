@@ -108,4 +108,8 @@ object FireCloudConfig {
     val indexName = elasticsearch.getString("index")
   }
 
+  object GoogleCloud {
+    private val googlecloud = config.getConfig("googlecloud")
+    val priceListUrl = googlecloud.getString("priceListUrl")
+  }
 }
