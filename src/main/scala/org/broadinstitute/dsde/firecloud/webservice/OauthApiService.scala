@@ -41,29 +41,22 @@ trait OauthApiService extends HttpService with FireCloudRequestBuilding
       post { requestContext =>
         try {
           val params = requestContext.request.entity.data.asString.parseJson.asJsObject
-          params.fields.get("code") match {
-            case None => completeWithMissingKey(requestContext, "code")
-            case Some(jsvCode) =>
-              try {
-                val code = jsvCode.convertTo[String]
-                params.fields.get("redirectUri") match {
-                  case None => completeWithMissingKey(requestContext, "redirectUri")
-                  case Some(jsvRedirectUri) =>
-                    try {
-                      val redirectUri = jsvRedirectUri.convertTo[String]
-                      perRequest(requestContext,
-                        OAuthService.props(oauthServiceConstructor),
-                        OAuthService.HandleOauthCode(code, redirectUri)
-                      )
-                    } catch {
-                      case e: DeserializationException =>
-                        completeWithBadValue(requestContext, "code", e.msg)
-                    }
-                }
-              } catch {
-                case e: DeserializationException =>
-                  completeWithBadValue(requestContext, "code", e.msg)
-              }
+          val jsvCode = params.fields.get("code")
+          val jsvRedirectUri = params.fields.get("redirectUri")
+          (jsvCode, jsvRedirectUri) match {
+            case (Some(code:JsString), Some(redirectUri:JsString)) =>
+              perRequest(requestContext,
+                OAuthService.props(oauthServiceConstructor),
+                OAuthService.HandleOauthCode(code.value, redirectUri.value)
+              )
+            case _ =>
+              requestContext.complete(
+                StatusCodes.BadRequest,
+                Map("error" ->
+                  Map("summary" -> s"code (string) and redirectUri (string) required",
+                    "detail" -> s"got code:$jsvCode, redirectUri:$jsvRedirectUri"
+                  ))
+              )
           }
         } catch {
           case e: ParsingException =>
@@ -74,16 +67,6 @@ trait OauthApiService extends HttpService with FireCloudRequestBuilding
         }
       }
     } ~
-      path("handle-oauth-code-v2") {
-        post {
-          entity(as[HandleOauthCodeParams]) { params => requestContext =>
-            perRequest(requestContext,
-              OAuthService.props(oauthServiceConstructor),
-              OAuthService.HandleOauthCode(params.code, params.redirectUri)
-            )
-          }
-        }
-      } ~
     path("api" / "refresh-token-status") {
       get {
         requireUserInfo() { userInfo => rc =>
