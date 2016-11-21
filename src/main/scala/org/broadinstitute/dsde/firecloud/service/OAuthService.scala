@@ -44,9 +44,6 @@ class OAuthService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
   (implicit protected val executionContext: ExecutionContext) extends Actor
   with LazyLogging {
 
-  lazy val log = LoggerFactory.getLogger(getClass)
-
-
   override def receive = {
     case HandleOauthCode(code, redirectUri) => handleOauthCode(code, redirectUri) pipeTo sender
     case GetRefreshTokenStatus(userInfo) => getRefreshTokenStatus(userInfo) pipeTo sender
@@ -90,10 +87,10 @@ class OAuthService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
         val ageDaysCount = Days.daysBetween(tokenDate, DateTime.now).getDays
         ageDaysCount match {
           case x if x < 90 =>
-            log.debug(s"User's refresh token is $x days old; all good!")
+            logger.debug(s"User's refresh token is $x days old; all good!")
             RequestComplete(StatusCodes.NoContent)
           case x =>
-            log.info(s"User's refresh token is $x days old; requesting a new one.")
+            logger.info(s"User's refresh token is $x days old; requesting a new one.")
             RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
         }
       case None =>
