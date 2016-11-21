@@ -95,7 +95,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
         case OK =>
           Option(DateTime.parse(unmarshal[RawlsTokenDate].apply(response).refreshTokenUpdatedDate))
         case NotFound | BadRequest => None
-        case _ => throwBadResponse(response)
+        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
       }
     }
   }
@@ -103,9 +103,5 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def saveRefreshToken(userInfo: UserInfo, refreshToken: String): Future[Unit] = {
     userAuthedRequest(Put(RawlsDAO.refreshTokenUrl, RawlsToken(refreshToken)))(userInfo) map
       { _ => () }
-  }
-
-  private def throwBadResponse(response: HttpResponse) = {
-    throw new FireCloudExceptionWithErrorReport(ErrorReport("Rawls", response))
   }
 }

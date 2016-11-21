@@ -19,7 +19,10 @@ case class ErrorReport (
   stackTrace: Seq[StackTraceElement] = Seq())
 
 object ErrorReport extends ((String,String,Option[StatusCode],Seq[ErrorReport],Seq[StackTraceElement]) => ErrorReport) {
-  private val SOURCE = "FireCloud"
+
+  // We're not propagating this through in most cases, so be explicit about the fact that it is not
+  // providing additional information.
+  private val SOURCE = "N/A"
 
   def apply(throwable: Throwable) =
     new ErrorReport(SOURCE, message(throwable), None, causes(throwable), throwable.getStackTrace)
