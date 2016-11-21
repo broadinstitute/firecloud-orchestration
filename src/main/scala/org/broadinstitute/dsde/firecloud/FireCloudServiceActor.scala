@@ -28,8 +28,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
   val rawlsDAO:RawlsDAO = new HttpRawlsDAO
   val searchDAO:SearchDAO = new ElasticSearchDAO(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.indexName)
   val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
+  val googleServicesDAO:GoogleServicesDAO = HttpGoogleServicesDAO
 
-  val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO, thurloeDAO)
+  val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO, thurloeDAO, googleServicesDAO)
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)

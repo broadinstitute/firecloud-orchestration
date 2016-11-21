@@ -4,7 +4,7 @@ import akka.actor._
 import akka.pattern._
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.{GooglePriceList, HttpGoogleServicesDAO, RawlsDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -40,10 +40,10 @@ object WorkspaceService {
   }
 
   def constructor(app: Application)(userToken: WithAccessToken)(implicit executionContext: ExecutionContext) =
-    new WorkspaceService(userToken, app.rawlsDAO, app.thurloeDAO)
+    new WorkspaceService(userToken, app.rawlsDAO, app.thurloeDAO, app.googleServicesDAO)
 }
 
-class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with AttributeSupport with TSVFileSupport {
+class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO) extends Actor with AttributeSupport with TSVFileSupport {
 
   implicit val system = context.system
 
@@ -76,7 +76,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String) = {
     Future.sequence(Seq(
       rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName),
-      HttpGoogleServicesDAO.fetchPriceList
+      googleServicesDAO.fetchPriceList
     )) map {
       case Seq(usage: RawlsBucketUsageResponse, priceList: GooglePriceList) =>
         val rate = priceList.prices.cpBigstoreStorage.us

@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud
 
-import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO, SearchDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess._
 
 /**
   * Created by davidan on 9/23/16.
@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO, SearchD
 class Application (val agoraDAO: AgoraDAO,
                    val rawlsDAO: RawlsDAO,
                    val searchDAO: SearchDAO,
-                   val thurloeDAO: ThurloeDAO) {
+                   val thurloeDAO: ThurloeDAO,
+                   val googleServicesDAO: GoogleServicesDAO) {
 
 }

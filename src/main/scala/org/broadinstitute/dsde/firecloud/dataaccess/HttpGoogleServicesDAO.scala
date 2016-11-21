@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.io.StringReader
+import java.io.{InputStream, StringReader}
 
 import akka.actor.ActorRefFactory
 import com.google.api.client.auth.oauth2.Credential
@@ -44,7 +44,7 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
-object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
+class HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding {
 
   val baseUrl = FireCloudConfig.FireCloud.baseUrl
   val callbackPath = "/callback"
@@ -112,7 +112,7 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
   }
 
   // check the requested UI redirect against the list of allowed JS origins
-  def whitelistRedirect(userUri:String) = {
+  def whitelistRedirect(userUri:String): String = {
     userUri match {
       case "" => ""
       case x if origins.contains(x) => x
@@ -126,7 +126,7 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
 
   def randomString(length: Int) = scala.util.Random.alphanumeric.take(length).mkString
 
-  def getAdminUserAccessToken = {
+  def getAdminUserAccessToken: String = {
     val googleCredential = new GoogleCredential.Builder()
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
@@ -149,7 +149,7 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
       .build()
   }
 
-  def getRawlsServiceAccountAccessToken = {
+  private def getRawlsServiceAccountAccessToken = {
     val googleCredential = new GoogleCredential.Builder()
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
@@ -162,13 +162,13 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
     googleCredential.getAccessToken
   }
 
-  def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {
+  def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
   // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program
-  def getSignedUrl(bucketName: String, objectKey: String) = {
+  private def getSignedUrl(bucketName: String, objectKey: String) = {
 
     // generate the string-to-be-signed
     val verb = "GET"
@@ -197,14 +197,14 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
       "&Signature=" + java.net.URLEncoder.encode(java.util.Base64.getEncoder.encodeToString(signedBytes), "UTF-8")
   }
 
-  def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
+  private def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
 
-  def getObjectResourceUrl(bucketName: String, objectKey: String) = {
+  def getObjectResourceUrl(bucketName: String, objectKey: String): String = {
     val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"
     gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
   }
 
-  def objectAccessCheck(bucketName: String, objectKey: String, authToken: String)
+  private def objectAccessCheck(bucketName: String, objectKey: String, authToken: String)
                        (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
     val accessRequest = Get( HttpGoogleServicesDAO.getObjectResourceUrl(bucketName, objectKey) )
     val accessPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
@@ -231,7 +231,7 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
   //      else
   //        redirect to a direct download in GCS
   def getDownload(requestContext: RequestContext, bucketName: String, objectKey: String, userAuthToken: String)
-                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext) = {
+                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Unit = {
 
     val objectStr = s"gs://$bucketName/$objectKey" // for logging
     // can we determine the current user's identity with Google?
@@ -308,3 +308,5 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
     pipeline(Get(FireCloudConfig.GoogleCloud.priceListUrl))
   }
 }
+
+object HttpGoogleServicesDAO extends HttpGoogleServicesDAO
