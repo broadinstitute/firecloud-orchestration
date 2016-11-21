@@ -13,7 +13,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives with LibraryApiService
   with WorkspaceApiService
-  with NamespaceApiService {
+  with NamespaceApiService
+  with CookieAuthedApiService
+  with EntityService
+  with StorageApiService {
 
   implicit val system = context.system
 
@@ -31,23 +34,18 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
-
-  // insecure cookie-authed routes
-
-  val cookieAuthedService = new CookieAuthedService with ActorRefFactoryContext
+  val exportEntitiesByTypeConstructor: (UserInfo) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
 
   // routes under /api
 
   val methodsService = new MethodsService with ActorRefFactoryContext
-  val entityService = new EntityService with ActorRefFactoryContext
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
-  val storageService = new StorageService with ActorRefFactoryContext
   val statusService = new StatusService with ActorRefFactoryContext
   val nihService = new NIHService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
-  val routes = methodsService.routes ~ entityService.routes ~
-    methodConfigurationService.routes ~ submissionsService.routes ~ storageService.routes ~
+  val routes = methodsService.routes ~
+    methodConfigurationService.routes ~ submissionsService.routes ~
     statusService.routes ~ nihService.routes ~ billingService.routes
 
   val oAuthService = new OAuthService with ActorRefFactoryContext
@@ -91,11 +89,14 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
         libraryRoutes ~
         workspaceRoutes ~
         namespaceRoutes ~
+        entityRoutes ~
+        storageRoutes ~
         pathPrefix("api") {
           routes
         } ~
         pathPrefix("cookie-authed") {
-          cookieAuthedService.routes
+          // insecure cookie-authed routes
+          cookieAuthedRoutes
         }
       }
     }
