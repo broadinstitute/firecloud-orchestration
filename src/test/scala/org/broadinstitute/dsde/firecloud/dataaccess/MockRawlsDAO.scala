@@ -21,7 +21,7 @@ class MockRawlsDAO  extends RawlsDAO {
 
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = Future(true)
 
-  override def getBucketUsage(ns: String, name: String)(implicit userInfo: UserInfo): Future[RawlsBucketUsageResponse] = {
+  override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsBucketUsageResponse] = {
     Future(RawlsBucketUsageResponse(BigInt("98461538500")))
   }
 

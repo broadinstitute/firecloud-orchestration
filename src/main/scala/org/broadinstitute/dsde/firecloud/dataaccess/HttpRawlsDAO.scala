@@ -44,7 +44,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
-  override def getBucketUsage(ns: String, name: String)(implicit userInfo: UserInfo): Future[RawlsBucketUsageResponse] =
+  override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsBucketUsageResponse] =
     requestToObject[RawlsBucketUsageResponse]( Get(getBucketUsageUrl(ns, name)) )
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[RawlsWorkspaceResponse] =
