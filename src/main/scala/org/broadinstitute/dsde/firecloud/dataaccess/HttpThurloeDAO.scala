@@ -46,8 +46,6 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   }
 
   override def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit] = {
-    val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~>
-      sendReceive
     profile.linkedNihUsername match {
       case Some(nihUsername) =>
         val profileExpiration = profile.linkExpireTime.getOrElse(0L)
@@ -56,6 +54,8 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
           val expireKVP = FireCloudKeyValue(Some("linkExpireTime"), Some(linkExpireSeconds.toString))
           val expirePayload = ThurloeKeyValue(Some(userInfo.getUniqueId), Some(expireKVP))
           val updateReq = Post(UserService.remoteSetKeyURL, expirePayload)
+          val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~>
+            sendReceive
           pipeline(updateReq) map { _ => () }
         } else
           Future.successful(Unit)
