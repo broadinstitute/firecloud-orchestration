@@ -82,7 +82,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
         val rate = priceList.prices.cpBigstoreStorage.us
         val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / 1000000000 * rate
         RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f"))
-      case results => throw new ClassCastException(results.toString)
+      case results => throw new RuntimeException(s"Unexptected results: $results")
     }
   }
 
