@@ -66,7 +66,7 @@ class OAuthService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
       val idToken = response.parseIdToken()
       val accessToken = response.getAccessToken
       val refreshToken = Option(response.getRefreshToken)
-      val userInfo = UserInfo("", OAuth2BearerToken(accessToken), -1, idToken.getPayload.getSubject)
+      val userInfo = UserInfo(accessToken, idToken.getPayload.getSubject)
       thurloeDao.getProfile(userInfo) map {
         _.map { thurloeDao.maybeUpdateNihLinkExpiration(userInfo, _) }
       }

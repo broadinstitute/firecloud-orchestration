@@ -23,6 +23,11 @@ case class UserInfo(userEmail: String, accessToken: OAuth2BearerToken, accessTok
   def getUniqueId = id
 }
 
+object UserInfo {
+  def apply(accessToken: String, subjectId: String): UserInfo =
+    UserInfo("", OAuth2BearerToken(accessToken), -1, subjectId)
+}
+
 case class AccessToken(accessToken: OAuth2BearerToken) extends WithAccessToken
 
 // response from Google has other fields, but these are the ones we care about
