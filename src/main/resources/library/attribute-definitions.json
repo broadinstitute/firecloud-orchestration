@@ -193,109 +193,33 @@
   [
     {
       "title": "Define Data Set attributes",
-      "enumerate": false,
       "questions":
       [
-        {
-          "property": "datasetName",
-          "required": true
-        },
-        {
-          "property": "datasetDescription",
-          "required": true
-        },
-        {
-          "property": "datasetCustodian",
-          "inputHint": "e.g. Project Manager",
-          "required": true
-        },
-        {
-          "property": "datasetDepositor",
-          "inputHint": "e.g. Project Manager",
-          "required": true
-        },
-        {
-          "property": "datasetOwner",
-          "inputHint": "e.g. Prinicipal Investigator",
-          "required": true
-        },
-        {
-          "property": "institute",
-          "required": true
-        },
-        {
-          "property": "indication",
-          "required": true
-        },
-        {
-          "property": "numSubjects",
-          "inputHint": "Number of participants the data maps to",
-          "required": true
-        },
-        {
-          "property": "projectName",
-          "inputHint": "e.g. TCGA, TopMed, ExAC ; tag all relevant associated projects",
-          "required": true
-        },
-        {
-          "property": "datatype",
-          "inputHint": "e.g. Whole Genome, Whole Exome, RNA-Seq ; tag all relevant",
-          "required": true
-        },
-        {
-          "property": "reference",
-          "inputHint": "e.g. hg19, GRC38;  To which genome build the data was aligned, if relevant"
-        },
-        {
-          "property": "dataFileFormats",
-          "inputHint": "e.g. VCF, BAM; Tag all relevant"
-        },
-        {
-          "property": "technology",
-          "inputHint": "e.g. Illumina, 10X"
-        },
-        {
-          "property": "profilingProtocol"
-        },
-        {
-          "property": "dataUseRestriction",
-          "required": true
-        },
-        {
-          "property": "dataUseBSPSampleCollectionID"
-        },
-        {
-          "property": "studyDesign",
-          "inputHint": "e.g Case/Control, Trio, Tumor/normal, cases only - somatic,  cases only - germline, controls",
-          "required": true
-        },
-        {
-          "property": "cellType",
-          "required": true
-        },
-        {
-          "property": "coverage"
-        },
-        {
-          "property": "ethnicity",
-          "inputHint": "e.g. Caucasians, African-americans, Latino,East asians, South Asians, Finnish, Non-Finnish Europeans; check all relevant"
-        },
-        {
-          "property": "primaryDiseaseSite"
-        },
-        {
-          "property": "broadInternalResearchProjectID"
-        },
-        {
-          "property": "broadInternalResearchProjectName"
-        },
-        {
-          "property": "broadInternalCohortName"
-        },
-        {
-          "property": "broadInternalSeqProjectNumbers",
-          "inputHint": "Broad internal IDs"
-        }
+        {"property": "datasetName", "required": true},
+        {"property": "datasetDescription", "required": true},
+        {"property": "datasetCustodian", "inputHint": "e.g. Project Manager", "required": true},
+        {"property": "datasetDepositor", "inputHint": "e.g. Project Manager", "required": true},
+        {"property": "datasetOwner", "inputHint": "e.g. Prinicipal Investigator", "required": true},
+        {"property": "institute", "required": true},
+        {"property": "indication", "required": true},
+        {"property": "numSubjects", "inputHint": "Number of participants the data maps to", "required": true},
+        {"property": "projectName", "inputHint": "e.g. TCGA, TopMed, ExAC ; tag all relevant associated projects", "required": true},
+        {"property": "datatype", "inputHint": "e.g. Whole Genome, Whole Exome, RNA-Seq ; tag all relevant", "required": true},
+        {"property": "reference", "inputHint": "e.g. hg19, GRC38;  To which genome build the data was aligned, if relevant"},
+        {"property": "dataFileFormats", "inputHint": "e.g. VCF, BAM; Tag all relevant"},
+        {"property": "technology", "inputHint": "e.g. Illumina, 10X"},
+        {"property": "profilingProtocol"},
+        {"property": "dataUseRestriction", "required": true},
+        {"property": "dataUseBSPSampleCollectionID"},
+        {"property": "studyDesign", "inputHint": "e.g Case/Control, Trio, Tumor/normal, cases only - somatic,  cases only - germline, controls", "required": true},
+        {"property": "cellType", "required": true},
+        {"property": "coverage"},
+        {"property": "ethnicity", "inputHint": "e.g. Caucasians, African-americans, Latino,East asians, South Asians, Finnish, Non-Finnish Europeans; check all relevant"},
+        {"property": "primaryDiseaseSite"},
+        {"property": "broadInternalResearchProjectID"},
+        {"property": "broadInternalResearchProjectName"},
+        {"property": "broadInternalCohortName"},
+        {"property": "broadInternalSeqProjectNumbers", "inputHint": "Broad internal IDs"}
       ]
     },
     {
@@ -309,63 +233,25 @@
             "enumerate": true,
             "questions":
             [
-              {
-                "property": "futureGeneralUse",
-                "required": true,
-                "footerHint": "For health/medical/biomedical purposes and other biological research, including the study of population origins or ancestry."
-              },
-              {
-                "property": "futureHMB",
-                "required": true,
-                "footerHint": "Use of the data is limited to health/medical/biomedical purposes, does not include the study of population origins or ancestry."
-              },
-              {
-                "property": "futureDiseaseAreas"
-              },
-              {
-                "property": "futureCommercialUseProhibited",
-                "required": true
-              },
-              {
-                "property": "futureForProfit",
-                "required": true
-              },
-              {
-                "property": "futureMethodsProhibited",
-                "required": true
-              },
-              {
-                "property": "futureAggregateDataProhibited",
-                "required": true
-              },
-              {
-                "property": "futureControlSetProhibited",
-                "required": true
-              },
-              {
-                "property": "futureGenderRestricted",
-                "required": true
-              },
-              {
-                "property": "futurePediatric",
-                "required": true
-              },
-              {
-                "property": "futurePopulationRestricted"
-              },
-              {
-                "property": "futureUseDate"
-              }
+              {"property": "futureGeneralUse", "required": true},
+              {"property": "futureHMB", "required": true},
+              {"property": "futureDiseaseAreas"},
+              {"property": "futureCommercialUseProhibited", "required": true},
+              {"property": "futureForProfit", "required": true},
+              {"property": "futureMethodsProhibited", "required": true},
+              {"property": "futureAggregateDataProhibited", "required": true},
+              {"property": "futureControlSetProhibited", "required": true},
+              {"property": "futureGenderRestricted", "required": true},
+              {"property": "futurePediatric", "required": true},
+              {"property": "futurePopulationRestricted"},
+              {"property": "futureUseDate"}
             ]
           },
           {
             "title": "Retrieve Data Use Restrictions from Broad ORSP",
-            "enumerate": false,
             "questions":
             [
-              {
-                "property": "orsp"
-              }
+              {"property": "orsp"}
             ]
           }
         ]
