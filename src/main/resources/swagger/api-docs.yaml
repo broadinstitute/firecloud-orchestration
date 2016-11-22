@@ -1906,10 +1906,7 @@ paths:
       operationId: getRefreshTokenStatus
       summary: Returns the status of the current user's refresh token.
       responses:
-        204:
-          description: Refresh token is valid.
         200:
-          description: Refresh token is not valid and needs to be re-requested.
           schema:
             required:
               - requiresRefresh

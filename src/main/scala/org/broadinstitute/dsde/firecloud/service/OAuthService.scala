@@ -88,7 +88,7 @@ class OAuthService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
         ageDaysCount match {
           case x if x < 90 =>
             logger.debug(s"User's refresh token is $x days old; all good!")
-            RequestComplete(StatusCodes.NoContent)
+            RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> false))
           case x =>
             logger.info(s"User's refresh token is $x days old; requesting a new one.")
             RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
