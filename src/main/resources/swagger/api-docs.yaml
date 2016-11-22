@@ -345,6 +345,22 @@ paths:
         200:
           description: Matching datasets
 
+  /api/library/search/aggregations:
+    post:
+      tags:
+        - Library
+      operationId: GetAggregations
+      summary: Returns the aggregation information for your term
+      parameters:
+        - name: fields
+          description: attribute to get aggregations for
+          required: true
+          schema:
+            $ref: '#/definitions/AggregationRef'
+          in: body
+      responses:
+        200:
+          description: aggregations
   /api/library/user/role/curator:
     get:
       responses:
@@ -2087,6 +2103,20 @@ parameters:
 ## DEFINITIONS
 ##########################################################################################
 definitions:
+
+  AggregationRef:
+    properties:
+      fields:
+        type: array
+        items:
+          type: string
+        description: The fields to get aggregations for
+      maxResults:
+        type: integer
+        default: 10
+        description: How many results to return, will be applied to all fields
+    required:
+      - fields
 
   AttributeUpdateOperation:
     properties:

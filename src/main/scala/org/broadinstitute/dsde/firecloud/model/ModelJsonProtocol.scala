@@ -311,6 +311,10 @@ object ModelJsonProtocol {
   implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
   implicit val impLibrarySearchResponse = jsonFormat3(LibrarySearchResponse)
+  implicit val impLibraryAggregationParams = jsonFormat2(LibraryAggregationParams)
+  implicit val impAggregationTermResult = jsonFormat2(AggregationTermResult)
+  implicit val impAggregationFieldResults = jsonFormat2(AggregationFieldResults)
+  implicit val impLibraryAggregationResponse = jsonFormat2(LibraryAggregationResponse)
 
   implicit val impESQuery = jsonFormat1(ESQuery)
   implicit val impESWildcardSearchTerm = jsonFormat1(ESWildcardSearchTerm)
