@@ -603,31 +603,6 @@ paths:
 #            - https://www.googleapis.com/auth/devstorage.full_control
 #            - https://www.googleapis.com/auth/cloud-billing
 
-  /api/profile/refreshTokenDate:
-    get:
-      responses:
-        '200':
-          description: Successful Request
-          schema:
-            $ref: '#/definitions/UserRefreshTokenDate'
-        '400':
-          description: Token for the user is invalid
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '404':
-          description: There is no refresh token for the user
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '500':
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-      description: "get the date the refresh token last updated"
-      tags:
-        - Profile
-      summary: Get refresh token date
-      operationId: refreshTokenDate
-
   /api/status:
     get:
       tags:
@@ -2916,13 +2891,6 @@ definitions:
       userEmail:
         type: string
         description: User's email
-
-  UserRefreshTokenDate:
-    description: date a refresh token was stored
-    properties:
-      refreshTokenUpdatedDate:
-        type: string
-        format: date-time
 
   ValidatedMethodConfiguration:
     description: ''

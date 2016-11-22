@@ -141,9 +141,6 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
             case Failure(regrets) => respondWithErrorReport(regrets, requestContext)
           }
         }
-      } ~
-      path("profile" / "refreshTokenDate") {
-        passthrough(RawlsDAO.refreshTokenDateUrl, HttpMethods.GET)
       }
     } ~
     pathPrefix("register") {
