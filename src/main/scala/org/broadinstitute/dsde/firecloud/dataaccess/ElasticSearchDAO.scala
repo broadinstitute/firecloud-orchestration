@@ -11,11 +11,13 @@ import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, Del
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.search.aggregations.{AggregationBuilders}
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-
+import org.elasticsearch.search.aggregations.bucket.terms.Terms
+import scala.collection.JavaConverters._
 
 class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport {
 
@@ -113,5 +115,27 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
       hit.getSourceAsString.parseJson
     }
     new LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments)
+  }
+
+  def getAggregations(fields: Seq[String], numBuckets: Option[Int]) : Seq[LibraryAggregationResponse] = {
+    val searchReq = client.prepareSearch(indexName)
+    searchReq.setSize(0)
+    fields map { field: String =>
+      val terms = AggregationBuilders.terms(field)
+      if (None != numBuckets) {
+        terms.size(numBuckets.get)
+      }
+      searchReq.addAggregation(terms.field(field + ".raw"))
+    }
+    val aggResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
+
+    fields map { field: String =>
+      val terms: Terms = aggResults.getAggregations().get(field)
+      LibraryAggregationResponse(terms.getName(),
+        AggregationFieldResults(terms.getSumOfOtherDocCounts.toInt,
+          terms.getBuckets.asScala.toSeq map { bucket: Terms.Bucket =>
+            AggregationTermResult(bucket.getKey.toString, bucket.getDocCount.toInt)
+          }))
+    }
   }
 }

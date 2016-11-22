@@ -58,9 +58,19 @@ object LibrarySearchParams {
 case class LibrarySearchResponse(
   searchParams: LibrarySearchParams,
   total: Int,
-  results: Seq[JsValue]) {
-}
+  results: Seq[JsValue])
 
+
+case class LibraryAggregationParams(fields: Seq[String], maxResults: Option[Int])
+
+case class LibraryAggregationResponse(
+  field: String,
+  results: AggregationFieldResults)
+
+case class AggregationFieldResults(  numOtherDocs: Int,
+  buckets: Seq[AggregationTermResult])
+
+case class AggregationTermResult(key: String, doc_count: Int)
 
 /** classes to create the ES queries in json format
   * {"query":{"match_all":{}}}"
