@@ -38,7 +38,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
     pipeline(Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))) map { response =>
       response.status match {
-        case StatusCodes.OK => Option(Profile(unmarshal[ProfileWrapper].apply(response)))
+        case StatusCodes.OK => Some(Profile(unmarshal[ProfileWrapper].apply(response)))
         case StatusCodes.NotFound => None
         case _ => throwBadResponse(response)
       }
