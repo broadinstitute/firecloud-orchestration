@@ -1858,10 +1858,16 @@ paths:
       - Library
       operationId: duosAutocomplete
       summary: |
-        Searches DUOS for a disease ontology.
+        Passes through to DUOS' autocomplete method to select ontology terms of disease type that match the query term.
+      parameters:
+        - name: queryTerm
+          in: path
+          description: The query term (word fragment) which the service should try and complete.
+          required: true
+          type: string
       responses:
         200:
-          description: Matching disease ontologies.
+          description: Array of results.
         500:
           description: Internal Server Error
       security: []
