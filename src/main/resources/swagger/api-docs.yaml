@@ -1852,6 +1852,20 @@ paths:
           description: Internal Server Error
       security: []
 
+  /duos/autocomplete/{queryTerm}:
+    get:
+      tags:
+      - Library
+      operationId: duosAutocomplete
+      summary: |
+        Searches DUOS for a disease ontology.
+      responses:
+        200:
+          description: Matching disease ontologies.
+        500:
+          description: Internal Server Error
+      security: []
+
   /error:
     get:
       tags:

@@ -8,7 +8,7 @@
                "library:datasetDepositor", "library:datasetOwner", "library:institute", "library:numSubjects",
                "library:projectName", "library:datatype", "library:dataUseRestriction", "library:studyDesign",
                "library:cellType"],
-  "propertyOrder": ["library:diseaseOntology", "library:indication", "library:numSubjects", "library:datatype",
+  "propertyOrder": ["library:diseaseOntologyLabel", "library:indication", "library:numSubjects", "library:datatype",
                     "library:dataUseRestriction",  "library:datasetName", "library:datasetDescription", "library:datasetCustodian",
                     "library:datasetDepositor", "library:datasetOwner", "library:institute",  "library:projectName",
                     "library:reference", "library:dataFileFormats", "library:technology", "library:profilingProtocol",
@@ -46,11 +46,11 @@
       "items": { "type": "string" },
       "title": "Research Institute"
     },
-    "library:diseaseOntologyDOID": {
+    "library:diseaseOntologyID": {
       "type": "string",
       "hidden": true
     },
-    "library:diseaseOntology": {
+    "library:diseaseOntologyLabel": {
       "type": "string",
       "title": "Cohort Phenotypic Inclusion Criteria (Disease Ontology)",
       "typeahead": "ontology"
