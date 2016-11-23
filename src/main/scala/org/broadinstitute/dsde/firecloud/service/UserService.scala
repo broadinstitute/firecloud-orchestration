@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
-import org.broadinstitute.dsde.firecloud.dataaccess.{HttpGoogleServicesDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -11,13 +11,13 @@ import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.HttpHeaders.Authorization
 import spray.http.StatusCodes._
-import spray.http.{HttpCredentials, HttpMethods, StatusCode}
+import spray.http.{HttpCredentials, HttpMethods, StatusCode, StatusCodes}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
-import spray.json._
+import spray.json.DefaultJsonProtocol._
 import spray.routing._
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 class UserServiceActor extends Actor with UserService {
   def actorRefFactory = context
@@ -124,21 +124,16 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
       path("profile" / "billingAccounts") {
         get { requestContext =>
           val pipeline = authHeaders(requestContext) ~> sendReceive
-          val extReq = Get(UserService.billingAccountsUrl)
-          pipeline(extReq) onComplete {
-            case Success(response) if response.status == Forbidden =>
-              val tryParseScopes = Try {
-                response.entity.asString.parseJson.convertTo[ErrorReport].message.parseJson.convertTo[BillingAccountScopes]
-              }
-              tryParseScopes match {
-                case Success(scopes) =>
-                  // user does not have appropriate scopes.
-                  requestContext.complete(Forbidden)
-                case _ =>
-                  requestContext.complete(Forbidden, response.entity)
-              }
-            case Success(response) => requestContext.complete(response.status, response.entity)
-            case Failure(regrets) => respondWithErrorReport(regrets, requestContext)
+          pipeline(Get(UserService.billingAccountsUrl)) map { response =>
+            response.status match {
+              // The proxy would prevent a user from getting here if their account wasn't enabled,
+              // so a 403 from Rawls is effectively guaranteed to mean that the user hasn't enabled
+              // the billing accounts scope.
+              case StatusCodes.Forbidden =>
+                requestContext.complete(
+                  StatusCodes.Forbidden, Map("billingPermissionsRequired" -> true))
+              case _ => requestContext.complete(response)
+            }
           }
         }
       }

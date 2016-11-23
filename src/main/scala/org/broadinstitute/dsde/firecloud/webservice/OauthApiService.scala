@@ -1,13 +1,8 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impCurator
-import org.broadinstitute.dsde.firecloud.model.{Curator, UserInfo}
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, LibraryService, OAuthService}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, OAuthService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import spray.client.pipelining._
 import spray.http.StatusCodes
-import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsonParser.ParsingException
