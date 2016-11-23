@@ -122,19 +122,8 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         passthrough(UserService.billingUrl, HttpMethods.GET)
       } ~
       path("profile" / "billingAccounts") {
-        get { requestContext =>
-          val pipeline = authHeaders(requestContext) ~> sendReceive
-          pipeline(Get(UserService.billingAccountsUrl)) map { response =>
-            response.status match {
-              // The proxy would prevent a user from getting here if their account wasn't enabled,
-              // so a 403 from Rawls is effectively guaranteed to mean that the user hasn't enabled
-              // the billing accounts scope.
-              case StatusCodes.Forbidden =>
-                requestContext.complete(
-                  StatusCodes.Forbidden, Map("billingPermissionsRequired" -> true))
-              case _ => requestContext.complete(response)
-            }
-          }
+        get {
+          passthrough(UserService.billingAccountsUrl, HttpMethods.GET)
         }
       }
     } ~
