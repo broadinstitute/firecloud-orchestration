@@ -20,22 +20,26 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
   lazy val log = LoggerFactory.getLogger(getClass)
 
   def entityRoutes: Route =
-    requireUserInfo() { userInfo =>
-      pathPrefix("api") {
-        pathPrefix("workspaces" / Segment / Segment) { (workspaceNamespace, workspaceName) =>
-          val baseRawlsEntitiesUrl = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
-          path("entities_with_type") {
-            get { requestContext =>
+    pathPrefix("api") {
+      pathPrefix("workspaces" / Segment / Segment) { (workspaceNamespace, workspaceName) =>
+        val baseRawlsEntitiesUrl = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+        path("entities_with_type") {
+          get {
+            requireUserInfo() { _ => requestContext =>
               perRequest(requestContext, Props(new GetEntitiesWithTypeActor(requestContext)),
                 GetEntitiesWithType.ProcessUrl(encodeUri(baseRawlsEntitiesUrl)))
             }
-          } ~
-            pathPrefix("entities") {
-              pathEnd {
+          }
+        } ~
+          pathPrefix("entities") {
+            pathEnd {
+              requireUserInfo() { _ =>
                 passthrough(requestCompression = true, baseRawlsEntitiesUrl, HttpMethods.GET)
-              } ~
-                path("copy") {
-                  post {
+              }
+            } ~
+              path("copy") {
+                post {
+                  requireUserInfo() { _ =>
                     entity(as[EntityCopyDefinition]) { copyRequest => requestContext =>
                       val copyMethodConfig = new EntityCopyWithDestinationDefinition(
                         sourceWorkspace = copyRequest.sourceWorkspace,
@@ -46,40 +50,48 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                       externalHttpPerRequest(requestContext, extReq)
                     }
                   }
-                } ~
-                //TODO: Disabled as part of GAWB-423, re-enable as part of GAWB-422
-                //        path("delete") {
-                //          post {
-                //            entity(as[EntityDeleteDefinition]) { deleteDefinition => requestContext =>
-                //              perRequest(requestContext, Props(new DeleteEntitiesActor(requestContext, deleteDefinition.entities)),
-                //                DeleteEntities.ProcessUrl(baseRawlsEntitiesUrl))
-                //            }
-                //          }
-                //        } ~
-                pathPrefix(Segment) { entityType =>
-                  val entityTypeUrl = encodeUri(baseRawlsEntitiesUrl + "/" + entityType)
-                  pathEnd {
+                }
+              } ~
+              //TODO: Disabled as part of GAWB-423, re-enable as part of GAWB-422
+              //        path("delete") {
+              //          post {
+              //            entity(as[EntityDeleteDefinition]) { deleteDefinition => requestContext =>
+              //              perRequest(requestContext, Props(new DeleteEntitiesActor(requestContext, deleteDefinition.entities)),
+              //                DeleteEntities.ProcessUrl(baseRawlsEntitiesUrl))
+              //            }
+              //          }
+              //        } ~
+              pathPrefix(Segment) { entityType =>
+                val entityTypeUrl = encodeUri(baseRawlsEntitiesUrl + "/" + entityType)
+                pathEnd {
+                  requireUserInfo() { _ =>
                     passthrough(requestCompression = true, entityTypeUrl, HttpMethods.GET)
-                  } ~
-                    parameters('attributeNames.?) { attributeNamesString =>
-                      path("tsv") { requestContext =>
+                  }
+                } ~
+                  parameters('attributeNames.?) { attributeNamesString =>
+                    path("tsv") {
+                      requireUserInfo() { userInfo => requestContext =>
                         val filename = entityType + ".txt"
                         val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
                         perRequest(requestContext, ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo),
                           ExportEntitiesByTypeActor.ExportEntities(workspaceNamespace, workspaceName, filename, entityType, attributeNames))
                       }
-                    } ~
-                    path(Segment) { entityName =>
+                    }
+                  } ~
+                  path(Segment) { entityName =>
+                    requireUserInfo() { _ =>
                       passthrough(requestCompression = true, entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
                     }
-                }
-            } ~
-            pathPrefix("entityQuery" / Segment) { entityType =>
-              val baseRawlsEntityQueryUrl = FireCloudConfig.Rawls.entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)
-              val baseEntityQueryUri = Uri(baseRawlsEntityQueryUrl)
+                  }
+              }
+          } ~
+          pathPrefix("entityQuery" / Segment) { entityType =>
+            val baseRawlsEntityQueryUrl = FireCloudConfig.Rawls.entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)
+            val baseEntityQueryUri = Uri(baseRawlsEntityQueryUrl)
 
-              pathEnd {
-                get { requestContext =>
+            pathEnd {
+              get {
+                requireUserInfo() { _ => requestContext =>
                   val requestUri = requestContext.request.uri
 
                   val entityQueryUri = baseEntityQueryUri
@@ -92,7 +104,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                 }
               }
             }
-        }
+          }
       }
     }
 }
