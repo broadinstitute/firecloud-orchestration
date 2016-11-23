@@ -33,15 +33,13 @@
     },
     "indication": {
       "title": "Cohort Phenotype/Indication",
-      "type": "string",
-      "description": "The phenotype/indication criteria for being included as a subject in the cohort"
+      "type": "string"
     },
     "numSubjects": {
       "title": "No. of Subjects",
       "type": "integer",
       "minimum": 0,
-      "default": 0,
-      "description": "Dataset Size"
+      "default": 0
     },
     "projectName": {
       "title": "Project/s Name",
@@ -118,60 +116,71 @@
       "type": "array",
       "items": { "type": "string" }
     },
-    "futureGeneralUse": {
-      "title": "Data is available for future general research use [GRU]?",
+    "GRU": {
+      "title": "Data is available for future general research use",
       "type": "string",
-      "enum": ["Yes", "No"]
+      "enum": ["Yes", "No"],
+      "consentCode": "GRU"
     },
-    "futureHMB": {
-      "title": "Future use is limited for health/medical/biomedical research [HMB]?",
+    "HMB": {
+      "title": "Future use is limited for health/medical/biomedical research",
       "type": "string",
-      "enum": ["Yes", "No"]
+      "enum": ["Yes", "No"],
+      "consentCode": "HMB"
     },
-    "futureDiseaseAreas": {
-      "title": "Future use is limited to research involving the following disease area(s) [DS]",
+    "DS": {
+      "title": "Future use is limited to research involving the following disease area(s)",
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "consentCode": "DS"
     },
-    "futureCommercialUseProhibited": {
-      "title": "Future commercial use is prohibited [NCU]",
+    "NCU": {
+      "title": "Future commercial use is prohibited",
       "type": "string",
-      "enum": ["Yes", "No"]
+      "enum": ["Yes", "No"],
+      "consentCode": "NCU"
     },
-    "futureForProfit": {
-      "title": "Future use by for-profit entities is prohibited [NPU]",
+    "NPU": {
+      "title": "Future use by for-profit entities is prohibited",
       "type": "string",
-      "enum": ["Yes", "No"]
+      "enum": ["Yes", "No"],
+      "consentCode": "NPU"
     },
-    "futureMethodsProhibited": {
-      "title": "Future use for methods research (analytic/software/technology development) outside the bounds of the other specified restrictions is prohibited [NDMS]",
+    "NDMS": {
+      "title": "Future use for methods research (analytic/software/technology development) outside the bounds of the other specified restrictions is prohibited",
       "type": "string",
-      "enum": ["Yes", "No"]
+      "enum": ["Yes", "No"],
+      "consentCode": "NDMS"
     },
-    "futureAggregateDataProhibited": {
-      "title": "Future use of aggregate-level data for general research purposes is prohibited [NAGR]",
+    "NAGR": {
+      "title": "Future use of aggregate-level data for general research purposes is prohibited",
       "type": "string",
-      "enum": ["Yes", "No", "Unspecified"]
+      "enum": ["Yes", "No", "Unspecified"],
+      "consentCode": "NAGR"
     },
-    "futureControlSetProhibited": {
-      "title": "Future use as a control set for diseases other than those specified is prohibited [NCTRL]",
+    "NCTRL": {
+      "title": "Future use as a control set for diseases other than those specified is prohibited",
       "type": "string",
-      "enum": ["Yes", "No"]
+      "enum": ["Yes", "No"],
+      "consentCode": "NCTRL"
     },
-    "futureGenderRestricted": {
-      "title": "Future use is limited to research involving a particular gender [RS-M]/[RS-FM]",
+    "RS-G": {
+      "title": "Future use is limited to research involving a particular gender",
       "type": "string",
-      "enum": ["Male", "Female", "N/A"]
+      "enum": ["Male", "Female", "N/A"],
+      "consentCode": "RS-G"
     },
-    "futurePediatric": {
-      "title": "Future use is limited to pediatric research [RS-PD]",
+    "RS-PD": {
+      "title": "Future use is limited to pediatric research",
       "type": "string",
-      "enum": ["Yes", "No"]
+      "enum": ["Yes", "No"],
+      "consentCode": "RS-PD"
     },
-    "futurePopulationRestricted": {
-      "title": "Future use is limited to research involving a specific population [RS-POP]",
+    "RS-POP": {
+      "title": "Future use is limited to research involving a specific population",
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "consentCode": "RS-POP"
     },
     "futureUseDate": {
       "title": "Future use is limited to data generated from samples collected after the following consent form date",
@@ -180,6 +189,19 @@
     "orsp": {
       "type": "text"
     }
+  },
+  "consentCodes": {
+    "GRU": "For health/medical/biomedical purposes and other biological research, including the study of population origins or ancestry.",
+    "HMB": "Use of the data is limited to health/medical/biomedical purposes, does not include the study of population origins or ancestry.",
+    "DS": "Use of the data must be related to a particular disease.",
+    "NCU": "Use of the data is limited to non-commercial use.",
+    "NPU": "Use of the data is limited to not-for-profit organizations.",
+    "NDMS": "Use of the data includes methods development research (e.g., development of software or algorithms) ONLY within the bounds of other specified data use limitations.",
+    "NAGR": "Use of the data includes aggregate level analysis to address research questions (e.g., determine variant frequencies across the general population) ONLY within the bounds of other specified data use limitations.",
+    "NCTRL": "Data can be used as a control set ONLY within the bounds of other specified data use limitations (e.g. only for cancer studies).",
+    "RS-G": "Use of the data is limited to studies of particular gender.",
+    "RS-PD": "Use of the data is limited to pediatric research.",
+    "RS-POP": "Use of the data is limited to studies of particular population."
   },
   "display": {
     "primary": ["indication", "numSubjects", "datatype", "dataUseRestriction"],
@@ -233,17 +255,17 @@
             "enumerate": true,
             "questions":
             [
-              {"property": "futureGeneralUse", "required": true},
-              {"property": "futureHMB", "required": true},
-              {"property": "futureDiseaseAreas"},
-              {"property": "futureCommercialUseProhibited", "required": true},
-              {"property": "futureForProfit", "required": true},
-              {"property": "futureMethodsProhibited", "required": true},
-              {"property": "futureAggregateDataProhibited", "required": true},
-              {"property": "futureControlSetProhibited", "required": true},
-              {"property": "futureGenderRestricted", "required": true},
-              {"property": "futurePediatric", "required": true},
-              {"property": "futurePopulationRestricted"},
+              {"property": "GRU", "required": true},
+              {"property": "HMB", "required": true},
+              {"property": "DS"},
+              {"property": "NCU", "required": true},
+              {"property": "NPU", "required": true},
+              {"property": "NDMS", "required": true},
+              {"property": "NAGR", "required": true},
+              {"property": "NCTRL", "required": true},
+              {"property": "RS-M", "required": true},
+              {"property": "RS-PD", "required": true},
+              {"property": "RS-POP"},
               {"property": "futureUseDate"}
             ]
           },
