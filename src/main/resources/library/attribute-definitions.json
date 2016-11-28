@@ -236,7 +236,7 @@
         {"property": "studyDesign", "inputHint": "e.g Case/Control, Trio, Tumor/normal, cases only - somatic,  cases only - germline, controls", "required": true},
         {"property": "cellType", "required": true},
         {"property": "coverage"},
-        {"property": "ethnicity", "inputHint": "e.g. Caucasians, African-americans, Latino,East asians, South Asians, Finnish, Non-Finnish Europeans; check all relevant"},
+        {"property": "ethnicity", "inputHint": "e.g. Caucasians, African-americans, Latino, East asians, South Asians, Finnish, Non-Finnish Europeans; check all relevant"},
         {"property": "primaryDiseaseSite"},
         {"property": "broadInternalResearchProjectID"},
         {"property": "broadInternalResearchProjectName"},
@@ -273,7 +273,7 @@
             "title": "Retrieve Data Use Restrictions from Broad ORSP",
             "questions":
             [
-              {"property": "orsp"}
+              {"property": "orsp", "required": true}
             ]
           }
         ]
