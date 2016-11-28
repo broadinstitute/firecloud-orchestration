@@ -1,53 +1,35 @@
 package org.broadinstitute.dsde.firecloud.core
 
-import akka.actor.{ActorRefFactory, Actor, Props}
+import akka.actor.{Actor, ActorRefFactory, Props}
 import akka.event.Logging
 import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-
 import org.broadinstitute.dsde.firecloud.core.ProfileClient._
-import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
-import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.dataaccess.{HttpGoogleServicesDAO, HttpRawlsDAO, HttpThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{UserService, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudRequestBuilding, UserService}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
-
 import spray.client.pipelining._
-import spray.http.{Uri, HttpRequest, HttpResponse}
 import spray.http.StatusCodes._
+import spray.http.{HttpRequest, HttpResponse, StatusCodes, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
+import spray.json.DefaultJsonProtocol._
 import spray.routing.RequestContext
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object ProfileClient {
   case class UpdateProfile(userInfo: UserInfo, profile: BasicProfile)
   case class UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink)
   case class GetNIHStatus(userInfo: UserInfo)
-  case class GetAndUpdateNIHStatus(userInfo: UserInfo)
   case object SyncWhitelist
 
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
-
-  def calculateExpireTime(profile:Profile): Long = {
-    (profile.lastLinkTime, profile.linkExpireTime) match {
-      case (Some(lastLink), Some(expire)) if (lastLink < DateUtils.nowMinus24Hours && expire > DateUtils.nowPlus24Hours) =>
-        // The user has not logged in to FireCloud within 24 hours, AND the user's expiration is
-        // more than 24 hours in the future. Reset the user's expiration.
-        DateUtils.nowPlus24Hours
-      case (Some(lastLink), Some(expire)) =>
-        // User in good standing; return the expire time unchanged
-        expire
-      case _ =>
-        // Either last-link or expire is missing. Reset the user's expiration.
-        DateUtils.nowPlus24Hours
-    }
-  }
 }
 
 class ProfileClientActor(requestContext: RequestContext) extends Actor with FireCloudRequestBuilding {
@@ -56,10 +38,13 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   import system.dispatcher
   val log = Logging(system, getClass)
 
+  // GAWB-1286
+  val temporaryThurloeDao = new HttpThurloeDAO
+  val temporaryRawlsDao = new HttpRawlsDAO
+
   override def receive: Receive = {
 
     case UpdateProfile(userInfo: UserInfo, profile: BasicProfile) =>
-      val parent = context.parent
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
       val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
@@ -84,10 +69,9 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
                                         "Unexpected error saving profile", e) }
 
-      profileResponse pipeTo context.parent
+      profileResponse pipeTo sender
 
     case UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) =>
-      val parent = context.parent
       val syncWhiteListResult = syncWhitelist(Some(userInfo.getUniqueId))
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = nihLink.propertyValueMap
@@ -100,123 +84,31 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
         }
       } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
         "Unexpected error updating NIH link", e) }
+
       // Complete syncWhitelist and ignore as neither success nor failure are useful to the client
-      syncWhiteListResult onComplete {
-        case _ => profileResponse pipeTo parent
-      }
+      syncWhiteListResult map(Success(_)) recover { case t => Failure(t) } flatMap { _ =>
+        profileResponse
+      } pipeTo sender
 
     case GetNIHStatus(userInfo: UserInfo) =>
-      val profileResponse = getProfile(userInfo, false)
-      profileResponse pipeTo context.parent
-
-    case GetAndUpdateNIHStatus(userInfo: UserInfo) =>
-      getProfile(userInfo, true)
-      // do NOT pipe the response back to the parent!
+      temporaryThurloeDao.getProfile(userInfo) flatMap {
+        case Some(profile) =>
+          profile.linkedNihUsername match {
+            case Some(_) =>
+              temporaryRawlsDao.isDbGapAuthorized(userInfo) map {
+                case true =>
+                  RequestComplete(NIHStatus(profile, Some(true)))
+                case false =>
+                  RequestComplete(NIHStatus(profile, Some(false)))
+              }
+            case None =>
+              Future.successful(RequestComplete(StatusCodes.NotFound))
+          }
+        case None => Future.successful(RequestComplete(StatusCodes.NotFound))
+      } pipeTo sender
 
     case SyncWhitelist =>
-      syncWhitelist() pipeTo context.parent
-
-  }
-
-  def getProfile(userInfo: UserInfo, updateExpiration: Boolean): Future[PerRequestMessage] = {
-    val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
-    val profileReq = Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))
-
-    pipeline(profileReq) flatMap { response: HttpResponse =>
-      response.status match {
-        case OK =>
-          val profileEither = response.entity.as[ProfileWrapper]
-          profileEither match {
-            case Right(profileWrapper) =>
-              val profile = Profile(profileWrapper)
-              profile.linkedNihUsername match {
-                case Some(nihUsername) =>
-                  // we have a linked profile.
-
-                  // get the current link expiration time
-                  val profileExpiration = profile.linkExpireTime.getOrElse(0L)
-
-                  // calculate the possible new link expiration time
-                  val linkExpireSeconds = if (updateExpiration) {
-                    calculateExpireTime(profile)
-                  } else {
-                    profileExpiration
-                  }
-
-                  // if the link expiration time needs updating (i.e. is different than what's in the profile), do the updating
-                  if (linkExpireSeconds != profileExpiration) {
-                    val expireKVP = FireCloudKeyValue(Some("linkExpireTime"), Some(linkExpireSeconds.toString))
-                    val expirePayload = ThurloeKeyValue(Some(userInfo.getUniqueId), Some(expireKVP))
-
-                    val postPipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
-                    val updateReq = Post(UserService.remoteSetKeyURL, expirePayload)
-
-                    postPipeline(updateReq) map { response: HttpResponse =>
-                      response.status match {
-                        case OK => log.info(s"User with linked NIH account [%s] now has 24 hours to re-link.".format(nihUsername))
-                        case x =>
-                          log.warning(s"User with linked NIH account [%s] requires re-link within 24 hours, ".format(nihUsername) +
-                            s"but the system encountered a failure updating link expiration: " + response.toString)
-                      }
-                    } recover {
-                      case e: Throwable =>
-                        // TODO: COULD NOT UPDATE link expire in Thurloe
-                        log.warning(s"User with linked NIH account [%s] requires re-link within 24 hours, ".format(nihUsername) +
-                          s"but the system encountered an unexpected error updating link expiration: " + e.getMessage, e)
-                    }
-                  }
-
-                  val howSoonExpire = DateUtils.secondsSince(linkExpireSeconds)
-
-                  // if the user's link has expired, the user must re-link.
-                  // NB: we use a separate val here in case we need to change the logic. For instance, we could
-                  // change the logic later to be "link has expired OR user hasn't logged in within 24 hours"
-                  val loginRequired = (howSoonExpire >= 0)
-
-                  getNIHStatusResponse(pipeline, loginRequired, profile, linkExpireSeconds)
-
-                case _ =>
-                  Future(RequestComplete(NotFound, "Linked NIH username not found"))
-              }
-            case Left(err) =>
-              Future(RequestCompleteWithErrorReport(InternalServerError,
-                "Could not unmarshal profile response: " + err.toString, Seq()))
-          }
-        case x =>
-          // request for profile returned non-200
-          Future(RequestCompleteWithErrorReport(x, response.toString, Seq()))
-      }
-    } recover {
-      // unexpected error retrieving profile
-      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
-    }
-  }
-
-  def getNIHStatusResponse(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    loginRequired: Boolean, profile: Profile, linkExpireSeconds: Long): Future[PerRequestMessage] = {
-    val dbGapUrl = UserService.groupUrl(FireCloudConfig.Nih.rawlsGroupName)
-    val isDbGapAuthorizedRequest = Get(dbGapUrl)
-
-    pipeline(isDbGapAuthorizedRequest) map { response: HttpResponse =>
-      val authorized: Boolean = response.status match {
-        case x if x == OK => true
-        case _ => false
-      }
-      RequestComplete(OK,
-        NIHStatus(
-          loginRequired,
-          linkedNihUsername = profile.linkedNihUsername,
-          isDbgapAuthorized = Some(authorized),
-          lastLinkTime = Some(profile.lastLinkTime.getOrElse(0L)),
-          linkExpireTime = Some(linkExpireSeconds),
-          descriptionSinceLastLink = Some(DateUtils.prettySince(profile.lastLinkTime.getOrElse(0L))),
-          descriptionUntilExpires = Some(DateUtils.prettySince(linkExpireSeconds))
-        )
-      )
-    } recover {
-      // unexpected error retrieving dbgap group status
-      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
-    }
+      syncWhitelist() pipeTo sender
   }
 
   def updateUserProperties(
@@ -291,6 +183,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
                                       "Profile saved, but unexpected error registering user", e) }
   }
 
+  // GAWB-1314
   def sendNotification(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     notification: Notification) = {
     pipeline {

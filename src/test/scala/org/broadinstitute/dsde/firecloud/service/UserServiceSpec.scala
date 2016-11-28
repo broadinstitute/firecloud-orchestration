@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -7,7 +8,6 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-
 import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
@@ -68,7 +68,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
       )
 
     workspaceServer
-      .when(request.withMethod("GET").withPath(OAuthService.remoteTokenDateUrl))
+      .when(request.withMethod("GET").withPath(RawlsDAO.refreshTokenDateUrl))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)

@@ -603,31 +603,6 @@ paths:
 #            - https://www.googleapis.com/auth/devstorage.full_control
 #            - https://www.googleapis.com/auth/cloud-billing
 
-  /api/profile/refreshTokenDate:
-    get:
-      responses:
-        '200':
-          description: Successful Request
-          schema:
-            $ref: '#/definitions/UserRefreshTokenDate'
-        '400':
-          description: Token for the user is invalid
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '404':
-          description: There is no refresh token for the user
-          schema:
-            $ref: '#/definitions/ErrorReport'
-        '500':
-          description: Rawls Internal Error
-          schema:
-            $ref: '#/definitions/ErrorReport'
-      description: "get the date the refresh token last updated"
-      tags:
-        - Profile
-      summary: Get refresh token date
-      operationId: refreshTokenDate
-
   /api/status:
     get:
       tags:
@@ -1876,42 +1851,43 @@ paths:
           description: Success
       security: []
 
-  /login:
+  /handle-oauth-code:
+    post:
+      tags:
+        - OAuth
+      operationId: handleOauthCode
+      summary: Handles OAuth code from authenticated client
+      description: This code allows the server to acquire a refresh token.
+      parameters:
+        - in: body
+          name: body
+          schema:
+            required:
+              - code
+              - redirectUri
+            properties:
+              code:
+                type: string
+              redirectUri:
+                type: string
+      responses:
+        204:
+          description: All set
+      security: []
+  /api/refresh-token-status:
     get:
       tags:
         - OAuth
-      operationId: login
-      summary: Starts the authentication flow for a user
-      description: This is an unauthenticated endpoint at /login (not /api/login) that initiates the OAuth flow.
-        Authentication cannot be initiated from within swagger, because auth requires the entire browser
-        to redirect, and swagger uses ajax. To test, fill in your desired query params, then copy and paste the
-        request url into your browser address bar.
-      parameters:
-      - name: path
-        in: query
-        description: The url fragment to use after finishing authentication
-        required: false
-        type: string
-      - name: prompt
-        in: query
-        description: use "force" to always request a new refresh token
-        required: false
-        type: string
-        enum: ["auto","force"]
-        default: "auto"
-      - name: callback
-        in: query
-        description: The host to use after finishing authentication. Include the scheme, but no trailing slash, e.g. https://firecloud.broadinstitute.org
-        required: false
-        type: string
+      operationId: getRefreshTokenStatus
+      summary: Returns the status of the current user's refresh token.
       responses:
-        307:
-          description: Successful redirect after authentication
-        401:
-          description: Unauthorized
-        500:
-          description: Internal server error
-      security: []
+        200:
+          schema:
+            required:
+              - requiresRefresh
+            properties:
+              requiresRefresh:
+                type: boolean
 
   /me:
     get:
@@ -2915,13 +2891,6 @@ definitions:
       userEmail:
         type: string
         description: User's email
-
-  UserRefreshTokenDate:
-    description: date a refresh token was stored
-    properties:
-      refreshTokenUpdatedDate:
-        type: string
-        format: date-time
 
   ValidatedMethodConfiguration:
     description: ''

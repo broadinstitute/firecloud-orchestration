@@ -9,15 +9,15 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
-import spray.http.{HttpCredentials, HttpMethods, StatusCode}
 import spray.http.HttpHeaders.Authorization
 import spray.http.StatusCodes._
+import spray.http.{HttpCredentials, HttpMethods, StatusCode, StatusCodes}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
+import spray.json.DefaultJsonProtocol._
 import spray.routing._
-import spray.json._
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 class UserServiceActor extends Actor with UserService {
   def actorRefFactory = context
@@ -117,35 +117,14 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         }
       }
     } ~
-    requireUserInfo() { userInfo =>
     pathPrefix("api") {
       path("profile" / "billing") {
         passthrough(UserService.billingUrl, HttpMethods.GET)
       } ~
       path("profile" / "billingAccounts") {
-        oauthParams { (state, _) => requestContext =>
-          val pipeline = authHeaders(requestContext) ~> sendReceive
-          val extReq = Get(UserService.billingAccountsUrl)
-          pipeline(extReq) onComplete {
-            case Success(response) if response.status == Forbidden =>
-              val tryParseScopes = Try {
-                response.entity.asString.parseJson.convertTo[ErrorReport].message.parseJson.convertTo[BillingAccountScopes]
-              }
-              tryParseScopes match {
-                case Success(scopes) =>
-                  // user does not have appropriate scopes.  Ask user to enable them via OAuth
-                  val redirectURI = HttpGoogleServicesDAO.getGoogleRedirectURI(state, "auto", Option(scopes.requiredScopes ++ HttpGoogleServicesDAO.userLoginScopes))
-                  requestContext.complete(Forbidden, ErrorReport(Forbidden, BillingAccountRedirect(redirectURI).toJson.toString))
-                case _ =>
-                  requestContext.complete(Forbidden, response.entity)
-              }
-            case Success(response) => requestContext.complete(response.status, response.entity)
-            case Failure(regrets) => respondWithErrorReport(regrets, requestContext)
-          }
+        get {
+          passthrough(UserService.billingAccountsUrl, HttpMethods.GET)
         }
-      } ~
-      path("profile" / "refreshTokenDate") {
-        passthrough(OAuthService.remoteTokenDateUrl, HttpMethods.GET)
       }
     } ~
     pathPrefix("register") {
@@ -161,21 +140,24 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         // GET /profile - get all keys for current user
         pathEnd {
           get {
-            mapRequest(addFireCloudCredentials) {
-              passthrough(UserService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
+            requireUserInfo() { userInfo =>
+              mapRequest(addFireCloudCredentials) {
+                passthrough(UserService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
+              }
             }
           } ~
           post {
-            entity(as[BasicProfile]) {
-              profileData => requestContext =>
-                perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
-                  ProfileClient.UpdateProfile(userInfo, profileData))
+            requireUserInfo() { userInfo =>
+              entity(as[BasicProfile]) {
+                profileData => requestContext =>
+                  perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
+                    ProfileClient.UpdateProfile(userInfo, profileData))
+              }
             }
           }
         }
       }
     }
-  }
 
   private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext) = {
     requestContext.complete(statusCode, ErrorReport(statusCode=statusCode, message=message))

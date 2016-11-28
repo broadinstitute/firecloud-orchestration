@@ -65,33 +65,41 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               }
         }
     } ~
-    requireUserInfo() { userInfo =>
-      pathPrefix("api") {
-        pathPrefix("workspaces") {
-          pathEnd {
+    pathPrefix("api") {
+      pathPrefix("workspaces") {
+        pathEnd {
+          requireUserInfo() { _ =>
             mapHttpResponseEntity(transformListWorkspaceRequest) {
               passthrough(rawlsWorkspacesRoot, HttpMethods.GET)
-            } ~
-            post {
+            }
+          } ~
+          post {
+            requireUserInfo() { _ =>
               entity(as[WorkspaceCreate]) { createRequest => requestContext =>
                 val extReq = Post(FireCloudConfig.Rawls.workspacesUrl, new RawlsWorkspaceCreate(createRequest))
                 externalHttpPerRequest(requestContext, extReq)
               }
             }
-          } ~
-          pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
-            val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
-            pathEnd {
+          }
+        } ~
+        pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
+          val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
+          pathEnd {
+            requireUserInfo() { _ =>
               mapHttpResponseEntity(transformSingleWorkspaceRequest) {
                 passthrough(workspacePath, HttpMethods.GET)
               } ~
-              passthrough(workspacePath, HttpMethods.DELETE)
-            } ~
-            path("methodconfigs") {
+                passthrough(workspacePath, HttpMethods.DELETE)
+            }
+          } ~
+          path("methodconfigs") {
+            requireUserInfo() { _ =>
               passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
-            } ~
-            path("importEntities") {
-              post {
+            }
+          } ~
+          path("importEntities") {
+            post {
+              requireUserInfo() { _ =>
                 formFields('entities) { entitiesTSV =>
                   respondWithJSON { requestContext =>
                     perRequest(requestContext, Props(new EntityClient(requestContext)),
@@ -99,12 +107,16 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   }
                 }
               }
-            } ~
-            path("updateAttributes") {
+            }
+          } ~
+          path("updateAttributes") {
+            requireUserInfo() { _ =>
               passthrough(workspacePath, HttpMethods.PATCH)
-            } ~
-            path("setAttributes") {
-              patch {
+            }
+          } ~
+          path("setAttributes") {
+            patch {
+              requireUserInfo() { userInfo =>
                 implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
                 entity(as[AttributeMap]) { newAttributes => requestContext =>
                   perRequest(requestContext,
@@ -112,16 +124,20 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                     WorkspaceService.SetWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes))
                 }
               }
-            } ~
-            path("exportAttributesTSV") {
-              get { requestContext =>
-                  perRequest(requestContext,
-                      WorkspaceService.props(workspaceServiceConstructor, userInfo),
-                      WorkspaceService.ExportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename))
-                }
-            } ~
-            path("importAttributesTSV") {
-              post {
+            }
+          } ~
+          path("exportAttributesTSV") {
+            get {
+              requireUserInfo() { userInfo => requestContext =>
+                perRequest(requestContext,
+                  WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                  WorkspaceService.ExportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename))
+              }
+            }
+          } ~
+          path("importAttributesTSV") {
+            post {
+              requireUserInfo() { userInfo =>
                 formFields('attributes) { attributesTSV =>
                   respondWithJSON { requestContext =>
                     perRequest(requestContext, WorkspaceService.props(workspaceServiceConstructor, userInfo),
@@ -130,34 +146,46 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   }
                 }
               }
-            } ~
-            path("acl") {
-              patch {
+            }
+          } ~
+          path("acl") {
+            patch {
+              requireUserInfo() { userInfo =>
                 entity(as[List[WorkspaceACLUpdate]]) { aclUpdates => requestContext =>
                   perRequest(requestContext,
                     WorkspaceService.props(workspaceServiceConstructor, userInfo),
                     WorkspaceService.UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail))
                 }
-              } ~
-              get {
-                passthrough(workspacePath + "/acl", HttpMethods.GET)
               }
             } ~
-            path("checkBucketReadAccess") {
+            get {
+              requireUserInfo() { _ =>
+                passthrough(workspacePath + "/acl", HttpMethods.GET)
+              }
+            }
+          } ~
+          path("checkBucketReadAccess") {
+            requireUserInfo() { _ =>
               passthrough(workspacePath + "/checkBucketReadAccess", HttpMethods.GET)
-            } ~
-            path("clone") {
-              post {
+            }
+          } ~
+          path("clone") {
+            post {
+              requireUserInfo() { _ =>
                 entity(as[WorkspaceCreate]) { createRequest => requestContext =>
                   val extReq = Post(workspacePath + "/clone", new RawlsWorkspaceCreate(createRequest))
                   externalHttpPerRequest(requestContext, extReq)
                 }
               }
-            } ~
-            path("lock") {
+            }
+          } ~
+          path("lock") {
+            requireUserInfo() { _ =>
               passthrough(workspacePath + "/lock", HttpMethods.PUT)
-            } ~
-            path("unlock") {
+            }
+          } ~
+          path("unlock") {
+            requireUserInfo() { _ =>
               passthrough(workspacePath + "/unlock", HttpMethods.PUT)
             }
           }

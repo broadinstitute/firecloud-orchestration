@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud
 
+import akka.actor.ActorContext
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
 import org.slf4j.LoggerFactory
@@ -10,8 +11,11 @@ import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.webservice._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
+
 
 class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives with LibraryApiService
+  with OauthApiService
   with WorkspaceApiService
   with NamespaceApiService
   with CookieAuthedApiService
@@ -31,6 +35,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
 
   val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO, thurloeDAO)
 
+  val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
@@ -48,7 +53,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
     methodConfigurationService.routes ~ submissionsService.routes ~
     statusService.routes ~ nihService.routes ~ billingService.routes
 
-  val oAuthService = new OAuthService with ActorRefFactoryContext
   val userService = new UserService with ActorRefFactoryContext
   val nihSyncService = new NIHSyncService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
@@ -65,7 +69,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
         import spray.json.DefaultJsonProtocol._
         val dataMap = response.entity.asString.parseJson.convertTo[Map[String, JsValue]]
         val withTimestamp = dataMap + ("timestamp" -> JsNumber(System.currentTimeMillis()))
-        response.withEntity(HttpEntity(withTimestamp.toJson.prettyPrint))
+        val contentType = response.header[HttpHeaders.`Content-Type`].map{_.contentType}.getOrElse(ContentTypes.`application/json`)
+        response.withEntity(HttpEntity(contentType, withTimestamp.toJson.prettyPrint + "\n"))
       } catch {
         // usually a failure to parse, if the response isn't JSON (e.g. HTML responses from Google)
         case e: Exception => response
@@ -79,10 +84,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
   def receive = runRoute(
     appendTimestamp {
       logRequests {
-        swaggerCorsService ~
         swaggerUiService ~
         testNihService ~
-        oAuthService.routes ~
+        oauthRoutes ~
         userService.routes ~
         nihSyncService.routes ~
         healthService.routes ~
@@ -105,36 +109,31 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
   private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/2.2.5"
 
   val swaggerUiService = {
-    get {
-      optionalHeaderValueByName("X-Forwarded-Host") { forwardedHost =>
-        pathPrefix("") {
-          pathEnd {
-            parameter("url") {urlparam =>
-              requestUri {uri =>
-                redirect(uri.withQuery(Map.empty[String,String]), MovedPermanently)
-              }
-            } ~
-            serveIndex()
-          } ~
-            pathSuffix("api-docs") {
-              withResourceFileContents("swagger/api-docs.yaml") { apiDocs =>
-                complete(apiDocs)
-              }
-            } ~
-            getFromResourceDirectory(swaggerUiPath)
+    path("") {
+      get {
+        parameter("url") {urlparam =>
+          requestUri {uri =>
+            redirect(uri.withQuery(Map.empty[String,String]), MovedPermanently)
+          }
+        } ~
+        serveIndex()
+      }
+    } ~
+    path("api-docs") {
+      get {
+        withResourceFileContents("swagger/api-docs.yaml") { apiDocs =>
+          complete(apiDocs)
         }
       }
-    }
-  }
-
-  val swaggerCorsService = {
-    options{
-      optionalHeaderValueByName("Referer") { refer =>
-        refer match {
-          // at some point in the future, we may want to support additional referers; careful of hardcoding!
-          case Some("https://swagger.dsde-dev.broadinstitute.org/") => complete(OK)
-          case _ => reject
-        }
+    } ~
+    // We have to be explicit about the paths here since we're matching at the root URL and we don't
+    // want to catch all paths lest we circumvent Spray's not-found and method-not-allowed error
+    // messages.
+    (pathSuffixTest("o2c.html") | pathSuffixTest("swagger-ui.js")
+        | pathPrefixTest("css" /) | pathPrefixTest("fonts" /) | pathPrefixTest("images" /)
+        | pathPrefixTest("lang" /) | pathPrefixTest("lib" /)) {
+      get {
+        getFromResourceDirectory(swaggerUiPath)
       }
     }
   }

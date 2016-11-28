@@ -1,17 +1,14 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.io.StringReader
-
 import akka.actor.ActorRefFactory
 import com.google.api.client.auth.oauth2.Credential
-import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets, GoogleCredential}
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
-import com.google.api.services.compute.ComputeScopes
 import com.google.api.services.storage.{Storage, StorageScopes}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.{OAuthException, OAuthTokens, OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
+import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
@@ -46,29 +43,13 @@ import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol.
 
 object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
 
-  val baseUrl = FireCloudConfig.FireCloud.baseUrl
-  val callbackPath = "/callback"
-
-  // this needs to match a value in the "Authorized redirect URIs" section of the Google credential in use
-  val callbackUri = Uri(s"${baseUrl}${callbackPath}")
-
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
-  // the scopes we request for the end user during interactive login. TODO: remove compute?
-  val userLoginScopes = Seq(StorageScopes.DEVSTORAGE_FULL_CONTROL, ComputeScopes.COMPUTE) ++ authScopes
 
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
   val jsonFactory = JacksonFactory.getDefaultInstance
-
-  val clientSecrets = GoogleClientSecrets.load(jsonFactory, new StringReader(FireCloudConfig.Auth.googleSecretJson))
-
-  // Google Java Client doesn't offer direct access to the allowed origins, so we have to jump through a couple hoops
-  val origins:List[String] = (clientSecrets.getDetails.get("javascript_origins").asInstanceOf[java.util.ArrayList[String]]).toList
-
-  val flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport,
-    jsonFactory, clientSecrets, userLoginScopes).build()
 
   val pemFile = FireCloudConfig.Auth.pemFile
   val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
@@ -77,54 +58,6 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
   val rawlsPemFileClientId = FireCloudConfig.Auth.rawlsPemFileClientId
 
   lazy val log = LoggerFactory.getLogger(getClass)
-
-  /**
-   * first step of OAuth dance: redirect the browser to Google's login page
-   */
-  def getGoogleRedirectURI(state: String, approvalPrompt: String = "auto", overrideScopes: Option[Seq[String]] = None): String = {
-    val urlBuilder = flow.newAuthorizationUrl()
-      .setRedirectUri(callbackUri.toString)
-      .setState(state)
-      .setAccessType("offline")   // enables refresh token
-      .setApprovalPrompt(approvalPrompt) // "force" to get a new refresh token
-
-    overrideScopes match {
-      case Some(newScopes) => urlBuilder.setScopes(newScopes).build()
-      case _ => urlBuilder.build()
-    }
-
-    // TODO: login hint?
-  }
-
-  /**
-   * third step of OAuth dance: exchange an auth code for access/refresh tokens
-   */
-  def getTokens(actualState: String,  expectedState: String, authCode: String): OAuthTokens = {
-
-    if ( actualState != expectedState ) throw new OAuthException(
-      "State mismatch: this authentication request cannot be completed.")
-
-    val gcsTokenResponse = flow.newTokenRequest(authCode)
-      .setRedirectUri(callbackUri.toString)
-      .execute()
-
-    OAuthTokens(gcsTokenResponse)
-  }
-
-  // check the requested UI redirect against the list of allowed JS origins
-  def whitelistRedirect(userUri:String) = {
-    userUri match {
-      case "" => ""
-      case x if origins.contains(x) => x
-      case _ =>
-        log.warn("User requested a redirect to " + userUri + ", but that url does not exist in whitelist.")
-        ""
-    }
-  }
-
-  def randomStateString = randomString(24)
-
-  def randomString(length: Int) = scala.util.Random.alphanumeric.take(length).mkString
 
   def getAdminUserAccessToken = {
     val googleCredential = new GoogleCredential.Builder()
@@ -239,8 +172,8 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
       userResponse.status match {
         case OK =>
           // user is known to Google. Extract the user's email and SID from the response, for logging
-          import spray.json._
           import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOAuthUser
+          import spray.json._
           val oauthUser:Try[OAuthUser] = Try(userResponse.entity.asString.parseJson.convertTo[OAuthUser])
           val userStr = (oauthUser getOrElse userResponse.entity).toString
           // Does the user have access to the target file?
