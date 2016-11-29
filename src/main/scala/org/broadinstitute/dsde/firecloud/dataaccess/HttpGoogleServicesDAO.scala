@@ -29,19 +29,28 @@ import scala.util.Try
 case class GooglePriceList(prices: GooglePrices, version: String, updated: String)
 
 /** Partial price list. Attributes can be added as needed to import prices for more products. */
-case class GooglePrices(cpBigstoreStorage: UsPriceItem)
+case class GooglePrices(cpBigstoreStorage: UsPriceItem,
+                        cpComputeengineInternetEgressNA: UsTieredPriceItem,
+                        cpComputeengineInternetEgressAPAC: UsTieredPriceItem,
+                        cpComputeengineInternetEgressAU: UsTieredPriceItem,
+                        cpComputeengineInternetEgressCN: UsTieredPriceItem)
 
 /** Price item containing only US currency. */
 case class UsPriceItem(us: BigDecimal)
 
+/** Tiered price item containing only US currency. */
+case class UsTieredPriceItem(tiers: Map[String, BigDecimal])
+
 object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
   implicit val UsPriceItemFormat = jsonFormat1(UsPriceItem)
-  implicit val GooglePricesFormat = jsonFormat(GooglePrices, "CP-BIGSTORE-STORAGE")
+  implicit val UsTieredPriceItemFormat = jsonFormat1(UsTieredPriceItem)
+  implicit val GooglePricesFormat = jsonFormat(GooglePrices, "CP-BIGSTORE-STORAGE", "CP-COMPUTEENGINE-INTERNET-EGRESS-NA-NA",
+  "CP-COMPUTEENGINE-INTERNET-EGRESS-APAC-APAC", "CP-COMPUTEENGINE-INTERNET-EGRESS-AU-AU", "CP-COMPUTEENGINE-INTERNET-EGRESS-CN-CN")
   implicit val GooglePriceListFormat = jsonFormat(GooglePriceList, "gcp_price_list", "version", "updated")
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
-object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
+object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding {
 
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
@@ -132,13 +141,21 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
 
   def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
 
+  def getObjectStats(bucketName: String, objectKey: String, authToken: String)
+                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): HttpRequest = {
+    val statsRequest = Get( getObjectResourceUrl(bucketName, objectKey) )
+    val statsPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
+    statsRequest
+    //statsPipeline{statsRequest}
+  }
+
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
     val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"
     gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
   }
 
   def objectAccessCheck(bucketName: String, objectKey: String, authToken: String)
-                       (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
+                       (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse]= {
     val accessRequest = Get( HttpGoogleServicesDAO.getObjectResourceUrl(bucketName, objectKey) )
     val accessPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
     accessPipeline{accessRequest}
