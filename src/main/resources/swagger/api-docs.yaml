@@ -849,32 +849,32 @@ paths:
         500:
           description: Internal Server Error
 
-#  /api/profile/billingAccounts:
-#    get:
-#      tags:
-#        - Profile
-#      operationId: billingAccounts
-#      summary: List billing accounts for a user
-#      responses:
-#        200:
-#          description: OK
-#          schema:
-#            type: array
-#            items:
-#              $ref: '#/definitions/BillingAccount'
-#        403:
-#          description: Forbidden - redirect to Google to enable appropriate scopes
-#          schema:
-#            $ref: '#/definitions/BillingAccountRedirect'
-#        500:
-#          description: Internal Server Error
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#            - https://www.googleapis.com/auth/devstorage.full_control
-#            - https://www.googleapis.com/auth/cloud-billing
+  /api/profile/billingAccounts:
+    get:
+      tags:
+        - Profile
+      operationId: billingAccounts
+      summary: List billing accounts for a user
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BillingAccount'
+        403:
+          description: Forbidden - redirect to Google to enable appropriate scopes
+          schema:
+            $ref: '#/definitions/BillingAccountRedirect'
+        500:
+          description: Internal Server Error
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
+            - https://www.googleapis.com/auth/cloud-billing
 
   /api/refresh-token-status:
     get:
