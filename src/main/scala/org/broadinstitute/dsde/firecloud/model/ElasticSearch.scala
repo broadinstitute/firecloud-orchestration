@@ -75,21 +75,24 @@ case class AggregationTermResult(key: String, doc_count: Int)
 
 // classes to create the ES queries in json format
 // {"query":{"match_all":{}}}"
-// {"query":{"wildcard":{"_all":"%s"}}}"
 
-//{ "query": {
-//  "constant_score":  {
-//  "filter": {
-//  "bool": {
-//  "must":  [
-//{"match": {<column>: "<space separated list of terms>"}},
-//{"match": {"library:studyDesign": "somatic test sequencing"}},
-//{"wildcard": {"_all": "br*"}}
-//  ]
-//}}}}}
+//{"query":{
+//  "constant_score":{
+//  "filter":{
+//  "bool":{
+//  "must":[
+//{"bool":{
+//  "should":[
+//{"term":{"library:indication":"n/a"}},
+//{"term":{"library:indication":"disease"}},
+//{"term":{"library:indication":"lukemia"}}]
+//}
+//},
+//{"match":{"all_":"broad"}}]}}}}}
 
 
 trait QueryMap
+trait ESLogicType
 
 case class ESQuery(query: ESConstantScore)
 
@@ -97,21 +100,21 @@ case class ESConstantScore(constant_score: ESFilter)
 
 case class ESFilter(filter: ESBool)
 
-case class ESBool(bool: ESMust)
+case class ESBool(bool: ESLogicType) extends QueryMap
 
-case class ESMust(must: Seq[QueryMap])
+case class ESMust(must: Seq[QueryMap]) extends ESLogicType
 
-case class ESMatch(`match`: Map[String, String]) extends QueryMap
+case class ESShould(should: Seq[QueryMap]) extends ESLogicType
 
+case class ESMatch(`match`: Map[String, String]) extends QueryMap {
+  // when the search term should search all columns/attributes
+  def this(value: String) = this(Map("_all" -> value))
+}
+
+case class ESTerm(term: Map[String, String]) extends QueryMap
 
 case class ESMatchAll(match_all: Map[String,String]) extends QueryMap {
   def this() = this(Map.empty[String,String])
 }
-
-case class ESWildcard(wildcard: ESWildcardSearchTerm) extends QueryMap {
-  def this(term: String) = this(ESWildcardSearchTerm(term))
-}
-
-case class ESWildcardSearchTerm(_all: String)
 
 
