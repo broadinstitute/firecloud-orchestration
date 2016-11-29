@@ -9,11 +9,19 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 case class AttributeDefinition(properties: Map[String, AttributeDetail])
 
-case class AttributeDetail(`type`: String, items: Option[AttributeDetail] = None)
+case class AttributeDetail(`type`: String, items: Option[AttributeDetail] = None, aggregate: Option[Boolean] = None)
 
-case class ESDatasetProperty(properties: Map[String, ESDetail])
 
-case class ESDetail(`type`: String)
+trait ESPropertyFields
+case class ESDatasetProperty(properties: Map[String, ESPropertyFields])
+case class ESType(`type`: String) extends ESPropertyFields
+case class ESAggregatableType(`type`: String, fields:ESRaw) extends ESPropertyFields {
+  def this(str:String) = this(str, new ESRaw(str))
+}
+case class ESRaw(raw: ESAggregateProperties) {
+  def this(str: String) = this(ESAggregateProperties(str, "not_analyzed"))
+}
+case class ESAggregateProperties(`type`: String, index:String)
 
 
 // classes for sending documents to ES to be indexed

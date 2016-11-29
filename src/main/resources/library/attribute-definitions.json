@@ -46,7 +46,8 @@
     "library:indication": {
       "type": "string",
       "title": "Cohort Phenotype/Indication",
-      "description": "The phenotype/indication criteria for being included as a subject in the cohort"
+      "description": "The phenotype/indication criteria for being included as a subject in the cohort",
+      "aggregate": true
     },
     "library:numSubjects": {
       "type": "integer",
@@ -59,13 +60,15 @@
     "library:projectName": {
       "type": "string",
       "title": "Project/s Name",
-      "inputHint": "e.g. TCGA, TopMed, ExAC ; tag all relevant associated projects"
+      "inputHint": "e.g. TCGA, TopMed, ExAC ; tag all relevant associated projects",
+      "aggregate": true
     },
     "library:datatype": {
       "type": "array",
       "items": { "type": "string" },
       "title": "Data Type/s",
-      "inputHint": "e.g. Whole Genome, Whole Exome, RNA-Seq ; tag all relevant"
+      "inputHint": "e.g. Whole Genome, Whole Exome, RNA-Seq ; tag all relevant",
+      "aggregate": true
     },
     "library:reference": {
       "type": "string",
@@ -91,7 +94,8 @@
     },
     "library:dataUseRestriction": {
       "type": "string",
-      "title": "Data Use Restriction"
+      "title": "Data Use Restriction",
+      "aggregate": true
     },
     "library:dataUseORSPConsentGroupNumber": {
       "type": "string",
