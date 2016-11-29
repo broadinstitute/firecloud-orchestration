@@ -46,12 +46,13 @@ object Document {
 // classes to convert from json body and to json response
 case class LibrarySearchParams(
   searchTerm: Option[String],
+  fieldTerms: Map[String, Seq[String]],
   from: Int = 0,
   size: Int = 10)
 
 object LibrarySearchParams {
-  def apply(searchTerm: Option[String], from: Option[Int], size: Option[Int]) = {
-    new LibrarySearchParams(searchTerm, from.getOrElse(0), size.getOrElse(10))
+  def apply(searchTerm: Option[String], fieldTerms: Map[String, Seq[String]], from: Option[Int], size: Option[Int]) = {
+    new LibrarySearchParams(searchTerm, fieldTerms, from.getOrElse(0), size.getOrElse(10))
   }
 }
 
@@ -75,9 +76,33 @@ case class AggregationTermResult(key: String, doc_count: Int)
 // classes to create the ES queries in json format
 // {"query":{"match_all":{}}}"
 // {"query":{"wildcard":{"_all":"%s"}}}"
+
+//{ "query": {
+//  "constant_score":  {
+//  "filter": {
+//  "bool": {
+//  "must":  [
+//{"match": {<column>: "<space separated list of terms>"}},
+//{"match": {"library:studyDesign": "somatic test sequencing"}},
+//{"wildcard": {"_all": "br*"}}
+//  ]
+//}}}}}
+
+
 trait QueryMap
 
-case class ESQuery(query: QueryMap)
+case class ESQuery(query: ESConstantScore)
+
+case class ESConstantScore(constant_score: ESFilter)
+
+case class ESFilter(filter: ESBool)
+
+case class ESBool(bool: ESMust)
+
+case class ESMust(must: Seq[QueryMap])
+
+case class ESMatch(`match`: Map[String, String]) extends QueryMap
+
 
 case class ESMatchAll(match_all: Map[String,String]) extends QueryMap {
   def this() = this(Map.empty[String,String])
