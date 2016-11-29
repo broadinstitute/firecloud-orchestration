@@ -381,17 +381,36 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       "works for string type" in {
         val label = "library:attr"
         val `type` = "string"
-        val expected = label -> ESDetail(`type`)
+        val expected = label -> ESType(`type`)
         assertResult(expected) {
           detailFromAttribute(label, AttributeDetail(`type`))
         }
+      }
+      "works for aggregatable string type" in {
+        val label = "library:attr"
+        val `type` = "string"
+        val expected = label -> new ESAggregatableType(`type`)
+        assertResult(expected) {
+          detailFromAttribute(label, AttributeDetail(`type`, None, Some(true)))
+        }
+        val result = detailFromAttribute(label, AttributeDetail(`type`, None, Some(true)))
       }
       "works for array type" in {
         val label = "library:attr"
         val `type` = "array"
         val subtype = "string"
         val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
-        val expected = label -> ESDetail(subtype)
+        val expected = label -> ESType(subtype)
+        assertResult(expected) {
+          detailFromAttribute(label, detail)
+        }
+      }
+      "works for aggregatable array type" in {
+        val label = "library:attr"
+        val `type` = "array"
+        val subtype = "string"
+        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)), Some(true))
+        val expected = label -> new ESAggregatableType(subtype)
         assertResult(expected) {
           detailFromAttribute(label, detail)
         }
@@ -402,6 +421,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val jsonVal: Try[JsValue] = Try(testJson.parseJson)
         assert(jsonVal.isSuccess, "Mapping should be valid json")
       }
+
     }
   }
 }

@@ -151,6 +151,22 @@ object ModelJsonProtocol {
     }
   }
 
+  implicit object impESPropertyFields extends JsonFormat[ESPropertyFields] {
+    override def write(input: ESPropertyFields): JsValue = input match {
+      case estype : ESType => estype.toJson
+      case esaggtype : ESAggregatableType => esaggtype.toJson
+      case _ => throw new SerializationException("unexpected ESProperty type")
+    }
+
+    override def read(json: JsValue): ESPropertyFields = {
+      json.asJsObject.fields.keys.size match {
+        case 1 => ESTypeFormat.read(json)
+        case 2 => ESAggregatableTypeFormat.read(json)
+        case _ => throw DeserializationException("unexpected json type")
+      }
+    }
+  }
+
   implicit object impStackTraceElement extends RootJsonFormat[StackTraceElement] {
     val CLASS_NAME = "className"
     val METHOD_NAME = "methodName"
@@ -285,11 +301,14 @@ object ModelJsonProtocol {
 
   implicit val impGoogleObjectMetadata = jsonFormat15(ObjectMetadata)
 
-  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat2(AttributeDetail)))
+  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat3(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
-  implicit val ESDetailFormat = jsonFormat1(ESDetail)
-  implicit val ESDatasetPropertyFormat = jsonFormat1(ESDatasetProperty)
+  implicit val ESAggregatePropertiesFormat = jsonFormat2(ESAggregateProperties)
+  implicit val ESRawFormat = jsonFormat1(ESRaw)
+  implicit val ESAggregatableTypeFormat = jsonFormat2(ESAggregatableType)
+  implicit val ESTypeFormat = jsonFormat1(ESType)
+  implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
   implicit val impLibrarySearchResponse = jsonFormat3(LibrarySearchResponse)
 
