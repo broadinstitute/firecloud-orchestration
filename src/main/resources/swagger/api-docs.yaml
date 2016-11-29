@@ -271,7 +271,6 @@ paths:
         default:
           description: Unexpected error
           schema:
-            type: object
             $ref: '#/definitions/Error'
     post:
       summary: Add a Method.
@@ -287,7 +286,6 @@ paths:
           description: Agora Entity
           required: false
           schema:
-            type: object
             $ref: '#/definitions/ConfigurationQuery'
       tags:
         - Method Repository
@@ -295,17 +293,14 @@ paths:
         '201':
           description: Method successfully added.
           schema:
-            type: object
             $ref: '#/definitions/ConfigurationResponse'
         '400':
           description: Malformed input.
           schema:
-            type: object
             $ref: '#/definitions/Error'
         '500':
           description: Internal error.
           schema:
-            type: object
             $ref: '#/definitions/Error'
 
   /api/configurations/{namespace}/{name}/{snapshotId}:
@@ -343,7 +338,6 @@ paths:
         default:
           description: Error upon redaction
           schema:
-            type: object
             $ref: '#/definitions/Error'
 
   /api/configurations/{namespace}/{name}/{snapshotId}/permissions:
@@ -641,7 +635,6 @@ paths:
         default:
           description: Unexpected error
           schema:
-            type: object
             $ref: '#/definitions/Error'
     post:
       summary: Add a Method.
@@ -659,24 +652,19 @@ paths:
           description: Agora Entity
           required: false
           schema:
-            type: object
             $ref: '#/definitions/MethodQuery'
       responses:
         201:
           description: Method successfully added.
           schema:
-            type: object
             $ref: '#/definitions/MethodResponse'
         400:
           description: Malformed input.
           schema:
-            type: object
-            code: 400
             $ref: '#/definitions/Error'
         500:
           description: Internal error.
           schema:
-            type: object
             $ref: '#/definitions/Error'
 
   /api/methods/{namespace}/{name}/{snapshotId}:
@@ -701,12 +689,10 @@ paths:
         '200':
           description: A single method.
           schema:
-            type: object
             $ref: '#/definitions/MethodResponse'
         default:
           description: Unexpected error
           schema:
-            type: object
             $ref: '#/definitions/Error'
     delete:
       tags:
@@ -727,7 +713,6 @@ paths:
         default:
           description: Error upon redaction
           schema:
-            type: object
             $ref: '#/definitions/Error'
 
   /api/methods/{namespace}/{name}/{snapshotId}/permissions:
