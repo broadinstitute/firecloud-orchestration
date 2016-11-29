@@ -19,7 +19,7 @@ import spray.json.DefaultJsonProtocol._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import scala.collection.JavaConverters._
 
-class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport {
+class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
   private val client: TransportClient = buildClient(servers)
   private final val datatype = "dataset"
@@ -100,23 +100,8 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     }
   }
 
-  def createESMatch(data: Map[String, Seq[String]]): Seq[QueryMap] = {
-    (data map {
-      case (k:String, v:Vector[String]) => ESMatch(Map(k -> v.mkString(" ")))
-    }).toSeq
-  }
-
   override def findDocuments(criteria: LibrarySearchParams) : LibrarySearchResponse = {
-    val qmseq:Seq[QueryMap] = (criteria.searchTerm, criteria.fieldTerms.size) match {
-      case (None | Some(""), 0) => Seq(new ESMatchAll)
-      case (None | Some(""), _) => createESMatch(criteria.fieldTerms)
-      case (Some(searchTerm: String), 0) => Seq(new ESWildcard(searchTerm.toLowerCase))
-      case (Some(searchTerm: String), _) => createESMatch(criteria.fieldTerms) :+ new ESWildcard(searchTerm.toLowerCase)
-    }
-
-    val searchStr = ESQuery(ESConstantScore(ESFilter(ESBool(ESMust(qmseq))))).toJson.compactPrint
-
-    val searchReq = client.prepareSearch(indexName).setQuery(searchStr)
+    val searchReq = client.prepareSearch(indexName).setQuery(createQueryString(criteria))
       .setFrom(criteria.from)
       .setSize(criteria.size)
     val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)

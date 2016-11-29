@@ -79,6 +79,7 @@ case class AggregationTermResult(key: String, doc_count: Int)
   */
 
 sealed trait QueryMap
+sealed trait ESLogicType
 
 case class ESQuery(query: ESConstantScore)
 
@@ -86,14 +87,18 @@ case class ESConstantScore(constant_score: ESFilter)
 
 case class ESFilter(filter: ESBool)
 
-case class ESBool(bool: ESMust)
+case class ESBool(bool: ESLogicType) extends QueryMap
 
-case class ESMust(must: Seq[QueryMap])
+case class ESMust(must: Seq[QueryMap]) extends ESLogicType
+
+case class ESShould(should: Seq[QueryMap]) extends ESLogicType
 
 case class ESMatch(`match`: Map[String, String]) extends QueryMap {
   // when the search term should search all columns/attributes
   def this(value: String) = this(Map("_all" -> value))
 }
+
+case class ESTerm(term: Map[String, String]) extends QueryMap
 
 case class ESMatchAll(match_all: Map[String,String]) extends QueryMap {
   def this() = this(Map.empty[String,String])
