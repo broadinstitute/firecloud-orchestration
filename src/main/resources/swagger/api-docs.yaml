@@ -2999,7 +2999,16 @@ definitions:
 
   MethodResponse:
     type: object
+    required:
+      - managers
+      - namespace
+      - name
+      - snapshotId
     properties:
+      managers:
+        type: array
+        items:
+          type: string
       namespace:
         type: string
         description: Namespace which contains AgoraEntity.
