@@ -423,5 +423,12 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       }
 
     }
+    "when converting json to LibraryAggregationParams" - {
+      "should succeed" in {
+        val json = "{\"fields\":[\"library:indication\"]}".parseJson
+        val obj = impLibraryAggregationParams.read(json)
+        assert(obj.getClass.getName == "org.broadinstitute.dsde.firecloud.model.LibraryAggregationParams")
+      }
+    }
   }
 }

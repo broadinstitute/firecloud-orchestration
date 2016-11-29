@@ -127,7 +127,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def getAggregations(params: LibraryAggregationParams): Future[PerRequestMessage] = {
-    val results: Seq[LibraryAggregationResponse] = searchDAO.asInstanceOf[ElasticSearchDAO].getAggregations(params.fields, params.maxResults)
+    val results: Seq[LibraryAggregationResponse] = searchDAO.getAggregations(params)
     Future(RequestComplete(results))
   }
 
