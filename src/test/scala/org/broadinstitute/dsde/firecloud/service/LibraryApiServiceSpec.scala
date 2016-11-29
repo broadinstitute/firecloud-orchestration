@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.model.{LibrarySearchResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{LibraryAggregationParams, LibrarySearchResponse, UserInfo}
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
@@ -24,6 +24,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
   private def publishedPath(ns:String="namespace", name:String="name") =
     "/api/library/%s/%s/published".format(ns, name)
   private final val librarySearchPath = "/api/library/search"
+  private final val libraryAggregationPath = librarySearchPath + "/aggregations"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
@@ -106,7 +107,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
     }
 
     "when retrieving datasets" - {
-      "Post with no searchterm on " + librarySearchPath - {
+      "POST with no searchterm on " + librarySearchPath - {
         "should retrieve all datasets" in {
           this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
           val content = HttpEntity(ContentTypes.`application/json`, "{}")
@@ -128,6 +129,20 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.size == 0, "results array should be empty")
             this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
+          }
+        }
+      }
+    }
+
+    "when retrieving aggregations" - {
+      "POST on " + libraryAggregationPath - {
+        "should retrieve aggregations for terms" in {
+          this.searchDAO.asInstanceOf[MockSearchDAO].getAggregationsInvoked = false
+          val content = HttpEntity(ContentTypes.`application/json`, "{\"fields\":[\"library:indication\"]}")
+          new RequestBuilder(HttpMethods.POST)(libraryAggregationPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            assert(this.searchDAO.asInstanceOf[MockSearchDAO].getAggregationsInvoked, "getAggregations should have been invoked")
+            this.searchDAO.asInstanceOf[MockSearchDAO].getAggregationsInvoked = false
           }
         }
       }

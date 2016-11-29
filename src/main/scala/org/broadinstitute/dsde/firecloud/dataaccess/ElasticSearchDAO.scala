@@ -100,7 +100,7 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     }
   }
 
-  override def findDocuments(criteria: LibrarySearchParams) : LibrarySearchResponse = {
+  override def findDocuments(criteria: LibrarySearchParams): LibrarySearchResponse = {
     val searchReq = client.prepareSearch(indexName).setQuery(createQueryString(criteria))
       .setFrom(criteria.from)
       .setSize(criteria.size)
@@ -112,19 +112,19 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     new LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments)
   }
 
-  def getAggregations(fields: Seq[String], numBuckets: Option[Int]) : Seq[LibraryAggregationResponse] = {
+  override def getAggregations(params: LibraryAggregationParams): Seq[LibraryAggregationResponse] = {
     val searchReq = client.prepareSearch(indexName)
     searchReq.setSize(0)
-    fields map { field: String =>
+    params.fields map { field: String =>
       val terms = AggregationBuilders.terms(field)
-      if (None != numBuckets) {
-        terms.size(numBuckets.get)
+      if (None != params.maxResults) {
+        terms.size(params.maxResults.get)
       }
       searchReq.addAggregation(terms.field(field + ".raw"))
     }
     val aggResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
 
-    fields map { field: String =>
+    params.fields map { field: String =>
       val terms: Terms = aggResults.getAggregations().get(field)
       LibraryAggregationResponse(terms.getName(),
         AggregationFieldResults(terms.getSumOfOtherDocCounts.toInt,
