@@ -13,8 +13,7 @@
       "title": "Dataset Description",
       "type": "string"
     },
-    "datasetCustodian":
-    {
+    "datasetCustodian": {
       "title": "Dataset Custodian",
       "type": "string"
     },
