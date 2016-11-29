@@ -30,22 +30,25 @@ case class GooglePriceList(prices: GooglePrices, version: String, updated: Strin
 
 /** Partial price list. Attributes can be added as needed to import prices for more products. */
 case class GooglePrices(cpBigstoreStorage: UsPriceItem,
-                        cpComputeengineInternetEgressNA: UsTieredPriceItem,
-                        cpComputeengineInternetEgressAPAC: UsTieredPriceItem,
-                        cpComputeengineInternetEgressAU: UsTieredPriceItem,
-                        cpComputeengineInternetEgressCN: UsTieredPriceItem)
+                        cpComputeengineInternetEgressNA: UsTieredPriceItem)
 
 /** Price item containing only US currency. */
 case class UsPriceItem(us: BigDecimal)
 
 /** Tiered price item containing only US currency. */
-case class UsTieredPriceItem(tiers: Map[String, BigDecimal])
+case class UsTieredPriceItem(tiers: Map[Long, BigDecimal])
 
 object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
   implicit val UsPriceItemFormat = jsonFormat1(UsPriceItem)
-  implicit val UsTieredPriceItemFormat = jsonFormat1(UsTieredPriceItem)
-  implicit val GooglePricesFormat = jsonFormat(GooglePrices, "CP-BIGSTORE-STORAGE", "CP-COMPUTEENGINE-INTERNET-EGRESS-NA-NA",
-  "CP-COMPUTEENGINE-INTERNET-EGRESS-APAC-APAC", "CP-COMPUTEENGINE-INTERNET-EGRESS-AU-AU", "CP-COMPUTEENGINE-INTERNET-EGRESS-CN-CN")
+//  implicit val UsTieredPriceItemFormat = jsonFormat1(UsTieredPriceItem)
+  implicit object UsTieredPriceItemFormat extends RootJsonFormat[UsTieredPriceItem] {
+    override def write(value: UsTieredPriceItem): JsValue = ???
+    override def read(json: JsValue): UsTieredPriceItem = json match {
+      case JsObject(values) => UsTieredPriceItem(values("tiers").asJsObject.fields.map{ case (name, value) => name.toLong -> BigDecimal(value.toString)})
+      case x => throw new DeserializationException("invalid value: " + x)
+    }
+  }
+  implicit val GooglePricesFormat = jsonFormat(GooglePrices, "CP-BIGSTORE-STORAGE", "CP-COMPUTEENGINE-INTERNET-EGRESS-NA-NA")
   implicit val GooglePriceListFormat = jsonFormat(GooglePriceList, "gcp_price_list", "version", "updated")
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._

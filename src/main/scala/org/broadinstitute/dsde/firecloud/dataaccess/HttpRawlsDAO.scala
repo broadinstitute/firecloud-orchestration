@@ -104,4 +104,5 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     userAuthedRequest(Put(RawlsDAO.refreshTokenUrl, RawlsToken(refreshToken)))(userInfo) map
       { _ => () }
   }
+
 }

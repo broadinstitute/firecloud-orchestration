@@ -35,50 +35,34 @@ object StorageService {
 }
 
 class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO: GoogleServicesDAO)(implicit val executionContext: ExecutionContext) extends Actor with RestJsonClient {
-
   implicit val system = context.system
-
-  //import system.dispatcher
-
   val log = Logging(system, getClass)
-
   implicit val userInfo = argUserInfo
-
   import StorageService._
 
   override def receive: Receive = {
-    case GetObjectStats(bucketName: String, objectName: String) => getObjectStats(bucketName, objectName, "CP-COMPUTEENGINE-INTERNET-EGRESS-NA-NA") pipeTo sender
+    case GetObjectStats(bucketName: String, objectName: String) => getObjectStats(bucketName, objectName) pipeTo sender
   }
 
-  def getObjectStats(bucketName: String, objectName: String, region: String) = {
+  def getObjectStats(bucketName: String, objectName: String) = {
     requestToObject[JsObject](googleServicesDAO.getObjectStats(bucketName, objectName, userInfo.accessToken.token)) flatMap { googleResponse =>
       googleServicesDAO.fetchPriceList map { googlePrices =>
-        val original = googleResponse.getFields("size").head.toString
-        val fileSizeGB = BigDecimal(original.replaceAll("\"", "")) / 1024 / 1024 / 1024
+        val unformattedSize = googleResponse.getFields("size").head.toString
+        val fileSizeGB = BigDecimal(unformattedSize.replaceAll("\"", "")) / Math.pow(1000, 3)
+        val egressPrice = getEgressCost(googlePrices.prices.cpComputeengineInternetEgressNA.tiers, fileSizeGB, 0)
 
-        val egressPrice = getEgressClass(googlePrices.prices, fileSizeGB, region)
-
-        val totalCost = fileSizeGB * egressPrice
-
-        println(fileSizeGB)
-
-        println(totalCost)
-
-        RequestComplete(googleResponse.copy(googleResponse.fields ++ Map("estimatedCost" -> JsNumber(totalCost))))
+        RequestComplete(googleResponse.copy(googleResponse.fields ++ Map("estimatedCostUSD" -> JsNumber(egressPrice))))
       }
     }
   }
 
-  private def getEgressClass(googlePrices: GooglePrices, fileSizeGB: BigDecimal, region: String) = {
-    val thing = region match {
-      case "CP-COMPUTEENGINE-INTERNET-EGRESS-NA-NA" => googlePrices.cpComputeengineInternetEgressNA
-      case "CP-COMPUTEENGINE-INTERNET-EGRESS-CN-CN" => googlePrices.cpComputeengineInternetEgressCN
-      case "CP-COMPUTEENGINE-INTERNET-EGRESS-AU-AU" => googlePrices.cpComputeengineInternetEgressAU
-      case "CP-COMPUTEENGINE-INTERNET-EGRESS-APAC-APAC" => googlePrices.cpComputeengineInternetEgressAPAC
+  private def getEgressCost(googlePrices: Map[Long, BigDecimal], fileSizeGB: BigDecimal, totalCost: BigDecimal): BigDecimal = {
+    if (fileSizeGB <= 0) totalCost
+    else if(googlePrices.size <= 1) totalCost + (googlePrices.head._1 * fileSizeGB)
+    else {
+      val (sizeCharged, sizeRemaining) = if(fileSizeGB <= googlePrices.head._1) (fileSizeGB, BigDecimal(0))
+        else (BigDecimal(googlePrices.head._1), fileSizeGB - googlePrices.head._1)
+      getEgressCost(googlePrices.tail, sizeRemaining, (sizeCharged * googlePrices.head._2) + totalCost)
     }
-
-    if(fileSizeGB <= 1) thing.tiers("1024")
-    else if(fileSizeGB <= 10) thing.tiers("10240")
-    else thing.tiers("92160")
   }
 }

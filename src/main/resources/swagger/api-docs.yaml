@@ -639,7 +639,7 @@ paths:
       summary: |
         Get metadata about an object stored in GCS.
       description: |
-        Mirror of Google's Cloud Storage json API. See https://cloud.google.com/storage/docs/json_api/v1/objects/get
+        Mirror of Google's Cloud Storage json API. See https://cloud.google.com/storage/docs/json_api/v1/objects/get Also includes estimated egress charge to NA
       parameters:
         - name: bucket
           description: Name of the bucket in which the object resides.
