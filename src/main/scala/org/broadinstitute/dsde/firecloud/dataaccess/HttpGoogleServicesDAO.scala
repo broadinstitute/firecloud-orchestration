@@ -40,7 +40,6 @@ case class UsTieredPriceItem(tiers: Map[Long, BigDecimal])
 
 object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
   implicit val UsPriceItemFormat = jsonFormat1(UsPriceItem)
-//  implicit val UsTieredPriceItemFormat = jsonFormat1(UsTieredPriceItem)
   implicit object UsTieredPriceItemFormat extends RootJsonFormat[UsTieredPriceItem] {
     override def write(value: UsTieredPriceItem): JsValue = ???
     override def read(json: JsValue): UsTieredPriceItem = json match {

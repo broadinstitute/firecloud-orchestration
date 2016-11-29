@@ -10,9 +10,6 @@ import spray.routing.RequestContext
 import scala.concurrent.{ExecutionContext, Future}
 
 trait GoogleServicesDAO {
-  def getGoogleRedirectURI(state: String, approvalPrompt: String = "auto", overrideScopes: Option[Seq[String]] = None): String
-  def getTokens(actualState: String,  expectedState: String, authCode: String): OAuthTokens
-  def whitelistRedirect(userUri:String): String
   def getAdminUserAccessToken: String
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
