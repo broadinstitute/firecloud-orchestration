@@ -2753,6 +2753,9 @@ definitions:
       searchTerm:
         type: string
         description: The term to search for
+      fieldTerms:
+        type: object
+        description: Map[String, Array[String]]
       from:
         type: integer
         default: 0

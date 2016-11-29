@@ -100,11 +100,21 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     }
   }
 
+  def createESMatch(data: Map[String, Seq[String]]): Seq[QueryMap] = {
+    (data map {
+      case (k:String, v:Vector[String]) => ESMatch(Map(k -> v.mkString(" ")))
+    }).toSeq
+  }
+
   override def findDocuments(criteria: LibrarySearchParams) : LibrarySearchResponse = {
-    val searchStr = criteria.searchTerm match {
-      case None | Some("") => ESQuery(new ESMatchAll).toJson.compactPrint
-      case Some(searchTerm:String) => ESQuery(new ESMatch(searchTerm.toLowerCase)).toJson.compactPrint
+    val qmseq:Seq[QueryMap] = (criteria.searchTerm, criteria.fieldTerms.size) match {
+      case (None | Some(""), 0) => Seq(new ESMatchAll)
+      case (None | Some(""), _) => createESMatch(criteria.fieldTerms)
+      case (Some(searchTerm: String), 0) => Seq(new ESWildcard(searchTerm.toLowerCase))
+      case (Some(searchTerm: String), _) => createESMatch(criteria.fieldTerms) :+ new ESWildcard(searchTerm.toLowerCase)
     }
+
+    val searchStr = ESQuery(ESConstantScore(ESFilter(ESBool(ESMust(qmseq))))).toJson.compactPrint
 
     val searchReq = client.prepareSearch(indexName).setQuery(searchStr)
       .setFrom(criteria.from)
