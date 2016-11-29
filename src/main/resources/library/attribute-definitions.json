@@ -184,10 +184,10 @@
     },
     "futureUseDate": {
       "title": "Future use is limited to data generated from samples collected after the following consent form date",
-      "type": "date"
+      "type": "string"
     },
     "orsp": {
-      "type": "text"
+      "type": "string"
     }
   },
   "consentCodes": {
@@ -263,17 +263,17 @@
               {"property": "NDMS", "required": true},
               {"property": "NAGR", "required": true},
               {"property": "NCTRL", "required": true},
-              {"property": "RS-M", "required": true},
+              {"property": "RS-G", "required": true},
               {"property": "RS-PD", "required": true},
               {"property": "RS-POP"},
-              {"property": "futureUseDate"}
+              {"property": "futureUseDate", "renderHint": "date"}
             ]
           },
           {
             "title": "Retrieve Data Use Restrictions from Broad ORSP",
             "questions":
             [
-              {"property": "orsp", "required": true}
+              {"property": "orsp", "required": true, "renderHint": "text"}
             ]
           }
         ]
