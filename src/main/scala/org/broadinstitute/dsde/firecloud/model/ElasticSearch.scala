@@ -45,24 +45,24 @@ object Document {
 
 // classes to convert from json body and to json response
 case class LibrarySearchParams(
-  searchTerm: Option[String],
-  fieldTerms: Map[String, Seq[String]],
+  searchString: Option[String],
+  searchFields: Map[String, Seq[String]],
+  fieldAggregations: Seq[String],
+  maxAggregations: Option[Int],
   from: Int = 0,
   size: Int = 10)
 
 object LibrarySearchParams {
-  def apply(searchTerm: Option[String], fieldTerms: Map[String, Seq[String]], from: Option[Int], size: Option[Int]) = {
-    new LibrarySearchParams(searchTerm, fieldTerms, from.getOrElse(0), size.getOrElse(10))
+  def apply(searchTerm: Option[String], fieldTerms: Map[String, Seq[String]], fieldAggregations: Seq[String], maxAggregations: Option[Int], from: Option[Int], size: Option[Int]) = {
+    new LibrarySearchParams(searchTerm, fieldTerms, fieldAggregations, maxAggregations, from.getOrElse(0), size.getOrElse(10))
   }
 }
 
 case class LibrarySearchResponse(
   searchParams: LibrarySearchParams,
   total: Int,
-  results: Seq[JsValue])
-
-
-case class LibraryAggregationParams(fields: Seq[String], maxResults: Option[Int])
+  results: Seq[JsValue],
+  aggregations: Seq[LibraryAggregationResponse])
 
 case class LibraryAggregationResponse(
   field: String,
