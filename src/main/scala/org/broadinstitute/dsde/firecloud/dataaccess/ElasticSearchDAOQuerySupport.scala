@@ -4,7 +4,6 @@ import org.broadinstitute.dsde.firecloud.model._
 import spray.json._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.elasticsearch.search.aggregations.{AggregationBuilders, Aggregations}
-import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
@@ -86,8 +85,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     // for aggregtions fields that are part of the current search criteria, we need to do a separate
     // aggregate request *without* that term in the search criteria
     (criteria.searchFields.keys map { field =>
-      val query = baseQuery.filterNot((m: QueryMap) => m.isInstanceOf[ESShould] && m.asInstanceOf[ESShould].should.last.isInstanceOf[ESTerm]
-        && m.asInstanceOf[ESShould].should.last.asInstanceOf[ESTerm].term.last._1.equals(field))
+      val query = baseQuery.filterNot((m: QueryMap) => m.isInstanceOf[ESBool] && m.asInstanceOf[ESBool].bool.isInstanceOf[ESShould]
+        && m.asInstanceOf[ESBool].bool.asInstanceOf[ESShould].should.last.isInstanceOf[ESTerm]
+        && m.asInstanceOf[ESBool].bool.asInstanceOf[ESShould].should.last.asInstanceOf[ESTerm].term.last._1.equals(field))
       // setting size to 0, we will ignore the actual search results
       (field -> addAggregations(createESSearchRequest(client, indexname, query, 0, 0), Seq(field), criteria.maxAggregations))
     }).toMap
@@ -98,7 +98,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       val terms: Terms = aggResults.get(field)
       LibraryAggregationResponse(terms.getName(),
         AggregationFieldResults(terms.getSumOfOtherDocCounts.toInt,
-          terms.getBuckets.asScala.toSeq map { bucket: Terms.Bucket =>
+          terms.getBuckets.asScala map { bucket: Terms.Bucket =>
             AggregationTermResult(bucket.getKey.toString, bucket.getDocCount.toInt)
           }))
     }
@@ -109,18 +109,20 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     val baseQuery = createQuery(criteria)
     val mainQuery = buildMainQuery(client, indexname, baseQuery, criteria)
     val aggregateQueries = buildAggregateQueries(client, indexname, baseQuery, criteria)
-    //    executeQueries()
-    //    buildResponse()
 
-
+    // TODO execute requests in parallel
     val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](mainQuery)
 
     val sourceDocuments = searchResults.getHits.getHits.toList map { hit =>
       hit.getSourceAsString.parseJson
     }
+    val aggResults = mutable.ArrayBuffer[LibraryAggregationResponse]()
+    aggResults ++= getAggregationsFromResults(searchResults.getAggregations)
 
-    val aggResults: scala.collection.mutable.ArraySeq[LibraryAggregationResponse] = mutable.ArraySeq(getAggregationsFromResults(searchResults.getAggregations()):_*)
-//    aggResults +: getAggregationsFromResults(searchResults.getAggregations())
+    aggregateQueries.values foreach {query: SearchRequestBuilder =>
+      val secondaryResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](query)
+      aggResults ++= getAggregationsFromResults(secondaryResults.getAggregations())
+    }
 
     new LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments, aggResults)
   }

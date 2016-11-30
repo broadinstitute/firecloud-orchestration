@@ -78,17 +78,17 @@ case class AggregationTermResult(key: String, doc_count: Int)
 
 //{"query":{
 //  "constant_score":{
-//  "filter":{
-//  "bool":{
-//  "must":[
-//{"bool":{
-//  "should":[
-//{"term":{"library:indication":"n/a"}},
-//{"term":{"library:indication":"disease"}},
-//{"term":{"library:indication":"lukemia"}}]
-//}
-//},
-//{"match":{"all_":"broad"}}]}}}}}
+//    "filter":{
+//      "bool":{
+//        "must":[
+//          {"bool":{
+//            "should":[
+//              {"term":{"library:indication":"n/a"}},
+//              {"term":{"library:indication":"disease"}},
+//              {"term":{"library:indication":"lukemia"}}]
+//            }
+//          },
+//          {"match":{"all_":"broad"}}]}}}}}
 
 
 trait QueryMap
