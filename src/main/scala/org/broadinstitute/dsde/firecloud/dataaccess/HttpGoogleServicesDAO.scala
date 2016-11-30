@@ -154,7 +154,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   def objectAccessCheck(bucketName: String, objectKey: String, authToken: String)
-                       (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse]= {
+                       (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
     val accessRequest = Get( HttpGoogleServicesDAO.getObjectResourceUrl(bucketName, objectKey) )
     val accessPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
     accessPipeline{accessRequest}
