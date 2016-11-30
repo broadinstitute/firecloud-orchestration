@@ -208,7 +208,8 @@
       "institute", "projectName", "reference", "dataFileFormats", "technology", "profilingProtocol",
       "dataUseBSPSampleCollectionID", "studyDesign", "cellType", "coverage", "ethnicity", "primaryDiseaseSite",
       "broadInternalResearchProjectID", "broadInternalResearchProjectName", "broadInternalCohortName",
-      "broadInternalSeqProjectNumbers"]
+      "broadInternalSeqProjectNumbers"],
+    "consentCodes": ["GRU", "HMB", "DS", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-G", "RS-PD", "RS-POP"]
   },
   "wizard":
   [
