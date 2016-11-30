@@ -345,22 +345,6 @@ paths:
         200:
           description: Matching datasets
 
-  /api/library/search/aggregations:
-    post:
-      tags:
-        - Library
-      operationId: GetAggregations
-      summary: Returns the aggregation information for your term
-      parameters:
-        - name: fields
-          description: attribute to get aggregations for
-          required: true
-          schema:
-            $ref: '#/definitions/AggregationRef'
-          in: body
-      responses:
-        200:
-          description: aggregations
   /api/library/user/role/curator:
     get:
       responses:
@@ -2104,20 +2088,6 @@ parameters:
 ##########################################################################################
 definitions:
 
-  AggregationRef:
-    properties:
-      fields:
-        type: array
-        items:
-          type: string
-        description: The fields to get aggregations for
-      maxResults:
-        type: integer
-        default: 10
-        description: How many results to return, will be applied to all fields
-    required:
-      - fields
-
   AttributeUpdateOperation:
     properties:
       op:
@@ -2750,12 +2720,20 @@ definitions:
 
   SearchTermRef:
     properties:
-      searchTerm:
+      searchString:
         type: string
         description: The term to search for
-      fieldTerms:
+      searchFields:
         type: object
-        description: Map[String, Array[String]]
+        description: Map[String, Array[String]] Each entry contains the column name (i.e. "library:indication") and a list of terms that will be or'ed in the query (["cancer", "sleep apnea"])
+      fieldAggregations:
+        type: array
+        items:
+          type: string
+        description: The list of fields for which you would like to retrieve aggregations
+      maxAggregations:
+        type: integer
+        description: Set if you want more than 10 results, will be applied to all field aggregations
       from:
         type: integer
         default: 0

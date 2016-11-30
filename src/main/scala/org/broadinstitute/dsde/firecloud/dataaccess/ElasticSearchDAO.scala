@@ -11,7 +11,6 @@ import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, Del
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.search.aggregations.{AggregationBuilders}
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
@@ -104,33 +103,21 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     val searchReq = client.prepareSearch(indexName).setQuery(createQueryString(criteria))
       .setFrom(criteria.from)
       .setSize(criteria.size)
+    addAggregations(searchReq, criteria)
     val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
 
     val sourceDocuments = searchResults.getHits.getHits.toList map { hit =>
       hit.getSourceAsString.parseJson
     }
-    new LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments)
-  }
-
-  override def getAggregations(params: LibraryAggregationParams): Seq[LibraryAggregationResponse] = {
-    val searchReq = client.prepareSearch(indexName)
-    searchReq.setSize(0)
-    params.fields map { field: String =>
-      val terms = AggregationBuilders.terms(field)
-      if (None != params.maxResults) {
-        terms.size(params.maxResults.get)
-      }
-      searchReq.addAggregation(terms.field(field + ".raw"))
-    }
-    val aggResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
-
-    params.fields map { field: String =>
-      val terms: Terms = aggResults.getAggregations().get(field)
+    val aggResults = criteria.fieldAggregations map { field: String =>
+      val terms: Terms = searchResults.getAggregations().get(field)
       LibraryAggregationResponse(terms.getName(),
         AggregationFieldResults(terms.getSumOfOtherDocCounts.toInt,
           terms.getBuckets.asScala.toSeq map { bucket: Terms.Bucket =>
             AggregationTermResult(bucket.getKey.toString, bucket.getDocCount.toInt)
           }))
     }
+
+    new LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments, aggResults)
   }
 }

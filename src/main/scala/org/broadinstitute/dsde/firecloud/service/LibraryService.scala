@@ -4,9 +4,9 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, RawlsDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.firecloud.model.{LibraryAggregationParams, _}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.RoleSupport
@@ -31,7 +31,6 @@ object LibraryService {
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
   case object IndexAll extends LibraryServiceMessage
   case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
-  case class GetAggregations(params: LibraryAggregationParams) extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
@@ -54,7 +53,6 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
     case IndexAll => asAdmin {indexAll} pipeTo sender
     case FindDocuments(criteria: LibrarySearchParams) => asCurator {findDocuments(criteria)} pipeTo sender
-    case GetAggregations(params: LibraryAggregationParams) => asCurator {getAggregations(params)} pipeTo sender
   }
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
@@ -125,10 +123,4 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     val results: LibrarySearchResponse = searchDAO.findDocuments(criteria)
     Future(RequestComplete(results))
   }
-
-  def getAggregations(params: LibraryAggregationParams): Future[PerRequestMessage] = {
-    val results: Seq[LibraryAggregationResponse] = searchDAO.getAggregations(params)
-    Future(RequestComplete(results))
-  }
-
 }

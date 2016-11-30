@@ -104,30 +104,31 @@ object ModelJsonProtocol {
   }
 
   implicit object impLibrarySearchParams extends RootJsonFormat[LibrarySearchParams] {
-    val SEARCH_TERM = "searchTerm"
-    val FIELD_TERMS = "fieldTerms"
+    val SEARCH_STRING = "searchString"
+    val SEARCH_FIELDS = "searchFields"
+    val FIELD_AGGREGATIONS = "fieldAggregations"
+    val MAX_AGGREGATIONS = "maxAggregations"
     val FROM = "from"
     val SIZE = "size"
 
-    def convertFieldValuesToJson(params: LibrarySearchParams): Map[String,JsArray] = {
-      params.fieldTerms.map {
-        case (k: String, v: Seq[String]) =>
-          k -> JsArray((v map (term => JsString(term))).toVector)
+    override def write(params: LibrarySearchParams): JsValue = {
+      val results = scala.collection.mutable.HashMap(SEARCH_FIELDS -> params.searchFields.toJson, FIELD_AGGREGATIONS -> params.fieldAggregations.toJson, FROM -> params.from.toJson, SIZE -> params.size.toJson)
+      if (params.searchString != None) {
+        results += (SEARCH_STRING -> JsString(params.searchString.get))
       }
-    }
-
-    override def write(params: LibrarySearchParams): JsValue = params.searchTerm match {
-      case None => JsObject(Map(FIELD_TERMS -> JsObject(convertFieldValuesToJson(params)), FROM -> JsNumber(params.from), SIZE -> JsNumber(params.size)))
-      case Some(term) => JsObject(Map(FIELD_TERMS -> JsObject(convertFieldValuesToJson(params)), SEARCH_TERM -> JsString(term), FROM -> JsNumber(params.from), SIZE -> JsNumber(params.size)))
+      if (params.maxAggregations != None) {
+        results += (MAX_AGGREGATIONS -> JsNumber(params.maxAggregations.get))
+      }
+      JsObject(results.toMap)
     }
 
     override def read(json: JsValue): LibrarySearchParams = {
       val data = json.asJsObject.fields
-      val term = data.getOrElse(SEARCH_TERM, None) match {
+      val term = data.getOrElse(SEARCH_STRING, None) match {
         case JsString(str) if str.trim == "" => None
         case JsString(str) => Some(str.trim)
         case None => None
-        case _ => throw DeserializationException("unexpected json type for " + SEARCH_TERM)
+        case _ => throw DeserializationException("unexpected json type for " + SEARCH_STRING)
       }
       val from: Option[Int] = data.getOrElse(FROM, None) match {
         case JsNumber(f) => Some(f.intValue)
@@ -139,20 +140,21 @@ object ModelJsonProtocol {
         case None => None
         case _ => throw DeserializationException("unexpected json type for " + SIZE)
       }
-
-      val fields: Map[String,Seq[String]] = data.getOrElse(FIELD_TERMS, None) match {
-        case some:JsObject => some.fields map {
-          case (k: String, v: JsArray) => k -> (v.elements map {element:JsValue => element match {
-            case JsString(e) => e
-            case _ => throw DeserializationException("unexpected json type for value in " + FIELD_TERMS)
-          }})
-          case _ =>  throw DeserializationException("unexpected json type for " + FIELD_TERMS)
-        }
+      val fields: Map[String, Seq[String]] = data.getOrElse(SEARCH_FIELDS, None) match {
+        case some:JsObject => some.convertTo[Map[String,Seq[String]]]
         case None => Map.empty
-        case _ => throw DeserializationException("unexpected json type for " + FIELD_TERMS)
       }
-
-      LibrarySearchParams(term, fields, from, size)
+      val aggs = data.getOrElse(FIELD_AGGREGATIONS, None) match {
+        case some: JsArray => some.convertTo[Seq[String]]
+        case None => Seq.empty
+        case _ => throw DeserializationException("unexpected json type")
+      }
+      val maxAggs = data.getOrElse(MAX_AGGREGATIONS, None) match {
+        case JsNumber(x) => Some(x.intValue)
+        case None => None
+        case _ => throw DeserializationException("unexpected json type")
+      }
+      LibrarySearchParams(term, fields, aggs, maxAggs, from, size)
     }
   }
 
@@ -351,11 +353,10 @@ object ModelJsonProtocol {
   implicit val ESTypeFormat = jsonFormat1(ESType)
   implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
-  implicit val impLibrarySearchResponse = jsonFormat3(LibrarySearchResponse)
-  implicit val impLibraryAggregationParams = jsonFormat2(LibraryAggregationParams)
   implicit val impAggregationTermResult = jsonFormat2(AggregationTermResult)
   implicit val impAggregationFieldResults = jsonFormat2(AggregationFieldResults)
   implicit val impLibraryAggregationResponse = jsonFormat2(LibraryAggregationResponse)
+  implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
 
   implicit val impESMatch = jsonFormat1(ESMatch)
   implicit val impESTerm = jsonFormat1(ESTerm)

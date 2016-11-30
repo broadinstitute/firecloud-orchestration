@@ -16,5 +16,4 @@ trait SearchDAO extends LazyLogging {
   def indexDocument(doc: Document): Unit
   def deleteDocument(id: String): Unit
   def findDocuments(criteria: LibrarySearchParams): LibrarySearchResponse
-  def getAggregations(params: LibraryAggregationParams): Seq[LibraryAggregationResponse]
 }
