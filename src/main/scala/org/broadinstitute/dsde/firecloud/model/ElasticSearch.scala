@@ -75,7 +75,19 @@ case class AggregationTermResult(key: String, doc_count: Int)
 
 /** classes to create the ES queries in json format
   * {"query":{"match_all":{}}}"
-  * {"query":{"match":{"_all":"some-search-string"}}}"
+  * {"query":{
+  *  "constant_score":{
+  *    "filter":{
+  *      "bool":{
+  *        "must":[
+  *          {"bool":{
+  *            "should":[
+  *              {"term":{"library:indication":"n/a"}},
+  *              {"term":{"library:indication":"disease"}},
+  *              {"term":{"library:indication":"lukemia"}}]
+  *            }
+  *          },
+  *          {"match":{"all_":"broad"}}]}}}}}
   */
 
 sealed trait QueryMap
