@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor._
 import akka.pattern._
 import akka.event.Logging
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, Application}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -43,11 +43,15 @@ class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO:
   def getObjectStats(bucketName: String, objectName: String) = {
     requestToObject[JsObject](googleServicesDAO.getObjectMetadata(bucketName, objectName, userInfo.accessToken.token)) flatMap { googleResponse =>
       googleServicesDAO.fetchPriceList map { googlePrices =>
-        val unformattedSize = googleResponse.getFields("size").head.toString
-        val fileSizeGB = BigDecimal(unformattedSize.replaceAll("\"", "")) / Math.pow(1000, 3)
-        val egressPrice = getEgressCost(googlePrices.prices.cpComputeengineInternetEgressNA.tiers, fileSizeGB, 0)
+        googleResponse.getFields("size").headOption match {
+          case Some(size) => {
+            val fileSizeGB = BigDecimal(size.toString.replaceAll("\"", "")) / Math.pow(1000, 3)
+            val egressPrice = getEgressCost(googlePrices.prices.cpComputeengineInternetEgressNA.tiers, fileSizeGB, 0)
+            RequestComplete(StatusCodes.OK, googleResponse.copy(googleResponse.fields ++ Map("estimatedCostUSD" -> JsNumber(egressPrice))))
+          }
+          case None => RequestComplete(StatusCodes.OK, googleResponse)
 
-        RequestComplete(StatusCodes.OK, googleResponse.copy(googleResponse.fields ++ Map("estimatedCostUSD" -> JsNumber(egressPrice))))
+        }
       }
     }
   }
