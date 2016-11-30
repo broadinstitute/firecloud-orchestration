@@ -143,7 +143,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
 
-  def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
+  def getObjectMetadataRequest(bucketName: String, objectKey: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): HttpRequest = {
     Get( getObjectResourceUrl(bucketName, objectKey) )
   }
