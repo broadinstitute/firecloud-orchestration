@@ -9,14 +9,11 @@ import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsReque
 import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkResponse}
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
-import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.client.transport.TransportClient
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import org.elasticsearch.search.aggregations.bucket.terms.Terms
-import scala.collection.JavaConverters._
 
 class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
@@ -100,24 +97,6 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
   }
 
   override def findDocuments(criteria: LibrarySearchParams): LibrarySearchResponse = {
-    val searchReq = client.prepareSearch(indexName).setQuery(createQueryString(criteria))
-      .setFrom(criteria.from)
-      .setSize(criteria.size)
-    addAggregations(searchReq, criteria)
-    val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
-
-    val sourceDocuments = searchResults.getHits.getHits.toList map { hit =>
-      hit.getSourceAsString.parseJson
-    }
-    val aggResults = criteria.fieldAggregations map { field: String =>
-      val terms: Terms = searchResults.getAggregations().get(field)
-      LibraryAggregationResponse(terms.getName(),
-        AggregationFieldResults(terms.getSumOfOtherDocCounts.toInt,
-          terms.getBuckets.asScala.toSeq map { bucket: Terms.Bucket =>
-            AggregationTermResult(bucket.getKey.toString, bucket.getDocCount.toInt)
-          }))
-    }
-
-    new LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments, aggResults)
+    findDocumentsWithAggregateInfo(client, indexName, criteria)
   }
 }
