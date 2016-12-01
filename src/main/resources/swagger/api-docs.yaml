@@ -274,8 +274,6 @@ paths:
         Inserts a method into the method repository and
         gives the owner full access permissions. Must supply a namespace
         name, payload, and entityType. Cannot supply a snapshotId
-      consumes:
-        - application/json
       parameters:
         - name: body
           in: body
@@ -1672,7 +1670,6 @@ paths:
           description: Workspace or Method Configuration does not exist
         500:
           description: Rawls Internal Error
-      description: ''
       tags:
         - Method Configurations
       summary: get syntax validation information for a method configuration
@@ -2244,8 +2241,6 @@ paths:
         - Profile
       operationId: setProfile
       summary: Sets a profile object in the user profile service for the currently logged-in user.
-      consumes:
-      - application/json
       parameters:
       - name: profile
         description: A complete profile
