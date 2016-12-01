@@ -58,7 +58,6 @@ paths:
           description: FireCloud Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-      description: create new billing project in FireCloud and google
       parameters:
         - in: body
           description: create project request
@@ -94,7 +93,6 @@ paths:
           description: FireCloud Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-      description: list members of billing project the caller owns
       parameters:
         - in: path
           description: Project ID
@@ -128,7 +126,6 @@ paths:
           description: FireCloud Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-      description: add user to billing project the caller owns
       parameters:
         - in: path
           description: Project ID
@@ -171,7 +168,6 @@ paths:
           description: FireCloud Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-      description: remove user from billing project the caller owns
       parameters:
         - in: path
           description: Project ID
@@ -262,7 +258,7 @@ paths:
 #          required: false
 #          type: string
       responses:
-        '200':
+        200:
           description: An array of configurations.
           schema:
             type: array
@@ -290,15 +286,15 @@ paths:
       tags:
         - Method Repository
       responses:
-        '201':
+        201:
           description: Method successfully added.
           schema:
             $ref: '#/definitions/ConfigurationResponse'
-        '400':
+        400:
           description: Malformed input.
           schema:
             $ref: '#/definitions/Error'
-        '500':
+        500:
           description: Internal error.
           schema:
             $ref: '#/definitions/Error'
@@ -318,6 +314,8 @@ paths:
           description: Method Repository configuration detail
         500:
           description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
     delete:
       tags:
         - Method Repository
@@ -644,8 +642,6 @@ paths:
         name, payload, and entityType. Cannot supply a snapshotId
       tags:
         - Method Repository
-      consumes:
-        - application/json
       parameters:
         - name: body
           in: body
@@ -686,7 +682,7 @@ paths:
         #   required: false
         #   type: string
       responses:
-        '200':
+        200:
           description: A single method.
           schema:
             $ref: '#/definitions/MethodResponse'
@@ -951,11 +947,11 @@ paths:
   /api/submissions/queueStatus:
     get:
       responses:
-        '200':
+        200:
           description: Successful Request
           schema:
             $ref: '#/definitions/WorkflowQueueStatusResponse'
-        '500':
+        500:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
@@ -1295,23 +1291,23 @@ paths:
           description: Internal Server Error
     patch:
       responses:
-        '200':
+        200:
           description: Entity updated
           schema:
             $ref: '#/definitions/Entity'
-        '400':
+        400:
           description: Attribute does not exist
           schema:
             $ref: '#/definitions/ErrorReport'
-        '403':
+        403:
           description: User does not have permission to update attributes in the namespace
           schema:
             $ref: '#/definitions/ErrorReport'
-        '404':
+        404:
           description: Workspace or Entity not found
           schema:
             $ref: '#/definitions/ErrorReport'
-        '500':
+        500:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
@@ -1668,13 +1664,13 @@ paths:
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/validate:
     get:
       responses:
-        '200':
+        200:
           description: Successful Request
           schema:
             $ref: '#/definitions/ValidatedMethodConfiguration'
-        '404':
+        404:
           description: Workspace or Method Configuration does not exist
-        '500':
+        500:
           description: Rawls Internal Error
       description: ''
       tags:
@@ -1876,23 +1872,23 @@ paths:
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/validate:
     post:
       responses:
-        '200':
+        200:
           description: Validation Response
           schema:
             $ref: '#/definitions/SubmissionValidationReport'
-        '400':
+        400:
           description: Expression evaluation failed or entities are not of type required by method config
           schema:
             $ref: '#/definitions/ErrorReport'
-        '404':
+        404:
           description: Workspace, Method Configuration or Entity not found
           schema:
             $ref: '#/definitions/ErrorReport'
-        '500':
+        500:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-        '502':
+        502:
           description: Trouble talking to Agora
           schema:
             $ref: '#/definitions/ErrorReport'
@@ -1914,15 +1910,15 @@ paths:
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}:
     get:
       responses:
-        '200':
+        200:
           description: Successful Request
           schema:
             $ref: '#/definitions/ExecutionMetadata'
-        '404':
+        404:
           description: Workspace, Submission or Workflow not found
           schema:
             $ref: '#/definitions/ErrorReport'
-        '500':
+        500:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
