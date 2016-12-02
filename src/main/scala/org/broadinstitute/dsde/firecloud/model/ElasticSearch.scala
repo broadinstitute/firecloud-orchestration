@@ -54,10 +54,12 @@ case class LibrarySearchResponse(
 }
 
 
-// classes to create the ES queries in json format
-// {"query":{"match_all":{}}}"
-// {"query":{"match":{"_all":"<str>"}}}"
-trait QueryMap
+/** classes to create the ES queries in json format
+  * {"query":{"match_all":{}}}"
+  * {"query":{"match":{"_all":"some-search-string"}}}"
+  */
+
+sealed trait QueryMap
 
 case class ESQuery(query: QueryMap)
 

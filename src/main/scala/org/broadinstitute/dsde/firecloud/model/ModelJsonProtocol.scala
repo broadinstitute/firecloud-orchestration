@@ -138,14 +138,14 @@ object ModelJsonProtocol {
   implicit object impQueryMap extends JsonFormat[QueryMap] {
     override def write(inputmap: QueryMap): JsValue = inputmap match {
       case matchall : ESMatchAll => matchall.toJson
-      case wildcard : ESMatch => wildcard.toJson
+      case amatch : ESMatch => amatch.toJson
       case _ => throw new SerializationException("unexpected QueryMap type")
     }
 
     override def read(json: JsValue): QueryMap = {
       json.asJsObject.fields.keys.head match {
         case "match_all" => impESMatchAll.read(json)
-        case "wildcard" => impESMatch.read(json)
+        case "match" => impESMatch.read(json)
         case _ => throw DeserializationException("unexpected json type")
       }
     }
