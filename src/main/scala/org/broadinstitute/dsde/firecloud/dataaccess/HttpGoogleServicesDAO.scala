@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import akka.actor.ActorRefFactory
+import akka.actor.{ActorSystem, ActorRefFactory}
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
 import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
+import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -35,7 +36,12 @@ case class GooglePrices(cpBigstoreStorage: UsPriceItem,
 /** Price item containing only US currency. */
 case class UsPriceItem(us: BigDecimal)
 
-/** Tiered price item containing only US currency. */
+/** Tiered price item containing only US currency.
+  *
+  * Used for egress, may need to be altered to work with other types in the future.
+  * Contains a map of the different tiers of pricing, where the key is the size in GB
+  * for that tier and the value is the cost in USD for that tier.
+  */
 case class UsTieredPriceItem(tiers: Map[Long, BigDecimal])
 
 object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
@@ -143,9 +149,10 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
 
-  def getObjectMetadataRequest(bucketName: String, objectKey: String)
-                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): HttpRequest = {
-    Get( getObjectResourceUrl(bucketName, objectKey) )
+  def getObjectMetadata(bucketName: String, objectKey: String)
+                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
+    val request = Get( getObjectResourceUrl(bucketName, objectKey) ) ~> sendReceive
+    request map (_.entity.asString.parseJson.convertTo[ObjectMetadata])
   }
 
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {

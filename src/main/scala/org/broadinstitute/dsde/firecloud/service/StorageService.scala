@@ -8,12 +8,12 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.PerRequest._
-import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import scala.concurrent.ExecutionContext
+import scala.util.Try
 
 /**
  * Created by mbemis on 11/28/16.
@@ -30,7 +30,7 @@ object StorageService {
     new StorageService(userInfo, app.googleServicesDAO)
 }
 
-class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO: GoogleServicesDAO)(implicit val executionContext: ExecutionContext) extends Actor with RestJsonClient {
+class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO: GoogleServicesDAO)(implicit val executionContext: ExecutionContext) extends Actor with StorageServiceSupport {
   implicit val system = context.system
   val log = Logging(system, getClass)
   implicit val userInfo = argUserInfo
@@ -41,28 +41,17 @@ class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO:
   }
 
   def getObjectStats(bucketName: String, objectName: String) = {
-    requestToObject[JsObject](googleServicesDAO.getObjectMetadataRequest(bucketName, objectName)) flatMap { googleResponse =>
-      googleServicesDAO.fetchPriceList map { googlePrices =>
-        googleResponse.getFields("size").headOption match {
-          case Some(size) => {
-            val fileSizeGB = BigDecimal(size.toString.replaceAll("\"", "")) / Math.pow(1000, 3)
-            val egressPrice = getEgressCost(googlePrices.prices.cpComputeengineInternetEgressNA.tiers, fileSizeGB, 0)
-            RequestComplete(StatusCodes.OK, googleResponse.copy(googleResponse.fields ++ Map("estimatedCostUSD" -> JsNumber(egressPrice))))
-          }
-          case None => RequestComplete(StatusCodes.OK, googleResponse)
-
+    googleServicesDAO.getObjectMetadata(bucketName, objectName).zip(googleServicesDAO.fetchPriceList) map { case (objectMetadata, googlePrices) =>
+      Try(objectMetadata.size).toOption.getOrElse("-1").toLong match {
+        case -1L => RequestComplete(StatusCodes.OK, objectMetadata)
+        case size => {
+          //size is in bytes, must convert to gigabytes
+          val fileSizeGB = BigDecimal(size) / Math.pow(1000, 3)
+          val googlePricesList = googlePrices.prices.cpComputeengineInternetEgressNA.tiers.toList.sortBy(_._1)
+          val egressPrice = getEgressCost(googlePricesList, fileSizeGB, 0)
+          RequestComplete(StatusCodes.OK, (objectMetadata.copy(estimatedCostUSD = egressPrice)))
         }
       }
-    }
-  }
-
-  private def getEgressCost(googlePrices: Map[Long, BigDecimal], fileSizeGB: BigDecimal, totalCost: BigDecimal): BigDecimal = {
-    if (fileSizeGB <= 0) totalCost
-    else if(googlePrices.size <= 1) (googlePrices.head._1 * fileSizeGB) + totalCost
-    else {
-      val (sizeCharged, sizeRemaining) = if(fileSizeGB <= googlePrices.head._1) (fileSizeGB, BigDecimal(0))
-        else (BigDecimal(googlePrices.head._1), fileSizeGB - googlePrices.head._1)
-      getEgressCost(googlePrices.tail, sizeRemaining, (sizeCharged * googlePrices.head._2) + totalCost)
     }
   }
 }

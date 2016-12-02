@@ -21,6 +21,7 @@ case class ObjectMetadata(
   updated: String,
   contentDisposition: Option[String],
   contentEncoding: Option[String],
-  contentType: Option[String]
+  contentType: Option[String],
+  estimatedCostUSD: Option[BigDecimal]
 )
 
