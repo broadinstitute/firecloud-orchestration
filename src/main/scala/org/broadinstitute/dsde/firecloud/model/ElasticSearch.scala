@@ -21,6 +21,7 @@ case class ESAggregatableType(`type`: String, fields:ESRaw) extends ESPropertyFi
 case class ESRaw(raw: ESAggregateProperties) {
   def this(str: String) = this(ESAggregateProperties(str, "not_analyzed"))
 }
+
 case class ESAggregateProperties(`type`: String, index:String)
 
 
@@ -92,8 +93,6 @@ case class AggregationTermResult(key: String, doc_count: Int)
 
 sealed trait QueryMap
 sealed trait ESLogicType
-
-case class ESQuery(query: ESConstantScore)
 
 case class ESConstantScore(constant_score: ESFilter)
 
