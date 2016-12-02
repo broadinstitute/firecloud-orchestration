@@ -39,144 +39,161 @@ securityDefinitions:
 ##########################################################################################
 paths:
 
-### GAWB-934 we're hiding billing endpoints for now
-#  /api/billing:
-#    post:
-#      responses:
-#        '204':
-#          description: Successfully Created Billing Project in FireCloud and Google
-#        '400':
-#          description: firecloud billing user must be an administrator of the billing account
-#        '403':
-#          description: You must be an administrator of the google billing account
-#        '409':
-#          description: project already exists in firecloud or google
-#        '500':
-#          description: Rawls Internal Error
-#      description: create new billing project in firecloud and google
-#      parameters:
-#        - in: body
-#          description: create project request
-#          name: createProjectRequest
-#          required: true
-#          schema:
-#            $ref: '#/definitions/CreateRawlsBillingProjectFullRequest'
-#      tags:
-#        - Billing
-#      summary: create billing project in firecloud and google
-#      operationId: createBillingProjectFull
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#            - https://www.googleapis.com/auth/cloud-billing
-#
-#  '/api/billing/{projectId}/members':
-#    get:
-#      responses:
-#        '200':
-#          description: Success
-#          schema:
-#            type: array
-#            items:
-#              $ref: '#/definitions/BillingProjectMember'
-#        '403':
-#          description: You must be a project owner to view the members of a project
-#        '500':
-#          description: Rawls Internal Error
-#      description: list members of billing project the caller owns
-#      parameters:
-#        - in: path
-#          description: Project ID
-#          name: projectId
-#          required: true
-#          type: string
-#      tags:
-#        - Billing
-#      summary: list members of billing project the caller owns
-#      operationId: listBillingProjectMembers
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#
-#  '/api/billing/{projectId}/{role}/{userEmail}':
-#    put:
-#      responses:
-#        '200':
-#          description: Successfully Added User To Billing Project
-#        '403':
-#          description: You must be a project owner to add a user to a billing project
-#        '404':
-#          description: User not found
-#        '500':
-#          description: Rawls Internal Error
-#      description: add user to billing project the caller owns
-#      parameters:
-#        - in: path
-#          description: Project ID
-#          name: projectId
-#          required: true
-#          type: string
-#        - in: path
-#          description: role of user for project
-#          name: role
-#          required: true
-#          type: string
-#          enum: ["user", "owner"]
-#        - in: path
-#          description: User Email
-#          name: userEmail
-#          required: true
-#          type: string
-#      tags:
-#        - Billing
-#      summary: add user to billing project the caller owns
-#      operationId: addUserToBillingProject
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#    delete:
-#      responses:
-#        '200':
-#          description: Successfully Removed User From Billing Project
-#        '403':
-#          description: You must be a project owner to add a user to a billing project
-#        '404':
-#          description: User not found
-#        '500':
-#          description: Rawls Internal Error
-#      description: remove user from billing project the caller owns
-#      parameters:
-#        - in: path
-#          description: Project ID
-#          name: projectId
-#          required: true
-#          type: string
-#        - in: path
-#          description: role of user for project
-#          name: role
-#          required: true
-#          type: string
-#          enum: ["user", "owner"]
-#        - in: path
-#          description: User Email
-#          name: userEmail
-#          required: true
-#          type: string
-#      tags:
-#        - Billing
-#      summary: remove user from billing project the caller owns
-#      operationId: removeUserFromBillingProject
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
+  /api/billing:
+    post:
+      responses:
+        204:
+          description: Successfully Created Billing Project in FireCloud and Google
+        400:
+          description: FireCloud billing user must be an administrator of the billing account
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        403:
+          description: You must be an administrator of the google billing account
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        409:
+          description: project already exists in FireCloud or google
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: body
+          description: create project request
+          name: createProjectRequest
+          required: true
+          schema:
+            $ref: '#/definitions/CreateRawlsBillingProjectFullRequest'
+      tags:
+        - Billing
+      summary: create billing project in FireCloud and google
+      operationId: createBillingProjectFull
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/cloud-billing
+
+  /api/billing/{projectId}/members:
+    get:
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BillingProjectMember'
+        403:
+          description: You must be a project owner to view the members of a project
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Project ID
+          name: projectId
+          required: true
+          type: string
+      tags:
+        - Billing
+      summary: list members of billing project the caller owns
+      operationId: listBillingProjectMembers
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
+  /api/billing/{projectId}/{role}/{userEmail}:
+    put:
+      responses:
+        200:
+          description: Successfully Added User To Billing Project
+        403:
+          description: You must be a project owner to add a user to a billing project
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: User not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Project ID
+          name: projectId
+          required: true
+          type: string
+        - in: path
+          description: role of user for project
+          name: role
+          required: true
+          type: string
+          enum: ["user", "owner"]
+        - in: path
+          description: User Email
+          name: userEmail
+          required: true
+          type: string
+      tags:
+        - Billing
+      summary: add user to billing project the caller owns
+      operationId: addUserToBillingProject
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+    delete:
+      responses:
+        200:
+          description: Successfully Removed User From Billing Project
+        403:
+          description: You must be a project owner to add a user to a billing project
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: User not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Project ID
+          name: projectId
+          required: true
+          type: string
+        - in: path
+          description: role of user for project
+          name: role
+          required: true
+          type: string
+          enum: ["user", "owner"]
+        - in: path
+          description: User Email
+          name: userEmail
+          required: true
+          type: string
+      tags:
+        - Billing
+      summary: remove user from billing project the caller owns
+      operationId: removeUserFromBillingProject
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
 
   /api/configurations:
     get:
@@ -185,9 +202,100 @@ paths:
       operationId: listMethodRepositoryConfigurations
       summary: |
         List Method Repository configurations.
+# GAWB-1303
+#      description: |
+#        The configurations endpoint returns all configurations the requester
+#        has permissions to read that fit the filter criteria.
+#      parameters:
+#        - name: namespace
+#         in: query
+#          description: Namespace of method.
+#          required: false
+#          type: string
+#        - name: name
+#          in: query
+#          description: Name of method.
+#          required: false
+#          type: string
+#        - name: snapshotId
+#          in: query
+#          description: Snapshot ID of method.
+#          required: false
+#          type: number
+#        - name: synopsis
+#          in: query
+#          description: Synopsis of method.
+#          required: false
+#          type: string
+#        - name: documentation
+#          in: query
+#          description: Documentation of method.
+#          required: false
+#          type: string
+#        - name: owner
+#          in: query
+#          description: Owner of method.
+#          required: false
+#          type: string
+#        - name: payload
+#          in: query
+#          description: Payload of method in WDL.
+#          required: false
+#          type: string
+#        - name: entityType
+#          in: query
+#          description: Type of Method - Task or Workflow
+#          required: false
+#          type: string
+#        - name: excludedFields
+#          in: query
+#          description: Fields to exclude in JSON response.
+#          required: false
+#          type: string
+#        - name: includedFields
+#          in: query
+#          description: Fields to include in JSON response
+#          required: false
+#          type: string
       responses:
         200:
-          description: List of Method Repository configurations.
+          description: An array of configurations.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ConfigurationResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Add a Method.
+      description: |
+        Inserts a method into the method repository and
+        gives the owner full access permissions. Must supply a namespace
+        name, payload, and entityType. Cannot supply a snapshotId
+      parameters:
+        - name: body
+          in: body
+          description: Agora Entity
+          required: false
+          schema:
+            $ref: '#/definitions/ConfigurationQuery'
+      tags:
+        - Method Repository
+      responses:
+        201:
+          description: Method successfully added.
+          schema:
+            $ref: '#/definitions/ConfigurationResponse'
+        400:
+          description: Malformed input.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal error.
+          schema:
+            $ref: '#/definitions/Error'
 
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
@@ -204,6 +312,29 @@ paths:
           description: Method Repository configuration detail
         500:
           description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - Method Repository
+      summary: Redact a single configuration.
+      description: |
+        Redacts a configuration and all of its associated configurations
+      parameters:
+        - $ref: '#/parameters/configNamespaceParam'
+        - $ref: '#/parameters/configNameParam'
+        - $ref: '#/parameters/configSnapshotId'
+      responses:
+        200:
+          description: >
+            An integer showing how many configurations were deleted. Should be
+            1.
+          schema:
+            type: number
+        default:
+          description: Error upon redaction
+          schema:
+            $ref: '#/definitions/Error'
 
   /api/configurations/{namespace}/{name}/{snapshotId}/permissions:
     get:
@@ -434,13 +565,149 @@ paths:
   /api/methods:
     get:
       tags:
-      - Method Repository
+        - Method Repository
       operationId: listMethodRepositoryMethods
       summary: |
         Lists Method Repository methods.
+      # GAWB-1303
+      # parameters:
+      #   - name: namespace
+      #     in: query
+      #     description: Namespace of method.
+      #     required: false
+      #     type: string
+      #   - name: name
+      #     in: query
+      #     description: Name of method.
+      #     required: false
+      #     type: string
+      #   - name: snapshotId
+      #     in: query
+      #     description: Snapshot ID of method.
+      #     required: false
+      #     type: number
+      #   - name: synopsis
+      #     in: query
+      #     description: Synopsis of method.
+      #     required: false
+      #     type: string
+      #   - name: documentation
+      #     in: query
+      #     description: Documentation of method.
+      #     required: false
+      #     type: string
+      #   - name: owner
+      #     in: query
+      #     description: Owner of method.
+      #     required: false
+      #     type: string
+      #   - name: payload
+      #     in: query
+      #     description: Payload of method in WDL.
+      #     required: false
+      #     type: string
+      #   - name: entityType
+      #     in: query
+      #     description: Type of Method - Task or Workflow
+      #     required: false
+      #     type: string
+      #   - name: excludedFields
+      #     in: query
+      #     description: Fields to exclude in JSON response.
+      #     required: false
+      #     type: string
+      #   - name: includedFields
+      #     in: query
+      #     description: Fields to include in JSON response
+      #     required: false
+      #     type: string
       responses:
         200:
-          description: List of Method Repository methods.
+          description: An array of methods.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Add a Method.
+      description: |
+        Inserts a method into the method repository and
+        gives the owner full access permissions. Must supply a namespace
+        name, payload, and entityType. Cannot supply a snapshotId
+      tags:
+        - Method Repository
+      parameters:
+        - name: body
+          in: body
+          description: Agora Entity
+          required: false
+          schema:
+            $ref: '#/definitions/MethodQuery'
+      responses:
+        201:
+          description: Method successfully added.
+          schema:
+            $ref: '#/definitions/MethodResponse'
+        400:
+          description: Malformed input.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal error.
+          schema:
+            $ref: '#/definitions/Error'
+
+  /api/methods/{namespace}/{name}/{snapshotId}:
+    get:
+      tags:
+        - Method Repository
+      summary: Find a single method.
+      description: |
+        Returns one method that matches the namespace,
+        name, and snapshotId.
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
+        # GAWB-1303
+        # - name: onlyPayload
+        #   in: query
+        #   description: Boolean to return only the payload of the method.
+        #   required: false
+        #   type: string
+      responses:
+        200:
+          description: A single method.
+          schema:
+            $ref: '#/definitions/MethodResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - Method Repository
+      summary: Redact a single method.
+      description: |
+        Redacts a method and all of its associated configurations
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
+      responses:
+        200:
+          description: |
+            An integer showing how many methods were deleted.
+          schema:
+            type: number
+        default:
+          description: Error upon redaction
+          schema:
+            $ref: '#/definitions/Error'
 
   /api/methods/{namespace}/{name}/{snapshotId}/permissions:
     get:
@@ -576,32 +843,48 @@ paths:
         500:
           description: Internal Server Error
 
-#  /api/profile/billingAccounts:
-#    get:
-#      tags:
-#        - Profile
-#      operationId: billingAccounts
-#      summary: List billing accounts for a user
-#      responses:
-#        200:
-#          description: OK
-#          schema:
-#            type: array
-#            items:
-#              $ref: '#/definitions/BillingAccount'
-#        403:
-#          description: Forbidden - redirect to Google to enable appropriate scopes
-#          schema:
-#            $ref: '#/definitions/BillingAccountRedirect'
-#        500:
-#          description: Internal Server Error
-#      security:
-#        - googleoauth:
-#            - openid
-#            - email
-#            - profile
-#            - https://www.googleapis.com/auth/devstorage.full_control
-#            - https://www.googleapis.com/auth/cloud-billing
+  /api/profile/billingAccounts:
+    get:
+      tags:
+        - Profile
+      operationId: billingAccounts
+      summary: List billing accounts for a user
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BillingAccount'
+        403:
+          description: Forbidden - redirect to Google to enable appropriate scopes
+          schema:
+            $ref: '#/definitions/BillingAccountRedirect'
+        500:
+          description: Internal Server Error
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+            - https://www.googleapis.com/auth/devstorage.full_control
+            - https://www.googleapis.com/auth/cloud-billing
+
+  /api/refresh-token-status:
+    get:
+      tags:
+        - OAuth
+      operationId: getRefreshTokenStatus
+      summary: Returns the status of the current user's refresh token.
+      responses:
+        200:
+          description: OK
+          schema:
+            required:
+              - requiresRefresh
+            properties:
+              requiresRefresh:
+                type: boolean
 
   /api/status:
     get:
@@ -662,11 +945,11 @@ paths:
   /api/submissions/queueStatus:
     get:
       responses:
-        '200':
+        200:
           description: Successful Request
           schema:
             $ref: '#/definitions/WorkflowQueueStatusResponse'
-        '500':
+        500:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
@@ -1006,23 +1289,23 @@ paths:
           description: Internal Server Error
     patch:
       responses:
-        '200':
+        200:
           description: Entity updated
           schema:
             $ref: '#/definitions/Entity'
-        '400':
+        400:
           description: Attribute does not exist
           schema:
             $ref: '#/definitions/ErrorReport'
-        '403':
+        403:
           description: User does not have permission to update attributes in the namespace
           schema:
             $ref: '#/definitions/ErrorReport'
-        '404':
+        404:
           description: Workspace or Entity not found
           schema:
             $ref: '#/definitions/ErrorReport'
-        '500':
+        500:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
@@ -1379,15 +1662,14 @@ paths:
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/validate:
     get:
       responses:
-        '200':
+        200:
           description: Successful Request
           schema:
             $ref: '#/definitions/ValidatedMethodConfiguration'
-        '404':
+        404:
           description: Workspace or Method Configuration does not exist
-        '500':
+        500:
           description: Rawls Internal Error
-      description: ''
       tags:
         - Method Configurations
       summary: get syntax validation information for a method configuration
@@ -1587,23 +1869,23 @@ paths:
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/validate:
     post:
       responses:
-        '200':
+        200:
           description: Validation Response
           schema:
             $ref: '#/definitions/SubmissionValidationReport'
-        '400':
+        400:
           description: Expression evaluation failed or entities are not of type required by method config
           schema:
             $ref: '#/definitions/ErrorReport'
-        '404':
+        404:
           description: Workspace, Method Configuration or Entity not found
           schema:
             $ref: '#/definitions/ErrorReport'
-        '500':
+        500:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-        '502':
+        502:
           description: Trouble talking to Agora
           schema:
             $ref: '#/definitions/ErrorReport'
@@ -1625,15 +1907,15 @@ paths:
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}:
     get:
       responses:
-        '200':
+        200:
           description: Successful Request
           schema:
             $ref: '#/definitions/ExecutionMetadata'
-        '404':
+        404:
           description: Workspace, Submission or Workflow not found
           schema:
             $ref: '#/definitions/ErrorReport'
-        '500':
+        500:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
@@ -1716,6 +1998,7 @@ paths:
           description: Workspace not found
         500:
           description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/setAttributes:
     patch:
       tags:
@@ -1729,7 +2012,8 @@ paths:
         - name: newAttributes
           description: New attribute values, as Map[String, Attribute]
           required: true
-          type: object
+          schema:
+            type: object
           in: body
       responses:
         200:
@@ -1874,20 +2158,6 @@ paths:
         204:
           description: All set
       security: []
-  /api/refresh-token-status:
-    get:
-      tags:
-        - OAuth
-      operationId: getRefreshTokenStatus
-      summary: Returns the status of the current user's refresh token.
-      responses:
-        200:
-          schema:
-            required:
-              - requiresRefresh
-            properties:
-              requiresRefresh:
-                type: boolean
 
   /me:
     get:
@@ -1971,8 +2241,6 @@ paths:
         - Profile
       operationId: setProfile
       summary: Sets a profile object in the user profile service for the currently logged-in user.
-      consumes:
-      - application/json
       parameters:
       - name: profile
         description: A complete profile
@@ -2240,6 +2508,81 @@ definitions:
       - inputs
       - prerequisites
 
+  ConfigurationQuery:
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: Namespace which contains Configuration.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the Configuration.
+        default: quick-BWA-config
+      synopsis:
+        type: string
+        description: Synopsis which contains Configuration.
+        default: Quick synopsis of configuration.
+      documentation:
+        type: string
+        description: Documentation of the Configuration.
+        default: |
+          Example configuraion with an associated method.
+      payload:
+        type: string
+        description: Payload of method -- must be in WDL format
+        default: >
+          { "methodRepoMethod": { "methodNamespace": "YOUR_NAMESPACE",
+          "methodName": "BWA", "methodVersion": 1}}
+      entityType:
+        type: string
+        description: Can only be Configuration.
+        default: Configuration
+
+  ConfigurationResponse:
+    type: object
+    properties:
+      method:
+        type: object
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      snapshotId:
+        type: integer
+        description: SnapshotId of AgoraEntity
+      synopsis:
+        type: string
+        description: Synopsis which contains AgoraEntity.
+        default: Quickly aligns short nucleotide sequences.
+      documentation:
+        type: string
+        description: Documentation of the AgoraEntity. MUST BE REQUESTED EXPLICITLY.
+        default: |
+          BWA is a software package for mapping low-divergent sequences
+          against a large reference genome, such as the human genome.
+          It consists of three algorithms: BWA-backtrack, BWA-SW and BWA-MEM.
+      createDate:
+        type: string
+        description: Timestamp of creation
+      url:
+        type: string
+        description: URL where resource can be accessed.
+      payload:
+        type: string
+        description: Payload of method -- must be in WDL format. MUST BE REQUESTED EXPLICITLY.
+        default: >
+          { "methodRepoMethod": { "methodNamespace": "YOUR_NAMESPACE",
+          "methodName": "BWA", "methodVersion": 1}}
+      entityType:
+        type: string
+        description: Type of the AgoraEntity -- Task or Workflow.
+        default: Task
+
   CopyConfigurationIngest:
     properties:
       configurationNamespace:
@@ -2408,6 +2751,16 @@ definitions:
       filteredPageCount:
         type: number
         description: count of pages after filtering; honors pageSize parameter
+
+  Error:
+    type: object
+    properties:
+      code:
+        type: integer
+        default: 500
+      message:
+        type: string
+        default: Internal Server Error
 
   ErrorReport:
     description: ''
@@ -2585,6 +2938,39 @@ definitions:
       - methodName
       - methodVersion
 
+  MethodQuery:
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      synopsis:
+        type: string
+        description: Synopsis which contains AgoraEntity.
+        default: Quickly aligns short nucleotide sequences.
+      documentation:
+        type: string
+        description: Documentation of the AgoraEntity.
+        default: |
+          BWA is a software package for mapping low-divergent sequences
+          against a large reference genome, such as the human genome.
+          It consists of three algorithms: BWA-backtrack, BWA-SW and BWA-MEM.
+      payload:
+        type: string
+        description: Payload of method -- must be in WDL format
+        default: >
+          task wc {File in_file command { cat ${in_file} | wc -l } output { Int
+          count = read_int(stdout()) }}
+      entityType:
+        type: string
+        description: Type of the AgoraEntity -- Task or Workflow.
+        default: Task
+
   MethodRepoMethod:
     description: ''
     required:
@@ -2601,6 +2987,57 @@ definitions:
       methodVersion:
         type: integer
         description: The version of method from method store
+
+  MethodResponse:
+    type: object
+    required:
+      - managers
+      - namespace
+      - name
+      - snapshotId
+    properties:
+      managers:
+        type: array
+        items:
+          type: string
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      snapshotId:
+        type: integer
+        description: SnapshotId of AgoraEntity
+      synopsis:
+        type: string
+        description: Synopsis which contains AgoraEntity.
+        default: Quickly aligns short nucleotide sequences.
+      documentation:
+        type: string
+        description: Documentation of the AgoraEntity. MUST BE REQUESTED EXPLICITLY.
+        default: |
+          BWA is a software package for mapping low-divergent sequences
+          against a large reference genome, such as the human genome.
+          It consists of three algorithms: BWA-backtrack, BWA-SW and BWA-MEM.
+      createDate:
+        type: string
+        description: Timestamp of creation
+      url:
+        type: string
+        description: URL where resource can be accessed.
+      payload:
+        type: string
+        description: Payload of method -- must be in WDL format. MUST BE REQUESTED EXPLICITLY.
+        default: >
+          task wc {File in_file command { cat ${in_file} | wc -l } output { Int
+          count = read_int(stdout()) }}
+      entityType:
+        type: string
+        description: Type of the AgoraEntity -- Task or Workflow.
+        default: Task
 
   Namespace:
     properties:
