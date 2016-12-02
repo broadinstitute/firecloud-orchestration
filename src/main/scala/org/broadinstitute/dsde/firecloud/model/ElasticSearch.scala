@@ -56,19 +56,18 @@ case class LibrarySearchResponse(
 
 // classes to create the ES queries in json format
 // {"query":{"match_all":{}}}"
-// {"query":{"wildcard":{"_all":"%s"}}}"
+// {"query":{"match":{"_all":"<str>"}}}"
 trait QueryMap
 
 case class ESQuery(query: QueryMap)
 
+case class ESMatch(`match`: Map[String, String]) extends QueryMap {
+  // when the search term should search all columns/attributes
+  def this(value: String) = this(Map("_all" -> value))
+}
+
 case class ESMatchAll(match_all: Map[String,String]) extends QueryMap {
   def this() = this(Map.empty[String,String])
 }
-
-case class ESWildcard(wildcard: ESWildcardSearchTerm) extends QueryMap {
-  def this(term: String) = this(ESWildcardSearchTerm(term))
-}
-
-case class ESWildcardSearchTerm(_all: String)
 
 
