@@ -1,22 +1,18 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.model._
-import spray.json._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.elasticsearch.search.aggregations.{AggregationBuilders, Aggregations}
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
-
-import scala.collection.JavaConverters._
+import spray.json._
 import spray.json.DefaultJsonProtocol._
+import scala.collection.JavaConverters._
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
-import scala.collection.mutable
 
-
-/**
-  * Created by ahaessly on 11/28/16.
-  */
 trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
 
   def createListOfMusts(fields: Map[String, Seq[String]]): Seq[QueryMap] = {
@@ -41,7 +37,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def addAggregations(searchReq: SearchRequestBuilder, aggFields: Seq[String], maxAggs: Option[Int]): SearchRequestBuilder = {
+  def addAggregationsToQuery(searchReq: SearchRequestBuilder, aggFields: Seq[String], maxAggs: Option[Int]): SearchRequestBuilder = {
     aggFields foreach { field: String =>
       val terms = AggregationBuilders.terms(field)
       if (maxAggs.isDefined) {
@@ -52,13 +48,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     searchReq
   }
 
-  def queryToJsonQueryString(qmseq: Seq[QueryMap]): String = {
-    ESConstantScore(ESFilter(ESBool(ESMust(qmseq)))).toJson.compactPrint
-  }
-
   def createESSearchRequest(client: TransportClient, indexname: String, qmseq: Seq[QueryMap], from: Int, size: Int): SearchRequestBuilder = {
     client.prepareSearch(indexname)
-      .setQuery(queryToJsonQueryString(qmseq))
+      .setQuery(ESConstantScore(ESFilter(ESBool(ESMust(qmseq)))).toJson.compactPrint)
       .setFrom(from)
       .setSize(size)
   }
@@ -68,14 +60,14 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     if (criteria.fieldAggregations.nonEmpty && criteria.fieldAggregations.size != criteria.searchFields.size) {
       // if we are not collecting aggregation data (in the case of pagination)
       // and if there are some aggregations that are not part of the search criteria
-      // then the aggregation data for those fields will be accurate from the standard search
-      addAggregations(mainQuery, criteria.fieldAggregations.diff(criteria.searchFields.keySet.toIndexedSeq), criteria.maxAggregations)
+      // then the aggregation data for those fields will be accurate from the main search
+      addAggregationsToQuery(mainQuery, criteria.fieldAggregations.diff(criteria.searchFields.keySet.toIndexedSeq), criteria.maxAggregations)
     }
     mainQuery
   }
 
 
-  def buildAggregateQueries(client: TransportClient, indexname: String, baseQuery: Seq[QueryMap], criteria: LibrarySearchParams): Map[String, SearchRequestBuilder] = {
+  def buildAggregateQueries(client: TransportClient, indexname: String, baseQuery: Seq[QueryMap], criteria: LibrarySearchParams): Seq[SearchRequestBuilder] = {
     // for aggregtions fields that are part of the current search criteria, we need to do a separate
     // aggregate request *without* that term in the search criteria
     (criteria.searchFields.keys map { field =>
@@ -83,8 +75,8 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
         && m.asInstanceOf[ESBool].bool.asInstanceOf[ESShould].should.last.isInstanceOf[ESTerm]
         && m.asInstanceOf[ESBool].bool.asInstanceOf[ESShould].should.last.asInstanceOf[ESTerm].term.last._1.equals(field))
       // setting size to 0, we will ignore the actual search results
-      field -> addAggregations(createESSearchRequest(client, indexname, query, 0, 0), Seq(field), criteria.maxAggregations)
-    }).toMap
+      addAggregationsToQuery(createESSearchRequest(client, indexname, query, 0, 0), Seq(field), criteria.maxAggregations)
+    }).toSeq
   }
 
   def getAggregationsFromResults(aggResults: Aggregations): Seq[LibraryAggregationResponse] = {
@@ -99,28 +91,30 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
 
-  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams): LibrarySearchResponse = {
+  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams): Future[LibrarySearchResponse] = {
     val baseQuery = createQuery(criteria)
     val mainQuery = buildMainQuery(client, indexname, baseQuery, criteria)
     val aggregateQueries = buildAggregateQueries(client, indexname, baseQuery, criteria)
 
-    // TODO execute requests in parallel
     logger.debug(s"main query: $mainQuery")
-    val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](mainQuery)
-
-    val sourceDocuments = searchResults.getHits.getHits.toList map { hit =>
-      hit.getSourceAsString.parseJson
-    }
-    val aggResults = mutable.ArrayBuffer[LibraryAggregationResponse]()
-    aggResults ++= getAggregationsFromResults(searchResults.getAggregations)
+    val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](mainQuery))
 
     logger.debug(s"additional queries for aggregations: $aggregateQueries")
-    aggregateQueries.values foreach {query: SearchRequestBuilder =>
-      val secondaryResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](query)
-      aggResults ++= getAggregationsFromResults(secondaryResults.getAggregations)
+    val aggFutures:Seq[Future[SearchResponse]] = aggregateQueries map {query: SearchRequestBuilder =>
+      Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](query))
     }
 
-    LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments, aggResults)
+    val allFutures = Future.sequence(aggFutures :+ searchFuture)
+    val response = for (
+      allResults <- allFutures
+    ) yield LibrarySearchResponse(
+      criteria,
+      allResults.last.getHits.totalHits().toInt,
+      allResults.last.getHits.getHits.toList map { hit => hit.getSourceAsString.parseJson },
+      allResults flatMap { aggResp => getAggregationsFromResults(aggResp.getAggregations) }
+    )
+    response
+
   }
 }
 

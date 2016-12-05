@@ -120,7 +120,6 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    val results: LibrarySearchResponse = searchDAO.findDocuments(criteria)
-    Future(RequestComplete(results))
+    searchDAO.findDocuments(criteria) map (RequestComplete(_))
   }
 }

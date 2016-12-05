@@ -4,6 +4,8 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
+import scala.concurrent.Future
+
 trait SearchDAO extends LazyLogging {
 
   def initIndex(): Unit
@@ -15,5 +17,5 @@ trait SearchDAO extends LazyLogging {
   def bulkIndex(docs: Seq[Document]): Unit
   def indexDocument(doc: Document): Unit
   def deleteDocument(id: String): Unit
-  def findDocuments(criteria: LibrarySearchParams): LibrarySearchResponse
+  def findDocuments(criteria: LibrarySearchParams): Future[LibrarySearchResponse]
 }

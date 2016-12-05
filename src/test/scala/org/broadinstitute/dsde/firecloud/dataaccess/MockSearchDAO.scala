@@ -3,6 +3,9 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.model._
 import spray.json.JsValue
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 /**
   * Created by davidan on 10/6/16.
   */
@@ -28,9 +31,9 @@ class MockSearchDAO extends SearchDAO {
     deleteDocumentInvoked = true
   }
 
-  override def findDocuments(librarySearchParams: LibrarySearchParams): LibrarySearchResponse = {
+  override def findDocuments(librarySearchParams: LibrarySearchParams): Future[LibrarySearchResponse] = {
     findDocumentsInvoked = true
-    LibrarySearchResponse(librarySearchParams, 0, Array[JsValue](), Array[LibraryAggregationResponse]())
+    Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
 }

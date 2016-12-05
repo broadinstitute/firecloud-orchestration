@@ -14,6 +14,7 @@ import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import scala.concurrent.Future
 
 class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
@@ -96,7 +97,7 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     }
   }
 
-  override def findDocuments(criteria: LibrarySearchParams): LibrarySearchResponse = {
+  override def findDocuments(criteria: LibrarySearchParams): Future[LibrarySearchResponse] = {
     findDocumentsWithAggregateInfo(client, indexName, criteria)
   }
 }
