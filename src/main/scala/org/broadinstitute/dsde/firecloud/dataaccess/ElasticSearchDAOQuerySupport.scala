@@ -80,13 +80,17 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def getAggregationsFromResults(aggResults: Aggregations): Seq[LibraryAggregationResponse] = {
-    aggResults.getAsMap.keySet().asScala.toSeq map { field: String =>
-      val terms: Terms = aggResults.get(field)
-      LibraryAggregationResponse(terms.getName,
-        AggregationFieldResults(terms.getSumOfOtherDocCounts.toInt,
-          terms.getBuckets.asScala map { bucket: Terms.Bucket =>
-            AggregationTermResult(bucket.getKey.toString, bucket.getDocCount.toInt)
-          }))
+    if (aggResults == null)
+      Seq.empty
+    else {
+      aggResults.getAsMap.keySet().asScala.toSeq map { field: String =>
+        val terms: Terms = aggResults.get(field)
+        LibraryAggregationResponse(terms.getName,
+          AggregationFieldResults(terms.getSumOfOtherDocCounts.toInt,
+            terms.getBuckets.asScala map { bucket: Terms.Bucket =>
+              AggregationTermResult(bucket.getKey.toString, bucket.getDocCount.toInt)
+            }))
+      }
     }
   }
 
