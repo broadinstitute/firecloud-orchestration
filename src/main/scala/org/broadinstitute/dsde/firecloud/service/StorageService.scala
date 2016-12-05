@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor._
 import akka.pattern._
 import akka.event.Logging
-import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, Application}
+import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -42,9 +42,9 @@ class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO:
 
   def getObjectStats(bucketName: String, objectName: String) = {
     googleServicesDAO.getObjectMetadata(bucketName, objectName).zip(googleServicesDAO.fetchPriceList) map { case (objectMetadata, googlePrices) =>
-      Try(objectMetadata.size).toOption.getOrElse("-1").toLong match {
-        case -1L => RequestComplete(StatusCodes.OK, objectMetadata)
-        case size => {
+      Try(objectMetadata.size.toLong).toOption match {
+        case None => RequestComplete(StatusCodes.OK, objectMetadata)
+        case Some(size) => {
           //size is in bytes, must convert to gigabytes
           val fileSizeGB = BigDecimal(size) / Math.pow(1000, 3)
           val googlePricesList = googlePrices.prices.cpComputeengineInternetEgressNA.tiers.toList.sortBy(_._1)
