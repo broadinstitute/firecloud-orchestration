@@ -15,6 +15,7 @@ import spray.http._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json._
+import spray.json.DefaultJsonProtocol._
 
 class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
 

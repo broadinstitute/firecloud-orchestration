@@ -75,5 +75,4 @@ object WorkspaceACLJsonSupport {
   implicit val WorkspaceACLFormat = jsonFormat1(WorkspaceACL)
 
   implicit val WorkspaceACLUpdateFormat = jsonFormat2(WorkspaceACLUpdate)
-  implicit val ListOfWorkspaceACLUpdatesFormat = listFormat[WorkspaceACLUpdate]
 }
