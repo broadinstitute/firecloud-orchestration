@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import akka.actor.ActorRefFactory
+import akka.actor.{ActorSystem, ActorRefFactory}
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
 import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
+import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -29,19 +30,35 @@ import scala.util.Try
 case class GooglePriceList(prices: GooglePrices, version: String, updated: String)
 
 /** Partial price list. Attributes can be added as needed to import prices for more products. */
-case class GooglePrices(cpBigstoreStorage: UsPriceItem)
+case class GooglePrices(cpBigstoreStorage: UsPriceItem,
+                        cpComputeengineInternetEgressNA: UsTieredPriceItem)
 
 /** Price item containing only US currency. */
 case class UsPriceItem(us: BigDecimal)
 
+/** Tiered price item containing only US currency.
+  *
+  * Used for egress, may need to be altered to work with other types in the future.
+  * Contains a map of the different tiers of pricing, where the key is the size in GB
+  * for that tier and the value is the cost in USD for that tier.
+  */
+case class UsTieredPriceItem(tiers: Map[Long, BigDecimal])
+
 object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
   implicit val UsPriceItemFormat = jsonFormat1(UsPriceItem)
-  implicit val GooglePricesFormat = jsonFormat(GooglePrices, "CP-BIGSTORE-STORAGE")
+  implicit object UsTieredPriceItemFormat extends RootJsonFormat[UsTieredPriceItem] {
+    override def write(value: UsTieredPriceItem): JsValue = ???
+    override def read(json: JsValue): UsTieredPriceItem = json match {
+      case JsObject(values) => UsTieredPriceItem(values("tiers").asJsObject.fields.map{ case (name, value) => name.toLong -> BigDecimal(value.toString)})
+      case x => throw new DeserializationException("invalid value: " + x)
+    }
+  }
+  implicit val GooglePricesFormat = jsonFormat(GooglePrices, "CP-BIGSTORE-STORAGE", "CP-COMPUTEENGINE-INTERNET-EGRESS-NA-NA")
   implicit val GooglePriceListFormat = jsonFormat(GooglePriceList, "gcp_price_list", "version", "updated")
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
-object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
+object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding {
 
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
@@ -131,6 +148,12 @@ object HttpGoogleServicesDAO extends FireCloudRequestBuilding {
   }
 
   def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
+
+  def getObjectMetadata(bucketName: String, objectKey: String)
+                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
+    val request = Get( getObjectResourceUrl(bucketName, objectKey) ) ~> sendReceive
+    request map (_.entity.asString.parseJson.convertTo[ObjectMetadata])
+  }
 
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
     val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"

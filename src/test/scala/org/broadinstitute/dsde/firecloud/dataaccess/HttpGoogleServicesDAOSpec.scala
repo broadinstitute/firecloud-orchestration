@@ -17,5 +17,6 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers {
     priceList.version should startWith ("v")
     priceList.updated should not be empty
     priceList.prices.cpBigstoreStorage.us should be > BigDecimal(0)
+    priceList.prices.cpComputeengineInternetEgressNA.tiers.size should be > 0
   }
 }
