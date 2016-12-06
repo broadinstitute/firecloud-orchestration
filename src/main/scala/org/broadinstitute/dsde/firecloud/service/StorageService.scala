@@ -47,7 +47,7 @@ class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO:
         case Some(size) => {
           //size is in bytes, must convert to gigabytes
           val fileSizeGB = BigDecimal(size) / Math.pow(1000, 3)
-          val googlePricesList = googlePrices.prices.cpComputeengineInternetEgressNA.tiers.toList.sortBy(_._1)
+          val googlePricesList = googlePrices.prices.cpComputeengineInternetEgressNA.tiers.toList
           val egressPrice = getEgressCost(googlePricesList, fileSizeGB, 0)
           RequestComplete(StatusCodes.OK, (objectMetadata.copy(estimatedCostUSD = egressPrice)))
         }
