@@ -170,44 +170,6 @@ object ModelJsonProtocol {
     }
   }
 
-  implicit object impESLogicType extends JsonFormat[ESLogicType] {
-    override def write(inputmap: ESLogicType): JsValue = inputmap match {
-      case must : ESMust => must.toJson
-      case should : ESShould => should.toJson
-      case _ => throw new SerializationException("unexpected QueryMap type")
-    }
-
-    override def read(json: JsValue): ESLogicType = {
-      if (json.asJsObject.fields.isEmpty)
-        throw DeserializationException("expected data within ESLogicType")
-      json.asJsObject.fields.keys.head match {
-        case "must" => impESMust.read(json)
-        case "should" => impESShould.read(json)
-        case _ => throw DeserializationException("unexpected json type")
-      }
-    }
-  }
-
-  implicit object impQueryMap extends JsonFormat[QueryMap] {
-    override def write(inputmap: QueryMap): JsValue = inputmap match {
-      case matchall : ESMatchAll => matchall.toJson
-      case amatch : ESMatch => amatch.toJson
-      case term : ESTerm => term.toJson
-      case bool : ESBool => bool.toJson
-      case _ => throw new SerializationException("unexpected QueryMap type")
-    }
-
-    override def read(json: JsValue): QueryMap = {
-      json.asJsObject.fields.keys.head match {
-        case "match_all" => impESMatchAll.read(json)
-        case "match" => impESMatch.read(json)
-        case "term" => impESTerm.read(json)
-        case "bool" => impESBool.read(json)
-        case _ => throw DeserializationException("unexpected json type")
-      }
-    }
-  }
-
   implicit object impESPropertyFields extends JsonFormat[ESPropertyFields] {
     override def write(input: ESPropertyFields): JsValue = input match {
       case estype : ESType => estype.toJson
@@ -371,16 +333,7 @@ object ModelJsonProtocol {
   implicit val impAggregationFieldResults = jsonFormat2(AggregationFieldResults)
   implicit val impLibraryAggregationResponse = jsonFormat2(LibraryAggregationResponse)
   implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
-
-  implicit val impESMatch = jsonFormat1(ESMatch)
-  implicit val impESTerm = jsonFormat1(ESTerm)
-  implicit val impESMust = jsonFormat1(ESMust)
-  implicit val impESShould = jsonFormat1(ESShould)
-  implicit val impESBool = jsonFormat1(ESBool)
-  implicit val impESFilter = jsonFormat1(ESFilter)
-  implicit val impESConstantScore = jsonFormat1(ESConstantScore)
-  implicit val impESMatchAll = jsonFormat1(ESMatchAll)
-
+  
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
     case MalformedRequestContentRejection(errorMsg, _) :: _ =>

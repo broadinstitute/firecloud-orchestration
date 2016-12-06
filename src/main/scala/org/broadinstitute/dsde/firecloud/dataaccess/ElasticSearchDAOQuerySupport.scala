@@ -5,9 +5,12 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.elasticsearch.search.aggregations.{AggregationBuilders, Aggregations}
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
+import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
+import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,26 +18,45 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
 
-  def createListOfMusts(fields: Map[String, Seq[String]]): Seq[QueryMap] = {
-    (fields map {
-      case (k, v) => ESBool(createESShouldForTerms(k, v))
-    }).toSeq
-  }
+  /** ES queries - below is similar to what will be created by the query builders
+    * {"query":{"match_all":{}}}"
+    * {"query":{
+    *    "bool":{
+    *      "must":[{
+    *        "bool":{
+    *        "should":[
+    *          {"term":{"library:indication":"n/a"}},
+    *          {"term":{"library:indication":"disease"}},
+    *          {"term":{"library:indication":"lukemia"}}]
+    *        }
+    *      },
+    *      {"match":{"all_":"broad"}}]}},
+    *  "aggregations":{
+    *    "library:dataUseRestriction":{
+    *      "terms":{"field":"library:dataUseRestriction.raw"}},
+    *    "library:datatype":{
+    *      "terms":{"field":"library:datatype.raw"}}
+    * }
+    *  The outer boolean query, which is a must, is indicating that all selections of the filter and search
+    *  are being "and"-ed together
+    *  For selections with an attribute, each selection is "or"-ed together - this is represented by the inner
+    *  boolean query with the should list
+    */
 
-  def createESShouldForTerms(attribute: String, terms: Seq[String]): ESShould = {
-    val clauses: Seq[ESTerm] = terms map {
-      case (term: String) => ESTerm(Map(attribute -> term))
-    }
-    ESShould(clauses)
-  }
 
-  def createQuery(criteria: LibrarySearchParams): Seq[QueryMap] = {
-    (criteria.searchString, criteria.searchFields.size) match {
-      case (None | Some(""), 0) => Seq(new ESMatchAll)
-      case (None | Some(""), _) => createListOfMusts(criteria.searchFields)
-      case (Some(searchTerm: String), 0) => Seq(new ESMatch(searchTerm.toLowerCase))
-      case (Some(searchTerm: String), _) => createListOfMusts(criteria.searchFields) :+ new ESMatch(searchTerm.toLowerCase)
+  def createQuery(criteria: LibrarySearchParams): QueryBuilder = {
+    val query: BoolQueryBuilder = boolQuery // outer query, all subqueries should be added to the must list
+    query.must(criteria.searchString match {
+      case None => matchAllQuery
+      case Some(searchTerm) if searchTerm.trim == "" => matchAllQuery
+      case Some(searchTerm) => matchQuery("_all", searchTerm)
+    })
+    criteria.searchFields foreach { case (field:String, values:Seq[String]) =>
+      val fieldQuery = boolQuery // query for possible values of aggregation, added via should
+      values foreach { value:String => fieldQuery.should(termQuery(field, value))}
+      query.must(fieldQuery)
     }
+    query
   }
 
   def addAggregationsToQuery(searchReq: SearchRequestBuilder, aggFields: Seq[String], maxAggs: Option[Int]): SearchRequestBuilder = {
@@ -48,35 +70,35 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     searchReq
   }
 
-  def createESSearchRequest(client: TransportClient, indexname: String, qmseq: Seq[QueryMap], from: Int, size: Int): SearchRequestBuilder = {
+  def createESSearchRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int): SearchRequestBuilder = {
     client.prepareSearch(indexname)
-      .setQuery(ESConstantScore(ESFilter(ESBool(ESMust(qmseq)))).toJson.compactPrint)
+      .setQuery(qmseq)
       .setFrom(from)
       .setSize(size)
   }
 
-  def buildMainQuery(client: TransportClient, indexname: String, baseQuery: Seq[QueryMap], criteria: LibrarySearchParams): SearchRequestBuilder = {
-    val mainQuery = createESSearchRequest(client, indexname, baseQuery, criteria.from, criteria.size)
+  def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams): SearchRequestBuilder = {
+    val searchQuery = createESSearchRequest(client, indexname, createQuery(criteria), criteria.from, criteria.size)
+    // if we are not collecting aggregation data (in the case of pagination), we can skip adding aggregations
+    // if the search criteria contains elements from all of the aggregatable attributes, then we will be making
+    // separate queries for each of them. so we can skip adding them in the main search query
     if (criteria.fieldAggregations.nonEmpty && criteria.fieldAggregations.size != criteria.searchFields.size) {
-      // if we are not collecting aggregation data (in the case of pagination)
-      // and if there are some aggregations that are not part of the search criteria
-      // then the aggregation data for those fields will be accurate from the main search
-      addAggregationsToQuery(mainQuery, criteria.fieldAggregations.diff(criteria.searchFields.keySet.toIndexedSeq), criteria.maxAggregations)
+      // for the aggregations that are not part of the search criteria
+      // then the aggregation data for those fields will be accurate from the main search query so we add them here
+      addAggregationsToQuery(searchQuery, criteria.fieldAggregations.diff(criteria.searchFields.keySet.toSeq), criteria.maxAggregations)
     }
-    mainQuery
+    searchQuery
   }
 
 
-  def buildAggregateQueries(client: TransportClient, indexname: String, baseQuery: Seq[QueryMap], criteria: LibrarySearchParams): Seq[SearchRequestBuilder] = {
-    // for aggregtions fields that are part of the current search criteria, we need to do a separate
+  def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams): Seq[SearchRequestBuilder] = {
+    // for aggregations fields that are part of the current search criteria, we need to do a separate
     // aggregate request *without* that term in the search criteria
-    (criteria.searchFields.keys map { field =>
-      val query = baseQuery.filterNot((m: QueryMap) => m.isInstanceOf[ESBool] && m.asInstanceOf[ESBool].bool.isInstanceOf[ESShould]
-        && m.asInstanceOf[ESBool].bool.asInstanceOf[ESShould].should.last.isInstanceOf[ESTerm]
-        && m.asInstanceOf[ESBool].bool.asInstanceOf[ESShould].should.last.asInstanceOf[ESTerm].term.last._1.equals(field))
+    (criteria.fieldAggregations intersect criteria.searchFields.keySet.toSeq) map { field =>
+      val query = createQuery(criteria.copy(searchFields = criteria.searchFields - field))
       // setting size to 0, we will ignore the actual search results
       addAggregationsToQuery(createESSearchRequest(client, indexname, query, 0, 0), Seq(field), criteria.maxAggregations)
-    }).toSeq
+    }
   }
 
   def getAggregationsFromResults(aggResults: Aggregations): Seq[LibraryAggregationResponse] = {
@@ -94,16 +116,16 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-
   def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams): Future[LibrarySearchResponse] = {
-    val baseQuery = createQuery(criteria)
-    val mainQuery = buildMainQuery(client, indexname, baseQuery, criteria)
-    val aggregateQueries = buildAggregateQueries(client, indexname, baseQuery, criteria)
+    val searchQuery = buildSearchQuery(client, indexname, criteria)
+    val aggregateQueries = buildAggregateQueries(client, indexname, criteria)
 
-    logger.debug(s"main query: $mainQuery")
-    val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](mainQuery))
 
-    logger.debug(s"additional queries for aggregations: $aggregateQueries")
+    logger.debug(s"main search query: $searchQuery.toJson")
+    // search future will request aggregate data for aggregatable attributes that are not being searched on
+    val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchQuery))
+
+    logger.debug(s"additional queries for aggregations: $aggregateQueries.toJson")
     val aggFutures:Seq[Future[SearchResponse]] = aggregateQueries map {query: SearchRequestBuilder =>
       Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](query))
     }
@@ -118,7 +140,6 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       allResults flatMap { aggResp => getAggregationsFromResults(aggResp.getAggregations) }
     )
     response
-
   }
 }
 

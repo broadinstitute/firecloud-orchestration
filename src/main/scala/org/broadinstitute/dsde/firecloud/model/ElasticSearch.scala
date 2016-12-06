@@ -45,6 +45,16 @@ object Document {
 
 
 // classes to convert from json body and to json response
+
+/**
+  *
+  * @param searchString
+  * @param searchFields a map of field names to a list of possible values which will be part of the search criteria
+  * @param fieldAggregations the aggregation data to retrieve, results will differ based on the search criteria
+  * @param maxAggregations the default is 10, this should only be specified if the use has requested to see more options
+  * @param from used for pagination, where to start the returned results
+  * @param size used for pagination, how many results to return
+  */
 case class LibrarySearchParams(
   searchString: Option[String],
   searchFields: Map[String, Seq[String]],
@@ -73,46 +83,5 @@ case class AggregationFieldResults(  numOtherDocs: Int,
   buckets: Seq[AggregationTermResult])
 
 case class AggregationTermResult(key: String, doc_count: Int)
-
-/** classes to create the ES queries in json format
-  * {"query":{"match_all":{}}}"
-  * {"query":{
-  *  "constant_score":{
-  *    "filter":{
-  *      "bool":{
-  *        "must":[
-  *          {"bool":{
-  *            "should":[
-  *              {"term":{"library:indication":"n/a"}},
-  *              {"term":{"library:indication":"disease"}},
-  *              {"term":{"library:indication":"lukemia"}}]
-  *            }
-  *          },
-  *          {"match":{"all_":"broad"}}]}}}}}
-  */
-
-sealed trait QueryMap
-sealed trait ESLogicType
-
-case class ESConstantScore(constant_score: ESFilter)
-
-case class ESFilter(filter: ESBool)
-
-case class ESBool(bool: ESLogicType) extends QueryMap
-
-case class ESMust(must: Seq[QueryMap]) extends ESLogicType
-
-case class ESShould(should: Seq[QueryMap]) extends ESLogicType
-
-case class ESMatch(`match`: Map[String, String]) extends QueryMap {
-  // when the search term should search all columns/attributes
-  def this(value: String) = this(Map("_all" -> value))
-}
-
-case class ESTerm(term: Map[String, String]) extends QueryMap
-
-case class ESMatchAll(match_all: Map[String,String]) extends QueryMap {
-  def this() = this(Map.empty[String,String])
-}
 
 
