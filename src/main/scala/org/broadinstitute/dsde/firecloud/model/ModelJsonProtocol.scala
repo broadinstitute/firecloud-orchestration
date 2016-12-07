@@ -131,7 +131,7 @@ object ModelJsonProtocol {
 
   implicit object impLibrarySearchParams extends RootJsonFormat[LibrarySearchParams] {
     val SEARCH_STRING = "searchString"
-    val SEARCH_FIELDS = "searchFields"
+    val FILTERS = "filters"
     val FIELD_AGGREGATIONS = "fieldAggregations"
     val MAX_AGGREGATIONS = "maxAggregations"
     val FROM = "from"
@@ -139,7 +139,7 @@ object ModelJsonProtocol {
 
     override def write(params: LibrarySearchParams): JsValue = {
       val fields:Seq[Option[(String, JsValue)]] = Seq(
-        Some(SEARCH_FIELDS -> params.searchFields.toJson),
+        Some(FILTERS -> params.filters.toJson),
         Some(FIELD_AGGREGATIONS -> params.fieldAggregations.toJson),
         Some(FROM -> params.from.toJson),
         Some(SIZE -> params.size.toJson),
@@ -159,13 +159,13 @@ object ModelJsonProtocol {
         case _ => throw DeserializationException(s"unexpected json type for $SEARCH_STRING")
       }
 
-      val fields = optionalEntryReader[Map[String, Seq[String]]](SEARCH_FIELDS, data, _.convertTo[Map[String, Seq[String]]], Map.empty)
+      val filters = optionalEntryReader[Map[String, Seq[String]]](FILTERS, data, _.convertTo[Map[String, Seq[String]]], Map.empty)
       val aggs = optionalEntryReader[Seq[String]](FIELD_AGGREGATIONS, data, _.convertTo[Seq[String]], Seq.empty)
       val from = optionalEntryIntReader(FROM, data)
       val size = optionalEntryIntReader(SIZE, data)
       val maxAggs = optionalEntryIntReader(MAX_AGGREGATIONS, data)
 
-      LibrarySearchParams(term, fields, aggs, maxAggs, from, size)
+      LibrarySearchParams(term, filters, aggs, maxAggs, from, size)
     }
   }
 

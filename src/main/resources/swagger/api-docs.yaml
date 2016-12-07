@@ -2723,7 +2723,7 @@ definitions:
       searchString:
         type: string
         description: The term to search for
-      searchFields:
+      filters:
         type: object
         description: Map[String, Array[String]] Each entry contains the column name (i.e. "library:indication") and a list of terms that will be or'ed in the query (["cancer", "sleep apnea"])
       fieldAggregations:

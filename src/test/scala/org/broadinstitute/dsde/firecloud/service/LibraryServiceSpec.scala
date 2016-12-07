@@ -425,7 +425,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
     }
     "when converting json to LibrarySearchParams" - {
       "should succeed" in {
-        val json = "{\"searchFields\": {\"library:datatype\":[\"cancer\"]},\"fieldAggregations\":[\"library:indication\"]}".parseJson
+        val json = "{\"filters\": {\"library:datatype\":[\"cancer\"]},\"fieldAggregations\":[\"library:indication\"]}".parseJson
         val obj = impLibrarySearchParams.read(json)
         assert(obj.getClass.getName == "org.broadinstitute.dsde.firecloud.model.LibrarySearchParams")
       }

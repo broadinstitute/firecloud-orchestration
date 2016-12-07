@@ -51,7 +51,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       case Some(searchTerm) if searchTerm.trim == "" => matchAllQuery
       case Some(searchTerm) => matchQuery("_all", searchTerm)
     })
-    criteria.searchFields foreach { case (field:String, values:Seq[String]) =>
+    criteria.filters foreach { case (field:String, values:Seq[String]) =>
       val fieldQuery = boolQuery // query for possible values of aggregation, added via should
       values foreach { value:String => fieldQuery.should(termQuery(field+".raw", value))}
       query.must(fieldQuery)
@@ -84,10 +84,10 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     // if we are not collecting aggregation data (in the case of pagination), we can skip adding aggregations
     // if the search criteria contains elements from all of the aggregatable attributes, then we will be making
     // separate queries for each of them. so we can skip adding them in the main search query
-    if (criteria.fieldAggregations.nonEmpty && (criteria.fieldAggregations diff criteria.searchFields.keySet.toSeq).size != 0) {
+    if (criteria.fieldAggregations.nonEmpty && (criteria.fieldAggregations diff criteria.filters.keySet.toSeq).size != 0) {
       // for the aggregations that are not part of the search criteria
       // then the aggregation data for those fields will be accurate from the main search query so we add them here
-      addAggregationsToQuery(searchQuery, criteria.fieldAggregations.diff(criteria.searchFields.keySet.toSeq), criteria.maxAggregations)
+      addAggregationsToQuery(searchQuery, criteria.fieldAggregations.diff(criteria.filters.keySet.toSeq), criteria.maxAggregations)
     }
     searchQuery
   }
@@ -96,8 +96,8 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams): Seq[SearchRequestBuilder] = {
     // for aggregations fields that are part of the current search criteria, we need to do a separate
     // aggregate request *without* that term in the search criteria
-    (criteria.fieldAggregations intersect criteria.searchFields.keySet.toSeq) map { field =>
-      val query = createQuery(criteria.copy(searchFields = criteria.searchFields - field))
+    (criteria.fieldAggregations intersect criteria.filters.keySet.toSeq) map { field =>
+      val query = createQuery(criteria.copy(filters = criteria.filters - field))
       // setting size to 0, we will ignore the actual search results
       addAggregationsToQuery(createESSearchRequest(client, indexname, query, 0, 0), Seq(field), criteria.maxAggregations)
     }
