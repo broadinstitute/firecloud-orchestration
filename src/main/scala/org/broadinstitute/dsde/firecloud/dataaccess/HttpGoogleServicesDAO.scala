@@ -149,9 +149,9 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
 
-  def getObjectMetadata(bucketName: String, objectKey: String)
+  def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
-    val request = Get( getObjectResourceUrl(bucketName, objectKey) ) ~> sendReceive
+    val request = Get( getObjectResourceUrl(bucketName, objectKey) ) ~> addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
     request map (_.entity.asString.parseJson.convertTo[ObjectMetadata])
   }
 

@@ -18,7 +18,7 @@ trait GoogleServicesDAO {
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse]
   def getDownload(requestContext: RequestContext, bucketName: String, objectKey: String, userAuthToken: String)
                  (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Unit
-  def getObjectMetadata(bucketName: String, objectKey: String)
+  def getObjectMetadata(bucketName: String, objectKey: String, userAuthToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata]
   def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList]
 }
