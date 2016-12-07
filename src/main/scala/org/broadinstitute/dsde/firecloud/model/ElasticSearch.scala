@@ -15,8 +15,8 @@ case class AttributeDetail(`type`: String, items: Option[AttributeDetail] = None
 trait ESPropertyFields
 case class ESDatasetProperty(properties: Map[String, ESPropertyFields])
 case class ESType(`type`: String) extends ESPropertyFields
-case class ESAggregatableType(`type`: String, fields:ESRaw) extends ESPropertyFields {
-  def this(str:String) = this(str, new ESRaw(str))
+case class ESAggregatableType(`type`: String, fields: ESRaw) extends ESPropertyFields {
+  def this(str: String) = this(str, new ESRaw(str))
 }
 case class ESRaw(raw: ESAggregateProperties) {
   def this(str: String) = this(ESAggregateProperties(str, "not_analyzed"))
@@ -64,8 +64,8 @@ case class LibrarySearchParams(
   size: Int = 10)
 
 object LibrarySearchParams {
-  def apply(searchTerm: Option[String], fieldTerms: Map[String, Seq[String]], fieldAggregations: Seq[String], maxAggregations: Option[Int], from: Option[Int], size: Option[Int]) = {
-    new LibrarySearchParams(searchTerm, fieldTerms, fieldAggregations, maxAggregations, from.getOrElse(0), size.getOrElse(10))
+  def apply(searchString: Option[String], searchFields: Map[String, Seq[String]], fieldAggregations: Seq[String], maxAggregations: Option[Int], from: Option[Int], size: Option[Int]) = {
+    new LibrarySearchParams(searchString, searchFields, fieldAggregations, maxAggregations, from.getOrElse(0), size.getOrElse(10))
   }
 }
 
@@ -79,7 +79,8 @@ case class LibraryAggregationResponse(
   field: String,
   results: AggregationFieldResults)
 
-case class AggregationFieldResults(  numOtherDocs: Int,
+case class AggregationFieldResults(
+  numOtherDocs: Int,
   buckets: Seq[AggregationTermResult])
 
 case class AggregationTermResult(key: String, doc_count: Int)

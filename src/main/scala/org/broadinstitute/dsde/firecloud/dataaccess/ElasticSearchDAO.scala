@@ -16,7 +16,7 @@ import spray.json._
 import spray.json.DefaultJsonProtocol._
 import scala.concurrent.Future
 
-class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
+class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
   private val client: TransportClient = buildClient(servers)
   private final val datatype = "dataset"

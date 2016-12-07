@@ -96,7 +96,7 @@ trait TypedAttributeListSerializer extends AttributeListSerializer {
 
 object ModelJsonProtocol {
 
-  def optionalEntryIntReader(fieldName:String, data:Map[String,JsValue]):Option[Int] = {
+  def optionalEntryIntReader(fieldName: String, data: Map[String,JsValue]): Option[Int] = {
     optionalEntryReader[Option[Int]](fieldName, data, _.convertTo[Option[Int]], None)
   }
 
@@ -111,10 +111,9 @@ object ModelJsonProtocol {
     * @tparam T the type of the object the data represents and will be converted to
     * @return on object of the specified type constructed from the data if field is in the map, or the default if not
     */
-  def optionalEntryReader[T](fieldName:String, data:Map[String,JsValue], converter: JsValue => T, default:T):T = {
+  def optionalEntryReader[T](fieldName: String, data: Map[String,JsValue], converter: JsValue => T, default: T): T = {
     data.getOrElse(fieldName, None) match {
       case j:JsValue => Try(converter(j)).toOption.getOrElse(
-//      case j:JsValue => Try(j.convertTo[T]).toOption.getOrElse(
         throw DeserializationException(s"unexpected json type for $fieldName")
       )
       case None => default
@@ -172,8 +171,8 @@ object ModelJsonProtocol {
 
   implicit object impESPropertyFields extends JsonFormat[ESPropertyFields] {
     override def write(input: ESPropertyFields): JsValue = input match {
-      case estype : ESType => estype.toJson
-      case esaggtype : ESAggregatableType => esaggtype.toJson
+      case estype: ESType => estype.toJson
+      case esaggtype: ESAggregatableType => esaggtype.toJson
       case _ => throw new SerializationException("unexpected ESProperty type")
     }
 
