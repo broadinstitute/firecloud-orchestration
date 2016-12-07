@@ -1095,6 +1095,19 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/bucketUsage:
+    get:
+      tags:
+        - Workspaces
+      operationId: getBucketUsage
+      summary: Get bucket usage
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        '200':
+          description: Successful Request
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/checkBucketReadAccess:
     get:
       description: Read a workspace bucket

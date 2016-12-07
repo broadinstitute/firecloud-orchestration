@@ -29,7 +29,7 @@ trait RawlsDAO extends LazyLogging {
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
   lazy val rawlsAdminWorkspaces = FireCloudConfig.Rawls.authUrl + "/admin/workspaces?attributeName=library:published&valueBoolean=true"
   lazy val rawlsWorkspaceACLUrl = FireCloudConfig.Rawls.workspacesUrl + "/%s/%s/acl"
-  lazy val rawlsBucketUsageUrl = FireCloudConfig.Rawls.workspacesUrl + "/%s/%s/bucketUsage"
+  def rawlsBucketUsageUrl(workspaceNamespace: String, workspaceName: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/bucketUsage"
   def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType"
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]

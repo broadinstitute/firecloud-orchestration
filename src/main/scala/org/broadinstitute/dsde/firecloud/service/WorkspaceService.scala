@@ -73,16 +73,12 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   }
 
-  def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String) = {
-    Future.sequence(Seq(
-      rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName),
-      googleServicesDAO.fetchPriceList
-    )) map {
-      case Seq(usage: RawlsBucketUsageResponse, priceList: GooglePriceList) =>
+  def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
+    rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
+      case (usage, priceList) =>
         val rate = priceList.prices.cpBigstoreStorage.us
         val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / 1000000000 * rate
         RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f"))
-      case results => throw new RuntimeException(s"Unexptected results: $results")
     }
   }
 

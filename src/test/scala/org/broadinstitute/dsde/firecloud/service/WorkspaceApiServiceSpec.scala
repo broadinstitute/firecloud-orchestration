@@ -181,6 +181,16 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+    "Passthrough tests on the /workspaces/segment/segment/bucketUsage path" - {
+      List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
+        s"MethodNotAllowed error is returned for $method" in {
+          new RequestBuilder(method)("/api/workspaces/namespace/name/bucketUsage") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(MethodNotAllowed)
+          }
+        }
+      }
+    }
+
   }
 
   "WorkspaceService Passthrough Tests" - {
@@ -271,6 +281,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+    "Passthrough tests on the /workspaces/%s/%s/bucketUsage path" - {
+      "OK status is returned for GET" in {
+        stubRawlsService(HttpMethods.GET, bucketUsagePath, OK)
+        Get(bucketUsagePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
   }
 
   "Workspace Non-passthrough Tests" - {
