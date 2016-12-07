@@ -1909,8 +1909,6 @@ paths:
       responses:
         200:
           description: Successful Request
-          schema:
-            $ref: '#/definitions/ExecutionMetadata'
         404:
           description: Workspace, Submission or Workflow not found
           schema:
@@ -2807,37 +2805,6 @@ definitions:
         type: string
         format: date-time
         description: When the event finished
-
-  ExecutionMetadata:
-    description: Stuff you need to know about a workflow
-    properties:
-      id:
-        type: string
-        description: The identifier of the workflow
-      status:
-        type: string
-        description: Workflow status
-      submission:
-        type: string
-        format: date-time
-        description: Data and time the workflow was submitted
-      start:
-        type: string
-        format: date-time
-        description: Date and time the workflow started execution
-      end:
-        type: string
-        format: date-time
-        description: Date and time the workflow ended execution
-      inputs:
-        type: object
-        description: map of workflow input names onto resolved values
-      outputs:
-        type: object
-        description: map of workflow output names onto local files
-      calls:
-        description: map from call names onto call metadata
-        $ref: '#/definitions/CallMetadata'
 
   ExtendedEnabled:
     allOf:
