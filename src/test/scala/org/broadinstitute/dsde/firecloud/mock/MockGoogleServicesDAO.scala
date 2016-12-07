@@ -16,7 +16,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getAdminUserAccessToken: String = ""
   override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = null
   override def getObjectResourceUrl(bucketName: String, objectKey: String): String = ""
-  override def getObjectMetadata(bucketName: String, objectKey: String)
+  override def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
     Future.successful(ObjectMetadata("foo", "bar", "baz", "bla", "blah", "blahh", "blahh", "blahh", "blahh", "blahh", "blahh", "blahh", Option("blahh"), Option("blahh"), Option("blahh"), None))
   }
