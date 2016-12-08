@@ -51,11 +51,11 @@
       "default": 0
     },
     "library:projectName": {
-      "title": "Project/s Name",
+      "title": "Project Name",
       "type": "string"
     },
     "library:datatype": {
-      "title": "Data Type/s",
+      "title": "Data Type(s)",
       "type": "array",
       "items": { "type": "string" }
     },
@@ -248,7 +248,7 @@
         {"property": "library:studyDesign", "inputHint": "e.g Case/Control, Trio, Tumor/normal, cases only - somatic,  cases only - germline, controls", "required": true},
         {"property": "library:cellType", "required": true},
         {"property": "library:coverage"},
-        {"property": "library:ethnicity", "inputHint": "e.g. Caucasians, African-americans, Latino, East asians, South Asians, Finnish, Non-Finnish Europeans; check all relevant"},
+        {"property": "library:ethnicity", "inputHint": "e.g. Caucasians, African-Americans, Latino, East Asians, South Asians, Finnish, Non-Finnish Europeans; check all relevant"},
         {"property": "library:primaryDiseaseSite"},
         {"property": "library:broadInternalResearchProjectID"},
         {"property": "library:broadInternalResearchProjectName"},
