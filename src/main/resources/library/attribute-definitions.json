@@ -42,7 +42,8 @@
     },
     "library:indication": {
       "title": "Cohort Phenotype/Indication",
-      "type": "string"
+      "type": "string",
+      "aggregate": true
     },
     "library:numSubjects": {
       "title": "No. of Subjects",
@@ -52,12 +53,14 @@
     },
     "library:projectName": {
       "title": "Project Name",
-      "type": "string"
+      "type": "string",
+      "aggregate": true
     },
     "library:datatype": {
       "title": "Data Type(s)",
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "aggregate": true
     },
     "library:reference": {
       "title": "Genome Reference Version",
@@ -80,7 +83,8 @@
     },
     "library:dataUseRestriction": {
       "title": "Data Use Restriction",
-      "type": "string"
+      "type": "string",
+      "aggregate": true
     },
     "library:dataUseBSPSampleCollectionID": {
       "title": "BSP Sample Collection ID",
