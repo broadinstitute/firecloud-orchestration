@@ -3124,9 +3124,20 @@ definitions:
 
   SearchTermRef:
     properties:
-      searchTerm:
+      searchString:
         type: string
         description: The term to search for
+      filters:
+        type: object
+        description: Map[String, Array[String]] Each entry contains the column name (i.e. "library:indication") and a list of terms that will be or'ed in the query (["cancer", "sleep apnea"])
+      fieldAggregations:
+        type: array
+        items:
+          type: string
+        description: The list of fields for which you would like to retrieve aggregations
+      maxAggregations:
+        type: integer
+        description: Set if you want more than 10 results, will be applied to all field aggregations
       from:
         type: integer
         default: 0

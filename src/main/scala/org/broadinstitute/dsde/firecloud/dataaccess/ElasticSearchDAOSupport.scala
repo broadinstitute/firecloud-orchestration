@@ -52,8 +52,10 @@ trait ElasticSearchDAOSupport extends LazyLogging {
 
   def detailFromAttribute(label: String, detail: AttributeDetail) = {
     detail match {
-      case AttributeDetail("array", Some(items)) => label -> ESDetail(items.`type`)
-      case AttributeDetail(t, None) => label -> ESDetail(detail.`type`)
+      case AttributeDetail("array", Some(items), Some(true)) => label -> new ESAggregatableType(items.`type`)
+      case AttributeDetail("array", Some(items), _) => label -> ESType(items.`type`)
+      case AttributeDetail(t, None, Some(true)) => label -> new ESAggregatableType(t)
+      case AttributeDetail(t, None, None) => label -> ESType(t)
     }
   }
 

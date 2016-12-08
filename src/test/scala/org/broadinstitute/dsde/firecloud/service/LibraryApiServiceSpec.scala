@@ -24,6 +24,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
   private def publishedPath(ns:String="namespace", name:String="name") =
     "/api/library/%s/%s/published".format(ns, name)
   private final val librarySearchPath = "/api/library/search"
+  private final val libraryAggregationPath = librarySearchPath + "/aggregations"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
@@ -106,7 +107,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
     }
 
     "when retrieving datasets" - {
-      "Post with no searchterm on " + librarySearchPath - {
+      "POST with no searchterm on " + librarySearchPath - {
         "should retrieve all datasets" in {
           this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
           val content = HttpEntity(ContentTypes.`application/json`, "{}")
@@ -129,6 +130,13 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             assert(respdata.results.size == 0, "results array should be empty")
             this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
           }
+        }
+      }
+      "when converting json to LibrarySearchParams" - {
+        "should succeed" in {
+          val json = "{\"searchString\": \"test\",\"filters\": {},\"fieldAggregations\": [\"library:indication\"],\"from\": 0,\"size\": 10}".parseJson
+          val obj = impLibrarySearchParams.read(json)
+          assert(obj.getClass.getName == "org.broadinstitute.dsde.firecloud.model.LibrarySearchParams")
         }
       }
     }

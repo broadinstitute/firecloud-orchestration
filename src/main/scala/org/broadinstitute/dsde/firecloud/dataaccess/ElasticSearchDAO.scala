@@ -9,15 +9,14 @@ import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsReque
 import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkResponse}
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
-import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.client.transport.TransportClient
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import scala.concurrent.Future
 
-
-class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport {
+class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
   private val client: TransportClient = buildClient(servers)
   private final val datatype = "dataset"
@@ -98,20 +97,7 @@ class ElasticSearchDAO(servers:Seq[Authority], indexName: String) extends Search
     }
   }
 
-  override def findDocuments(criteria: LibrarySearchParams) : LibrarySearchResponse = {
-    val searchStr = criteria.searchTerm match {
-      case None | Some("") => ESQuery(new ESMatchAll).toJson.compactPrint
-      case Some(searchTerm:String) => ESQuery(new ESMatch(searchTerm.toLowerCase)).toJson.compactPrint
-    }
-
-    val searchReq = client.prepareSearch(indexName).setQuery(searchStr)
-      .setFrom(criteria.from)
-      .setSize(criteria.size)
-    val searchResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder] (searchReq)
-
-    val sourceDocuments = searchResults.getHits.getHits.toList map { hit =>
-      hit.getSourceAsString.parseJson
-    }
-    new LibrarySearchResponse(criteria, searchResults.getHits.totalHits().toInt, sourceDocuments)
+  override def findDocuments(criteria: LibrarySearchParams): Future[LibrarySearchResponse] = {
+    findDocumentsWithAggregateInfo(client, indexName, criteria)
   }
 }

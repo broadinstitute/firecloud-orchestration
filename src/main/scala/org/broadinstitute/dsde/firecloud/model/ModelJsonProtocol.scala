@@ -9,6 +9,8 @@ import spray.json.DefaultJsonProtocol._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 
+import scala.util.Try
+
 //Mix in one of these with your AttributeFormat so you can serialize lists
 //This also needs mixing in with an AttributeFormat because they're symbiotic
 sealed trait AttributeListSerializer {
@@ -94,6 +96,30 @@ trait TypedAttributeListSerializer extends AttributeListSerializer {
 
 object ModelJsonProtocol {
 
+  def optionalEntryIntReader(fieldName: String, data: Map[String,JsValue]): Option[Int] = {
+    optionalEntryReader[Option[Int]](fieldName, data, _.convertTo[Option[Int]], None)
+  }
+
+  /**
+    * optionalEntryReader constructs a type from a json map for a field that may or may not be in the map.
+    * if the field is missing from the map, the default passed in will be returned. This class does not necessarily
+    * have to return an option. It will if the type T is an Option.
+    * @param fieldName the field that may or may not exist in the map
+    * @param data the map to check
+    * @param converter the convert to method for the type T (you can pass the parameter as: _.convertTo[T] where you replace T with the actual type)
+    * @param default what to return if the field is not in the map
+    * @tparam T the type of the object the data represents and will be converted to
+    * @return on object of the specified type constructed from the data if field is in the map, or the default if not
+    */
+  def optionalEntryReader[T](fieldName: String, data: Map[String,JsValue], converter: JsValue => T, default: T): T = {
+    data.getOrElse(fieldName, None) match {
+      case j:JsValue => Try(converter(j)).toOption.getOrElse(
+        throw DeserializationException(s"unexpected json type for $fieldName")
+      )
+      case None => default
+    }
+  }
+
   implicit object impStatusCode extends JsonFormat[StatusCode] {
     override def write(code: StatusCode): JsValue = JsNumber(code.intValue)
 
@@ -104,49 +130,57 @@ object ModelJsonProtocol {
   }
 
   implicit object impLibrarySearchParams extends RootJsonFormat[LibrarySearchParams] {
-    val SEARCH_TERM = "searchTerm"
+    val SEARCH_STRING = "searchString"
+    val FILTERS = "filters"
+    val FIELD_AGGREGATIONS = "fieldAggregations"
+    val MAX_AGGREGATIONS = "maxAggregations"
     val FROM = "from"
     val SIZE = "size"
 
-    override def write(params: LibrarySearchParams): JsValue = params.searchTerm match {
-      case None => JsObject(Map(FROM -> JsNumber(params.from), SIZE -> JsNumber(params.size)))
-      case Some(term) => JsObject(Map(SEARCH_TERM -> JsString(term), FROM -> JsNumber(params.from), SIZE -> JsNumber(params.size)))
+    override def write(params: LibrarySearchParams): JsValue = {
+      val fields:Seq[Option[(String, JsValue)]] = Seq(
+        Some(FILTERS -> params.filters.toJson),
+        Some(FIELD_AGGREGATIONS -> params.fieldAggregations.toJson),
+        Some(FROM -> params.from.toJson),
+        Some(SIZE -> params.size.toJson),
+        params.searchString map {SEARCH_STRING -> JsString(_)},
+        params.maxAggregations map {MAX_AGGREGATIONS -> JsNumber(_)}
+      )
+
+      JsObject( fields.filter(_.isDefined).map{_.get}.toMap )
     }
 
     override def read(json: JsValue): LibrarySearchParams = {
       val data = json.asJsObject.fields
-      val term = data.getOrElse(SEARCH_TERM, None) match {
+      val term = data.getOrElse(SEARCH_STRING, None) match {
         case JsString(str) if str.trim == "" => None
         case JsString(str) => Some(str.trim)
         case None => None
-        case _ => throw DeserializationException("unexpected json type for " + SEARCH_TERM)
+        case _ => throw DeserializationException(s"unexpected json type for $SEARCH_STRING")
       }
-      val from: Option[Int] = data.getOrElse(FROM, None) match {
-        case JsNumber(f) => Some(f.intValue)
-        case None => None
-        case _ => throw DeserializationException("unexpected json type for " + FROM)
-      }
-      val size: Option[Int] = data.getOrElse(SIZE, None) match {
-        case JsNumber(s) => Some(s.intValue)
-        case None => None
-        case _ => throw DeserializationException("unexpected json type for " + SIZE)
-      }
-      LibrarySearchParams(term, from, size)
+
+      val filters = optionalEntryReader[Map[String, Seq[String]]](FILTERS, data, _.convertTo[Map[String, Seq[String]]], Map.empty)
+      val aggs = optionalEntryReader[Seq[String]](FIELD_AGGREGATIONS, data, _.convertTo[Seq[String]], Seq.empty)
+      val from = optionalEntryIntReader(FROM, data)
+      val size = optionalEntryIntReader(SIZE, data)
+      val maxAggs = optionalEntryIntReader(MAX_AGGREGATIONS, data)
+
+      LibrarySearchParams(term, filters, aggs, maxAggs, from, size)
     }
   }
 
-  implicit object impQueryMap extends JsonFormat[QueryMap] {
-    override def write(inputmap: QueryMap): JsValue = inputmap match {
-      case matchall : ESMatchAll => matchall.toJson
-      case amatch : ESMatch => amatch.toJson
-      case _ => throw new SerializationException("unexpected QueryMap type")
+  implicit object impESPropertyFields extends JsonFormat[ESPropertyFields] {
+    override def write(input: ESPropertyFields): JsValue = input match {
+      case estype: ESType => estype.toJson
+      case esaggtype: ESAggregatableType => esaggtype.toJson
+      case _ => throw new SerializationException("unexpected ESProperty type")
     }
 
-    override def read(json: JsValue): QueryMap = {
-      json.asJsObject.fields.keys.head match {
-        case "match_all" => impESMatchAll.read(json)
-        case "match" => impESMatch.read(json)
-        case _ => throw DeserializationException("unexpected json type")
+    override def read(json: JsValue): ESPropertyFields = {
+      if (json.asJsObject.fields.contains("fields")) {
+        ESAggregatableTypeFormat.read(json)
+      } else {
+        ESTypeFormat.read(json)
       }
     }
   }
@@ -203,7 +237,7 @@ object ModelJsonProtocol {
       //list types
       case x: AttributeList[_] => writeListType(x)
 
-      case _ => throw new SerializationException("AttributeFormat doesn't know how to write JSON for type " + obj.getClass.getSimpleName)
+      case _ => throw new SerializationException(s"AttributeFormat doesn't know how to write JSON for type $obj.getClass.getSimpleName")
     }
 
     override def read(json: JsValue): Attribute = readAttribute(json)
@@ -285,18 +319,20 @@ object ModelJsonProtocol {
 
   implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)
 
-  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat2(AttributeDetail)))
+  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat3(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
-  implicit val ESDetailFormat = jsonFormat1(ESDetail)
-  implicit val ESDatasetPropertyFormat = jsonFormat1(ESDatasetProperty)
+  implicit val ESAggregatePropertiesFormat = jsonFormat2(ESAggregateProperties)
+  implicit val ESRawFormat = jsonFormat1(ESRaw)
+  implicit val ESAggregatableTypeFormat = jsonFormat2(ESAggregatableType)
+  implicit val ESTypeFormat = jsonFormat1(ESType)
+  implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
-  implicit val impLibrarySearchResponse = jsonFormat3(LibrarySearchResponse)
-
-  implicit val impESQuery = jsonFormat1(ESQuery)
-  implicit val impESMatchAll = jsonFormat1(ESMatchAll)
-  implicit val impESMatch = jsonFormat1(ESMatch)
-
+  implicit val impAggregationTermResult = jsonFormat2(AggregationTermResult)
+  implicit val impAggregationFieldResults = jsonFormat2(AggregationFieldResults)
+  implicit val impLibraryAggregationResponse = jsonFormat2(LibraryAggregationResponse)
+  implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
+  
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
     case MalformedRequestContentRejection(errorMsg, _) :: _ =>

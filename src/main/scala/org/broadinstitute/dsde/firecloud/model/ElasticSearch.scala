@@ -9,11 +9,20 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 case class AttributeDefinition(properties: Map[String, AttributeDetail])
 
-case class AttributeDetail(`type`: String, items: Option[AttributeDetail] = None)
+case class AttributeDetail(`type`: String, items: Option[AttributeDetail] = None, aggregate: Option[Boolean] = None)
 
-case class ESDatasetProperty(properties: Map[String, ESDetail])
 
-case class ESDetail(`type`: String)
+trait ESPropertyFields
+case class ESDatasetProperty(properties: Map[String, ESPropertyFields])
+case class ESType(`type`: String) extends ESPropertyFields
+case class ESAggregatableType(`type`: String, fields: ESRaw) extends ESPropertyFields {
+  def this(str: String) = this(str, new ESRaw(str))
+}
+case class ESRaw(raw: ESAggregateProperties) {
+  def this(str: String) = this(ESAggregateProperties(str, "not_analyzed"))
+}
+
+case class ESAggregateProperties(`type`: String, index:String)
 
 
 // classes for sending documents to ES to be indexed
@@ -36,40 +45,44 @@ object Document {
 
 
 // classes to convert from json body and to json response
+
+/**
+  *
+  * @param searchString
+  * @param filters a map of field names to a list of possible values which will be part of the search criteria
+  * @param fieldAggregations the aggregation data to retrieve, results will differ based on the search criteria
+  * @param maxAggregations the default is 10, this should only be specified if the use has requested to see more options
+  * @param from used for pagination, where to start the returned results
+  * @param size used for pagination, how many results to return
+  */
 case class LibrarySearchParams(
-  searchTerm: Option[String],
+  searchString: Option[String],
+  filters: Map[String, Seq[String]],
+  fieldAggregations: Seq[String],
+  maxAggregations: Option[Int],
   from: Int = 0,
   size: Int = 10)
 
 object LibrarySearchParams {
-  def apply(searchTerm: Option[String], from: Option[Int], size: Option[Int]) = {
-    new LibrarySearchParams(searchTerm, from.getOrElse(0), size.getOrElse(10))
+  def apply(searchString: Option[String], filters: Map[String, Seq[String]], fieldAggregations: Seq[String], maxAggregations: Option[Int], from: Option[Int], size: Option[Int]) = {
+    new LibrarySearchParams(searchString, filters, fieldAggregations, maxAggregations, from.getOrElse(0), size.getOrElse(10))
   }
 }
 
 case class LibrarySearchResponse(
   searchParams: LibrarySearchParams,
   total: Int,
-  results: Seq[JsValue]) {
-}
+  results: Seq[JsValue],
+  aggregations: Seq[LibraryAggregationResponse])
 
+case class LibraryAggregationResponse(
+  field: String,
+  results: AggregationFieldResults)
 
-/** classes to create the ES queries in json format
-  * {"query":{"match_all":{}}}"
-  * {"query":{"match":{"_all":"some-search-string"}}}"
-  */
+case class AggregationFieldResults(
+  numOtherDocs: Int,
+  buckets: Seq[AggregationTermResult])
 
-sealed trait QueryMap
-
-case class ESQuery(query: QueryMap)
-
-case class ESMatch(`match`: Map[String, String]) extends QueryMap {
-  // when the search term should search all columns/attributes
-  def this(value: String) = this(Map("_all" -> value))
-}
-
-case class ESMatchAll(match_all: Map[String,String]) extends QueryMap {
-  def this() = this(Map.empty[String,String])
-}
+case class AggregationTermResult(key: String, doc_count: Int)
 
 
