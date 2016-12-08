@@ -201,6 +201,14 @@
     },
     "library:orsp": {
       "type": "string"
+    },
+    "library:lmsvn": {
+      "title": "Library Metadata Schema Version Number",
+      "description": "Library Metadata Schema Version Number",
+      "type": "integer",
+      "default": 1,
+      "indexable": false,
+      "editable": false
     }
   },
   "consentCodes": {

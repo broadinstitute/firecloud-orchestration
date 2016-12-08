@@ -5,7 +5,7 @@ import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
 import spray.json._
-import spray.json.DefaultJsonProtocol._
+import spray.json.DefaultJsonProtocol.{jsonFormat4, _}
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 
@@ -322,7 +322,7 @@ object ModelJsonProtocol {
 
   implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)
 
-  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat3(AttributeDetail)))
+  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat4(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
   implicit val ESAggregatePropertiesFormat = jsonFormat2(ESAggregateProperties)
