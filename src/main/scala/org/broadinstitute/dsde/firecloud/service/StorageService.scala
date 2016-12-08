@@ -41,7 +41,7 @@ class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO:
   }
 
   def getObjectStats(bucketName: String, objectName: String) = {
-    googleServicesDAO.getObjectMetadata(bucketName, objectName).zip(googleServicesDAO.fetchPriceList) map { case (objectMetadata, googlePrices) =>
+    googleServicesDAO.getObjectMetadata(bucketName, objectName, userInfo.accessToken.token).zip(googleServicesDAO.fetchPriceList) map { case (objectMetadata, googlePrices) =>
       Try(objectMetadata.size.toLong).toOption match {
         case None => RequestComplete(StatusCodes.OK, objectMetadata)
         case Some(size) => {
