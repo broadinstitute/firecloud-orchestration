@@ -54,7 +54,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
   def detailFromAttribute(label: String, detail: AttributeDetail): (String, ESPropertyFields) = {
     val itemType = detail match {
       case x if x.`type` == "array" && x.items.isDefined => x.items.get.`type`
-      case x => x.`type`
+      case _ => detail.`type`
     }
     detail match {
       case x if x.aggregate.getOrElse(false) => label -> new ESAggregatableType(itemType)
