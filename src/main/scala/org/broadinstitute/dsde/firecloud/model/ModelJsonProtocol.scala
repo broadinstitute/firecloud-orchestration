@@ -317,6 +317,9 @@ object ModelJsonProtocol {
 
   implicit val impRawlsGroupMemberList = jsonFormat4(RawlsGroupMemberList)
 
+  implicit val impRawlsBucketUsageResponse = jsonFormat1(RawlsBucketUsageResponse)
+  implicit val impWorkspaceStorageCostEstimate = jsonFormat1(WorkspaceStorageCostEstimate)
+
   implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)
 
   implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat3(AttributeDetail)))

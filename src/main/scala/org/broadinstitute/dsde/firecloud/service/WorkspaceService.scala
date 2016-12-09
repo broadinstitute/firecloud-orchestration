@@ -4,7 +4,7 @@ import akka.actor._
 import akka.pattern._
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -28,6 +28,7 @@ import scala.util.Try
  */
 object WorkspaceService {
   sealed trait WorkspaceServiceMessage
+  case class GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
   case class SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) extends WorkspaceServiceMessage
   case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) extends WorkspaceServiceMessage
   case class ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
@@ -39,10 +40,10 @@ object WorkspaceService {
   }
 
   def constructor(app: Application)(userToken: WithAccessToken)(implicit executionContext: ExecutionContext) =
-    new WorkspaceService(userToken, app.rawlsDAO, app.thurloeDAO)
+    new WorkspaceService(userToken, app.rawlsDAO, app.thurloeDAO, app.googleServicesDAO)
 }
 
-class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO) extends Actor with AttributeSupport with TSVFileSupport {
+class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO) extends Actor with AttributeSupport with TSVFileSupport {
 
   implicit val system = context.system
 
@@ -58,6 +59,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   override def receive: Receive = {
 
+    case GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) =>
+      getStorageCostEstimate(workspaceNamespace, workspaceName) pipeTo sender
     case SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =>
       setWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes) pipeTo sender
     case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) =>
@@ -68,6 +71,15 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString) pipeTo sender
 
 
+  }
+
+  def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
+    rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
+      case (usage, priceList) =>
+        val rate = priceList.prices.cpBigstoreStorage.us
+        val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / 1000000000 * rate
+        RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f"))
+    }
   }
 
   def setWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) = {
