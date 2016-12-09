@@ -14,13 +14,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 
 
-class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives with LibraryApiService
-  with OauthApiService
-  with WorkspaceApiService
-  with NamespaceApiService
+class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with CookieAuthedApiService
   with EntityService
-  with StorageApiService {
+  with LibraryApiService
+  with NamespaceApiService
+  with OauthApiService
+  with StorageApiService
+  with WorkspaceApiService
+  {
 
   implicit val system = context.system
 
