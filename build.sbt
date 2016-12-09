@@ -74,7 +74,7 @@ libraryDependencies ++= {
     "com.jason-goodwin"   %% "authentikat-jwt" % "0.4.1",
     "com.sun.mail"         % "javax.mail" % "1.5.6",
     "org.ocpsoft.prettytime" % "prettytime" % "4.0.1.Final",
-    "org.everit.json"      %  "org.everit.json.schema" % "1.4.0",
+    "org.everit.json"      %  "org.everit.json.schema" % "1.4.1",
     "org.specs2"          %%  "specs2-core"   % "3.7"  % "test",
     "org.scalatest"       %%  "scalatest"     % "2.2.6"   % "test",
     "org.mock-server"      %  "mockserver-netty" % "3.10.2" % "test"

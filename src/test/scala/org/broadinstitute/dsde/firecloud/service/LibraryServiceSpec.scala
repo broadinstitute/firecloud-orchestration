@@ -14,6 +14,7 @@ import spray.json._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
+import scala.collection.JavaConversions._
 import scala.util.Try
 
 class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
@@ -58,9 +59,43 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       |  "library:dataUseRestriction" : "dur",
       |  "library:studyDesign" : "study",
       |  "library:cellType" : "cell",
-      |  "library:technology" : ["is an optional","array attribute"]
+      |  "library:technology" : ["is an optional","array attribute"],
+      |  "library:orsp" : "some orsp"
       |}
     """.stripMargin
+
+  val testLibraryDURMetadata =
+    """
+      |{
+      |  "description" : "some description",
+      |  "userAttributeOne" : "one",
+      |  "userAttributeTwo" : "two",
+      |  "library:datasetName" : "name",
+      |  "library:datasetDescription" : "desc",
+      |  "library:datasetCustodian" : "cust",
+      |  "library:datasetDepositor" : "depo",
+      |  "library:datasetOwner" : "owner",
+      |  "library:institute" : ["inst","it","ute"],
+      |  "library:indication" : "indic",
+      |  "library:numSubjects" : 123,
+      |  "library:projectName" : "proj",
+      |  "library:datatype" : ["data","type"],
+      |  "library:dataUseRestriction" : "dur",
+      |  "library:studyDesign" : "study",
+      |  "library:cellType" : "cell",
+      |  "library:technology" : ["is an optional","array attribute"],
+      |  "library:GRU"  : "Yes",
+      |  "library:HMB"  : "Yes",
+      |  "library:NCU"  : "No",
+      |  "library:NPU"  : "No",
+      |  "library:NDMS" : "Yes",
+      |  "library:NAGR" : "Unspecified",
+      |  "library:NCTRL": "Yes",
+      |  "library:RS-G" : "Female",
+      |  "library:RS-PD": "No"
+      |}
+    """.stripMargin
+
 
   "LibraryService" - {
     "when new attrs are empty" - {
@@ -315,25 +350,25 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
     }
     "when validating JSON Schema" - {
       "fails on an empty JsObject" in {
-        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         val sampleData = "{}"
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(13){ex.getViolationCount}
+        assertResult(23){ex.getViolationCount}
       }
       "fails with one missing key" in {
-        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields-"library:datasetName").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getMessage.contains("library:datasetName"))
+        assert(ex.getCausingExceptions.last.getMessage.contains("library:datasetName"))
       }
       "fails with two missing keys" in {
-        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields-"library:datasetName"-"library:datasetOwner").compactPrint
         val ex = intercept[ValidationException] {
@@ -342,39 +377,72 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         assertResult(2){ex.getViolationCount}
       }
       "fails on a string that should be a number" in {
-        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields.updated("library:numSubjects", JsString("isString"))).compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getMessage.contains("library:numSubjects"))
+        assert(ex.getCausingExceptions.last.getMessage.contains("library:numSubjects"))
       }
       "fails on a number out of bounds" in {
-        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields.updated("library:numSubjects", JsNumber(-1))).compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getMessage.contains("library:numSubjects"))
+        assert(ex.getCausingExceptions.last.getMessage.contains("library:numSubjects"))
+      }
+      "fails on a value outside its enum" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields.updated("library:coverage", JsString("foobar"))).compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        assertResult(1){ex.getViolationCount}
+        assert(ex.getCausingExceptions.last.getMessage.contains("library:coverage: foobar is not a valid enum value"))
       }
       "fails on a string that should be an array" in {
-        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         val defaultData = testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields.updated("library:institute", JsString("isString"))).compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getMessage.contains("library:institute"))
+        assert(ex.getCausingExceptions.last.getMessage.contains("library:institute"))
       }
-      "validates on a complete metadata packet" in {
-        val testSchema = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+      "fails with missing ORSP key" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields-"library:orsp").compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        // require violations inside the oneOf schemas are extra-nested, and can include errors from all
+        // subschemas in the oneOf list. Not worth testing in detail.
+      }
+      "validates on a complete metadata packet with ORSP key" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         validateJsonSchema(testLibraryMetadata, testSchema)
-
+      }
+      "fails with one missing key from the DUR set" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryDURMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields-"library:NPU").compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        // require violations inside the oneOf schemas are extra-nested, and can include errors from all
+        // subschemas in the oneOf list. Not worth testing in detail.
+      }
+      "validates on a complete metadata packet with all DUR keys" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        validateJsonSchema(testLibraryDURMetadata, testSchema)
       }
     }
     "when creating schema mappings" - {
@@ -416,7 +484,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         }
       }
       "mapping has valid json" in {
-        val attrJson = FileUtils.readAllTextFromResource("test-attribute-definitions.json")
+        val attrJson = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         val testJson = makeMapping(attrJson)
         val jsonVal: Try[JsValue] = Try(testJson.parseJson)
         assert(jsonVal.isSuccess, "Mapping should be valid json")
