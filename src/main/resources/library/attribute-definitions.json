@@ -207,8 +207,7 @@
       "description": "Library Metadata Schema Version Number",
       "type": "integer",
       "default": 1,
-      "indexable": false,
-      "editable": false
+      "indexable": false
     }
   },
   "consentCodes": {
