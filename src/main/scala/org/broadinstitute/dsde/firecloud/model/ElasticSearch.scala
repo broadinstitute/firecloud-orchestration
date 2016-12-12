@@ -13,7 +13,7 @@ case class AttributeDetail(
   `type`: String,
   items: Option[AttributeDetail] = None,
   aggregate: Option[Boolean] = None,
-  indexable: Option[Boolean] = Some(true)
+  indexable: Option[Boolean] = None
 )
 
 
