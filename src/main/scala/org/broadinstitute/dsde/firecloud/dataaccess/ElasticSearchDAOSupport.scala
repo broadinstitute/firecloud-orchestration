@@ -44,9 +44,8 @@ trait ElasticSearchDAOSupport extends LazyLogging {
 
   def makeMapping(attributeJson: String): String = {
     val definition = attributeJson.parseJson.convertTo[AttributeDefinition]
-    val attributeDetailMap = definition.properties map {
-      case (label: String, detail: AttributeDetail) if detail.indexable.getOrElse(true) =>
-        detailFromAttribute(label, detail)
+    val attributeDetailMap = definition.properties filter(_._2.indexable.getOrElse(true)) map {
+      case (label: String, detail: AttributeDetail) => detailFromAttribute(label, detail)
     }
     ESDatasetProperty(attributeDetailMap).toJson.prettyPrint
   }

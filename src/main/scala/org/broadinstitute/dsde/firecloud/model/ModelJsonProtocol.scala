@@ -5,7 +5,7 @@ import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
 import spray.json._
-import spray.json.DefaultJsonProtocol.{jsonFormat4, _}
+import spray.json.DefaultJsonProtocol._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 
