@@ -56,7 +56,7 @@
       }
     },
     "library:diseaseOntologyID": {
-      "type": "string",
+      "type": "string"
     },
     "library:diseaseOntologyLabel": {
       "type": "string",
