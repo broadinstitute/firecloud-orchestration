@@ -23,7 +23,16 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
 
   val libraryServiceConstructor: UserInfo => LibraryService
 
+  val duosAutocompleteUrl = FireCloudConfig.Duos.baseUrl + "/autocomplete?types=disease&q=%s" // does this still work?
+
   val libraryRoutes: Route =
+    path("duos" / "autocomplete" / Segment) { (searchTerm) =>
+      get { requestContext =>
+//        val extReq = Get(duosAutocompleteUrl.format(searchTerm))
+        val extReq = Get("http://consent-ontology.dsde-dev.broadinstitute.org/autocomplete?types=disease&q=%s".format(searchTerm))
+        externalHttpPerRequest(requestContext, extReq)
+      }
+    } ~
     pathPrefix("schemas") {
       path("library-attributedefinitions-v1") {
         respondWithJSON {

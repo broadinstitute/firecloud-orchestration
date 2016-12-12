@@ -55,6 +55,14 @@
         "renderHint": "text"
       }
     },
+    "library:diseaseOntologyID": {
+      "type": "string",
+    },
+    "library:diseaseOntologyLabel": {
+      "type": "string",
+      "title": "Cohort Phenotypic Inclusion Criteria (Disease Ontology)",
+      "typeahead": "ontology"
+    },
     "library:numSubjects": {
       "title": "No. of Subjects",
       "type": "integer",
@@ -240,8 +248,8 @@
     "RS-POP": "Use of the data is limited to studies of particular population."
   },
   "display": {
-    "primary": ["library:indication", "library:numSubjects", "library:dataCategory", "library:datatype", "library:dataUseRestriction"],
-    "secondary": ["library:datasetName", "library:datasetVersion", "library:datasetDescription", "library:datasetOwner",
+    "primary": ["library:diseaseOntologyLabel", "library:numSubjects", "library:dataCategory", "library:datatype", "library:dataUseRestriction"],
+    "secondary": ["library:indication", "library:datasetName", "library:datasetVersion", "library:datasetDescription", "library:datasetOwner",
       "library:datasetCustodian", "library:datasetDepositor", "library:contactEmail", "library:institute", "library:primaryDiseaseSite",
       "library:projectName", "library:reference", "library:dataFileFormats", "library:technology", "library:profilingProtocol",
       "library:coverage", "library:studyDesign", "library:cellType", "library:ethnicity", "library:cohortCountry", "library:requiresExternalApproval", "library:lmsvn"],
@@ -261,6 +269,7 @@
         {"property": "library:datasetDepositor", "inputHint": "e.g. Project Manager", "required": true},
         {"property": "library:contactEmail", "required": true, "renderHint": "email"},
         {"property": "library:institute", "required": true},
+        {"property": "library:diseaseOntologyLabel"},
         {"property": "library:indication", "required": true},
         {"property": "library:primaryDiseaseSite"},
         {"property": "library:numSubjects", "inputHint": "Number of participants the data maps to", "required": true},
