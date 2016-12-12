@@ -9,7 +9,12 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 case class AttributeDefinition(properties: Map[String, AttributeDetail])
 
-case class AttributeDetail(`type`: String, items: Option[AttributeDetail] = None, aggregate: Option[Boolean] = None)
+case class AttributeDetail(
+  `type`: String,
+  items: Option[AttributeDetail] = None,
+  aggregate: Option[Boolean] = None,
+  indexable: Option[Boolean] = None
+)
 
 
 trait ESPropertyFields

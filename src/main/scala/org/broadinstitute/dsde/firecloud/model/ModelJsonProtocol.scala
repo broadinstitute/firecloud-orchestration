@@ -322,7 +322,7 @@ object ModelJsonProtocol {
 
   implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)
 
-  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat3(AttributeDetail)))
+  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat4(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
   implicit val ESAggregatePropertiesFormat = jsonFormat2(ESAggregateProperties)

@@ -489,6 +489,12 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val jsonVal: Try[JsValue] = Try(testJson.parseJson)
         assert(jsonVal.isSuccess, "Mapping should be valid json")
       }
+      "non-indexable type is not in mapping" in {
+        val attrJson = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val testJson = makeMapping(attrJson)
+        val label = "library:lmsvn"
+        assert(!testJson.contains(label))
+      }
 
     }
     "when converting json to LibrarySearchParams" - {
