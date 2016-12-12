@@ -232,7 +232,7 @@
       "library:dataUseBSPSampleCollectionID", "library:studyDesign", "library:cellType", "library:coverage",
       "library:ethnicity", "library:primaryDiseaseSite", "library:broadInternalResearchProjectID",
       "library:broadInternalResearchProjectName", "library:broadInternalCohortName",
-      "library:broadInternalSeqProjectNumbers"],
+      "library:broadInternalSeqProjectNumbers", "library:lmsvn"],
     "consentCodes": ["GRU", "HMB", "DS", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-G", "RS-PD", "RS-POP"]
   },
   "wizard":
@@ -265,7 +265,8 @@
         {"property": "library:broadInternalResearchProjectID"},
         {"property": "library:broadInternalResearchProjectName"},
         {"property": "library:broadInternalCohortName"},
-        {"property": "library:broadInternalSeqProjectNumbers", "inputHint": "Broad internal IDs"}
+        {"property": "library:broadInternalSeqProjectNumbers", "inputHint": "Broad internal IDs"},
+        {"property": "library:lmsvn", "editable": false}
       ]
     },
     {
