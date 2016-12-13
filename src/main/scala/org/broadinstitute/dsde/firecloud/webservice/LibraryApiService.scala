@@ -23,7 +23,7 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
 
   val libraryServiceConstructor: UserInfo => LibraryService
 
-  val duosAutocompleteUrl = FireCloudConfig.Duos.baseUrl + "/autocomplete?types=disease&q=%s" // does this still work?
+  val duosAutocompleteUrl = FireCloudConfig.Duos.baseUrl + "/autocomplete?types=disease&q=%s"
 
   val libraryRoutes: Route =
     path("duos" / "autocomplete" / Segment) { (searchTerm) =>
