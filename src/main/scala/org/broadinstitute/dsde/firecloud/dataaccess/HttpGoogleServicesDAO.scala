@@ -6,9 +6,9 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.storage.{Storage, StorageScopes}
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
-import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
+import org.broadinstitute.dsde.firecloud.model.{ErrorReport, OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.slf4j.LoggerFactory
@@ -152,7 +152,10 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
     val request = Get( getObjectResourceUrl(bucketName, objectKey) ) ~> addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
-    request map (_.entity.asString.parseJson.convertTo[ObjectMetadata])
+    request map { x =>
+      if(x.status.isSuccess) x.entity.asString.parseJson.convertTo[ObjectMetadata]
+      else throw new FireCloudExceptionWithErrorReport(ErrorReport(x.status, x.entity.asString))
+    }
   }
 
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
