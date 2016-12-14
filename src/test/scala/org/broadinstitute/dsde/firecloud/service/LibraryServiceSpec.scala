@@ -47,43 +47,31 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       |  "userAttributeOne" : "one",
       |  "userAttributeTwo" : "two",
       |  "library:datasetName" : "name",
+      |  "library:datasetVersion" : "v1.0",
       |  "library:datasetDescription" : "desc",
       |  "library:datasetCustodian" : "cust",
       |  "library:datasetDepositor" : "depo",
+      |  "library:contactEmail" : "name@example.com",
       |  "library:datasetOwner" : "owner",
       |  "library:institute" : ["inst","it","ute"],
       |  "library:indication" : "indic",
       |  "library:numSubjects" : 123,
       |  "library:projectName" : "proj",
       |  "library:datatype" : ["data","type"],
+      |  "library:dataCategory" : ["data","category"],
       |  "library:dataUseRestriction" : "dur",
       |  "library:studyDesign" : "study",
       |  "library:cellType" : "cell",
+      |  "library:requiresExternalApproval" : "No",
       |  "library:technology" : ["is an optional","array attribute"],
       |  "library:orsp" : "some orsp"
       |}
     """.stripMargin
+  val testLibraryMetadataJsObject = testLibraryMetadata.parseJson.asJsObject
 
-  val testLibraryDURMetadata =
+  val DURAdditionalJsObject =
     """
       |{
-      |  "description" : "some description",
-      |  "userAttributeOne" : "one",
-      |  "userAttributeTwo" : "two",
-      |  "library:datasetName" : "name",
-      |  "library:datasetDescription" : "desc",
-      |  "library:datasetCustodian" : "cust",
-      |  "library:datasetDepositor" : "depo",
-      |  "library:datasetOwner" : "owner",
-      |  "library:institute" : ["inst","it","ute"],
-      |  "library:indication" : "indic",
-      |  "library:numSubjects" : 123,
-      |  "library:projectName" : "proj",
-      |  "library:datatype" : ["data","type"],
-      |  "library:dataUseRestriction" : "dur",
-      |  "library:studyDesign" : "study",
-      |  "library:cellType" : "cell",
-      |  "library:technology" : ["is an optional","array attribute"],
       |  "library:GRU"  : "Yes",
       |  "library:HMB"  : "Yes",
       |  "library:NCU"  : "No",
@@ -94,8 +82,9 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       |  "library:RS-G" : "Female",
       |  "library:RS-PD": "No"
       |}
-    """.stripMargin
-
+    """.stripMargin.parseJson.asJsObject
+  val DURfields = (testLibraryMetadataJsObject.fields-"library:orsp") ++ DURAdditionalJsObject.fields
+  val testLibraryDURMetadata = testLibraryMetadataJsObject.copy(DURfields).compactPrint
 
   "LibraryService" - {
     "when new attrs are empty" - {
@@ -355,7 +344,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(23){ex.getViolationCount}
+        assertResult(27){ex.getViolationCount}
       }
       "fails with one missing key" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
