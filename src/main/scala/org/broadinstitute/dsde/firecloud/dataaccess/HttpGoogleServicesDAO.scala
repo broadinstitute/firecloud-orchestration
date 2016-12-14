@@ -152,9 +152,9 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
     val request = Get( getObjectResourceUrl(bucketName, objectKey) ) ~> addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
-    request map { x =>
-      if(x.status.isSuccess) x.entity.asString.parseJson.convertTo[ObjectMetadata]
-      else throw new FireCloudExceptionWithErrorReport(ErrorReport(x.status, x.entity.asString))
+    request map { response =>
+      if(response.status.isSuccess) response.entity.asString.parseJson.convertTo[ObjectMetadata]
+      else throw new FireCloudExceptionWithErrorReport(ErrorReport(response.status, response.entity.asString))
     }
   }
 
