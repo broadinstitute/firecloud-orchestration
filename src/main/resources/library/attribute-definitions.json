@@ -61,7 +61,8 @@
     "library:diseaseOntologyLabel": {
       "type": "string",
       "title": "Cohort Phenotypic Inclusion Criteria (Disease Ontology)",
-      "typeahead": "ontology"
+      "typeahead": "ontology",
+      "relatedID": "library:diseaseOntologyID"
     },
     "library:numSubjects": {
       "title": "No. of Subjects",
