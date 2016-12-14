@@ -246,7 +246,7 @@
         {"property": "library:datasetOwner", "inputHint": "e.g. Prinicipal Investigator", "required": true},
         {"property": "library:datasetCustodian", "inputHint": "e.g. Project Manager", "required": true},
         {"property": "library:datasetDepositor", "inputHint": "e.g. Project Manager", "required": true},
-        {"property": "library:contactEmail", "required": true},
+        {"property": "library:contactEmail", "required": true, "renderHint": "email"},
         {"property": "library:institute", "required": true},
         {"property": "library:indication", "required": true},
         {"property": "library:primaryDiseaseSite"},
