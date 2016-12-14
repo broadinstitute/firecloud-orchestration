@@ -231,7 +231,7 @@
     "secondary": ["library:datasetName", "library:datasetVersion", "library:datasetDescription", "library:datasetOwner",
       "library:datasetCustodian", "library:datasetDepositor", "library:contactEmail", "library:institute", "library:primaryDiseaseSite",
       "library:projectName", "library:reference", "library:dataFileFormats", "library:technology", "library:profilingProtocol",
-      "library:coverage", "library:studyDesign", "library:cellType", "library:ethnicity", "library:requiresExternalApproval", "library:lmsvn"],
+      "library:coverage", "library:studyDesign", "library:cellType", "library:ethnicity", "library:cohortCountry", "library:requiresExternalApproval", "library:lmsvn"],
     "consentCodes": ["GRU", "HMB", "DS", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-G", "RS-PD", "RS-POP"]
   },
   "wizard":
@@ -263,6 +263,7 @@
         {"property": "library:studyDesign", "inputHint": "e.g. Case/Control, Tumor/Normal, Trio/Twin/Family, Prospective Longitudinal Cohort, Cases only - somatic, Cases only - germline, Controls", "required": true},
         {"property": "library:cellType", "required": true},
         {"property": "library:ethnicity", "inputHint": "e.g. Caucasians, African-Americans, Latino, East Asians, South Asians, Finnish, Non-Finnish Europeans; include all relevant"},
+        {"property": "library:cohortCountry"},
         {"property": "library:requiresExternalApproval", "inputHint": "i.e. approval from a second source is required in order to access the data", "required": true},
         {"property": "library:lmsvn", "editable": false}
       ]
