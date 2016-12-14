@@ -230,7 +230,7 @@
       "title": "Library Metadata Schema Version Number",
       "description": "Library Metadata Schema Version Number",
       "type": "integer",
-      "default": 2,
+      "default": 3,
       "indexable": false
     }
   },
