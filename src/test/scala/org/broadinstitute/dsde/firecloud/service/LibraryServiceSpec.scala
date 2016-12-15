@@ -2,15 +2,15 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.net.URL
 import java.util.UUID
-import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAOSupport, RawlsDAO}
+
+import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOSupport
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
 import org.scalatest.FreeSpec
-import spray.json._
-
+import spray.json.{JsObject, _}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
@@ -446,11 +446,12 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       "works for aggregatable string type" in {
         val label = "library:attr"
         val `type` = "string"
+        val aggregateObject = JsObject("renderHint"->JsString("text"))
         val expected = label -> new ESAggregatableType(`type`)
         assertResult(expected) {
-          detailFromAttribute(label, AttributeDetail(`type`, None, Some(true)))
+          detailFromAttribute(label, AttributeDetail(`type`, None, Some(aggregateObject)))
         }
-        val result = detailFromAttribute(label, AttributeDetail(`type`, None, Some(true)))
+        val result = detailFromAttribute(label, AttributeDetail(`type`, None, Some(aggregateObject)))
       }
       "works for array type" in {
         val label = "library:attr"
@@ -466,7 +467,8 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val label = "library:attr"
         val `type` = "array"
         val subtype = "string"
-        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)), Some(true))
+        val aggregateObject = JsObject("renderHint"->JsString("text"))
+        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)), Some(aggregateObject))
         val expected = label -> new ESAggregatableType(subtype)
         assertResult(expected) {
           detailFromAttribute(label, detail)

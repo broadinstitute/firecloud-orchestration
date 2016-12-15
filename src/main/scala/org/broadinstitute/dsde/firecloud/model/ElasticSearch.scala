@@ -12,7 +12,7 @@ case class AttributeDefinition(properties: Map[String, AttributeDetail])
 case class AttributeDetail(
   `type`: String,
   items: Option[AttributeDetail] = None,
-  aggregate: Option[Boolean] = None,
+  aggregate: Option[JsObject] = None,
   indexable: Option[Boolean] = None
 )
 
