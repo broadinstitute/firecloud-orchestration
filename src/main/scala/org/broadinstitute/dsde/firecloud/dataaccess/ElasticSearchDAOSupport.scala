@@ -56,7 +56,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
       case _ => detail.`type`
     }
     detail match {
-      case x if x.aggregate.getOrElse(false) => label -> new ESAggregatableType(itemType)
+      case x if x.aggregate.isDefined => label -> new ESAggregatableType(itemType)
       case _ => label -> ESType(itemType)
     }
   }
