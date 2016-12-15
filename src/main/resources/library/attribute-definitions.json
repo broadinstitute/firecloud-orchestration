@@ -51,30 +51,35 @@
     "library:indication": {
       "title": "Cohort Phenotype/Indication",
       "type": "string",
-      "aggregate": true
+      "aggregate": true,
+      "renderHint": "text"
     },
     "library:numSubjects": {
       "title": "No. of Subjects",
       "type": "integer",
       "minimum": 0,
-      "default": 0
+      "default": 0,
+      "renderHint": "slider"
     },
     "library:projectName": {
       "title": "Project Name",
       "type": "string",
-      "aggregate": true
+      "aggregate": true,
+      "renderHint": "checkbox"
     },
     "library:dataCategory": {
       "title": "Data Category",
       "type": "array",
       "items": { "type": "string" },
-      "aggregate": true
+      "aggregate": true,
+      "renderHint": "checkbox"
     },
     "library:datatype": {
       "title": "Experimental Strategy",
       "type": "array",
       "items": { "type": "string" },
-      "aggregate": true
+      "aggregate": true,
+      "renderHint": "checkbox"
     },
     "library:reference": {
       "title": "Genome Reference Version",
@@ -98,7 +103,8 @@
     "library:dataUseRestriction": {
       "title": "Data Use Restriction",
       "type": "string",
-      "aggregate": true
+      "aggregate": true,
+      "renderHint": "checkbox"
     },
     "library:studyDesign": {
       "title": "Study Design",
