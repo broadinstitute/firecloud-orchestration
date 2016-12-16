@@ -2386,6 +2386,7 @@ parameters:
 definitions:
 
   AttributeUpdateOperation:
+    type: object
     properties:
       op:
         type: string
@@ -3013,7 +3014,6 @@ definitions:
         description: The version of method from method store
 
   MethodResponse:
-    type: object
     required:
       - managers
       - namespace
