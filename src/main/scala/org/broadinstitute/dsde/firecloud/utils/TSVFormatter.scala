@@ -100,7 +100,7 @@ object TSVFormatter {
     headerRenamingMap:Map[String, String]): IndexedSeq[String] = {
     val rowMap: Map[Int, String] =  entity.attributes map {
       case (attributeName, attribute) =>
-        val columnPosition = headerValues.indexOf(headerRenamingMap.getOrElse(attributeName.name, attributeName.name))
+        val columnPosition = headerValues.indexOf(attributeName.name)
         val cellValue = AttributeStringifier(attribute)
         columnPosition -> cellValue
     }
