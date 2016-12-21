@@ -12,7 +12,7 @@ case class ObjectMetadata(
   etag: String,
   generation: String,
   id: String,
-  md5Hash: String,
+  md5Hash: Option[String],
   mediaLink: String,
   name: String,
   size: String,
