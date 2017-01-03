@@ -16,13 +16,14 @@ import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
 import spray.httpx.SprayJsonSupport._
+import spray.httpx.UnsuccessfulResponseException
 import spray.httpx.encoding.Gzip
 import spray.json._
 import spray.routing.RequestContext
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -151,10 +152,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
-    val request = Get( getObjectResourceUrl(bucketName, objectKey) ) ~> addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
-    request map { response =>
-      if(response.status.isSuccess) response.entity.asString.parseJson.convertTo[ObjectMetadata]
-      else throw new FireCloudExceptionWithErrorReport(ErrorReport(response.status, response.entity.asString))
+    val metadataRequest = Get( getObjectResourceUrl(bucketName, objectKey) )
+    val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive ~> unmarshal[ObjectMetadata]
+    val request = metadataPipeline{metadataRequest}
+
+    request.recover {
+      case t: UnsuccessfulResponseException =>
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(t.response.status, t.response.entity.asString))
     }
   }
 
