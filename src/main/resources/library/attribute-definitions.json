@@ -53,16 +53,17 @@
       "type": "string",
       "aggregate": {
         "renderHint": "text"
-      }
+      },
+      "typeahead": "ontology",
+      "relatedID": "library:diseaseOntologyID",
+      "relatedLabel": "library:diseaseOntologyLabel"
     },
     "library:diseaseOntologyID": {
       "type": "string"
     },
     "library:diseaseOntologyLabel": {
       "type": "string",
-      "title": "Cohort Phenotypic Inclusion Criteria (Disease Ontology)",
-      "typeahead": "ontology",
-      "relatedID": "library:diseaseOntologyID"
+      "title": "Cohort Phenotype/Indication: Disease Ontology Autocomplete"
     },
     "library:numSubjects": {
       "title": "No. of Subjects",
@@ -270,7 +271,8 @@
         {"property": "library:datasetDepositor", "inputHint": "e.g. Project Manager", "required": true},
         {"property": "library:contactEmail", "required": true, "renderHint": "email"},
         {"property": "library:institute", "required": true},
-        {"property": "library:diseaseOntologyLabel"},
+        {"property": "library:diseaseOntologyLabel", "hidden": true},
+        {"property": "library:diseaseOntologyID", "hidden": true},
         {"property": "library:indication", "required": true},
         {"property": "library:primaryDiseaseSite"},
         {"property": "library:numSubjects", "inputHint": "Number of participants the data maps to", "required": true},
