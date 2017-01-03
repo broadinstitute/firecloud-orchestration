@@ -1063,6 +1063,8 @@ paths:
       responses:
         200:
           description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkspaceACL'
         400:
           description: Can't retrieve ACL for workspace
         404:
@@ -1077,6 +1079,12 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
+        - in: query
+          description: true to invite unregistered users, false to ignore
+          name: inviteUsersNotFound
+          required: true
+          default: false
+          type: boolean
         - name: aclUpdates
           description: Series of ACL updates for workspace
           required: true
@@ -1088,6 +1096,8 @@ paths:
       responses:
         200:
           description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkspaceACLUpdateResponseList'
         400:
           description: Can't set ACL for workspace
         404:
@@ -3431,6 +3441,15 @@ definitions:
         type: boolean
         description: Can the Workspace currently be modified?
 
+  WorkspaceACL:
+    description: ''
+    required:
+      - acl
+    properties:
+      acl:
+        type: object
+        description: Map[String, WorkspaceAccessEntry]
+
   WorkspaceACLUpdate:
     description: ''
     required:
@@ -3443,6 +3462,55 @@ definitions:
       accessLevel:
         type: string
         description: The access level to grant to this user or group (OWNER, READER, WRITER, NO ACCESS)
+
+  WorkspaceACLUpdateResponse:
+    description: ''
+    required:
+      - subjectId
+      - accessLevel
+    properties:
+      subjectId:
+        type: string
+        description: id of the user or group whose permissions will be changed
+      accessLevel:
+        type: string
+        description: The access level granted to this user or group (OWNER, READER, WRITER, NO ACCESS)
+
+  WorkspaceACLUpdateResponseList:
+    description: ''
+    required:
+      - usersUpdated
+      - invitesUpdated
+      - usersNotFound
+    properties:
+      usersUpdated:
+        type: array
+        description: the users or groups who were updated
+        items:
+          $ref: '#/definitions/WorkspaceACLUpdateResponse'
+      invitesUpdated:
+        type: array
+        description: the list of invites that were updated
+        items:
+          $ref: '#/definitions/WorkspaceACLUpdate'
+      usersNotFound:
+        type: array
+        description: the users or groups who were not found
+        items:
+          $ref: '#/definitions/WorkspaceACLUpdate'
+
+  WorkspaceAccessEntry:
+    description: ''
+    required:
+      - accessLevel
+      - pending
+    properties:
+      accessLevel:
+        type: string
+        description: The access level granted to this user or group (OWNER, READER, WRITER, NO ACCESS)
+      pending:
+        type: boolean
+        description: The status of the users access
 
   WorkspaceIngest:
     required:

@@ -30,10 +30,9 @@ object WorkspaceService {
   sealed trait WorkspaceServiceMessage
   case class GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
   case class SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) extends WorkspaceServiceMessage
-  case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) extends WorkspaceServiceMessage
+  case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) extends WorkspaceServiceMessage
   case class ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
   case class ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) extends WorkspaceServiceMessage
-
 
   def props(workspaceServiceConstructor: WithAccessToken => WorkspaceService, userToken: WithAccessToken): Props = {
     Props(workspaceServiceConstructor(userToken))
@@ -63,13 +62,12 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       getStorageCostEstimate(workspaceNamespace, workspaceName) pipeTo sender
     case SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =>
       setWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes) pipeTo sender
-    case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) =>
-      updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail) pipeTo sender
+    case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) =>
+      updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail, inviteUsersNotFound) pipeTo sender
     case ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) =>
       exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, filename) pipeTo sender
     case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString) pipeTo sender
-
 
   }
 
@@ -91,17 +89,19 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     }
   }
 
-  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String) = {
+  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) = {
 
-    val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates)
+    val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
     aclUpdate map { actualUpdates =>
 
-      val allNotifications = actualUpdates.map {
-        case removed if removed.accessLevel.equals(WorkspaceAccessLevels.NoAccess) => WorkspaceRemovedNotification(removed.email, removed.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
-        case added => WorkspaceAddedNotification(added.email, added.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
+      val updateNotifications = actualUpdates.usersUpdated.map {
+        case removed if removed.accessLevel.equals(WorkspaceAccessLevels.NoAccess) => WorkspaceRemovedNotification(removed.subjectId, removed.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
+        case added => WorkspaceAddedNotification(added.subjectId, added.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
       }
 
-      thurloeDAO.sendNotifications(allNotifications)
+      val inviteNotifications = actualUpdates.invitesUpdated.filterNot(_.accessLevel.equals(WorkspaceAccessLevels.NoAccess)).map(invite => WorkspaceInvitedNotification(invite.email, originEmail))
+
+      thurloeDAO.sendNotifications((updateNotifications ++ inviteNotifications))
 
       RequestComplete(actualUpdates)
     }

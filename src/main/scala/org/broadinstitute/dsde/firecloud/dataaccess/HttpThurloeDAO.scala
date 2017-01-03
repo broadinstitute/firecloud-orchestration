@@ -26,7 +26,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   override def sendNotifications(notifications: Seq[Notification]): Future[Try[Unit]] = {
 
     val notificationPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> addHeader(fireCloudHeader) ~> sendReceive
-    val thurloeNotifications = notifications.map(n => ThurloeNotification(n.userId, n.replyTo, n.notificationId, n.toMap))
+    val thurloeNotifications = notifications.map(n => ThurloeNotification(n.userId, n.userEmail, n.replyTo, n.notificationId, n.toMap))
 
     notificationPipeline(Post(UserService.remotePostNotifyURL, thurloeNotifications)) map {
       case response if response.status.isSuccess => Success(())

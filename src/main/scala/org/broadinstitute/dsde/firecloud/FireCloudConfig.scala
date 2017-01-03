@@ -97,6 +97,7 @@ object FireCloudConfig {
     val activationTemplateId = thurloe.getString("activationTemplateId")
     val workspaceAddedTemplateId = thurloe.getString("workspaceAddedTemplateId")
     val workspaceRemovedTemplateId = thurloe.getString("workspaceRemovedTemplateId")
+    val workspaceInvitedTemplateId = thurloe.getString("workspaceInvitedTemplateId")
   }
 
   object ElasticSearch {
