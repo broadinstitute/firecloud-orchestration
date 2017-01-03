@@ -15,7 +15,9 @@ import scala.util.Try
 //This also needs mixing in with an AttributeFormat because they're symbiotic
 sealed trait AttributeListSerializer {
   def writeListType(obj: Attribute): JsValue
-  def readListType(json: JsValue): Attribute
+
+  //distinguish between lists and RawJson types here
+  def readComplexType(json: JsValue): Attribute
 
   def writeAttribute(obj: Attribute): JsValue
   def readAttribute(json: JsValue): Attribute
@@ -33,16 +35,16 @@ trait PlainArrayAttributeListSerializer extends AttributeListSerializer {
     case _ => throw new FireCloudException("you can't pass a non-list to writeListType")
   }
 
-  override def readListType(json: JsValue): Attribute = json match {
+  override def readComplexType(json: JsValue): Attribute = json match {
     case JsArray(a) =>
       val attrList: Seq[Attribute] = a.map(readAttribute)
       attrList match {
         case e: Seq[_] if e.isEmpty => AttributeValueEmptyList
         case v: Seq[AttributeValue @unchecked] if attrList.map(_.isInstanceOf[AttributeValue]).reduce(_&&_) => AttributeValueList(v)
         case r: Seq[AttributeEntityReference @unchecked] if attrList.map(_.isInstanceOf[AttributeEntityReference]).reduce(_&&_) => AttributeEntityReferenceList(r)
-        case _ => throw new DeserializationException("illegal array type")
+        case _ => AttributeValueRawJson(json) //heterogeneous array type? ok, we'll treat it as raw json
       }
-    case _ => throw new DeserializationException("unexpected json type")
+    case _ => AttributeValueRawJson(json) //something else? ok, we'll treat it as raw json
   }
 }
 
@@ -65,10 +67,11 @@ trait TypedAttributeListSerializer extends AttributeListSerializer {
     case _ => throw new FireCloudException("you can't pass a non-list to writeListType")
   }
 
-  def readListType(json: JsValue): Attribute = json match {
+  def readComplexType(json: JsValue): Attribute = json match {
     case JsObject(members) if LIST_OBJECT_KEYS subsetOf members.keySet => readAttributeList(members)
 
-    case _ => throw new DeserializationException("unexpected json type")
+    //in this serializer, [1,2,3] is not the representation for an AttributeValueList, so it's raw json
+    case _ => AttributeValueRawJson(json)
   }
 
   def writeAttributeList[T <: Attribute](listType: String, list: Seq[T]): JsValue = {
@@ -232,6 +235,7 @@ object ModelJsonProtocol {
       case AttributeBoolean(b) => JsBoolean(b)
       case AttributeNumber(n) => JsNumber(n)
       case AttributeString(s) => JsString(s)
+      case AttributeValueRawJson(j) => j
       //ref
       case AttributeEntityReference(entityType, entityName) => JsObject(Map(ENTITY_TYPE_KEY -> JsString(entityType), ENTITY_NAME_KEY -> JsString(entityName)))
       //list types
@@ -246,11 +250,14 @@ object ModelJsonProtocol {
       case JsString(s) => AttributeString(s)
       case JsBoolean(b) => AttributeBoolean(b)
       case JsNumber(n) => AttributeNumber(n)
+      //NOTE: we handle AttributeValueRawJson in readComplexType below
 
-      case JsObject(members) if ENTITY_OBJECT_KEYS subsetOf members.keySet =>
-        AttributeEntityReference(members(ENTITY_TYPE_KEY).asInstanceOf[JsString].value, members(ENTITY_NAME_KEY).asInstanceOf[JsString].value)
+      case JsObject(members) if ENTITY_OBJECT_KEYS subsetOf members.keySet => (members(ENTITY_TYPE_KEY), members(ENTITY_NAME_KEY)) match {
+        case (JsString(typeKey), JsString(nameKey)) => AttributeEntityReference(typeKey, nameKey)
+        case _ => throw DeserializationException(s"the values for $ENTITY_TYPE_KEY and $ENTITY_NAME_KEY must be strings")
+      }
 
-      case _ => readListType(json)
+      case _ => readComplexType(json)
     }
   }
 
