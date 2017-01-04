@@ -36,4 +36,9 @@ class MockSearchDAO extends SearchDAO {
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
+  override def suggest(librarySearchParams: LibrarySearchParams): Future[LibrarySearchResponse] = {
+    // findDocumentsInvoked = true
+    Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
+  }
+
 }

@@ -476,6 +476,23 @@ paths:
         200:
           description: Matching datasets
 
+  /api/library/suggest:
+    post:
+      tags:
+        - Library
+      operationId: searchSuggest
+      summary: |
+        search suggestions
+      parameters:
+        - in: body
+          name: searchParams
+          description: Search terms and pagination parameters
+          schema:
+            $ref: '#/definitions/SearchTermRef'
+      responses:
+        200:
+          description: Matching datasets
+
   /api/library/user/role/curator:
     get:
       responses:

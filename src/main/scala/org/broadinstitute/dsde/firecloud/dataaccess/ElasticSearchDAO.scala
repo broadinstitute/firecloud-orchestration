@@ -100,4 +100,8 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
   override def findDocuments(criteria: LibrarySearchParams): Future[LibrarySearchResponse] = {
     findDocumentsWithAggregateInfo(client, indexName, criteria)
   }
+
+  override def suggest(criteria: LibrarySearchParams): Future[LibrarySearchResponse] = {
+    findDocumentsWithAggregateInfo(client, indexName, criteria)
+  }
 }
