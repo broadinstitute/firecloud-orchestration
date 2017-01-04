@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloud
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.client.pipelining._
 import spray.http.StatusCodes._
+import spray.http.Uri
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
@@ -23,7 +24,15 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
 
   val libraryServiceConstructor: UserInfo => LibraryService
 
+  val duosAutocompleteUrl = FireCloudConfig.Duos.baseUrl + "/autocomplete"
+
   val libraryRoutes: Route =
+    path("duos" / "autocomplete" / Segment) { (searchTerm) =>
+      get { requestContext =>
+        val extReq = Get(Uri(duosAutocompleteUrl).withQuery(("types", "disease"), ("q", searchTerm)))
+        externalHttpPerRequest(requestContext, extReq)
+      }
+    } ~
     pathPrefix("schemas") {
       path("library-attributedefinitions-v1") {
         respondWithJSON {
