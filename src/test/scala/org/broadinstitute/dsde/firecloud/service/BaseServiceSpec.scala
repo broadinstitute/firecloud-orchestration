@@ -3,14 +3,20 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
+import org.scalatest.BeforeAndAfter
 
-class BaseServiceSpec extends ServiceSpec {
+class BaseServiceSpec extends ServiceSpec with BeforeAndAfter {
 
-  val agoraDAO:AgoraDAO = new MockAgoraDAO
-  val rawlsDAO:RawlsDAO = new MockRawlsDAO
-  val searchDAO:SearchDAO = new MockSearchDAO
-  val thurloeDAO:ThurloeDAO = new MockThurloeDAO
-  val googleServicesDAO:GoogleServicesDAO = new MockGoogleServicesDAO
-  val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO, thurloeDAO, googleServicesDAO)
+  val agoraDao:MockAgoraDAO = new MockAgoraDAO
+  val googleServicesDao:MockGoogleServicesDAO = new MockGoogleServicesDAO
+  val rawlsDao:MockRawlsDAO = new MockRawlsDAO
+  val searchDao:MockSearchDAO = new MockSearchDAO
+  val thurloeDao:MockThurloeDAO = new MockThurloeDAO
 
+  val app:Application =
+    new Application(agoraDao, rawlsDao, searchDao, thurloeDao, googleServicesDao)
+
+  def reset() = {
+    thurloeDao.reset()
+  }
 }

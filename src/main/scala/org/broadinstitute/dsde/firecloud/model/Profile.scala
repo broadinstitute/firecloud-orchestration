@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
+import spray.json.DefaultJsonProtocol._
 
 import scala.language.postfixOps
 
@@ -130,6 +131,8 @@ case class NIHStatus(
 )
 
 object NIHStatus {
+
+  implicit val impNihStatus = jsonFormat7(NIHStatus.apply)
 
   def apply(profile: Profile): NIHStatus = {
     apply(profile, profile.isDbgapAuthorized)

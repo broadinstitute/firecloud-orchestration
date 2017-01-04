@@ -19,6 +19,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with EntityService
   with LibraryApiService
   with NamespaceApiService
+  with NihApiService
   with OauthApiService
   with StorageApiService
   with WorkspaceApiService
@@ -41,6 +42,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val exportEntitiesByTypeConstructor: (UserInfo) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
+  val nihServiceConstructor: () => NihService2 = NihService2.constructor(app)
   val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
@@ -51,11 +53,10 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
   val statusService = new StatusService with ActorRefFactoryContext
-  val nihService = new NIHService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
   val routes = methodsService.routes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    statusService.routes ~ nihService.routes ~ billingService.routes
+    statusService.routes ~ nihRoutes ~ billingService.routes
 
   val userService = new UserService with ActorRefFactoryContext
   val nihSyncService = new NIHSyncService with ActorRefFactoryContext

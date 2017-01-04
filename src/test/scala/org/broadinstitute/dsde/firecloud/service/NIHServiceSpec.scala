@@ -1,78 +1,32 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.NIHStatus
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
-import org.mockserver.integration.ClientAndServer
-import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.HttpRequest._
-
+import org.broadinstitute.dsde.firecloud.webservice.NihApiService
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
-import spray.json._
 
 
-class NIHServiceSpec extends ServiceSpec with NIHService {
+class NIHServiceSpec extends BaseServiceSpec with NihApiService {
 
   def actorRefFactory = system
-  var profileServer: ClientAndServer = _
-  var workspaceServer: ClientAndServer = _
+  val nihServiceConstructor:() => NihService2 = NihService2.constructor(app)
   val uniqueId = "1234"
   val dbGapPath = UserService.groupPath(FireCloudConfig.Nih.rawlsGroupName)
 
-  override def beforeAll(): Unit = {
-
-    profileServer = startClientAndServer(thurloeServerPort)
-
-    profileServer
-      .when(request().withMethod("GET").withPath(UserService.remoteGetAllPath.format(uniqueId)))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          .withBody("{}")
-      )
-
-    workspaceServer = startClientAndServer(workspaceServerPort)
-    workspaceServer
-      .when(request().withMethod("GET").withPath(dbGapPath))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          .withBody("true")
-      )
-
-  }
-
-  override def afterAll(): Unit = {
-    profileServer.stop()
-    workspaceServer.stop()
+  before {
+    reset()
   }
 
   val targetUri = "/nih/status"
 
   "NIHService" - {
 
-    "when GET-ting a profile with no NIH info" - {
+    "when GET-ting a profile with no NIH username" - {
       "NotFound response is returned" in {
-        respondWith()
-
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
-          status should equal(NotFound)
-        }
-      }
-    }
-
-    "when GET-ting a profile with missing NIH username" - {
-      "NotFound response is returned" in {
-        respondWith(
-          lastLinkTime = Some(222),
-          linkExpireTime = Some(333),
-          isDbgapAuthorized = Some(true)
-        )
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        thurloeDao.nextGetProfileResponse = Some(thurloeDao.testProfile)
+        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
           status should equal(NotFound)
         }
       }
@@ -80,12 +34,10 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
 
     "when GET-ting a profile with missing lastLinkTime" - {
       "loginRequired is true" in {
-        respondWith(
-          linkedNihUsername = Some("nihuser"),
-          linkExpireTime = Some(333),
-          isDbgapAuthorized = Some(true)
-        )
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        thurloeDao.nextGetProfileResponse = Some(thurloeDao.testProfile.copy(
+          linkedNihUsername = Some("nihuser")
+        ))
+        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
           status should equal(OK)
           val nihStatus = responseAs[NIHStatus]
           nihStatus.loginRequired shouldBe(true)
@@ -93,14 +45,22 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
       }
     }
 
+    // This is done after the previous test to ensure reset() is working.
+    "when GET-ting a non-existent profile" - {
+      "NotFound response is returned" in {
+        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
+          status should equal(NotFound)
+        }
+      }
+    }
+
     "when GET-ting a profile with missing linkExpireTime" - {
       "loginRequired is true" in {
-        respondWith(
+        thurloeDao.nextGetProfileResponse = Some(thurloeDao.testProfile.copy(
           linkedNihUsername = Some("nihuser"),
-          lastLinkTime = Some(222),
-          isDbgapAuthorized = Some(true)
-        )
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          lastLinkTime = Some(222)
+        ))
+        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
           status should equal(OK)
           val nihStatus = responseAs[NIHStatus]
           nihStatus.loginRequired shouldBe(true)
@@ -114,13 +74,12 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
         val lastLinkTime = DateUtils.now
         val linkExpireTime = DateUtils.nowPlus30Days
 
-        respondWith(
+        thurloeDao.nextGetProfileResponse = Some(thurloeDao.testProfile.copy(
           linkedNihUsername = Some("nihuser"),
           lastLinkTime = Some(lastLinkTime),
-          linkExpireTime = Some(linkExpireTime),
-          isDbgapAuthorized = Some(true)
-        )
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          linkExpireTime = Some(linkExpireTime)
+        ))
+        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
           status should equal(OK)
           val nihStatus = responseAs[NIHStatus]
           nihStatus.loginRequired shouldBe(false)
@@ -134,13 +93,12 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
         val lastLinkTime = DateUtils.now
         val linkExpireTime = DateUtils.nowMinus24Hours
 
-        respondWith(
+        thurloeDao.nextGetProfileResponse = Some(thurloeDao.testProfile.copy(
           linkedNihUsername = Some("nihuser"),
           lastLinkTime = Some(lastLinkTime),
-          linkExpireTime = Some(linkExpireTime),
-          isDbgapAuthorized = Some(true)
-        )
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          linkExpireTime = Some(linkExpireTime)
+        ))
+        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
           status should equal(OK)
           val nihStatus = responseAs[NIHStatus]
           nihStatus.loginRequired shouldBe(true)
@@ -149,74 +107,4 @@ class NIHServiceSpec extends ServiceSpec with NIHService {
     }
 
   }
-
-  def respondWith(
-                   linkedNihUsername: Option[String] = None,
-                   lastLinkTime: Option[Long] = None,
-                   linkExpireTime: Option[Long] = None,
-                   isDbgapAuthorized: Option[Boolean] = None) = {
-
-    profileServer.clear(request.withMethod("GET").withPath(UserService.remoteGetAllPath.format(uniqueId)))
-    profileServer
-      .when(request().withMethod("GET").withPath(UserService.remoteGetAllPath.format(uniqueId)))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          .withBody(generateResponse(linkedNihUsername, lastLinkTime, linkExpireTime))
-      )
-
-    workspaceServer.clear(request.withMethod("GET").withPath(dbGapPath))
-    isDbgapAuthorized match {
-      case Some(x) if x =>
-        workspaceServer
-          .when(request().withMethod("GET").withPath(dbGapPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-              .withBody("true")
-          )
-      case _ =>
-        workspaceServer
-          .when(request().withMethod("GET").withPath(dbGapPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
-              .withBody("false")
-          )
-    }
-  }
-
-
-  def generateResponse(
-                        linkedNihUsername: Option[String] = None,
-                        lastLinkTime: Option[Long] = None,
-                        linkExpireTime: Option[Long] = None): String = {
-
-    val kvps: List[FireCloudKeyValue] = List(
-      FireCloudKeyValue(Some("firstName"), Some("firstName")),
-      FireCloudKeyValue(Some("lastName"), Some("lastName")),
-      FireCloudKeyValue(Some("title"), Some("title")),
-      FireCloudKeyValue(Some("institute"), Some("institute")),
-      FireCloudKeyValue(Some("institutionalProgram"), Some("institutionalProgram")),
-      FireCloudKeyValue(Some("programLocationCity"), Some("city")),
-      FireCloudKeyValue(Some("programLocationState"), Some("state")),
-      FireCloudKeyValue(Some("programLocationCountry"), Some("country")),
-      FireCloudKeyValue(Some("pi"), Some("testPI")),
-      FireCloudKeyValue(Some("nonProfitStatus"), Some("NonProfit"))
-    ) ::: (linkedNihUsername match {
-      case Some(x:String) => List(FireCloudKeyValue(Some("linkedNihUsername"), Some(x)))
-      case _ => List.empty[FireCloudKeyValue]
-    }) ::: (lastLinkTime match {
-      case Some(x:Long) => List(FireCloudKeyValue(Some("lastLinkTime"), Some(x.toString)))
-      case _ => List.empty[FireCloudKeyValue]
-    }) ::: (linkExpireTime match {
-      case Some(x:Long) => List(FireCloudKeyValue(Some("linkExpireTime"), Some(x.toString)))
-      case _ => List.empty[FireCloudKeyValue]
-    })
-
-    val profileWrapper = ProfileWrapper(uniqueId,kvps)
-
-    profileWrapper.toJson.prettyPrint
-  }
-
 }

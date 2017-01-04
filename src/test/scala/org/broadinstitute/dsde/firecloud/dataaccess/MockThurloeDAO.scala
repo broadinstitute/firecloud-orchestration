@@ -12,12 +12,20 @@ import scala.util.{Success, Try}
  *
  */
 class MockThurloeDAO extends ThurloeDAO {
+  var nextGetProfileResponse:Option[Profile] = None
+  val testProfile = Profile("Rich", "Hickey", "CTO", None, "Datomic", "Data Storage",
+    "NYC", "NY", "USA", "David Mohs", "Not for no profit")
+
+  def reset() = {
+    nextGetProfileResponse = None
+  }
+
 
   override def sendNotifications(notifications: Seq[Notification]): Future[Try[Unit]] = Future(Success(()))
 
-  override def getProfile(userInfo: UserInfo): Future[Option[Profile]] =
-    Future(Some(Profile("Rich", "Hickey", "CTO", None, "Datomic", "Data Storage",
-      "NYC", "NY", "USA", "David Mohs", "Not for no profit")))
+  override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
+    Future(nextGetProfileResponse)
+  }
 
   override def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit] =
     Future(())
