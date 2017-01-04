@@ -1006,6 +1006,7 @@ paths:
           required: true
           in: body
           schema:
+            type: object
             $ref: '#/definitions/WorkspaceIngest'
       responses:
         200:
@@ -2405,6 +2406,7 @@ parameters:
 definitions:
 
   AttributeUpdateOperation:
+    type: object
     properties:
       op:
         type: string
@@ -2425,6 +2427,7 @@ definitions:
       - accountName
       - firecloudHasAccess
       - displayName
+    type: object
     properties:
       accountName:
         type: string
@@ -2440,6 +2443,7 @@ definitions:
     description: 'Google redirect URL to enable appropriate scopes'
     required:
       - redirect
+    type: object
     properties:
       redirect:
         type: string
@@ -2450,6 +2454,7 @@ definitions:
     required:
       - email
       - role
+    type: object
     properties:
       email:
         type: string
@@ -2463,6 +2468,7 @@ definitions:
     required:
       - projectName
       - role
+    type: object
     properties:
       projectName:
         type: string
@@ -2473,6 +2479,7 @@ definitions:
 
   CallMetadata:
     description: Stuff you need to know about calls
+    type: object
     properties:
       inputs:
         type: object
@@ -2521,6 +2528,7 @@ definitions:
         description: call index within a scatter block, as reported by execution service
 
   ConfigurationIngest:
+    type: object
     properties:
       namespace:
         type: string
@@ -2632,6 +2640,7 @@ definitions:
         default: Task
 
   CopyConfigurationIngest:
+    type: object
     properties:
       configurationNamespace:
         type: string
@@ -2656,6 +2665,7 @@ definitions:
       - destinationName
 
   CopyEntity:
+    type: object
     properties:
       sourceWorkspace:
         $ref: '#/definitions/Namespace'
@@ -2674,6 +2684,7 @@ definitions:
     required:
       - projectName
       - billingAccount
+    type: object
     properties:
       projectName:
         type: string
@@ -2686,11 +2697,13 @@ definitions:
     description: is the user a curator?
     required:
       - curator
+    type: object
     properties:
       curator:
         type: boolean
 
   DeleteEntities:
+    type: object
     properties:
       recursive:
         type: boolean
@@ -2706,6 +2719,7 @@ definitions:
       - entities
 
   Enabled:
+    type: object
     properties:
       google:
         type: boolean
@@ -2723,6 +2737,7 @@ definitions:
       - name
       - entityType
       - attributes
+    type: object
     properties:
       name:
         type: string
@@ -2735,6 +2750,7 @@ definitions:
         description: Map[String,Attribute]
 
   EntityID:
+    type: object
     properties:
       entityType:
         type: string
@@ -2750,6 +2766,7 @@ definitions:
       - pageSize
       - sortField
       - sortDirection
+    type: object
     properties:
       page:
         type: number
@@ -2773,6 +2790,7 @@ definitions:
       - parameters
       - resultMetadata
       - results
+    type: object
     properties:
       parameters:
         $ref: '#/definitions/EntityQueryParameters'
@@ -2789,6 +2807,7 @@ definitions:
       - unfilteredCount
       - filteredCount
       - filteredPageCount
+    type: object
     properties:
       unfilteredCount:
         type: number
@@ -2817,6 +2836,7 @@ definitions:
       - message
       - causes
       - stackTrace
+    type: object
     properties:
       source:
         type: string
@@ -2843,6 +2863,7 @@ definitions:
     required:
       - description
       - startTime
+    type: object
     properties:
       description:
         type: string
@@ -2859,18 +2880,21 @@ definitions:
   ExtendedEnabled:
     allOf:
       - $ref: '#/definitions/Enabled'
+    type: object
     properties:
       allUsersGroup:
         type: boolean
         description: User is a member of the "All Users" group?
 
   JWTWrapper:
+    type: object
     properties:
       jwt:
         type: string
         description: the encoded/signed JWT
 
   Me:
+    type: object
     properties:
       userInfo:
         $ref: '#/definitions/UserInfo'
@@ -2892,6 +2916,7 @@ definitions:
         - role
 
   MethodConfigRename:
+    type: object
     properties:
       namespace:
         type: string
@@ -2915,6 +2940,7 @@ definitions:
       - rootEntityType
       - inputs
       - methodRepoMethod
+    type: object
     properties:
       namespace:
         type: string
@@ -2939,6 +2965,7 @@ definitions:
         description: The properties of the method from the method store that this config is associated with
 
   MethodID:
+    type: object
     properties:
       methodNamespace:
         type: string
@@ -2994,6 +3021,7 @@ definitions:
       - methodNamespace
       - methodName
       - methodVersion
+    type: object
     properties:
       methodNamespace:
         type: string
@@ -3006,12 +3034,12 @@ definitions:
         description: The version of method from method store
 
   MethodResponse:
-    type: object
     required:
       - managers
       - namespace
       - name
       - snapshotId
+    type: object
     properties:
       managers:
         type: array
@@ -3057,6 +3085,7 @@ definitions:
         default: Task
 
   Namespace:
+    type: object
     properties:
       namespace:
         type: string
@@ -3066,6 +3095,7 @@ definitions:
         description: Entity name
 
   NewMethodConfigIngest:
+    type: object
     properties:
       namespace:
         type: string
@@ -3101,6 +3131,7 @@ definitions:
     required:
       - loginRequired
       - linkedNihUsername
+    type: object
     properties:
       loginRequired:
         type: boolean
@@ -3124,6 +3155,7 @@ definitions:
         type: string
 
   Profile:
+    type: object
     properties:
       name:
         type: string
@@ -3139,6 +3171,7 @@ definitions:
         description: Primary Investigator
 
   PublishConfigurationIngest:
+    type: object
     properties:
       configurationNamespace:
         type: string
@@ -3159,6 +3192,7 @@ definitions:
       - sourceName
 
   RawlsGroupRef:
+    type: object
     description: a reference to a group
     properties:
       groupName:
@@ -3166,6 +3200,7 @@ definitions:
         description: ''
 
   RawlsMe:
+    type: object
     properties:
       userInfo:
         $ref: '#/definitions/UserInfo'
@@ -3173,6 +3208,7 @@ definitions:
         $ref: '#/definitions/ExtendedEnabled'
 
   SearchTermRef:
+    type: object
     properties:
       searchString:
         type: string
@@ -3204,6 +3240,7 @@ definitions:
       - methodName
       - fileName
       - lineNumber
+    type: object
     properties:
       className:
         type: string
@@ -3219,6 +3256,7 @@ definitions:
         description: line number
 
   SubmissionIngest:
+    type: object
     properties:
       methodConfigurationNamespace:
         type: string
@@ -3249,6 +3287,7 @@ definitions:
       - methodConfigurationName
       - entityType
       - entityName
+    type: object
     properties:
       methodConfigurationNamespace:
         type: string
@@ -3271,6 +3310,7 @@ definitions:
     required:
       - entityName
       - inputResolutions
+    type: object
     properties:
       entityName:
         type: string
@@ -3286,6 +3326,7 @@ definitions:
     required:
       - entityType
       - inputExpressions
+    type: object
     properties:
       entityType:
         type: string
@@ -3301,6 +3342,7 @@ definitions:
     required:
       - wdlName
       - expression
+    type: object
     properties:
       wdlName:
         type: string
@@ -3316,6 +3358,7 @@ definitions:
       - header
       - validEntities
       - invalidEntities
+    type: object
     properties:
       header:
         $ref: '#/definitions/SubmissionValidationHeader'
@@ -3337,6 +3380,7 @@ definitions:
     description: result of an expression parse for one of the inputs
     required:
       - inputName
+    type: object
     properties:
       value:
         type: string
@@ -3349,6 +3393,7 @@ definitions:
         description: name of input
 
   UserInfo:
+    type: object
     properties:
       userSubjectId:
         type: string
@@ -3365,6 +3410,7 @@ definitions:
       - invalidInputs
       - validOutputs
       - invalidOutputs
+    type: object
     properties:
       validInputs:
         type: array
@@ -3389,6 +3435,7 @@ definitions:
       - estimatedQueueTimeMS
       - workflowsBeforeNextUserWorkflow
       - workflowCountsByStatus
+    type: object
     properties:
       estimatedQueueTimeMS:
         type: integer
@@ -3411,6 +3458,7 @@ definitions:
       - createdBy
       - attributes
       - accessLevels
+    type: object
     properties:
       namespace:
         type: string
@@ -3456,6 +3504,7 @@ definitions:
     required:
       - email
       - accessLevel
+    type: object
     properties:
       email:
         type: string
@@ -3469,6 +3518,7 @@ definitions:
       - namespace
       - name
       - attributes
+    type: object
     properties:
       namespace:
         type: string

@@ -121,7 +121,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
         serveIndex()
       }
     } ~
-    path("api-docs") {
+    path("api-docs.yaml") {
       get {
         withResourceFileContents("swagger/api-docs.yaml") { apiDocs =>
           complete(apiDocs)
@@ -173,7 +173,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
             .replace("scopeSeparator: \",\"", "scopeSeparator: \" \"")
             .replace("jsonEditor: false,", "jsonEditor: false," + swaggerOptions)
             .replace("url = \"http://petstore.swagger.io/v2/swagger.json\";",
-              "url = '/api-docs';")
+              "url = '/api-docs.yaml';")
         )
       }
     }
