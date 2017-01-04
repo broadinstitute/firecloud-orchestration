@@ -6,9 +6,9 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.storage.{Storage, StorageScopes}
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
-import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
+import org.broadinstitute.dsde.firecloud.model.{ErrorReport, OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.slf4j.LoggerFactory
@@ -16,13 +16,14 @@ import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
 import spray.httpx.SprayJsonSupport._
+import spray.httpx.UnsuccessfulResponseException
 import spray.httpx.encoding.Gzip
 import spray.json._
 import spray.routing.RequestContext
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -151,8 +152,14 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
-    val request = Get( getObjectResourceUrl(bucketName, objectKey) ) ~> addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
-    request map (_.entity.asString.parseJson.convertTo[ObjectMetadata])
+    val metadataRequest = Get( getObjectResourceUrl(bucketName, objectKey) )
+    val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive ~> unmarshal[ObjectMetadata]
+    val request = metadataPipeline{metadataRequest}
+
+    request.recover {
+      case t: UnsuccessfulResponseException =>
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(t.response.status, t.response.entity.asString))
+    }
   }
 
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
