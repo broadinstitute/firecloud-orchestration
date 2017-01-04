@@ -63,7 +63,7 @@
     },
     "library:diseaseOntologyLabel": {
       "type": "string",
-      "title": "Cohort Phenotype/Indication: Disease Ontology Autocomplete"
+      "title": "Cohort Phenotype/Indication (Disease Ontology)"
     },
     "library:numSubjects": {
       "title": "No. of Subjects",
