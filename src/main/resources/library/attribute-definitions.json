@@ -234,6 +234,13 @@
       "type": "integer",
       "default": 3,
       "indexable": false
+    },
+    "library:dulvn": {
+      "title": "Structured Data Use Limitations  Version Number",
+      "description": "Structured Data Use Limitations Version Number",
+      "type": "integer",
+      "default": 1,
+      "indexable": false
     }
   },
   "consentCodes": {
@@ -254,7 +261,8 @@
     "secondary": ["library:indication", "library:datasetName", "library:datasetVersion", "library:datasetDescription", "library:datasetOwner",
       "library:datasetCustodian", "library:datasetDepositor", "library:contactEmail", "library:institute", "library:primaryDiseaseSite",
       "library:projectName", "library:reference", "library:dataFileFormats", "library:technology", "library:profilingProtocol",
-      "library:coverage", "library:studyDesign", "library:cellType", "library:ethnicity", "library:cohortCountry", "library:requiresExternalApproval", "library:lmsvn"],
+      "library:coverage", "library:studyDesign", "library:cellType", "library:ethnicity", "library:cohortCountry", "library:requiresExternalApproval",
+      "library:lmsvn", "library:dulvn" ],
     "consentCodes": ["GRU", "HMB", "DS", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-G", "RS-PD", "RS-POP"]
   },
   "wizard":
@@ -289,8 +297,7 @@
         {"property": "library:cellType", "required": true},
         {"property": "library:ethnicity", "inputHint": "e.g. Caucasians, African-Americans, Latino, East Asians, South Asians, Finnish, Non-Finnish Europeans; include all relevant"},
         {"property": "library:cohortCountry"},
-        {"property": "library:requiresExternalApproval", "inputHint": "i.e. approval from a second source is required in order to access the data", "required": true},
-        {"property": "library:lmsvn", "editable": false}
+        {"property": "library:requiresExternalApproval", "inputHint": "i.e. approval from a second source is required in order to access the data", "required": true}
       ]
     },
     {
