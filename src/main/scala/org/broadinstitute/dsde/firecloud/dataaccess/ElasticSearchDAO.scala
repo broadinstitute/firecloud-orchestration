@@ -121,7 +121,7 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
   }
 
   override def suggest(criteria: LibrarySearchParams): Future[LibrarySearchResponse] = {
-    findDocumentsWithAggregateInfo(client, indexName, criteria)
+    autocompleteSuggestions(client, indexName, criteria)
   }
 
   // see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html

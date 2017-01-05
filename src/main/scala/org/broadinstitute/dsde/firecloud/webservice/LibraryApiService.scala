@@ -109,7 +109,7 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                   entity(as[LibrarySearchParams]) { params => requestContext =>
                     perRequest(requestContext,
                       LibraryService.props(libraryServiceConstructor, userInfo),
-                      LibraryService.FindDocuments(params))
+                      LibraryService.Suggest(params))
                   }
                 }
               }
