@@ -46,6 +46,6 @@ class NihService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
             Future.successful(RequestComplete(StatusCodes.NotFound))
         }
       case None => Future.successful(RequestComplete(StatusCodes.NotFound))
-    } pipeTo sender
+    }
   }
 }
