@@ -143,8 +143,7 @@ object ModelJsonProtocol {
         Some(FIELD_AGGREGATIONS -> params.fieldAggregations.toJson),
         Some(FROM -> params.from.toJson),
         Some(SIZE -> params.size.toJson),
-        params.searchString map {SEARCH_STRING -> JsString(_)},
-        params.maxAggregations map {MAX_AGGREGATIONS -> JsNumber(_)}
+        params.searchString map {SEARCH_STRING -> JsString(_)}
       )
 
       JsObject( fields.filter(_.isDefined).map{_.get}.toMap )
@@ -160,12 +159,11 @@ object ModelJsonProtocol {
       }
 
       val filters = optionalEntryReader[Map[String, Seq[String]]](FILTERS, data, _.convertTo[Map[String, Seq[String]]], Map.empty)
-      val aggs = optionalEntryReader[Seq[String]](FIELD_AGGREGATIONS, data, _.convertTo[Seq[String]], Seq.empty)
+      val aggs = optionalEntryReader[Map[String, Int]](FIELD_AGGREGATIONS, data, _.convertTo[Map[String, Int]], Map.empty)
       val from = optionalEntryIntReader(FROM, data)
       val size = optionalEntryIntReader(SIZE, data)
-      val maxAggs = optionalEntryIntReader(MAX_AGGREGATIONS, data)
 
-      LibrarySearchParams(term, filters, aggs, maxAggs, from, size)
+      LibrarySearchParams(term, filters, aggs, from, size)
     }
   }
 
