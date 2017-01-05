@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.{NIHStatus, UserInfo}
-import org.broadinstitute.dsde.firecloud.service.NihService2.GetStatus
+import org.broadinstitute.dsde.firecloud.service.NihService.GetStatus
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import spray.http._
 import spray.httpx.SprayJsonSupport._
@@ -14,19 +14,19 @@ import spray.httpx.SprayJsonSupport._
 import scala.concurrent.{ExecutionContext, Future}
 
 
-object NihService2 {
+object NihService {
   sealed trait ServiceMessage
   case class GetStatus(userInfo: UserInfo) extends ServiceMessage
 
-  def props(service: () => NihService2): Props = {
+  def props(service: () => NihService): Props = {
     Props(service())
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new NihService2(app.rawlsDAO, app.thurloeDAO)
+    new NihService(app.rawlsDAO, app.thurloeDAO)
 }
 
-class NihService2(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
+class NihService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
   (implicit protected val executionContext: ExecutionContext) extends Actor
   with LazyLogging {
 

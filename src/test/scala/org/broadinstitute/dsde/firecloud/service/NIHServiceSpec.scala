@@ -11,7 +11,7 @@ import spray.httpx.SprayJsonSupport._
 class NIHServiceSpec extends BaseServiceSpec with NihApiService {
 
   def actorRefFactory = system
-  val nihServiceConstructor:() => NihService2 = NihService2.constructor(app)
+  val nihServiceConstructor:() => NihService = NihService.constructor(app)
   val uniqueId = "1234"
   val dbGapPath = UserService.groupPath(FireCloudConfig.Nih.rawlsGroupName)
 

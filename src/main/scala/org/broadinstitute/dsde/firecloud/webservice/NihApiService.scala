@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, NihService2, PerRequestCreator}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, NihService, PerRequestCreator}
 import org.broadinstitute.dsde.firecloud.utils.{DateUtils, StandardUserInfoDirectives}
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes
@@ -18,7 +18,7 @@ trait NihApiService extends HttpService with PerRequestCreator with FireCloudDir
   private implicit val executionContext = actorRefFactory.dispatcher
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  val nihServiceConstructor: () => NihService2
+  val nihServiceConstructor: () => NihService
 
   val nihRoutes: Route =
     requireUserInfo() { userInfo =>
@@ -65,8 +65,8 @@ trait NihApiService extends HttpService with PerRequestCreator with FireCloudDir
           }
         } ~
         path ("status") { requestContext =>
-          perRequest(requestContext, NihService2.props(nihServiceConstructor),
-            NihService2.GetStatus(userInfo)
+          perRequest(requestContext, NihService.props(nihServiceConstructor),
+            NihService.GetStatus(userInfo)
           )
         }
       }
