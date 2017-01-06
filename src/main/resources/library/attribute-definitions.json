@@ -232,13 +232,15 @@
       "title": "Library Metadata Schema Version Number",
       "description": "Library Metadata Schema Version Number",
       "current": 3,
-      "indexable": false
+      "indexable": false,
+      "type": "integer"
     },
     "library:dulvn": {
       "title": "Structured Data Use Limitations  Version Number",
       "description": "Structured Data Use Limitations Version Number",
       "current": 1,
-      "indexable": false
+      "indexable": false,
+      "type": "integer"
     }
   },
   "consentCodes": {
