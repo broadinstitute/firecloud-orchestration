@@ -16,6 +16,7 @@ class BaseServiceSpec extends ServiceSpec with BeforeAndAfter {
   val app:Application =
     new Application(agoraDao, rawlsDao, searchDao, thurloeDao, googleServicesDao)
 
+  // Don't copy this pattern. See GAWB-1477.
   def reset() = {
     thurloeDao.reset()
   }

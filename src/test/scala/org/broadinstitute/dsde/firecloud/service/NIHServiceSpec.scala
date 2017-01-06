@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.NIHStatus
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.firecloud.webservice.NihApiService
@@ -13,8 +12,8 @@ class NIHServiceSpec extends BaseServiceSpec with NihApiService {
   def actorRefFactory = system
   val nihServiceConstructor:() => NihService = NihService.constructor(app)
   val uniqueId = "1234"
-  val dbGapPath = UserService.groupPath(FireCloudConfig.Nih.rawlsGroupName)
 
+  // Don't copy this pattern. See GAWB-1477.
   before {
     reset()
   }

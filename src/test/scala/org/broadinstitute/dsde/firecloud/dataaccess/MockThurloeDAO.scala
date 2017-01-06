@@ -16,6 +16,7 @@ class MockThurloeDAO extends ThurloeDAO {
   val testProfile = Profile("Rich", "Hickey", "CTO", None, "Datomic", "Data Storage",
     "NYC", "NY", "USA", "David Mohs", "Not for no profit")
 
+  // Don't copy this pattern. See GAWB-1477.
   def reset() = {
     nextGetProfileResponse = None
   }
