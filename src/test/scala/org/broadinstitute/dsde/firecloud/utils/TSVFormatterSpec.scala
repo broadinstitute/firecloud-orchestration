@@ -67,7 +67,8 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         Seq(
           IndexedSeq("header_2", "does_not_exist", "header_1"),
           IndexedSeq("header_2", "sample_id", "header_1"),
-          IndexedSeq("header_1", "header_2")
+          IndexedSeq("header_1", "header_2"),
+          IndexedSeq("header_1", "participant")
         ).foreach { requestedHeaders =>
           val resultsWithSpecificHeaders = testEntityDataSet("sample", sampleList, Option(requestedHeaders))
           resultsWithSpecificHeaders should contain theSameElementsInOrderAs Seq("entity:sample_id") ++ requestedHeaders.filterNot(_.equals("sample_id"))
@@ -167,8 +168,6 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
   }
 
   private def testEntityDataSet(entityType: String, entities: List[RawlsEntity], requestedHeaders: Option[IndexedSeq[String]]) = {
-    val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeExportRenamingMap(entityType)
-      .getOrElse(Map.empty[String, String])
     val tsv = TSVFormatter.makeEntityTsvString(entities, entityType, requestedHeaders)
 
     tsv shouldNot be(empty)
@@ -180,14 +179,8 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
     val headers = lines.head.split("\t")
 
-    // Make sure that all of the post-rename values exist in the list of headers from the TSV file
-    // for all non-set types
-    if (ModelSchema.getCollectionMemberType(entityType).isFailure) {
-      forAll (headerRenamingMap.values.toList) { x => headers should contain(x) }
-    }
-
-    // Conversely, the TSV file should not have any of the pre-rename values
-    forAll (headerRenamingMap.keys.toList) { x => headers shouldNot contain(x) }
+    // make sure all required headers are present
+    forAll (ModelSchema.getRequiredAttributes(entityType).get.keys) { x => headers should contain(x) }
 
     // Check that all lines have the same number of columns as the header.
     lines foreach( _.split("\t", -1).size should equal(headers.size) )

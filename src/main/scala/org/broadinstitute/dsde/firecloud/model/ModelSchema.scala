@@ -38,15 +38,6 @@ object ModelSchema {
   def getRequiredAttributes(entityType: String): Try[Map[String, String]] = {
     getTypeSchema(entityType).map(_.requiredAttributes)
   }
-
-  def getAttributeImportRenamingMap(entityType: String): Try[Map[String,String]] = {
-    getTypeSchema(entityType).map(_.attributeRenaming.getOrElse(Map.empty))
-  }
-
-  def getAttributeExportRenamingMap(entityType: String): Try[Map[String,String]] = {
-    // the inverse of the import mapping
-    getAttributeImportRenamingMap(entityType).map(_.map(_.swap))
-  }
 }
 
 object EntityTypes {
@@ -57,7 +48,6 @@ object EntityTypes {
 case class EntityMetadata(
   plural: String,                         //Used to name the members attribute of collection types, e.g. sample_set.samples
   requiredAttributes: Map[String, String],//(Attribute name -> stringified type) Might be an entity type defined by the ModelSchema.
-  attributeRenaming: Option[Map[String, String]],// for when we don't like the names in the column headers
   memberType: Option[String]              //If defined, we're a collection type, and this is the entity type of our members
 )
 

@@ -5,47 +5,30 @@
     },
     "sample": {
         "requiredAttributes": {
-            "participant_id": "participant"
-        },
-        "attributeRenaming": {
-            "participant_id": "participant"
+            "participant": "participant"
         },
         "plural": "samples"
     },
     "pair": {
         "requiredAttributes": {
-            "case_sample_id": "sample",
-            "control_sample_id": "sample",
-            "participant_id": "participant"
-        },
-        "attributeRenaming": {
-            "case_sample_id": "case_sample",
-            "control_sample_id": "control_sample",
-            "participant_id": "participant"
+            "case_sample": "sample",
+            "control_sample": "sample",
+            "participant": "participant"
         },
         "plural": "pairs"
     },
     "participant_set": {
         "requiredAttributes": {},
-        "attributeRenaming": {
-            "participant_id": "participant"
-        },
         "plural": "participant_sets",
         "memberType": "participant"
     },
     "sample_set": {
         "requiredAttributes": {},
-        "attributeRenaming": {
-            "sample_id": "sample"
-        },
         "plural": "sample_sets",
         "memberType": "sample"
     },
     "pair_set": {
         "requiredAttributes": {},
-        "attributeRenaming": {
-            "pair_id": "pair"
-        },
         "plural": "pair_sets",
         "memberType": "pair"
     }

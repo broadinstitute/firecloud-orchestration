@@ -28,7 +28,6 @@ object TSVFormatter {
   }
 
   def makeEntityTsvString(entities: Seq [RawlsEntity], entityType: String, requestedHeaders: Option[IndexedSeq[String]]): String = {
-    val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeExportRenamingMap(entityType).getOrElse(Map.empty[String, String])
     val entityHeader = "entity:" + entityType + "_id"
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
@@ -51,20 +50,20 @@ object TSVFormatter {
       // entity id always needs to be first and is handled differently so remove it from requestedHeaders
       map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
 
-    val headers: IndexedSeq[String] = entityHeader +: requestedHeadersSansId.getOrElse(defaultHeaders(entityType, filteredEntities, headerRenamingMap))
+    val headers: IndexedSeq[String] = entityHeader +: requestedHeadersSansId.getOrElse(defaultHeaders(entityType, filteredEntities))
     val rows: IndexedSeq[IndexedSeq[String]] = filteredEntities.filter { _.entityType == entityType }
       .map { entity =>
-        makeRow(entity, headers, headerRenamingMap)
+        makeRow(entity, headers)
       }.toIndexedSeq
     exportToString(headers, rows)
   }
 
-  def defaultHeaders(entityType: String, filteredEntities: Seq[RawlsEntity], headerRenamingMap: Map[String, String]) = {
+  def defaultHeaders(entityType: String, filteredEntities: Seq[RawlsEntity]) = {
     val attributeNames = filteredEntities.collect {
       case RawlsEntity(_, `entityType`, attributes) => attributes.keySet
     }.flatten.distinct
 
-    attributeNames.map { key => headerRenamingMap.getOrElse(key.name, key.name) }.toIndexedSeq
+    attributeNames.map(_.name).toIndexedSeq
   }
 
   private def exportToString(headers: IndexedSeq[String], rows: IndexedSeq[IndexedSeq[String]]): String = {
@@ -96,11 +95,10 @@ object TSVFormatter {
     * @param headerValues List of ordered header values to determine order of values
     * @return IndexedSeq of ordered data fields
     */
-  private def makeRow(entity: RawlsEntity, headerValues: IndexedSeq[String],
-    headerRenamingMap:Map[String, String]): IndexedSeq[String] = {
+  private def makeRow(entity: RawlsEntity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
     val rowMap: Map[Int, String] =  entity.attributes map {
       case (attributeName, attribute) =>
-        val columnPosition = headerValues.indexOf(headerRenamingMap.getOrElse(attributeName.name, attributeName.name))
+        val columnPosition = headerValues.indexOf(attributeName.name)
         val cellValue = AttributeStringifier(attribute)
         columnPosition -> cellValue
     }

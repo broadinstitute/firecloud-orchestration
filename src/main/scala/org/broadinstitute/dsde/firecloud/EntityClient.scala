@@ -30,8 +30,7 @@ object EntityClient {
   def props(requestContext: RequestContext): Props = Props(new EntityClient(requestContext))
 
   def colNamesToAttributeNames(entityType: String, headers: Seq[String], requiredAttributes: Map[String,String]) = {
-    val renameMap = ModelSchema.getAttributeImportRenamingMap(entityType).get
-    headers.tail map { colName => (renameMap.getOrElse(colName,colName), requiredAttributes.get(colName))}
+    headers.tail map { colName => (colName, requiredAttributes.get(colName))}
   }
 
 }
