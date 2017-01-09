@@ -80,10 +80,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def createESAutocompleteRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int): SearchRequestBuilder = {
-    client.prepareSearch(indexname)
-      .setQuery(qmseq)
-      .setFrom(from)
-      .setSize(size)
+    createESSearchRequest(client, indexname, qmseq, from, size)
       .setFetchSource(false)
       .addHighlightedField(fieldSuggest)
       .setHighlighterFragmentSize(75)
