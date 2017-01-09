@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.utils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.service.TsvType
 
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FreeSpec, Inspectors, Matchers}
@@ -53,26 +54,29 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         )
 
         val results = testEntityDataSet("sample", sampleList, None)
-        results should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant_id")
+        results should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant")
         results.head should be ("entity:sample_id")
 
         val results2 = testEntityDataSet("sample", sampleList, Option(IndexedSeq.empty))
-        results2 should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant_id")
+        results2 should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant")
         results2.head should be ("entity:sample_id")
 
         val results3 = testEntityDataSet("sample", sampleList, Option(IndexedSeq("")))
-        results3 should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant_id")
+        results3 should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant")
         results3.head should be ("entity:sample_id")
 
         Seq(
           IndexedSeq("header_2", "does_not_exist", "header_1"),
           IndexedSeq("header_2", "sample_id", "header_1"),
           IndexedSeq("header_1", "header_2"),
-          IndexedSeq("header_1", "participant")
+          IndexedSeq("header_1")
         ).foreach { requestedHeaders =>
-          val resultsWithSpecificHeaders = testEntityDataSet("sample", sampleList, Option(requestedHeaders))
-          resultsWithSpecificHeaders should contain theSameElementsInOrderAs Seq("entity:sample_id") ++ requestedHeaders.filterNot(_.equals("sample_id"))
+          val resultsWithSpecificHeaders = testEntityDataSet("sample", sampleList, Option(requestedHeaders), true)
+          resultsWithSpecificHeaders should contain theSameElementsInOrderAs Seq("update:sample_id") ++ requestedHeaders.filterNot(_.equals("sample_id"))
         }
+
+        testEntityDataSet("sample", sampleList, Option(IndexedSeq("participant"))) should contain theSameElementsInOrderAs Seq("entity:sample_id", "participant")
+
       }
 
       "Set Data" in {
@@ -149,7 +153,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
           RawlsEntity("2", "pair", pairAtts2))
 
         val results = testEntityDataSet("pair", pairList, None)
-        results should contain theSameElementsAs Seq("entity:pair_id", "case_sample_id", "control_sample_id", "participant_id", "header_1")
+        results should contain theSameElementsAs Seq("entity:pair_id", "case_sample", "control_sample", "participant", "header_1")
         results.head should be ("entity:pair_id")
       }
 
@@ -167,7 +171,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
   }
 
-  private def testEntityDataSet(entityType: String, entities: List[RawlsEntity], requestedHeaders: Option[IndexedSeq[String]]) = {
+  private def testEntityDataSet(entityType: String, entities: List[RawlsEntity], requestedHeaders: Option[IndexedSeq[String]], expectUpdateTsv: Boolean = false) = {
     val tsv = TSVFormatter.makeEntityTsvString(entities, entityType, requestedHeaders)
 
     tsv shouldNot be(empty)
@@ -180,7 +184,11 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
     val headers = lines.head.split("\t")
 
     // make sure all required headers are present
-    forAll (ModelSchema.getRequiredAttributes(entityType).get.keys) { x => headers should contain(x) }
+    if (expectUpdateTsv) {
+      headers(0) should be(s"${TsvType.UPDATE}:${entityType}_id")
+    } else {
+      headers(0) should be(s"${TsvType.ENTITY}:${entityType}_id")
+    }
 
     // Check that all lines have the same number of columns as the header.
     lines foreach( _.split("\t", -1).size should equal(headers.size) )

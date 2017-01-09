@@ -8,7 +8,7 @@ import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudRequestBuilding, TSVFileSupport}
+import org.broadinstitute.dsde.firecloud.service.{TsvType, FireCloudRequestBuilding, TSVFileSupport}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
 import spray.client.pipelining._
@@ -183,9 +183,9 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
             Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, entity type should end in _id"))
           } else {
             tsvType match {
-              case "membership" => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
-              case "entity" => importEntityTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
-              case "update" => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
+              case TsvType.MEMBERSHIP => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
+              case TsvType.ENTITY => importEntityTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
+              case TsvType.UPDATE => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
               case _ =>
                 Future(RequestCompleteWithErrorReport(BadRequest, "Invalid TSV type, supported types are: membership, entity, update"))
             }

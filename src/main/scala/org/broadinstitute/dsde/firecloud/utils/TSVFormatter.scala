@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.TsvType
 
 import scala.collection.immutable
 import scala.util.{Success, Try}
@@ -11,7 +12,7 @@ import spray.json.JsValue
 object TSVFormatter {
 
   def makeMembershipTsvString(entities: Seq[RawlsEntity], entityType: String, collectionMemberType: String): String = {
-    val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq("membership:" + entityType + "_id", entityType.replace("_set", "_id"))
+    val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq(s"${TsvType.MEMBERSHIP}:${entityType}_id", entityType.replace("_set", "_id"))
     val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
       entity =>
         entity.attributes.filter {
@@ -28,7 +29,19 @@ object TSVFormatter {
   }
 
   def makeEntityTsvString(entities: Seq [RawlsEntity], entityType: String, requestedHeaders: Option[IndexedSeq[String]]): String = {
-    val entityHeader = "entity:" + entityType + "_id"
+    val requestedHeadersSansId = requestedHeaders.
+      // remove empty strings
+      map(_.filter(_.length > 0)).
+      // handle empty requested headers as no requested headers
+      flatMap(rh => if (rh.isEmpty) None else Option(rh)).
+      // entity id always needs to be first and is handled differently so remove it from requestedHeaders
+      map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
+
+    val entityHeader = requestedHeadersSansId match {
+      case Some(headers) if !ModelSchema.getRequiredAttributes(entityType).get.keySet.forall(headers.contains) => s"${TsvType.UPDATE}:${entityType}_id"
+      case _ => s"${TsvType.ENTITY}:${entityType}_id"
+    }
+
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
     val memberType = ModelSchema.getCollectionMemberType(entityType)
@@ -40,15 +53,6 @@ object TSVFormatter {
         }
       case _ => entities
     }
-
-
-    val requestedHeadersSansId = requestedHeaders.
-      // remove empty strings
-      map(_.filter(_.length > 0)).
-      // handle empty requested headers as no requested headers
-      flatMap(rh => if (rh.isEmpty) None else Option(rh)).
-      // entity id always needs to be first and is handled differently so remove it from requestedHeaders
-      map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
 
     val headers: IndexedSeq[String] = entityHeader +: requestedHeadersSansId.getOrElse(defaultHeaders(entityType, filteredEntities))
     val rows: IndexedSeq[IndexedSeq[String]] = filteredEntities.filter { _.entityType == entityType }

@@ -11,12 +11,17 @@ import spray.http.StatusCodes._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import spray.json._
+
 /**
-  * Created by ansingh on 11/14/16.
-  */
+ * The different types of tsv import/export formats
+ */
+object TsvType {
+  val ENTITY = "entity" // insert or update, must have required columns
+  val UPDATE = "update" // update only, entity must preexist
+  val MEMBERSHIP = "membership" // add members to a set
+}
+
 trait TSVFileSupport {
-
-
   /**
     * Attempts to parse a string into a TSVLoadFile.
     * Bails with a 400 Bad Request if the TSV is invalid. */
@@ -91,9 +96,9 @@ trait TSVFileSupport {
     } else if( tsv.headers.length != 2 ){
       Future(
         RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Must have exactly two columns") )
-    } else if( tsv.headers != Seq(tsv.firstColumnHeader, membersType.get + "_id") ) {
+    } else if( tsv.headers != Seq(tsv.firstColumnHeader, membersType.get) ) {
       Future(
-        RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Second column header should be " + membersType.get + "_id") )
+        RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Second column header should be " + membersType.get) )
     } else {
       op
     }

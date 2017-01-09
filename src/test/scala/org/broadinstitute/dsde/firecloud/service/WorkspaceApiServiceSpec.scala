@@ -395,6 +395,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             (Post(tsvImportPath, MockTSVFormData.membershipValid)
               ~> dummyUserIdHeaders("1234")
               ~> sealRoute(workspaceRoutes)) ~> check {
+              println(response.entity.asString)
               status should equal(OK)
             }
           }
