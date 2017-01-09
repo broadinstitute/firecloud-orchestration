@@ -43,27 +43,13 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
   override def createIndex = {
     val mapping = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
     executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
-      client.admin.indices.prepareCreate(indexName).setSettings(analysisSettings).addMapping(datatype, mapping)
+      client.admin.indices.prepareCreate(indexName)
+        .setSettings(analysisSettings)
+        .addMapping(datatype, mapping)
+      // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
     )
-    // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
-
-    /* TODO: eventually, we will make an autocomplete query that looks something like this:
-       {
-          "_source": false,
-            "size" : 8,
-          "query": {
-              "match": {
-                  "_suggest": "sam"
-              }
-          },
-          "highlight": {
-            "fields" : {
-              "_suggest" : {"fragment_size" : 75}
-            }
-          }
-        }
-     */
   }
+
   // will throw an error if index does not exist
   override def deleteIndex = {
     executeESRequest[DeleteIndexRequest, DeleteIndexResponse, DeleteIndexRequestBuilder](

@@ -44,27 +44,12 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     */
 
 
-  def createQuery(criteria: LibrarySearchParams): QueryBuilder = {
+  def createQuery(criteria: LibrarySearchParams, searchField: String = fieldAll): QueryBuilder = {
     val query: BoolQueryBuilder = boolQuery // outer query, all subqueries should be added to the must list
     query.must(criteria.searchString match {
       case None => matchAllQuery
       case Some(searchTerm) if searchTerm.trim == "" => matchAllQuery
-      case Some(searchTerm) => matchQuery("_all", searchTerm)
-    })
-    criteria.filters foreach { case (field:String, values:Seq[String]) =>
-      val fieldQuery = boolQuery // query for possible values of aggregation, added via should
-      values foreach { value:String => fieldQuery.should(termQuery(field+".raw", value))}
-      query.must(fieldQuery)
-    }
-    query
-  }
-
-  def createAutocompleteQuery(criteria: LibrarySearchParams): QueryBuilder = {
-    val query: BoolQueryBuilder = boolQuery // outer query, all subqueries should be added to the must list
-    query.must(criteria.searchString match {
-      case None => matchAllQuery
-      case Some(searchTerm) if searchTerm.trim == "" => matchAllQuery
-      case Some(searchTerm) => matchQuery("_suggest", searchTerm)
+      case Some(searchTerm) => matchQuery(searchField, searchTerm)
     })
     criteria.filters foreach { case (field:String, values:Seq[String]) =>
       val fieldQuery = boolQuery // query for possible values of aggregation, added via should
@@ -100,7 +85,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       .setFrom(from)
       .setSize(size)
       .setFetchSource(false)
-      .addHighlightedField("_suggest")
+      .addHighlightedField(fieldSuggest)
       .setHighlighterFragmentSize(75)
   }
 
@@ -118,7 +103,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def buildAutocompleteQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams): SearchRequestBuilder = {
-    createESAutocompleteRequest(client, indexname, createAutocompleteQuery(criteria), 0, 8)
+    createESAutocompleteRequest(client, indexname, createQuery(criteria, searchField=fieldSuggest), 0, 8)
   }
 
   def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams): Seq[SearchRequestBuilder] = {
@@ -185,7 +170,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
         criteria,
         searchResult.getHits.totalHits().toInt,
         searchResult.getHits.getHits.toList flatMap { hit =>
-          val sugg = hit.getHighlightFields.get("_suggest")
+          val sugg = hit.getHighlightFields.get(fieldSuggest)
           sugg.fragments map {t =>
             JsString(t.toString)
           }
