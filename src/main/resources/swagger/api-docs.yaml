@@ -491,7 +491,7 @@ paths:
             $ref: '#/definitions/SearchTermRef'
       responses:
         200:
-          description: Matching datasets
+          description: Search suggestions, with highlighting
 
   /api/library/user/role/curator:
     get:
