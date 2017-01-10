@@ -159,19 +159,23 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     val searchQuery = buildAutocompleteQuery(client, indexname, criteria)
 
     logger.debug(s"autocomplete search query: $searchQuery.toJson")
-    // search future will request aggregate data for aggregatable attributes that are not being searched on
     val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchQuery))
 
     searchFuture map {searchResult =>
+
+      // autocomplete query can return duplicate suggestions. De-dupe them here.
+      val suggestions:List[JsString] = (searchResult.getHits.getHits.toList flatMap { hit =>
+        if (hit.getHighlightFields.containsKey(fieldSuggest)) {
+          hit.getHighlightFields.get(fieldSuggest).fragments map {t => JsString(t.toString)}
+        } else {
+          None
+        }
+      }).distinct
+
       LibrarySearchResponse(
         criteria,
         searchResult.getHits.totalHits().toInt,
-        (searchResult.getHits.getHits.toList flatMap { hit =>
-          val sugg = hit.getHighlightFields.get(fieldSuggest)
-          sugg.fragments map {t =>
-            JsString(t.toString)
-          }
-        }).distinct,
+        suggestions,
         Seq.empty)
     }
 
