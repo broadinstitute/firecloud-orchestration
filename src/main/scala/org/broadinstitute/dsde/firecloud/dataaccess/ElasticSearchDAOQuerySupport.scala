@@ -100,6 +100,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       // setting size to 0, we will ignore the actual search results
       addAggregationsToQuery(
         createESSearchRequest(client, indexname, query, 0, 0),
+        // using filter instead of filterKeys which is not reliable
         criteria.fieldAggregations.filter({case (key, value) => key == field}))
     }
   }
