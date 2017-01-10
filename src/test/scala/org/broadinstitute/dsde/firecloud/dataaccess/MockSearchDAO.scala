@@ -20,6 +20,7 @@ class MockSearchDAO extends SearchDAO {
   var indexDocumentInvoked = false
   var deleteDocumentInvoked = false
   var findDocumentsInvoked = false
+  var autocompleteInvoked = false
 
   override def bulkIndex(docs: Seq[Document]) = Unit
 
@@ -37,7 +38,7 @@ class MockSearchDAO extends SearchDAO {
   }
 
   override def suggest(librarySearchParams: LibrarySearchParams): Future[LibrarySearchResponse] = {
-    // findDocumentsInvoked = true
+    autocompleteInvoked = true
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
