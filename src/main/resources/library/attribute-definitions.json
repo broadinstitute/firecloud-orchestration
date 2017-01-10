@@ -59,6 +59,7 @@
       "relatedLabel": "library:diseaseOntologyLabel"
     },
     "library:diseaseOntologyID": {
+      "title": "Disease Ontology ID",
       "type": "string"
     },
     "library:diseaseOntologyLabel": {
@@ -333,5 +334,32 @@
   "versions": [
     "library:dulvn",
     "library:lmsvn"
+  ],
+  "searchResultColumns":
+  [
+    "library:datasetName",
+    "library:indication",
+    "library:dataUseRestriction",
+    "library:numSubjects",
+    "library:datasetVersion",
+    "library:datasetDescription",
+    "library:datasetOwner",
+    "library:datasetCustodian",
+    "library:datasetDepositor",
+    "library:contactEmail",
+    "library:institute",
+    "library:diseaseOntologyID",
+    "library:studyDesign",
+    "library:primaryDiseaseSite",
+    "library:projectName",
+    "library:dataCategory",
+    "library:datatype",
+    "library:reference",
+    "library:dataFileFormats",
+    "library:profilingProtocol",
+    "library:coverage",
+    "library:cellType",
+    "library:ethnicity",
+    "library:cohortCountry"
   ]
 }
