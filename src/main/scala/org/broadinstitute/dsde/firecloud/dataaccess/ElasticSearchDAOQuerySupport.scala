@@ -98,7 +98,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     (criteria.fieldAggregations.keySet.toSeq intersect criteria.filters.keySet.toSeq) map { field: String =>
       val query = createQuery(criteria.copy(filters = criteria.filters - field))
       // setting size to 0, we will ignore the actual search results
-      addAggregationsToQuery(createESSearchRequest(client, indexname, query, 0, 0), criteria.fieldAggregations.filterKeys(key => key == field))
+      addAggregationsToQuery(
+        createESSearchRequest(client, indexname, query, 0, 0),
+        criteria.fieldAggregations.filter({case (key, value) => key == field}))
     }
   }
 
