@@ -166,12 +166,12 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       LibrarySearchResponse(
         criteria,
         searchResult.getHits.totalHits().toInt,
-        searchResult.getHits.getHits.toList flatMap { hit =>
+        (searchResult.getHits.getHits.toList flatMap { hit =>
           val sugg = hit.getHighlightFields.get(fieldSuggest)
           sugg.fragments map {t =>
             JsString(t.toString)
           }
-        },
+        }).distinct,
         Seq.empty)
     }
 
