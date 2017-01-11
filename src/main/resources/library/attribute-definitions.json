@@ -354,6 +354,7 @@
     "library:datasetDepositor",
     "library:contactEmail",
     "library:institute",
+    "library:diseaseOntologyLabel",
     "library:diseaseOntologyID",
     "library:studyDesign",
     "library:primaryDiseaseSite",
