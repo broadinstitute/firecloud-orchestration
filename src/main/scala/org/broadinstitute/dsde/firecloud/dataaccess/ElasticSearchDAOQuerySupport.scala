@@ -166,7 +166,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       // autocomplete query can return duplicate suggestions. De-dupe them here.
       val suggestions:List[JsString] = (searchResult.getHits.getHits.toList flatMap { hit =>
         if (hit.getHighlightFields.containsKey(fieldSuggest)) {
-          hit.getHighlightFields.get(fieldSuggest).fragments map {t => JsString(t.toString)}
+          hit.getHighlightFields.get(fieldSuggest).fragments map {t => JsString(t.toString.toLowerCase)}
         } else {
           None
         }
