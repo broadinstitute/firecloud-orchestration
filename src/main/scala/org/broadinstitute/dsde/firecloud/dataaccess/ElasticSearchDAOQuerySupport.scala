@@ -84,6 +84,8 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       .setFetchSource(false)
       .addHighlightedField(fieldSuggest)
       .setHighlighterFragmentSize(75)
+      .setHighlighterPreTags("<strong class='es-highlight'>")
+      .setHighlighterPostTags("</strong>")
   }
 
   def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams): SearchRequestBuilder = {
