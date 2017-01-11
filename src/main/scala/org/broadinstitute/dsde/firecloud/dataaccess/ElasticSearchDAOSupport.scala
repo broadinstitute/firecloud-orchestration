@@ -17,6 +17,9 @@ import scala.util.{Failure, Success, Try}
 
 trait ElasticSearchDAOSupport extends LazyLogging {
 
+  final val fieldAll = "_all"
+  final val fieldSuggest = "_suggest"
+
   def buildClient(servers:Seq[Authority]): TransportClient = {
     // cluster name is constant across environments; no need to add it to config
     val settings = Settings.settingsBuilder
@@ -47,7 +50,9 @@ trait ElasticSearchDAOSupport extends LazyLogging {
     val attributeDetailMap = definition.properties filter(_._2.indexable.getOrElse(true)) map {
       case (label: String, detail: AttributeDetail) => detailFromAttribute(label, detail)
     }
-    ESDatasetProperty(attributeDetailMap).toJson.prettyPrint
+    // add the magic "_suggest" property that we'll use for autocomplete
+    val props = attributeDetailMap + ((fieldSuggest, new ESSuggestField))
+    ESDatasetProperty(props).toJson.prettyPrint
   }
 
   def detailFromAttribute(label: String, detail: AttributeDetail): (String, ESPropertyFields) = {

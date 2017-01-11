@@ -24,6 +24,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
   private def publishedPath(ns:String="namespace", name:String="name") =
     "/api/library/%s/%s/published".format(ns, name)
   private final val librarySearchPath = "/api/library/search"
+  private final val librarySuggestPath = "/api/library/suggest"
   private final val libraryAggregationPath = librarySearchPath + "/aggregations"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
@@ -129,6 +130,20 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.size == 0, "results array should be empty")
             this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
+          }
+        }
+      }
+      "POST on " + librarySuggestPath - {
+        "should return autcomplete suggestions" in {
+          this.searchDAO.asInstanceOf[MockSearchDAO].autocompleteInvoked = false
+          val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
+          new RequestBuilder(HttpMethods.POST)(librarySuggestPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            assert(this.searchDAO.asInstanceOf[MockSearchDAO].autocompleteInvoked, "autocompleteInvoked should have been invoked")
+            val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
+            assert(respdata.total == 0, "total results should be 0")
+            assert(respdata.results.size == 0, "results array should be empty")
+            this.searchDAO.asInstanceOf[MockSearchDAO].autocompleteInvoked = false
           }
         }
       }

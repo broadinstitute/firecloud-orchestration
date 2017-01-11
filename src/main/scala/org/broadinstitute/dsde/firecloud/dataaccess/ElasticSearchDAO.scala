@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
 import org.elasticsearch.action.admin.indices.delete.{DeleteIndexRequest, DeleteIndexRequestBuilder, DeleteIndexResponse}
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
+import org.elasticsearch.action.admin.indices.mapping.put.{PutMappingRequest, PutMappingRequestBuilder, PutMappingResponse}
 import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkResponse}
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
@@ -42,9 +43,13 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
   override def createIndex = {
     val mapping = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
     executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
-      client.admin.indices.prepareCreate(indexName).addMapping(datatype, mapping)
+      client.admin.indices.prepareCreate(indexName)
+        .setSettings(analysisSettings)
+        .addMapping(datatype, mapping)
+      // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
     )
   }
+
   // will throw an error if index does not exist
   override def deleteIndex = {
     executeESRequest[DeleteIndexRequest, DeleteIndexResponse, DeleteIndexRequestBuilder](
@@ -100,4 +105,37 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
   override def findDocuments(criteria: LibrarySearchParams): Future[LibrarySearchResponse] = {
     findDocumentsWithAggregateInfo(client, indexName, criteria)
   }
+
+  override def suggest(criteria: LibrarySearchParams): Future[LibrarySearchResponse] = {
+    autocompleteSuggestions(client, indexName, criteria)
+  }
+
+  // see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html
+  //  and https://qbox.io/blog/multi-field-partial-word-autocomplete-in-elasticsearch-using-ngrams
+  private final val analysisSettings =
+    """
+      |{
+      |	"analysis": {
+      |		"filter": {
+      |			"autocomplete_filter": {
+      |				"type":     "edge_ngram",
+      |				"min_gram": 1,
+      |				"max_gram": 20
+      |			}
+      |		},
+      |		"analyzer": {
+      |			"autocomplete": {
+      |				"type":      "custom",
+      |				"tokenizer": "standard",
+      |				"filter": [
+      |					"lowercase",
+      |					"autocomplete_filter"
+      |				]
+      |			}
+      |		}
+      |	}
+      |}
+    """.stripMargin
+
+
 }

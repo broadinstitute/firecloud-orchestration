@@ -101,6 +101,19 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                 }
               }
             }
+          } ~
+          pathPrefix("suggest") {
+            pathEndOrSingleSlash {
+              post {
+                respondWithJSON {
+                  entity(as[LibrarySearchParams]) { params => requestContext =>
+                    perRequest(requestContext,
+                      LibraryService.props(libraryServiceConstructor, userInfo),
+                      LibraryService.Suggest(params))
+                  }
+                }
+              }
+            }
           }
         }
       }
