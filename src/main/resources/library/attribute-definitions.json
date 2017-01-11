@@ -362,6 +362,7 @@
     "library:datatype",
     "library:reference",
     "library:dataFileFormats",
+    "library:technology",
     "library:profilingProtocol",
     "library:coverage",
     "library:cellType",
