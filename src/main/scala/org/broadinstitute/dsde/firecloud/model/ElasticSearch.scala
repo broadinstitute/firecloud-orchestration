@@ -19,13 +19,18 @@ case class AttributeDetail(
 
 trait ESPropertyFields
 case class ESDatasetProperty(properties: Map[String, ESPropertyFields])
-case class ESType(`type`: String) extends ESPropertyFields
-case class ESAggregatableType(`type`: String, fields: ESRaw) extends ESPropertyFields {
+case class ESType(`type`: String, copy_to: String = "_suggest") extends ESPropertyFields
+case class ESAggregatableType(`type`: String, fields: ESRaw, copy_to: String = "_suggest") extends ESPropertyFields {
   def this(str: String) = this(str, new ESRaw(str))
 }
 case class ESRaw(raw: ESAggregateProperties) {
   def this(str: String) = this(ESAggregateProperties(str, "not_analyzed"))
 }
+case class ESSuggestField(`type`: String = "string",
+                          analyzer: String = "autocomplete",
+                          search_analyzer: String = "standard",
+                          include_in_all: Boolean = false,
+                          store: Boolean = true) extends ESPropertyFields
 
 case class ESAggregateProperties(`type`: String, index:String)
 

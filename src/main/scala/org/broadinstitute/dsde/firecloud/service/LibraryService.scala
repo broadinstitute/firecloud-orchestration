@@ -31,6 +31,7 @@ object LibraryService {
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
   case object IndexAll extends LibraryServiceMessage
   case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
+  case class Suggest(criteria: LibrarySearchParams) extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
@@ -53,6 +54,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
     case IndexAll => asAdmin {indexAll} pipeTo sender
     case FindDocuments(criteria: LibrarySearchParams) => asCurator {findDocuments(criteria)} pipeTo sender
+    case Suggest(criteria: LibrarySearchParams) => asCurator {suggest(criteria)} pipeTo sender
   }
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
@@ -121,5 +123,9 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
     searchDAO.findDocuments(criteria) map (RequestComplete(_))
+  }
+
+  def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
+    searchDAO.suggest(criteria) map (RequestComplete(_))
   }
 }
