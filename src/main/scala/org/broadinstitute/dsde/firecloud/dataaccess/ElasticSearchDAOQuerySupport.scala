@@ -174,7 +174,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
 
       LibrarySearchResponse(
         criteria,
-        searchResult.getHits.totalHits().toInt,
+        suggestions.size,
         suggestions,
         Seq.empty)
     }
