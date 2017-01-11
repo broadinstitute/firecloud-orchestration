@@ -82,7 +82,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     // separate queries for each of them. so we can skip adding them in the main search query
     if (criteria.fieldAggregations.nonEmpty) {
       val fieldDiffs = criteria.fieldAggregations -- criteria.filters.keySet
-      if (fieldDiffs.size != 0) {
+      if (fieldDiffs.nonEmpty) {
         // for the aggregations that are not part of the search criteria
         // then the aggregation data for those fields will be accurate from the main search query so we add them here
         addAggregationsToQuery(searchQuery, fieldDiffs)
