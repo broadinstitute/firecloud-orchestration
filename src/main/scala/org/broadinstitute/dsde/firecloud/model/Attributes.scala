@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.AttributeFormat
 import spray.json._
 
 object Attributable {
@@ -66,7 +67,9 @@ object AttributeStringifier {
       case AttributeBoolean(value) => value.toString()
       case AttributeValueRawJson(value) => value.toString()
       case AttributeEntityReference(t, name) => name
-      case al: AttributeList[_] => al.list.map(apply).mkString(" ")
+      case al: AttributeList[_] =>
+        val format = new AttributeFormat with PlainArrayAttributeListSerializer
+        format.write(al).toString()
     }
   }
 }
