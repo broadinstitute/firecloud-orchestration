@@ -13,11 +13,6 @@ class NIHServiceSpec extends BaseServiceSpec with NihApiService {
   val nihServiceConstructor:() => NihService = NihService.constructor(app)
   val uniqueId = "1234"
 
-  // Don't copy this pattern. See GAWB-1477.
-  before {
-    reset()
-  }
-
   val targetUri = "/nih/status"
 
   "NIHService" - {

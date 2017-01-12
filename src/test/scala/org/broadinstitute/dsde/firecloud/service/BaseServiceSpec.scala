@@ -20,4 +20,8 @@ class BaseServiceSpec extends ServiceSpec with BeforeAndAfter {
   def reset() = {
     thurloeDao.reset()
   }
+
+  before {
+    reset()
+  }
 }
