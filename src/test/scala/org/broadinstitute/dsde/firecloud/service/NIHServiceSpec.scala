@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.model.NIHStatus
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.firecloud.webservice.NihApiService
 import spray.http.StatusCodes._

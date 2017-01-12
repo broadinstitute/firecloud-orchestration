@@ -120,37 +120,6 @@ case class NIHLink (linkedNihUsername: String, lastLinkTime: Long, linkExpireTim
   require(ProfileValidator.nonEmpty(linkedNihUsername), "linkedNihUsername must be non-empty")
 }
 
-case class NIHStatus(
-    loginRequired: Boolean,
-    linkedNihUsername: Option[String] = None,
-    isDbgapAuthorized: Option[Boolean] = None,
-    lastLinkTime: Option[Long] = None,
-    linkExpireTime: Option[Long] = None,
-    descriptionSinceLastLink: Option[String] = None,
-    descriptionUntilExpires: Option[String] = None
-)
-
-object NIHStatus {
-
-  implicit val impNihStatus = jsonFormat7(NIHStatus.apply)
-
-  def apply(profile: Profile): NIHStatus = {
-    apply(profile, profile.isDbgapAuthorized)
-  }
-
-  def apply(profile: Profile, isDbGapAuthorized: Option[Boolean]): NIHStatus = {
-    val linkExpireSeconds = profile.linkExpireTime.getOrElse(0L)
-    val howSoonExpire = DateUtils.secondsSince(linkExpireSeconds)
-    new NIHStatus(
-      loginRequired = howSoonExpire >= 0,
-      profile.linkedNihUsername,
-      isDbGapAuthorized,
-      profile.lastLinkTime,
-      profile.linkExpireTime
-    )
-  }
-}
-
 object ProfileValidator {
   private val emailRegex = """^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$""".r
   def nonEmpty(field: String): Boolean = !field.trim.isEmpty
