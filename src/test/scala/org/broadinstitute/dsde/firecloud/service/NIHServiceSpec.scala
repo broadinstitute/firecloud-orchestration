@@ -32,7 +32,7 @@ class NIHServiceSpec extends BaseServiceSpec with NihApiService {
         ))
         Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
           status should equal(OK)
-          val nihStatus = responseAs[NIHStatus]
+          val nihStatus = responseAs[NihStatus]
           nihStatus.loginRequired shouldBe(true)
         }
       }
@@ -55,7 +55,7 @@ class NIHServiceSpec extends BaseServiceSpec with NihApiService {
         ))
         Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
           status should equal(OK)
-          val nihStatus = responseAs[NIHStatus]
+          val nihStatus = responseAs[NihStatus]
           nihStatus.loginRequired shouldBe(true)
         }
       }
@@ -74,7 +74,7 @@ class NIHServiceSpec extends BaseServiceSpec with NihApiService {
         ))
         Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
           status should equal(OK)
-          val nihStatus = responseAs[NIHStatus]
+          val nihStatus = responseAs[NihStatus]
           nihStatus.loginRequired shouldBe(false)
         }
       }
@@ -93,7 +93,7 @@ class NIHServiceSpec extends BaseServiceSpec with NihApiService {
         ))
         Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
           status should equal(OK)
-          val nihStatus = responseAs[NIHStatus]
+          val nihStatus = responseAs[NihStatus]
           nihStatus.loginRequired shouldBe(true)
         }
       }

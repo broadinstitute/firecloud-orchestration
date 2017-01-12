@@ -16,7 +16,7 @@ import spray.json.DefaultJsonProtocol._
 import scala.concurrent.{ExecutionContext, Future}
 
 
-case class NIHStatus(
+case class NihStatus(
   loginRequired: Boolean,
   linkedNihUsername: Option[String] = None,
   isDbgapAuthorized: Option[Boolean] = None,
@@ -26,18 +26,18 @@ case class NIHStatus(
   descriptionUntilExpires: Option[String] = None
 )
 
-object NIHStatus {
+object NihStatus {
 
-  implicit val impNihStatus = jsonFormat7(NIHStatus.apply)
+  implicit val impNihStatus = jsonFormat7(NihStatus.apply)
 
-  def apply(profile: Profile): NIHStatus = {
+  def apply(profile: Profile): NihStatus = {
     apply(profile, profile.isDbgapAuthorized)
   }
 
-  def apply(profile: Profile, isDbGapAuthorized: Option[Boolean]): NIHStatus = {
+  def apply(profile: Profile, isDbGapAuthorized: Option[Boolean]): NihStatus = {
     val linkExpireSeconds = profile.linkExpireTime.getOrElse(0L)
     val howSoonExpire = DateUtils.secondsSince(linkExpireSeconds)
-    new NIHStatus(
+    new NihStatus(
       loginRequired = howSoonExpire >= 0,
       profile.linkedNihUsername,
       isDbGapAuthorized,
@@ -73,7 +73,7 @@ class NihService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
         profile.linkedNihUsername match {
           case Some(_) =>
             rawlsDao.isDbGapAuthorized(userInfo) map { x =>
-              RequestComplete(NIHStatus(profile, Some(x)))
+              RequestComplete(NihStatus(profile, Some(x)))
             }
           case None =>
             Future.successful(RequestComplete(StatusCodes.NotFound))
