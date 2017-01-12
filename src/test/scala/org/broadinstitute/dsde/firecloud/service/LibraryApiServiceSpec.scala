@@ -135,15 +135,15 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
       }
       "POST on " + librarySuggestPath - {
         "should return autcomplete suggestions" in {
-          this.searchDAO.asInstanceOf[MockSearchDAO].autocompleteInvoked = false
+          this.searchDao.autocompleteInvoked = false
           val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
           new RequestBuilder(HttpMethods.POST)(librarySuggestPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].autocompleteInvoked, "autocompleteInvoked should have been invoked")
+            assert(this.searchDao.autocompleteInvoked, "autocompleteInvoked should have been invoked")
             val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.size == 0, "results array should be empty")
-            this.searchDAO.asInstanceOf[MockSearchDAO].autocompleteInvoked = false
+            this.searchDao.autocompleteInvoked = false
           }
         }
       }
