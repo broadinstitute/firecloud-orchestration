@@ -6,7 +6,7 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 
 
-class NIHServiceSpec extends BaseServiceSpec with NihApiService {
+class NihServiceSpec extends BaseServiceSpec with NihApiService {
 
   def actorRefFactory = system
   val nihServiceConstructor:() => NihService = NihService.constructor(app)
