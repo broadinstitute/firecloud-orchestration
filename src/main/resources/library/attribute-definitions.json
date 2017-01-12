@@ -52,7 +52,7 @@
       "title": "Cohort Phenotype/Indication",
       "type": "string",
       "aggregate": {
-        "renderHint": "text"
+        "renderHint": "checkbox"
       },
       "typeahead": "ontology",
       "relatedID": "library:diseaseOntologyID",
@@ -70,10 +70,7 @@
       "title": "No. of Subjects",
       "type": "integer",
       "minimum": 0,
-      "default": 0,
-      "aggregate": {
-        "renderHint": "slider"
-      }
+      "default": 0
     },
     "library:projectName": {
       "title": "Project Name",
@@ -85,10 +82,7 @@
     "library:dataCategory": {
       "title": "Data Category",
       "type": "array",
-      "items": { "type": "string" },
-      "aggregate": {
-        "renderHint": "checkbox"
-      }
+      "items": { "type": "string" }
     },
     "library:datatype": {
       "title": "Experimental Strategy",

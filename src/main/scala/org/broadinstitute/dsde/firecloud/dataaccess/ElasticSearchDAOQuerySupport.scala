@@ -59,15 +59,11 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     query
   }
 
-  def addAggregationsToQuery(searchReq: SearchRequestBuilder, aggFields: Seq[String], maxAggs: Option[Int]): SearchRequestBuilder = {
-    aggFields foreach { field: String =>
-      // field here is specifying which attribute to collect aggregation info for
-      val terms = AggregationBuilders.terms(field)
-      if (maxAggs.isDefined) {
-        terms.size(maxAggs.get)
-      }
+  def addAggregationsToQuery(searchReq: SearchRequestBuilder, aggFields: Map[String, Int]): SearchRequestBuilder = {
+    aggFields.keys foreach { property: String =>
+      // property here is specifying which attribute to collect aggregation info for
       // we use field.raw here because we want it to use the unanalyzed form of the data for the aggregations
-      searchReq.addAggregation(terms.field(field + ".raw"))
+      searchReq.addAggregation(AggregationBuilders.terms(property).field(property + ".raw").size(aggFields.getOrElse(property, 5)))
     }
     searchReq
   }
@@ -93,10 +89,13 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     // if we are not collecting aggregation data (in the case of pagination), we can skip adding aggregations
     // if the search criteria contains elements from all of the aggregatable attributes, then we will be making
     // separate queries for each of them. so we can skip adding them in the main search query
-    if (criteria.fieldAggregations.nonEmpty && (criteria.fieldAggregations diff criteria.filters.keySet.toSeq).size != 0) {
-      // for the aggregations that are not part of the search criteria
-      // then the aggregation data for those fields will be accurate from the main search query so we add them here
-      addAggregationsToQuery(searchQuery, criteria.fieldAggregations.diff(criteria.filters.keySet.toSeq), criteria.maxAggregations)
+    if (criteria.fieldAggregations.nonEmpty) {
+      val fieldDiffs = criteria.fieldAggregations -- criteria.filters.keySet
+      if (fieldDiffs.nonEmpty) {
+        // for the aggregations that are not part of the search criteria
+        // then the aggregation data for those fields will be accurate from the main search query so we add them here
+        addAggregationsToQuery(searchQuery, fieldDiffs)
+      }
     }
     searchQuery
   }
@@ -108,10 +107,13 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams): Seq[SearchRequestBuilder] = {
     // for aggregations fields that are part of the current search criteria, we need to do a separate
     // aggregate request *without* that term in the search criteria
-    (criteria.fieldAggregations intersect criteria.filters.keySet.toSeq) map { field =>
+    (criteria.fieldAggregations.keySet.toSeq intersect criteria.filters.keySet.toSeq) map { field: String =>
       val query = createQuery(criteria.copy(filters = criteria.filters - field))
       // setting size to 0, we will ignore the actual search results
-      addAggregationsToQuery(createESSearchRequest(client, indexname, query, 0, 0), Seq(field), criteria.maxAggregations)
+      addAggregationsToQuery(
+        createESSearchRequest(client, indexname, query, 0, 0),
+        // using filter instead of filterKeys which is not reliable
+        criteria.fieldAggregations.filter({case (key, value) => key == field}))
     }
   }
 

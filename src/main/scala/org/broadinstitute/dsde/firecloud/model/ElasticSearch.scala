@@ -60,22 +60,20 @@ object Document {
   *
   * @param searchString
   * @param filters a map of field names to a list of possible values which will be part of the search criteria
-  * @param fieldAggregations the aggregation data to retrieve, results will differ based on the search criteria
-  * @param maxAggregations the default is 10, this should only be specified if the use has requested to see more options
+  * @param fieldAggregations a map of the field names for which to retrieve aggregations, results will differ based on the search criteria, the value is number of aggregations to return. 0 returns all
   * @param from used for pagination, where to start the returned results
   * @param size used for pagination, how many results to return
   */
 case class LibrarySearchParams(
   searchString: Option[String],
   filters: Map[String, Seq[String]],
-  fieldAggregations: Seq[String],
-  maxAggregations: Option[Int],
+  fieldAggregations: Map[String, Int],
   from: Int = 0,
   size: Int = 10)
 
 object LibrarySearchParams {
-  def apply(searchString: Option[String], filters: Map[String, Seq[String]], fieldAggregations: Seq[String], maxAggregations: Option[Int], from: Option[Int], size: Option[Int]) = {
-    new LibrarySearchParams(searchString, filters, fieldAggregations, maxAggregations, from.getOrElse(0), size.getOrElse(10))
+  def apply(searchString: Option[String], filters: Map[String, Seq[String]], fieldAggregations: Map[String, Int], from: Option[Int], size: Option[Int]) = {
+    new LibrarySearchParams(searchString, filters, fieldAggregations, from.getOrElse(0), size.getOrElse(10))
   }
 }
 
