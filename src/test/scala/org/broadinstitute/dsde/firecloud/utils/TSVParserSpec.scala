@@ -62,14 +62,15 @@ class TSVParserSpec extends FlatSpec {
       TSVParser.parse(MockTSVStrings.validMultiline)
     }
   }
-  "EntityClient.colNamesToAttributeNames" should "fix up the names of attributes for certain reference types for pairs" in {
+
+  "EntityClient.backwardsCompatStripIdSuffixes" should "fix up the names of attributes for certain reference types for pairs" in {
     val entityType: String = "pair"
     val requiredAttributes: Map[String, String] = Map("case_sample_id" -> "sample",
       "control_sample_id" -> "sample",
       "participant_id" -> "participant")
 
     val input = Seq(
-      "entity:pair_id", // first column stripped off when parsing attributes
+      "entity:pair_id",
       "case_sample_id",
       "control_sample_id",
       "participant_id",
@@ -78,15 +79,16 @@ class TSVParserSpec extends FlatSpec {
       "ref_fasta")
 
     val expect = Seq(
-      "case_sample" -> Some("sample"),
-      "control_sample" -> Some("sample"),
-      "participant" -> Some("participant"),
-      "some_other_id" -> None,
-      "ref_dict" -> None,
-      "ref_fasta" -> None)
+      "entity:pair_id",
+      "case_sample",
+      "control_sample",
+      "participant",
+      "some_other_id",
+      "ref_dict",
+      "ref_fasta")
 
-    assertResult(expect) {
-      EntityClient.colNamesToAttributeNames(entityType, input, requiredAttributes)
+    assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
+      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType)
     }
   }
 
@@ -96,20 +98,21 @@ class TSVParserSpec extends FlatSpec {
       "participant_id" -> "participant")
 
     val input = Seq(
-      "entity:sample_id", // first column stripped off when parsing attributes
+      "entity:sample_id",
       "participant_id",
       "some_other_id",
       "ref_dict",
       "ref_fasta")
 
     val expect = Seq(
-      "participant" -> Some("participant"),
-      "some_other_id" -> None,
-      "ref_dict" -> None,
-      "ref_fasta" -> None)
+      "entity:sample_id",
+      "participant",
+      "some_other_id",
+      "ref_dict",
+      "ref_fasta")
 
-    assertResult(expect) {
-      EntityClient.colNamesToAttributeNames(entityType, input, requiredAttributes)
+    assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
+      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType)
     }
   }
 
@@ -119,16 +122,17 @@ class TSVParserSpec extends FlatSpec {
     val requiredAttributes: Map[String, String] = Map.empty
 
     val input = Seq(
-      "entity:participant_set_id", // first column stripped off when parsing attributes
+      "entity:participant_set_id",
       "participant_id",
       "some_other_id")
 
     val expect = Seq(
-      "participant" -> None,
-      "some_other_id" -> None)
-    
-    assertResult(expect) {
-      EntityClient.colNamesToAttributeNames(entityType, input, requiredAttributes)
+      "entity:participant_set_id",
+      "participant",
+      "some_other_id")
+
+    assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
+      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType)
     }
   }
 }

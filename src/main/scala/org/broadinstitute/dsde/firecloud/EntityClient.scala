@@ -33,6 +33,22 @@ object EntityClient {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
   }
 
+  def backwardsCompatStripIdSuffixes(tsvLoadFile: TSVLoadFile, entityType: String): TSVLoadFile = {
+    ModelSchema.getTypeSchema(entityType) match {
+      case Failure(regrets) => tsvLoadFile
+      case Success(metaData) =>
+        val newHeaders = tsvLoadFile.headers.map { header =>
+          val headerSansId = header.stripSuffix("_id")
+          if (metaData.requiredAttributes.keySet.contains(headerSansId) || metaData.memberType.contains(headerSansId)) {
+            headerSansId
+          } else {
+            header
+          }
+        }
+        tsvLoadFile.copy(headers = newHeaders)
+    }
+  }
+
 }
 
 class EntityClient (requestContext: RequestContext) extends Actor with FireCloudRequestBuilding with TSVFileSupport {
@@ -182,10 +198,11 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
           if( entityType == entityHeader ) {
             Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, entity type should end in _id"))
           } else {
+            val strippedTsv = backwardsCompatStripIdSuffixes(tsv, entityType)
             tsvType match {
-              case TsvType.MEMBERSHIP => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
-              case TsvType.ENTITY => importEntityTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
-              case TsvType.UPDATE => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
+              case TsvType.MEMBERSHIP => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+              case TsvType.ENTITY => importEntityTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+              case TsvType.UPDATE => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
               case _ =>
                 Future(RequestCompleteWithErrorReport(BadRequest, "Invalid TSV type, supported types are: membership, entity, update"))
             }
@@ -195,5 +212,4 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       }
     }
   }
-
 }
