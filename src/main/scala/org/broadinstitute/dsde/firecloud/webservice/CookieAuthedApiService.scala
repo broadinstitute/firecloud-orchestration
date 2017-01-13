@@ -24,7 +24,7 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
       (workspaceNamespace, workspaceName, entityType) =>
         formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) =>
           post { requestContext =>
-            val filename = entityType + ".txt"
+            val filename = entityType + ".tsv"
             val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
             val userInfo = UserInfo("dummy", OAuth2BearerToken(tokenValue), -1, "dummy")
             perRequest(requestContext, ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo),
