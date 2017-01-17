@@ -85,23 +85,23 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
       }
       "POST on " + publishedPath() - {
         "should invoke indexDocument" in {
-          this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked = false
+          this.searchDao.indexDocumentInvoked = false
           new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked, "indexDocument should have been invoked")
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked == false, "deleteDocument should not have been invoked")
-            this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked = false
+            assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
+            assert(this.searchDao.deleteDocumentInvoked == false, "deleteDocument should not have been invoked")
+            this.searchDao.indexDocumentInvoked = false
           }
         }
       }
       "DELETE on " + publishedPath() - {
         "should invoke deleteDocument" in {
-          this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked = false
+          this.searchDao.deleteDocumentInvoked = false
           new RequestBuilder(HttpMethods.DELETE)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked, "deleteDocument should have been invoked")
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].indexDocumentInvoked == false, "indexDocument should not have been invoked")
-            this.searchDAO.asInstanceOf[MockSearchDAO].deleteDocumentInvoked = false
+            assert(this.searchDao.deleteDocumentInvoked, "deleteDocument should have been invoked")
+            assert(this.searchDao.indexDocumentInvoked == false, "indexDocument should not have been invoked")
+            this.searchDao.deleteDocumentInvoked = false
           }
         }
       }
@@ -110,40 +110,40 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
     "when retrieving datasets" - {
       "POST with no searchterm on " + librarySearchPath - {
         "should retrieve all datasets" in {
-          this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
+          this.searchDao.findDocumentsInvoked = false
           val content = HttpEntity(ContentTypes.`application/json`, "{}")
           new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked, "findDocuments should have been invoked")
-            this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
+            assert(this.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
+            this.searchDao.findDocumentsInvoked = false
           }
         }
       }
       "POST on " + librarySearchPath - {
         "should search for datasets" in {
-          this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
+          this.searchDao.findDocumentsInvoked = false
           val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
           new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked, "findDocuments should have been invoked")
+            assert(this.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
             val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.size == 0, "results array should be empty")
-            this.searchDAO.asInstanceOf[MockSearchDAO].findDocumentsInvoked = false
+            this.searchDao.findDocumentsInvoked = false
           }
         }
       }
       "POST on " + librarySuggestPath - {
         "should return autcomplete suggestions" in {
-          this.searchDAO.asInstanceOf[MockSearchDAO].autocompleteInvoked = false
+          this.searchDao.autocompleteInvoked = false
           val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
           new RequestBuilder(HttpMethods.POST)(librarySuggestPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDAO.asInstanceOf[MockSearchDAO].autocompleteInvoked, "autocompleteInvoked should have been invoked")
+            assert(this.searchDao.autocompleteInvoked, "autocompleteInvoked should have been invoked")
             val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.size == 0, "results array should be empty")
-            this.searchDAO.asInstanceOf[MockSearchDAO].autocompleteInvoked = false
+            this.searchDao.autocompleteInvoked = false
           }
         }
       }

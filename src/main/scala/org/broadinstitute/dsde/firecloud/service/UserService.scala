@@ -162,8 +162,4 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
   private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext) = {
     requestContext.complete(statusCode, ErrorReport(statusCode=statusCode, message=message))
   }
-
-  private def respondWithErrorReport(error: Throwable, requestContext: RequestContext) = {
-    requestContext.complete(InternalServerError, ErrorReport(error))
-  }
 }

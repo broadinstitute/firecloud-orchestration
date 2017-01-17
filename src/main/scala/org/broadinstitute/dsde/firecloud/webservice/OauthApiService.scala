@@ -18,19 +18,6 @@ trait OauthApiService extends HttpService with FireCloudRequestBuilding
 
   val oauthServiceConstructor: () => OAuthService
 
-  def completeWithMissingKey(rc: RequestContext, key: String) = rc.complete(
-    StatusCodes.BadRequest,
-    Map("error" -> Map("summary" -> s"Missing required key '$key'"))
-  )
-
-  def completeWithBadValue(rc: RequestContext, key: String, message: String) = rc.complete(
-    StatusCodes.BadRequest,
-    Map("error" -> Map("summary" -> s"Invalid value for '$key'", "detail" -> message))
-  )
-
-  case class HandleOauthCodeParams(code: String, redirectUri: String)
-  implicit val impHandleOathCodeParams = jsonFormat2(HandleOauthCodeParams)
-
   val oauthRoutes: Route =
     path("handle-oauth-code") {
       post { requestContext =>

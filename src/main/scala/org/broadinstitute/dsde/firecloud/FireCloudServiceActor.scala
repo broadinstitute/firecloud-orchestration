@@ -14,13 +14,16 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 
 
-class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives with LibraryApiService
-  with OauthApiService
-  with WorkspaceApiService
-  with NamespaceApiService
+class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with CookieAuthedApiService
   with EntityService
-  with StorageApiService {
+  with LibraryApiService
+  with NamespaceApiService
+  with NihApiService
+  with OauthApiService
+  with StorageApiService
+  with WorkspaceApiService
+  {
 
   implicit val system = context.system
 
@@ -36,12 +39,13 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
 
   val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO, thurloeDAO, googleServicesDAO)
 
-  val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
+  val exportEntitiesByTypeConstructor: (UserInfo) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
-  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
+  val nihServiceConstructor: () => NihService = NihService.constructor(app)
+  val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
-  val exportEntitiesByTypeConstructor: (UserInfo) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
+  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
   // routes under /api
 
@@ -49,11 +53,10 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives wi
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
   val statusService = new StatusService with ActorRefFactoryContext
-  val nihService = new NIHService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
   val routes = methodsService.routes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    statusService.routes ~ nihService.routes ~ billingService.routes
+    statusService.routes ~ nihRoutes ~ billingService.routes
 
   val userService = new UserService with ActorRefFactoryContext
   val nihSyncService = new NIHSyncService with ActorRefFactoryContext

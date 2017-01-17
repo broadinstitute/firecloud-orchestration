@@ -26,7 +26,6 @@ import scala.util.{Failure, Success, Try}
 object ProfileClient {
   case class UpdateProfile(userInfo: UserInfo, profile: BasicProfile)
   case class UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink)
-  case class GetNIHStatus(userInfo: UserInfo)
   case object SyncWhitelist
 
   def props(requestContext: RequestContext): Props = Props(new ProfileClientActor(requestContext))
@@ -37,10 +36,6 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
-
-  // GAWB-1286
-  val temporaryThurloeDao = new HttpThurloeDAO
-  val temporaryRawlsDao = new HttpRawlsDAO
 
   override def receive: Receive = {
 
@@ -88,23 +83,6 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       // Complete syncWhitelist and ignore as neither success nor failure are useful to the client
       syncWhiteListResult map(Success(_)) recover { case t => Failure(t) } flatMap { _ =>
         profileResponse
-      } pipeTo sender
-
-    case GetNIHStatus(userInfo: UserInfo) =>
-      temporaryThurloeDao.getProfile(userInfo) flatMap {
-        case Some(profile) =>
-          profile.linkedNihUsername match {
-            case Some(_) =>
-              temporaryRawlsDao.isDbGapAuthorized(userInfo) map {
-                case true =>
-                  RequestComplete(NIHStatus(profile, Some(true)))
-                case false =>
-                  RequestComplete(NIHStatus(profile, Some(false)))
-              }
-            case None =>
-              Future.successful(RequestComplete(StatusCodes.NotFound))
-          }
-        case None => Future.successful(RequestComplete(StatusCodes.NotFound))
       } pipeTo sender
 
     case SyncWhitelist =>

@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
+import spray.json.DefaultJsonProtocol._
 
 import scala.language.postfixOps
 
@@ -117,35 +118,6 @@ object Profile {
 
 case class NIHLink (linkedNihUsername: String, lastLinkTime: Long, linkExpireTime: Long, isDbgapAuthorized: Boolean) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(linkedNihUsername), "linkedNihUsername must be non-empty")
-}
-
-case class NIHStatus(
-    loginRequired: Boolean,
-    linkedNihUsername: Option[String] = None,
-    isDbgapAuthorized: Option[Boolean] = None,
-    lastLinkTime: Option[Long] = None,
-    linkExpireTime: Option[Long] = None,
-    descriptionSinceLastLink: Option[String] = None,
-    descriptionUntilExpires: Option[String] = None
-)
-
-object NIHStatus {
-
-  def apply(profile: Profile): NIHStatus = {
-    apply(profile, profile.isDbgapAuthorized)
-  }
-
-  def apply(profile: Profile, isDbGapAuthorized: Option[Boolean]): NIHStatus = {
-    val linkExpireSeconds = profile.linkExpireTime.getOrElse(0L)
-    val howSoonExpire = DateUtils.secondsSince(linkExpireSeconds)
-    new NIHStatus(
-      loginRequired = howSoonExpire >= 0,
-      profile.linkedNihUsername,
-      isDbGapAuthorized,
-      profile.lastLinkTime,
-      profile.linkExpireTime
-    )
-  }
 }
 
 object ProfileValidator {
