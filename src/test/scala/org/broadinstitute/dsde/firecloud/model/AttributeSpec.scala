@@ -193,6 +193,46 @@ class AttributeSpec extends FreeSpec with Assertions {
         ))
         assertResult(expected) { attr }
       }
+      "should handle raw json empty array" in {
+        val testData =
+          """
+            | {"testKey" : [] }
+          """.stripMargin
+        val obj = testData.parseJson.convertTo[AttributeMap]
+        val attr = obj.getOrElse(AttributeName.withDefaultNS("testKey"), fail("attr doesn't exist"))
+        val expected = AttributeValueRawJson(JsArray())
+        assertResult(expected) { attr }
+      }
+      "should handle raw json filled array" in {
+        val testData =
+          """
+            | {"testKey" : [1,2,3] }
+          """.stripMargin
+        val obj = testData.parseJson.convertTo[AttributeMap]
+        val attr = obj.getOrElse(AttributeName.withDefaultNS("testKey"), fail("attr doesn't exist"))
+        val expected = AttributeValueRawJson(JsArray(JsNumber(1), JsNumber(2), JsNumber(3)))
+        assertResult(expected) { attr }
+      }
+      "should handle raw json empty object" in {
+        val testData =
+          """
+            | {"testKey" : {} }
+          """.stripMargin
+        val obj = testData.parseJson.convertTo[AttributeMap]
+        val attr = obj.getOrElse(AttributeName.withDefaultNS("testKey"), fail("attr doesn't exist"))
+        val expected = AttributeValueRawJson(JsObject())
+        assertResult(expected) { attr }
+      }
+      "should handle raw json object with items" in {
+        val testData =
+          """
+            | {"testKey" : {"foo" : "bar"} }
+          """.stripMargin
+        val obj = testData.parseJson.convertTo[AttributeMap]
+        val attr = obj.getOrElse(AttributeName.withDefaultNS("testKey"), fail("attr doesn't exist"))
+        val expected = AttributeValueRawJson(JsObject(Map("foo" -> JsString("bar"))))
+        assertResult(expected) { attr }
+      }
       "should fail if entity reference list contains values" in {
         val testData =
           """
@@ -250,16 +290,17 @@ class AttributeSpec extends FreeSpec with Assertions {
           testData.parseJson.convertTo[AttributeMap]
         }
       }
-      "should fail if list omits type" in {
+      "should return AttributeValueRawJson attribute if list omits type" in {
         val testData =
           """
             | {"testKey" : {
             |   "items" : ["foo", "bar", "baz"]
             | }}
           """.stripMargin
-        intercept[DeserializationException] {
-          testData.parseJson.convertTo[AttributeMap]
-        }
+        val obj = testData.parseJson.convertTo[AttributeMap]
+        val attr = obj.getOrElse(AttributeName.withDefaultNS("testKey"), fail("attr doesn't exist"))
+        val expected = AttributeValueRawJson(JsObject(Map("items" -> JsArray(JsString("foo"), JsString("bar"), JsString("baz")))))
+        assertResult(expected) { attr }
       }
       "should fail if entity reference list contains list" in {
         val testData =
@@ -285,14 +326,10 @@ class AttributeSpec extends FreeSpec with Assertions {
           """
             | {"testKey" : {
             |   "itemsType" : "AttributeValue",
-            |   "items" : [
-            |     {"anotherList" :
-            |       {
-            |         "itemsType" : "AttributeValue",
-            |         "items" : ["foo", "bar", "baz"]
-            |       }
-            |     }
-            |   ]
+            |   "items" : {
+            |     "itemsType" : "AttributeValue",
+            |     "items" : ["foo", "bar", "baz"]
+            |   }
             | }}
           """.stripMargin
         intercept[DeserializationException] {
