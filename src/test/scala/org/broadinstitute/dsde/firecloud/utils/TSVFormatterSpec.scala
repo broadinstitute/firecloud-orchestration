@@ -12,6 +12,7 @@ import org.scalatest.{FreeSpec, Inspectors, Matchers}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
+import scala.Array
 import scala.io.Source
 
 class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Inspectors {
@@ -199,7 +200,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
     expectedSize: Int
   ): Unit = {
     val collectionMemberType = ModelSchema.getPlural(ModelSchema.getCollectionMemberType(entityType).get.get)
-    val tsv = TSVFormatter.makeMembershipTsvString(entities, entityType, collectionMemberType.getOrElse(entityType))
+    val tsv = TSVFormatter.makeMembershipTsvString(entities, entityType, ModelSchema.getCollectionMemberType(entityType).get.get, collectionMemberType.getOrElse(entityType))
     tsv shouldNot be(empty)
 
     val lines: List[String] = Source.fromString(tsv).getLines().toList
@@ -207,6 +208,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
     lines map { _.split("\t", -1).size should equal(2) }
 
+    lines.head.split("\t") should be(Array(s"${TsvTypes.MEMBERSHIP.toString}:${entityType}_id", ModelSchema.getCollectionMemberType(entityType).get.get))
   }
 
 }

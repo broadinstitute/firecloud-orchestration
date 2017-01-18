@@ -11,14 +11,14 @@ import spray.json.JsValue
 
 object TSVFormatter {
 
-  def makeMembershipTsvString(entities: Seq[RawlsEntity], entityType: String, collectionMemberType: String): String = {
-    val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq(s"${TsvTypes.MEMBERSHIP}:${entityType}_id", entityType.replace("_set", "_id"))
+  def makeMembershipTsvString(entities: Seq[RawlsEntity], entityType: String, collectionMemberType: String, collectionMembersAttribute: String): String = {
+    val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq(s"${TsvTypes.MEMBERSHIP}:${entityType}_id", collectionMemberType)
     val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
       entity =>
         entity.attributes.filter {
           // To make the membership file, we need the array of elements that correspond to the set type.
           // All other top-level properties are not necessary and are only used for the data load file.
-          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(collectionMemberType))
+          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(collectionMembersAttribute))
         }.flatMap {
           case (_, AttributeEntityReference(entityType, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
           case (_, AttributeEntityReferenceList(refs)) => refs.map( ref => IndexedSeq[String](entity.name, ref.entityName) )
