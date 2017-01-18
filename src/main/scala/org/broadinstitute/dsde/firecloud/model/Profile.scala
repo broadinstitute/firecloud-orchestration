@@ -14,7 +14,8 @@ case class ThurloeKeyValue(
   keyValuePair: Option[FireCloudKeyValue] = None)
 
 case class ThurloeNotification(
-  userId: String,
+  userId: Option[String],
+  userEmail: Option[String],
   replyTo: Option[String],
   notificationId: String,
   substitutions: Map[String, String])

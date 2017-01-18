@@ -66,8 +66,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     requestToObject[RawlsWorkspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 
-  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate])(implicit userToken: WithAccessToken): Future[Seq[WorkspaceACLUpdate]] =
-    requestToObject[Seq[WorkspaceACLUpdate]]( Patch(patchWorkspaceAclUrl(ns, name), aclUpdates) )
+  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate],inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] =
+    requestToObject[WorkspaceACLUpdateResponseList]( Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates) )
 
   override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = {
     val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
@@ -90,7 +90,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
-  private def patchWorkspaceAclUrl(ns: String, name: String) = rawlsWorkspaceACLUrl.format(ns, name)
+  private def patchWorkspaceAclUrl(ns: String, name: String, inviteUsersNotFound: Boolean) = rawlsWorkspaceACLUrl.format(ns, name, inviteUsersNotFound)
 
   override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
     userAuthedRequest(Get(RawlsDAO.refreshTokenDateUrl))(userInfo) map { response =>

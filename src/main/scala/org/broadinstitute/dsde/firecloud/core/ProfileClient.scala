@@ -165,7 +165,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   def sendNotification(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     notification: Notification) = {
     pipeline {
-      Post(UserService.remotePostNotifyURL, List(ThurloeNotification(notification.userId, notification.replyTo, notification.notificationId, notification.toMap)))
+      Post(UserService.remotePostNotifyURL, List(ThurloeNotification(notification.userId, None, notification.replyTo, notification.notificationId, notification.toMap)))
     } flatMap { response =>
       if(response.status.isFailure)
         log.warning(s"Could not send notification: ${notification}")
