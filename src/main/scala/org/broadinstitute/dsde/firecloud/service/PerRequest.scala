@@ -75,6 +75,9 @@ trait PerRequest extends Actor {
   override val supervisorStrategy =
     OneForOneStrategy() {
 
+      case e: FireCloudExceptionWithErrorReport =>
+        r.complete((e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport))
+        Stop
       case e: RequestProcessingException =>
         r.complete(HttpResponseWithErrorReport(InternalServerError, e))
         Stop

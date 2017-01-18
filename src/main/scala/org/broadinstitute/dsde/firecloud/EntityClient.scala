@@ -8,7 +8,7 @@ import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{TsvType, FireCloudRequestBuilding, TSVFileSupport}
+import org.broadinstitute.dsde.firecloud.service.{TsvTypes, FireCloudRequestBuilding, TSVFileSupport}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
 import spray.client.pipelining._
@@ -29,7 +29,7 @@ object EntityClient {
 
   def props(requestContext: RequestContext): Props = Props(new EntityClient(requestContext))
 
-  def colNamesToAttributeNames(entityType: String, headers: Seq[String], requiredAttributes: Map[String,String]) = {
+  def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
   }
 
@@ -151,7 +151,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
       withMemberCollectionType(entityType) { memberTypeOpt =>
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
-            val colInfo = colNamesToAttributeNames(entityType, tsv.headers, requiredAttributes)
+            val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
             batchCallToRawls(pipeline, workspaceNamespace, workspaceName, rawlsCalls, "batchUpsert")
           }
@@ -174,7 +174,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
             //defined when the entity was created. But we still need the type information if the headers do exist.
             case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
             case Success(requiredAttributes) =>
-              val colInfo = colNamesToAttributeNames(entityType, tsv.headers, requiredAttributes)
+              val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
               batchCallToRawls(pipeline, workspaceNamespace, workspaceName, rawlsCalls, "batchUpdate")
           }
@@ -199,12 +199,10 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
             Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, entity type should end in _id"))
           } else {
             val strippedTsv = backwardsCompatStripIdSuffixes(tsv, entityType)
-            tsvType match {
-              case TsvType.MEMBERSHIP => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-              case TsvType.ENTITY => importEntityTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-              case TsvType.UPDATE => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-              case _ =>
-                Future(RequestCompleteWithErrorReport(BadRequest, "Invalid TSV type, supported types are: membership, entity, update"))
+            TsvTypes.withName(tsvType) match {
+              case TsvTypes.MEMBERSHIP => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+              case TsvTypes.ENTITY => importEntityTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+              case TsvTypes.UPDATE => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
             }
           }
         case _ =>

@@ -3,7 +3,8 @@ package org.broadinstitute.dsde.firecloud.utils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.service.TsvType
+import org.broadinstitute.dsde.firecloud.service.TsvTypes
+import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FreeSpec, Inspectors, Matchers}
@@ -71,7 +72,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
           IndexedSeq("header_1", "header_2"),
           IndexedSeq("header_1")
         ).foreach { requestedHeaders =>
-          val resultsWithSpecificHeaders = testEntityDataSet("sample", sampleList, Option(requestedHeaders), true)
+          val resultsWithSpecificHeaders = testEntityDataSet("sample", sampleList, Option(requestedHeaders), TsvTypes.UPDATE)
           resultsWithSpecificHeaders should contain theSameElementsInOrderAs Seq("update:sample_id") ++ requestedHeaders.filterNot(_.equals("sample_id"))
         }
 
@@ -171,7 +172,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
   }
 
-  private def testEntityDataSet(entityType: String, entities: List[RawlsEntity], requestedHeaders: Option[IndexedSeq[String]], expectUpdateTsv: Boolean = false) = {
+  private def testEntityDataSet(entityType: String, entities: List[RawlsEntity], requestedHeaders: Option[IndexedSeq[String]], tsvType: TsvType = TsvTypes.ENTITY) = {
     val tsv = TSVFormatter.makeEntityTsvString(entities, entityType, requestedHeaders)
 
     tsv shouldNot be(empty)
@@ -184,11 +185,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
     val headers = lines.head.split("\t")
 
     // make sure all required headers are present
-    if (expectUpdateTsv) {
-      headers(0) should be(s"${TsvType.UPDATE}:${entityType}_id")
-    } else {
-      headers(0) should be(s"${TsvType.ENTITY}:${entityType}_id")
-    }
+    headers(0) should be(s"${tsvType.toString}:${entityType}_id")
 
     // Check that all lines have the same number of columns as the header.
     lines foreach( _.split("\t", -1).size should equal(headers.size) )

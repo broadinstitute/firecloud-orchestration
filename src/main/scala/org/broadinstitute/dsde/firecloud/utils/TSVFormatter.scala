@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.TsvType
+import org.broadinstitute.dsde.firecloud.service.TsvTypes
 
 import scala.collection.immutable
 import scala.util.{Success, Try}
@@ -12,7 +12,7 @@ import spray.json.JsValue
 object TSVFormatter {
 
   def makeMembershipTsvString(entities: Seq[RawlsEntity], entityType: String, collectionMemberType: String): String = {
-    val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq(s"${TsvType.MEMBERSHIP}:${entityType}_id", entityType.replace("_set", "_id"))
+    val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq(s"${TsvTypes.MEMBERSHIP}:${entityType}_id", entityType.replace("_set", "_id"))
     val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
       entity =>
         entity.attributes.filter {
@@ -38,8 +38,8 @@ object TSVFormatter {
       map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
 
     val entityHeader = requestedHeadersSansId match {
-      case Some(headers) if !ModelSchema.getRequiredAttributes(entityType).get.keySet.forall(headers.contains) => s"${TsvType.UPDATE}:${entityType}_id"
-      case _ => s"${TsvType.ENTITY}:${entityType}_id"
+      case Some(headers) if !ModelSchema.getRequiredAttributes(entityType).get.keySet.forall(headers.contains) => s"${TsvTypes.UPDATE}:${entityType}_id"
+      case _ => s"${TsvTypes.ENTITY}:${entityType}_id"
     }
 
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
