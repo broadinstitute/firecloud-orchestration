@@ -85,12 +85,12 @@ object MockTSVStrings {
     List("sset_2").mkString("\t")).mkString("\n")
 
   val membershipExtraAttributes = List(
-    List("membership:sample_set_id", "sample_id", "other_attribute").mkString("\t"),
+    List("membership:sample_set_id", "sample", "other_attribute").mkString("\t"),
     List("woop", "de", "doo").mkString("\t"),
     List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
 
   val membershipValid = List(
-    List("membership:sample_set_id", "sample_id").mkString("\t"),
+    List("membership:sample_set_id", "sample").mkString("\t"),
     List("sset_01", "sample_01").mkString("\t"),
     List("sset_01", "sample_02").mkString("\t")).mkString("\n")
 
@@ -106,22 +106,22 @@ object MockTSVStrings {
     List("part_01", "hip").mkString("\t")).mkString("\n")
 
   val entityHasCollectionMembers = List(
-    List("entity:sample_set_id", "sample_id").mkString("\t"),
+    List("entity:sample_set_id", "sample").mkString("\t"),
     List("sset_01", "sample_01").mkString("\t"),
     List("sset_01", "sample_02").mkString("\t")).mkString("\n")
 
-  val entityUpdateMissingRequiredAttrs = List( //missing participant_id
+  val entityUpdateMissingRequiredAttrs = List( //missing participant
     List("entity:sample_id", "some_attribute").mkString("\t"),
     List("sample_01", "de").mkString("\t"),
     List("sample_02", "hip").mkString("\t")).mkString("\n")
 
   val entityUpdateWithRequiredAttrs = List(
-    List("entity:sample_id", "participant_id").mkString("\t"),
+    List("entity:sample_id", "participant").mkString("\t"),
     List("sample_01", "part_01").mkString("\t"),
     List("sample_02", "part_02").mkString("\t")).mkString("\n")
 
   val entityUpdateWithRequiredAndOptionalAttrs = List(
-    List("entity:sample_id", "participant_id", "some_attribute").mkString("\t"),
+    List("entity:sample_id", "participant", "some_attribute").mkString("\t"),
     List("sample_01", "part_01", "foo").mkString("\t"),
     List("sample_02", "part_02", "bar").mkString("\t")).mkString("\n")
 
@@ -137,22 +137,22 @@ object MockTSVStrings {
     List("part_01", "hip").mkString("\t")).mkString("\n")
 
   val updateHasCollectionMembers = List(
-    List("update:sample_set_id", "sample_id").mkString("\t"),
+    List("update:sample_set_id", "sample").mkString("\t"),
     List("sset_01", "sample_01").mkString("\t"),
     List("sset_01", "sample_02").mkString("\t")).mkString("\n")
 
-  val updateMissingRequiredAttrs = List( //missing participant_id
+  val updateMissingRequiredAttrs = List( //missing participant
     List("update:sample_id", "some_attribute").mkString("\t"),
     List("sample_01", "de").mkString("\t"),
     List("sample_02", "hip").mkString("\t")).mkString("\n")
 
   val updateWithRequiredAttrs = List(
-    List("update:sample_id", "participant_id").mkString("\t"),
+    List("update:sample_id", "participant").mkString("\t"),
     List("sample_01", "part_01").mkString("\t"),
     List("sample_02", "part_02").mkString("\t")).mkString("\n")
 
   val updateWithRequiredAndOptionalAttrs = List(
-    List("update:sample_id", "participant_id", "some_attribute").mkString("\t"),
+    List("update:sample_id", "participant", "some_attribute").mkString("\t"),
     List("sample_01", "part_01", "foo").mkString("\t"),
     List("sample_02", "part_02", "bar").mkString("\t")).mkString("\n")
 

@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.Actor
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.AttributeFormat
 import org.broadinstitute.dsde.firecloud.model._
@@ -11,12 +12,27 @@ import spray.http.StatusCodes._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import spray.json._
+
 /**
-  * Created by ansingh on 11/14/16.
-  */
+ * The different types of tsv import/export formats
+ */
+object TsvTypes {
+  sealed trait TsvType
+  case object ENTITY extends TsvType { override def toString = "entity" } // insert or update, must have required columns
+  case object UPDATE extends TsvType { override def toString = "update" } // update only, entity must preexist
+  case object MEMBERSHIP extends TsvType { override def toString = "membership" } // add members to a set
+
+  def withName(name: String): TsvType = {
+    name match {
+      case "entity" => ENTITY
+      case "update" => UPDATE
+      case "membership" => MEMBERSHIP
+      case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "Invalid TSV type, supported types are: membership, entity, update"))
+    }
+  }
+}
+
 trait TSVFileSupport {
-
-
   /**
     * Attempts to parse a string into a TSVLoadFile.
     * Bails with a 400 Bad Request if the TSV is invalid. */
@@ -91,9 +107,9 @@ trait TSVFileSupport {
     } else if( tsv.headers.length != 2 ){
       Future(
         RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Must have exactly two columns") )
-    } else if( tsv.headers != Seq(tsv.firstColumnHeader, membersType.get + "_id") ) {
+    } else if( tsv.headers != Seq(tsv.firstColumnHeader, membersType.get) ) {
       Future(
-        RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Second column header should be " + membersType.get + "_id") )
+        RequestCompleteWithErrorReport(BadRequest, "Invalid membership TSV. Second column header should be " + membersType.get) )
     } else {
       op
     }

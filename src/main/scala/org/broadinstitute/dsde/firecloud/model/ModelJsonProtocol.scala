@@ -293,7 +293,7 @@ object ModelJsonProtocol {
   implicit val impFireCloudPermission = jsonFormat2(FireCloudPermission)
   implicit val impAgoraPermission = jsonFormat2(AgoraPermission)
 
-  implicit val impEntityMetadata = jsonFormat4(EntityMetadata)
+  implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)
   implicit val impSubmissionIngest = jsonFormat5(SubmissionIngest)
 

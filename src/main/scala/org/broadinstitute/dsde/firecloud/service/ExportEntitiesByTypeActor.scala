@@ -47,7 +47,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
         case Success(Some(collectionType)) =>
           val collectionMemberType = ModelSchema.getPlural(collectionType)
           val entityData = TSVFormatter.makeEntityTsvString(entities, entityType, attributeNames)
-          val membershipData = TSVFormatter.makeMembershipTsvString(entities, entityType, collectionMemberType.get)
+          val membershipData = TSVFormatter.makeMembershipTsvString(entities, entityType, collectionType, collectionMemberType.get)
           val zipBytes: Array[Byte] = getZipBytes(entityType, membershipData, entityData)
           val zippedFileName = entityType + ".zip"
           RequestCompleteWithHeaders(

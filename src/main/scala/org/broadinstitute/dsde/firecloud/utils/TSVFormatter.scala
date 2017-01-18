@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.TsvTypes
 
 import scala.collection.immutable
 import scala.util.{Success, Try}
@@ -10,14 +11,14 @@ import spray.json.JsValue
 
 object TSVFormatter {
 
-  def makeMembershipTsvString(entities: Seq[RawlsEntity], entityType: String, collectionMemberType: String): String = {
-    val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq("membership:" + entityType + "_id", entityType.replace("_set", "_id"))
+  def makeMembershipTsvString(entities: Seq[RawlsEntity], entityType: String, collectionMemberType: String, collectionMembersAttribute: String): String = {
+    val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq(s"${TsvTypes.MEMBERSHIP}:${entityType}_id", collectionMemberType)
     val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
       entity =>
         entity.attributes.filter {
           // To make the membership file, we need the array of elements that correspond to the set type.
           // All other top-level properties are not necessary and are only used for the data load file.
-          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(collectionMemberType))
+          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(collectionMembersAttribute))
         }.flatMap {
           case (_, AttributeEntityReference(entityType, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
           case (_, AttributeEntityReferenceList(refs)) => refs.map( ref => IndexedSeq[String](entity.name, ref.entityName) )
@@ -28,8 +29,19 @@ object TSVFormatter {
   }
 
   def makeEntityTsvString(entities: Seq [RawlsEntity], entityType: String, requestedHeaders: Option[IndexedSeq[String]]): String = {
-    val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeExportRenamingMap(entityType).getOrElse(Map.empty[String, String])
-    val entityHeader = "entity:" + entityType + "_id"
+    val requestedHeadersSansId = requestedHeaders.
+      // remove empty strings
+      map(_.filter(_.length > 0)).
+      // handle empty requested headers as no requested headers
+      flatMap(rh => if (rh.isEmpty) None else Option(rh)).
+      // entity id always needs to be first and is handled differently so remove it from requestedHeaders
+      map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
+
+    val entityHeader = requestedHeadersSansId match {
+      case Some(headers) if !ModelSchema.getRequiredAttributes(entityType).get.keySet.forall(headers.contains) => s"${TsvTypes.UPDATE}:${entityType}_id"
+      case _ => s"${TsvTypes.ENTITY}:${entityType}_id"
+    }
+
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
     val memberType = ModelSchema.getCollectionMemberType(entityType)
@@ -42,29 +54,20 @@ object TSVFormatter {
       case _ => entities
     }
 
-
-    val requestedHeadersSansId = requestedHeaders.
-      // remove empty strings
-      map(_.filter(_.length > 0)).
-      // handle empty requested headers as no requested headers
-      flatMap(rh => if (rh.isEmpty) None else Option(rh)).
-      // entity id always needs to be first and is handled differently so remove it from requestedHeaders
-      map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
-
-    val headers: IndexedSeq[String] = entityHeader +: requestedHeadersSansId.getOrElse(defaultHeaders(entityType, filteredEntities, headerRenamingMap))
+    val headers: IndexedSeq[String] = entityHeader +: requestedHeadersSansId.getOrElse(defaultHeaders(entityType, filteredEntities))
     val rows: IndexedSeq[IndexedSeq[String]] = filteredEntities.filter { _.entityType == entityType }
       .map { entity =>
-        makeRow(entity, headers, headerRenamingMap)
+        makeRow(entity, headers)
       }.toIndexedSeq
     exportToString(headers, rows)
   }
 
-  def defaultHeaders(entityType: String, filteredEntities: Seq[RawlsEntity], headerRenamingMap: Map[String, String]) = {
+  def defaultHeaders(entityType: String, filteredEntities: Seq[RawlsEntity]) = {
     val attributeNames = filteredEntities.collect {
       case RawlsEntity(_, `entityType`, attributes) => attributes.keySet
     }.flatten.distinct
 
-    attributeNames.map { key => headerRenamingMap.getOrElse(key.name, key.name) }.toIndexedSeq
+    attributeNames.map(_.name).toIndexedSeq
   }
 
   private def exportToString(headers: IndexedSeq[String], rows: IndexedSeq[IndexedSeq[String]]): String = {
@@ -96,11 +99,10 @@ object TSVFormatter {
     * @param headerValues List of ordered header values to determine order of values
     * @return IndexedSeq of ordered data fields
     */
-  private def makeRow(entity: RawlsEntity, headerValues: IndexedSeq[String],
-    headerRenamingMap:Map[String, String]): IndexedSeq[String] = {
+  private def makeRow(entity: RawlsEntity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
     val rowMap: Map[Int, String] =  entity.attributes map {
       case (attributeName, attribute) =>
-        val columnPosition = headerValues.indexOf(headerRenamingMap.getOrElse(attributeName.name, attributeName.name))
+        val columnPosition = headerValues.indexOf(attributeName.name)
         val cellValue = AttributeStringifier(attribute)
         columnPosition -> cellValue
     }
