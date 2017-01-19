@@ -447,7 +447,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val label = "library:attr"
         val `type` = "string"
         val aggregateObject = JsObject("renderHint"->JsString("text"))
-        val expected = label -> new ESAggregatableType(`type`)
+        val expected = label -> ESAggregatableType(`type`)
         assertResult(expected) {
           detailFromAttribute(label, AttributeDetail(`type`, None, Some(aggregateObject)))
         }
@@ -469,7 +469,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val subtype = "string"
         val aggregateObject = JsObject("renderHint"->JsString("text"))
         val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)), Some(aggregateObject))
-        val expected = label -> new ESAggregatableType(subtype)
+        val expected = label -> ESAggregatableType(subtype)
         assertResult(expected) {
           detailFromAttribute(label, detail)
         }

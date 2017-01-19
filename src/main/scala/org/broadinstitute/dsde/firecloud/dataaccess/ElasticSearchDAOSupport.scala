@@ -51,7 +51,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
       case (label: String, detail: AttributeDetail) => detailFromAttribute(label, detail)
     }
     // add the magic "_suggest" property that we'll use for autocomplete
-    val props = attributeDetailMap + ((fieldSuggest, new ESSuggestField))
+    val props = attributeDetailMap + ((fieldSuggest, ESType.suggestField("string")))
     ESDatasetProperty(props).toJson.prettyPrint
   }
 
@@ -61,7 +61,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
       case _ => detail.`type`
     }
     detail match {
-      case x if x.aggregate.isDefined => label -> new ESAggregatableType(itemType)
+      case x if x.aggregate.isDefined => label -> ESAggregatableType(itemType)
       case _ => label -> ESType(itemType)
     }
   }

@@ -17,23 +17,43 @@ case class AttributeDetail(
 )
 
 
-trait ESPropertyFields
 case class ESDatasetProperty(properties: Map[String, ESPropertyFields])
-case class ESType(`type`: String, copy_to: String = "_suggest") extends ESPropertyFields
-case class ESAggregatableType(`type`: String, fields: ESRaw, copy_to: String = "_suggest") extends ESPropertyFields {
-  def this(str: String) = this(str, new ESRaw(str))
-}
-case class ESRaw(raw: ESAggregateProperties) {
-  def this(str: String) = this(ESAggregateProperties(str, "not_analyzed"))
-}
-case class ESSuggestField(`type`: String = "string",
-                          analyzer: String = "autocomplete",
-                          search_analyzer: String = "standard",
-                          include_in_all: Boolean = false,
-                          store: Boolean = true) extends ESPropertyFields
 
-case class ESAggregateProperties(`type`: String, index:String)
+// trait def, with util factories
+trait ESPropertyFields {
+  def suggestField(`type`:String) = ESInnerField(`type`,
+    analyzer = Some("autocomplete"),
+    search_analyzer = Some("standard"),
+    include_in_all = Some(false),
+    store = Some(true)
+  )
+  // TODO: build out completion suggester field, a la:
+  // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/search-suggesters-completion.html
+  def completionField(`type`:String) = ESInnerField(`type`)
+  def rawField(`type`:String) = ESInnerField(`type`,
+    index = Some("not_analyzed")
+  )
+}
 
+// top-level field defs, for facet and non-facet types
+case class ESType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = "_suggest") extends ESPropertyFields
+object ESType extends ESPropertyFields {
+  def apply(`type`: String):ESType = ESType(`type`, Map("completion" -> completionField(`type`)))
+}
+case class ESAggregatableType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = "_suggest") extends ESPropertyFields
+object ESAggregatableType extends ESPropertyFields {
+  def apply(`type`: String):ESAggregatableType = ESAggregatableType(`type`, Map("completion" -> completionField(`type`), "raw" -> rawField(`type`)))
+}
+
+// def for ElasticSearch's multi-fields: https://www.elastic.co/guide/en/elasticsearch/reference/2.4/multi-fields.html
+// technically, the top-level fields and inner fields are the same thing, and we *could* use the same class.
+// we keep them different here for ease of development and clarity of code-reading.
+case class ESInnerField(`type`: String,
+                        analyzer: Option[String] = None,
+                        search_analyzer: Option[String] = None,
+                        index: Option[String] = None,
+                        include_in_all: Option[Boolean] = None,
+                        store: Option[Boolean] = None) extends ESPropertyFields
 
 // classes for sending documents to ES to be indexed
 trait Indexable {
