@@ -5,6 +5,7 @@ import java.net.InetAddress
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.elasticsearch.action.{ActionRequest, ActionRequestBuilder, ActionResponse}
 import org.elasticsearch.client.transport.TransportClient
@@ -16,9 +17,6 @@ import spray.json._
 import scala.util.{Failure, Success, Try}
 
 trait ElasticSearchDAOSupport extends LazyLogging {
-
-  final val fieldAll = "_all"
-  final val fieldSuggest = "_suggest"
 
   def buildClient(servers:Seq[Authority]): TransportClient = {
     // cluster name is constant across environments; no need to add it to config

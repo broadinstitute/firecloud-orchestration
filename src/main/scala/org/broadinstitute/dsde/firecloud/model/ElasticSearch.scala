@@ -7,6 +7,11 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsValue}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
+object ElasticSearch {
+  final val fieldAll = "_all"
+  final val fieldSuggest = "_suggest"
+}
+
 case class AttributeDefinition(properties: Map[String, AttributeDetail])
 
 case class AttributeDetail(
@@ -36,11 +41,11 @@ trait ESPropertyFields {
 }
 
 // top-level field defs, for facet and non-facet types
-case class ESType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = "_suggest") extends ESPropertyFields
+case class ESType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = ElasticSearch.fieldSuggest) extends ESPropertyFields
 object ESType extends ESPropertyFields {
   def apply(`type`: String):ESType = ESType(`type`, Map("completion" -> completionField(`type`)))
 }
-case class ESAggregatableType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = "_suggest") extends ESPropertyFields
+case class ESAggregatableType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = ElasticSearch.fieldSuggest) extends ESPropertyFields
 object ESAggregatableType extends ESPropertyFields {
   def apply(`type`: String):ESAggregatableType = ESAggregatableType(`type`, Map("completion" -> completionField(`type`), "raw" -> rawField(`type`)))
 }
