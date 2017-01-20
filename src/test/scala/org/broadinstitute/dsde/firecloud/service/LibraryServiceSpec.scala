@@ -486,14 +486,12 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val label = "library:lmsvn"
         assert(!testJson.contains(label))
       }
-
-    }
-    "when converting json to LibrarySearchParams" - {
-      "should succeed" in {
-        val json = "{\"filters\": {\"library:datatype\":[\"cancer\"]},\"fieldAggregations\":{\"library:indication\":5}}".parseJson
-        val obj = impLibrarySearchParams.read(json)
-        assert(obj.getClass.getName == "org.broadinstitute.dsde.firecloud.model.LibrarySearchParams")
+      "discoverableByGroups is in mapping" in {
+        val attrJson = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val testJson = makeMapping(attrJson)
+        assert(testJson.contains(ElasticSearch.fieldDiscoverableByGroups))
       }
+
     }
   }
 }
