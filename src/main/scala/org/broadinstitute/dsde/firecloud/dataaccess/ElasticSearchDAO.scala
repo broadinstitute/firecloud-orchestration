@@ -98,7 +98,7 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
         logger.info(s"... ES index '%s' created.".format(indexName))
       }
     } catch {
-      case e: Exception => logger.warn(s"ES index '%s' could not be recreated and may be in an unstable state.".format(indexName))
+      case e: Exception => logger.warn(s"ES index '%s' could not be recreated and may be in an unstable state.".format(indexName), e)
     }
   }
 

@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 object ElasticSearch {
   final val fieldAll = "_all"
   final val fieldSuggest = "_suggest"
+  final val fieldDiscoverableByGroups = "library:discoverableByGroups"
 }
 
 case class AttributeDefinition(properties: Map[String, AttributeDetail])
@@ -45,6 +46,9 @@ case class ESType(`type`: String, fields: Map[String,ESInnerField], copy_to: Str
 object ESType extends ESPropertyFields {
   def apply(`type`: String):ESType = ESType(`type`, Map("completion" -> completionField(`type`)))
 }
+
+case class ESInternalType(`type`: String, index: String = "not_analyzed", include_in_all: Boolean = false) extends ESPropertyFields
+
 case class ESAggregatableType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = ElasticSearch.fieldSuggest) extends ESPropertyFields
 object ESAggregatableType extends ESPropertyFields {
   def apply(`type`: String):ESAggregatableType = ESAggregatableType(`type`, Map("completion" -> completionField(`type`), "raw" -> rawField(`type`)))
