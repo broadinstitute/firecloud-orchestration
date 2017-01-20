@@ -47,7 +47,10 @@ object ESType extends ESPropertyFields {
   def apply(`type`: String):ESType = ESType(`type`, Map("completion" -> completionField(`type`)))
 }
 
-case class ESInternalType(`type`: String, index: String = "not_analyzed", include_in_all: Boolean = false) extends ESPropertyFields
+case class ESInternalType(
+  `type`: String,
+  index: String = "not_analyzed",
+  include_in_all: Boolean = false) extends ESPropertyFields
 
 case class ESAggregatableType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = ElasticSearch.fieldSuggest) extends ESPropertyFields
 object ESAggregatableType extends ESPropertyFields {
