@@ -14,13 +14,14 @@ trait StorageApiService extends HttpService with PerRequestCreator with FireClou
   val storageServiceConstructor: UserInfo => StorageService
 
   val storageRoutes: Route =
-    requireUserInfo() { userInfo =>
-      pathPrefix("api") {
-        pathPrefix(ApiPrefix) {
-          path(Segment / Rest) { (bucket, obj) => requestContext =>
-            perRequest(requestContext,
-              StorageService.props(storageServiceConstructor, userInfo),
-              StorageService.GetObjectStats(bucket, obj))
+    pathPrefix("api") {
+      pathPrefix(ApiPrefix) {
+        path(Segment / Rest) { (bucket, obj) =>
+          requireUserInfo() { userInfo =>
+            requestContext =>
+              perRequest(requestContext,
+                StorageService.props(storageServiceConstructor, userInfo),
+                StorageService.GetObjectStats(bucket, obj))
           }
         }
       }
