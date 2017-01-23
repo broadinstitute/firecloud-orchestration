@@ -16,7 +16,7 @@ case class WorkspaceACLUpdate(email: String, accessLevel: WorkspaceAccessLevel, 
 
 case class WorkspaceACLUpdateResponse(subjectId: String, accessLevel: WorkspaceAccessLevel)
 
-case class WorkspaceACLUpdateResponseList(usersUpdated: Seq[WorkspaceACLUpdateResponse], invitesUpdated: Seq[WorkspaceACLUpdate], usersNotFound: Seq[WorkspaceACLUpdate])
+case class WorkspaceACLUpdateResponseList(usersUpdated: Seq[WorkspaceACLUpdateResponse], invitesSent: Seq[WorkspaceACLUpdate], invitesUpdated: Seq[WorkspaceACLUpdate], usersNotFound: Seq[WorkspaceACLUpdate])
 
 object WorkspaceAccessLevels {
   sealed trait WorkspaceAccessLevel extends Ordered[WorkspaceAccessLevel] {
@@ -86,5 +86,5 @@ object WorkspaceACLJsonSupport {
 
   implicit val WorkspaceACLUpdateResponseFormat = jsonFormat2(WorkspaceACLUpdateResponse)
 
-  implicit val WorkspaceACLUpdateResponseListFormat = jsonFormat3(WorkspaceACLUpdateResponseList)
+  implicit val WorkspaceACLUpdateResponseListFormat = jsonFormat4(WorkspaceACLUpdateResponseList)
 }
