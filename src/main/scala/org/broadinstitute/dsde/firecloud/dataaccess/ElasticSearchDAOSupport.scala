@@ -5,6 +5,7 @@ import java.net.InetAddress
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.elasticsearch.action.{ActionRequest, ActionRequestBuilder, ActionResponse}
 import org.elasticsearch.client.transport.TransportClient
@@ -16,9 +17,6 @@ import spray.json._
 import scala.util.{Failure, Success, Try}
 
 trait ElasticSearchDAOSupport extends LazyLogging {
-
-  final val fieldAll = "_all"
-  final val fieldSuggest = "_suggest"
 
   def buildClient(servers:Seq[Authority]): TransportClient = {
     // cluster name is constant across environments; no need to add it to config
@@ -51,7 +49,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
       case (label: String, detail: AttributeDetail) => detailFromAttribute(label, detail)
     }
     // add the magic "_suggest" property that we'll use for autocomplete
-    val props = attributeDetailMap + ((fieldSuggest, new ESSuggestField))
+    val props = attributeDetailMap + ((fieldSuggest, ESType.suggestField("string")))
     ESDatasetProperty(props).toJson.prettyPrint
   }
 
@@ -61,7 +59,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
       case _ => detail.`type`
     }
     detail match {
-      case x if x.aggregate.isDefined => label -> new ESAggregatableType(itemType)
+      case x if x.aggregate.isDefined => label -> ESAggregatableType(itemType)
       case _ => label -> ESType(itemType)
     }
   }

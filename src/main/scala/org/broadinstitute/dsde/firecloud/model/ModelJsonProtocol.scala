@@ -174,7 +174,7 @@ object ModelJsonProtocol {
     override def write(input: ESPropertyFields): JsValue = input match {
       case estype: ESType => estype.toJson
       case esaggtype: ESAggregatableType => esaggtype.toJson
-      case essuggtype: ESSuggestField => essuggtype.toJson
+      case esinnerfield: ESInnerField => esinnerfield.toJson
       case _ => throw new SerializationException("unexpected ESProperty type")
     }
 
@@ -330,11 +330,9 @@ object ModelJsonProtocol {
   implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat4(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
-  implicit val ESAggregatePropertiesFormat = jsonFormat2(ESAggregateProperties)
-  implicit val ESRawFormat = jsonFormat1(ESRaw)
-  implicit val ESAggregatableTypeFormat = jsonFormat3(ESAggregatableType)
-  implicit val ESTypeFormat = jsonFormat2(ESType)
-  implicit val ESTESSuggestFieldFormat = jsonFormat5(ESSuggestField)
+  implicit val ESInnerFieldFormat = jsonFormat6(ESInnerField)
+  implicit val ESAggregatableTypeFormat = jsonFormat3(ESAggregatableType.apply)
+  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
   implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
   implicit val impAggregationTermResult = jsonFormat2(AggregationTermResult)
