@@ -9,7 +9,7 @@
     "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:dataUseRestriction",
     "library:studyDesign", "library:cellType", "library:requiresExternalApproval"],
   "oneOf": [{
-    "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
+    "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS",
       "library:NCTRL", "library:RS-G", "library:RS-PD"]
   }, {
     "required": ["library:orsp"]
@@ -275,7 +275,7 @@
       "library:datasetCustodian", "library:datasetDepositor", "library:contactEmail", "library:institute", "library:primaryDiseaseSite",
       "library:projectName", "library:reference", "library:dataFileFormats", "library:technology", "library:profilingProtocol",
       "library:coverage", "library:studyDesign", "library:cellType", "library:ethnicity", "library:cohortCountry", "library:requiresExternalApproval",
-      "library:lmsvn", "library:dulvn" ],
+      "library:lmsvn", "library:dulvn"],
     "consentCodes": ["GRU", "HMB", "DS", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-G", "RS-PD", "RS-POP"]
   },
   "wizard":
@@ -301,8 +301,7 @@
             "title": "Set Data Use Restrictions by answering a questionnaire",
             "enumerate": true,
             "questions": ["library:GRU", "library:HMB", "library:DS", "library:NCU", "library:NPU", "library:NDMS",
-              "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate"
-            ]
+              "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate"]
           },
           {
             "title": "Retrieve Data Use Restrictions from Broad ORSP",
