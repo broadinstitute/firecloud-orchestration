@@ -8,11 +8,11 @@ import spray.json.DefaultJsonProtocol._
 * TODO: share with rawls code, instead of copying wholesale
 */
 
-case class AccessEntry(accessLevel: WorkspaceAccessLevel, pending: Boolean)
+case class AccessEntry(accessLevel: WorkspaceAccessLevel, pending: Boolean, canShare: Boolean)
 
 case class WorkspaceACL(acl: Map[String, AccessEntry])
 
-case class WorkspaceACLUpdate(email: String, accessLevel: WorkspaceAccessLevel)
+case class WorkspaceACLUpdate(email: String, accessLevel: WorkspaceAccessLevel, canShare: Option[Boolean])
 
 case class WorkspaceACLUpdateResponse(subjectId: String, accessLevel: WorkspaceAccessLevel)
 
@@ -78,11 +78,11 @@ object WorkspaceACLJsonSupport {
     }
   }
 
-  implicit val AccessEntryFormat = jsonFormat2(AccessEntry)
+  implicit val AccessEntryFormat = jsonFormat3(AccessEntry)
 
   implicit val WorkspaceACLFormat = jsonFormat1(WorkspaceACL)
 
-  implicit val WorkspaceACLUpdateFormat = jsonFormat2(WorkspaceACLUpdate)
+  implicit val WorkspaceACLUpdateFormat = jsonFormat3(WorkspaceACLUpdate)
 
   implicit val WorkspaceACLUpdateResponseFormat = jsonFormat2(WorkspaceACLUpdateResponse)
 
