@@ -53,6 +53,9 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
+  override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] =
+    requestToObject[Seq[String]]( Get(rawlsGroupsForUserUrl) )
+
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsBucketUsageResponse] =
     requestToObject[RawlsBucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
 

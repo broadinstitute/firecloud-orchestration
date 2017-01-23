@@ -17,6 +17,6 @@ trait SearchDAO extends LazyLogging {
   def bulkIndex(docs: Seq[Document]): Unit
   def indexDocument(doc: Document): Unit
   def deleteDocument(id: String): Unit
-  def findDocuments(criteria: LibrarySearchParams): Future[LibrarySearchResponse]
-  def suggest(criteria: LibrarySearchParams): Future[LibrarySearchResponse]
+  def findDocuments(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse]
+  def suggest(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse]
 }
