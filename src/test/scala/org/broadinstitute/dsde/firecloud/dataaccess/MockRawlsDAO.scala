@@ -50,15 +50,15 @@ class MockRawlsDAO  extends RawlsDAO {
     Some(Map("" -> ""))
   )
 
-  private val rawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", rawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  private val rawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", false, rawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
 
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[RawlsWorkspaceResponse] = {
     ns match {
-      case "projectowner" => Future(RawlsWorkspaceResponse("PROJECT_OWNER", newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
-      case "reader" => Future(RawlsWorkspaceResponse("READER", newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
+      case "projectowner" => Future(RawlsWorkspaceResponse("PROJECT_OWNER", true, newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
+      case "reader" => Future(RawlsWorkspaceResponse("READER", false, newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
-      case _ => Future(RawlsWorkspaceResponse("OWNER", newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
+      case _ => Future(RawlsWorkspaceResponse("OWNER", true, newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
     }
 
   }

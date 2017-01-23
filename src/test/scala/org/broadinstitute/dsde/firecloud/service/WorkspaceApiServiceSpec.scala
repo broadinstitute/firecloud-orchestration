@@ -300,7 +300,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "OK status is returned from PATCH on /workspaces/%s/%s/acl" in {
-      Patch(aclPath, List(WorkspaceACLUpdate("dummy@test.org", WorkspaceAccessLevels.NoAccess))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+      Patch(aclPath, List(WorkspaceACLUpdate("dummy@test.org", WorkspaceAccessLevels.NoAccess, Some(false)))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
       }
     }
