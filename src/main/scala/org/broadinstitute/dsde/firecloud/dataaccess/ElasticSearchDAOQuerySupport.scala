@@ -153,7 +153,6 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     val searchQuery = buildSearchQuery(client, indexname, criteria, groups)
     val aggregateQueries = buildAggregateQueries(client, indexname, criteria, groups)
 
-    logger.debug("user's groups:" + groups)
     logger.debug(s"main search query: $searchQuery.toJson")
     // search future will request aggregate data for aggregatable attributes that are not being searched on
     val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchQuery))
