@@ -21,6 +21,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with NamespaceApiService
   with NihApiService
   with OauthApiService
+  with ProfileApiService
   with StorageApiService
   with WorkspaceApiService
   {
@@ -89,17 +90,18 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   def receive = runRoute(
     appendTimestamp {
       logRequests {
-        swaggerUiService ~
-        testNihService ~
-        oauthRoutes ~
-        userService.routes ~
-        nihSyncService.routes ~
+        entityRoutes ~
         healthService.routes ~
         libraryRoutes ~
-        workspaceRoutes ~
         namespaceRoutes ~
-        entityRoutes ~
+        nihSyncService.routes ~
+        oauthRoutes ~
+        profileRoutes ~
         storageRoutes ~
+        swaggerUiService ~
+        testNihService ~
+        userService.routes ~
+        workspaceRoutes ~
         pathPrefix("api") {
           routes
         } ~

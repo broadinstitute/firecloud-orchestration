@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.model.{Notification, Profile, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, Notification, Profile, UserInfo}
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -13,5 +13,6 @@ trait ThurloeDAO extends LazyLogging {
 
   def sendNotifications(notifications: Seq[Notification]): Future[Try[Unit]]
   def getProfile(userInfo: UserInfo): Future[Option[Profile]]
+  def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Int]
   def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit]
 }

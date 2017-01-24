@@ -45,6 +45,35 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     }
   }
 
+  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Int] = {
+    val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
+    val profilePropertyMap: Map[String, String] = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
+    profilePropertyMap map {
+      case (key, value) =>
+        pipeline {
+          Post(UserService.remoteSetKeyURL,
+            ThurloeKeyValue(
+              Some(userInfo.getUniqueId),
+              Some(FireCloudKeyValue(Some(key), Some(value)))
+            ))
+        } map { response =>
+          response.status match {
+            case StatusCodes.OK => 1
+            case _ => 0
+          }
+        }
+    }.sum
+//    propertyPosts map { a => a.
+//
+//    }
+//    map { response =>
+//      response.status match {
+//        case StatusCodes.OK => 1
+//        case _ => 0
+//      }
+//    } reduce { (total, next) => total + next }
+  }
+
   override def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit] = {
     profile.linkedNihUsername match {
       case Some(nihUsername) =>
