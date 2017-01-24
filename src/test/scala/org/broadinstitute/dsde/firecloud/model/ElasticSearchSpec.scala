@@ -38,14 +38,14 @@ class ElasticSearchSpec  extends FreeSpec with Assertions {
 
   "ESInternalType model" - {
     "when unmarshalling from json" in {
-      val testData = """ {"type": "string", "analyzer":"whitespace", "include_in_all":false} """
+      val testData = """ {"type": "string", "index":"not_analyzed", "include_in_all":false} """
       val item = testData.parseJson.convertTo[ESPropertyFields]
       assertResult("org.broadinstitute.dsde.firecloud.model.ESInternalType") {item.getClass.getName}
       assertResult(false) {item.asInstanceOf[ESInternalType].include_in_all}
     }
     "when marshalling to json" in {
       val testData = new ESInternalType("string")
-      assertResult("""{"type":"string","analyzer":"whitespace","include_in_all":false}""") {
+      assertResult("""{"type":"string","index":"not_analyzed","include_in_all":false}""") {
         testData.toJson.toString
       }
     }

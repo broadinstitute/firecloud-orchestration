@@ -49,7 +49,7 @@ object ESType extends ESPropertyFields {
 
 case class ESInternalType(
   `type`: String,
-  analyzer: String = "whitespace",
+  index: String = "not_analyzed",
   include_in_all: Boolean = false) extends ESPropertyFields
 
 case class ESAggregatableType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = ElasticSearch.fieldSuggest) extends ESPropertyFields
