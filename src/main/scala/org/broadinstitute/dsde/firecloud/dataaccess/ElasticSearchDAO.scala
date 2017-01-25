@@ -22,6 +22,34 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
   private val client: TransportClient = buildClient(servers)
   private final val datatype = "dataset"
 
+  // see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html
+  //  and https://qbox.io/blog/multi-field-partial-word-autocomplete-in-elasticsearch-using-ngrams
+  private final val analysisSettings=
+  """
+    |{
+    |	"analysis": {
+    |		"filter": {
+    |			"autocomplete_filter": {
+    |				"type":     "edge_ngram",
+    |				"min_gram": 1,
+    |				"max_gram": 20
+    |			}
+    |		},
+    |		"analyzer": {
+    |			"autocomplete": {
+    |				"type":      "custom",
+    |				"tokenizer": "standard",
+    |				"filter": [
+    |					"lowercase",
+    |					"autocomplete_filter"
+    |				]
+    |			}
+    |		}
+    |	}
+    |}
+  """.stripMargin
+
+
   initIndex
 
   // if the index does not exist, create it.
@@ -98,7 +126,7 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
         logger.info(s"... ES index '%s' created.".format(indexName))
       }
     } catch {
-      case e: Exception => logger.warn(s"ES index '%s' could not be recreated and may be in an unstable state.".format(indexName))
+      case e: Exception => logger.warn(s"ES index '%s' could not be recreated and may be in an unstable state.".format(indexName), e)
     }
   }
 
@@ -109,33 +137,5 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
   override def suggest(criteria: LibrarySearchParams): Future[LibrarySearchResponse] = {
     autocompleteSuggestions(client, indexName, criteria)
   }
-
-  // see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html
-  //  and https://qbox.io/blog/multi-field-partial-word-autocomplete-in-elasticsearch-using-ngrams
-  private final val analysisSettings =
-    """
-      |{
-      |	"analysis": {
-      |		"filter": {
-      |			"autocomplete_filter": {
-      |				"type":     "edge_ngram",
-      |				"min_gram": 1,
-      |				"max_gram": 20
-      |			}
-      |		},
-      |		"analyzer": {
-      |			"autocomplete": {
-      |				"type":      "custom",
-      |				"tokenizer": "standard",
-      |				"filter": [
-      |					"lowercase",
-      |					"autocomplete_filter"
-      |				]
-      |			}
-      |		}
-      |	}
-      |}
-    """.stripMargin
-
-
+  
 }
