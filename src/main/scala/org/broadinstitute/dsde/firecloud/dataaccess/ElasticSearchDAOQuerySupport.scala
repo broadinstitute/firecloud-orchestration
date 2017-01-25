@@ -52,13 +52,6 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       case Some(searchTerm) if searchTerm.trim == "" => matchAllQuery
       case Some(searchTerm) => matchQuery(searchField, searchTerm)
     })
-    val groupsQuery = boolQuery
-    // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/query-dsl-exists-query.html
-    groupsQuery.should(boolQuery.mustNot(existsQuery(fieldDiscoverableByGroups)))
-    if (groups.nonEmpty) {
-      groupsQuery.should(termsQuery(fieldDiscoverableByGroups, groups.asJavaCollection))
-    }
-    query.must((groupsQuery))
     criteria.filters foreach { case (field:String, values:Seq[String]) =>
       val fieldQuery = boolQuery // query for possible values of aggregation, added via should
       values foreach { value:String => fieldQuery.should(termQuery(field+".raw", value))}
