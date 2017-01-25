@@ -45,10 +45,10 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     }
   }
 
-  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Int] = {
+  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Boolean] = {
     val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
     val profilePropertyMap: Map[String, String] = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
-    profilePropertyMap map {
+    Future.sequence(profilePropertyMap map {
       case (key, value) =>
         pipeline {
           Post(UserService.remoteSetKeyURL,
@@ -58,20 +58,11 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
             ))
         } map { response =>
           response.status match {
-            case StatusCodes.OK => 1
-            case _ => 0
+            case StatusCodes.OK => true
+            case _ => false
           }
         }
-    }.sum
-//    propertyPosts map { a => a.
-//
-//    }
-//    map { response =>
-//      response.status match {
-//        case StatusCodes.OK => 1
-//        case _ => 0
-//      }
-//    } reduce { (total, next) => total + next }
+    }) map({ _.forall({x: Boolean => x}) })
   }
 
   override def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit] = {
