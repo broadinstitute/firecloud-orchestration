@@ -21,12 +21,13 @@ trait LibraryServiceSupport {
 
   def indexableDocument(workspace: RawlsWorkspace): Document = {
     val attrfields = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
-    val idfields = Map(
+    val nonlibraryfields = Map(
       AttributeName.withDefaultNS("name") -> AttributeString(workspace.name),
       AttributeName.withDefaultNS("namespace") -> AttributeString(workspace.namespace),
-      AttributeName.withDefaultNS("workspaceId") -> AttributeString(workspace.workspaceId)
+      AttributeName.withDefaultNS("workspaceId") -> AttributeString(workspace.workspaceId),
+      AttributeName.withDefaultNS("discoverableByGroups") -> AttributeString(ElasticSearch.fieldDiscoverableByGroups)
     )
-    Document(workspace.workspaceId, attrfields ++ idfields)
+    Document(workspace.workspaceId, attrfields ++ nonlibraryfields)
   }
 
   def defaultSchema: String = FileUtils.readAllTextFromResource(LibraryService.schemaLocation)
