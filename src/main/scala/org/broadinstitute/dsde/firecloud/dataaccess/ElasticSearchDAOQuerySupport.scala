@@ -28,9 +28,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     *          {"should" : [
     *            {"bool" :
     *              {"must_not" :
-    *                {"exists" : {"field" : "library:discoverableByGroups"}}}},
+    *                {"exists" : {"field" : "_discoverableByGroups"}}}},
     *            {"terms" :
-    *            {"library:discoverableByGroups" : ["37e1e624-84e0-4046-98d6-f89388a8f727-OWNER", "fdae9abd-be33-4be9-9eb2-321df017b8a2-OWNER"]}}]
+    *            {"_discoverableByGroups" : ["37e1e624-84e0-4046-98d6-f89388a8f727-OWNER", "fdae9abd-be33-4be9-9eb2-321df017b8a2-OWNER"]}}]
     *          }
     *        },
     *        {"bool":
