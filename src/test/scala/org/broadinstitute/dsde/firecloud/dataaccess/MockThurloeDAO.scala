@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.{Notification, Profile, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, Notification, Profile, UserInfo}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -27,6 +27,8 @@ class MockThurloeDAO extends ThurloeDAO {
   override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
     Future(nextGetProfileResponse)
   }
+
+  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Boolean] = Future(true)
 
   override def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit] =
     Future(())
