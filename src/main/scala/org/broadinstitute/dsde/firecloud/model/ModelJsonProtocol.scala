@@ -182,14 +182,11 @@ object ModelJsonProtocol {
     override def read(json: JsValue): ESPropertyFields = {
       val data = json.asJsObject.fields
       if (data.contains("fields")) {
-        if (data.get("fields").contains("raw"))
-        {
-          ESAggregatableTypeFormat.read(json)
-        } else {
-          ESTypeFormat.read(json)
-        }
-      } else {
+        ESAggregatableTypeFormat.read(json)
+      } else if (data.contains("index")) {
         ESInternalTypeFormat.read(json)
+      } else {
+        ESTypeFormat.read(json)
       }
     }
   }
@@ -340,7 +337,7 @@ object ModelJsonProtocol {
   implicit val ESInnerFieldFormat = jsonFormat6(ESInnerField)
   implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
   implicit val ESAggregatableTypeFormat = jsonFormat3(ESAggregatableType.apply)
-  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
+  implicit val ESTypeFormat = jsonFormat2(ESType.apply)
   implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
   implicit val impAggregationTermResult = jsonFormat2(AggregationTermResult)
