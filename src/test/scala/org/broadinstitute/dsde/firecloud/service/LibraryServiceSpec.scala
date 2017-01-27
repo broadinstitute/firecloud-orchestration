@@ -65,7 +65,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       |  "library:requiresExternalApproval" : "No",
       |  "library:technology" : ["is an optional","array attribute"],
       |  "library:orsp" : "some orsp",
-      |  "discoverableByGroups" : ["Group1","Group2"]
+      |  "_discoverableByGroups" : ["Group1","Group2"]
       |}
     """.stripMargin
   val testLibraryMetadataJsObject = testLibraryMetadata.parseJson.asJsObject
