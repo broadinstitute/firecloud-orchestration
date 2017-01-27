@@ -67,7 +67,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     if (groups.nonEmpty) {
       groupsQuery.should(termsQuery(fieldDiscoverableByGroups, groups.asJavaCollection))
     }
-    query.must((groupsQuery))
+    query.must(groupsQuery)
     criteria.filters foreach { case (field:String, values:Seq[String]) =>
       val fieldQuery = boolQuery // query for possible values of aggregation, added via should
       values foreach { value:String => fieldQuery.should(termQuery(field+".raw", value))}
