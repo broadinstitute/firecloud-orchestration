@@ -20,7 +20,13 @@ trait LibraryServiceSupport {
   }
 
   def indexableDocument(workspace: RawlsWorkspace): Document = {
-    val attrfields = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
+    val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
+    val attrfields = attrfields_subset map { case (attr, value) =>
+      attr.name match {
+        case "discoverableByGroups" => AttributeName.withDefaultNS(ElasticSearch.fieldDiscoverableByGroups) -> value
+        case _ => attr -> value
+      }
+    }
     val idfields = Map(
       AttributeName.withDefaultNS("name") -> AttributeString(workspace.name),
       AttributeName.withDefaultNS("namespace") -> AttributeString(workspace.namespace),

@@ -147,13 +147,6 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
           }
         }
       }
-      "when converting json to LibrarySearchParams" - {
-        "should succeed" in {
-          val json = "{\"searchString\": \"test\",\"filters\": {},\"fieldAggregations\": {\"library:indication\":5},\"from\": 0,\"size\": 10}".parseJson
-          val obj = impLibrarySearchParams.read(json)
-          assert(obj.getClass.getName == "org.broadinstitute.dsde.firecloud.model.LibrarySearchParams")
-        }
-      }
     }
   }
 }

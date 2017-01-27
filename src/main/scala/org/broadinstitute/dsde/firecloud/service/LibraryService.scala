@@ -122,10 +122,10 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    searchDAO.findDocuments(criteria) map (RequestComplete(_))
+    rawlsDAO.getGroupsForUser map (searchDAO.findDocuments(criteria, _)) map (RequestComplete(_))
   }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    searchDAO.suggest(criteria) map (RequestComplete(_))
+    rawlsDAO.getGroupsForUser map (searchDAO.suggest(criteria, _)) map (RequestComplete(_))
   }
 }

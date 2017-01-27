@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 object ElasticSearch {
   final val fieldAll = "_all"
   final val fieldSuggest = "_suggest"
+  final val fieldDiscoverableByGroups = "_discoverableByGroups"
 }
 
 case class AttributeDefinition(properties: Map[String, AttributeDetail])
@@ -32,22 +33,25 @@ trait ESPropertyFields {
     include_in_all = Some(false),
     store = Some(true)
   )
-  // TODO: build out completion suggester field, a la:
-  // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/search-suggesters-completion.html
-  def completionField(`type`:String) = ESInnerField(`type`)
   def rawField(`type`:String) = ESInnerField(`type`,
     index = Some("not_analyzed")
   )
 }
 
 // top-level field defs, for facet and non-facet types
-case class ESType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = ElasticSearch.fieldSuggest) extends ESPropertyFields
+case class ESType(`type`: String, copy_to: String) extends ESPropertyFields
 object ESType extends ESPropertyFields {
-  def apply(`type`: String):ESType = ESType(`type`, Map("completion" -> completionField(`type`)))
+  def apply(`type`: String):ESType = ESType(`type`, ElasticSearch.fieldSuggest)
 }
+
+case class ESInternalType(
+  `type`: String,
+  index: String = "not_analyzed",
+  include_in_all: Boolean = false) extends ESPropertyFields
+
 case class ESAggregatableType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = ElasticSearch.fieldSuggest) extends ESPropertyFields
 object ESAggregatableType extends ESPropertyFields {
-  def apply(`type`: String):ESAggregatableType = ESAggregatableType(`type`, Map("completion" -> completionField(`type`), "raw" -> rawField(`type`)))
+  def apply(`type`: String):ESAggregatableType = ESAggregatableType(`type`, Map("raw" -> rawField(`type`)))
 }
 
 // def for ElasticSearch's multi-fields: https://www.elastic.co/guide/en/elasticsearch/reference/2.4/multi-fields.html

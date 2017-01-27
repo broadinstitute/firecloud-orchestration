@@ -32,12 +32,12 @@ class MockSearchDAO extends SearchDAO {
     deleteDocumentInvoked = true
   }
 
-  override def findDocuments(librarySearchParams: LibrarySearchParams): Future[LibrarySearchResponse] = {
+  override def findDocuments(librarySearchParams: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
     findDocumentsInvoked = true
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
-  override def suggest(librarySearchParams: LibrarySearchParams): Future[LibrarySearchResponse] = {
+  override def suggest(librarySearchParams: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
     autocompleteInvoked = true
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
