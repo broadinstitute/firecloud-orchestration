@@ -493,6 +493,26 @@ paths:
         200:
           description: Search suggestions, with highlighting
 
+  /api/library/populate/suggest/{field}/{text}/:
+    post:
+      tags:
+        - Library
+      operationId: populateSuggest
+      summary: |
+        suggestions for populating a field
+      parameters:
+        - in: path
+          name: field
+          description: the property to get suggestions for
+          type: string
+        - in: path
+          name: text
+          type: string
+          description: the initial text to complete
+      responses:
+        200:
+          description: Field specific suggestions
+
   /api/library/user/role/curator:
     get:
       responses:

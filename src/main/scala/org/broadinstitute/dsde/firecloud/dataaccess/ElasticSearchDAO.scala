@@ -110,6 +110,10 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     autocompleteSuggestions(client, indexName, criteria, groups)
   }
 
+  override def fieldSuggest(field: String, text: String): Future[Seq[String]] = {
+    allSuggestions(client, indexName, field, text)
+  }
+
   /* see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html
    *  and https://qbox.io/blog/multi-field-partial-word-autocomplete-in-elasticsearch-using-ngrams
    *  for explanation of the autocomplete analyzer.
@@ -120,5 +124,4 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
    * lazy is necessary here because we use it above
    */
   private final lazy val analysisSettings = FileUtils.readAllTextFromResource("library/es-settings.json")
-
 }

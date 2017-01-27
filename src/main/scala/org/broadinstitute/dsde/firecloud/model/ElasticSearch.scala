@@ -47,8 +47,8 @@ trait ESPropertyFields {
 // top-level field defs, for facet and non-facet types
 case class ESType(`type`: String, fields: Option[Map[String,ESInnerField]], copy_to: Option[String] = None ) extends ESPropertyFields
 object ESType extends ESPropertyFields {
-  def apply(`type`: String, hasCreateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
-    val fields: Option[Map[String,ESInnerField]] = (hasCreateSuggest, isAggregatable) match {
+  def apply(`type`: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
+    val fields: Option[Map[String,ESInnerField]] = (hasPopulateSuggest, isAggregatable) match {
       case (true, true) => Option(Map("suggest" -> completionField, "raw" -> rawField(`type`)))
       case (true, false) => Option(Map("suggest" -> completionField))
       case (false, true) => Option(Map("raw" -> rawField(`type`)))

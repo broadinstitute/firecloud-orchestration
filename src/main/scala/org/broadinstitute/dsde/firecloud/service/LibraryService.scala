@@ -32,6 +32,7 @@ object LibraryService {
   case object IndexAll extends LibraryServiceMessage
   case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
   case class Suggest(criteria: LibrarySearchParams) extends LibraryServiceMessage
+  case class PopulateSuggest(field: String, text: String) extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
@@ -55,6 +56,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     case IndexAll => asAdmin {indexAll} pipeTo sender
     case FindDocuments(criteria: LibrarySearchParams) => asCurator {findDocuments(criteria)} pipeTo sender
     case Suggest(criteria: LibrarySearchParams) => asCurator {suggest(criteria)} pipeTo sender
+    case PopulateSuggest(field: String, text: String) => asCurator {populateSuggest(field: String, text: String)} pipeTo sender
   }
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
@@ -124,5 +126,9 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
     rawlsDAO.getGroupsForUser map (searchDAO.suggest(criteria, _)) map (RequestComplete(_))
+  }
+
+  def populateSuggest(field: String, text: String): Future[PerRequestMessage] = {
+    searchDAO.fieldSuggest(field, text) map (RequestComplete(_))
   }
 }
