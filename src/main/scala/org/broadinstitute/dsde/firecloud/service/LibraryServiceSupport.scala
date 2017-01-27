@@ -3,10 +3,11 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
-import org.everit.json.schema.Schema
+import org.everit.json.schema.{Schema, ValidationException}
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.{JSONObject, JSONTokener}
 import org.parboiled.common.FileUtils
+import scala.collection.JavaConversions._
 import spray.json.JsObject
 
 /**
@@ -38,7 +39,10 @@ trait LibraryServiceSupport {
     val rawSchema:JSONObject = new JSONObject(new JSONTokener(schemaStr))
     val schema:Schema = SchemaLoader.load(rawSchema)
     schema.validate(new JSONObject(data))
-
   }
 
+  def getSchemaValidationMessages(ve: ValidationException): Seq[String] = {
+    Seq(ve.getPointerToViolation + ": " + ve.getErrorMessage) ++
+      (ve.getCausingExceptions flatMap {ce => getSchemaValidationMessages(ce)})
+  }
 }
