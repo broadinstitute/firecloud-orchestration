@@ -59,6 +59,7 @@
         "renderHint": "checkbox"
       },
       "typeahead": "ontology",
+      "inputHint": "Select an ontology value",
       "relatedID": "library:diseaseOntologyID",
       "relatedLabel": "library:diseaseOntologyLabel"
     },
