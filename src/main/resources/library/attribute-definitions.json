@@ -9,7 +9,7 @@
     "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:dataUseRestriction",
     "library:studyDesign", "library:cellType", "library:requiresExternalApproval"],
   "oneOf": [{
-    "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS",
+    "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
       "library:NCTRL", "library:RS-G", "library:RS-PD"]
   }, {
     "required": ["library:orsp"]
@@ -204,8 +204,8 @@
     },
     "library:NAGR": {
       "title": "Future use of aggregate-level data for general research purposes is prohibited",
-      "type": "boolean",
-      "renderHint": {"wording": "yes/no", "emptyChoice": "Unspecified"},
+      "type": "string",
+      "enum": ["Yes", "No", "Unspecified"],
       "consentCode": "NAGR"
     },
     "library:NCTRL": {
