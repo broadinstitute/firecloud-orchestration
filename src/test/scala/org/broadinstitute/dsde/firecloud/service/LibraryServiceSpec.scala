@@ -62,7 +62,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       |  "library:dataUseRestriction" : "dur",
       |  "library:studyDesign" : "study",
       |  "library:cellType" : "cell",
-      |  "library:requiresExternalApproval" : "No",
+      |  "library:requiresExternalApproval" : false,
       |  "library:technology" : ["is an optional","array attribute"],
       |  "library:orsp" : "some orsp"
       |}
@@ -72,15 +72,15 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
   val DURAdditionalJsObject =
     """
       |{
-      |  "library:GRU"  : "Yes",
-      |  "library:HMB"  : "Yes",
-      |  "library:NCU"  : "No",
-      |  "library:NPU"  : "No",
-      |  "library:NDMS" : "Yes",
+      |  "library:GRU"  : true,
+      |  "library:HMB"  : false,
+      |  "library:NCU"  : false,
+      |  "library:NPU"  : false,
+      |  "library:NDMS" : true,
       |  "library:NAGR" : "Unspecified",
-      |  "library:NCTRL": "Yes",
+      |  "library:NCTRL": true,
       |  "library:RS-G" : "Female",
-      |  "library:RS-PD": "No"
+      |  "library:RS-PD": false
       |}
     """.stripMargin.parseJson.asJsObject
   val DURfields = (testLibraryMetadataJsObject.fields-"library:orsp") ++ DURAdditionalJsObject.fields
