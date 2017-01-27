@@ -8,15 +8,15 @@ import spray.json.DefaultJsonProtocol._
 * TODO: share with rawls code, instead of copying wholesale
 */
 
-case class AccessEntry(accessLevel: WorkspaceAccessLevel, pending: Boolean)
+case class AccessEntry(accessLevel: WorkspaceAccessLevel, pending: Boolean, canShare: Boolean)
 
 case class WorkspaceACL(acl: Map[String, AccessEntry])
 
-case class WorkspaceACLUpdate(email: String, accessLevel: WorkspaceAccessLevel)
+case class WorkspaceACLUpdate(email: String, accessLevel: WorkspaceAccessLevel, canShare: Option[Boolean])
 
 case class WorkspaceACLUpdateResponse(subjectId: String, accessLevel: WorkspaceAccessLevel)
 
-case class WorkspaceACLUpdateResponseList(usersUpdated: Seq[WorkspaceACLUpdateResponse], invitesUpdated: Seq[WorkspaceACLUpdate], usersNotFound: Seq[WorkspaceACLUpdate])
+case class WorkspaceACLUpdateResponseList(usersUpdated: Seq[WorkspaceACLUpdateResponse], invitesSent: Seq[WorkspaceACLUpdate], invitesUpdated: Seq[WorkspaceACLUpdate], usersNotFound: Seq[WorkspaceACLUpdate])
 
 object WorkspaceAccessLevels {
   sealed trait WorkspaceAccessLevel extends Ordered[WorkspaceAccessLevel] {
@@ -78,13 +78,13 @@ object WorkspaceACLJsonSupport {
     }
   }
 
-  implicit val AccessEntryFormat = jsonFormat2(AccessEntry)
+  implicit val AccessEntryFormat = jsonFormat3(AccessEntry)
 
   implicit val WorkspaceACLFormat = jsonFormat1(WorkspaceACL)
 
-  implicit val WorkspaceACLUpdateFormat = jsonFormat2(WorkspaceACLUpdate)
+  implicit val WorkspaceACLUpdateFormat = jsonFormat3(WorkspaceACLUpdate)
 
   implicit val WorkspaceACLUpdateResponseFormat = jsonFormat2(WorkspaceACLUpdateResponse)
 
-  implicit val WorkspaceACLUpdateResponseListFormat = jsonFormat3(WorkspaceACLUpdateResponseList)
+  implicit val WorkspaceACLUpdateResponseListFormat = jsonFormat4(WorkspaceACLUpdateResponseList)
 }

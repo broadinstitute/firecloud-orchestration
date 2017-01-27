@@ -99,7 +99,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
         case added => WorkspaceAddedNotification(added.subjectId, added.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
       }
 
-      val inviteNotifications = actualUpdates.invitesUpdated.filterNot(_.accessLevel.equals(WorkspaceAccessLevels.NoAccess)).map(invite => WorkspaceInvitedNotification(invite.email, originEmail))
+      val inviteNotifications = actualUpdates.invitesSent.filterNot(_.accessLevel.equals(WorkspaceAccessLevels.NoAccess)).map(invite => WorkspaceInvitedNotification(invite.email, originEmail))
 
       thurloeDAO.sendNotifications((updateNotifications ++ inviteNotifications))
 

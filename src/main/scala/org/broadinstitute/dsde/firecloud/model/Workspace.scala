@@ -34,6 +34,7 @@ case class RawlsWorkspaceCreate(
 
 case class RawlsWorkspaceResponse(
   accessLevel: String,
+  canShare: Boolean,
   workspace: RawlsWorkspace,
   workspaceSubmissionStats: SubmissionStats,
   owners: List[String])
@@ -60,11 +61,12 @@ case class SubmissionStats(
 
 case class UIWorkspaceResponse(
   accessLevel: Option[String] = None,
+  canShare: Option[Boolean] = None,
   workspace: Option[UIWorkspace] = None,
   workspaceSubmissionStats: Option[SubmissionStats] = None,
   owners: Option[List[String]] = None) {
   def this(rwr: RawlsWorkspaceResponse) =
-    this(Option(rwr.accessLevel), Option(new UIWorkspace(rwr.workspace)), Option(rwr.workspaceSubmissionStats), Option(rwr.owners))
+    this(Option(rwr.accessLevel), Option(rwr.canShare), Option(new UIWorkspace(rwr.workspace)), Option(rwr.workspaceSubmissionStats), Option(rwr.owners))
 }
 
 case class UIWorkspace(
