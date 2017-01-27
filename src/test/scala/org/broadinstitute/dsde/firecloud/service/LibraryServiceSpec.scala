@@ -219,8 +219,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName("library","bar")->AttributeString("bar"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("discoverableByGroups") -> AttributeString(ElasticSearch.fieldDiscoverableByGroups)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
@@ -230,14 +229,33 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
     "with only default attributes in workspace" - {
       "should generate indexable document" in {
         val w = testWorkspace.copy(attributes = Map(
+          AttributeName("library","foo")->AttributeString("foo"),
+          AttributeName("library","discoverableByGroups")->AttributeValueList(Seq(AttributeString("Group1"))),
+          AttributeName.withDefaultNS("baz")->AttributeString("defaultBaz"),
+          AttributeName.withDefaultNS("qux")->AttributeString("defaultQux")
+        ))
+        val expected = Document(testUUID.toString, Map(
+          AttributeName("library","foo")->AttributeString("foo"),
+          AttributeName.withDefaultNS("_discoverableByGroups") -> AttributeValueList(Seq(AttributeString("Group1"))),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          indexableDocument(w)
+        }
+      }
+    }
+    "with discoverableByGroup attribute in workspace" - {
+      "should generate indexable document" in {
+        val w = testWorkspace.copy(attributes = Map(
           AttributeName.withDefaultNS("baz")->AttributeString("defaultBaz"),
           AttributeName.withDefaultNS("qux")->AttributeString("defaultQux")
         ))
         val expected = Document(testUUID.toString, Map(
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("discoverableByGroups") -> AttributeString(ElasticSearch.fieldDiscoverableByGroups)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
@@ -252,8 +270,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val expected = Document(testUUID.toString, Map(
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("discoverableByGroups") -> AttributeString(ElasticSearch.fieldDiscoverableByGroups)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
@@ -274,8 +291,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val expected = Document(testUUID.toString, Map(
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("discoverableByGroups") -> AttributeString(ElasticSearch.fieldDiscoverableByGroups)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
@@ -295,8 +311,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName("library","bar")->AttributeString("bar"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("discoverableByGroups") -> AttributeString(ElasticSearch.fieldDiscoverableByGroups)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
@@ -318,8 +333,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName("library","bar")->AttributeString("bar"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("discoverableByGroups") -> AttributeString(ElasticSearch.fieldDiscoverableByGroups)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           indexableDocument(w)
