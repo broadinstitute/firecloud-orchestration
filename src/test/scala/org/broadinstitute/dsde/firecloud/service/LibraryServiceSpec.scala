@@ -433,6 +433,31 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         validateJsonSchema(testLibraryDURMetadata, testSchema)
       }
+
+      "has error messages for top-level missing keys" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields-"library:datasetName"-"library:datasetOwner").compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        val errorMessages = getSchemaValidationMessages(ex)
+        assert( errorMessages.contains("#: required key [library:datasetName] not found"),
+          "does not have library:datasetName in error messages" )
+        assert( errorMessages.contains("#: required key [library:datasetOwner] not found"),
+          "does not have library:datasetOwner in error messages" )
+      }
+      "has error message for missing key from the DUR set" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryDURMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields-"library:NPU").compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        val errorMessages = getSchemaValidationMessages(ex)
+        assert( errorMessages.contains("#: required key [library:NPU] not found"),
+          "does not have library:NPU in error messages" )
+      }
     }
     "when creating schema mappings" - {
       "works for string type" in {
