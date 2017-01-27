@@ -29,19 +29,23 @@
     },
     "library:datasetCustodian": {
       "title": "Dataset Custodian",
-      "type": "string"
+      "type": "string",
+      "inputHint": "e.g. Project Manager"
     },
     "library:datasetDepositor": {
       "title": "Dataset Depositor",
-      "type": "string"
+      "type": "string",
+      "inputHint": "e.g. Project Manager"
     },
     "library:contactEmail": {
       "title": "Contact Email",
-      "type": "string"
+      "type": "string",
+      "renderHint": {"datatype": "email"}
     },
     "library:datasetOwner": {
       "title": "Dataset Owner",
-      "type": "string"
+      "type": "string",
+      "inputHint": "e.g. Prinicipal Investigator"
     },
     "library:institute": {
       "title": "Research Institute",
@@ -55,26 +59,31 @@
         "renderHint": "checkbox"
       },
       "typeahead": "ontology",
+      "inputHint": "Select an ontology value",
       "relatedID": "library:diseaseOntologyID",
       "relatedLabel": "library:diseaseOntologyLabel"
     },
     "library:diseaseOntologyID": {
       "title": "Disease Ontology ID",
-      "type": "string"
+      "type": "string",
+      "hidden": true
     },
     "library:diseaseOntologyLabel": {
       "type": "string",
-      "title": "Cohort Phenotype/Indication (Disease Ontology)"
+      "title": "Cohort Phenotype/Indication (Disease Ontology)",
+      "hidden": true
     },
     "library:numSubjects": {
       "title": "No. of Subjects",
       "type": "integer",
       "minimum": 0,
-      "default": 0
+      "default": 0,
+      "inputHint": "Number of participants the data maps to"
     },
     "library:projectName": {
       "title": "Project Name",
       "type": "string",
+      "inputHint": "e.g. TCGA, TopMed, ExAC ; tag all relevant associated projects",
       "aggregate": {
         "renderHint": "checkbox"
       }
@@ -82,29 +91,34 @@
     "library:dataCategory": {
       "title": "Data Category",
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "inputHint": "e.g. Simple Nucleotide Variation (SNVs), Raw Sequencing data, Copy Number Variation, Structural Variation, Expression Quantification, Transcriptome Assembly, DNA-Methylation, Clinical phenotypes, Biospecimen metadata"
     },
     "library:datatype": {
       "title": "Experimental Strategy",
       "type": "array",
       "items": { "type": "string" },
+      "inputHint": "e.g. Whole Exome, Whole Genome, Exome Panel, Genotyping Array, RNA-Seq, Methylation Array; include all relevant",
       "aggregate": {
         "renderHint": "checkbox"
       }
     },
     "library:reference": {
       "title": "Genome Reference Version",
-      "type": "string"
+      "type": "string",
+      "inputHint": "e.g. GRCh37/hg19, GRCh38/hg38; To which genome build the data was aligned, if relevant"
     },
     "library:dataFileFormats": {
       "title": "Data File Formats",
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "inputHint": "e.g. VCF, BAM, TXT, TSV, BCR XML, BED, GTF, GCT; Tag all relevant"
     },
     "library:technology": {
       "title": "Profiling Instrument Type",
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "inputHint": "e.g. Illumina, 10X"
     },
     "library:profilingProtocol": {
       "title": "Profiling Protocol",
@@ -120,7 +134,8 @@
     },
     "library:studyDesign": {
       "title": "Study Design",
-      "type": "string"
+      "type": "string",
+      "inputHint": "e.g. Case/Control, Tumor/Normal, Trio/Twin/Family, Prospective Longitudinal Cohort, Cases only - somatic, Cases only - germline, Controls"
     },
     "library:cellType": {
       "title": "Cell Type",
@@ -134,7 +149,8 @@
     "library:ethnicity": {
       "title": "Reported Ethnicity",
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "inputHint": "e.g. Caucasians, African-Americans, Latino, East Asians, South Asians, Finnish, Non-Finnish Europeans; include all relevant"
     },
     "library:cohortCountry": {
       "title": "Cohort Country of Origin",
@@ -142,9 +158,10 @@
     },
     "library:requiresExternalApproval": {
       "title": "Requires External Approval",
-      "type": "string",
-      "enum": ["Yes", "No"],
-      "default": "No"
+      "type": "boolean",
+      "renderHint": {"wording": "yes/no"},
+      "default": false,
+      "inputHint": "i.e. approval from a second source is required in order to access the data"
     },
     "library:primaryDiseaseSite": {
       "title": "Primary Disease Site",
@@ -152,14 +169,14 @@
     },
     "library:GRU": {
       "title": "Data is available for future general research use",
-      "type": "string",
-      "enum": ["Yes", "No"],
+      "type": "boolean",
+      "renderHint": {"wording": "yes/no"},
       "consentCode": "GRU"
     },
     "library:HMB": {
       "title": "Future use is limited for health/medical/biomedical research",
-      "type": "string",
-      "enum": ["Yes", "No"],
+      "type": "boolean",
+      "renderHint": {"wording": "yes/no"},
       "consentCode": "HMB"
     },
     "library:DS": {
@@ -170,20 +187,20 @@
     },
     "library:NCU": {
       "title": "Future commercial use is prohibited",
-      "type": "string",
-      "enum": ["Yes", "No"],
+      "type": "boolean",
+      "renderHint": {"wording": "yes/no"},
       "consentCode": "NCU"
     },
     "library:NPU": {
       "title": "Future use by for-profit entities is prohibited",
-      "type": "string",
-      "enum": ["Yes", "No"],
+      "type": "boolean",
+      "renderHint": {"wording": "yes/no"},
       "consentCode": "NPU"
     },
     "library:NDMS": {
       "title": "Future use for methods research (analytic/software/technology development) outside the bounds of the other specified restrictions is prohibited",
-      "type": "string",
-      "enum": ["Yes", "No"],
+      "type": "boolean",
+      "renderHint": {"wording": "yes/no"},
       "consentCode": "NDMS"
     },
     "library:NAGR": {
@@ -194,8 +211,8 @@
     },
     "library:NCTRL": {
       "title": "Future use as a control set for diseases other than those specified is prohibited",
-      "type": "string",
-      "enum": ["Yes", "No"],
+      "type": "boolean",
+      "renderHint": {"wording": "yes/no"},
       "consentCode": "NCTRL"
     },
     "library:RS-G": {
@@ -206,8 +223,8 @@
     },
     "library:RS-PD": {
       "title": "Future use is limited to pediatric research",
-      "type": "string",
-      "enum": ["Yes", "No"],
+      "type": "boolean",
+      "renderHint": {"wording": "yes/no"},
       "consentCode": "RS-PD"
     },
     "library:RS-POP": {
@@ -218,10 +235,12 @@
     },
     "library:futureUseDate": {
       "title": "Future use is limited to data generated from samples collected after the following consent form date",
-      "type": "string"
+      "type": "string",
+      "renderHint": {"datatype": "date"}
     },
     "library:orsp": {
-      "type": "string"
+      "type": "string",
+      "renderHint": {"datatype": "freetext"}
     },
     "library:lmsvn": {
       "title": "Library Metadata Schema Version Number",
@@ -257,42 +276,20 @@
       "library:datasetCustodian", "library:datasetDepositor", "library:contactEmail", "library:institute", "library:primaryDiseaseSite",
       "library:projectName", "library:reference", "library:dataFileFormats", "library:technology", "library:profilingProtocol",
       "library:coverage", "library:studyDesign", "library:cellType", "library:ethnicity", "library:cohortCountry", "library:requiresExternalApproval",
-      "library:lmsvn", "library:dulvn" ],
+      "library:lmsvn", "library:dulvn"],
     "consentCodes": ["GRU", "HMB", "DS", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-G", "RS-PD", "RS-POP"]
   },
   "wizard":
   [
     {
       "title": "Define Data Set attributes",
-      "questions":
-      [
-        {"property": "library:datasetName", "required": true},
-        {"property": "library:datasetVersion", "required": true},
-        {"property": "library:datasetDescription", "required": true},
-        {"property": "library:datasetOwner", "inputHint": "e.g. Prinicipal Investigator", "required": true},
-        {"property": "library:datasetCustodian", "inputHint": "e.g. Project Manager", "required": true},
-        {"property": "library:datasetDepositor", "inputHint": "e.g. Project Manager", "required": true},
-        {"property": "library:contactEmail", "required": true, "renderHint": "email"},
-        {"property": "library:institute", "required": true},
-        {"property": "library:diseaseOntologyLabel", "hidden": true},
-        {"property": "library:diseaseOntologyID", "hidden": true},
-        {"property": "library:indication", "required": true},
-        {"property": "library:primaryDiseaseSite"},
-        {"property": "library:numSubjects", "inputHint": "Number of participants the data maps to", "required": true},
-        {"property": "library:projectName", "inputHint": "e.g. TCGA, TopMed, ExAC ; tag all relevant associated projects", "required": true},
-        {"property": "library:dataCategory", "inputHint": "e.g. Simple Nucleotide Variation (SNVs), Raw Sequencing data, Copy Number Variation, Structural Variation, Expression Quantification, Transcriptome Assembly, DNA-Methylation, Clinical phenotypes, Biospecimen metadata", "required": true},
-        {"property": "library:datatype", "inputHint": "e.g. Whole Exome, Whole Genome, Exome Panel, Genotyping Array, RNA-Seq, Methylation Array; include all relevant", "required": true},
-        {"property": "library:reference", "inputHint": "e.g. GRCh37/hg19, GRCh38/hg38; To which genome build the data was aligned, if relevant"},
-        {"property": "library:dataFileFormats", "inputHint": "e.g. VCF, BAM, TXT, TSV, BCR XML, BED, GTF, GCT; Tag all relevant"},
-        {"property": "library:technology", "inputHint": "e.g. Illumina, 10X"},
-        {"property": "library:profilingProtocol"},
-        {"property": "library:coverage"},
-        {"property": "library:dataUseRestriction", "required": true},
-        {"property": "library:studyDesign", "inputHint": "e.g. Case/Control, Tumor/Normal, Trio/Twin/Family, Prospective Longitudinal Cohort, Cases only - somatic, Cases only - germline, Controls", "required": true},
-        {"property": "library:cellType", "required": true},
-        {"property": "library:ethnicity", "inputHint": "e.g. Caucasians, African-Americans, Latino, East Asians, South Asians, Finnish, Non-Finnish Europeans; include all relevant"},
-        {"property": "library:cohortCountry"},
-        {"property": "library:requiresExternalApproval", "inputHint": "i.e. approval from a second source is required in order to access the data", "required": true}
+      "questions": ["library:datasetName", "library:datasetVersion", "library:datasetDescription", "library:datasetOwner",
+        "library:datasetCustodian", "library:datasetDepositor", "library:contactEmail", "library:institute",
+        "library:diseaseOntologyLabel", "library:diseaseOntologyID", "library:indication", "library:primaryDiseaseSite",
+        "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:reference",
+        "library:dataFileFormats", "library:technology", "library:profilingProtocol", "library:coverage",
+        "library:dataUseRestriction", "library:studyDesign", "library:cellType", "library:ethnicity",
+        "library:cohortCountry", "library:requiresExternalApproval"
       ]
     },
     {
@@ -304,28 +301,12 @@
           {
             "title": "Set Data Use Restrictions by answering a questionnaire",
             "enumerate": true,
-            "questions":
-            [
-              {"property": "library:GRU", "required": true},
-              {"property": "library:HMB", "required": true},
-              {"property": "library:DS"},
-              {"property": "library:NCU", "required": true},
-              {"property": "library:NPU", "required": true},
-              {"property": "library:NDMS", "required": true},
-              {"property": "library:NAGR", "required": true},
-              {"property": "library:NCTRL", "required": true},
-              {"property": "library:RS-G", "required": true},
-              {"property": "library:RS-PD", "required": true},
-              {"property": "library:RS-POP"},
-              {"property": "library:futureUseDate", "renderHint": "date"}
-            ]
+            "questions": ["library:GRU", "library:HMB", "library:DS", "library:NCU", "library:NPU", "library:NDMS",
+              "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate"]
           },
           {
             "title": "Retrieve Data Use Restrictions from Broad ORSP",
-            "questions":
-            [
-              {"property": "library:orsp", "required": true, "renderHint": "text"}
-            ]
+            "questions": ["library:orsp"]
           }
         ]
       }
