@@ -24,11 +24,14 @@ class MockThurloeDAO extends ThurloeDAO {
 
   override def sendNotifications(notifications: Seq[Notification]): Future[Try[Unit]] = Future(Success(()))
 
-  override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
+  override def getProfile(userInfo: UserInfo): Future[Option[Profile]] =
     Future(nextGetProfileResponse)
-  }
 
-  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Boolean] = Future(true)
+  override def saveKeyValue(userInfo: UserInfo, key: String, value: String): Future[Boolean] =
+    Future(true)
+
+  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Boolean] =
+    Future(true)
 
   override def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit] =
     Future(())

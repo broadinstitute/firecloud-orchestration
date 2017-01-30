@@ -16,7 +16,7 @@ import spray.routing._
 trait RegisterApiService extends HttpService with PerRequestCreator with FireCloudDirectives with StandardUserInfoDirectives {
 
   private implicit val executionContext = actorRefFactory.dispatcher
-  lazy val log = LoggerFactory.getLogger(getClass)
+  private lazy val log = LoggerFactory.getLogger(getClass)
 
   val registerServiceConstructor: () => RegisterService
 
