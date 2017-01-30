@@ -17,6 +17,14 @@
       "english_possessive_stemmer": {
         "type":       "stemmer",
         "language":   "possessive_english"
+      },
+      "index_delimiter" : {
+        "type": "word_delimiter"
+      },
+      "index_shingle" : {
+        "type": "shingle",
+        "max_shingle_size": 4,
+        "token_separator": "_"
       }
     },
     "analyzer": {
@@ -35,8 +43,12 @@
           "lowercase",
           "english_stop",
           "english_stemmer",
-          "word_delimiter"
+          "index_delimiter",
+          "index_shingle"
         ]
+      },
+      "default_search": {
+        "type": "standard"
       }
     }
   }
