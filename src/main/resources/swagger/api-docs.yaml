@@ -494,7 +494,7 @@ paths:
           description: Search suggestions, with highlighting
 
   /api/library/populate/suggest/{field}/{text}/:
-    post:
+    get:
       tags:
         - Library
       operationId: populateSuggest
