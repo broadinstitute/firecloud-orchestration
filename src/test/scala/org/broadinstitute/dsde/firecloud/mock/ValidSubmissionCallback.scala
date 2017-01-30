@@ -19,6 +19,7 @@ class ValidSubmissionCallback extends ExpectationCallback {
       case x if x.entityName.isDefined &&
         x.entityType.isDefined &&
         x.expression.isDefined &&
+        x.readFromCache.isDefined &&
         x.methodConfigurationName.isDefined &&
         x.methodConfigurationNamespace.isDefined =>
         response()

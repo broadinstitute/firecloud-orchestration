@@ -25,6 +25,10 @@ object MockUtils {
      randomStringFromCharList(randomPositiveInt(), chars)
    }
 
+  def randomBoolean(): Boolean = {
+    scala.util.Random.nextBoolean()
+  }
+
    def randomStringFromCharList(length: Int, chars: Seq[Char]): String = {
      val sb = new StringBuilder
      for (i <- 1 to length) {

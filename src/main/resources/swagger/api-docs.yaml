@@ -3305,11 +3305,15 @@ definitions:
         type: string
         description: Expression that resolves to one or more entities matching the entity type
           in the method configuration. Leave blank for default.
+      readFromCache:
+        type: boolean
+        description: Whether or not to read from cache for this submission
     required:
       - methodConfigurationNamespace
       - methodConfigurationName
       - entityType
       - entityName
+      - readFromCache
 
   SubmissionRequest:
     description: ''
