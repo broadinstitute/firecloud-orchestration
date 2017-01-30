@@ -7,7 +7,7 @@
   "required": ["library:datasetName", "library:datasetVersion", "library:datasetDescription", "library:datasetCustodian",
     "library:datasetDepositor", "library:contactEmail", "library:datasetOwner", "library:institute", "library:indication",
     "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:dataUseRestriction",
-    "library:studyDesign", "library:requiresExternalApproval"],
+    "library:studyDesign", "library:requiresExternalApproval", "library:useRestrictionOption"],
   "oneOf": [{
     "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
       "library:NCTRL", "library:RS-G", "library:RS-PD"]
@@ -187,6 +187,11 @@
       "type": "string",
       "typeahead": "populate"
     },
+    "library:useRestrictionOption": {
+      "title": "Choose one of the available options to define Data Use Restrictions:",
+      "type": "string",
+      "enum": ["questionnaire", "orsp"]
+    },
     "library:GRU": {
       "title": "Data is available for future general research use",
       "type": "boolean",
@@ -315,17 +320,19 @@
     {
       "title": "Catalog structured Data Use Restrictions",
       "switch": {
-        "title": "Choose one of the available options to define Data Use Restrictions:",
+        "property": "library:useRestrictionOption",
         "options":
         [
           {
             "title": "Set Data Use Restrictions by answering a questionnaire",
+            "propertyValue": "questionnaire",
             "enumerate": true,
             "questions": ["library:GRU", "library:HMB", "library:DS", "library:NCU", "library:NPU", "library:NDMS",
               "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate"]
           },
           {
             "title": "Retrieve Data Use Restrictions from Broad ORSP",
+            "propertyValue": "orsp",
             "questions": ["library:orsp"]
           }
         ]
