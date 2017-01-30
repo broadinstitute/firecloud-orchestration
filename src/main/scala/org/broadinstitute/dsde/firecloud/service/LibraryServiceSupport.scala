@@ -43,6 +43,6 @@ trait LibraryServiceSupport {
 
   def getSchemaValidationMessages(ve: ValidationException): Seq[String] = {
     Seq(ve.getPointerToViolation + ": " + ve.getErrorMessage) ++
-      (ve.getCausingExceptions flatMap {ce => getSchemaValidationMessages(ce)})
+      (ve.getCausingExceptions flatMap getSchemaValidationMessages)
   }
 }

@@ -70,7 +70,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
         validationResult match {
           case Failure(ve: ValidationException) =>
             val errorMessages = getSchemaValidationMessages(ve)
-            val errorReports = errorMessages.map{errmsg => ErrorReport(errmsg)}
+            val errorReports = errorMessages map {ErrorReport(_)}
             Future(RequestCompleteWithErrorReport(BadRequest, errorMessages.mkString("; "), errorReports))
           case Failure(e) =>
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
