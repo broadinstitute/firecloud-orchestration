@@ -69,12 +69,9 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
         val validationResult = Try( schemaValidate(attrsJsonString) )
         validationResult match {
           case Failure(ve: ValidationException) =>
-            val errorReports = ve.getCausingExceptions.map{v => ErrorReport(v.getMessage)}
-            val userMsg = if (errorReports.size > 1)
-              ve.getMessage + ". See causes for details."
-            else
-              ve.getMessage
-            Future(RequestCompleteWithErrorReport(BadRequest, userMsg, errorReports))
+            val errorMessages = getSchemaValidationMessages(ve)
+            val errorReports = errorMessages map {ErrorReport(_)}
+            Future(RequestCompleteWithErrorReport(BadRequest, errorMessages.mkString("; "), errorReports))
           case Failure(e) =>
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
           case Success(x) => {
