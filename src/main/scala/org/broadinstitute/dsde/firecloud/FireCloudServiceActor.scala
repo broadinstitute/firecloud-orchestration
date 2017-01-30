@@ -21,7 +21,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with NamespaceApiService
   with NihApiService
   with OauthApiService
-  with ProfileApiService
+  with RegisterApiService
   with StorageApiService
   with WorkspaceApiService
   {
@@ -45,6 +45,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val nihServiceConstructor: () => NihService = NihService.constructor(app)
   val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
+  val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
@@ -96,7 +97,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         namespaceRoutes ~
         nihSyncService.routes ~
         oauthRoutes ~
-        profileRoutes ~
+        registerRoutes ~
         storageRoutes ~
         swaggerUiService ~
         testNihService ~
@@ -185,4 +186,3 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   }
 
 }
-

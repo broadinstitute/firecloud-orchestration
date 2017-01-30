@@ -24,6 +24,7 @@ object RawlsDAO {
 
 trait RawlsDAO extends LazyLogging {
 
+  lazy val rawlsUserRegistrationUrl = FireCloudConfig.Rawls.baseUrl + "/register/user"
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
@@ -34,11 +35,15 @@ trait RawlsDAO extends LazyLogging {
 
   def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType"
 
+  def isRegistered(userInfo: UserInfo): Future[Boolean]
+
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
   def isDbGapAuthorized(userInfo: UserInfo): Future[Boolean]
 
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
+
+  def registerUser(userInfo: UserInfo): Future[Unit]
 
   def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]]
 

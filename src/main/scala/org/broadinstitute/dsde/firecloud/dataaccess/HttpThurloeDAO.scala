@@ -45,6 +45,22 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     }
   }
 
+  override def saveKeyValue(userInfo: UserInfo, key: String, value: String): Future[Boolean] = {
+    val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
+    pipeline {
+      Post(UserService.remoteSetKeyURL,
+        ThurloeKeyValue(
+          Some(userInfo.getUniqueId),
+          Some(FireCloudKeyValue(Some(key), Some(value)))
+        ))
+    } map { response =>
+      response.status match {
+        case StatusCodes.OK => true
+        case _ => false
+      }
+    }
+  }
+
   override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Boolean] = {
     val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
     val profilePropertyMap: Map[String, String] = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
