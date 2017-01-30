@@ -5,7 +5,7 @@ import akka.event.Logging
 import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.ProfileClient._
-import org.broadinstitute.dsde.firecloud.dataaccess.{HttpGoogleServicesDAO, HttpRawlsDAO, HttpThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -24,7 +24,6 @@ import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 object ProfileClient {
-  case class UpdateProfile(userInfo: UserInfo, profile: BasicProfile)
   case class UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink)
   case object SyncWhitelist
 
@@ -38,33 +37,6 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   val log = Logging(system, getClass)
 
   override def receive: Receive = {
-
-    case UpdateProfile(userInfo: UserInfo, profile: BasicProfile) =>
-      val pipeline = authHeaders(requestContext) ~> sendReceive
-      val profilePropertyMap = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
-      val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
-      val profileResponse: Future[PerRequestMessage] = propertyUpdates flatMap { responses =>
-        val allSucceeded = responses.forall { _.status.isSuccess }
-        allSucceeded match {
-          case true =>
-            val kv2 = FireCloudKeyValue(Some("isRegistrationComplete"), Some(Profile.currentVersion.toString))
-            val completionUpdate = pipeline {
-              Post(UserService.remoteSetKeyURL, ThurloeKeyValue(Some(userInfo.getUniqueId), Some(kv2)))
-            }
-            completionUpdate.flatMap { response =>
-              response.status match {
-                case x if x.isSuccess => checkUserInRawls(pipeline, requestContext, userInfo.getUniqueId)
-                case _ => Future(RequestCompleteWithErrorReport(response.status,
-                                  "Profile partially saved, but error completing profile", Seq(ErrorReport(response))))
-              }
-            } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
-                                              "Profile partially saved, but unexpected error completing profile", e) }
-          case false => handleFailedUpdateResponse(responses, profilePropertyMap)
-        }
-      } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
-                                        "Unexpected error saving profile", e) }
-
-      profileResponse pipeTo sender
 
     case UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) =>
       val syncWhiteListResult = syncWhitelist(Some(userInfo.getUniqueId))
@@ -123,54 +95,6 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
         }
       }
       Future(RequestCompleteWithErrorReport(InternalServerError, errorMessage, errorReports))
-  }
-
-  def checkUserInRawls(
-    pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    requestContext: RequestContext, userId: String): Future[PerRequestMessage] = {
-    pipeline { Get(UserService.rawlsRegisterUserURL) } flatMap { response =>
-        response.status match {
-          case x if x == OK =>
-            Future(RequestComplete(OK))
-          case x if x == NotFound =>
-            registerUserInRawls(pipeline, requestContext, userId)
-          case _ =>
-            Future(RequestCompleteWithErrorReport(response.status,
-                    "Profile saved, but error verifying user registration", Seq(ErrorReport(response))))
-        }
-    } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
-                                      "Profile saved, but unexpected error verifying user registration", e) }
-  }
-
-  def registerUserInRawls(
-    pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    requestContext: RequestContext, userId: String): Future[PerRequestMessage] = {
-    pipeline { Post(UserService.rawlsRegisterUserURL) } map { response =>
-        response.status match {
-          case x if x.isSuccess || isConflict(response) =>
-            //sendNotification is purposely detached from the sequence. we don't want to block
-            //the completion of registration by waiting for sendgrid to succeed or fail the registration
-            // if sendgrid fails. unfortunately, if this call fails then ¯\_(ツ)_/¯
-            sendNotification(pipeline, ActivationNotification(userId))
-            RequestComplete(OK)
-          case _ =>
-            RequestCompleteWithErrorReport(response.status,
-              "Profile saved, but error registering user", Seq(ErrorReport(response)))
-        }
-    } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
-                                      "Profile saved, but unexpected error registering user", e) }
-  }
-
-  // GAWB-1314
-  def sendNotification(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    notification: Notification) = {
-    pipeline {
-      Post(UserService.remotePostNotifyURL, List(ThurloeNotification(notification.userId, None, notification.replyTo, notification.notificationId, notification.toMap)))
-    } flatMap { response =>
-      if(response.status.isFailure)
-        log.warning(s"Could not send notification: ${notification}")
-      Future.successful(response)
-    }
   }
 
   /**
