@@ -7,7 +7,7 @@
   "required": ["library:datasetName", "library:datasetVersion", "library:datasetDescription", "library:datasetCustodian",
     "library:datasetDepositor", "library:contactEmail", "library:datasetOwner", "library:institute", "library:indication",
     "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:dataUseRestriction",
-    "library:studyDesign", "library:cellType", "library:requiresExternalApproval"],
+    "library:studyDesign", "library:requiresExternalApproval"],
   "oneOf": [{
     "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
       "library:NCTRL", "library:RS-G", "library:RS-PD"]
@@ -245,7 +245,7 @@
     "library:lmsvn": {
       "title": "Library Metadata Schema Version Number",
       "description": "Library Metadata Schema Version Number",
-      "default": 3,
+      "default": 4,
       "indexable": false,
       "type": "integer"
     },
