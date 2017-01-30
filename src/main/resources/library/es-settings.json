@@ -6,18 +6,6 @@
         "min_gram": 1,
         "max_gram": 20
       },
-      "english_stop": {
-        "type":       "stop",
-        "stopwords":  "_english_"
-      },
-      "english_stemmer": {
-        "type":       "stemmer",
-        "language":   "english"
-      },
-      "english_possessive_stemmer": {
-        "type":       "stemmer",
-        "language":   "possessive_english"
-      },
       "index_delimiter" : {
         "type": "word_delimiter"
       },
@@ -39,10 +27,7 @@
       "default": {
         "tokenizer":  "standard",
         "filter": [
-          "english_possessive_stemmer",
           "lowercase",
-          "english_stop",
-          "english_stemmer",
           "index_delimiter",
           "index_shingle"
         ]
