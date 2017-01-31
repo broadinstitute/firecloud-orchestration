@@ -1,0 +1,40 @@
+{
+  "analysis": {
+    "filter": {
+      "autocomplete_filter": {
+        "type":     "edge_ngram",
+        "min_gram": 1,
+        "max_gram": 20
+      },
+      "index_delimiter" : {
+        "type": "word_delimiter"
+      },
+      "index_shingle" : {
+        "type": "shingle",
+        "max_shingle_size": 4,
+        "token_separator": "_"
+      }
+    },
+    "analyzer": {
+      "autocomplete": {
+        "type":      "custom",
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase",
+          "autocomplete_filter"
+        ]
+      },
+      "default": {
+        "tokenizer":  "standard",
+        "filter": [
+          "lowercase",
+          "index_delimiter",
+          "index_shingle"
+        ]
+      },
+      "default_search": {
+        "type": "standard"
+      }
+    }
+  }
+}

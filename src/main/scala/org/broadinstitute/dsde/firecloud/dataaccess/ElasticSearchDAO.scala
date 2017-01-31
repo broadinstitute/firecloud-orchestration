@@ -110,32 +110,15 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     autocompleteSuggestions(client, indexName, criteria, groups)
   }
 
-  // see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html
-  //  and https://qbox.io/blog/multi-field-partial-word-autocomplete-in-elasticsearch-using-ngrams
-  // lazy is necessary here because we use it above
-  private final lazy val analysisSettings=
-  """
-    |{
-    |	"analysis": {
-    |		"filter": {
-    |			"autocomplete_filter": {
-    |				"type":     "edge_ngram",
-    |				"min_gram": 1,
-    |				"max_gram": 20
-    |			}
-    |		},
-    |		"analyzer": {
-    |			"autocomplete": {
-    |				"type":      "custom",
-    |				"tokenizer": "standard",
-    |				"filter": [
-    |					"lowercase",
-    |					"autocomplete_filter"
-    |				]
-    |			}
-    |		}
-    |	}
-    |}
-  """.stripMargin
+  /* see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html
+   *  and https://qbox.io/blog/multi-field-partial-word-autocomplete-in-elasticsearch-using-ngrams
+   *  for explanation of the autocomplete analyzer.
+   *
+   * our default analyzer is based off the english analyzer (https://www.elastic.co/guide/en/elasticsearch/reference/2.4/analysis-lang-analyzer.html#english-analyzer)
+   *   but includes the word_delimiter filter for better searching on data containing underscores, e.g. "tcga_brca"
+   *   
+   * lazy is necessary here because we use it above
+   */
+  private final lazy val analysisSettings = FileUtils.readAllTextFromResource("library/es-settings.json")
 
 }
