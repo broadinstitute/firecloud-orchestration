@@ -111,7 +111,7 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
   }
 
   override def fieldSuggest(field: String, text: String): Future[Seq[String]] = {
-    allSuggestions(client, indexName, field, text)
+    populateSuggestions(client, indexName, field, text)
   }
 
   /* see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html

@@ -25,7 +25,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
     "/api/library/%s/%s/published".format(ns, name)
   private final val librarySearchPath = "/api/library/search"
   private final val librarySuggestPath = "/api/library/suggest"
-  private final val libraryAggregationPath = librarySearchPath + "/aggregations"
+  private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
@@ -144,6 +144,19 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.size == 0, "results array should be empty")
             this.searchDao.autocompleteInvoked = false
+          }
+        }
+      }
+      "GET on " + libraryPopulateSuggestPath - {
+        "should return autcomplete suggestions" in {
+          this.searchDao.populateSuggestInvoked = false
+          new RequestBuilder(HttpMethods.GET)(libraryPopulateSuggestPath + "library:datasetOwner/aha") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            assert(this.searchDao.populateSuggestInvoked, "populateSuggestInvoked should have been invoked")
+            val respdata = response.entity.asString
+            assert(respdata.contains("library:datasetOwner"))
+            assert(respdata.contains("aha"))
+            this.searchDao.populateSuggestInvoked = false
           }
         }
       }

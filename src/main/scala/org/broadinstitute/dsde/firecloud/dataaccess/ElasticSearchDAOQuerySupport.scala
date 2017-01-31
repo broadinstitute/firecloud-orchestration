@@ -9,7 +9,7 @@ import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, Sea
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
-import org.elasticsearch.search.suggest.completion.{CompletionSuggestionBuilder, CompletionSuggestion}
+import org.elasticsearch.search.suggest.completion.{CompletionSuggestionFuzzyBuilder, CompletionSuggestion}
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -175,9 +175,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     response
   }
 
-  def allSuggestions(client: TransportClient, indexname: String, field: String, text: String) : Future[Seq[String]] = {
+  def populateSuggestions(client: TransportClient, indexname: String, field: String, text: String) : Future[Seq[String]] = {
     val suggestionName = "populateSuggestion"
-    val suggestion = new CompletionSuggestionBuilder(suggestionName)
+    val suggestion = new CompletionSuggestionFuzzyBuilder(suggestionName)
     suggestion.text(text)
     suggestion.field(field + ".suggest")
     val suggestQuery = client.prepareSearch(indexname).addSuggestion(suggestion)

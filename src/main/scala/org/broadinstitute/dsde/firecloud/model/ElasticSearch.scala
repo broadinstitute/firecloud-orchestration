@@ -36,8 +36,8 @@ trait ESPropertyFields {
   // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/search-suggesters-completion.html
   def completionField = ESInnerField(
     "completion",
-    analyzer = Some("simple"),
-    search_analyzer = Some("simple")
+    analyzer = Option("simple"),
+    search_analyzer = Option("simple")
   )
   def rawField(`type`:String) = ESInnerField(`type`,
     index = Some("not_analyzed")
