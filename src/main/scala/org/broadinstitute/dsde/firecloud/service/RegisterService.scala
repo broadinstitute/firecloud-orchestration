@@ -45,6 +45,8 @@ class RegisterService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
           rawlsDao.isRegistered(userInfo) flatMap {
             case true => Future.successful(RequestComplete(StatusCodes.OK))
             case false => rawlsDao.registerUser(userInfo) map { _ =>
+              // Notifications can happen in the background---it is not necessary to block the
+              // request waiting for the notifications to be enqueued. 
               thurloeDao.sendNotifications(List(ActivationNotification(userInfo.id)))
               RequestComplete(StatusCodes.OK)
             }
