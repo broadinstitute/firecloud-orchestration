@@ -45,7 +45,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     }
   }
 
-  override def saveKeyValue(userInfo: UserInfo, key: String, value: String): Future[Boolean] = {
+  override def saveKeyValue(userInfo: UserInfo, key: String, value: String): Future[Unit] = {
     val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
     pipeline {
       Post(UserService.remoteSetKeyURL,
@@ -55,30 +55,18 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
         ))
     } map { response =>
       response.status match {
-        case StatusCodes.OK => true
-        case _ => false
+        case StatusCodes.OK => ()
+        case _ => throwBadResponse(response)
       }
     }
   }
 
-  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Boolean] = {
+  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit] = {
     val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
-    val profilePropertyMap: Map[String, String] = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
-    Future.sequence(profilePropertyMap map {
-      case (key, value) =>
-        pipeline {
-          Post(UserService.remoteSetKeyURL,
-            ThurloeKeyValue(
-              Some(userInfo.getUniqueId),
-              Some(FireCloudKeyValue(Some(key), Some(value)))
-            ))
-        } map { response =>
-          response.status match {
-            case StatusCodes.OK => true
-            case _ => false
-          }
-        }
-    }) map({ _.forall({x: Boolean => x}) })
+    val profilePropertyMap = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
+    Future.sequence(profilePropertyMap map({
+      case (key, value) => saveKeyValue(userInfo, key, value)
+    })) map({ _.forall({ _ => true }) })
   }
 
   override def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit] = {

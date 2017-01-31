@@ -38,13 +38,11 @@ class RegisterService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
   }
 
   private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
-    thurloeDao.saveProfile(userInfo, basicProfile) flatMap {
-      case false => Future.successful(RequestComplete(StatusCodes.BadGateway))
-      case true => thurloeDao.saveKeyValue(
+    thurloeDao.saveProfile(userInfo, basicProfile) flatMap { _ =>
+      thurloeDao.saveKeyValue(
           userInfo, "isRegistrationComplete", Profile.currentVersion.toString
-        ) flatMap {
-          case false => Future.successful(RequestComplete(StatusCodes.BadGateway))
-          case true => rawlsDao.isRegistered(userInfo) flatMap {
+        ) flatMap { _ =>
+          rawlsDao.isRegistered(userInfo) flatMap {
             case true => Future.successful(RequestComplete(StatusCodes.OK))
             case false => rawlsDao.registerUser(userInfo) map { _ =>
               thurloeDao.sendNotifications(List(ActivationNotification(userInfo.id)))

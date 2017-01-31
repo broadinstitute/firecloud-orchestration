@@ -13,7 +13,7 @@ trait ThurloeDAO extends LazyLogging {
 
   def sendNotifications(notifications: Seq[Notification]): Future[Try[Unit]]
   def getProfile(userInfo: UserInfo): Future[Option[Profile]]
-  def saveKeyValue(userInfo: UserInfo, key: String, value: String): Future[Boolean]
-  def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Boolean]
+  def saveKeyValue(userInfo: UserInfo, key: String, value: String): Future[Unit]
+  def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit]
   def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit]
 }
