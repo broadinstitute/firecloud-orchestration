@@ -7,7 +7,7 @@
   "required": ["library:datasetName", "library:datasetVersion", "library:datasetDescription", "library:datasetCustodian",
     "library:datasetDepositor", "library:contactEmail", "library:datasetOwner", "library:institute", "library:indication",
     "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:dataUseRestriction",
-    "library:studyDesign", "library:requiresExternalApproval", "library:useRestrictionOption"],
+    "library:studyDesign", "library:requiresExternalApproval", "library:useLimitationOption"],
   "oneOf": [{
     "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
       "library:NCTRL", "library:RS-G", "library:RS-PD"]
@@ -187,7 +187,7 @@
       "type": "string",
       "typeahead": "populate"
     },
-    "library:useRestrictionOption": {
+    "library:useLimitationOption": {
       "title": "Choose one of the available options to define Data Use Limitations:",
       "type": "string",
       "enum": ["questionnaire", "orsp"],
@@ -321,7 +321,7 @@
     {
       "title": "Catalog structured Data Use Limitations",
       "switch": {
-        "property": "library:useRestrictionOption",
+        "property": "library:useLimitationOption",
         "options":
         [
           {
