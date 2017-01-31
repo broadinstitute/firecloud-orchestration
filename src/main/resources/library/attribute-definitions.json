@@ -10,9 +10,21 @@
     "library:studyDesign", "library:requiresExternalApproval", "library:useLimitationOption"],
   "oneOf": [{
     "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
-      "library:NCTRL", "library:RS-G", "library:RS-PD"]
+      "library:NCTRL", "library:RS-G", "library:RS-PD", "library:useLimitationOption"],
+    "properties": {
+      "library:useLimitationOption": {
+        "type": "string",
+        "enum": ["questionnaire"]
+      }
+    }
   }, {
-    "required": ["library:orsp"]
+    "required": ["library:orsp", "library:useLimitationOption"],
+    "properties": {
+      "library:useLimitationOption": {
+        "type": "string",
+        "enum": ["orsp"]
+      }
+    }
   }],
   "properties": {
     "library:datasetName": {
