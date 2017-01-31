@@ -2542,6 +2542,7 @@ definitions:
     required:
       - projectName
       - role
+      - status
     type: object
     properties:
       projectName:
@@ -2550,6 +2551,12 @@ definitions:
       role:
         type: string
         description: the role of the current user in the project
+      status:
+        type: string
+        enum: ["Creating", "Ready", "Error"]
+      message:
+        type: string
+        description: informational message about the project
 
   CallMetadata:
     description: Stuff you need to know about calls
