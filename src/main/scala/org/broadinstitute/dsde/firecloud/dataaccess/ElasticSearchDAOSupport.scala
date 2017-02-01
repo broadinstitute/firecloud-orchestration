@@ -61,14 +61,11 @@ trait ElasticSearchDAOSupport extends LazyLogging {
       case _ => detail.`type`
     }
     val searchSuggest = itemType == "string"
-    val createSuggest = searchSuggest && !(noCreateSuggest.contains(label))
-    val isaggregate = detail match {
+    val createSuggest = detail.typeahead.contains("populate")
+    val isAggregate = detail match {
       case x if x.aggregate.isDefined => true
       case _ => false
     }
-    label -> ESType(itemType, createSuggest, searchSuggest, isaggregate)
+    label -> ESType(itemType, createSuggest, searchSuggest, isAggregate)
   }
-
-  private final lazy val noCreateSuggest = Seq("library:datasetName", "library:datasetDescription")
-
 }

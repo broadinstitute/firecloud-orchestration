@@ -19,7 +19,8 @@ case class AttributeDetail(
   `type`: String,
   items: Option[AttributeDetail] = None,
   aggregate: Option[JsObject] = None,
-  indexable: Option[Boolean] = None
+  indexable: Option[Boolean] = None,
+  typeahead: Option[String] = None
 )
 
 

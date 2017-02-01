@@ -175,19 +175,19 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     response
   }
 
-  def populateSuggestions(client: TransportClient, indexname: String, field: String, text: String) : Future[Seq[String]] = {
+  def populateSuggestions(client: TransportClient, indexName: String, field: String, text: String) : Future[Seq[String]] = {
     val suggestionName = "populateSuggestion"
     val suggestion = new CompletionSuggestionFuzzyBuilder(suggestionName)
     suggestion.text(text)
     suggestion.field(field + ".suggest")
-    val suggestQuery = client.prepareSearch(indexname).addSuggestion(suggestion)
+    val suggestQuery = client.prepareSearch(indexName).addSuggestion(suggestion)
     logger.debug(s"populate suggestions query: $suggestQuery.toJson")
     val results = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](suggestQuery))
 
     results map { suggestResult =>
       val compSugg: CompletionSuggestion = suggestResult.getSuggest.getSuggestion(suggestionName)
       val options : Seq[CompletionSuggestion.Entry.Option] = compSugg.getEntries.get(0).getOptions.asScala
-      options map { option: CompletionSuggestion.Entry.Option => option.getText().string() }
+      options map { option: CompletionSuggestion.Entry.Option => option.getText.string }
     }
   }
 
