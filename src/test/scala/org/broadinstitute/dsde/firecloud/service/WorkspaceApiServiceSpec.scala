@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model._
@@ -54,11 +55,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param path   request path
     * @param status status for the response
     */
-  def stubRawlsService(method: HttpMethod, path: String, status: StatusCode): Unit = {
+  def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None): Unit = {
+    val response = org.mockserver.model.HttpResponse.response()
+      .withHeaders(MockUtils.header).withStatusCode(status.intValue)
+    if (body.isDefined) response.withBody(body.get)
     rawlsServer
       .when(request().withMethod(method.name).withPath(path))
-      .respond(org.mockserver.model.HttpResponse.response()
-        .withHeaders(MockUtils.header).withStatusCode(status.intValue))
+      .respond(response)
   }
 
   def stubRawlsServiceWithError(method: HttpMethod, path: String, status: StatusCode) = {
@@ -198,7 +201,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces path" - {
       List(HttpMethods.GET) foreach { method =>
         s"OK status is returned for HTTP $method" in {
-          stubRawlsService(method, workspacesRoot, OK)
+          val dao = new MockRawlsDAO
+          val rwr = dao.rawlsWorkspaceResponseWithAttributes.copy(canShare=None)
+          val lrwr = Seq.fill(2){rwr}
+          stubRawlsService(method, workspacesRoot, OK, Some(lrwr.toJson.compactPrint))
           new RequestBuilder(method)(workspacesRoot) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
           }
