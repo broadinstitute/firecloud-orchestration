@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.core
 import akka.actor.{Actor, ActorRefFactory, Props}
 import akka.event.Logging
 import akka.pattern.pipe
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.core.ProfileClient._
 import org.broadinstitute.dsde.firecloud.dataaccess.{HttpGoogleServicesDAO, HttpRawlsDAO, HttpThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -67,7 +67,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       profileResponse pipeTo sender
 
     case UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) =>
-      val syncWhiteListResult = syncWhitelist(Some(userInfo.getUniqueId))
+      val syncWhiteListResult = syncWhitelist(Some((userInfo.getUniqueId, nihLink.linkedNihUsername)))
       val pipeline = authHeaders(requestContext) ~> sendReceive
       val profilePropertyMap = nihLink.propertyValueMap
       val propertyUpdates = updateUserProperties(pipeline, userInfo, profilePropertyMap)
@@ -80,9 +80,10 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,
         "Unexpected error updating NIH link", e) }
 
-      // Complete syncWhitelist and ignore as neither success nor failure are useful to the client
-      syncWhiteListResult map(Success(_)) recover { case t => Failure(t) } flatMap { _ =>
-        profileResponse
+      syncWhiteListResult map(Success(_)) recover { case t => Failure(t) } flatMap {
+        case Success(_) => profileResponse
+        case Failure(t) => Future(RequestCompleteWithErrorReport(InternalServerError,
+          "Error updating NIH link", t))
       } pipeTo sender
 
     case SyncWhitelist =>
@@ -186,7 +187,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
       postResponse.entity.asString.contains(Conflict.reason)
   }
 
-  def syncWhitelist(subjectId: Option[String] = None): Future[PerRequestMessage] = Try {
+  def syncWhitelist(subjectId: Option[(String, String)] = None): Future[PerRequestMessage] = Try {
     val (bucket, file) = (FireCloudConfig.Nih.whitelistBucket, FireCloudConfig.Nih.whitelistFile)
     val whitelist = Source.fromInputStream(HttpGoogleServicesDAO.getBucketObjectAsInputStream(bucket, file)).getLines().toSet
 
@@ -208,7 +209,10 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
           RawlsGroupMemberList(userSubjectIds = Some(subjectIds))
         }}
       }
-      case Some(id) => Future.successful(RawlsGroupMemberList(userSubjectIds = Some(Seq(id))))
+      case Some((fcUser, nihUser)) =>
+        if(whitelist contains nihUser) Future.successful(RawlsGroupMemberList(userSubjectIds = Some(Seq(fcUser))))
+        else Future.failed(throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.Forbidden,
+          "Error updating NIH link. Check to make sure that you have the appropriate permissions.")))
     }
 
     val pipeline = addAdminCredentials ~> sendReceive
