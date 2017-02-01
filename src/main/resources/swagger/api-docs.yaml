@@ -512,6 +512,10 @@ paths:
       responses:
         200:
           description: Field specific suggestions
+        400:
+          description: Bad Request, specified field that was not configured for suggestions
+          schema:
+            $ref: '#/definitions/ErrorReport'
 
   /api/library/user/role/curator:
     get:

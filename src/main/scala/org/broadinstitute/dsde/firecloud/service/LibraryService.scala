@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
@@ -18,6 +18,7 @@ import spray.json.JsonParser.ParsingException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -129,6 +130,8 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def populateSuggest(field: String, text: String): Future[PerRequestMessage] = {
-    searchDAO.fieldSuggest(field, text) map (RequestComplete(_))
+    searchDAO.fieldSuggest(field, text) map {(RequestComplete(_))} recoverWith {
+      case e: FireCloudException => Future(RequestCompleteWithErrorReport(BadRequest, s"suggestions not available for field %s".format(field)))
+    }
   }
 }
