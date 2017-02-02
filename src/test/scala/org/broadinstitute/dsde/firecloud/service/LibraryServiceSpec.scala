@@ -484,29 +484,29 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       "works for string type" in {
         val label = "library:attr"
         val `type` = "string"
-        val expected = label -> ESType(`type`)
+        val expected = label -> ESType(`type`, false, true, false)
         assertResult(expected) {
-          detailFromAttribute(label, AttributeDetail(`type`))
+          createType(label, AttributeDetail(`type`))
         }
       }
       "works for aggregatable string type" in {
         val label = "library:attr"
         val `type` = "string"
         val aggregateObject = JsObject("renderHint"->JsString("text"))
-        val expected = label -> ESAggregatableType(`type`)
+        val expected = label -> ESType(`type`, false, true, true)
         assertResult(expected) {
-          detailFromAttribute(label, AttributeDetail(`type`, None, Some(aggregateObject)))
+          createType(label, AttributeDetail(`type`, None, Some(aggregateObject)))
         }
-        val result = detailFromAttribute(label, AttributeDetail(`type`, None, Some(aggregateObject)))
+        val result = createType(label, AttributeDetail(`type`, None, Some(aggregateObject)))
       }
       "works for array type" in {
         val label = "library:attr"
         val `type` = "array"
         val subtype = "string"
         val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
-        val expected = label -> ESType(subtype)
+        val expected = label -> ESType(subtype, false, true, false)
         assertResult(expected) {
-          detailFromAttribute(label, detail)
+          createType(label, detail)
         }
       }
       "works for aggregatable array type" in {
@@ -515,9 +515,18 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val subtype = "string"
         val aggregateObject = JsObject("renderHint"->JsString("text"))
         val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)), Some(aggregateObject))
-        val expected = label -> ESAggregatableType(subtype)
+        val expected = label -> ESType(subtype, false, true, true)
         assertResult(expected) {
-          detailFromAttribute(label, detail)
+          createType(label, detail)
+        }
+      }
+      "works for populate suggest array type" in {
+        val label = "library:datatype"
+        val `type` = "string"
+        val detail = AttributeDetail(`type`, None, None, None, Option("populate"))
+        val expected = label -> ESType(`type`, true, true, false)
+        assertResult(expected) {
+          createType(label, detail)
         }
       }
       "mapping has valid json" in {

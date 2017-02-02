@@ -19,7 +19,8 @@ case class AttributeDetail(
   `type`: String,
   items: Option[AttributeDetail] = None,
   aggregate: Option[JsObject] = None,
-  indexable: Option[Boolean] = None
+  indexable: Option[Boolean] = None,
+  typeahead: Option[String] = None
 )
 
 
@@ -33,26 +34,36 @@ trait ESPropertyFields {
     include_in_all = Some(false),
     store = Some(true)
   )
+  // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/search-suggesters-completion.html
+  def completionField = ESInnerField(
+    "completion",
+    analyzer = Option("simple"),
+    search_analyzer = Option("simple")
+  )
   def rawField(`type`:String) = ESInnerField(`type`,
     index = Some("not_analyzed")
   )
 }
 
 // top-level field defs, for facet and non-facet types
-case class ESType(`type`: String, copy_to: String) extends ESPropertyFields
+case class ESType(`type`: String, fields: Option[Map[String,ESInnerField]], copy_to: Option[String] = None ) extends ESPropertyFields
 object ESType extends ESPropertyFields {
-  def apply(`type`: String):ESType = ESType(`type`, ElasticSearch.fieldSuggest)
+  def apply(`type`: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
+    val innerFields = Map.empty[String,ESInnerField] ++
+      (if (isAggregatable) Map("raw" -> rawField(`type`)) else Nil) ++
+      (if (hasPopulateSuggest) Map("suggest" -> completionField) else Nil)
+    if (hasSearchSuggest)
+      new ESType(`type`, Option(innerFields), Option(ElasticSearch.fieldSuggest))
+    else
+      new ESType(`type`, Option(innerFields))
+  }
+
 }
 
 case class ESInternalType(
   `type`: String,
   index: String = "not_analyzed",
   include_in_all: Boolean = false) extends ESPropertyFields
-
-case class ESAggregatableType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = ElasticSearch.fieldSuggest) extends ESPropertyFields
-object ESAggregatableType extends ESPropertyFields {
-  def apply(`type`: String):ESAggregatableType = ESAggregatableType(`type`, Map("raw" -> rawField(`type`)))
-}
 
 // def for ElasticSearch's multi-fields: https://www.elastic.co/guide/en/elasticsearch/reference/2.4/multi-fields.html
 // technically, the top-level fields and inner fields are the same thing, and we *could* use the same class.

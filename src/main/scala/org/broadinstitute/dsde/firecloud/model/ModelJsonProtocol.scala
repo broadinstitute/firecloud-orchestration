@@ -174,7 +174,6 @@ object ModelJsonProtocol {
     override def write(input: ESPropertyFields): JsValue = input match {
       case estype: ESType => estype.toJson
       case esinternaltype: ESInternalType => esinternaltype.toJson
-      case esaggtype: ESAggregatableType => esaggtype.toJson
       case esinnerfield: ESInnerField => esinnerfield.toJson
       case _ => throw new SerializationException("unexpected ESProperty type")
     }
@@ -182,11 +181,9 @@ object ModelJsonProtocol {
     override def read(json: JsValue): ESPropertyFields = {
       val data = json.asJsObject.fields
       if (data.contains("fields")) {
-        ESAggregatableTypeFormat.read(json)
-      } else if (data.contains("index")) {
-        ESInternalTypeFormat.read(json)
-      } else {
         ESTypeFormat.read(json)
+      } else {
+        ESInternalTypeFormat.read(json)
       }
     }
   }
@@ -331,13 +328,12 @@ object ModelJsonProtocol {
 
   implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)
 
-  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat4(AttributeDetail)))
+  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat5(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
   implicit val ESInnerFieldFormat = jsonFormat6(ESInnerField)
   implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
-  implicit val ESAggregatableTypeFormat = jsonFormat3(ESAggregatableType.apply)
-  implicit val ESTypeFormat = jsonFormat2(ESType.apply)
+  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
   implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
   implicit val impAggregationTermResult = jsonFormat2(AggregationTermResult)

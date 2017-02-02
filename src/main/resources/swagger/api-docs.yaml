@@ -493,6 +493,31 @@ paths:
         200:
           description: Search suggestions, with highlighting
 
+  /api/library/populate/suggest/{field}:
+    get:
+      tags:
+        - Library
+      operationId: populateSuggest
+      summary: |
+        suggestions for populating a field
+      parameters:
+        - in: path
+          name: field
+          description: the property to get suggestions for
+          type: string
+        - in: query
+          name: q
+          type: string
+          required: true
+          description: the initial text to complete
+      responses:
+        200:
+          description: Field specific suggestions
+        400:
+          description: Bad Request, specified field that was not configured for suggestions
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
   /api/library/user/role/curator:
     get:
       responses:

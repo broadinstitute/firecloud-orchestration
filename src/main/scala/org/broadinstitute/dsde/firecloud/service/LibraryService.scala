@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
@@ -18,6 +18,7 @@ import spray.json.JsonParser.ParsingException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -32,6 +33,7 @@ object LibraryService {
   case object IndexAll extends LibraryServiceMessage
   case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
   case class Suggest(criteria: LibrarySearchParams) extends LibraryServiceMessage
+  case class PopulateSuggest(field: String, text: String) extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
@@ -55,6 +57,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     case IndexAll => asAdmin {indexAll} pipeTo sender
     case FindDocuments(criteria: LibrarySearchParams) => asCurator {findDocuments(criteria)} pipeTo sender
     case Suggest(criteria: LibrarySearchParams) => asCurator {suggest(criteria)} pipeTo sender
+    case PopulateSuggest(field: String, text: String) => asCurator {populateSuggest(field: String, text: String)} pipeTo sender
   }
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
@@ -123,6 +126,12 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    rawlsDAO.getGroupsForUser map (searchDAO.suggest(criteria, _)) map (RequestComplete(_))
+    rawlsDAO.getGroupsForUser map (searchDAO.suggestionsFromAll(criteria, _)) map (RequestComplete(_))
+  }
+
+  def populateSuggest(field: String, text: String): Future[PerRequestMessage] = {
+    searchDAO.suggestionsForFieldPopulate(field, text) map {(RequestComplete(_))} recoverWith {
+      case e: FireCloudException => Future(RequestCompleteWithErrorReport(BadRequest, s"suggestions not available for field %s".format(field)))
+    }
   }
 }

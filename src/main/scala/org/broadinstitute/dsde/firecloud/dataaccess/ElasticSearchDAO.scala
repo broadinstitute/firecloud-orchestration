@@ -106,8 +106,12 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     findDocumentsWithAggregateInfo(client, indexName, criteria, groups)
   }
 
-  override def suggest(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
+  override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
     autocompleteSuggestions(client, indexName, criteria, groups)
+  }
+
+  override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {
+    populateSuggestions(client, indexName, field, text)
   }
 
   /* see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html
@@ -120,5 +124,4 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
    * lazy is necessary here because we use it above
    */
   private final lazy val analysisSettings = FileUtils.readAllTextFromResource("library/es-settings.json")
-
 }

@@ -21,7 +21,8 @@
     },
     "library:datasetVersion": {
       "title": "Dataset Version",
-      "type": "string"
+      "type": "string",
+      "typeahead": "populate"
     },
     "library:datasetDescription": {
       "title": "Cohort Description",
@@ -30,27 +31,32 @@
     "library:datasetCustodian": {
       "title": "Dataset Custodian",
       "type": "string",
-      "inputHint": "e.g. Project Manager"
+      "inputHint": "e.g. Project Manager",
+      "typeahead": "populate"
     },
     "library:datasetDepositor": {
       "title": "Dataset Depositor",
       "type": "string",
-      "inputHint": "e.g. Project Manager"
+      "inputHint": "e.g. Project Manager",
+      "typeahead": "populate"
     },
     "library:contactEmail": {
       "title": "Contact Email",
       "type": "string",
-      "renderHint": {"datatype": "email"}
+      "renderHint": {"datatype": "email"},
+      "typeahead": "populate"
     },
     "library:datasetOwner": {
       "title": "Dataset Owner",
       "type": "string",
-      "inputHint": "e.g. Prinicipal Investigator"
+      "inputHint": "e.g. Prinicipal Investigator",
+      "typeahead": "populate"
     },
     "library:institute": {
       "title": "Research Institute",
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "typeahead": "populate"
     },
     "library:indication": {
       "title": "Cohort Phenotype/Indication",
@@ -86,13 +92,15 @@
       "inputHint": "e.g. TCGA, TopMed, ExAC ; tag all relevant associated projects",
       "aggregate": {
         "renderHint": "checkbox"
-      }
+      },
+      "typeahead": "populate"
     },
     "library:dataCategory": {
       "title": "Data Category",
       "type": "array",
       "items": { "type": "string" },
-      "inputHint": "e.g. Simple Nucleotide Variation (SNVs), Raw Sequencing data, Copy Number Variation, Structural Variation, Expression Quantification, Transcriptome Assembly, DNA-Methylation, Clinical phenotypes, Biospecimen metadata"
+      "inputHint": "e.g. Simple Nucleotide Variation (SNVs), Raw Sequencing data, Copy Number Variation, Structural Variation, Expression Quantification, Transcriptome Assembly, DNA-Methylation, Clinical phenotypes, Biospecimen metadata",
+      "typeahead": "populate"
     },
     "library:datatype": {
       "title": "Experimental Strategy",
@@ -101,60 +109,71 @@
       "inputHint": "e.g. Whole Exome, Whole Genome, Exome Panel, Genotyping Array, RNA-Seq, Methylation Array; include all relevant",
       "aggregate": {
         "renderHint": "checkbox"
-      }
+      },
+      "typeahead": "populate"
     },
     "library:reference": {
       "title": "Genome Reference Version",
       "type": "string",
-      "inputHint": "e.g. GRCh37/hg19, GRCh38/hg38; To which genome build the data was aligned, if relevant"
+      "inputHint": "e.g. GRCh37/hg19, GRCh38/hg38; To which genome build the data was aligned, if relevant",
+      "typeahead": "populate"
     },
     "library:dataFileFormats": {
       "title": "Data File Formats",
       "type": "array",
       "items": { "type": "string" },
-      "inputHint": "e.g. VCF, BAM, TXT, TSV, BCR XML, BED, GTF, GCT; Tag all relevant"
+      "inputHint": "e.g. VCF, BAM, TXT, TSV, BCR XML, BED, GTF, GCT; Tag all relevant",
+      "typeahead": "populate"
     },
     "library:technology": {
       "title": "Profiling Instrument Type",
       "type": "array",
       "items": { "type": "string" },
-      "inputHint": "e.g. Illumina, 10X"
+      "inputHint": "e.g. Illumina, 10X",
+      "typeahead": "populate"
     },
     "library:profilingProtocol": {
       "title": "Profiling Protocol",
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "typeahead": "populate"
     },
     "library:dataUseRestriction": {
       "title": "Data Use Restriction",
       "type": "string",
       "aggregate": {
         "renderHint": "checkbox"
-      }
+      },
+      "typeahead": "populate"
     },
     "library:studyDesign": {
       "title": "Study Design",
       "type": "string",
-      "inputHint": "e.g. Case/Control, Tumor/Normal, Trio/Twin/Family, Prospective Longitudinal Cohort, Cases only - somatic, Cases only - germline, Controls"
+      "inputHint": "e.g. Case/Control, Tumor/Normal, Trio/Twin/Family, Prospective Longitudinal Cohort, Cases only - somatic, Cases only - germline, Controls",
+      "typeahead": "populate"
     },
     "library:cellType": {
       "title": "Cell Type",
-      "type": "string"
+      "type": "string",
+      "typeahead": "populate"
     },
     "library:coverage": {
       "title": "Depth of Sequencing Coverage (Average)",
       "type": "string",
-      "enum": ["0-10X","11x-20x","21x-30x","31x-100x","100x-150x",">150x"]
+      "enum": ["0-10X","11x-20x","21x-30x","31x-100x","100x-150x",">150x"],
+      "typeahead": "populate"
     },
     "library:ethnicity": {
       "title": "Reported Ethnicity",
       "type": "array",
       "items": { "type": "string" },
-      "inputHint": "e.g. Caucasians, African-Americans, Latino, East Asians, South Asians, Finnish, Non-Finnish Europeans; include all relevant"
+      "inputHint": "e.g. Caucasians, African-Americans, Latino, East Asians, South Asians, Finnish, Non-Finnish Europeans; include all relevant",
+      "typeahead": "populate"
     },
     "library:cohortCountry": {
       "title": "Cohort Country of Origin",
-      "type": "string"
+      "type": "string",
+      "typeahead": "populate"
     },
     "library:requiresExternalApproval": {
       "title": "Requires External Approval",
@@ -165,7 +184,8 @@
     },
     "library:primaryDiseaseSite": {
       "title": "Primary Disease Site",
-      "type": "string"
+      "type": "string",
+      "typeahead": "populate"
     },
     "library:GRU": {
       "title": "Data is available for future general research use",

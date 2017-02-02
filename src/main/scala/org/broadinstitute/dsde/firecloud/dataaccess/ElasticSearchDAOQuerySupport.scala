@@ -9,6 +9,7 @@ import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, Sea
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
+import org.elasticsearch.search.suggest.completion.{CompletionSuggestionFuzzyBuilder, CompletionSuggestion}
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -174,6 +175,22 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     response
   }
 
+  def populateSuggestions(client: TransportClient, indexName: String, field: String, text: String) : Future[Seq[String]] = {
+    val suggestionName = "populateSuggestion"
+    val suggestion = new CompletionSuggestionFuzzyBuilder(suggestionName)
+    suggestion.text(text)
+    suggestion.field(field + ".suggest")
+    val suggestQuery = client.prepareSearch(indexName).addSuggestion(suggestion)
+    logger.debug(s"populate suggestions query: $suggestQuery.toJson")
+    val results = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](suggestQuery))
+
+    results map { suggestResult =>
+      val compSugg: CompletionSuggestion = suggestResult.getSuggest.getSuggestion(suggestionName)
+      val options : Seq[CompletionSuggestion.Entry.Option] = compSugg.getEntries.get(0).getOptions.asScala
+      options map { option: CompletionSuggestion.Entry.Option => option.getText.string }
+    }
+  }
+
   def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
 
     val searchQuery = buildAutocompleteQuery(client, indexname, criteria, groups)
@@ -182,7 +199,6 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchQuery))
 
     searchFuture map {searchResult =>
-
       // autocomplete query can return duplicate suggestions. De-dupe them here.
       val suggestions:List[JsString] = (searchResult.getHits.getHits.toList flatMap { hit =>
         if (hit.getHighlightFields.containsKey(fieldSuggest)) {
