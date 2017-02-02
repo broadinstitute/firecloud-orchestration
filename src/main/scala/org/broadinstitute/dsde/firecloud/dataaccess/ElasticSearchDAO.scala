@@ -106,11 +106,11 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     findDocumentsWithAggregateInfo(client, indexName, criteria, groups)
   }
 
-  override def suggest(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
+  override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
     autocompleteSuggestions(client, indexName, criteria, groups)
   }
 
-  override def suggest(field: String, text: String): Future[Seq[String]] = {
+  override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {
     populateSuggestions(client, indexName, field, text)
   }
 

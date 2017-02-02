@@ -126,11 +126,11 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    rawlsDAO.getGroupsForUser map (searchDAO.suggest(criteria, _)) map (RequestComplete(_))
+    rawlsDAO.getGroupsForUser map (searchDAO.suggestionsFromAll(criteria, _)) map (RequestComplete(_))
   }
 
   def populateSuggest(field: String, text: String): Future[PerRequestMessage] = {
-    searchDAO.suggest(field, text) map {(RequestComplete(_))} recoverWith {
+    searchDAO.suggestionsForFieldPopulate(field, text) map {(RequestComplete(_))} recoverWith {
       case e: FireCloudException => Future(RequestCompleteWithErrorReport(BadRequest, s"suggestions not available for field %s".format(field)))
     }
   }
