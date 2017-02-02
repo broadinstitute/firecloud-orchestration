@@ -493,7 +493,7 @@ paths:
         200:
           description: Search suggestions, with highlighting
 
-  /api/library/populate/suggest/{field}/{text}/:
+  /api/library/populate/suggest/{field}:
     get:
       tags:
         - Library
@@ -505,9 +505,10 @@ paths:
           name: field
           description: the property to get suggestions for
           type: string
-        - in: path
-          name: text
+        - in: query
+          name: q
           type: string
+          required: true
           description: the initial text to complete
       responses:
         200:

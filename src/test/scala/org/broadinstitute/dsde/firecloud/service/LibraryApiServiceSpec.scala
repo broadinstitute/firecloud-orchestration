@@ -150,7 +150,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
       "GET on " + libraryPopulateSuggestPath - {
         "should return autcomplete suggestions" in {
           this.searchDao.populateSuggestInvoked = false
-          new RequestBuilder(HttpMethods.GET)(libraryPopulateSuggestPath + "library:datasetOwner/aha") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          new RequestBuilder(HttpMethods.GET)(libraryPopulateSuggestPath + "library:datasetOwner?q=aha") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.populateSuggestInvoked, "populateSuggestInvoked should have been invoked")
             val respdata = response.entity.asString

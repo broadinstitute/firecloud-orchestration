@@ -484,7 +484,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       "works for string type" in {
         val label = "library:attr"
         val `type` = "string"
-        val expected = label -> ESType(`type`, true, true, false)
+        val expected = label -> ESType(`type`, false, true, false)
         assertResult(expected) {
           createType(label, AttributeDetail(`type`))
         }
@@ -493,7 +493,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val label = "library:attr"
         val `type` = "string"
         val aggregateObject = JsObject("renderHint"->JsString("text"))
-        val expected = label -> ESType(`type`, true, true, true)
+        val expected = label -> ESType(`type`, false, true, true)
         assertResult(expected) {
           createType(label, AttributeDetail(`type`, None, Some(aggregateObject)))
         }
@@ -504,7 +504,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val `type` = "array"
         val subtype = "string"
         val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
-        val expected = label -> ESType(subtype, true, true, false)
+        val expected = label -> ESType(subtype, false, true, false)
         assertResult(expected) {
           createType(label, detail)
         }
@@ -515,7 +515,16 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val subtype = "string"
         val aggregateObject = JsObject("renderHint"->JsString("text"))
         val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)), Some(aggregateObject))
-        val expected = label -> ESType(subtype, true, true, true)
+        val expected = label -> ESType(subtype, false, true, true)
+        assertResult(expected) {
+          createType(label, detail)
+        }
+      }
+      "works for populate suggest array type" in {
+        val label = "library:datatype"
+        val `type` = "string"
+        val detail = AttributeDetail(`type`, None, None, None, Option("populate"))
+        val expected = label -> ESType(`type`, true, true, false)
         assertResult(expected) {
           createType(label, detail)
         }

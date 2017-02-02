@@ -43,7 +43,7 @@ class MockSearchDAO extends SearchDAO {
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
-  override def fieldSuggest(field: String, text: String): Future[Seq[String]] = {
+  override def suggest(field: String, text: String): Future[Seq[String]] = {
     populateSuggestInvoked = true
     Future(Seq(field, text))
   }

@@ -49,18 +49,15 @@ trait ESPropertyFields {
 case class ESType(`type`: String, fields: Option[Map[String,ESInnerField]], copy_to: Option[String] = None ) extends ESPropertyFields
 object ESType extends ESPropertyFields {
   def apply(`type`: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
-    val fields: Option[Map[String,ESInnerField]] = (hasPopulateSuggest, isAggregatable) match {
-      case (true, true) => Option(Map("suggest" -> completionField, "raw" -> rawField(`type`)))
-      case (true, false) => Option(Map("suggest" -> completionField))
-      case (false, true) => Option(Map("raw" -> rawField(`type`)))
-      case (false, false) => None
-    }
-    val copyto = hasSearchSuggest match {
-      case true => Option(ElasticSearch.fieldSuggest)
-      case false => None
-    }
-    new ESType(`type`, fields, copyto)
+    val innerFields = Map.empty[String,ESInnerField] ++
+      (if (isAggregatable) Map("raw" -> rawField(`type`)) else Nil) ++
+      (if (hasPopulateSuggest) Map("suggest" -> completionField) else Nil)
+    if (hasSearchSuggest)
+      new ESType(`type`, Option(innerFields), Option(ElasticSearch.fieldSuggest))
+    else
+      new ESType(`type`, Option(innerFields))
   }
+
 }
 
 case class ESInternalType(

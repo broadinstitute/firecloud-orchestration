@@ -130,7 +130,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def populateSuggest(field: String, text: String): Future[PerRequestMessage] = {
-    searchDAO.fieldSuggest(field, text) map {(RequestComplete(_))} recoverWith {
+    searchDAO.suggest(field, text) map {(RequestComplete(_))} recoverWith {
       case e: FireCloudException => Future(RequestCompleteWithErrorReport(BadRequest, s"suggestions not available for field %s".format(field)))
     }
   }

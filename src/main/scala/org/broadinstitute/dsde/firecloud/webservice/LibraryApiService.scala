@@ -115,9 +115,9 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           } ~
-          pathPrefix("populate" / "suggest" / Segment / Segment) { (field, text ) =>
-            pathEndOrSingleSlash {
-              get {
+          pathPrefix("populate" / "suggest" / Segment ) { (field) =>
+            get {
+              parameter('q) { text =>
                 respondWithJSON {
                   requestContext =>
                     perRequest(requestContext,

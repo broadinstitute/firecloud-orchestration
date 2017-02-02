@@ -110,7 +110,7 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     autocompleteSuggestions(client, indexName, criteria, groups)
   }
 
-  override def fieldSuggest(field: String, text: String): Future[Seq[String]] = {
+  override def suggest(field: String, text: String): Future[Seq[String]] = {
     populateSuggestions(client, indexName, field, text)
   }
 
