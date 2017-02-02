@@ -55,8 +55,8 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => asCurator {updateAttributes(ns, name, attrsJsonString)} pipeTo sender
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
     case IndexAll => asAdmin {indexAll} pipeTo sender
-    case FindDocuments(criteria: LibrarySearchParams) => asCurator {findDocuments(criteria)} pipeTo sender
-    case Suggest(criteria: LibrarySearchParams) => asCurator {suggest(criteria)} pipeTo sender
+    case FindDocuments(criteria: LibrarySearchParams) => findDocuments(criteria) pipeTo sender
+    case Suggest(criteria: LibrarySearchParams) => suggest(criteria) pipeTo sender
     case PopulateSuggest(field: String, text: String) => asCurator {populateSuggest(field: String, text: String)} pipeTo sender
   }
 
