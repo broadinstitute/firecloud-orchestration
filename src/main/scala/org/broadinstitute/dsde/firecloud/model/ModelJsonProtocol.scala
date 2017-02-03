@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest

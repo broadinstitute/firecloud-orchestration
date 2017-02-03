@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.AttributeFormat
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsValue}

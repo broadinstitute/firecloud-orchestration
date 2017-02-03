@@ -6,6 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.EntityClient._
+import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{TsvTypes, FireCloudRequestBuilding, TSVFileSupport}

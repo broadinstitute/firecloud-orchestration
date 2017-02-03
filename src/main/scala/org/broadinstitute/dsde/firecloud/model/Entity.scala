@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 
 case class Entity  (
   wsNamespace: Option[String] = None,

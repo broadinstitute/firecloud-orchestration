@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.model
 
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 /**
