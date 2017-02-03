@@ -278,9 +278,8 @@ object ModelJsonProtocol {
   implicit val impUIWorkspace = jsonFormat12(UIWorkspace)
   implicit val impUIWorkspaceResponse = jsonFormat5(UIWorkspaceResponse)
 
-  implicit val impEntity = jsonFormat5(Entity)
+  //implicit val impEntity = jsonFormat5(Entity)
   implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
-  implicit val impRawlsEntity = jsonFormat3(RawlsEntity)
   implicit val impEntityCopyDefinition = jsonFormat3(EntityCopyDefinition)
   implicit val impEntityCopyWithDestinationDefinition = jsonFormat4(EntityCopyWithDestinationDefinition)
   implicit val impEntityId = jsonFormat2(EntityId)

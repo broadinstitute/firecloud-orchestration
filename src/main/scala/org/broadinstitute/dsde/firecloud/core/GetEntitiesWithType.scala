@@ -3,13 +3,12 @@ package org.broadinstitute.dsde.firecloud.core
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
-
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.ProcessUrl
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{RawlsEntity, RequestCompleteWithErrorReport, ErrorReport}
+import org.broadinstitute.dsde.firecloud.model.{ErrorReport, RequestCompleteWithErrorReport}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-
+import org.broadinstitute.dsde.rawls.model.Entity
 import spray.client.pipelining._
 import spray.http.HttpEncodings._
 import spray.http.HttpHeaders.`Accept-Encoding`
@@ -57,12 +56,13 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
   }
 
   def getEntitiesForTypesResponse(future: Future[List[HttpResponse]], entityTypes: List[String]): Future[PerRequestMessage] = {
+    import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
     future.map {
       responses =>
         val allSucceeded = responses.forall(_.status == OK)
         allSucceeded match {
           case true =>
-            val entities = responses.flatMap(unmarshal[List[RawlsEntity]].apply)
+            val entities = responses.flatMap(unmarshal[List[Entity]].apply)
             RequestComplete(OK, entities)
           case false =>
             val errors = responses.filterNot(_.status == OK) map { e => (e, ErrorReport.tryUnmarshal(e)) }

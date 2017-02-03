@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
@@ -54,7 +55,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
     AttributeName.withDefaultNS("ref_dict") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.dict"),
     AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "subject_HCC1143")
   )
-  val validSampleEntities = List(RawlsEntity("sample_01", "sample", sampleAtts))
+  val validSampleEntities = List(Entity("sample_01", "sample", sampleAtts))
 
   override def beforeAll(): Unit = {
     workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)

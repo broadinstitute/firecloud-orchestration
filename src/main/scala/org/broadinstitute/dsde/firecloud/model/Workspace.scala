@@ -52,8 +52,6 @@ case class RawlsWorkspace(
   accessLevels: Map[String, Map[String, String]],
   realm: Option[Map[String, String]])
 
-case class RawlsEntity(name: String, entityType: String, attributes: AttributeMap)
-
 case class SubmissionStats(
   lastSuccessDate: Option[String] = None,
   lastFailureDate: Option[String] = None,

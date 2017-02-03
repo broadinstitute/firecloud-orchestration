@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -30,13 +31,13 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityService {
     AttributeName.withDefaultNS("ref_dict") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.dict"),
     AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "subject_HCC1143")
   )
-  val validSampleEntities = List(RawlsEntity("sample_01", "sample", sampleAtts))
+  val validSampleEntities = List(Entity("sample_01", "sample", sampleAtts))
   val participantAtts = Map(
     AttributeName.withDefaultNS("tumor_platform") -> AttributeString("illumina"),
     AttributeName.withDefaultNS("ref_fasta") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta"),
     AttributeName.withDefaultNS("tumor_strip_unpaired") -> AttributeString("TRUE")
   )
-  val validParticipants = List(RawlsEntity("subject_HCC1143", "participant", participantAtts))
+  val validParticipants = List(Entity("subject_HCC1143", "participant", participantAtts))
 
   override def beforeAll(): Unit = {
 
@@ -101,7 +102,7 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityService {
         val path = validFireCloudPath + "entities_with_type"
         Get(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(OK)
-          val entities = responseAs[List[RawlsEntity]]
+          val entities = responseAs[List[Entity]]
           entities shouldNot be(empty)
         }
       }
