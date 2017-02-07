@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
@@ -26,9 +26,6 @@ import scala.util.{Failure, Success, Try}
 object LibraryService {
   final val publishedFlag = AttributeName("library","published")
   final val schemaLocation = "library/attribute-definitions.json"
-
-  // TODO: read this from conf instead
-  final val whitelistedGroups:Seq[String] = Seq("all_broad_users")
 
   sealed trait LibraryServiceMessage
   case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
@@ -126,7 +123,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
     rawlsDAO.getGroupsForUser map {allUserGroups:Seq[String] =>
-      val userGroupSubset = whitelistedGroups intersect allUserGroups
+      val userGroupSubset = FireCloudConfig.ElasticSearch.discoverGroupNames intersect allUserGroups
       searchDAO.findDocuments(criteria, userGroupSubset)} map (RequestComplete(_))
   }
 
