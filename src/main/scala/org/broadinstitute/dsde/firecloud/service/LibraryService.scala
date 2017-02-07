@@ -27,6 +27,9 @@ object LibraryService {
   final val publishedFlag = AttributeName("library","published")
   final val schemaLocation = "library/attribute-definitions.json"
 
+  // TODO: read this from conf instead
+  final val whitelistedGroups:Seq[String] = Seq("all_broad_users")
+
   sealed trait LibraryServiceMessage
   case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
@@ -122,7 +125,9 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    rawlsDAO.getGroupsForUser map (searchDAO.findDocuments(criteria, _)) map (RequestComplete(_))
+    rawlsDAO.getGroupsForUser map {allUserGroups:Seq[String] =>
+      val userGroupSubset = whitelistedGroups intersect allUserGroups
+      searchDAO.findDocuments(criteria, userGroupSubset)} map (RequestComplete(_))
   }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
