@@ -2,7 +2,8 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.model.{ErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{UserInfo, errorReportSource}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import spray.http.StatusCodes
 

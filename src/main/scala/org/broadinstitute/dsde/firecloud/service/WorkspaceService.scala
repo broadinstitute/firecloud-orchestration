@@ -110,9 +110,10 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
+      val attributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
       val attributes = workspaceResponse.workspace.attributes.filterKeys(_ != AttributeName.withDefaultNS("description"))
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
-      val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(impPlainAttributeFormat.write(attValue)) }).mkString("\t")
+      val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(attributeFormat.write(attValue)) }).mkString("\t")
       RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
         HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
         HttpHeaders.`Content-Type`(`text/plain`))

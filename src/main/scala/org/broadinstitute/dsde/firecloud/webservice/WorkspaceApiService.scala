@@ -4,7 +4,6 @@ import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.rawls.model._

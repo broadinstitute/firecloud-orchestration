@@ -16,6 +16,7 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json.JsonParser.ParsingException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 

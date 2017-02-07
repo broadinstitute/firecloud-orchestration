@@ -2,7 +2,8 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
-import org.broadinstitute.dsde.firecloud.model.{ErrorReport, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
+import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import spray.client.pipelining._
 import spray.http.HttpEncodings._
 import spray.http.HttpHeaders.`Accept-Encoding`
@@ -35,9 +36,9 @@ trait RestJsonClient {
         case s if s.isSuccess =>
           response.entity.as[T] match {
             case Right(obj) => obj
-            case Left(error) => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+            case Left(error) => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
           }
-        case f => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+        case f => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }

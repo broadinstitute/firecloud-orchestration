@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
@@ -41,7 +42,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
       response.status match {
         case OK => true
         case NotFound => false
-        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }
@@ -60,7 +61,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
       response.status match {
         case OK => true
         case NotFound => false
-        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }
@@ -117,7 +118,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
         case OK =>
           Option(DateTime.parse(unmarshal[RawlsTokenDate].apply(response).refreshTokenUpdatedDate))
         case NotFound | BadRequest => None
-        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }

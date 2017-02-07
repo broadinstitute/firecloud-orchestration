@@ -1,11 +1,13 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{Notification, Profile, ThurloeNotification, _}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudRequestBuilding, UserService}
 import org.broadinstitute.dsde.firecloud.utils.{DateUtils, RestJsonClient}
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http.{HttpResponse, OAuth2BearerToken, StatusCodes}
@@ -88,7 +90,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   }
 
   private def throwBadResponse(response: HttpResponse) = {
-    throw new FireCloudExceptionWithErrorReport(ErrorReport("Thurloe", response))
+    throw new FireCloudExceptionWithErrorReport(FCErrorReport("Thurloe", response))
   }
 }
 

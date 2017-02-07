@@ -209,9 +209,6 @@ object ModelJsonProtocol {
       }
   }
 
-  // see https://github.com/spray/spray-json#jsonformats-for-recursive-types
-  implicit val impErrorReport: RootJsonFormat[ErrorReport] = rootFormat(lazyFormat(jsonFormat5(ErrorReport)))
-
   implicit object AttributeNameFormat extends RootJsonFormat[AttributeName] {
     override def write(an: AttributeName): JsValue = JsString(AttributeName.toDelimitedName(an))
 

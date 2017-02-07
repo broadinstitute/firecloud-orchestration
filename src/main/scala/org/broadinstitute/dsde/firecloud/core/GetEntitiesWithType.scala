@@ -5,7 +5,9 @@ import akka.event.Logging
 import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.ProcessUrl
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{ErrorReport, RequestCompleteWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.rawls.model.Entity
@@ -65,7 +67,7 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
             val entities = responses.flatMap(unmarshal[List[Entity]].apply)
             RequestComplete(OK, entities)
           case false =>
-            val errors = responses.filterNot(_.status == OK) map { e => (e, ErrorReport.tryUnmarshal(e)) }
+            val errors = responses.filterNot(_.status == OK) map { e => (e, FCErrorReport.tryUnmarshal(e)) }
             val errorReports = errors collect { case (_, Success(report)) => report }
             val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
             val errorMessage = {
