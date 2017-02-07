@@ -2063,7 +2063,7 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
         - name: workspaceUpdateJson
-          description: Attribute operations
+          description: Attribute operations. WARNING! This should not be used to change library metadata (republish will not happen). Use UpdateAttributes in the library section.
           required: true
           schema:
             type: array
@@ -2091,7 +2091,7 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
         - name: newAttributes
-          description: New attribute values, as Map[String, Attribute]
+          description: New attribute values, as Map[String, Attribute]. WARNING! This should not be used to change library metadata (republish will not happen). Use UpdateAttributes in the library section
           required: true
           schema:
             type: object
