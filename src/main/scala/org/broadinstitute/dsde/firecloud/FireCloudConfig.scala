@@ -107,6 +107,7 @@ object FireCloudConfig {
       Authority(Host(hp(0)), hp(1).toInt)
     })
     val indexName = elasticsearch.getString("index")
+    val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
   }
 
   object GoogleCloud {
