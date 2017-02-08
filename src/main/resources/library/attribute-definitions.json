@@ -7,12 +7,24 @@
   "required": ["library:datasetName", "library:datasetVersion", "library:datasetDescription", "library:datasetCustodian",
     "library:datasetDepositor", "library:contactEmail", "library:datasetOwner", "library:institute", "library:indication",
     "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:dataUseRestriction",
-    "library:studyDesign", "library:requiresExternalApproval"],
+    "library:studyDesign", "library:requiresExternalApproval", "library:useLimitationOption"],
   "oneOf": [{
     "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
-      "library:NCTRL", "library:RS-G", "library:RS-PD"]
+      "library:NCTRL", "library:RS-G", "library:RS-PD", "library:useLimitationOption"],
+    "properties": {
+      "library:useLimitationOption": {
+        "type": "string",
+        "enum": ["questionnaire"]
+      }
+    }
   }, {
-    "required": ["library:orsp"]
+    "required": ["library:orsp", "library:useLimitationOption"],
+    "properties": {
+      "library:useLimitationOption": {
+        "type": "string",
+        "enum": ["orsp"]
+      }
+    }
   }],
   "properties": {
     "library:datasetName": {
@@ -139,7 +151,7 @@
       "typeahead": "populate"
     },
     "library:dataUseRestriction": {
-      "title": "Data Use Restriction",
+      "title": "Data Use Limitation",
       "type": "string",
       "aggregate": {
         "renderHint": "checkbox"
@@ -186,6 +198,19 @@
       "title": "Primary Disease Site",
       "type": "string",
       "typeahead": "populate"
+    },
+    "library:useLimitationOption": {
+      "title": "Choose one of the available options to define Data Use Limitations",
+      "type": "string",
+      "enum": ["questionnaire", "orsp"],
+      "renderHint": {
+        "style": "large",
+        "wording": {
+          "questionnaire": "Set Data Use Limitations by answering a questionnaire",
+          "orsp": "Retrieve Data Use Limitations from Broad ORSP"
+        }
+      },
+      "indexable": false
     },
     "library:GRU": {
       "title": "Data is available for future general research use",
@@ -259,6 +284,7 @@
       "renderHint": {"datatype": "date"}
     },
     "library:orsp": {
+      "title": "Specify Broad ORSP",
       "type": "string",
       "renderHint": {"datatype": "freetext"}
     },
@@ -302,7 +328,7 @@
   "wizard":
   [
     {
-      "title": "Define Data Set attributes",
+      "title": "Define Dataset attributes",
       "questions": ["library:datasetName", "library:datasetVersion", "library:datasetDescription", "library:datasetOwner",
         "library:datasetCustodian", "library:datasetDepositor", "library:contactEmail", "library:institute",
         "library:diseaseOntologyLabel", "library:diseaseOntologyID", "library:indication", "library:primaryDiseaseSite",
@@ -313,22 +339,21 @@
       ]
     },
     {
-      "title": "Catalog structured Data Use Restrictions",
-      "switch": {
-        "title": "Choose one of the available options to define Data Use Restrictions:",
-        "options":
-        [
-          {
-            "title": "Set Data Use Restrictions by answering a questionnaire",
-            "enumerate": true,
-            "questions": ["library:GRU", "library:HMB", "library:DS", "library:NCU", "library:NPU", "library:NDMS",
-              "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate"]
-          },
-          {
-            "title": "Retrieve Data Use Restrictions from Broad ORSP",
-            "questions": ["library:orsp"]
-          }
-        ]
+      "title": "Select Data Use Limitation model",
+      "questions": ["library:useLimitationOption"]
+    },
+    {
+      "title": "Define Data Use Limitations",
+      "optionSource": "library:useLimitationOption",
+      "options": {
+        "questionnaire": {
+          "enumerate": true,
+          "questions": ["library:GRU", "library:HMB", "library:DS", "library:NCU", "library:NPU", "library:NDMS",
+            "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate"]
+        },
+        "orsp": {
+          "questions": ["library:orsp"]
+        }
       }
     }
   ],
