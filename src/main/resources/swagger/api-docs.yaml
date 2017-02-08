@@ -442,9 +442,6 @@ paths:
       operationId: reindexAll
       summary: |
         deletes and rebuilds the entire index of published library datasets
-      produces:
-        - text/plain
-        - application/json
       responses:
         200:
           description: List of errors if partial success, "()" if all datasets indexed successfully

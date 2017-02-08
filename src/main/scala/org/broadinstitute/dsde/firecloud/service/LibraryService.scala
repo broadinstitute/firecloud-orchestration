@@ -130,8 +130,8 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
       else {
         val toIndex:Seq[Document] = workspaces.map {workspace => indexableDocument(workspace)}
         searchDAO.recreateIndex
-        val indexResult = searchDAO.bulkIndex(toIndex)
-        RequestComplete(OK, indexResult.toString)
+        val indexResult = Map("result" -> searchDAO.bulkIndex(toIndex).toString)
+        RequestComplete(OK, indexResult.toJson.prettyPrint)
       }
     }
   }
