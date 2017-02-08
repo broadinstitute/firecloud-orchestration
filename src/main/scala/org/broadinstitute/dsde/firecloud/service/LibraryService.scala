@@ -83,8 +83,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
               // between the time we retrieved them and here, where we update them.
               val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
                 k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
-              val republish = workspaceResponse.workspace.attributes.contains(publishedFlag) &&
-                workspaceResponse.workspace.attributes.get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
+              val republish = workspaceResponse.workspace.attributes.get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
               rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map { newws =>
                 if (republish) {
                   // we do not need to delete before republish

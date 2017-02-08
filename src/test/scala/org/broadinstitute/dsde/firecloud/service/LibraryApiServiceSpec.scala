@@ -55,7 +55,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
       |  "library:studyDesign" : "study",
       |  "library:cellType" : "cell",
       |  "library:requiresExternalApproval" : false,
-      |  "library:published" : true,
+      |  "library:useLimitationOption" : "orsp",
       |  "library:technology" : ["is an optional","array attribute"],
       |  "library:orsp" : "some orsp",
       |  "_discoverableByGroups" : ["Group1","Group2"]

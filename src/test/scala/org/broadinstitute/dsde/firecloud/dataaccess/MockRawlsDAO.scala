@@ -50,8 +50,8 @@ class MockRawlsDAO  extends RawlsDAO {
         AttributeBoolean(true)
       ))),
     "",
-    Map("" -> Map("" -> "")),
-    Some(Map("" -> ""))
+    Map.empty,
+    Some(Map.empty)
   )
 
   private val publishedRawlsWorkspaceWithAttributes = RawlsWorkspace(
@@ -66,6 +66,7 @@ class MockRawlsDAO  extends RawlsDAO {
       AttributeName("default", "b") -> AttributeNumber(1.23),
       AttributeName("default", "c") -> AttributeString(""),
       AttributeName("library", "published") -> AttributeBoolean(true),
+      AttributeName("library", "projectName") -> AttributeString("testing"),
       AttributeName("default", "d") -> AttributeString("escape quo\"te"),
       AttributeName("default", "e") -> AttributeString("v1"),
       AttributeName("default", "f") -> AttributeValueList(Seq(
@@ -74,8 +75,8 @@ class MockRawlsDAO  extends RawlsDAO {
         AttributeBoolean(true)
       ))),
     "",
-    Map("" -> Map("" -> "")),
-    Some(Map("" -> ""))
+    Map.empty,
+    Some(Map.empty)
   )
 
   val rawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), rawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
