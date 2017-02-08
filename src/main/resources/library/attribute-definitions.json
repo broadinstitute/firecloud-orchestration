@@ -215,7 +215,7 @@
         "wording": {
           "questionnaire": "Set Data Use Limitations by answering a questionnaire",
           "orsp": "Retrieve Data Use Limitations from Broad ORSP",
-          "skip": "Skip setting Data Use Limitations for now"
+          "skip": "I would like to skip this step"
         }
       },
       "indexable": false
