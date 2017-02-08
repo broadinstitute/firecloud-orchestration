@@ -54,7 +54,32 @@ class MockRawlsDAO  extends RawlsDAO {
     Some(Map("" -> ""))
   )
 
+  private val publishedRawlsWorkspaceWithAttributes = RawlsWorkspace(
+    "id",
+    "attributes",
+    "att",
+    Option(false),
+    "ansingh",
+    "date",
+    Some("date"),
+    Map(AttributeName("default", "a") -> AttributeBoolean(true),
+      AttributeName("default", "b") -> AttributeNumber(1.23),
+      AttributeName("default", "c") -> AttributeString(""),
+      AttributeName("library", "published") -> AttributeBoolean(true),
+      AttributeName("default", "d") -> AttributeString("escape quo\"te"),
+      AttributeName("default", "e") -> AttributeString("v1"),
+      AttributeName("default", "f") -> AttributeValueList(Seq(
+        AttributeString("v6"),
+        AttributeNumber(999),
+        AttributeBoolean(true)
+      ))),
+    "",
+    Map("" -> Map("" -> "")),
+    Some(Map("" -> ""))
+  )
+
   val rawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), rawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  val publishedRawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), publishedRawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
 
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[RawlsWorkspaceResponse] = {
@@ -62,6 +87,7 @@ class MockRawlsDAO  extends RawlsDAO {
       case "projectowner" => Future(RawlsWorkspaceResponse("PROJECT_OWNER", Some(true), newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
       case "reader" => Future(RawlsWorkspaceResponse("READER", Some(false), newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
+      case "republish" => Future(publishedRawlsWorkspaceResponseWithAttributes)
       case _ => Future(RawlsWorkspaceResponse("OWNER", Some(true), newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
     }
 
