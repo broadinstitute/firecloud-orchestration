@@ -83,7 +83,14 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
               // between the time we retrieved them and here, where we update them.
               val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
                 k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
-              rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map (RequestComplete(_))
+              val republish = workspaceResponse.workspace.attributes.get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
+              rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map { newws =>
+                if (republish) {
+                  // we do not need to delete before republish
+                  publishDocument(newws)
+                }
+                RequestComplete(newws)
+              }
             }
           }
         }
@@ -99,13 +106,21 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
         val operations = updatePublishAttribute(value)
         rawlsDAO.patchWorkspaceAttributes(ns, name, operations) map { ws =>
           if (value)
-            searchDAO.indexDocument(indexableDocument(ws))
+            publishDocument(ws)
           else
-            searchDAO.deleteDocument(ws.workspaceId)
+            removeDocument(ws)
           RequestComplete(ws)
         }
       }
     }
+  }
+
+  def publishDocument(ws: RawlsWorkspace): Unit = {
+    searchDAO.indexDocument(indexableDocument(ws))
+  }
+
+  def removeDocument(ws: RawlsWorkspace): Unit = {
+    searchDAO.deleteDocument(ws.workspaceId)
   }
 
   def indexAll: Future[PerRequestMessage] = {
