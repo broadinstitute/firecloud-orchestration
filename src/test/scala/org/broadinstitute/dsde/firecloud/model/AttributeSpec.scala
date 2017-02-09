@@ -1,11 +1,12 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.{Assertions, FreeSpec}
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 
 
 class AttributeSpec extends FreeSpec with Assertions {

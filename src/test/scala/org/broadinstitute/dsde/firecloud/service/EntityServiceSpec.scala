@@ -33,10 +33,10 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
   val invalidFireCloudEntitiesCopyPath = apiPrefix + "/broad-dsde-dev/invalid/entities/copy"
 
   val validEntityCopy = EntityCopyWithoutDestinationDefinition(
-    sourceWorkspace = WorkspaceName(namespace=Some("broad-dsde-dev"), name=Some("other-ws")),
+    sourceWorkspace = WorkspaceName(namespace="broad-dsde-dev", name="other-ws"),
     entityType = "sample", Seq("sample_01"))
   val invalidEntityCopy = EntityCopyWithoutDestinationDefinition(
-    sourceWorkspace = WorkspaceName(namespace=Some("invalid"), name=Some("other-ws")),
+    sourceWorkspace = WorkspaceName(namespace="invalid", name="other-ws"),
     entityType = "sample", Seq("sample_01"))
 
   val validEntityDelete = EntityDeleteDefinition(false, Seq(EntityId("sample","id"),EntityId("sample","bar")))
@@ -45,7 +45,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
 
   def entityCopyWithDestination(copyDef: EntityCopyDefinition) = new EntityCopyDefinition(
     sourceWorkspace = copyDef.sourceWorkspace,
-    destinationWorkspace = WorkspaceName(Some("broad-dsde-dev"), Some("valid")),
+    destinationWorkspace = WorkspaceName("broad-dsde-dev", "valid"),
     entityType = copyDef.entityType,
     entityNames = copyDef.entityNames)
 

@@ -2,10 +2,7 @@ package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-
-case class WorkspaceName(
-  namespace: Option[String] = None,
-  name: Option[String] = None)
+import org.broadinstitute.dsde.rawls.model.WorkspaceName
 
 case class WorkspaceEntity(
   namespace: Option[String] = None,

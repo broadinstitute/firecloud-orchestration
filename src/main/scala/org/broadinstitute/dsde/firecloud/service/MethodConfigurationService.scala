@@ -4,6 +4,7 @@ import akka.actor.Actor
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.slf4j.LoggerFactory
 import spray.http.HttpMethods
 import spray.httpx.SprayJsonSupport._
@@ -69,8 +70,8 @@ trait MethodConfigurationService extends HttpService with PerRequestCreator with
                   name = ingest.destinationName,
                   namespace = ingest.destinationNamespace,
                   workspaceName = Option(WorkspaceName(
-                    namespace = Option(workspaceNamespace),
-                    name = Option(workspaceName))))))
+                    namespace = workspaceNamespace,
+                    name = workspaceName)))))
               val extReq = Post(MethodConfigurationService.remoteCopyFromMethodRepoConfigUrl, copyMethodConfig)
               externalHttpPerRequest(requestContext, extReq)
             }
@@ -85,8 +86,8 @@ trait MethodConfigurationService extends HttpService with PerRequestCreator with
                   name = ingest.sourceName,
                   namespace = ingest.sourceNamespace,
                   workspaceName = Option(WorkspaceName(
-                    namespace = Option(workspaceNamespace),
-                    name = Option(workspaceName))))))
+                    namespace = workspaceNamespace,
+                    name = workspaceName)))))
               val extReq = Post(MethodConfigurationService.remoteCopyToMethodRepoConfigUrl, copyMethodConfig)
               externalHttpPerRequest(requestContext, extReq)
             }

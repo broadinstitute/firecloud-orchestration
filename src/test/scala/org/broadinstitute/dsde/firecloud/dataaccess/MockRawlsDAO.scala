@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.rawls.model.Entity
+import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import spray.http.OAuth2BearerToken
 import spray.http.StatusCodes

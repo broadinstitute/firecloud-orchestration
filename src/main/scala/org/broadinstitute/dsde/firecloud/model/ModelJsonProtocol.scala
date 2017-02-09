@@ -11,7 +11,7 @@ import spray.routing.directives.RouteDirectives.complete
 
 import scala.util.Try
 
-object ModelJsonProtocol extends JsonSupport {
+object ModelJsonProtocol extends WorkspaceJsonSupport {
   import spray.json.DefaultJsonProtocol._
 
   def optionalEntryIntReader(fieldName: String, data: Map[String,JsValue]): Option[Int] = {
@@ -123,19 +123,9 @@ object ModelJsonProtocol extends JsonSupport {
       }
   }
 
-  implicit object AttributeNameFormat extends RootJsonFormat[AttributeName] {
-    override def write(an: AttributeName): JsValue = JsString(AttributeName.toDelimitedName(an))
-
-    override def read(json: JsValue): AttributeName = json match {
-      case JsString(name) => AttributeName.fromDelimitedName(name)
-      case _ => throw new DeserializationException("unexpected json type")
-    }
-  }
-
   implicit val impMethod = jsonFormat8(MethodRepository.Method)
   implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
 
-  implicit val impWorkspaceName = jsonFormat2(WorkspaceName)
   implicit val impWorkspaceEntity = jsonFormat5(WorkspaceEntity)
   implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate)
   implicit val impRawlsWorkspaceCreate = jsonFormat4(RawlsWorkspaceCreate)
