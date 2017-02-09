@@ -444,17 +444,17 @@ paths:
         deletes and rebuilds the entire index of published library datasets
       responses:
         200:
-          description: List of errors if partial success, "()" if all datasets indexed successfully
+          description: Indexing Success
           schema:
-            type: string
+            $ref: '#/definitions/LibraryBulkIndexResponse'
         204:
           description: No published datasets exist to index
           schema:
             type: string
         500:
-          description: Rawls Internal Error
+          description: Indexing Error
           schema:
-            $ref: '#/definitions/ErrorReport'
+            $ref: '#/definitions/LibraryBulkIndexResponse'
 
   /api/library/search:
     post:
@@ -502,6 +502,7 @@ paths:
           name: field
           description: the property to get suggestions for
           type: string
+          required: true
         - in: query
           name: q
           type: string
@@ -2949,6 +2950,17 @@ definitions:
       jwt:
         type: string
         description: the encoded/signed JWT
+
+  LibraryBulkIndexResponse:
+    type: object
+    properties:
+      hasFailures:
+        type: boolean
+        description: did the indexing operation result in any failures?
+        default: false
+      failureMessages:
+        type: object
+        description: Map[String,String] of id -> failure message
 
   LibraryMetadataInput:
     type: object

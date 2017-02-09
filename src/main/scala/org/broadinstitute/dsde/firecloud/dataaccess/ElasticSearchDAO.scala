@@ -15,6 +15,7 @@ import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import collection.JavaConverters._
 import scala.concurrent.Future
 
 class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
@@ -64,10 +65,12 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     }
     val bulkResponse = executeESRequest[BulkRequest, BulkResponse, BulkRequestBuilder](bulkRequest)
 
-    if (bulkResponse.hasFailures) {
-      logger.warn(bulkResponse.buildFailureMessage)
+    val msgs:Map[String,String] = if (bulkResponse.hasFailures) {
+      bulkResponse.getItems.filter(_.isFailed).map(f => f.getId -> f.getFailureMessage).toMap
+    } else {
+      Map.empty
     }
-    bulkResponse.buildFailureMessage
+    LibraryBulkIndexResponse(bulkResponse.hasFailures, msgs)
   }
 
   override def indexDocument(doc: Document) = {
