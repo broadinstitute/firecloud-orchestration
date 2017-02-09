@@ -126,7 +126,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impMethod = jsonFormat8(MethodRepository.Method)
   implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
 
-  implicit val impWorkspaceEntity = jsonFormat5(WorkspaceEntity)
   implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate)
   implicit val impRawlsWorkspaceCreate = jsonFormat4(RawlsWorkspaceCreate)
 

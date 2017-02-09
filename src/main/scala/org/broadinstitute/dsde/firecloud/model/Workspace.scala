@@ -4,13 +4,6 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 
-case class WorkspaceEntity(
-  namespace: Option[String] = None,
-  name: Option[String] = None,
-  createdDate: Option[String] = None,
-  createdBy: Option[String] = None,
-  attributes: Option[AttributeMap] = None)
-
 case class WorkspaceCreate(
   namespace: String,
   name: String,
