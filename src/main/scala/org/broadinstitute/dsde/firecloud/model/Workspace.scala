@@ -22,11 +22,6 @@ object WorkspaceCreate {
   }
 }
 
-case class SubmissionStats(
-  lastSuccessDate: Option[String] = None,
-  lastFailureDate: Option[String] = None,
-  runningSubmissionsCount: Int)
-
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
 
 case class EntityCopyWithoutDestinationDefinition(
