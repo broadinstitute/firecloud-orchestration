@@ -14,6 +14,7 @@ import org.scalatest.FreeSpec
 import spray.json.{JsObject, _}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.joda.time.DateTime
 
 import scala.collection.JavaConversions._
 import scala.util.Try
@@ -29,17 +30,18 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
 
   val testUUID = UUID.randomUUID()
 
-  val testWorkspace = new RawlsWorkspace(workspaceId=testUUID.toString,
+  val testWorkspace = new Workspace(workspaceId=testUUID.toString,
     namespace="testWorkspaceNamespace",
     name="testWorkspaceName",
-    isLocked=Some(false),
+    realm=None,
+    isLocked=false,
     createdBy="createdBy",
-    createdDate="createdDate",
-    lastModified=None,
+    createdDate=DateTime.now(),
+    lastModified=DateTime.now(),
     attributes=Map.empty,
     bucketName="bucketName",
     accessLevels=Map.empty,
-    realm=None)
+    realmACLs=Map())
 
   val testLibraryMetadata =
     """

@@ -75,25 +75,25 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsBucketUsageResponse] =
     requestToObject[RawlsBucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
 
-  override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[RawlsWorkspaceResponse] =
-    requestToObject[RawlsWorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
+  override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
+    requestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
 
-  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[RawlsWorkspace] = {
+  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
     import spray.json.DefaultJsonProtocol._
     import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperationFormat
     import spray.json.DefaultJsonProtocol._
-    requestToObject[RawlsWorkspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
+    requestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate],inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] =
     requestToObject[WorkspaceACLUpdateResponseList]( Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates) )
 
-  override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = {
+  override def getAllLibraryPublishedWorkspaces: Future[Seq[Workspace]] = {
     val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
 
     val allPublishedPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> sendReceive
     allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
-      response.entity.as[Seq[RawlsWorkspace]] match {
+      response.entity.as[Seq[Workspace]] match {
         case Right(srw) =>
           logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
           srw

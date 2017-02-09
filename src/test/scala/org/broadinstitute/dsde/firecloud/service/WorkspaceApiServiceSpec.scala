@@ -260,7 +260,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       List(HttpMethods.GET) foreach { method =>
         s"OK status is returned for HTTP $method" in {
           val dao = new MockRawlsDAO
-          val rwr = dao.rawlsWorkspaceResponseWithAttributes.copy(canShare=None)
+          val rwr = dao.rawlsWorkspaceResponseWithAttributes.copy(canShare=false)
           val lrwr = Seq.fill(2){rwr}
           stubRawlsService(method, workspacesRoot, OK, Some(lrwr.toJson.compactPrint))
           new RequestBuilder(method)(workspacesRoot) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {

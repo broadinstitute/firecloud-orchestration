@@ -17,8 +17,8 @@ import spray.json.DefaultJsonProtocol._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json.JsonParser.ParsingException
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impRawlsWorkspace, impLibrarySearchResponse}
-import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impLibrarySearchResponse}
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.{AttributeNameFormat, WorkspaceFormat}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 
 import scala.collection.JavaConversions._
@@ -103,7 +103,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
       // verify owner on workspace
-      if (!workspaceResponse.accessLevel.contains("OWNER") && !workspaceResponse.accessLevel.contains("PROJECT_OWNER")) {
+      if (workspaceResponse.accessLevel < WorkspaceAccessLevels.Owner) {
         Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner"))
       } else {
         val operations = updatePublishAttribute(value)
