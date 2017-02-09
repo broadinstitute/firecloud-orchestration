@@ -550,8 +550,7 @@ paths:
           required: true
           in: body
           schema:
-            type: object
-            title: JsObject of metadata to update
+            $ref: '#/definitions/LibraryMetadataInput'
       responses:
         200:
           description: Success
@@ -2953,6 +2952,22 @@ definitions:
       jwt:
         type: string
         description: the encoded/signed JWT
+
+  LibraryMetadataInput:
+    type: object
+    description: JSON-standard packet of metadata as defined by the Library schema
+    example: |
+      {
+        "library:requiresExternalApproval": false,
+        "library:contactEmail": "someone@broadinstitute.org",
+        "library:datasetName": "My Dataset",
+        "library:numSubjects": 123,
+        "library:datatype": ["Whole Exome", "Whole Genome"]
+        ...
+        additional JSON-standard fields as
+        defined by the Library schema
+        ...
+      }
 
   Me:
     type: object
