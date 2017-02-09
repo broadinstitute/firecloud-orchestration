@@ -34,6 +34,8 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
 
   implicit val system = context.system
   import system.dispatcher
+  import spray.json.DefaultJsonProtocol._
+
   val log = Logging(system, getClass)
 
   def receive = {

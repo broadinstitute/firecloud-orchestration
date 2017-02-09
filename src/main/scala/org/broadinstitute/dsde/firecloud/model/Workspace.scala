@@ -88,15 +88,8 @@ case class UIWorkspace(
 
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
 
-case class EntityCopyDefinition(
+case class EntityCopyWithoutDestinationDefinition(
   sourceWorkspace: WorkspaceName,
-  entityType: String,
-  entityNames: Seq[String]
-  )
-
-case class EntityCopyWithDestinationDefinition(
-  sourceWorkspace: WorkspaceName,
-  destinationWorkspace: WorkspaceName,
   entityType: String,
   entityNames: Seq[String]
   )

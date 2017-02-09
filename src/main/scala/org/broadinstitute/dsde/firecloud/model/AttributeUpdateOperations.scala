@@ -1,8 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import spray.json._
-import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.{AttributeName, Attribute}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 /**
@@ -11,6 +10,8 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
  * TODO: share with rawls code, instead of copying wholesale
  */
 object AttributeUpdateOperations {
+  import spray.json.DefaultJsonProtocol._
+
   sealed trait AttributeUpdateOperation
   case class AddUpdateAttribute(attributeName: AttributeName, addUpdateAttribute: Attribute) extends AttributeUpdateOperation
   case class RemoveAttribute(attributeName: AttributeName) extends AttributeUpdateOperation

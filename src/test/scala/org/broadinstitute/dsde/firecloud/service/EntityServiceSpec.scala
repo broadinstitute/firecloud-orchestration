@@ -32,10 +32,10 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
   val invalidFireCloudEntitiesSamplePath = apiPrefix + "/broad-dsde-dev/invalid/entities/sample"
   val invalidFireCloudEntitiesCopyPath = apiPrefix + "/broad-dsde-dev/invalid/entities/copy"
 
-  val validEntityCopy = EntityCopyDefinition(
+  val validEntityCopy = EntityCopyWithoutDestinationDefinition(
     sourceWorkspace = WorkspaceName(namespace=Some("broad-dsde-dev"), name=Some("other-ws")),
     entityType = "sample", Seq("sample_01"))
-  val invalidEntityCopy = EntityCopyDefinition(
+  val invalidEntityCopy = EntityCopyWithoutDestinationDefinition(
     sourceWorkspace = WorkspaceName(namespace=Some("invalid"), name=Some("other-ws")),
     entityType = "sample", Seq("sample_01"))
 
@@ -43,7 +43,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
   val invalidEntityDelete = validEntityCopy // we're testing that the payload can't be unmarshalled to an EntityDeleteDefinition
   val mixedFailEntityDelete = EntityDeleteDefinition(false, Seq(EntityId("sample","foo"),EntityId("failme","kthxbai"),EntityId("sample","bar")))
 
-  def entityCopyWithDestination(copyDef: EntityCopyDefinition) = new EntityCopyWithDestinationDefinition(
+  def entityCopyWithDestination(copyDef: EntityCopyDefinition) = new EntityCopyDefinition(
     sourceWorkspace = copyDef.sourceWorkspace,
     destinationWorkspace = WorkspaceName(Some("broad-dsde-dev"), Some("valid")),
     entityType = copyDef.entityType,
