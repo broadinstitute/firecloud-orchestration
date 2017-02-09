@@ -26,6 +26,7 @@
       }
     }
   }, {
+    "required": ["library:useLimitationOption"],
     "properties": {
       "library:useLimitationOption": {
         "type": "string",
