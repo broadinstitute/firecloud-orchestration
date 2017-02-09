@@ -80,7 +80,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
           post {
             requireUserInfo() { _ =>
               entity(as[WorkspaceCreate]) { createRequest => requestContext =>
-                val extReq = Post(FireCloudConfig.Rawls.workspacesUrl, new RawlsWorkspaceCreate(createRequest))
+                val extReq = Post(FireCloudConfig.Rawls.workspacesUrl, createRequest)
                 externalHttpPerRequest(requestContext, extReq)
               }
             }
@@ -179,7 +179,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             post {
               requireUserInfo() { _ =>
                 entity(as[WorkspaceCreate]) { createRequest => requestContext =>
-                  val extReq = Post(workspacePath + "/clone", new RawlsWorkspaceCreate(createRequest))
+                  val extReq = Post(workspacePath + "/clone", createRequest)
                   externalHttpPerRequest(requestContext, extReq)
                 }
               }

@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model.WorkspaceName
+import org.broadinstitute.dsde.rawls.model.{RawlsGroupName, RawlsGroupRef, WorkspaceName, WorkspaceRequest}
 
 case class WorkspaceCreate(
   namespace: String,
@@ -10,16 +10,15 @@ case class WorkspaceCreate(
   attributes: AttributeMap,
   isProtected: Option[Boolean] = Some(false))
 
-case class RawlsWorkspaceCreate(
-  namespace: String,
-  name: String,
-  attributes: AttributeMap,
-  realm: Option[Map[String, String]] = None) {
-  def this(wc: WorkspaceCreate) =
-    this(wc.namespace, wc.name, wc.attributes,
-      if (wc.isProtected.getOrElse(false))
-        Some(Map("realmName" -> FireCloudConfig.Nih.rawlsGroupName))
-      else None)
+object WorkspaceCreate {
+  import scala.language.implicitConversions
+  implicit def toWorkspaceRequest(wc: WorkspaceCreate): WorkspaceRequest = {
+    val realm = if (wc.isProtected.getOrElse(false))
+      Some(RawlsGroupRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
+    else
+        None
+    WorkspaceRequest(wc.namespace, wc.name, realm, wc.attributes)
+  }
 }
 
 case class RawlsWorkspaceResponse(
