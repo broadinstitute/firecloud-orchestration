@@ -137,13 +137,13 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    rawlsDAO.getGroupsForUser map {allUserGroups:Seq[String] =>
-      val userGroupSubset = FireCloudConfig.ElasticSearch.discoverGroupNames intersect allUserGroups
-      searchDAO.findDocuments(criteria, userGroupSubset)} map (RequestComplete(_))
+    getEffectiveDiscoverGroups(rawlsDAO) map {userGroups =>
+      searchDAO.findDocuments(criteria, userGroups)} map (RequestComplete(_))
   }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    rawlsDAO.getGroupsForUser map (searchDAO.suggestionsFromAll(criteria, _)) map (RequestComplete(_))
+    getEffectiveDiscoverGroups(rawlsDAO) map {userGroups =>
+      searchDAO.suggestionsFromAll(criteria, userGroups)} map (RequestComplete(_))
   }
 
   def populateSuggest(field: String, text: String): Future[PerRequestMessage] = {
