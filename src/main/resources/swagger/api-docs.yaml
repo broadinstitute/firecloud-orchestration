@@ -912,6 +912,18 @@ paths:
             - https://www.googleapis.com/auth/devstorage.full_control
             - https://www.googleapis.com/auth/cloud-billing
 
+  /api/profile/realms:
+    get:
+      tags:
+        - Profile
+      operationId: getRealms
+      summary: List realms for a user
+      responses:
+        200:
+          description: OK
+        500:
+          description: Internal Server Error
+
   /api/refresh-token-status:
     get:
       tags:
@@ -3559,6 +3571,7 @@ definitions:
     description: ''
     required:
       - acl
+    type: object
     properties:
       acl:
         type: object
@@ -3587,6 +3600,7 @@ definitions:
     required:
       - subjectId
       - accessLevel
+    type: object
     properties:
       subjectId:
         type: string
@@ -3602,6 +3616,7 @@ definitions:
       - invitesSent
       - invitesUpdated
       - usersNotFound
+    type: object
     properties:
       usersUpdated:
         type: array
@@ -3630,6 +3645,7 @@ definitions:
       - accessLevel
       - pending
       - canShare
+    type: object
     properties:
       accessLevel:
         type: string
