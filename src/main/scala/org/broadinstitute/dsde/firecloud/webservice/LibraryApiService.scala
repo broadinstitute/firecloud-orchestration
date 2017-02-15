@@ -83,10 +83,12 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
             }
           } ~
           path("admin" / "reindex") {
-            post { requestContext =>
-              perRequest(requestContext,
-                LibraryService.props(libraryServiceConstructor, userInfo),
-                LibraryService.IndexAll)
+            post {
+              respondWithJSON { requestContext =>
+                perRequest(requestContext,
+                  LibraryService.props(libraryServiceConstructor, userInfo),
+                  LibraryService.IndexAll)
+              }
             }
           } ~
           pathPrefix("search") {

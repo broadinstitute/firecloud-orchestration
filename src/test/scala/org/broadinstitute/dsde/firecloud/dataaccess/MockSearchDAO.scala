@@ -23,7 +23,7 @@ class MockSearchDAO extends SearchDAO {
   var autocompleteInvoked = false
   var populateSuggestInvoked = false
 
-  override def bulkIndex(docs: Seq[Document]) = Unit
+  override def bulkIndex(docs: Seq[Document]) = LibraryBulkIndexResponse(false, Map.empty)
 
   override def indexDocument(doc: Document) = {
     indexDocumentInvoked = true
