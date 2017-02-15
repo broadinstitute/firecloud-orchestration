@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
@@ -7,8 +9,11 @@ import org.everit.json.schema.{Schema, ValidationException}
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.{JSONObject, JSONTokener}
 import org.parboiled.common.FileUtils
+
 import scala.collection.JavaConversions._
 import spray.json.JsObject
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Created by davidan on 10/2/16.
@@ -51,4 +56,9 @@ trait LibraryServiceSupport {
     Seq(ve.getPointerToViolation + ": " + ve.getErrorMessage) ++
       (ve.getCausingExceptions flatMap getSchemaValidationMessages)
   }
+
+  def getEffectiveDiscoverGroups(rawlsDAO: RawlsDAO)(implicit ec: ExecutionContext, userInfo:UserInfo): Future[Seq[String]] = {
+    rawlsDAO.getGroupsForUser map {FireCloudConfig.ElasticSearch.discoverGroupNames intersect _}
+  }
+
 }
