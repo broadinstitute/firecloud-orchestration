@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud
 
 import com.typesafe.config.ConfigFactory
 import spray.http.Uri.{Authority, Host}
+import scala.collection.JavaConverters._
 
 object FireCloudConfig {
   private val config = ConfigFactory.load()
@@ -104,7 +105,7 @@ object FireCloudConfig {
     private val elasticsearch = config.getConfig("elasticsearch")
     val servers: Seq[Authority] = parseESServers(elasticsearch.getString("urls"))
     val indexName = elasticsearch.getString("index")
-    val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
+    val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames").asScala.toSeq
   }
 
   def parseESServers(confString: String): Seq[Authority] = {

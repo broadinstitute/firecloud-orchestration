@@ -456,6 +456,17 @@ paths:
           schema:
             $ref: '#/definitions/LibraryBulkIndexResponse'
 
+  /api/library/groups:
+    get:
+      tags:
+        - Library
+      operationId: groups
+      summary: |
+        returns groups that can be used for discoverable datasets
+      responses:
+        200:
+          description: Names of the allowed groups
+
   /api/library/search:
     post:
       tags:

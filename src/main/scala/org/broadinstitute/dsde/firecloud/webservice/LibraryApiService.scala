@@ -12,6 +12,7 @@ import spray.http.Uri
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
+import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 
@@ -56,6 +57,13 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                   case NotFound => requestContext.complete(OK, Curator(false))
                   case _ => requestContext.complete(response) // replay the root exception
                 }
+              }
+            }
+          } ~
+          path("groups") {
+            pathEndOrSingleSlash {
+              get { requestContext =>
+                requestContext.complete(OK, FireCloudConfig.ElasticSearch.discoverGroupNames)
               }
             }
           } ~
