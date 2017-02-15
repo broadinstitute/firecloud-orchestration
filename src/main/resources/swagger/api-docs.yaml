@@ -921,6 +921,10 @@ paths:
       responses:
         200:
           description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/RawlsRealmRef'
         500:
           description: Internal Server Error
 
@@ -3279,6 +3283,14 @@ definitions:
         $ref: '#/definitions/UserInfo'
       enabled:
         $ref: '#/definitions/ExtendedEnabled'
+
+  RawlsRealmRef:
+    type: object
+    description: a reference to a realm
+    properties:
+      realmName:
+        type: string
+        description: ''
 
   SearchTermRef:
     type: object

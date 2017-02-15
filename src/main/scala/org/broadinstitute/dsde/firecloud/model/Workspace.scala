@@ -28,7 +28,7 @@ case class RawlsWorkspaceCreate(
   def this(wc: WorkspaceCreate) =
     this(wc.namespace, wc.name, wc.attributes,
       if (wc.isProtected.getOrElse(false))
-        Some(Map("groupName" -> FireCloudConfig.Nih.rawlsGroupName))
+        Some(Map("realmName" -> FireCloudConfig.Nih.rawlsGroupName))
       else None)
 }
 
