@@ -25,6 +25,14 @@
         "enum": ["orsp"]
       }
     }
+  }, {
+    "required": ["library:useLimitationOption"],
+    "properties": {
+      "library:useLimitationOption": {
+        "type": "string",
+        "enum": ["skip"]
+      }
+    }
   }],
   "properties": {
     "library:datasetName": {
@@ -202,12 +210,13 @@
     "library:useLimitationOption": {
       "title": "Choose one of the available options to define Data Use Limitations",
       "type": "string",
-      "enum": ["questionnaire", "orsp"],
+      "enum": ["questionnaire", "orsp", "skip"],
       "renderHint": {
         "style": "large",
         "wording": {
           "questionnaire": "Set Data Use Limitations by answering a questionnaire",
-          "orsp": "Retrieve Data Use Limitations from Broad ORSP"
+          "orsp": "Retrieve Data Use Limitations from Broad ORSP",
+          "skip": "I would like to skip this step"
         }
       },
       "indexable": false
