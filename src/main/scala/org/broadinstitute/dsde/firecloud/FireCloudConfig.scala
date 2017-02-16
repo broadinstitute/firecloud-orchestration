@@ -102,12 +102,16 @@ object FireCloudConfig {
 
   object ElasticSearch {
     private val elasticsearch = config.getConfig("elasticsearch")
-    val servers: Seq[Authority] = (elasticsearch.getString("urls").split(',') map { hostport =>
-      val hp = hostport.split(':')
-      Authority(Host(hp(0)), hp(1).toInt)
-    })
+    val servers: Seq[Authority] = parseESServers(elasticsearch.getString("urls"))
     val indexName = elasticsearch.getString("index")
     val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
+  }
+
+  def parseESServers(confString: String): Seq[Authority] = {
+    confString.split(',') map { hostport =>
+      val hp = hostport.split(':')
+      Authority(Host(hp(0)), hp(1).toInt)
+    }
   }
 
   object GoogleCloud {
