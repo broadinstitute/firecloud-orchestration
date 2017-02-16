@@ -340,7 +340,7 @@ object ModelJsonProtocol {
   implicit val impAggregationFieldResults = jsonFormat2(AggregationFieldResults)
   implicit val impLibraryAggregationResponse = jsonFormat2(LibraryAggregationResponse)
   implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
-  implicit val impLibraryBulkIndexResponse = jsonFormat2(LibraryBulkIndexResponse)
+  implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

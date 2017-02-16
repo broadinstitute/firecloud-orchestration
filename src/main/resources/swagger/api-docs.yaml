@@ -2954,6 +2954,9 @@ definitions:
   LibraryBulkIndexResponse:
     type: object
     properties:
+      totalCount:
+        type: number
+        description: the number of published workspaces sent to be indexed
       hasFailures:
         type: boolean
         description: did the indexing operation result in any failures?
