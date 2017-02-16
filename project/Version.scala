@@ -4,7 +4,7 @@ import sbt._
 object Version {
   val versionRoot = "0.1"
 
-  def getVersionString(baseDir: File) = {
+  def getVersionString = {
     // Get the revision, or -1 (later will be bumped to zero)
     val versionRevision = {
       try {
@@ -36,6 +36,6 @@ object Version {
   }
 
   val rootVersionSettings: Seq[Setting[_]] =
-    Seq(version := getVersionString(baseDirectory.value))
+    Seq(version := getVersionString)
 
 }

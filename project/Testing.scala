@@ -34,7 +34,9 @@ object Testing {
         .invoke(null, "ROOT")
     ),
     testOptions in Test ++= Seq(Tests.Filter(s => !isIntegrationTest(s))),
-    testOptions in IntegrationTest := Seq(Tests.Filter(s => isIntegrationTest(s)))
+    testOptions in IntegrationTest := Seq(Tests.Filter(s => isIntegrationTest(s))),
+
+    parallelExecution in Test := false
   )
 
   implicit class ProjectTestSettings(val project: Project) extends AnyVal {
