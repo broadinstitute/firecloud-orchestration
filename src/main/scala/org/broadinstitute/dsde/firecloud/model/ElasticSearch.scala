@@ -133,6 +133,6 @@ case class AggregationFieldResults(
 
 case class AggregationTermResult(key: String, doc_count: Int)
 
-case class LibraryBulkIndexResponse(hasFailures: Boolean, failureMessages: Map[String,String])
+case class LibraryBulkIndexResponse(totalCount: Int, hasFailures: Boolean, failureMessages: Map[String,String])
 
 

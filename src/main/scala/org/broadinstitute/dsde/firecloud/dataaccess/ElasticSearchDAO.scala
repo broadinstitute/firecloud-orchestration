@@ -70,7 +70,7 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     } else {
       Map.empty
     }
-    LibraryBulkIndexResponse(bulkResponse.hasFailures, msgs)
+    LibraryBulkIndexResponse(bulkResponse.getItems.length, bulkResponse.hasFailures, msgs)
   }
 
   override def indexDocument(doc: Document) = {
