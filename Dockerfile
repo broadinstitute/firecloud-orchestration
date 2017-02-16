@@ -29,7 +29,7 @@ WORKDIR /app
 
 # Grab dependencies.
 COPY build.sbt build.sbt
-COPY project/plugins.sbt project/plugins.sbt
+COPY project/* project/
 RUN sbt compile
 
 # Compile first to cache it.
