@@ -125,12 +125,11 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
 
   def indexAll: Future[PerRequestMessage] = {
     rawlsDAO.getAllLibraryPublishedWorkspaces map {workspaces =>
+      searchDAO.recreateIndex()
       if (workspaces.isEmpty)
         RequestComplete(NoContent)
       else {
         val toIndex:Seq[Document] = workspaces.map {workspace => indexableDocument(workspace)}
-        searchDAO.recreateIndex
-
         val bi = searchDAO.bulkIndex(toIndex)
         val statusCode = if (bi.hasFailures) {
           InternalServerError
