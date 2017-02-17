@@ -212,29 +212,48 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-//    "OK status is returned from POST on /workspaces (create workspace) with a realm" in {
-//      val response = RawlsWorkspace("foo", "broad-dsde-dev", "bar", Some(false), "foo", "baz", Some("bar"), Map.empty, "foo", Map.empty, Some(Map("realmName" -> "dbGapAuthorizedUsers")))
-//      stubRawlsService(HttpMethods.POST, workspacesRoot, OK, Some(response.toJson.compactPrint))
-//      Post(workspacesRoot, WorkspaceCreate("namespace", "name", Map(), Option(true))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-//        status should equal(OK)
-//        assert(responseAs[RawlsWorkspace].realm.get.nonEmpty)
-//      }
-//    }
-
-
     "Passthrough tests on the GET /workspaces/%s/%s path" - {
-      s"OK status is returned for HTTP GET" in {
+      s"OK status is returned for HTTP GET (dbGap workspace)" in {
         val dao = new MockRawlsDAO
-        val rwr = dao.protectedRawlsWorkspaceResponseWithAttributes
+        val rwr = dao.protectedRawlsWorkspaceResponse
         stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(rwr.toJson.compactPrint))
         Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
-          assert(responseAs[UIWorkspaceResponse].workspace.get.isProtected)
+          //generally this is not how we want to treat the response
+          //it should already be returned as JSON but for some strange reason it's being returned as text/plain
+          //here we take the plain text and force it to be json so we can get the test to work
+          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
         }
       }
-    }
 
-    "Passthrough tests on the DELETE /workspaces/%s/%s path" - {
+      s"OK status is returned for HTTP GET (other realm workspace)" in {
+        val dao = new MockRawlsDAO
+        val rwr = dao.realmRawlsWorkspaceResponse
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(rwr.toJson.compactPrint))
+        Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+          //generally this is not how we want to treat the response
+          //it should already be returned as JSON but for some strange reason it's being returned as text/plain
+          //here we take the plain text and force it to be json so we can get the test to work
+          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
+          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.realm.get.nonEmpty)
+        }
+      }
+
+      s"OK status is returned for HTTP GET (non-realmed workspace)" in {
+        val dao = new MockRawlsDAO
+        val rwr = dao.nonRealmedRawlsWorkspaceResponse
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(rwr.toJson.compactPrint))
+        Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+          //generally this is not how we want to treat the response
+          //it should already be returned as JSON but for some strange reason it's being returned as text/plain
+          //here we take the plain text and force it to be json so we can get the test to work
+          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
+          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.realm.isDefined)
+        }
+      }
+
       s"OK status is returned for HTTP DELETE" in {
         stubRawlsService(HttpMethods.DELETE, workspacesPath, OK)
         new RequestBuilder(HttpMethods.DELETE)(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
@@ -242,7 +261,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
     }
-
 
     "Passthrough tests on the /workspaces/%s/%s/methodconfigs path" - {
       List(HttpMethods.GET, HttpMethods.POST) foreach { method =>

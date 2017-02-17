@@ -54,30 +54,51 @@ class MockRawlsDAO  extends RawlsDAO {
     Some(Map("" -> ""))
   )
 
-  val protectedRawlsWorkspaceWithAttributes = RawlsWorkspace(
+  val protectedRawlsWorkspace = RawlsWorkspace(
     "id",
     "attributes",
     "att",
     Option(false),
-    "ansingh",
+    "mb",
     "date",
     Some("date"),
-    Map(AttributeName("default", "a") -> AttributeBoolean(true),
-      AttributeName("default", "b") -> AttributeNumber(1.23),
-      AttributeName("default", "c") -> AttributeString(""),
-      AttributeName("default", "d") -> AttributeString("escape quo\"te"),
-      AttributeName("default", "e") -> AttributeString("v1"),
-      AttributeName("default", "f") -> AttributeValueList(Seq(
-        AttributeString("v6"),
-        AttributeNumber(999),
-        AttributeBoolean(true)
-      ))),
+    Map.empty,
     "",
     Map("" -> Map("" -> "")),
     Some(Map("realmName" -> "dbGapAuthorizedUsers"))
   )
 
-  val protectedRawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), protectedRawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  val realmRawlsWorkspace = RawlsWorkspace(
+    "id",
+    "attributes",
+    "att",
+    Option(false),
+    "mb",
+    "date",
+    Some("date"),
+    Map.empty,
+    "",
+    Map("" -> Map("" -> "")),
+    Some(Map("realmName" -> "secret_realm"))
+  )
+
+  val nonRealmedRawlsWorkspace = RawlsWorkspace(
+    "id",
+    "attributes",
+    "att",
+    Option(false),
+    "mb",
+    "date",
+    Some("date"),
+    Map.empty,
+    "",
+    Map("" -> Map("" -> "")),
+    None
+  )
+
+  val protectedRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), protectedRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  val realmRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), realmRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  val nonRealmedRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), nonRealmedRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
 
   val rawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), rawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
 
