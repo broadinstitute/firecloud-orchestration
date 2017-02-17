@@ -31,7 +31,7 @@ class MockRawlsDAO  extends RawlsDAO {
     Future(RawlsBucketUsageResponse(BigInt("256000000000")))
   }
 
-  private val rawlsWorkspaceWithAttributes = RawlsWorkspace(
+  val rawlsWorkspaceWithAttributes = RawlsWorkspace(
     "id",
     "attributes",
     "att",
@@ -52,6 +52,29 @@ class MockRawlsDAO  extends RawlsDAO {
     "",
     Map("" -> Map("" -> "")),
     Some(Map("" -> ""))
+  )
+
+  val protectedRawlsWorkspaceWithAttributes = RawlsWorkspace(
+    "id",
+    "attributes",
+    "att",
+    Option(false),
+    "ansingh",
+    "date",
+    Some("date"),
+    Map(AttributeName("default", "a") -> AttributeBoolean(true),
+      AttributeName("default", "b") -> AttributeNumber(1.23),
+      AttributeName("default", "c") -> AttributeString(""),
+      AttributeName("default", "d") -> AttributeString("escape quo\"te"),
+      AttributeName("default", "e") -> AttributeString("v1"),
+      AttributeName("default", "f") -> AttributeValueList(Seq(
+        AttributeString("v6"),
+        AttributeNumber(999),
+        AttributeBoolean(true)
+      ))),
+    "",
+    Map("" -> Map("" -> "")),
+    Some(Map("realmName" -> "dbGapAuthorizedUsers"))
   )
 
   val rawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), rawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
