@@ -48,6 +48,9 @@ object UserService {
   val rawlsRegisterUserPath = "/register/user"
   val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
 
+  val realmsPath = FireCloudConfig.Rawls.authPrefix + "/user/realms"
+  val realmsUrl = FireCloudConfig.Rawls.baseUrl + realmsPath
+
   val remotePostNotifyPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.postNotify
   val remotePostNotifyURL = FireCloudConfig.Thurloe.baseUrl + remotePostNotifyPath
 
@@ -124,6 +127,11 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
       path("profile" / "billingAccounts") {
         get {
           passthrough(UserService.billingAccountsUrl, HttpMethods.GET)
+        }
+      } ~
+      path("profile" / "realms") {
+        get {
+          passthrough(UserService.realmsUrl, HttpMethods.GET)
         }
       }
     } ~

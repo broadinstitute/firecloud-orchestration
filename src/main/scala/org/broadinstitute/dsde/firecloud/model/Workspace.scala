@@ -28,7 +28,7 @@ case class RawlsWorkspaceCreate(
   def this(wc: WorkspaceCreate) =
     this(wc.namespace, wc.name, wc.attributes,
       if (wc.isProtected.getOrElse(false))
-        Some(Map("groupName" -> FireCloudConfig.Nih.rawlsGroupName))
+        Some(Map("realmName" -> FireCloudConfig.Nih.rawlsGroupName))
       else None)
 }
 
@@ -85,7 +85,7 @@ case class UIWorkspace(
   def this(rw: RawlsWorkspace) =
     this(rw.workspaceId, rw.namespace, rw.name, rw.isLocked, rw.createdBy, rw.createdDate,
       rw.lastModified, rw.attributes, rw.bucketName, rw.accessLevels, rw.realm,
-      rw.realm.flatMap(_.get("groupName").map(_ == FireCloudConfig.Nih.rawlsGroupName)).getOrElse(false))
+      rw.realm.flatMap(_.get("realmName").map(_ == FireCloudConfig.Nih.rawlsGroupName)).getOrElse(false))
 }
 
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)

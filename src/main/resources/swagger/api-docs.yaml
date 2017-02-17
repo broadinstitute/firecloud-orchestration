@@ -909,6 +909,22 @@ paths:
             - https://www.googleapis.com/auth/devstorage.full_control
             - https://www.googleapis.com/auth/cloud-billing
 
+  /api/profile/realms:
+    get:
+      tags:
+        - Profile
+      operationId: getRealms
+      summary: List realms for a user
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/RawlsRealmRef'
+        500:
+          description: Internal Server Error
+
   /api/refresh-token-status:
     get:
       tags:
@@ -3295,6 +3311,14 @@ definitions:
       enabled:
         $ref: '#/definitions/ExtendedEnabled'
 
+  RawlsRealmRef:
+    type: object
+    description: a reference to a realm
+    properties:
+      realmName:
+        type: string
+        description: ''
+
   SearchTermRef:
     type: object
     properties:
@@ -3550,7 +3574,7 @@ definitions:
         type: string
         description: The name of the workspace
       realm:
-        $ref: '#/definitions/RawlsGroupRef'
+        $ref: '#/definitions/RawlsRealmRef'
         description: An optional realm for the workspace
       workspaceId:
         type: string
@@ -3586,6 +3610,7 @@ definitions:
     description: ''
     required:
       - acl
+    type: object
     properties:
       acl:
         type: object
@@ -3614,6 +3639,7 @@ definitions:
     required:
       - subjectId
       - accessLevel
+    type: object
     properties:
       subjectId:
         type: string
@@ -3629,6 +3655,7 @@ definitions:
       - invitesSent
       - invitesUpdated
       - usersNotFound
+    type: object
     properties:
       usersUpdated:
         type: array
@@ -3657,6 +3684,7 @@ definitions:
       - accessLevel
       - pending
       - canShare
+    type: object
     properties:
       accessLevel:
         type: string

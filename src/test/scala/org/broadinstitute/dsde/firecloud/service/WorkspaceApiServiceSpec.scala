@@ -47,6 +47,52 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
+  val protectedRawlsWorkspace = RawlsWorkspace(
+    "id",
+    "attributes",
+    "att",
+    Option(false),
+    "mb",
+    "date",
+    Some("date"),
+    Map.empty,
+    "",
+    Map("" -> Map("" -> "")),
+    Some(Map("realmName" -> "dbGapAuthorizedUsers"))
+  )
+
+  val realmRawlsWorkspace = RawlsWorkspace(
+    "id",
+    "attributes",
+    "att",
+    Option(false),
+    "mb",
+    "date",
+    Some("date"),
+    Map.empty,
+    "",
+    Map("" -> Map("" -> "")),
+    Some(Map("realmName" -> "secret_realm"))
+  )
+
+  val nonRealmedRawlsWorkspace = RawlsWorkspace(
+    "id",
+    "attributes",
+    "att",
+    Option(false),
+    "mb",
+    "date",
+    Some("date"),
+    Map.empty,
+    "",
+    Map("" -> Map("" -> "")),
+    None
+  )
+
+  val protectedRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), protectedRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  val realmRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), realmRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  val nonRealmedRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), nonRealmedRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+
   var rawlsServer: ClientAndServer = _
 
   /** Stub the mock rawls service to respond to a request. Used for testing passthroughs.
@@ -212,18 +258,49 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+    "Passthrough tests on the GET /workspaces/%s/%s path" - {
+      s"OK status is returned for HTTP GET (dbGap workspace)" in {
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(protectedRawlsWorkspaceResponse.toJson.compactPrint))
+        Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+          //generally this is not how we want to treat the response
+          //it should already be returned as JSON but for some strange reason it's being returned as text/plain
+          //here we take the plain text and force it to be json so we can get the test to work
+          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
+        }
+      }
 
-    "Passthrough tests on the /workspaces/%s/%s path" - {
-      List(HttpMethods.GET, HttpMethods.DELETE) foreach { method =>
-        s"OK status is returned for HTTP $method" in {
-          stubRawlsService(method, workspacesPath, OK)
-          new RequestBuilder(method)(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(OK)
-          }
+      s"OK status is returned for HTTP GET (other realm workspace)" in {
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(realmRawlsWorkspaceResponse.toJson.compactPrint))
+        Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+          //generally this is not how we want to treat the response
+          //it should already be returned as JSON but for some strange reason it's being returned as text/plain
+          //here we take the plain text and force it to be json so we can get the test to work
+          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
+          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.realm.get.nonEmpty)
+        }
+      }
+
+      s"OK status is returned for HTTP GET (non-realmed workspace)" in {
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(nonRealmedRawlsWorkspaceResponse.toJson.compactPrint))
+        Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+          //generally this is not how we want to treat the response
+          //it should already be returned as JSON but for some strange reason it's being returned as text/plain
+          //here we take the plain text and force it to be json so we can get the test to work
+          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
+          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.realm.isDefined)
+        }
+      }
+
+      s"OK status is returned for HTTP DELETE" in {
+        stubRawlsService(HttpMethods.DELETE, workspacesPath, OK)
+        new RequestBuilder(HttpMethods.DELETE)(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
         }
       }
     }
-
 
     "Passthrough tests on the /workspaces/%s/%s/methodconfigs path" - {
       List(HttpMethods.GET, HttpMethods.POST) foreach { method =>
@@ -302,6 +379,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       stubRawlsService(HttpMethods.POST, workspacesRoot, OK)
       Post(workspacesRoot, WorkspaceCreate("namespace", "name", Map())) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
+      }
+    }
+
+    "OK status is returned from POST on /workspaces (create workspace) with a realm" in {
+      val response = RawlsWorkspace("foo", "broad-dsde-dev", "bar", Some(false), "foo", "baz", Some("bar"), Map.empty, "foo", Map.empty, Some(Map("realmName" -> "dbGapAuthorizedUsers")))
+      stubRawlsService(HttpMethods.POST, workspacesRoot, OK, Some(response.toJson.compactPrint))
+      Post(workspacesRoot, WorkspaceCreate("namespace", "name", Map(), Option(true))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        status should equal(OK)
+        assert(responseAs[RawlsWorkspace].realm.get.nonEmpty)
       }
     }
 
