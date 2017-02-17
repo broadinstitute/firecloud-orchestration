@@ -86,17 +86,17 @@ class MockRawlsDAO  extends RawlsDAO {
     false
   )
 
-  val rawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), rawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
-
+  val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val publishedRawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] = {
     ns match {
-      case "projectowner" => Future(WorkspaceResponse(WorkspaceAccessLevels.ProjectOwner, canShare=true, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
-      case "reader" => Future(WorkspaceResponse(WorkspaceAccessLevels.Read, canShare=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "projectowner" => Future(WorkspaceResponse(WorkspaceAccessLevels.ProjectOwner, canShare = true, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "reader" => Future(WorkspaceResponse(WorkspaceAccessLevels.Read, canShare = false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
-      case _ => Future(RawlsWorkspaceResponse("OWNER", Some(true), newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
+      case "republish" => Future(publishedRawlsWorkspaceResponseWithAttributes)
+      case _ => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
     }
-
   }
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {

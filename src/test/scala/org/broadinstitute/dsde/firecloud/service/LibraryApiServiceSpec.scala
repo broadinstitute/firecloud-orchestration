@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AddUpdateAttribute
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AddUpdateAttribute
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 import org.mockserver.integration.ClientAndServer

@@ -15,10 +15,14 @@ object WorkspaceCreate {
   import scala.language.implicitConversions
   implicit def toWorkspaceRequest(wc: WorkspaceCreate): WorkspaceRequest = {
     val realm = if (wc.isProtected.getOrElse(false))
-      Some(RawlsGroupRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
+      Some(RawlsRealmRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
     else
         None
     WorkspaceRequest(wc.namespace, wc.name, realm, wc.attributes)
+  }
+
+  def isProtected(ws: Workspace): Boolean = {
+    ws.realm == Some(RawlsRealmRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
   }
 }
 

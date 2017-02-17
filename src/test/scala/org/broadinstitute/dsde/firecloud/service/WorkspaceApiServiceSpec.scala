@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
-import org.broadinstitute.dsde.rawls.model.{Workspace, WorkspaceACLUpdate, WorkspaceAccessLevels}
+import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
@@ -59,51 +59,54 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
-  val protectedRawlsWorkspace = RawlsWorkspace(
-    "id",
+  val protectedRawlsWorkspace = Workspace(
     "attributes",
     "att",
-    Option(false),
+    Some(RawlsRealmRef(RawlsGroupName("dbGapAuthorizedUsers"))), //realm
+    "id",
+    "", //bucketname
+    DateTime.now(),
+    DateTime.now(),
     "mb",
-    "date",
-    Some("date"),
-    Map.empty,
-    "",
-    Map("" -> Map("" -> "")),
-    Some(Map("realmName" -> "dbGapAuthorizedUsers"))
+    Map(), //attrs
+    Map(), //acls
+    Map(), //realm acls
+    false
   )
 
-  val realmRawlsWorkspace = RawlsWorkspace(
-    "id",
+  val realmRawlsWorkspace = Workspace(
     "attributes",
     "att",
-    Option(false),
+    Some(RawlsRealmRef(RawlsGroupName("secret_realm"))), //realm
+    "id",
+    "", //bucketname
+    DateTime.now(),
+    DateTime.now(),
     "mb",
-    "date",
-    Some("date"),
-    Map.empty,
-    "",
-    Map("" -> Map("" -> "")),
-    Some(Map("realmName" -> "secret_realm"))
+    Map(), //attrs
+    Map(), //acls
+    Map(), //realm acls
+    false
   )
 
-  val nonRealmedRawlsWorkspace = RawlsWorkspace(
-    "id",
+  val nonRealmedRawlsWorkspace = Workspace(
     "attributes",
     "att",
-    Option(false),
+    None, //realm
+    "id",
+    "", //bucketname
+    DateTime.now(),
+    DateTime.now(),
     "mb",
-    "date",
-    Some("date"),
-    Map.empty,
-    "",
-    Map("" -> Map("" -> "")),
-    None
+    Map(), //attrs
+    Map(), //acls
+    Map(), //realm acls
+    false
   )
 
-  val protectedRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), protectedRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
-  val realmRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), realmRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
-  val nonRealmedRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), nonRealmedRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  val protectedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, protectedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val realmRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, realmRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val nonRealmedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, nonRealmedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
 
   var rawlsServer: ClientAndServer = _
 
@@ -278,7 +281,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
+          assert(WorkspaceCreate.isProtected(entity.asString.parseJson.convertTo[WorkspaceResponse].workspace))
         }
       }
 
@@ -289,8 +292,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
-          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.realm.get.nonEmpty)
+          assert(!WorkspaceCreate.isProtected(entity.asString.parseJson.convertTo[WorkspaceResponse].workspace))
+          assert(entity.asString.parseJson.convertTo[WorkspaceResponse].workspace.realm.isDefined)
         }
       }
 
@@ -301,8 +304,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
-          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.realm.isDefined)
+          assert(!WorkspaceCreate.isProtected(entity.asString.parseJson.convertTo[WorkspaceResponse].workspace))
+          assert(!entity.asString.parseJson.convertTo[WorkspaceResponse].workspace.realm.isDefined)
         }
       }
 
@@ -395,11 +398,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "OK status is returned from POST on /workspaces (create workspace) with a realm" in {
-      val response = RawlsWorkspace("foo", "broad-dsde-dev", "bar", Some(false), "foo", "baz", Some("bar"), Map.empty, "foo", Map.empty, Some(Map("realmName" -> "dbGapAuthorizedUsers")))
+      val response = Workspace("broad-dsde-dev", "bar", Some(RawlsRealmRef(RawlsGroupName("dbGapAuthorizedUsers"))), "foo", "foo", DateTime.now(), DateTime.now(), "foo", Map(), Map(), Map(), false)
       stubRawlsService(HttpMethods.POST, workspacesRoot, OK, Some(response.toJson.compactPrint))
       Post(workspacesRoot, WorkspaceCreate("namespace", "name", Map(), Option(true))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
-        assert(responseAs[RawlsWorkspace].realm.get.nonEmpty)
+        assert(responseAs[Workspace].realm.isDefined)
       }
     }
 

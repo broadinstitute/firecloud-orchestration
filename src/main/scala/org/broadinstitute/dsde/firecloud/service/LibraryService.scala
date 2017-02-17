@@ -17,7 +17,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json.JsonParser.ParsingException
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impLibrarySearchResponse}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impLibraryBulkIndexResponse, impLibrarySearchResponse}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.{AttributeNameFormat, WorkspaceFormat}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 
@@ -118,11 +118,11 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     }
   }
 
-  def publishDocument(ws: RawlsWorkspace): Unit = {
+  def publishDocument(ws: Workspace): Unit = {
     searchDAO.indexDocument(indexableDocument(ws))
   }
 
-  def removeDocument(ws: RawlsWorkspace): Unit = {
+  def removeDocument(ws: Workspace): Unit = {
     searchDAO.deleteDocument(ws.workspaceId)
   }
 
