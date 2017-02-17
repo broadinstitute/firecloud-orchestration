@@ -37,21 +37,23 @@ class RegisterService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
       createUpdateProfile(userInfo, basicProfile) pipeTo sender
   }
 
-  private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
-    thurloeDao.saveProfile(userInfo, basicProfile) flatMap { _ =>
-      thurloeDao.saveKeyValue(
+  private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile):
+      Future[PerRequestMessage] = {
+    for {
+      _ <- thurloeDao.saveProfile(userInfo, basicProfile)
+      _ <- thurloeDao.saveKeyValue(
           userInfo, "isRegistrationComplete", Profile.currentVersion.toString
-        ) flatMap { _ =>
-          rawlsDao.isRegistered(userInfo) flatMap {
-            case true => Future.successful(RequestComplete(StatusCodes.OK))
-            case false => rawlsDao.registerUser(userInfo) map { _ =>
-              // Notifications can happen in the background---it is not necessary to block the
-              // request waiting for the notifications to be enqueued. 
-              thurloeDao.sendNotifications(List(ActivationNotification(userInfo.id)))
-              RequestComplete(StatusCodes.OK)
-            }
-          }
+        )
+      isRegistered <- rawlsDao.isRegistered(userInfo)
+      _ <- if (!isRegistered) {
+        rawlsDao.registerUser(userInfo) map { _ =>
+          // Notifications can happen in the background—it is not necessary to block the
+          // request waiting for the notifications to be enqueued.
+          thurloeDao.sendNotifications(List(ActivationNotification(userInfo.id)))
         }
+      } else Future.successful(())
+    } yield {
+      RequestComplete(StatusCodes.OK)
     }
   }
 }
