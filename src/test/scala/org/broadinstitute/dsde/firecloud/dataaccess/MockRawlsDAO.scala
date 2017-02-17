@@ -31,7 +31,7 @@ class MockRawlsDAO  extends RawlsDAO {
     Future(RawlsBucketUsageResponse(BigInt("256000000000")))
   }
 
-  val rawlsWorkspaceWithAttributes = RawlsWorkspace(
+  private val rawlsWorkspaceWithAttributes = RawlsWorkspace(
     "id",
     "attributes",
     "att",
@@ -53,52 +53,6 @@ class MockRawlsDAO  extends RawlsDAO {
     Map("" -> Map("" -> "")),
     Some(Map("" -> ""))
   )
-
-  val protectedRawlsWorkspace = RawlsWorkspace(
-    "id",
-    "attributes",
-    "att",
-    Option(false),
-    "mb",
-    "date",
-    Some("date"),
-    Map.empty,
-    "",
-    Map("" -> Map("" -> "")),
-    Some(Map("realmName" -> "dbGapAuthorizedUsers"))
-  )
-
-  val realmRawlsWorkspace = RawlsWorkspace(
-    "id",
-    "attributes",
-    "att",
-    Option(false),
-    "mb",
-    "date",
-    Some("date"),
-    Map.empty,
-    "",
-    Map("" -> Map("" -> "")),
-    Some(Map("realmName" -> "secret_realm"))
-  )
-
-  val nonRealmedRawlsWorkspace = RawlsWorkspace(
-    "id",
-    "attributes",
-    "att",
-    Option(false),
-    "mb",
-    "date",
-    Some("date"),
-    Map.empty,
-    "",
-    Map("" -> Map("" -> "")),
-    None
-  )
-
-  val protectedRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), protectedRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
-  val realmRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), realmRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
-  val nonRealmedRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), nonRealmedRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
 
   val rawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), rawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
 

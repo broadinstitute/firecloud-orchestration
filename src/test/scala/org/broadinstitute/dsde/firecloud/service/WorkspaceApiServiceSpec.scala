@@ -47,6 +47,52 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
+  val protectedRawlsWorkspace = RawlsWorkspace(
+    "id",
+    "attributes",
+    "att",
+    Option(false),
+    "mb",
+    "date",
+    Some("date"),
+    Map.empty,
+    "",
+    Map("" -> Map("" -> "")),
+    Some(Map("realmName" -> "dbGapAuthorizedUsers"))
+  )
+
+  val realmRawlsWorkspace = RawlsWorkspace(
+    "id",
+    "attributes",
+    "att",
+    Option(false),
+    "mb",
+    "date",
+    Some("date"),
+    Map.empty,
+    "",
+    Map("" -> Map("" -> "")),
+    Some(Map("realmName" -> "secret_realm"))
+  )
+
+  val nonRealmedRawlsWorkspace = RawlsWorkspace(
+    "id",
+    "attributes",
+    "att",
+    Option(false),
+    "mb",
+    "date",
+    Some("date"),
+    Map.empty,
+    "",
+    Map("" -> Map("" -> "")),
+    None
+  )
+
+  val protectedRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), protectedRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  val realmRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), realmRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  val nonRealmedRawlsWorkspaceResponse = RawlsWorkspaceResponse("", Some(false), nonRealmedRawlsWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+
   var rawlsServer: ClientAndServer = _
 
   /** Stub the mock rawls service to respond to a request. Used for testing passthroughs.
@@ -214,9 +260,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the GET /workspaces/%s/%s path" - {
       s"OK status is returned for HTTP GET (dbGap workspace)" in {
-        val dao = new MockRawlsDAO
-        val rwr = dao.protectedRawlsWorkspaceResponse
-        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(rwr.toJson.compactPrint))
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(protectedRawlsWorkspaceResponse.toJson.compactPrint))
         Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
           //generally this is not how we want to treat the response
@@ -227,9 +271,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       s"OK status is returned for HTTP GET (other realm workspace)" in {
-        val dao = new MockRawlsDAO
-        val rwr = dao.realmRawlsWorkspaceResponse
-        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(rwr.toJson.compactPrint))
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(realmRawlsWorkspaceResponse.toJson.compactPrint))
         Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
           //generally this is not how we want to treat the response
@@ -241,9 +283,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       s"OK status is returned for HTTP GET (non-realmed workspace)" in {
-        val dao = new MockRawlsDAO
-        val rwr = dao.nonRealmedRawlsWorkspaceResponse
-        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(rwr.toJson.compactPrint))
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(nonRealmedRawlsWorkspaceResponse.toJson.compactPrint))
         Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
           //generally this is not how we want to treat the response
