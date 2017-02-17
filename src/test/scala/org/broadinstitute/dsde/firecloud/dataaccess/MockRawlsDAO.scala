@@ -77,6 +77,8 @@ class MockRawlsDAO  extends RawlsDAO {
     Some(Map("realmName" -> "dbGapAuthorizedUsers"))
   )
 
+  val protectedRawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), protectedRawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+
   val rawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), rawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
 
 

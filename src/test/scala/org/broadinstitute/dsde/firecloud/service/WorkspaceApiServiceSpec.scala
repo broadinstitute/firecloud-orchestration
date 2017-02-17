@@ -212,30 +212,33 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+//    "OK status is returned from POST on /workspaces (create workspace) with a realm" in {
+//      val response = RawlsWorkspace("foo", "broad-dsde-dev", "bar", Some(false), "foo", "baz", Some("bar"), Map.empty, "foo", Map.empty, Some(Map("realmName" -> "dbGapAuthorizedUsers")))
+//      stubRawlsService(HttpMethods.POST, workspacesRoot, OK, Some(response.toJson.compactPrint))
+//      Post(workspacesRoot, WorkspaceCreate("namespace", "name", Map(), Option(true))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+//        status should equal(OK)
+//        assert(responseAs[RawlsWorkspace].realm.get.nonEmpty)
+//      }
+//    }
+
 
     "Passthrough tests on the GET /workspaces/%s/%s path" - {
-      List(HttpMethods.GET) foreach { method =>
-        s"OK status is returned for HTTP $method" in {
-          val dao = new MockRawlsDAO
-          val rw = dao.protectedRawlsWorkspaceWithAttributes
-          val x = new UIWorkspace(rw)
-          println(x)
-          stubRawlsService(method, workspacesPath, OK, Some(rw.toJson.compactPrint))
-          new RequestBuilder(method)(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(OK)
-            assert(responseAs[UIWorkspace].isProtected)
-          }
+      s"OK status is returned for HTTP GET" in {
+        val dao = new MockRawlsDAO
+        val rwr = dao.protectedRawlsWorkspaceResponseWithAttributes
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(rwr.toJson.compactPrint))
+        Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+          assert(responseAs[UIWorkspaceResponse].workspace.get.isProtected)
         }
       }
     }
 
     "Passthrough tests on the DELETE /workspaces/%s/%s path" - {
-      List(HttpMethods.DELETE) foreach { method =>
-        s"OK status is returned for HTTP $method" in {
-          stubRawlsService(method, workspacesPath, OK)
-          new RequestBuilder(method)(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(OK)
-          }
+      s"OK status is returned for HTTP DELETE" in {
+        stubRawlsService(HttpMethods.DELETE, workspacesPath, OK)
+        new RequestBuilder(HttpMethods.DELETE)(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
         }
       }
     }
