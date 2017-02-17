@@ -3562,9 +3562,12 @@ definitions:
       - workspaceId
       - bucketName
       - createdDate
+      - lastModified
       - createdBy
       - attributes
       - accessLevels
+      - realmACLs
+      - isLocked
     type: object
     properties:
       namespace:
