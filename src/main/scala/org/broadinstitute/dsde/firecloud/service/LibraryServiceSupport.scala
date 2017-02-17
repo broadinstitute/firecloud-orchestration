@@ -2,9 +2,9 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
-import org.broadinstitute.dsde.rawls.model.Attributable._
 import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
+import org.broadinstitute.dsde.rawls.model.Attributable._
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
 import org.everit.json.schema.{Schema, ValidationException}
 import org.everit.json.schema.loader.SchemaLoader

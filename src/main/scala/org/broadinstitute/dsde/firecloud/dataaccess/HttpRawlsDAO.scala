@@ -1,12 +1,12 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
@@ -72,16 +72,13 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] =
     requestToObject[Seq[String]]( Get(rawlsGroupsForUserUrl) )
 
-  override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsBucketUsageResponse] =
-    requestToObject[RawlsBucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
+  override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] =
+    requestToObject[BucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
     requestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
-    import spray.json.DefaultJsonProtocol._
-    import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperationFormat
-    import spray.json.DefaultJsonProtocol._
     requestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 

@@ -4,10 +4,10 @@ import java.net.URL
 import java.util.UUID
 
 import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOSupport
-import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
 import org.scalatest.FreeSpec

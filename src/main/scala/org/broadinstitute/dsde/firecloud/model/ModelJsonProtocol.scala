@@ -172,7 +172,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impRawlsGroupMemberList = jsonFormat4(RawlsGroupMemberList)
 
-  implicit val impRawlsBucketUsageResponse = jsonFormat1(RawlsBucketUsageResponse)
   implicit val impWorkspaceStorageCostEstimate = jsonFormat1(WorkspaceStorageCostEstimate)
 
   implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)

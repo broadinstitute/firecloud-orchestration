@@ -2,9 +2,9 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
 import spray.http.OAuth2BearerToken
 
@@ -48,7 +48,7 @@ trait RawlsDAO extends LazyLogging {
 
   def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]]
 
-  def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsBucketUsageResponse]
+  def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse]
 
   def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse]
 
