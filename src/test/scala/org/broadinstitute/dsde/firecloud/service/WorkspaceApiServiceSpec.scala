@@ -305,6 +305,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+    "OK status is returned from POST on /workspaces (create workspace) with a realm" in {
+      stubRawlsService(HttpMethods.POST, workspacesRoot, OK)
+      Post(workspacesRoot, WorkspaceCreate("namespace", "name", Map(), Option(true))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        status should equal(OK)
+        assert(responseAs[UIWorkspace].isProtected)
+      }
+    }
+
     "OK status is returned from PATCH on /workspaces/%s/%s/acl" in {
       Patch(aclPath, List(WorkspaceACLUpdate("dummy@test.org", WorkspaceAccessLevels.NoAccess, Some(false)))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
