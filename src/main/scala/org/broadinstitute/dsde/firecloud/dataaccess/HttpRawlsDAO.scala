@@ -24,6 +24,16 @@ import scala.concurrent.{ExecutionContext, Future}
 class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
   extends RawlsDAO with RestJsonClient {
 
+  override def isRegistered(userInfo: UserInfo): Future[Boolean] = {
+    userAuthedRequest(Get(rawlsUserRegistrationUrl))(userInfo) map { response =>
+      response.status match {
+        case OK => true
+        case NotFound => false
+        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+      }
+    }
+  }
+
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest( Get(rawlsAdminUrl) )(userInfo) map { response =>
       response.status match {
@@ -51,6 +61,10 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
         case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
       }
     }
+  }
+
+  override def registerUser(userInfo: UserInfo): Future[Unit] = {
+    userAuthedRequest(Post(rawlsUserRegistrationUrl))(userInfo) map { _ => () }
   }
 
   override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] =

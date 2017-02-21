@@ -17,11 +17,15 @@ import scala.concurrent.Future
   */
 class MockRawlsDAO  extends RawlsDAO {
 
+  override def isRegistered(userInfo: UserInfo): Future[Boolean] = Future(true)
+
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future(true)
 
   override def isDbGapAuthorized(userInfo: UserInfo): Future[Boolean] = Future(true)
 
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = Future(true)
+
+  override def registerUser(userInfo: UserInfo): Future[Unit] = Future(())
 
   override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] = {
     Future(Seq("TestUserGroup"))

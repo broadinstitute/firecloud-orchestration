@@ -153,15 +153,6 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
                 passthrough(UserService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
               }
             }
-          } ~
-          post {
-            requireUserInfo() { userInfo =>
-              entity(as[BasicProfile]) {
-                profileData => requestContext =>
-                  perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
-                    ProfileClient.UpdateProfile(userInfo, profileData))
-              }
-            }
           }
         }
       }
