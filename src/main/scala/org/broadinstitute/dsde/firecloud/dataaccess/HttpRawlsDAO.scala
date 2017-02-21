@@ -31,7 +31,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
       response.status match {
         case OK => true
         case NotFound => false
-        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }
