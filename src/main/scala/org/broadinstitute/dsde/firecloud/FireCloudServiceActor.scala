@@ -86,7 +86,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   }
 
   // wraps route rejections in an ErrorReport
-  import org.broadinstitute.dsde.firecloud.model.ErrorReport.errorReportRejectionHandler
+  import org.broadinstitute.dsde.firecloud.model.errorReportRejectionHandler
 
   def receive = runRoute(
     appendTimestamp {

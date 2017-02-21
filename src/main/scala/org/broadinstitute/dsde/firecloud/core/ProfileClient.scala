@@ -7,6 +7,8 @@ import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, Fir
 import org.broadinstitute.dsde.firecloud.core.ProfileClient._
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudRequestBuilding, UserService}
@@ -82,7 +84,7 @@ class ProfileClientActor(requestContext: RequestContext) extends Actor with Fire
   def handleFailedUpdateResponse(
     responses:List[HttpResponse],
     profilePropertyMap:Map[String,String]) = {
-      val errors = responses.filterNot(_.status == OK) map { e => (e, ErrorReport.tryUnmarshal(e) ) }
+      val errors = responses.filterNot(_.status == OK) map { e => (e, FCErrorReport.tryUnmarshal(e) ) }
       val errorReports = errors collect { case (_, Success(report)) => report }
       val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
       val errorMessage = {

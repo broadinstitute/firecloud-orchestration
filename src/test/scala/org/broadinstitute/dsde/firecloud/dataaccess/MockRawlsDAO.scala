@@ -1,8 +1,9 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
 import spray.http.OAuth2BearerToken
 import spray.http.StatusCodes
@@ -31,18 +32,19 @@ class MockRawlsDAO  extends RawlsDAO {
     Future(Seq("TestUserGroup"))
   }
 
-  override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsBucketUsageResponse] = {
-    Future(RawlsBucketUsageResponse(BigInt("256000000000")))
+  override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] = {
+    Future(BucketUsageResponse(BigInt("256000000000")))
   }
 
-  private val rawlsWorkspaceWithAttributes = RawlsWorkspace(
-    "id",
+  private val rawlsWorkspaceWithAttributes = Workspace(
     "attributes",
     "att",
-    Option(false),
+    None, //realm
+    "id",
+    "", //bucketname
+    DateTime.now(),
+    DateTime.now(),
     "ansingh",
-    "date",
-    Some("date"),
     Map(AttributeName("default", "a") -> AttributeBoolean(true),
       AttributeName("default", "b") -> AttributeNumber(1.23),
       AttributeName("default", "c") -> AttributeString(""),
@@ -53,19 +55,20 @@ class MockRawlsDAO  extends RawlsDAO {
         AttributeNumber(999),
         AttributeBoolean(true)
       ))),
-    "",
-    Map.empty,
-    Some(Map.empty)
+    Map(), //acls
+    Map(), //realm acls
+    false
   )
 
-  private val publishedRawlsWorkspaceWithAttributes = RawlsWorkspace(
-    "id",
+  private val publishedRawlsWorkspaceWithAttributes = Workspace(
     "attributes",
     "att",
-    Option(false),
+    None, //realm
+    "id",
+    "", //bucketname
+    DateTime.now(),
+    DateTime.now(),
     "ansingh",
-    "date",
-    Some("date"),
     Map(AttributeName("default", "a") -> AttributeBoolean(true),
       AttributeName("default", "b") -> AttributeNumber(1.23),
       AttributeName("default", "c") -> AttributeString(""),
@@ -78,46 +81,46 @@ class MockRawlsDAO  extends RawlsDAO {
         AttributeNumber(999),
         AttributeBoolean(true)
       ))),
-    "",
-    Map.empty,
-    Some(Map.empty)
+    Map(), //acls
+    Map(), //realm acls,
+    false
   )
 
-  val rawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), rawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
-  val publishedRawlsWorkspaceResponseWithAttributes = RawlsWorkspaceResponse("", Some(false), publishedRawlsWorkspaceWithAttributes, SubmissionStats(runningSubmissionsCount = 0), List.empty)
+  val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val publishedRawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
 
-
-  override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[RawlsWorkspaceResponse] = {
+  override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] = {
     ns match {
-      case "projectowner" => Future(RawlsWorkspaceResponse("PROJECT_OWNER", Some(true), newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
-      case "reader" => Future(RawlsWorkspaceResponse("READER", Some(false), newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
+      case "projectowner" => Future(WorkspaceResponse(WorkspaceAccessLevels.ProjectOwner, canShare = true, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "reader" => Future(WorkspaceResponse(WorkspaceAccessLevels.Read, canShare = false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
       case "republish" => Future(publishedRawlsWorkspaceResponseWithAttributes)
-      case _ => Future(RawlsWorkspaceResponse("OWNER", Some(true), newWorkspace, SubmissionStats(runningSubmissionsCount = 0), List.empty))
+      case _ => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
     }
-
   }
 
-  override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[RawlsWorkspace] = {
+  override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
     Future.successful(newWorkspace)
   }
 
-  private def newWorkspace: RawlsWorkspace = {
-    new RawlsWorkspace(
-      workspaceId = "workspaceId",
+  private def newWorkspace: Workspace = {
+    new Workspace(
       namespace = "namespace",
       name = "name",
-      isLocked = Some(true),
-      createdBy = "createdBy",
-      createdDate = "createdDate",
-      lastModified = None,
-      attributes = Map(),
+      realm = None,
+      workspaceId = "workspaceId",
       bucketName = "bucketName",
+      createdDate = DateTime.now(),
+      lastModified = DateTime.now(),
+      createdBy = "createdBy",
+      attributes = Map(),
       accessLevels = Map(),
-      realm = None)
+      realmACLs = Map(),
+      isLocked = true
+      )
   }
 
-  override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = Future(Seq.empty[RawlsWorkspace])
+  override def getAllLibraryPublishedWorkspaces: Future[Seq[Workspace]] = Future(Seq.empty[Workspace])
 
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] = {
     Future(WorkspaceACLUpdateResponseList(aclUpdates.map(update => WorkspaceACLUpdateResponse(update.email, update.accessLevel)), aclUpdates, aclUpdates, aclUpdates))
@@ -131,7 +134,7 @@ class MockRawlsDAO  extends RawlsDAO {
     Future(())
   }
 
-  override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[RawlsEntity]] = {
+  override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[Entity]] = {
     if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "not found")))
     } else {

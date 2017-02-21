@@ -1,10 +1,12 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
+import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
@@ -29,7 +31,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
       response.status match {
         case OK => true
         case NotFound => false
-        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }
@@ -39,7 +41,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
       response.status match {
         case OK => true
         case NotFound => false
-        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }
@@ -58,7 +60,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
       response.status match {
         case OK => true
         case NotFound => false
-        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }
@@ -70,28 +72,25 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] =
     requestToObject[Seq[String]]( Get(rawlsGroupsForUserUrl) )
 
-  override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[RawlsBucketUsageResponse] =
-    requestToObject[RawlsBucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
+  override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] =
+    requestToObject[BucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
 
-  override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[RawlsWorkspaceResponse] =
-    requestToObject[RawlsWorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
+  override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
+    requestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
 
-  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[RawlsWorkspace] = {
-    import spray.json.DefaultJsonProtocol._
-    import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.AttributeUpdateOperationFormat
-    import spray.json.DefaultJsonProtocol._
-    requestToObject[RawlsWorkspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
+  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
+    requestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate],inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] =
     requestToObject[WorkspaceACLUpdateResponseList]( Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates) )
 
-  override def getAllLibraryPublishedWorkspaces: Future[Seq[RawlsWorkspace]] = {
+  override def getAllLibraryPublishedWorkspaces: Future[Seq[Workspace]] = {
     val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
 
     val allPublishedPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> sendReceive
     allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
-      response.entity.as[Seq[RawlsWorkspace]] match {
+      response.entity.as[Seq[Workspace]] match {
         case Right(srw) =>
           logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
           srw
@@ -102,8 +101,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
-  override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[RawlsEntity]] = {
-    requestToObject[Seq[RawlsEntity]](Get(rawlsEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType)), true)
+  override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[Entity]] = {
+    requestToObject[Seq[Entity]](Get(rawlsEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType)), true)
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
@@ -115,7 +114,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
         case OK =>
           Option(DateTime.parse(unmarshal[RawlsTokenDate].apply(response).refreshTokenUpdatedDate))
         case NotFound | BadRequest => None
-        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response))
+        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }

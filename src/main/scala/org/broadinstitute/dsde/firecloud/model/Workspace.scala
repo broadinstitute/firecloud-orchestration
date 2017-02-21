@@ -1,18 +1,9 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
-
-case class WorkspaceName(
-  namespace: Option[String] = None,
-  name: Option[String] = None)
-
-case class WorkspaceEntity(
-  namespace: Option[String] = None,
-  name: Option[String] = None,
-  createdDate: Option[String] = None,
-  createdBy: Option[String] = None,
-  attributes: Option[AttributeMap] = None)
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model._
+import org.joda.time.DateTime
 
 case class WorkspaceCreate(
   namespace: String,
@@ -20,85 +11,25 @@ case class WorkspaceCreate(
   attributes: AttributeMap,
   isProtected: Option[Boolean] = Some(false))
 
-case class RawlsWorkspaceCreate(
-  namespace: String,
-  name: String,
-  attributes: AttributeMap,
-  realm: Option[Map[String, String]] = None) {
-  def this(wc: WorkspaceCreate) =
-    this(wc.namespace, wc.name, wc.attributes,
-      if (wc.isProtected.getOrElse(false))
-        Some(Map("realmName" -> FireCloudConfig.Nih.rawlsGroupName))
-      else None)
-}
+object WorkspaceCreate {
+  import scala.language.implicitConversions
+  implicit def toWorkspaceRequest(wc: WorkspaceCreate): WorkspaceRequest = {
+    val realm = if (wc.isProtected.getOrElse(false))
+      Some(RawlsRealmRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
+    else
+        None
+    WorkspaceRequest(wc.namespace, wc.name, realm, wc.attributes)
+  }
 
-case class RawlsWorkspaceResponse(
-  accessLevel: String,
-  canShare: Option[Boolean] = None,
-  workspace: RawlsWorkspace,
-  workspaceSubmissionStats: SubmissionStats,
-  owners: List[String])
-
-case class RawlsWorkspace(
-  workspaceId: String,
-  namespace: String,
-  name: String,
-  isLocked: Option[Boolean] = None,
-  createdBy: String,
-  createdDate: String,
-  lastModified: Option[String] = None,
-  attributes: AttributeMap,
-  bucketName: String,
-  accessLevels: Map[String, Map[String, String]],
-  realm: Option[Map[String, String]])
-
-case class RawlsEntity(name: String, entityType: String, attributes: AttributeMap)
-
-case class SubmissionStats(
-  lastSuccessDate: Option[String] = None,
-  lastFailureDate: Option[String] = None,
-  runningSubmissionsCount: Int)
-
-case class UIWorkspaceResponse(
-  accessLevel: Option[String] = None,
-  canShare: Option[Boolean] = None,
-  workspace: Option[UIWorkspace] = None,
-  workspaceSubmissionStats: Option[SubmissionStats] = None,
-  owners: Option[List[String]] = None) {
-  def this(rwr: RawlsWorkspaceResponse) =
-    this(Option(rwr.accessLevel), rwr.canShare, Option(new UIWorkspace(rwr.workspace)), Option(rwr.workspaceSubmissionStats), Option(rwr.owners))
-}
-
-case class UIWorkspace(
-  workspaceId: String,
-  namespace: String,
-  name: String,
-  isLocked: Option[Boolean] = None,
-  createdBy: String,
-  createdDate: String,
-  lastModified: Option[String] = None,
-  attributes: AttributeMap,
-  bucketName: String,
-  accessLevels: Map[String, Map[String, String]],
-  realm: Option[Map[String, String]],
-  isProtected: Boolean) {
-  def this(rw: RawlsWorkspace) =
-    this(rw.workspaceId, rw.namespace, rw.name, rw.isLocked, rw.createdBy, rw.createdDate,
-      rw.lastModified, rw.attributes, rw.bucketName, rw.accessLevels, rw.realm,
-      rw.realm.flatMap(_.get("realmName").map(_ == FireCloudConfig.Nih.rawlsGroupName)).getOrElse(false))
+  def isProtected(ws: Workspace): Boolean = {
+    ws.realm == Some(RawlsRealmRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
+  }
 }
 
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
 
-case class EntityCopyDefinition(
+case class EntityCopyWithoutDestinationDefinition(
   sourceWorkspace: WorkspaceName,
-  entityType: String,
-  entityNames: Seq[String]
-  )
-
-case class EntityCopyWithDestinationDefinition(
-  sourceWorkspace: WorkspaceName,
-  destinationWorkspace: WorkspaceName,
   entityType: String,
   entityNames: Seq[String]
   )
@@ -147,7 +78,5 @@ case class RawlsGroupMemberList(
   subGroupEmails: Option[Seq[String]] = None,
   userSubjectIds: Option[Seq[String]] = None,
   subGroupNames: Option[Seq[String]] = None)
-
-case class RawlsBucketUsageResponse(usageInBytes: BigInt)
 
 case class WorkspaceStorageCostEstimate(estimate: String)

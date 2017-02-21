@@ -1,8 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.mock.MockTSVLoadFiles
-import org.broadinstitute.dsde.firecloud.model.{AttributeName, AttributeString}
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, RemoveAttribute}
+import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeString}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, RemoveAttribute}
 import org.scalatest.FreeSpec
 
 /**

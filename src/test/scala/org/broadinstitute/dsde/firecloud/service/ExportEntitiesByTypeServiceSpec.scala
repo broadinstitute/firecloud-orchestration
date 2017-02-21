@@ -4,6 +4,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -31,10 +32,10 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with EntityService
   }
 
   val validSampleEntities = List(
-    RawlsEntity("sample_01", "sample", sampleAtts),
-    RawlsEntity("sample_02", "sample", sampleAtts),
-    RawlsEntity("sample_03", "sample", sampleAtts),
-    RawlsEntity("sample_04", "sample", sampleAtts)
+    Entity("sample_01", "sample", sampleAtts),
+    Entity("sample_02", "sample", sampleAtts),
+    Entity("sample_03", "sample", sampleAtts),
+    Entity("sample_04", "sample", sampleAtts)
   )
 
   override def beforeAll(): Unit = {

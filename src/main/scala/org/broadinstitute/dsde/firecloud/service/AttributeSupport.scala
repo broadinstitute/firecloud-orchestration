@@ -1,8 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.model.Attributable._
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations._
-import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.Attributable._
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
 
 /**
   * Created by putnam on 11/1/16.

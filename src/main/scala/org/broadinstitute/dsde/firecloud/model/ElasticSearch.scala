@@ -1,11 +1,11 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.AttributeFormat
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.{AttributeFormat, PlainArrayAttributeListSerializer}
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsValue}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 object ElasticSearch {
   final val fieldAll = "_all"
@@ -86,7 +86,7 @@ case class Document(val id: String, val content: JsObject) extends Indexable
 
 object Document {
   def apply(id: String, valMap: AttributeMap) = {
-    implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
+    implicit val impAttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
     new Document(id, valMap.toJson.asJsObject)
   }
 

@@ -2,8 +2,9 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
+import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.Attributable._
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
 import org.everit.json.schema.{Schema, ValidationException}
 import org.everit.json.schema.loader.SchemaLoader
@@ -25,7 +26,7 @@ trait LibraryServiceSupport {
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  def indexableDocument(workspace: RawlsWorkspace): Document = {
+  def indexableDocument(workspace: Workspace): Document = {
     val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {

@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.utils
 
+import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
 
@@ -11,7 +12,7 @@ import spray.json.JsValue
 
 object TSVFormatter {
 
-  def makeMembershipTsvString(entities: Seq[RawlsEntity], entityType: String, collectionMemberType: String, collectionMembersAttribute: String): String = {
+  def makeMembershipTsvString(entities: Seq[Entity], entityType: String, collectionMemberType: String, collectionMembersAttribute: String): String = {
     val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq(s"${TsvTypes.MEMBERSHIP}:${entityType}_id", collectionMemberType)
     val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
       entity =>
@@ -28,7 +29,7 @@ object TSVFormatter {
     exportToString(headers, rows.toIndexedSeq)
   }
 
-  def makeEntityTsvString(entities: Seq [RawlsEntity], entityType: String, requestedHeaders: Option[IndexedSeq[String]]): String = {
+  def makeEntityTsvString(entities: Seq [Entity], entityType: String, requestedHeaders: Option[IndexedSeq[String]]): String = {
     val requestedHeadersSansId = requestedHeaders.
       // remove empty strings
       map(_.filter(_.length > 0)).
@@ -62,9 +63,9 @@ object TSVFormatter {
     exportToString(headers, rows)
   }
 
-  def defaultHeaders(entityType: String, filteredEntities: Seq[RawlsEntity]) = {
+  def defaultHeaders(entityType: String, filteredEntities: Seq[Entity]) = {
     val attributeNames = filteredEntities.collect {
-      case RawlsEntity(_, `entityType`, attributes) => attributes.keySet
+      case Entity(_, `entityType`, attributes) => attributes.keySet
     }.flatten.distinct
 
     attributeNames.map(_.name).toIndexedSeq
@@ -77,12 +78,12 @@ object TSVFormatter {
   }
 
   /**
-    * New list of RawlsEntity objects with specified attribute filtered out.
+    * New list of Entity objects with specified attribute filtered out.
     *
-    * @param entities Initial list of RawlsEntity
-    * @return new list of RawlsEntity
+    * @param entities Initial list of Entity
+    * @return new list of Entity
     */
-  private def filterAttributeFromEntities(entities: Seq[RawlsEntity], attributeName: String): Seq[RawlsEntity] = {
+  private def filterAttributeFromEntities(entities: Seq[Entity], attributeName: String): Seq[Entity] = {
     entities map {
       entity =>
         val attributes = entity.attributes filterNot {
@@ -95,11 +96,11 @@ object TSVFormatter {
   /**
     * Generate a row of values in the same order as the headers.
     *
-    * @param entity The RawlsEntity object to extract data from
+    * @param entity The Entity object to extract data from
     * @param headerValues List of ordered header values to determine order of values
     * @return IndexedSeq of ordered data fields
     */
-  private def makeRow(entity: RawlsEntity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
+  private def makeRow(entity: Entity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
     val rowMap: Map[Int, String] =  entity.attributes map {
       case (attributeName, attribute) =>
         val columnPosition = headerValues.indexOf(attributeName.name)

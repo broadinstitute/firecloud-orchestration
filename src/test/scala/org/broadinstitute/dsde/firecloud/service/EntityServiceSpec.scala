@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
@@ -31,20 +32,20 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
   val invalidFireCloudEntitiesSamplePath = apiPrefix + "/broad-dsde-dev/invalid/entities/sample"
   val invalidFireCloudEntitiesCopyPath = apiPrefix + "/broad-dsde-dev/invalid/entities/copy"
 
-  val validEntityCopy = EntityCopyDefinition(
-    sourceWorkspace = WorkspaceName(namespace=Some("broad-dsde-dev"), name=Some("other-ws")),
+  val validEntityCopy = EntityCopyWithoutDestinationDefinition(
+    sourceWorkspace = WorkspaceName(namespace="broad-dsde-dev", name="other-ws"),
     entityType = "sample", Seq("sample_01"))
-  val invalidEntityCopy = EntityCopyDefinition(
-    sourceWorkspace = WorkspaceName(namespace=Some("invalid"), name=Some("other-ws")),
+  val invalidEntityCopy = EntityCopyWithoutDestinationDefinition(
+    sourceWorkspace = WorkspaceName(namespace="invalid", name="other-ws"),
     entityType = "sample", Seq("sample_01"))
 
   val validEntityDelete = EntityDeleteDefinition(false, Seq(EntityId("sample","id"),EntityId("sample","bar")))
   val invalidEntityDelete = validEntityCopy // we're testing that the payload can't be unmarshalled to an EntityDeleteDefinition
   val mixedFailEntityDelete = EntityDeleteDefinition(false, Seq(EntityId("sample","foo"),EntityId("failme","kthxbai"),EntityId("sample","bar")))
 
-  def entityCopyWithDestination(copyDef: EntityCopyDefinition) = new EntityCopyWithDestinationDefinition(
+  def entityCopyWithDestination(copyDef: EntityCopyDefinition) = new EntityCopyDefinition(
     sourceWorkspace = copyDef.sourceWorkspace,
-    destinationWorkspace = WorkspaceName(Some("broad-dsde-dev"), Some("valid")),
+    destinationWorkspace = WorkspaceName("broad-dsde-dev", "valid"),
     entityType = copyDef.entityType,
     entityNames = copyDef.entityNames)
 
@@ -54,7 +55,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
     AttributeName.withDefaultNS("ref_dict") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.dict"),
     AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "subject_HCC1143")
   )
-  val validSampleEntities = List(RawlsEntity("sample_01", "sample", sampleAtts))
+  val validSampleEntities = List(Entity("sample_01", "sample", sampleAtts))
 
   override def beforeAll(): Unit = {
     workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)

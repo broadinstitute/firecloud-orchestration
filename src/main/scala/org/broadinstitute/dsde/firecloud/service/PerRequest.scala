@@ -3,7 +3,10 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import org.broadinstitute.dsde.firecloud.model.{ErrorReport, HttpResponseWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
+import org.broadinstitute.dsde.firecloud.model.HttpResponseWithErrorReport
+import org.broadinstitute.dsde.firecloud.model.errorReportSource
 import org.broadinstitute.dsde.firecloud.service.PerRequest._
 import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, HttpClient}
 import spray.http.StatusCodes._
