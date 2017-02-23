@@ -29,6 +29,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
   private final val librarySearchPath = "/api/library/search"
   private final val librarySuggestPath = "/api/library/suggest"
   private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
+  private final val libraryGroupsPath = "/api/library/groups"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
@@ -201,6 +202,15 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             assert(respdata.contains("library:datasetOwner"))
             assert(respdata.contains("aha"))
             this.searchDao.populateSuggestInvoked = false
+          }
+        }
+      }
+      "GET on " + libraryGroupsPath - {
+        "should return the all broad users group" in {
+          new RequestBuilder(HttpMethods.GET)(libraryGroupsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            val respdata = response.entity.asString
+            assert(respdata.contains("all_broad_users"))
           }
         }
       }
