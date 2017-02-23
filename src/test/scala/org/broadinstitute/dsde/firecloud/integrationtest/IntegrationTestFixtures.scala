@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
-import org.broadinstitute.dsde.firecloud.model.{AttributeName, AttributeString, Document}
+import org.broadinstitute.dsde.firecloud.model.Document
+import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeString}
 
 /**
   * Created by davidan on 2/22/17.
