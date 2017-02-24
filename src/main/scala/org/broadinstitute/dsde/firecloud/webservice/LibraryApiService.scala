@@ -13,6 +13,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
 import spray.json.DefaultJsonProtocol._
+import scala.collection.JavaConverters._
 
 
 import scala.concurrent.ExecutionContext
@@ -66,7 +67,7 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
               get {
                 respondWithJSON {
                   requestContext =>
-                    requestContext.complete(OK, FireCloudConfig.ElasticSearch.discoverGroupNames)
+                    requestContext.complete(OK, FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSeq)
                 }
               }
             }
@@ -78,6 +79,18 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                   perRequest(requestContext,
                     LibraryService.props(libraryServiceConstructor, userInfo),
                     LibraryService.UpdateAttributes(namespace, name, rawAttrsString))
+                }
+              }
+            } ~
+            path("discoverableBy") {
+              put {
+                respondWithJSON {
+                  entity(as[Seq[String]]) { newGroups =>
+                    requestContext =>
+                      perRequest(requestContext,
+                        LibraryService.props(libraryServiceConstructor, userInfo),
+                        LibraryService.UpdateDiscoverableBy(namespace, name, newGroups))
+                  }
                 }
               }
             } ~

@@ -544,6 +544,30 @@ paths:
       summary: Query to see if you're a library curator
       operationId: isCurator
 
+  /api/library/{workspaceNamespace}/{workspaceName}/discoverableBy:
+    put:
+      tags:
+        - Library
+      operationId: updateDiscoverableGroups
+      summary: |
+        set the groups that can discover this library dataset
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: discoverableGroups
+          description: List of group names, or empty list for no restrictions
+          required: true
+          in: body
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/Workspace'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
   /api/library/{workspaceNamespace}/{workspaceName}/metadata:
     put:
       tags:
