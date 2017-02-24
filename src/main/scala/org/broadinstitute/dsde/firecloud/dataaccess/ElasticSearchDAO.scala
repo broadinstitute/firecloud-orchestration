@@ -58,8 +58,12 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     )
   }
 
-  override def bulkIndex(docs: Seq[Document]) = {
+  override def bulkIndex(docs: Seq[Document], refresh: Boolean = false) = {
     val bulkRequest = client.prepareBulk
+    // only set refresh to true if caller specified true, instead of the cleaner code: bulkRequest.setRefresh(refresh)
+    // this way, the ES client library can change its default for setRefresh, and we'll inherit the default.
+    if (refresh)
+      bulkRequest.setRefresh(true)
     docs map {
       case (doc:Document) => bulkRequest.add(client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint))
     }
