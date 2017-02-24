@@ -466,7 +466,10 @@ paths:
       responses:
         200:
           description: Names of the allowed groups
-
+          schema:
+            type: array
+            items:
+              type: string
   /api/library/search:
     post:
       tags:
@@ -560,11 +563,13 @@ paths:
           in: body
       responses:
         200:
-          description: Success
+          description: The groups that have been assigned to be able to discover the dataset
           schema:
-            $ref: '#/definitions/Workspace'
+            type: array
+            items:
+              type: string
         500:
-          description: Rawls Internal Error
+          description: Error
           schema:
             $ref: '#/definitions/ErrorReport'
 

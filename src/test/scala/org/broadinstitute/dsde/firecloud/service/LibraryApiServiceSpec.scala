@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
@@ -209,8 +209,8 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
         "should return the all broad users group" in {
           new RequestBuilder(HttpMethods.GET)(libraryGroupsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            val respdata = response.entity.asString
-            assert(respdata.contains("all_broad_users"))
+            val respdata = response.entity.asString.parseJson.convertTo[Seq[String]]
+            assert(FireCloudConfig.ElasticSearch.discoverGroupNames.containsAll(respdata.asJavaCollection)
           }
         }
       }
