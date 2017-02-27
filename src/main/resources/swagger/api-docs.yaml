@@ -3346,6 +3346,12 @@ definitions:
         type: integer
         default: 10
         description: How many results to return
+      sortField:
+        type: string
+        description: Field name on which to sort; defaults so sort by relevance if not specified
+      sortDirection:
+        type: string
+        description: asc or desc; defaults to asc if not specified
 
   StackTraceElement:
     description: ''
