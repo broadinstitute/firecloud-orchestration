@@ -43,7 +43,7 @@ trait LibraryServiceSupport {
     workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
         ontologyDAO.search(id.value) map { resources =>
-          Document(workspace.workspaceId, fields ++ Map(AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(resources.toString())))
+          Document(workspace.workspaceId, fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(resources.toString())))
         }
       case _ => Future(Document(workspace.workspaceId, fields))
     }
