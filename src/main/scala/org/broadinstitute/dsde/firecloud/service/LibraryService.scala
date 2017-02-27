@@ -168,7 +168,9 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def publishDocument(ws: Workspace): Unit = {
-    searchDAO.indexDocument(indexableDocument(ws, ontologyDAO))
+    indexableDocument(ws, ontologyDAO) onSuccess {
+      case document => searchDAO.indexDocument(document)
+    }
   }
 
   def removeDocument(ws: Workspace): Unit = {
@@ -176,19 +178,20 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def indexAll: Future[PerRequestMessage] = {
-    rawlsDAO.getAllLibraryPublishedWorkspaces map {workspaces =>
+    rawlsDAO.getAllLibraryPublishedWorkspaces flatMap { workspaces: Seq[Workspace] =>
       searchDAO.recreateIndex()
       if (workspaces.isEmpty)
-        RequestComplete(NoContent)
+        Future(RequestComplete(NoContent))
       else {
-        val toIndex:Seq[Document] = workspaces.map {workspace => indexableDocument(workspace, ontologyDAO)}
-        val bi = searchDAO.bulkIndex(toIndex)
-        val statusCode = if (bi.hasFailures) {
-          InternalServerError
-        } else {
-          OK
+        val toIndex: Future[Seq[Document]] = Future.sequence(workspaces map { indexableDocument(_, ontologyDAO) })
+        toIndex map { documents =>
+          val indexed = searchDAO.bulkIndex(documents)
+          if (indexed.hasFailures) {
+            RequestComplete(InternalServerError, indexed)
+          } else {
+            RequestComplete(OK, indexed)
+          }
         }
-        RequestComplete(statusCode, bi)
       }
     }
   }

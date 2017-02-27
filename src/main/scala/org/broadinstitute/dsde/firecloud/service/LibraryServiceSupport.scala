@@ -26,7 +26,7 @@ trait LibraryServiceSupport {
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  def indexableDocument(workspace: Workspace, ontologyDAO: OntologyDAO): Document = {
+  def indexableDocument(workspace: Workspace, ontologyDAO: OntologyDAO): Future[Document] = {
     val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {
@@ -39,7 +39,15 @@ trait LibraryServiceSupport {
       AttributeName.withDefaultNS("namespace") -> AttributeString(workspace.namespace),
       AttributeName.withDefaultNS("workspaceId") -> AttributeString(workspace.workspaceId)
     )
-    Document(workspace.workspaceId, attrfields ++ idfields)
+    val fields = attrfields ++ idfields
+
+    workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
+      case Some(id: AttributeString) =>
+        ontologyDAO.search(id.value) map { resources =>
+          Document(workspace.workspaceId, fields ++ Map(AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(resources.toString())))
+        }
+      case _ => Future(Document(workspace.workspaceId, fields))
+    }
   }
 
   def defaultSchema: String = FileUtils.readAllTextFromResource(LibraryService.schemaLocation)
