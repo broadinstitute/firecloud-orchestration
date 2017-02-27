@@ -83,14 +83,14 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   def updateDiscoverableBy(ns: String, name: String, newGroups: Seq[String]): Future[PerRequestMessage] = {
     if (FireCloudConfig.ElasticSearch.discoverGroupNames.containsAll(newGroups.asJavaCollection)) {
       rawlsDAO.getWorkspace(ns, name) map { workspaceResponse =>
-        if (workspaceResponse.accessLevel > WorkspaceAccessLevels.Owner || workspaceResponse.canShare) {
+        if (workspaceResponse.accessLevel > WorkspaceAccessLevels.Owner) {
           // this is technically vulnerable to a race condition in which the workspace attributes have changed
           // between the time we retrieved them and here, where we update them.
           val remove = Seq(RemoveAttribute(discoverableWSAttribute))
           val operations = newGroups map (group => AddListMember(discoverableWSAttribute, new AttributeString(group)))
           RequestComplete(patchWorkspace(ns, name, remove ++ operations, isPublished(workspaceResponse)))
         } else {
-          RequestCompleteWithErrorReport(Forbidden, "must be an owner or have can share privileges")
+          RequestCompleteWithErrorReport(Forbidden, "must be an owner to set discoverable By")
         }
       }
     } else {
@@ -122,8 +122,6 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
           case Success(x) => {
             rawlsDAO.getWorkspace(ns, name) map  { workspaceResponse =>
-              if (!hasAccessOrCurator(workspaceResponse, WorkspaceAccessLevels.Write))
-                return Future(RequestCompleteWithErrorReport(Forbidden, "must be a curator or have at least write privileges"))
               // this is technically vulnerable to a race condition in which the workspace attributes have changed
               // between the time we retrieved them and here, where we update them.
               val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
