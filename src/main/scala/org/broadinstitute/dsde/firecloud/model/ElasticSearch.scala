@@ -43,6 +43,10 @@ trait ESPropertyFields {
   def rawField(`type`:String) = ESInnerField(`type`,
     index = Some("not_analyzed")
   )
+  def sortField(`type`:String) = ESInnerField(`type`,
+    analyzer = Some("sort_analyzer"),
+    include_in_all = Some(false)
+  )
 }
 
 // top-level field defs, for facet and non-facet types
@@ -50,6 +54,10 @@ case class ESType(`type`: String, fields: Option[Map[String,ESInnerField]], copy
 object ESType extends ESPropertyFields {
   def apply(`type`: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
     val innerFields = Map.empty[String,ESInnerField] ++
+      (if (`type`.equals("string"))
+        Map("sort" -> sortField(`type`))
+      else
+        Map("sort" -> ESInnerField(`type`, None, None))) ++
       (if (isAggregatable) Map("raw" -> rawField(`type`)) else Nil) ++
       (if (hasPopulateSuggest) Map("suggest" -> completionField) else Nil)
     if (hasSearchSuggest)
@@ -109,11 +117,13 @@ case class LibrarySearchParams(
   filters: Map[String, Seq[String]],
   fieldAggregations: Map[String, Int],
   from: Int = 0,
-  size: Int = 10)
+  size: Int = 10,
+  sortField: Option[String] = None,
+  sortDirection: Option[String] = None)
 
 object LibrarySearchParams {
-  def apply(searchString: Option[String], filters: Map[String, Seq[String]], fieldAggregations: Map[String, Int], from: Option[Int], size: Option[Int]) = {
-    new LibrarySearchParams(searchString, filters, fieldAggregations, from.getOrElse(0), size.getOrElse(10))
+  def apply(searchString: Option[String], filters: Map[String, Seq[String]], fieldAggregations: Map[String, Int], from: Option[Int], size: Option[Int], sortField: Option[String], sortDirection: Option[String]) = {
+    new LibrarySearchParams(searchString, filters, fieldAggregations, from.getOrElse(0), size.getOrElse(10), sortField, sortDirection)
   }
 }
 

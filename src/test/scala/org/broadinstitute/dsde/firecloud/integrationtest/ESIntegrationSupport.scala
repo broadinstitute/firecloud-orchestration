@@ -37,6 +37,6 @@ object ESIntegrationSupport extends IntegrationTestConfig {
     new ElasticSearchDAO(ITElasticSearch.servers, itTestIndexName)
   }
 
-  lazy val emptyCriteria = LibrarySearchParams(None,Map.empty[String,Seq[String]],Map.empty[String,Int],None,None)
+  lazy val emptyCriteria = LibrarySearchParams(None,Map.empty[String,Seq[String]],Map.empty[String,Int],None,None,None,None)
 
 }

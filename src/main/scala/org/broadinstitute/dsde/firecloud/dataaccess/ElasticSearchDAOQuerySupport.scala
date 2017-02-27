@@ -9,7 +9,8 @@ import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, Sea
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
-import org.elasticsearch.search.suggest.completion.{CompletionSuggestionFuzzyBuilder, CompletionSuggestion}
+import org.elasticsearch.search.sort.SortOrder
+import org.elasticsearch.search.suggest.completion.{CompletionSuggestion, CompletionSuggestionFuzzyBuilder}
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -87,10 +88,24 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def createESSearchRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int): SearchRequestBuilder = {
-    client.prepareSearch(indexname)
+    createESSearchRequest(client, indexname, qmseq, from, size, None, None)
+  }
+
+  def createESSearchRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int, sortField: Option[String], sortDirection: Option[String]): SearchRequestBuilder = {
+    val search = client.prepareSearch(indexname)
       .setQuery(qmseq)
       .setFrom(from)
       .setSize(size)
+
+    if (sortField.isDefined) {
+      val direction = sortDirection match {
+        case Some("desc") => SortOrder.DESC
+        case _ => SortOrder.ASC
+      }
+      search.addSort(sortField.get + ".sort", direction)
+    }
+
+    search
   }
 
   def createESAutocompleteRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int): SearchRequestBuilder = {
@@ -103,7 +118,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String]): SearchRequestBuilder = {
-    val searchQuery = createESSearchRequest(client, indexname, createQuery(criteria, groups), criteria.from, criteria.size)
+    val searchQuery = createESSearchRequest(client, indexname, createQuery(criteria, groups), criteria.from, criteria.size, criteria.sortField, criteria.sortDirection)
     // if we are not collecting aggregation data (in the case of pagination), we can skip adding aggregations
     // if the search criteria contains elements from all of the aggregatable attributes, then we will be making
     // separate queries for each of them. so we can skip adding them in the main search query
