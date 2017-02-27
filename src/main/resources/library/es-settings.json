@@ -7,12 +7,12 @@
         "max_gram": 20
       },
       "index_delimiter" : {
-        "type": "word_delimiter"
+        "type": "word_delimiter",
+        "preserve_original": true
       },
-      "index_shingle" : {
-        "type": "shingle",
-        "max_shingle_size": 4,
-        "token_separator": "_"
+      "index_common_grams" : {
+        "type": "common_grams",
+        "common_words": ["tcga", "openaccess", "controlledaccess"]
       }
     },
     "analyzer": {
@@ -29,7 +29,7 @@
         "filter": [
           "lowercase",
           "index_delimiter",
-          "index_shingle"
+          "index_common_grams"
         ]
       },
       "default_search": {

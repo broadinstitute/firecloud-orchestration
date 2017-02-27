@@ -98,7 +98,7 @@ class TextSearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll with 
       }
     }
     "search for 'testing123'" - {
-      "should find the single dataset named 'testing123'" ignore {
+      "should find the single dataset named 'testing123'" in {
         val searchResponse = searchFor("testing123")
         assertResult(1) {searchResponse.total}
         validateResultNames(
