@@ -100,7 +100,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   /*
-   * Library metadata attributes can only be modified by curators or someone with write or higher permissions
+   * Library metadata attributes can only be modified by someone with write or higher permissions
    * for the workspace
    */
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
@@ -123,11 +123,15 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
           case Success(x) => {
             rawlsDAO.getWorkspace(ns, name) map  { workspaceResponse =>
-              // this is technically vulnerable to a race condition in which the workspace attributes have changed
-              // between the time we retrieved them and here, where we update them.
-              val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
-                k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
-              RequestComplete(patchWorkspace(ns, name, allOperations, isPublished(workspaceResponse)))
+              if (workspaceResponse.accessLevel >= WorkspaceAccessLevels.Write) {
+                // this is technically vulnerable to a race condition in which the workspace attributes have changed
+                // between the time we retrieved them and here, where we update them.
+                val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
+                  k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
+                RequestComplete(patchWorkspace(ns, name, allOperations, isPublished(workspaceResponse)))
+              } else {
+                RequestCompleteWithErrorReport(Forbidden, s"must have at least write permissions")
+              }
             }
           }
         }
