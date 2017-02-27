@@ -24,7 +24,7 @@ class MockRawlsDAO  extends RawlsDAO {
 
   override def isDbGapAuthorized(userInfo: UserInfo): Future[Boolean] = Future(true)
 
-  override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = Future(true)
+  override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = Future(false)
 
   override def registerUser(userInfo: UserInfo): Future[Unit] = Future(())
 
@@ -94,7 +94,9 @@ class MockRawlsDAO  extends RawlsDAO {
       case "projectowner" => Future(WorkspaceResponse(WorkspaceAccessLevels.ProjectOwner, canShare = true, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "reader" => Future(WorkspaceResponse(WorkspaceAccessLevels.Read, canShare = false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
-      case "republish" => Future(publishedRawlsWorkspaceResponseWithAttributes)
+      case "publishedreader" => Future(WorkspaceResponse(WorkspaceAccessLevels.Read, canShare = false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "publishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "unpublishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case _ => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
     }
   }

@@ -66,11 +66,12 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     case PopulateSuggest(field: String, text: String) => populateSuggest(field: String, text: String) pipeTo sender
   }
 
-  def hasAccessOrCurator(workspaceResponse: WorkspaceResponse, neededLevel: WorkspaceAccessLevels.WorkspaceAccessLevel): Boolean = {
+  def hasAccessOrCurator(workspaceResponse: WorkspaceResponse, neededLevel: WorkspaceAccessLevels.WorkspaceAccessLevel): Future[Boolean] = {
     val wsaccess = workspaceResponse.accessLevel >= neededLevel
     if (!wsaccess)
-      tryIsCurator(userInfo) map { value => return value }
-    wsaccess
+      tryIsCurator(userInfo)
+    else
+      Future.successful(wsaccess)
   }
 
   def isPublished(workspaceResponse: WorkspaceResponse): Boolean = {
@@ -147,26 +148,36 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     }
   }
 
+  def canPublish(workspaceResponse: WorkspaceResponse): Future[Boolean] = {
+    if (isPublished(workspaceResponse)) {
+      // workspace is already published
+      // republish just needs write
+      hasAccessOrCurator(workspaceResponse, WorkspaceAccessLevels.Write)
+    } else {
+      hasAccessOrCurator(workspaceResponse, WorkspaceAccessLevels.Owner)
+    }
+  }
+
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-      // verify owner on workspace
-      if (isPublished(workspaceResponse)) {
-        // workspace is already published
-        // allow republish
-        if (!hasAccessOrCurator(workspaceResponse, WorkspaceAccessLevels.Write))
-          return Future(RequestCompleteWithErrorReport(Forbidden, "must be a curator or have at least write privileges"))
-      } else if (!hasAccessOrCurator(workspaceResponse, WorkspaceAccessLevels.Owner)) {
-        return Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner or a curator"))
-      }
-
-      // has access
-      val operations = updatePublishAttribute(value)
-      rawlsDAO.patchWorkspaceAttributes(ns, name, operations) map { ws =>
-        if (value)
-          publishDocument(ws)
-        else
-          removeDocument(ws)
-        RequestComplete(ws)
+      canPublish(workspaceResponse) flatMap { canPublish =>
+        if (canPublish) {
+          // has access
+          val operations = updatePublishAttribute(value)
+          rawlsDAO.patchWorkspaceAttributes(ns, name, operations) map { ws =>
+            if (value)
+              publishDocument(ws)
+            else
+              removeDocument(ws)
+            RequestComplete(ws)
+          }
+        } else {
+          // verify owner on workspace
+          if (workspaceResponse.accessLevel < WorkspaceAccessLevels.Write)
+            Future(RequestCompleteWithErrorReport(Forbidden, "must be a curator or have at least write privileges"))
+          else
+            Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner or a curator"))
+        }
       }
     }
   }
