@@ -15,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
   extends OntologyDAO with RestJsonClient {
 
-  override def search(term: String)(implicit userInfo: UserInfo): Future[List[TermResource]] = {
+  override def search(term: String)(implicit ec: ExecutionContext, userInfo: UserInfo): Future[List[TermResource]] = {
     requestToObject[List[TermResource]](Get(ontologySearchUrl))
   }
 }

@@ -12,9 +12,10 @@ class BaseServiceSpec extends ServiceSpec with BeforeAndAfter {
   val rawlsDao:MockRawlsDAO = new MockRawlsDAO
   val searchDao:MockSearchDAO = new MockSearchDAO
   val thurloeDao:MockThurloeDAO = new MockThurloeDAO
+  val ontologyDao:MockOntologyDAO = new MockOntologyDAO
 
   val app:Application =
-    new Application(agoraDao, rawlsDao, searchDao, thurloeDao, googleServicesDao)
+    new Application(agoraDao, rawlsDao, searchDao, thurloeDao, googleServicesDao, ontologyDao)
 
   // Don't copy this pattern. See GAWB-1477.
   def reset() = {
