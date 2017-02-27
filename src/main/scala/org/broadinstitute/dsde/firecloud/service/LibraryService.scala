@@ -83,7 +83,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   def updateDiscoverableBy(ns: String, name: String, newGroups: Seq[String]): Future[PerRequestMessage] = {
     if (FireCloudConfig.ElasticSearch.discoverGroupNames.containsAll(newGroups.asJavaCollection)) {
       rawlsDAO.getWorkspace(ns, name) map { workspaceResponse =>
-        if (workspaceResponse.accessLevel > WorkspaceAccessLevels.Owner) {
+        if (workspaceResponse.accessLevel >= WorkspaceAccessLevels.Owner) {
           // this is technically vulnerable to a race condition in which the workspace attributes have changed
           // between the time we retrieved them and here, where we update them.
           val remove = Seq(RemoveAttribute(discoverableWSAttribute))
