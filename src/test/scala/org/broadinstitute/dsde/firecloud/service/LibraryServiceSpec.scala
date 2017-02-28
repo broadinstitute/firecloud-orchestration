@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMem
 import org.broadinstitute.dsde.firecloud.model._
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
-import org.scalatest.FreeSpec
+import org.scalatest.FreeSpecLike
 import spray.json.{JsObject, _}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -19,7 +19,7 @@ import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import scala.util.Try
 
-class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
+class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
   def toName(s:String) = AttributeName.fromDelimitedName(s)
 
   val libraryAttributePredicate = (k: AttributeName) => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name
@@ -226,7 +226,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          indexableDocument(w, ontologyDao)
         }
       }
     }
@@ -246,7 +246,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          indexableDocument(w, ontologyDao)
         }
       }
     }
@@ -262,7 +262,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          indexableDocument(w, ontologyDao)
         }
       }
     }
@@ -277,7 +277,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          indexableDocument(w, ontologyDao)
         }
       }
     }
@@ -298,7 +298,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          indexableDocument(w, ontologyDao)
         }
       }
     }
@@ -318,7 +318,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          indexableDocument(w, ontologyDao)
         }
       }
     }
@@ -340,7 +340,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          indexableDocument(w, ontologyDao)
         }
       }
     }
