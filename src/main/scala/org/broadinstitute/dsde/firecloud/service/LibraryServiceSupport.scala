@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
@@ -42,8 +43,12 @@ trait LibraryServiceSupport {
 
     workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
-        ontologyDAO.search(id.value) map { resources =>
-          Document(workspace.workspaceId, fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(resources.toString())))
+        ontologyDAO.search(id.value) map { (response: Seq[TermResource]) =>
+          val parents = response.get(0).parents
+          parents match {
+            case Some(list) => Document(workspace.workspaceId, fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(list.toString)))
+            case _ => Document(workspace.workspaceId, fields)
+          }
         }
       case _ => Future(Document(workspace.workspaceId, fields))
     }
