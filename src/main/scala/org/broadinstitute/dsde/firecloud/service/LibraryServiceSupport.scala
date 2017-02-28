@@ -6,13 +6,15 @@ import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.everit.json.schema.{Schema, ValidationException}
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.{JSONObject, JSONTokener}
 import org.parboiled.common.FileUtils
 
 import scala.collection.JavaConversions._
-import spray.json.{JsBoolean, JsObject, JsString}
+import spray.json._
+import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -46,7 +48,7 @@ trait LibraryServiceSupport {
         ontologyDAO.search(id.value) map { (response: Seq[TermResource]) =>
           val parents = response.get(0).parents
           parents match {
-            case Some(list) => Document(workspace.workspaceId, fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(list.toString)))
+            case Some(list) => Document(workspace.workspaceId, fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(list.toJson.compactPrint)))
             case _ => Document(workspace.workspaceId, fields)
           }
         }

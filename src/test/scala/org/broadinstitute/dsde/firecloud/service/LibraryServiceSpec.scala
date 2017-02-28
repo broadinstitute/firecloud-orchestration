@@ -348,6 +348,23 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
     }
+    "with diseaseOntologyID attribute with parents" - {
+      "should generate indexable document with parent info" in {
+        val w = testWorkspace.copy(attributes = Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220")
+        ))
+        val expected = Document(testUUID.toString, Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(ontologyDao.resources.get(0).parents.toJson.compactPrint)
+        ))
+        assertResult(expected) {
+          Await.result(indexableDocument(w, ontologyDao), dur)
+        }
+      }
+    }
     "in its runtime schema definition" - {
       "has valid JSON" in {
         val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
