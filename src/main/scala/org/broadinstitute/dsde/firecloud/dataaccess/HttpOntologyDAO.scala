@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import spray.client.pipelining._
+import spray.http.Uri
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
@@ -15,6 +16,6 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
   extends OntologyDAO with RestJsonClient {
 
   override def search(term: String)(implicit ec: ExecutionContext): Future[List[TermResource]] = {
-    unAuthedRequestToObject[List[TermResource]](Get(ontologySearchUrl))
+    unAuthedRequestToObject[List[TermResource]](Get(Uri(ontologySearchUrl).withQuery(("id", term))))
   }
 }
