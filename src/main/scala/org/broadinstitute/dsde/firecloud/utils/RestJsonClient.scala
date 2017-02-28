@@ -21,6 +21,15 @@ trait RestJsonClient {
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
 
+  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false): Future[HttpResponse] = {
+    val pipeline = if (compressed) {
+      addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
+    } else {
+      sendReceive
+    }
+    pipeline(req)
+  }
+
   def userAuthedRequest(req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
     val pipeline = if (compressed) {
       addCredentials(userInfo.accessToken) ~> addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
@@ -32,6 +41,19 @@ trait RestJsonClient {
 
   def requestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
     userAuthedRequest( req, compressed ) map {response =>
+      response.status match {
+        case s if s.isSuccess =>
+          response.entity.as[T] match {
+            case Right(obj) => obj
+            case Left(error) => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
+          }
+        case f => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
+      }
+    }
+  }
+
+  def unAuthedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit unmarshaller: Unmarshaller[T]): Future[T] = {
+    unAuthedRequest(req, compressed) map { response =>
       response.status match {
         case s if s.isSuccess =>
           response.entity.as[T] match {
