@@ -547,7 +547,7 @@ paths:
       summary: Query to see if you're a library curator
       operationId: isCurator
 
-  /api/library/{workspaceNamespace}/{workspaceName}/discoverableBy:
+  /api/library/{workspaceNamespace}/{workspaceName}/discoverableGroups:
     put:
       tags:
         - Library

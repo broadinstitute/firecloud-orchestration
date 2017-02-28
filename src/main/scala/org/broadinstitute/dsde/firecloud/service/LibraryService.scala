@@ -20,9 +20,8 @@ import spray.json.JsonParser.ParsingException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impLibraryBulkIndexResponse, impLibrarySearchResponse}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.{AttributeNameFormat, WorkspaceFormat}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AttributeUpdateOperation, CreateAttributeValueList, RemoveAttribute}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AttributeUpdateOperation, RemoveAttribute}
 
-import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -33,7 +32,7 @@ object LibraryService {
 
   sealed trait LibraryServiceMessage
   case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
-  case class UpdateDiscoverableBy(ns: String, name: String, newGroups: Seq[String]) extends LibraryServiceMessage
+  case class UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) extends LibraryServiceMessage
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
   case object IndexAll extends LibraryServiceMessage
   case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
@@ -58,7 +57,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
 
   override def receive = {
     case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => updateAttributes(ns, name, attrsJsonString) pipeTo sender
-    case UpdateDiscoverableBy(ns: String, name: String, newGroups: Seq[String]) => updateDiscoverableBy(ns, name, newGroups) pipeTo sender
+    case UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) => updateDiscoverableByGroups(ns, name, newGroups) pipeTo sender
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => setWorkspaceIsPublished(ns, name, value) pipeTo sender
     case IndexAll => asAdmin {indexAll} pipeTo sender
     case FindDocuments(criteria: LibrarySearchParams) => findDocuments(criteria) pipeTo sender
@@ -81,8 +80,8 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   /*
    * This attribute is allowed to be modified by on owner or someone with canShare for the workspace
    */
-  def updateDiscoverableBy(ns: String, name: String, newGroups: Seq[String]): Future[PerRequestMessage] = {
-    if (FireCloudConfig.ElasticSearch.discoverGroupNames.containsAll(newGroups.asJavaCollection)) {
+  def updateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]): Future[PerRequestMessage] = {
+    if (newGroups.forall { g => FireCloudConfig.ElasticSearch.discoverGroupNames.contains(g) }) {
       rawlsDAO.getWorkspace(ns, name) map { workspaceResponse =>
         if (workspaceResponse.accessLevel >= WorkspaceAccessLevels.Owner) {
           // this is technically vulnerable to a race condition in which the workspace attributes have changed
@@ -91,11 +90,11 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
           val operations = newGroups map (group => AddListMember(discoverableWSAttribute, new AttributeString(group)))
           RequestComplete(patchWorkspace(ns, name, remove ++ operations, isPublished(workspaceResponse)))
         } else {
-          RequestCompleteWithErrorReport(Forbidden, "must be an owner to set discoverable By")
+          RequestCompleteWithErrorReport(Forbidden, "must be an owner to set discoverable groups")
         }
       }
     } else {
-      Future(RequestCompleteWithErrorReport(BadRequest, s"groups must be subset of allowable groups: %s".format(FireCloudConfig.ElasticSearch.discoverGroupNames)))
+      Future(RequestCompleteWithErrorReport(BadRequest, s"groups must be subset of allowable groups: %s".format(FireCloudConfig.ElasticSearch.discoverGroupNames.toArray.mkString(", "))))
     }
   }
 

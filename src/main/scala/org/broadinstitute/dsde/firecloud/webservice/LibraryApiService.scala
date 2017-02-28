@@ -82,14 +82,14 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                 }
               }
             } ~
-            path("discoverableBy") {
+            path("discoverableGroups") {
               put {
                 respondWithJSON {
                   entity(as[Seq[String]]) { newGroups =>
                     requestContext =>
                       perRequest(requestContext,
                         LibraryService.props(libraryServiceConstructor, userInfo),
-                        LibraryService.UpdateDiscoverableBy(namespace, name, newGroups))
+                        LibraryService.UpdateDiscoverableByGroups(namespace, name, newGroups))
                   }
                 }
               }
