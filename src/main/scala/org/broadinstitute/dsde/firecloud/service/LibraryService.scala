@@ -168,9 +168,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def publishDocument(ws: Workspace): Unit = {
-    indexableDocument(ws, ontologyDAO) onSuccess {
-      case document => searchDAO.indexDocument(document)
-    }
+    indexableDocument(ws, ontologyDAO) map { searchDAO.indexDocument }
   }
 
   def removeDocument(ws: Workspace): Unit = {
@@ -185,11 +183,11 @@ class LibraryService (protected val argUserInfo: UserInfo,
       else {
         val toIndex: Future[Seq[Document]] = Future.sequence(workspaces map { indexableDocument(_, ontologyDAO) })
         toIndex map { documents =>
-          val indexed = searchDAO.bulkIndex(documents)
-          if (indexed.hasFailures) {
-            RequestComplete(InternalServerError, indexed)
+          val indexedDocuments = searchDAO.bulkIndex(documents)
+          if (indexedDocuments.hasFailures) {
+            RequestComplete(InternalServerError, indexedDocuments)
           } else {
-            RequestComplete(OK, indexed)
+            RequestComplete(OK, indexedDocuments)
           }
         }
       }
