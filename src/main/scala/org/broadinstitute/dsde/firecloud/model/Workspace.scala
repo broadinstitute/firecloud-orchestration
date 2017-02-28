@@ -28,7 +28,7 @@ object WorkspaceCreate {
     new WorkspaceCreate(
       namespace = wc.namespace,
       name = wc.name,
-      attributes = wc.attributes + (AttributeName("library","published") -> AttributeBoolean(false)),
+      attributes = wc.attributes - AttributeName("library","published"),
       isProtected = wc.isProtected)
   }
 

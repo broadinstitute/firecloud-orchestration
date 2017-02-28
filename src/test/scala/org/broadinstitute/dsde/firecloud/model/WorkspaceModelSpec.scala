@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.rawls.model.{Attribute, AttributeBoolean, AttributeName}
+import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeName}
 import org.scalatest.{Assertions, FreeSpec}
 
 class WorkspaceModelSpec extends FreeSpec with Assertions {
@@ -9,33 +9,31 @@ class WorkspaceModelSpec extends FreeSpec with Assertions {
 
   "Workspace Model" - {
 
-    "Workspace Create" in {
+    "Workspace Create is not protected" in {
       assert(!wc.isProtected.getOrElse(false))
     }
 
     "Workspace Clone is unpublished" in {
-      val clone = WorkspaceCreate.toWorkspaceClone(wc)
-      assert(!clone.isProtected.getOrElse(false))
-      assert(clone.attributes.nonEmpty)
-      assert(clone.attributes.contains(AttributeName("library","published")))
-      val published: Option[Attribute] = clone.attributes.get(key = AttributeName("library", "published"))
-      assert(published.getOrElse(None).isInstanceOf[AttributeBoolean])
-      assert(!published.getOrElse(None).asInstanceOf[AttributeBoolean].value)
+      assert(!isPublished(WorkspaceCreate.toWorkspaceClone(wc)))
     }
 
     "Workspace with published attribute is unpublished when cloned" in {
       val publishedWC = WorkspaceCreate("namespace", "name", Map(AttributeName("library","published") -> AttributeBoolean(true)))
-      val clone = WorkspaceCreate.toWorkspaceClone(publishedWC)
-      val published: Option[Attribute] = clone.attributes.get(key = AttributeName("library", "published"))
-      assert(published.getOrElse(None).isInstanceOf[AttributeBoolean])
-      assert(!published.getOrElse(None).asInstanceOf[AttributeBoolean].value)
+      assert(!isPublished(WorkspaceCreate.toWorkspaceClone(publishedWC)))
     }
 
-    "Workspace Request" in {
+    "Workspace Request has no realm" in {
       val request = WorkspaceCreate.toWorkspaceRequest(wc)
       assert(request.realm.isEmpty)
     }
 
+  }
+
+  private def isPublished(wc: WorkspaceCreate): Boolean = {
+    wc.attributes.
+      getOrElse(AttributeName("library","published"), AttributeBoolean(false)).
+      asInstanceOf[AttributeBoolean].
+      value
   }
 
 }
