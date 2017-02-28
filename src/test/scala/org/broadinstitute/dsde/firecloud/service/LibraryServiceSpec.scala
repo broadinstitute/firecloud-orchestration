@@ -17,6 +17,8 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.joda.time.DateTime
 
 import scala.collection.JavaConversions._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.util.Try
 
 class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
@@ -90,6 +92,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     """.stripMargin.parseJson.asJsObject
   val DULfields = (testLibraryMetadataJsObject.fields-"library:orsp") ++ DULAdditionalJsObject.fields
   val testLibraryDULMetadata = testLibraryMetadataJsObject.copy(DULfields).compactPrint
+
+  val dur = Duration(2, MINUTES)
 
   "LibraryService" - {
     "when new attrs are empty" - {
@@ -226,7 +230,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w, ontologyDao)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -246,7 +250,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w, ontologyDao)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -262,7 +266,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w, ontologyDao)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -277,7 +281,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w, ontologyDao)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -298,7 +302,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w, ontologyDao)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -318,7 +322,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w, ontologyDao)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -340,7 +344,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w, ontologyDao)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
