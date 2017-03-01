@@ -2,13 +2,12 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import java.text.SimpleDateFormat
 
-import akka.actor.{Actor, Props}
+import akka.actor.Props
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
-import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.ErrorReportFormat
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, WorkspaceService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
@@ -154,7 +153,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             post {
               requireUserInfo() { _ =>
                 entity(as[WorkspaceCreate]) { createRequest => requestContext =>
-                  val extReq = Post(workspacePath + "/clone", createRequest)
+                  val extReq = Post(workspacePath + "/clone", WorkspaceCreate.toWorkspaceClone(createRequest))
                   externalHttpPerRequest(requestContext, extReq)
                 }
               }

@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.firecloud.model
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model._
-import org.joda.time.DateTime
 
 case class WorkspaceCreate(
   namespace: String,
@@ -24,6 +23,15 @@ object WorkspaceCreate {
   def isProtected(ws: Workspace): Boolean = {
     ws.realm == Some(RawlsRealmRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
   }
+
+  def toWorkspaceClone(wc: WorkspaceCreate): WorkspaceCreate = {
+    new WorkspaceCreate(
+      namespace = wc.namespace,
+      name = wc.name,
+      attributes = wc.attributes - AttributeName("library","published"),
+      isProtected = wc.isProtected)
+  }
+
 }
 
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
