@@ -77,9 +77,6 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     workspaceResponse.workspace.attributes.get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
   }
 
-  /*
-   * This attribute is allowed to be modified by on owner or someone with canShare for the workspace
-   */
   def updateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]): Future[PerRequestMessage] = {
     if (newGroups.forall { g => FireCloudConfig.ElasticSearch.discoverGroupNames.contains(g) }) {
       rawlsDAO.getWorkspace(ns, name) map { workspaceResponse =>
@@ -122,15 +119,11 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
           case Success(x) => {
             rawlsDAO.getWorkspace(ns, name) map  { workspaceResponse =>
-              if (workspaceResponse.accessLevel >= WorkspaceAccessLevels.Write) {
-                // this is technically vulnerable to a race condition in which the workspace attributes have changed
-                // between the time we retrieved them and here, where we update them.
-                val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
-                  k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
-                RequestComplete(patchWorkspace(ns, name, allOperations, isPublished(workspaceResponse)))
-              } else {
-                RequestCompleteWithErrorReport(Forbidden, s"must have at least write permissions")
-              }
+              // this is technically vulnerable to a race condition in which the workspace attributes have changed
+              // between the time we retrieved them and here, where we update them.
+              val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
+                k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
+              RequestComplete(patchWorkspace(ns, name, allOperations, isPublished(workspaceResponse)))
             }
           }
         }
@@ -151,36 +144,21 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     }
   }
 
-  def canPublish(workspaceResponse: WorkspaceResponse): Future[Boolean] = {
-    if (isPublished(workspaceResponse)) {
-      // workspace is already published
-      // republish just needs write
-      hasAccessOrCurator(workspaceResponse, WorkspaceAccessLevels.Write)
-    } else {
-      hasAccessOrCurator(workspaceResponse, WorkspaceAccessLevels.Owner)
-    }
-  }
-
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-      canPublish(workspaceResponse) flatMap { canPublish =>
-        if (canPublish) {
-          // has access
-          val operations = updatePublishAttribute(value)
-          rawlsDAO.patchWorkspaceAttributes(ns, name, operations) map { ws =>
-            if (value)
-              publishDocument(ws)
-            else
-              removeDocument(ws)
-            RequestComplete(ws)
-          }
-        } else {
-          // verify owner on workspace
-          if (workspaceResponse.accessLevel < WorkspaceAccessLevels.Write)
-            Future(RequestCompleteWithErrorReport(Forbidden, "must be a curator or have at least write privileges"))
+      val pub = isPublished(workspaceResponse)
+      val requiredLevel = if (!pub || (pub && !value)) WorkspaceAccessLevels.Owner else WorkspaceAccessLevels.Write
+      if (workspaceResponse.accessLevel >= requiredLevel) {
+        val operations = updatePublishAttribute(value)
+        rawlsDAO.patchWorkspaceAttributes(ns, name, operations) map { ws =>
+          if (value)
+            publishDocument(ws)
           else
-            Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner or a curator"))
+            removeDocument(ws)
+          RequestComplete(ws)
         }
+      } else {
+        Future(RequestCompleteWithErrorReport(Forbidden, s"must have %s privileges".format(requiredLevel.toString())))
       }
     }
   }

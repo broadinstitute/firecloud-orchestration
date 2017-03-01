@@ -229,7 +229,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
           new RequestBuilder(HttpMethods.GET)(libraryGroupsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             val respdata = response.entity.asString.parseJson.convertTo[Seq[String]]
-            assert(respdata.forall { g => FireCloudConfig.ElasticSearch.discoverGroupNames.contains(g) })
+            assert(respdata.toSet ==  FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSet)
           }
         }
       }
