@@ -57,7 +57,7 @@ object ESType extends ESPropertyFields {
       (if (`type`.equals("string"))
         Map("sort" -> sortField(`type`))
       else
-        Map("sort" -> ESInnerField(`type`, None, None))) ++
+        Map("sort" -> ESInnerField(`type`))) ++
       (if (isAggregatable) Map("raw" -> rawField(`type`)) else Nil) ++
       (if (hasPopulateSuggest) Map("suggest" -> completionField) else Nil)
     if (hasSearchSuggest)

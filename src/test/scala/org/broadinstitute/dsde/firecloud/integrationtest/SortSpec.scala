@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.apache.lucene.search.SortField
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.{LibrarySearchParams, LibrarySearchResponse}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
