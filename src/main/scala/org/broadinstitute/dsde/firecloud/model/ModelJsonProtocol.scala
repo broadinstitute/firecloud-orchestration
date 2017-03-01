@@ -142,6 +142,9 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate.apply)
 
+  implicit val impUIWorkspace = jsonFormat12(UIWorkspace)
+  implicit val impUIWorkspaceResponse = jsonFormat5(UIWorkspaceResponse)
+
   //implicit val impEntity = jsonFormat5(Entity)
   implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
   implicit val impEntityCopyWithoutDestinationDefinition = jsonFormat3(EntityCopyWithoutDestinationDefinition)
