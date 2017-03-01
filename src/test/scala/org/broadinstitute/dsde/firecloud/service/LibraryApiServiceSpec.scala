@@ -106,9 +106,16 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
         }
       }
       "POST as writer on " + publishedPath() - {
-        "should be Forbidden" in {
+        "should be Forbidden for unpublished dataset" in {
           new RequestBuilder(HttpMethods.POST)(publishedPath("unpublishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(Forbidden)
+          }
+        }
+      }
+      "POST as writer on " + publishedPath() - {
+        "should be OK for published dataset" in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath("publishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
           }
         }
       }
