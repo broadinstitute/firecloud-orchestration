@@ -47,6 +47,13 @@ case class UIWorkspaceResponse(
     this(Option(wlr.accessLevel.toString), None, Option(new UIWorkspace(wlr.workspace)), Option(wlr.workspaceSubmissionStats), Option(wlr.owners.toList))
 }
 
+/** A Firecloud UI focused result object that performs extra translation on the result from Rawls, specifically
+  * interpreting the NIH realm as a binary "protected" flag.
+  *
+  * Note: Depending on the direction that firecloud-orchestration takes in the future, we may keep this here or move
+  * this logic into firecloud-ui as part of https://broadinstitute.atlassian.net/browse/GAWB-1674. See discussion in
+  * https://github.com/broadinstitute/firecloud-orchestration/pull/388.
+  */
 case class UIWorkspace(
   workspaceId: String,
   namespace: String,
