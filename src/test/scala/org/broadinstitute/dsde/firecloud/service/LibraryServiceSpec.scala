@@ -348,8 +348,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
     }
-    "with diseaseOntologyID attribute with parents" - {
-      "should generate indexable document with parent info" in {
+    "with diseaseOntologyID attribute" - {
+      "should generate indexable document with parent info when DOID valid" in {
         val w = testWorkspace.copy(attributes = Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220")
         ))
@@ -363,6 +363,17 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         assertResult(expected) {
           Await.result(indexableDocument(w, ontologyDao), dur)
         }
+      }
+      "should generate indexable document with no parent info when DOID not valid" in {
+        val w = testWorkspace.copy(attributes = Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_99999")
+        ))
+        val expected = Document(testUUID.toString, Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_99999"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+        ))
       }
     }
     "in its runtime schema definition" - {
