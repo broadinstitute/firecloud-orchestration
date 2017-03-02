@@ -21,39 +21,42 @@ trait RestJsonClient {
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
 
-  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false): Future[HttpResponse] = {
-    val pipeline = if (compressed) {
+  private def constructPipeline(compressed: Boolean): SendReceive = {
+    if (compressed) {
       addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
     } else {
       sendReceive
     }
+  }
+
+  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false): Future[HttpResponse] = {
+    val pipeline = constructPipeline(compressed)
     pipeline(req)
   }
 
   def userAuthedRequest(req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
-    val pipeline = if (compressed) {
-      addCredentials(userInfo.accessToken) ~> addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
-    } else {
-      addCredentials(userInfo.accessToken) ~> sendReceive
-    }
+    val pipeline = addCredentials(userInfo.accessToken) ~> constructPipeline(compressed)
     pipeline(req)
   }
 
-  def requestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
-    userAuthedRequest( req, compressed ) map {response =>
-      response.status match {
-        case s if s.isSuccess =>
-          response.entity.as[T] match {
-            case Right(obj) => obj
-            case Left(error) => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
-          }
-        case f => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
-      }
-    }
+  def authedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
+    requestToObject(true, req, compressed, userInfo = userInfo)
   }
 
   def unAuthedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit unmarshaller: Unmarshaller[T]): Future[T] = {
-    unAuthedRequest(req, compressed) map { response =>
+    requestToObject(false, req, compressed)
+  }
+
+  private def requestToObject[T](auth: Boolean, req: HttpRequest, compressed: Boolean = false, userInfo: WithAccessToken = null)(implicit unmarshaller: Unmarshaller[T]): Future[T] = {
+    val resp = if (auth) {
+      implicit val impUserInfo = userInfo
+      userAuthedRequest(req, compressed)
+    }
+    else {
+      unAuthedRequest(req, compressed)
+    }
+
+    resp map { response =>
       response.status match {
         case s if s.isSuccess =>
           response.entity.as[T] match {

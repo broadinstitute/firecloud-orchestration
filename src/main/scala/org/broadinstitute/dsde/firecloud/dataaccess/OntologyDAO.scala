@@ -10,5 +10,5 @@ trait OntologyDAO {
 
   lazy val ontologySearchUrl = FireCloudConfig.Duos.baseUrl + "/search"
 
-  def search(term: String)(implicit ec: ExecutionContext): Future[List[TermResource]]
+  def search(term: String): Future[Option[List[TermResource]]]
 }

@@ -1,7 +1,8 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 
 class MockOntologyDAO extends OntologyDAO {
@@ -43,5 +44,10 @@ class MockOntologyDAO extends OntologyDAO {
       )
     ))))
 
-  override def search(term: String)(implicit ec: ExecutionContext): Future[List[TermResource]] = Future(resources)
+  override def search(term: String): Future[Option[List[TermResource]]] = {
+    if (term == "DOID_9220")
+      Future(Some(resources))
+    else
+      Future(None)
+  }
 }

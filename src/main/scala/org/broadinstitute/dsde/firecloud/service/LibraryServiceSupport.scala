@@ -45,12 +45,13 @@ trait LibraryServiceSupport {
 
     workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
-        ontologyDAO.search(id.value) map { (response: Seq[TermResource]) =>
-          val parents = response.get(0).parents
-          parents match {
-            case Some(list) => Document(workspace.workspaceId, fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(list.toJson.compactPrint)))
-            case _ => Document(workspace.workspaceId, fields)
-          }
+        ontologyDAO.search(id.value) map {
+          case Some(terms) =>
+            terms.head.parents match {
+              case Some(list) => Document(workspace.workspaceId, fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(list.toJson.compactPrint)))
+              case None => Document(workspace.workspaceId, fields)
+            }
+          case None => Document(workspace.workspaceId, fields)
         }
       case _ => Future(Document(workspace.workspaceId, fields))
     }
