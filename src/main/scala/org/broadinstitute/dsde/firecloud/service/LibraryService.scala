@@ -145,8 +145,27 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
+    // get workspace ids user has access to, then add that to this
     getEffectiveDiscoverGroups(rawlsDAO) map {userGroups =>
-      searchDAO.findDocuments(criteria, userGroups)} map (RequestComplete(_))
+      // flatmap get workspace ids or use for ting with a yield
+      searchDAO.findDocuments(criteria, userGroups)} map { documents =>
+      // update documents
+      val docsWithAccess = documents.map { docs =>
+        rawlsDAO.getWorkspacesIds map { accessibleWorkspaceIds =>
+          val accessChecked = docs.results.map { document =>
+            val docId = document.asJsObject.fields.get("workspaceId")
+            val newJson = docId match {
+              case Some(id) =>  val workspaceId = id.toString.replace("\"", ""); document.asJsObject.fields + ("access" -> JsBoolean(accessibleWorkspaceIds.contains(workspaceId)))
+              case None => document.asJsObject.fields + ("access" -> JsBoolean(true)) // ??
+            }
+            JsObject(newJson)
+          }
+          log.info("all workspaces: " + accessChecked)
+          accessChecked
+        }
+      }
+      (RequestComplete(docsWithAccess))
+    }
   }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
