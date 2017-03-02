@@ -40,7 +40,7 @@ trait RestJsonClient {
   }
 
   def authedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
-    requestToObject(true, req, compressed, userInfo = userInfo)
+    requestToObject(true, req, compressed, userInfo)
   }
 
   def unAuthedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit unmarshaller: Unmarshaller[T]): Future[T] = {
