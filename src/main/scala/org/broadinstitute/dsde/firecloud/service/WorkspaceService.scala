@@ -93,16 +93,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
     aclUpdate map { actualUpdates =>
-
-      val updateNotifications = actualUpdates.usersUpdated.map {
-        case removed if removed.accessLevel.equals(WorkspaceAccessLevels.NoAccess) => WorkspaceRemovedNotification(removed.subjectId, removed.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
-        case added => WorkspaceAddedNotification(added.subjectId, added.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
-      }
-
-      val inviteNotifications = actualUpdates.invitesSent.filterNot(_.accessLevel.equals(WorkspaceAccessLevels.NoAccess)).map(invite => WorkspaceInvitedNotification(invite.email, originEmail))
-
-      thurloeDAO.sendNotifications((updateNotifications ++ inviteNotifications))
-
       RequestComplete(actualUpdates)
     }
   }
