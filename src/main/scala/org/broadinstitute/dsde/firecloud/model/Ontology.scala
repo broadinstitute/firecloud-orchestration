@@ -9,8 +9,8 @@ object Ontology {
     usable: Boolean,
     label: String,
     definition: String,
-    synonyms: Option[List[String]],
-    parents: Option[List[TermParent]]
+    synonyms: Option[List[String]] = None,
+    parents: Option[List[TermParent]] = None
   )
 
   case class TermParent(
@@ -18,6 +18,11 @@ object Ontology {
     order: Int,
     label: String,
     definition: String,
-    synonyms: Option[List[String]]
-  )
+    synonyms: Option[List[String]] = None
+  ) {
+    def toESTermParent: ESTermParent =
+      ESTermParent(label, order)
+  }
+
+  case class ESTermParent(label: String, order: Int)
 }

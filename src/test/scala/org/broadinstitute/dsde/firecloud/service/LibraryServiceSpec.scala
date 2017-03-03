@@ -14,6 +14,7 @@ import org.scalatest.FreeSpecLike
 import spray.json.{JsObject, _}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.joda.time.DateTime
 
 import scala.collection.JavaConversions._
@@ -353,12 +354,27 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         val w = testWorkspace.copy(attributes = Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220")
         ))
+        val parentData = ontologyDao.data("DOID_9220").head.parents.get.map(_.toESTermParent)
         val expected = Document(testUUID.toString, Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(ontologyDao.resources.get(0).parents.toJson.compactPrint)
+          AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parentData.toJson.compactPrint)
+        ))
+        assertResult(expected) {
+          Await.result(indexableDocument(w, ontologyDao), dur)
+        }
+      }
+      "should generate indexable document with no parent info when DOID has no parents" in {
+        val w = testWorkspace.copy(attributes = Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_4")
+        ))
+        val expected = Document(testUUID.toString, Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_4"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
           Await.result(indexableDocument(w, ontologyDao), dur)
@@ -374,6 +390,9 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
+        assertResult(expected) {
+          Await.result(indexableDocument(w, ontologyDao), dur)
+        }
       }
     }
     "in its runtime schema definition" - {

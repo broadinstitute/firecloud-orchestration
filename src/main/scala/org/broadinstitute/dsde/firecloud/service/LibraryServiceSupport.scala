@@ -48,7 +48,9 @@ trait LibraryServiceSupport {
         ontologyDAO.search(id.value) map {
           case Some(terms) =>
             terms.head.parents match {
-              case Some(list) => Document(workspace.workspaceId, fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(list.toJson.compactPrint)))
+              case Some(list) =>
+                val parentField = AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(list.map(_.toESTermParent).toJson.compactPrint)
+                Document(workspace.workspaceId, fields + parentField)
               case None => Document(workspace.workspaceId, fields)
             }
           case None => Document(workspace.workspaceId, fields)

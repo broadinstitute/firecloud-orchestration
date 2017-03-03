@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
-import org.broadinstitute.dsde.firecloud.model.Ontology.{TermResource, TermParent}
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermResource, TermParent, ESTermParent}
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
@@ -205,8 +205,9 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
   implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
 
-  implicit val impOntologyTermParentResponse = jsonFormat5(TermParent)
-  implicit val impOntologyTermResourceResponse = jsonFormat7(TermResource)
+  implicit val impOntologyTermParent = jsonFormat5(TermParent)
+  implicit val impOntologyTermResource = jsonFormat7(TermResource)
+  implicit val impOntologyESTermParent = jsonFormat2(ESTermParent)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
