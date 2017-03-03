@@ -30,7 +30,7 @@ trait RawlsDAO extends LazyLogging {
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
   lazy val rawlsGroupsForUserUrl = FireCloudConfig.Rawls.authUrl + "/user/groups"
-  lazy val rawlsWorkpacesIdsUrl = FireCloudConfig.Rawls.workspacesUrl + "/ids"
+  lazy val rawlsWorkpacesUrl = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminWorkspaces = FireCloudConfig.Rawls.authUrl + "/admin/workspaces?attributeName=library:published&valueBoolean=true"
   lazy val rawlsWorkspaceACLUrl = FireCloudConfig.Rawls.workspacesUrl + "/%s/%s/acl?inviteUsersNotFound=%s"
   def rawlsBucketUsageUrl(workspaceNamespace: String, workspaceName: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/bucketUsage"
@@ -51,7 +51,7 @@ trait RawlsDAO extends LazyLogging {
 
   def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse]
 
-  def getWorkspacesIds(implicit userInfo: WithAccessToken): Future[Seq[String]]
+  def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]]
 
   def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse]
 

@@ -64,13 +64,6 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             }
           }
         } ~
-        pathPrefix("ids") {
-          pathEnd {
-            requireUserInfo() { _ =>
-              passthrough(rawlsWorkspacesRoot + "/ids", HttpMethods.GET)
-            }
-          }
-        } ~
         pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
           val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
           pathEnd {
