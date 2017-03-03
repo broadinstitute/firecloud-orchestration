@@ -54,6 +54,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
     val MAX_AGGREGATIONS = "maxAggregations"
     val FROM = "from"
     val SIZE = "size"
+    val SORT_FIELD = "sortField"
+    val SORT_DIR = "sortDirection"
 
     override def write(params: LibrarySearchParams): JsValue = {
       val fields:Seq[Option[(String, JsValue)]] = Seq(
@@ -61,6 +63,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
         Some(FIELD_AGGREGATIONS -> params.fieldAggregations.toJson),
         Some(FROM -> params.from.toJson),
         Some(SIZE -> params.size.toJson),
+        params.sortField map {SORT_FIELD -> JsString(_)},
+        params.sortDirection map {SORT_DIR -> JsString(_)},
         params.searchString map {SEARCH_STRING -> JsString(_)}
       )
 
@@ -81,7 +85,17 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
       val from = optionalEntryIntReader(FROM, data)
       val size = optionalEntryIntReader(SIZE, data)
 
-      LibrarySearchParams(term, filters, aggs, from, size)
+      val sortField = data.get(SORT_FIELD) match {
+        case Some(x:JsString) => Some(x.value)
+        case _ => None
+      }
+
+      val sortDirection = data.get(SORT_DIR) match {
+        case Some(x:JsString) => Some(x.value)
+        case _ => None
+      }
+
+      LibrarySearchParams(term, filters, aggs, from, size, sortField, sortDirection)
     }
   }
 
