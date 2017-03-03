@@ -150,7 +150,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
         workspaceResponse.workspace.workspaceId
     }
 
-    docs.results.map { document =>
+    val updatedResults = docs.results.map { document =>
       val docId = document.asJsObject.fields.get("workspaceId")
       val newJson = docId match {
         case Some(id) =>  val workspaceId = id.toString.replace("\"", ""); document.asJsObject.fields + ("workspaceAccess" -> JsBoolean(ids.contains(workspaceId)))
@@ -158,6 +158,8 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
       }
       JsObject(newJson)
     }
+
+    docs.copy(results = updatedResults)
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
