@@ -459,8 +459,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "POST on /workspaces/.../.../clone for 'not protected' workspace sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name",
-        attributes = Map(AttributeName("library", "published") -> AttributeBoolean(false)))
+      val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name")
 
       val orchestrationRequest: WorkspaceCreate = WorkspaceCreate("namespace", "name", Map())
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
@@ -471,8 +470,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "POST on /workspaces/.../.../clone for 'protected' workspace sends NIH-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name", realm = Option(nihProtectedRealm),
-        attributes = Map(AttributeName("library", "published") -> AttributeBoolean(false)))
+      val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name", realm = Option(nihProtectedRealm))
 
       val isProtected: Option[Boolean] = Option(true)
       val orchestrationRequest: WorkspaceCreate = WorkspaceCreate("namespace", "name", Map(), isProtected)
@@ -483,9 +481,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-    "When cloning a published workspace, the clone should not be published" in {
+    "When cloning a published workspace, the clone should be published (really it shouldn't, but it needs more work; see GAWB-1659 and https://github.com/broadinstitute/firecloud-orchestration/pull/389)" in {
       val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name",
-        attributes = Map(AttributeName("library", "published") -> AttributeBoolean(false)))
+        attributes = Map(AttributeName("library", "published") -> AttributeBoolean(true)))
 
       val published = AttributeName("library", "published") -> AttributeBoolean(true)
       val orchestrationRequest = WorkspaceCreate("namespace", "name", Map(published))
