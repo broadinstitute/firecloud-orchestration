@@ -20,17 +20,19 @@ import spray.json.JsonParser.ParsingException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impLibraryBulkIndexResponse, impLibrarySearchResponse}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.{AttributeNameFormat, WorkspaceFormat}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AttributeUpdateOperation, RemoveAttribute}
 
-import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object LibraryService {
   final val publishedFlag = AttributeName("library","published")
+  final val discoverableWSAttribute = AttributeName("library","discoverableByGroups")
   final val schemaLocation = "library/attribute-definitions.json"
 
   sealed trait LibraryServiceMessage
   case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
+  case class UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) extends LibraryServiceMessage
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
   case object IndexAll extends LibraryServiceMessage
   case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
@@ -54,14 +56,49 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   implicit val userInfo = argUserInfo
 
   override def receive = {
-    case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => asCurator {updateAttributes(ns, name, attrsJsonString)} pipeTo sender
-    case SetPublishAttribute(ns: String, name: String, value: Boolean) => asCurator {setWorkspaceIsPublished(ns, name, value)} pipeTo sender
+    case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => updateAttributes(ns, name, attrsJsonString) pipeTo sender
+    case UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) => updateDiscoverableByGroups(ns, name, newGroups) pipeTo sender
+    case SetPublishAttribute(ns: String, name: String, value: Boolean) => setWorkspaceIsPublished(ns, name, value) pipeTo sender
     case IndexAll => asAdmin {indexAll} pipeTo sender
     case FindDocuments(criteria: LibrarySearchParams) => findDocuments(criteria) pipeTo sender
     case Suggest(criteria: LibrarySearchParams) => suggest(criteria) pipeTo sender
-    case PopulateSuggest(field: String, text: String) => asCurator {populateSuggest(field: String, text: String)} pipeTo sender
+    case PopulateSuggest(field: String, text: String) => populateSuggest(field: String, text: String) pipeTo sender
   }
 
+  def hasAccessOrCurator(workspaceResponse: WorkspaceResponse, neededLevel: WorkspaceAccessLevels.WorkspaceAccessLevel): Future[Boolean] = {
+    val wsaccess = workspaceResponse.accessLevel >= neededLevel
+    if (!wsaccess)
+      tryIsCurator(userInfo)
+    else
+      Future.successful(wsaccess)
+  }
+
+  def isPublished(workspaceResponse: WorkspaceResponse): Boolean = {
+    workspaceResponse.workspace.attributes.get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
+  }
+
+  def updateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]): Future[PerRequestMessage] = {
+    if (newGroups.forall { g => FireCloudConfig.ElasticSearch.discoverGroupNames.contains(g) }) {
+      rawlsDAO.getWorkspace(ns, name) map { workspaceResponse =>
+        if (workspaceResponse.accessLevel >= WorkspaceAccessLevels.Owner) {
+          // this is technically vulnerable to a race condition in which the workspace attributes have changed
+          // between the time we retrieved them and here, where we update them.
+          val remove = Seq(RemoveAttribute(discoverableWSAttribute))
+          val operations = newGroups map (group => AddListMember(discoverableWSAttribute, new AttributeString(group)))
+          RequestComplete(patchWorkspace(ns, name, remove ++ operations, isPublished(workspaceResponse)))
+        } else {
+          RequestCompleteWithErrorReport(Forbidden, "must be an owner to set discoverable groups")
+        }
+      }
+    } else {
+      Future(RequestCompleteWithErrorReport(BadRequest, s"groups must be subset of allowable groups: %s".format(FireCloudConfig.ElasticSearch.discoverGroupNames.toArray.mkString(", "))))
+    }
+  }
+
+  /*
+   * Library metadata attributes can only be modified by someone with write or higher permissions
+   * for the workspace
+   */
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
     // attributes come in as standard json so we can use json schema for validation. Thus,
     // we need to use the plain-array deserialization.
@@ -81,31 +118,37 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
           case Failure(e) =>
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
           case Success(x) => {
-            rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
+            rawlsDAO.getWorkspace(ns, name) map  { workspaceResponse =>
               // this is technically vulnerable to a race condition in which the workspace attributes have changed
               // between the time we retrieved them and here, where we update them.
               val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
                 k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
-              val republish = workspaceResponse.workspace.attributes.get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
-              rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map { newws =>
-                if (republish) {
-                  // we do not need to delete before republish
-                  publishDocument(newws)
-                }
-                RequestComplete(newws)
-              }
+              RequestComplete(patchWorkspace(ns, name, allOperations, isPublished(workspaceResponse)))
             }
           }
         }
     }
   }
 
+  /*
+   * Update workspace in rawls. If the dataset is currently published, republish with changes
+   */
+  def patchWorkspace(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean) : Future[Workspace] = {
+    rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations) map { newws =>
+      if (isPublished) {
+        // if already published, republish
+        // we do not need to delete before republish
+        publishDocument(newws)
+      }
+      newws
+    }
+  }
+
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-      // verify owner on workspace
-      if (workspaceResponse.accessLevel < WorkspaceAccessLevels.Owner) {
-        Future(RequestCompleteWithErrorReport(Forbidden, "must be an owner"))
-      } else {
+      val pub = isPublished(workspaceResponse)
+      val requiredLevel = if (!pub || (pub && !value)) WorkspaceAccessLevels.Owner else WorkspaceAccessLevels.Write
+      if (workspaceResponse.accessLevel >= requiredLevel) {
         val operations = updatePublishAttribute(value)
         rawlsDAO.patchWorkspaceAttributes(ns, name, operations) map { ws =>
           if (value)
@@ -114,6 +157,8 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
             removeDocument(ws)
           RequestComplete(ws)
         }
+      } else {
+        Future(RequestCompleteWithErrorReport(Forbidden, s"must have %s privileges".format(requiredLevel.toString())))
       }
     }
   }

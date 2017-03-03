@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
@@ -14,6 +14,8 @@ import spray.http._
 import spray.http.StatusCodes._
 import spray.json._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import spray.json.DefaultJsonProtocol._
+import scala.collection.JavaConverters._
 
 
 class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
@@ -29,6 +31,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
   private final val librarySearchPath = "/api/library/search"
   private final val librarySuggestPath = "/api/library/suggest"
   private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
+  private final val libraryGroupsPath = "/api/library/groups"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
@@ -102,6 +105,20 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
           }
         }
       }
+      "POST as writer on " + publishedPath() - {
+        "should be Forbidden for unpublished dataset" in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath("unpublishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(Forbidden)
+          }
+        }
+      }
+      "POST as writer on " + publishedPath() - {
+        "should be OK for published dataset" in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath("publishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+          }
+        }
+      }
       "POST as owner on " + publishedPath() - {
         "should be OK" in {
           new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
@@ -143,10 +160,20 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
       "should republish the workspace" in {
         this.searchDao.indexDocumentInvoked = false
         val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath(), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
           assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
           this.searchDao.indexDocumentInvoked = false
+        }
+      }
+      "should be forbidden when reader" in {
+        new RequestBuilder(HttpMethods.POST)(publishedPath("publishedreader")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(Forbidden)
+        }
+      }
+      "should be allowed when writer" in {
+        new RequestBuilder(HttpMethods.POST)(publishedPath("publishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
         }
       }
     }
@@ -201,6 +228,15 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             assert(respdata.contains("library:datasetOwner"))
             assert(respdata.contains("aha"))
             this.searchDao.populateSuggestInvoked = false
+          }
+        }
+      }
+      "GET on " + libraryGroupsPath - {
+        "should return the all broad users group" in {
+          new RequestBuilder(HttpMethods.GET)(libraryGroupsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            val respdata = response.entity.asString.parseJson.convertTo[Seq[String]]
+            assert(respdata.toSet ==  FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSet)
           }
         }
       }

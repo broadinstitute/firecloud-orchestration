@@ -456,6 +456,20 @@ paths:
           schema:
             $ref: '#/definitions/LibraryBulkIndexResponse'
 
+  /api/library/groups:
+    get:
+      tags:
+        - Library
+      operationId: groups
+      summary: |
+        returns groups that can be used for discoverable datasets
+      responses:
+        200:
+          description: Names of the allowed groups
+          schema:
+            type: array
+            items:
+              type: string
   /api/library/search:
     post:
       tags:
@@ -532,6 +546,32 @@ paths:
         - Profile
       summary: Query to see if you're a library curator
       operationId: isCurator
+
+  /api/library/{workspaceNamespace}/{workspaceName}/discoverableGroups:
+    put:
+      tags:
+        - Library
+      operationId: updateDiscoverableGroups
+      summary: |
+        set the groups that can discover this library dataset
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: discoverableGroups
+          description: List of group names, or empty list for no restrictions
+          required: true
+          in: body
+      responses:
+        200:
+          description: The groups that have been assigned to be able to discover the dataset
+          schema:
+            type: array
+            items:
+              type: string
+        500:
+          description: Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
 
   /api/library/{workspaceNamespace}/{workspaceName}/metadata:
     put:
