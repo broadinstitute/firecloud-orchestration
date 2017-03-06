@@ -92,14 +92,6 @@ object FireCloudConfig {
     val rawlsGroupName = nih.getString("rawlsGroupName")
   }
 
-  object Notification {
-    private val thurloe = config.getConfig("thurloe")
-    val activationTemplateId = thurloe.getString("activationTemplateId")
-    val workspaceAddedTemplateId = thurloe.getString("workspaceAddedTemplateId")
-    val workspaceRemovedTemplateId = thurloe.getString("workspaceRemovedTemplateId")
-    val workspaceInvitedTemplateId = thurloe.getString("workspaceInvitedTemplateId")
-  }
-
   object ElasticSearch {
     private val elasticsearch = config.getConfig("elasticsearch")
     val servers: Seq[Authority] = parseESServers(elasticsearch.getString("urls"))
