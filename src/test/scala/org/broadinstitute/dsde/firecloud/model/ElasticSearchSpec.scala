@@ -49,17 +49,73 @@ class ElasticSearchSpec  extends FreeSpec with Assertions {
   }
 
   "ESInternalType model" - {
-    "when unmarshalling from json" in {
-      val testData = """ {"type": "string", "index":"not_analyzed", "include_in_all":false} """
-      val item = testData.parseJson.convertTo[ESPropertyFields]
-      assertResult("org.broadinstitute.dsde.firecloud.model.ESInternalType") {item.getClass.getName}
-      assertResult(false) {item.asInstanceOf[ESInternalType].include_in_all}
+    val modelObject = ESInternalType("string",index="not_analyzed",include_in_all=false)
+    val modelJsonStr = """{"type":"string","index":"not_analyzed","include_in_all":false}"""
+
+    "when unmarshalling from json" - {
+      "using parseJson" in {
+        val item = modelJsonStr.parseJson.convertTo[ESPropertyFields]
+        assert(item.isInstanceOf[ESInternalType])
+        assertResult(modelObject) {item.asInstanceOf[ESInternalType]}
+      }
+      "using impESPropertyFields" in {
+        val item = impESPropertyFields.read(modelJsonStr.parseJson)
+        assert(item.isInstanceOf[ESInternalType])
+        assertResult(modelObject) {
+          item.asInstanceOf[ESInternalType]
+        }
+      }
+
     }
-    "when marshalling to json" in {
-      val testData = new ESInternalType("string")
-      assertResult("""{"type":"string","index":"not_analyzed","include_in_all":false}""") {
-        testData.toJson.toString
+    "when marshalling to json" - {
+      "using toJson" in {
+        assertResult(modelJsonStr) {
+          modelObject.toJson.toString
+        }
+      }
+      "using impESPropertyFields" in {
+        assertResult(modelJsonStr) {
+          impESPropertyFields.write(modelObject).toString
+        }
       }
     }
   }
+
+  "ESObjectType model" - {
+    val modelObject = ESObjectType(Map(
+      "foo" -> ESInnerField("string"),
+      "bar" -> ESInnerField("integer", include_in_all=Some(false))
+    ))
+    val modelJsonStr = """{"properties":{"foo":{"type":"string"},"bar":{"type":"integer","include_in_all":false}}}"""
+
+    "when unmarshalling from json" - {
+      "using parseJson" in {
+        val item = modelJsonStr.parseJson.convertTo[ESPropertyFields]
+        assert(item.isInstanceOf[ESObjectType])
+        assertResult(modelObject) {
+          item.asInstanceOf[ESObjectType]
+        }
+      }
+      "using impESPropertyFields" in {
+        val item = impESPropertyFields.read(modelJsonStr.parseJson)
+        assert(item.isInstanceOf[ESObjectType])
+        assertResult(modelObject) {
+          item.asInstanceOf[ESObjectType]
+        }
+      }
+    }
+    "when marshalling to json" - {
+      "using toJson" in {
+        assertResult(modelJsonStr) {
+          modelObject.toJson.toString
+        }
+      }
+      "using impESPropertyFields" in {
+        assertResult(modelJsonStr) {
+          impESPropertyFields.write(modelObject).toString
+        }
+      }
+    }
+  }
+
 }

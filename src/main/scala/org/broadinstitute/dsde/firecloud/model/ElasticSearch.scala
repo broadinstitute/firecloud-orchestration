@@ -11,6 +11,9 @@ object ElasticSearch {
   final val fieldAll = "_all"
   final val fieldSuggest = "_suggest"
   final val fieldDiscoverableByGroups = "_discoverableByGroups"
+  final val fieldOntologyParents = "parents"
+  final val fieldOntologyParentsOrder = "order"
+  final val fieldOntologyParentsLabel = "label"
 }
 
 case class AttributeDefinition(properties: Map[String, AttributeDetail])
@@ -67,6 +70,8 @@ object ESType extends ESPropertyFields {
   }
 
 }
+
+case class ESObjectType(properties:Map[String,ESInnerField]) extends ESPropertyFields
 
 case class ESInternalType(
   `type`: String,
