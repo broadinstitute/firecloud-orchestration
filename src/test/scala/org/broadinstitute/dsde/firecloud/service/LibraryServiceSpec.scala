@@ -561,24 +561,24 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
     }
     "when finding documents" - {
       val params = LibrarySearchParams(Some("test"), Map(), Map())
-      "if can't find workspace id for a document, doesn't add workspaceAccess to document" in {
+      "don't add workspaceAccess to document if can't find workspace id for a document" in {
         val doc = LibrarySearchResponse(params, 1, Seq(testLibraryMetadataJsObject: JsValue), Seq())
         assertResult(doc) {
           updateAccess(doc, Seq())
         }
       }
-      "add workspaceAccess:false if workspace not returned from workspace list" in {
+      "set workspaceAccess to No Access if workspace is not returned from workspace list" in {
         val result = testLibraryMetadataJsObject.copy(testLibraryMetadataJsObject.fields.updated("workspaceId", JsString("no.access.to.workspace.id")))
-        val expectedResult: JsValue = result.copy(result.fields.updated("workspaceAccess", JsBoolean(false)))
+        val expectedResult: JsValue = result.copy(result.fields.updated("workspaceAccess", JsString(WorkspaceAccessLevels.NoAccess.toString)))
         val doc = LibrarySearchResponse(params, 1, Seq(result: JsValue), Seq())
         assertResult(doc.copy(results=Seq(expectedResult))) {
           updateAccess(doc, Seq())
         }
       }
-      "add workspaceAccess:true if workspace is returned from workspace list" in {
+      "set workspaceAccess to workspace access level if workspace is returned from workspace list" in {
         val workspaceList = Seq(WorkspaceListResponse(WorkspaceAccessLevels.Owner, testWorkspace, WorkspaceSubmissionStats(None, None, 0), Seq()))
         val result = testLibraryMetadataJsObject.copy(testLibraryMetadataJsObject.fields.updated("workspaceId", JsString(testUUID.toString)))
-        val expectedResult: JsValue = result.copy(result.fields.updated("workspaceAccess", JsBoolean(true)))
+        val expectedResult: JsValue = result.copy(result.fields.updated("workspaceAccess", JsString(WorkspaceAccessLevels.Owner.toString)))
         val doc = LibrarySearchResponse(params, 1, Seq(result: JsValue), Seq())
         assertResult(doc.copy(results=Seq(expectedResult))) {
           updateAccess(doc, workspaceList)
