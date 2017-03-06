@@ -57,7 +57,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
         ))
     } map { response =>
       response.status match {
-        case StatusCodes.OK => ()
+        case StatusCodes.Created => ()
         case _ => throwBadResponse(response)
       }
     }
