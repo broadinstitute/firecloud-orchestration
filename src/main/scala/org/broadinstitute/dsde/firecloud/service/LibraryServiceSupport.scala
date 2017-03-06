@@ -63,12 +63,17 @@ trait LibraryServiceSupport {
   }
 
   def updateAccess(docs: LibrarySearchResponse, workspaces: Seq[WorkspaceListResponse]) = {
+
+    val accessMap = workspaces map { workspaceResponse: WorkspaceListResponse =>
+      workspaceResponse.workspace.workspaceId -> workspaceResponse.accessLevel
+    } toMap
+
     val updatedResults = docs.results.map { document =>
       val docId = document.asJsObject.fields.get("workspaceId")
       val newJson = docId match {
-        case Some(id: JsString) => workspaces.find((workspaceResponse: WorkspaceListResponse) => workspaceResponse.workspace.workspaceId == id.value) match {
-          case Some(workspaceResponse) => document.asJsObject.fields + ("workspaceAccess" -> JsString(workspaceResponse.accessLevel.toString))
-          case _ => document.asJsObject.fields + ("workspaceAccess" -> JsString(WorkspaceAccessLevels.NoAccess.toString))  // or just document.asJsObject.fields ??
+        case Some(id: JsString) => accessMap.get(id.value) match {
+          case Some(accessLevel) => document.asJsObject.fields + ("workspaceAccess" -> JsString(accessLevel.toString))
+          case _ => document.asJsObject.fields + ("workspaceAccess" -> JsString(WorkspaceAccessLevels.NoAccess.toString))
         }
         case _ => document.asJsObject.fields
       }
