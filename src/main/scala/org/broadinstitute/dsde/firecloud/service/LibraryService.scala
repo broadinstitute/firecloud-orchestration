@@ -144,32 +144,12 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
     }
   }
 
-  def updateAccess(docs: LibrarySearchResponse, workspaces: Seq[WorkspaceListResponse]) = {
-    val ids = workspaces collect {
-      case workspaceResponse: WorkspaceListResponse if (workspaceResponse.accessLevel != WorkspaceAccessLevels.NoAccess) =>
-        workspaceResponse.workspace.workspaceId
-    }
-
-    val updatedResults = docs.results.map { document =>
-      val docId = document.asJsObject.fields.get("workspaceId")
-      val newJson = docId match {
-        case Some(id) =>  val workspaceId = id.toString.replace("\"", ""); document.asJsObject.fields + ("workspaceAccess" -> JsBoolean(ids.contains(workspaceId)))
-        case None => document.asJsObject.fields + ("workspaceAccess" -> JsBoolean(true)) // is this the right thing to do?
-      }
-      JsObject(newJson)
-    }
-
-    docs.copy(results = updatedResults)
-  }
-
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
     getEffectiveDiscoverGroups(rawlsDAO) map { userGroups =>
-      // calling them first makes the futures execute in parallel?
-      // http://buransky.com/scala/scala-for-comprehension-with-concurrently-running-futures/
       val docsFuture = searchDAO.findDocuments(criteria, userGroups)
       val idsFuture = rawlsDAO.getWorkspaces
       val searchResults = for {
-        docs <- docsFuture //
+        docs <- docsFuture
         ids <- idsFuture
       } yield updateAccess(docs, ids)
       (RequestComplete(searchResults))

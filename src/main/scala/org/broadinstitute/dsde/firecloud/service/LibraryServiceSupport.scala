@@ -12,7 +12,7 @@ import org.json.{JSONObject, JSONTokener}
 import org.parboiled.common.FileUtils
 
 import scala.collection.JavaConversions._
-import spray.json.JsObject
+import spray.json.{JsBoolean, JsObject, JsString}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -60,6 +60,24 @@ trait LibraryServiceSupport {
 
   def getEffectiveDiscoverGroups(rawlsDAO: RawlsDAO)(implicit ec: ExecutionContext, userInfo:UserInfo): Future[Seq[String]] = {
     rawlsDAO.getGroupsForUser map {FireCloudConfig.ElasticSearch.discoverGroupNames intersect _}
+  }
+
+  def updateAccess(docs: LibrarySearchResponse, workspaces: Seq[WorkspaceListResponse]) = {
+    val ids = workspaces collect {
+      case workspaceResponse: WorkspaceListResponse if (workspaceResponse.accessLevel != WorkspaceAccessLevels.NoAccess) =>
+        workspaceResponse.workspace.workspaceId
+    }
+
+    val updatedResults = docs.results.map { document =>
+      val docId = document.asJsObject.fields.get("workspaceId")
+      val newJson = docId match {
+        case Some(id: JsString) => document.asJsObject.fields + ("workspaceAccess" -> JsBoolean(ids.contains(id.value)))
+        case _ => document.asJsObject.fields
+      }
+      JsObject(newJson)
+    }
+
+    docs.copy(results = updatedResults)
   }
 
 }
