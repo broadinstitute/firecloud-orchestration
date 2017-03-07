@@ -3,15 +3,15 @@ package org.broadinstitute.dsde.firecloud
 import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
-import akka.event.Logging
 import akka.pattern.pipe
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{TsvTypes, FireCloudRequestBuilding, TSVFileSupport}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudRequestBuilding, TSVFileSupport, TsvTypes}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
+import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
@@ -19,7 +19,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.routing.RequestContext
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object EntityClient {
@@ -28,7 +28,7 @@ object EntityClient {
                                    workspaceName: String,
                                    tsvString: String)
 
-  def props(requestContext: RequestContext): Props = Props(new EntityClient(requestContext))
+  def props(requestContext: RequestContext)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext))
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -52,18 +52,15 @@ object EntityClient {
 
 }
 
-class EntityClient (requestContext: RequestContext) extends Actor with FireCloudRequestBuilding with TSVFileSupport {
+class EntityClient (requestContext: RequestContext)(implicit protected val executionContext: ExecutionContext)
+  extends Actor with FireCloudRequestBuilding with TSVFileSupport with LazyLogging {
 
-  import system.dispatcher
-
-  implicit val system = context.system
-  val log = Logging(system, getClass)
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
 
   override def receive: Receive = {
     case ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
-      importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo context.parent
+      importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo sender
   }
 
 
@@ -98,7 +95,7 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
   def batchCallToRawls(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition], endpoint: String ): Future[PerRequestMessage] = {
-    log.info("TSV upload request received")
+    logger.debug("TSV upload request received")
 
     val responseFuture: Future[HttpResponse] = pipeline {
       Post(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/"+endpoint,
@@ -108,11 +105,11 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
     responseFuture map { response =>
       response.status match {
           case NoContent =>
-            log.debug("OK response")
+            logger.debug("OK response")
             RequestComplete(OK, calls.head.entityType)
           case _ =>
             // Bubble up all other unmarshallable responses
-            log.warning("Unanticipated response: " + response.status.defaultMessage)
+            logger.warn("Unanticipated response: " + response.status.defaultMessage)
             RequestComplete(response)
       }
     } recover {
@@ -200,10 +197,13 @@ class EntityClient (requestContext: RequestContext) extends Actor with FireCloud
             Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, entity type should end in _id"))
           } else {
             val strippedTsv = backwardsCompatStripIdSuffixes(tsv, entityType)
-            TsvTypes.withName(tsvType) match {
-              case TsvTypes.MEMBERSHIP => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-              case TsvTypes.ENTITY => importEntityTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-              case TsvTypes.UPDATE => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+            Try(TsvTypes.withName(tsvType)) match {
+              case Success(x) => x match {
+                case TsvTypes.MEMBERSHIP => importMembershipTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+                case TsvTypes.ENTITY => importEntityTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+                case TsvTypes.UPDATE => importUpdateTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+              }
+              case Failure(err) => Future(RequestCompleteWithErrorReport(BadRequest, err.toString))
             }
           }
         case _ =>

@@ -573,7 +573,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
 
           "should 200 OK if it has the correct headers and valid internals" in {
-            stubRawlsService(HttpMethods.POST, batchUpsertPath, OK)
+            stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
             (Post(tsvImportPath, MockTSVFormData.membershipValid)
               ~> dummyUserIdHeaders("1234")
               ~> sealRoute(workspaceRoutes)) ~> check {
@@ -620,7 +620,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
 
           "should 200 OK if it has the full set of required attribute headers" in {
-            stubRawlsService(HttpMethods.POST, batchUpsertPath, OK)
+            stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
             (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAttrs)
               ~> dummyUserIdHeaders("1234")
               ~> sealRoute(workspaceRoutes)) ~> check {
@@ -629,7 +629,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
 
           "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
-            stubRawlsService(HttpMethods.POST, batchUpsertPath, OK)
+            stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
             (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAndOptionalAttrs)
               ~> dummyUserIdHeaders("1234")
               ~> sealRoute(workspaceRoutes)) ~> check {
