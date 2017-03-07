@@ -2,10 +2,10 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
-import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
+import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
-import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.everit.json.schema.{Schema, ValidationException}
 import org.everit.json.schema.loader.SchemaLoader
@@ -45,17 +45,25 @@ trait LibraryServiceSupport {
 
     workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
-        ontologyDAO.search(id.value) map {
-          case Some(terms) =>
-            terms.head.parents match {
-              case Some(list) =>
-                val parentField = AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(list.map(_.toESTermParent).toJson.compactPrint)
-                Document(workspace.workspaceId, fields + parentField)
-              case None => Document(workspace.workspaceId, fields)
-            }
-          case None => Document(workspace.workspaceId, fields)
+        lookupParentNodes(id.value, ontologyDAO) map {parents =>
+          val parentFields = if (parents.nonEmpty) {
+            fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parents.map(_.toESTermParent).toJson.compactPrint))
+          } else {
+            fields
+          }
+          Document(workspace.workspaceId, parentFields)
         }
       case _ => Future(Document(workspace.workspaceId, fields))
+    }
+  }
+
+  // wraps the ontologyDAO call, handles Nones/nulls, and returns a [Future[Seq].
+  // the Seq is populated if the leaf node exists and has parents; Seq is empty otherwise.
+  def lookupParentNodes(leafId:String, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext):Future[Seq[TermParent]] = {
+    ontologyDAO.search(leafId) map {
+      case Some(terms) if terms.nonEmpty =>
+        terms.head.parents.getOrElse(Seq.empty)
+      case None => Seq.empty
     }
   }
 

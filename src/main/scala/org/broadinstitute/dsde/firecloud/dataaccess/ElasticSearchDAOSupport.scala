@@ -54,15 +54,13 @@ trait ElasticSearchDAOSupport extends LazyLogging {
      *   - _discoverableByGroups property to hold discover-mode permissions
      *   - parents.order and parents.label for ontology-aware search
      */
-    val parentsInnerFields = Map(
-      fieldOntologyParentsLabel -> ESInnerField("string"),
-      fieldOntologyParentsOrder -> ESInnerField("integer", include_in_all = Some(false), index = Some("not_analyzed"))
-    )
-
     val addlMappings:Map[String, ESPropertyFields] = Map(
       fieldSuggest -> ESType.suggestField("string"),
       fieldDiscoverableByGroups -> ESInternalType("string"),
-      fieldOntologyParents -> ESObjectType(parentsInnerFields)
+      fieldOntologyParents -> ESObjectType(Map(
+        fieldOntologyParentsLabel -> ESInnerField("string"),
+        fieldOntologyParentsOrder -> ESInnerField("integer", include_in_all=Some(false))
+      ))
     )
     val props = attributeDetailMap ++ addlMappings
     ESDatasetProperty(props).toJson.prettyPrint
