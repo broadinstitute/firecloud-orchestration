@@ -104,7 +104,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
       case estype: ESType => estype.toJson
       case esinternaltype: ESInternalType => esinternaltype.toJson
       case esinnerfield: ESInnerField => esinnerfield.toJson
-      case esobjectytpe: ESNestedType => esobjectytpe.toJson
+      case esnestedtype: ESNestedType => esnestedtype.toJson
       case _ => throw new SerializationException("unexpected ESProperty type")
     }
 
