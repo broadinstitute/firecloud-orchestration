@@ -70,7 +70,6 @@ object FireCloudConfig {
     val getAll = profile.getString("getAll")
     val getQuery = profile.getString("getQuery")
     val delete = profile.getString("delete")
-    val postNotify = profile.getString("postNotify")
   }
 
   object FireCloud {
