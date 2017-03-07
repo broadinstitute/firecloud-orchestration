@@ -81,26 +81,26 @@ class ElasticSearchSpec  extends FreeSpec with Assertions {
     }
   }
 
-  "ESObjectType model" - {
-    val modelObject = ESObjectType(Map(
+  "ESNestedType model" - {
+    val modelObject = ESNestedType(Map(
       "foo" -> ESInnerField("string"),
       "bar" -> ESInnerField("integer", include_in_all=Some(false))
     ))
-    val modelJsonStr = """{"properties":{"foo":{"type":"string"},"bar":{"type":"integer","include_in_all":false}}}"""
+    val modelJsonStr = """{"properties":{"foo":{"type":"string"},"bar":{"type":"integer","include_in_all":false}},"type":"nested"}"""
 
     "when unmarshalling from json" - {
       "using parseJson" in {
         val item = modelJsonStr.parseJson.convertTo[ESPropertyFields]
-        assert(item.isInstanceOf[ESObjectType])
+        assert(item.isInstanceOf[ESNestedType])
         assertResult(modelObject) {
-          item.asInstanceOf[ESObjectType]
+          item.asInstanceOf[ESNestedType]
         }
       }
       "using impESPropertyFields" in {
         val item = impESPropertyFields.read(modelJsonStr.parseJson)
-        assert(item.isInstanceOf[ESObjectType])
+        assert(item.isInstanceOf[ESNestedType])
         assertResult(modelObject) {
-          item.asInstanceOf[ESObjectType]
+          item.asInstanceOf[ESNestedType]
         }
       }
     }

@@ -57,7 +57,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
     val addlMappings:Map[String, ESPropertyFields] = Map(
       fieldSuggest -> ESType.suggestField("string"),
       fieldDiscoverableByGroups -> ESInternalType("string"),
-      fieldOntologyParents -> ESObjectType(Map(
+      fieldOntologyParents -> ESNestedType(Map(
         fieldOntologyParentsLabel -> ESInnerField("string"),
         fieldOntologyParentsOrder -> ESInnerField("integer", include_in_all=Some(false))
       ))

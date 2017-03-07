@@ -71,7 +71,7 @@ object ESType extends ESPropertyFields {
 
 }
 
-case class ESObjectType(properties:Map[String,ESInnerField]) extends ESPropertyFields
+case class ESNestedType(properties:Map[String,ESInnerField], `type`:String="nested") extends ESPropertyFields
 
 case class ESInternalType(
   `type`: String,

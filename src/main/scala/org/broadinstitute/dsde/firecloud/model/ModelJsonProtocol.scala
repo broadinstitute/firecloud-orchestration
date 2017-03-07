@@ -104,14 +104,14 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
       case estype: ESType => estype.toJson
       case esinternaltype: ESInternalType => esinternaltype.toJson
       case esinnerfield: ESInnerField => esinnerfield.toJson
-      case esobjectytpe: ESObjectType => esobjectytpe.toJson
+      case esobjectytpe: ESNestedType => esobjectytpe.toJson
       case _ => throw new SerializationException("unexpected ESProperty type")
     }
 
     override def read(json: JsValue): ESPropertyFields = {
       val data = json.asJsObject.fields
       data match {
-        case x if x.contains("properties") => ESObjectTypeFormat.read(json)
+        case x if x.contains("properties") => ESNestedTypeFormat.read(json)
         case x if x.contains("fields") => ESTypeFormat.read(json)
         case _ => ESInternalTypeFormat.read(json)
       }
@@ -197,7 +197,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val ESInnerFieldFormat = jsonFormat6(ESInnerField)
   implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
-  implicit val ESObjectTypeFormat = jsonFormat1(ESObjectType)
+  implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
   implicit val ESTypeFormat = jsonFormat3(ESType.apply)
   implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
