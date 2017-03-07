@@ -25,17 +25,6 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
 
   def adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
 
-  override def sendNotifications(notifications: Seq[Notification]): Future[Try[Unit]] = {
-
-    val notificationPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> addHeader(fireCloudHeader) ~> sendReceive
-    val thurloeNotifications = notifications.map(n => ThurloeNotification(n.userId, n.userEmail, n.replyTo, n.notificationId, n.toMap))
-
-    notificationPipeline(Post(UserService.remotePostNotifyURL, thurloeNotifications)) map {
-      case response if response.status.isSuccess => Success(())
-      case _ => Failure(new FireCloudException(s"Unable to send notifications ${notifications}"))
-    }
-  }
-
   override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
     val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
     pipeline(Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))) map { response =>

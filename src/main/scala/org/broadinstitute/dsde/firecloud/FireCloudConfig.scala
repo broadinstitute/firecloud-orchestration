@@ -70,7 +70,6 @@ object FireCloudConfig {
     val getAll = profile.getString("getAll")
     val getQuery = profile.getString("getQuery")
     val delete = profile.getString("delete")
-    val postNotify = profile.getString("postNotify")
   }
 
   object FireCloud {
@@ -90,14 +89,6 @@ object FireCloudConfig {
     val whitelistBucket = nih.getString("whitelistBucket")
     val whitelistFile = nih.getString("whitelistFile")
     val rawlsGroupName = nih.getString("rawlsGroupName")
-  }
-
-  object Notification {
-    private val thurloe = config.getConfig("thurloe")
-    val activationTemplateId = thurloe.getString("activationTemplateId")
-    val workspaceAddedTemplateId = thurloe.getString("workspaceAddedTemplateId")
-    val workspaceRemovedTemplateId = thurloe.getString("workspaceRemovedTemplateId")
-    val workspaceInvitedTemplateId = thurloe.getString("workspaceInvitedTemplateId")
   }
 
   object ElasticSearch {
