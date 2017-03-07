@@ -21,38 +21,42 @@ trait RestJsonClient {
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
 
-  private def constructPipeline(compressed: Boolean): SendReceive = {
-    if (compressed) {
+  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false): Future[HttpResponse] = {
+    implicit val userInfo:WithAccessToken = null
+    doRequest(req, compressed, false)
+  }
+
+  def userAuthedRequest(req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
+    doRequest(req, compressed, true)
+  }
+
+  private def doRequest(req: HttpRequest, compressed: Boolean, authed: Boolean)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
+    val basePipeline = if (compressed) {
       addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
     } else {
       sendReceive
     }
-  }
-
-  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false): Future[HttpResponse] = {
-    val pipeline = constructPipeline(compressed)
-    pipeline(req)
-  }
-
-  def userAuthedRequest(req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
-    val pipeline = addCredentials(userInfo.accessToken) ~> constructPipeline(compressed)
-    pipeline(req)
+    val finalPipeline = if (authed) {
+      addCredentials(userInfo.accessToken) ~> basePipeline
+    } else {
+      basePipeline
+    }
+    finalPipeline(req)
   }
 
   def authedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
-    requestToObject(true, req, compressed, userInfo)
+    requestToObject(true, req, compressed)
   }
 
   def unAuthedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit unmarshaller: Unmarshaller[T]): Future[T] = {
+    implicit val userInfo:WithAccessToken = null
     requestToObject(false, req, compressed)
   }
 
-  private def requestToObject[T](auth: Boolean, req: HttpRequest, compressed: Boolean = false, userInfo: WithAccessToken = null)(implicit unmarshaller: Unmarshaller[T]): Future[T] = {
+  private def requestToObject[T](auth: Boolean, req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
     val resp = if (auth) {
-      implicit val impUserInfo = userInfo
       userAuthedRequest(req, compressed)
-    }
-    else {
+    } else {
       unAuthedRequest(req, compressed)
     }
 
