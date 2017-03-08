@@ -27,7 +27,7 @@ object TsvTypes {
       case "entity" => ENTITY
       case "update" => UPDATE
       case "membership" => MEMBERSHIP
-      case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "Invalid TSV type, supported types are: membership, entity, update"))
+      case _ => throw new FireCloudException(s"Invalid TSV type '$name', supported types are: membership, entity, update")
     }
   }
 }
