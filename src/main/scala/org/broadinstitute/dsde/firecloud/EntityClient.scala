@@ -198,11 +198,9 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
           } else {
             val strippedTsv = backwardsCompatStripIdSuffixes(tsv, entityType)
             Try(TsvTypes.withName(tsvType)) match {
-              case Success(x) => x match {
-                case TsvTypes.MEMBERSHIP => importMembershipTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-                case TsvTypes.ENTITY => importEntityTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-                case TsvTypes.UPDATE => importUpdateTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-              }
+              case Success(TsvTypes.MEMBERSHIP) => importMembershipTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+              case Success(TsvTypes.ENTITY) => importEntityTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+              case Success(TsvTypes.UPDATE) => importUpdateTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
               case Failure(err) => Future(RequestCompleteWithErrorReport(BadRequest, err.toString))
             }
           }
