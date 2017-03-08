@@ -190,8 +190,15 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    getEffectiveDiscoverGroups(rawlsDAO) map {userGroups =>
-      searchDAO.findDocuments(criteria, userGroups)} map (RequestComplete(_))
+    getEffectiveDiscoverGroups(rawlsDAO) map { userGroups =>
+      val docsFuture = searchDAO.findDocuments(criteria, userGroups)
+      val idsFuture = rawlsDAO.getWorkspaces
+      val searchResults = for {
+        docs <- docsFuture
+        ids <- idsFuture
+      } yield updateAccess(docs, ids)
+      (RequestComplete(searchResults))
+    }
   }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
