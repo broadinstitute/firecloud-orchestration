@@ -129,7 +129,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
         }
       }
       "when omitting a page size" - {
-        "page size defaults to 20" in {
+        "page size defaults to 10" in {
           val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String])
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(0)) {getFromValue(jsonRequest)}
@@ -289,6 +289,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     assertResult(Set("match"), "first element of must clause should be a match") {matchClause.fields.keySet}
     matchClause.fields("match").asJsObject
   }
+
   private def getMustBoolObject(json:JsObject):JsObject = {
     val arr = getMustArray(json)
     val groupBoolClause = arr.elements.tail.head.asJsObject
