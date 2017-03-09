@@ -61,7 +61,10 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     query.must(criteria.searchString match {
       case None => matchAllQuery
       case Some(searchTerm) if searchTerm.trim == "" => matchAllQuery
-      case Some(searchTerm) => matchQuery(searchField, searchTerm).minimumShouldMatch("2<67%")
+      case Some(searchTerm) =>
+        boolQuery
+          .should(matchQuery(searchField, searchTerm).minimumShouldMatch("2<67%"))
+          .should(nestedQuery("parents", matchQuery("parents.label", searchTerm).minimumShouldMatch("3<75%")))
     })
     val groupsQuery = boolQuery
     // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/query-dsl-exists-query.html
