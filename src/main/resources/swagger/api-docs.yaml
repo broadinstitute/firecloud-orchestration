@@ -1077,6 +1077,29 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/version/executionEngine:
+    get:
+      tags:
+        - Version
+      operationId: executionEngineVersion
+      summary: Returns the currently deployed version of FireCloud's execution engine
+      responses:
+        200:
+          description: OK
+          schema:
+            {
+              "properties": {
+                "cromwell": {
+                  type: "string"
+                }
+              }
+            }
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
   /api/workspaces:
     get:
       tags:
@@ -2429,29 +2452,6 @@ paths:
       responses:
         200:
           description: OK
-
-  /api/version/executionEngine:
-    get:
-      tags:
-        - Version
-      operationId: executionEngineVersion
-      summary: Returns the currently deployed version of FireCloud's execution engine
-      responses:
-        200:
-          description: OK
-          schema:
-            {
-              "properties": {
-                "cromwell": {
-                  type: "string"
-                }
-              }
-            }
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
 
 ##########################################################################################
 ## PARAMETERS

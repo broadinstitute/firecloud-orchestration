@@ -56,6 +56,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val tsvImportPath = workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
+  private final val executionEngineVersionPath = FireCloudConfig.Rawls.authPrefix + "/version/executionEngine"
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
@@ -426,7 +427,16 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
     }
-  }
+
+    "Passthrough tests on the /version/executionEngine path" - {
+        "OK status is returned for GET" in {
+          stubRawlsService(HttpMethods.GET, executionEngineVersionPath, OK)
+          Get(executionEngineVersionPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(OK)
+          }
+        }
+      }
+    }
 
   "Workspace Non-passthrough Tests" - {
     "POST on /workspaces with 'not protected' workspace request sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
