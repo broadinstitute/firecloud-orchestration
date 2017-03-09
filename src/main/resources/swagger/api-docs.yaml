@@ -2430,7 +2430,7 @@ paths:
         200:
           description: OK
 
-  /version/executionEngine:
+  /api/version/executionEngine:
     get:
       tags:
         - Version
@@ -2447,6 +2447,11 @@ paths:
                 }
               }
             }
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
 
 ##########################################################################################
 ## PARAMETERS
