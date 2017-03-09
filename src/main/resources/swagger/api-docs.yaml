@@ -2430,6 +2430,24 @@ paths:
         200:
           description: OK
 
+  /version/executionEngine:
+    get:
+      tags:
+        - Version
+      operationId: executionEngineVersion
+      summary: Returns the currently deployed version of FireCloud's execution engine
+      responses:
+        200:
+          description: OK
+          schema:
+            {
+              "properties": {
+                "cromwell": {
+                  type: "string"
+                }
+              }
+            }
+
 ##########################################################################################
 ## PARAMETERS
 ##########################################################################################

@@ -207,6 +207,11 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             }
           }
         }
+      } ~
+      path("version" / "executionEngine") {
+        requireUserInfo() { _ =>
+          passthrough(FireCloudConfig.Rawls.executionEngineVersionUrl, HttpMethods.GET)
+        }
       }
     }
 }
