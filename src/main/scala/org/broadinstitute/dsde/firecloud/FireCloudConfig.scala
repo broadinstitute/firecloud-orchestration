@@ -52,6 +52,8 @@ object FireCloudConfig {
     val overwriteGroupMembershipPath = workspace.getString("overwriteGroupMembershipPath")
     val submissionQueueStatusPath = workspace.getString("submissionQueueStatusPath")
     val submissionQueueStatusUrl = authUrl + submissionQueueStatusPath
+    val executionEngineVersionPath = workspace.getString("executionEngineVersionPath")
+    val executionEngineVersionUrl = authUrl + executionEngineVersionPath
 
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
