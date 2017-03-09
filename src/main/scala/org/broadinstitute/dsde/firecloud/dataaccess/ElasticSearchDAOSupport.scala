@@ -44,14 +44,25 @@ trait ElasticSearchDAOSupport extends LazyLogging {
   }
 
   def makeMapping(attributeJson: String): String = {
+    // generate mappings from the Library schema file
     val definition = attributeJson.parseJson.convertTo[AttributeDefinition]
     val attributeDetailMap = definition.properties filter(_._2.indexable.getOrElse(true)) map {
       case (label: String, detail: AttributeDetail) => createType(label, detail)
     }
-    // add the magic "_suggest" property that we'll use for autocomplete
-    val props = attributeDetailMap +
-      (fieldSuggest -> ESType.suggestField("string"),
-        fieldDiscoverableByGroups -> new ESInternalType("string"))
+    /* add the additional mappings that aren't tracked in the schema file:
+     *   - _suggest property for autocomplete
+     *   - _discoverableByGroups property to hold discover-mode permissions
+     *   - parents.order and parents.label for ontology-aware search
+     */
+    val addlMappings:Map[String, ESPropertyFields] = Map(
+      fieldSuggest -> ESType.suggestField("string"),
+      fieldDiscoverableByGroups -> ESInternalType("string"),
+      fieldOntologyParents -> ESNestedType(Map(
+        fieldOntologyParentsLabel -> ESInnerField("string"),
+        fieldOntologyParentsOrder -> ESInnerField("integer", include_in_all=Some(false))
+      ))
+    )
+    val props = attributeDetailMap ++ addlMappings
     ESDatasetProperty(props).toJson.prettyPrint
   }
 

@@ -10,16 +10,19 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMem
 import org.broadinstitute.dsde.firecloud.model._
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
-import org.scalatest.FreeSpec
+import org.scalatest.FreeSpecLike
 import spray.json.{JsObject, _}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.joda.time.DateTime
 
 import scala.collection.JavaConversions._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.util.Try
 
-class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
+class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
   def toName(s:String) = AttributeName.fromDelimitedName(s)
 
   val libraryAttributePredicate = (k: AttributeName) => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name
@@ -90,6 +93,8 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
     """.stripMargin.parseJson.asJsObject
   val DULfields = (testLibraryMetadataJsObject.fields-"library:orsp") ++ DULAdditionalJsObject.fields
   val testLibraryDULMetadata = testLibraryMetadataJsObject.copy(DULfields).compactPrint
+
+  val dur = Duration(2, MINUTES)
 
   "LibraryService" - {
     "when new attrs are empty" - {
@@ -226,7 +231,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -246,7 +251,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -262,7 +267,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -277,7 +282,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -298,7 +303,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -318,7 +323,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -340,7 +345,53 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
+        }
+      }
+    }
+    "with diseaseOntologyID attribute" - {
+      "should generate indexable document with parent info when DOID valid" in {
+        val w = testWorkspace.copy(attributes = Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220")
+        ))
+        val parentData = ontologyDao.data("DOID_9220").head.parents.get.map(_.toESTermParent)
+        val expected = Document(testUUID.toString, Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parentData.toJson.compactPrint)
+        ))
+        assertResult(expected) {
+          Await.result(indexableDocument(w, ontologyDao), dur)
+        }
+      }
+      "should generate indexable document with no parent info when DOID has no parents" in {
+        val w = testWorkspace.copy(attributes = Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_4")
+        ))
+        val expected = Document(testUUID.toString, Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_4"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          Await.result(indexableDocument(w, ontologyDao), dur)
+        }
+      }
+      "should generate indexable document with no parent info when DOID not valid" in {
+        val w = testWorkspace.copy(attributes = Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_99999")
+        ))
+        val expected = Document(testUUID.toString, Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_99999"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }

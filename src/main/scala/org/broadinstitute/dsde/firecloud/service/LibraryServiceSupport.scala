@@ -1,20 +1,23 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.rawls.model.Attributable._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
-import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.everit.json.schema.{Schema, ValidationException}
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.{JSONObject, JSONTokener}
 import org.parboiled.common.FileUtils
 
 import scala.collection.JavaConversions._
-import spray.json.{JsBoolean, JsObject, JsString}
+import spray.json._
+import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
 
 /**
   * Created by davidan on 10/2/16.
@@ -26,7 +29,7 @@ trait LibraryServiceSupport {
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  def indexableDocument(workspace: Workspace): Document = {
+  def indexableDocument(workspace: Workspace, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Document] = {
     val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {
@@ -39,7 +42,30 @@ trait LibraryServiceSupport {
       AttributeName.withDefaultNS("namespace") -> AttributeString(workspace.namespace),
       AttributeName.withDefaultNS("workspaceId") -> AttributeString(workspace.workspaceId)
     )
-    Document(workspace.workspaceId, attrfields ++ idfields)
+    val fields = attrfields ++ idfields
+
+    workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
+      case Some(id: AttributeString) =>
+        lookupParentNodes(id.value, ontologyDAO) map {parents =>
+          val parentFields = if (parents.nonEmpty) {
+            fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parents.map(_.toESTermParent).toJson.compactPrint))
+          } else {
+            fields
+          }
+          Document(workspace.workspaceId, parentFields)
+        }
+      case _ => Future(Document(workspace.workspaceId, fields))
+    }
+  }
+
+  // wraps the ontologyDAO call, handles Nones/nulls, and returns a [Future[Seq].
+  // the Seq is populated if the leaf node exists and has parents; Seq is empty otherwise.
+  def lookupParentNodes(leafId:String, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext):Future[Seq[TermParent]] = {
+    ontologyDAO.search(leafId) map {
+      case Some(terms) if terms.nonEmpty =>
+        terms.head.parents.getOrElse(Seq.empty)
+      case None => Seq.empty
+    }
   }
 
   def defaultSchema: String = FileUtils.readAllTextFromResource(LibraryService.schemaLocation)

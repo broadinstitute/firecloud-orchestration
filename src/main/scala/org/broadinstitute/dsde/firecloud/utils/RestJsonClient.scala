@@ -21,17 +21,46 @@ trait RestJsonClient {
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
 
-  def userAuthedRequest(req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
-    val pipeline = if (compressed) {
-      addCredentials(userInfo.accessToken) ~> addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
-    } else {
-      addCredentials(userInfo.accessToken) ~> sendReceive
-    }
-    pipeline(req)
+  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false): Future[HttpResponse] = {
+    implicit val userInfo:WithAccessToken = null
+    doRequest(req, compressed, false)
   }
 
-  def requestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
-    userAuthedRequest( req, compressed ) map {response =>
+  def userAuthedRequest(req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
+    doRequest(req, compressed, true)
+  }
+
+  private def doRequest(req: HttpRequest, compressed: Boolean, authed: Boolean)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
+    val basePipeline = if (compressed) {
+      addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
+    } else {
+      sendReceive
+    }
+    val finalPipeline = if (authed) {
+      addCredentials(userInfo.accessToken) ~> basePipeline
+    } else {
+      basePipeline
+    }
+    finalPipeline(req)
+  }
+
+  def authedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
+    requestToObject(true, req, compressed)
+  }
+
+  def unAuthedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit unmarshaller: Unmarshaller[T]): Future[T] = {
+    implicit val userInfo:WithAccessToken = null
+    requestToObject(false, req, compressed)
+  }
+
+  private def requestToObject[T](auth: Boolean, req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
+    val resp = if (auth) {
+      userAuthedRequest(req, compressed)
+    } else {
+      unAuthedRequest(req, compressed)
+    }
+
+    resp map { response =>
       response.status match {
         case s if s.isSuccess =>
           response.entity.as[T] match {

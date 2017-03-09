@@ -70,23 +70,23 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] =
-    requestToObject[Seq[String]]( Get(rawlsGroupsForUserUrl) )
+    authedRequestToObject[Seq[String]]( Get(rawlsGroupsForUserUrl) )
 
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] =
-    requestToObject[BucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
+    authedRequestToObject[BucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
 
   override def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]] =
-    requestToObject[Seq[WorkspaceListResponse]] ( Get(rawlsWorkpacesUrl))
+    authedRequestToObject[Seq[WorkspaceListResponse]] ( Get(rawlsWorkpacesUrl))
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
-    requestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
+    authedRequestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
-    requestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
+    authedRequestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
 
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate],inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] =
-    requestToObject[WorkspaceACLUpdateResponseList]( Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates) )
+    authedRequestToObject[WorkspaceACLUpdateResponseList]( Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates) )
 
   override def getAllLibraryPublishedWorkspaces: Future[Seq[Workspace]] = {
     val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
@@ -105,7 +105,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[Entity]] = {
-    requestToObject[Seq[Entity]](Get(rawlsEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType)), true)
+    authedRequestToObject[Seq[Entity]](Get(rawlsEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType)), true)
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)

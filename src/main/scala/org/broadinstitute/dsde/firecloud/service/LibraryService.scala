@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
@@ -44,11 +44,15 @@ object LibraryService {
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO)
+    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO, app.ontologyDAO)
 }
 
 
-class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDAO, val searchDAO: SearchDAO)(implicit protected val executionContext: ExecutionContext) extends Actor
+class LibraryService (protected val argUserInfo: UserInfo,
+                      val rawlsDAO: RawlsDAO,
+                      val searchDAO: SearchDAO,
+                      val ontologyDAO: OntologyDAO)
+                     (implicit protected val executionContext: ExecutionContext) extends Actor
   with LibraryServiceSupport with AttributeSupport with RoleSupport with SprayJsonSupport with LazyLogging {
 
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -164,7 +168,7 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def publishDocument(ws: Workspace): Unit = {
-    searchDAO.indexDocument(indexableDocument(ws))
+    indexableDocument(ws, ontologyDAO) map { searchDAO.indexDocument }
   }
 
   def removeDocument(ws: Workspace): Unit = {
@@ -172,19 +176,20 @@ class LibraryService (protected val argUserInfo: UserInfo, val rawlsDAO: RawlsDA
   }
 
   def indexAll: Future[PerRequestMessage] = {
-    rawlsDAO.getAllLibraryPublishedWorkspaces map {workspaces =>
+    rawlsDAO.getAllLibraryPublishedWorkspaces flatMap { workspaces: Seq[Workspace] =>
       searchDAO.recreateIndex()
       if (workspaces.isEmpty)
-        RequestComplete(NoContent)
+        Future(RequestComplete(NoContent))
       else {
-        val toIndex:Seq[Document] = workspaces.map {workspace => indexableDocument(workspace)}
-        val bi = searchDAO.bulkIndex(toIndex)
-        val statusCode = if (bi.hasFailures) {
-          InternalServerError
-        } else {
-          OK
+        val toIndex: Future[Seq[Document]] = Future.sequence(workspaces map { indexableDocument(_, ontologyDAO) })
+        toIndex map { documents =>
+          val indexedDocuments = searchDAO.bulkIndex(documents)
+          if (indexedDocuments.hasFailures) {
+            RequestComplete(InternalServerError, indexedDocuments)
+          } else {
+            RequestComplete(OK, indexedDocuments)
+          }
         }
-        RequestComplete(statusCode, bi)
       }
     }
   }

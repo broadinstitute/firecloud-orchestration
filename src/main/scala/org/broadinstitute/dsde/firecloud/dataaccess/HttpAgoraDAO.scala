@@ -21,9 +21,9 @@ class HttpAgoraDAO(agoraUrl: String)(implicit val system: ActorSystem, implicit 
   }
 
   override def getNamespacePermissions(ns: String, entity: String)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] =
-    requestToObject[List[AgoraPermission]]( Get(getNamespaceUrl(ns, entity)) )
+    authedRequestToObject[List[AgoraPermission]]( Get(getNamespaceUrl(ns, entity)) )
 
   override def postNamespacePermissions(ns: String, entity: String, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] =
-    requestToObject[List[AgoraPermission]]( Post(getNamespaceUrl(ns, entity), perms) )
+    authedRequestToObject[List[AgoraPermission]]( Post(getNamespaceUrl(ns, entity), perms) )
 
 }

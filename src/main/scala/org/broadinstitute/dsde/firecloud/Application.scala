@@ -10,6 +10,7 @@ class Application (val agoraDAO: AgoraDAO,
                    val rawlsDAO: RawlsDAO,
                    val searchDAO: SearchDAO,
                    val thurloeDAO: ThurloeDAO,
-                   val googleServicesDAO: GoogleServicesDAO) {
+                   val googleServicesDAO: GoogleServicesDAO,
+                   val ontologyDAO: OntologyDAO) {
 
 }

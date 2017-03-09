@@ -1,10 +1,10 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.rawls.model._
-
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermResource, TermParent, ESTermParent}
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
@@ -104,15 +104,16 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
       case estype: ESType => estype.toJson
       case esinternaltype: ESInternalType => esinternaltype.toJson
       case esinnerfield: ESInnerField => esinnerfield.toJson
+      case esnestedtype: ESNestedType => esnestedtype.toJson
       case _ => throw new SerializationException("unexpected ESProperty type")
     }
 
     override def read(json: JsValue): ESPropertyFields = {
       val data = json.asJsObject.fields
-      if (data.contains("fields")) {
-        ESTypeFormat.read(json)
-      } else {
-        ESInternalTypeFormat.read(json)
+      data match {
+        case x if x.contains("properties") => ESNestedTypeFormat.read(json)
+        case x if x.contains("fields") => ESTypeFormat.read(json)
+        case _ => ESInternalTypeFormat.read(json)
       }
     }
   }
@@ -196,6 +197,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val ESInnerFieldFormat = jsonFormat6(ESInnerField)
   implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
+  implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
   implicit val ESTypeFormat = jsonFormat3(ESType.apply)
   implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
@@ -204,6 +206,10 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impLibraryAggregationResponse = jsonFormat2(LibraryAggregationResponse)
   implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
   implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
+
+  implicit val impOntologyTermParent = jsonFormat5(TermParent)
+  implicit val impOntologyTermResource = jsonFormat7(TermResource)
+  implicit val impOntologyESTermParent = jsonFormat2(ESTermParent)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
