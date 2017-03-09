@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
-import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.everit.json.schema.{Schema, ValidationException}
 import org.everit.json.schema.loader.SchemaLoader
@@ -17,6 +17,7 @@ import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
 
 /**
   * Created by davidan on 10/2/16.

@@ -76,7 +76,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     authedRequestToObject[BucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
 
   override def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]] =
-    requestToObject[Seq[WorkspaceListResponse]] ( Get(rawlsWorkpacesUrl))
+    authedRequestToObject[Seq[WorkspaceListResponse]] ( Get(rawlsWorkpacesUrl))
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
     authedRequestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
