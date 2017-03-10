@@ -160,6 +160,46 @@ class MockOntologyDAO extends OntologyDAO {
         )
       )))),
 
+    // fetal alcohol spectrum disorder (has multiple parents at the same level)
+    "DOID_0050696" -> List(TermResource(
+      id="http://purl.obolibrary.org/obo/DOID_0050696",
+      ontology="Disease",
+      usable=true,
+      label="fetal alcohol spectrum disorder",
+      definition=Some("A specific developmental disorder and physical disorder that is characterized by physical, behavioral and learning birth defects resulting from maternal ingestion of alcohol during pregnancy."),
+      parents=Some(List(
+        TermParent(
+          id="http://purl.obolibrary.org/obo/DOID_0080015",
+          order=1,
+          label="physical disorder",
+          definition=Some("A disease that has_material_basis_in a genetic abnormality, error with embryonic development, infection or compromised intrauterine environment.")
+        ),
+        TermParent(
+          id="http://purl.obolibrary.org/obo/DOID_0080015",
+          order=1,
+          label="specific developmental disorder",
+          definition=Some("A developmental disorder of mental health that categorizes specific learning disabilities and developmental disorders affecting coordination.")
+        ),
+        TermParent(
+          id="http://purl.obolibrary.org/obo/DOID_0060083",
+          order=2,
+          label="developmental disorder of mental health",
+          definition=Some("A disease of mental health that occur during a child's developmental period between birth and age 18 resulting in retarding of the child's psychological or physical development.")
+        ),
+        TermParent(
+          id="http://purl.obolibrary.org/obo/DOID_150",
+          order=3,
+          label="disease of mental health",
+          definition=Some("A disease that involves a psychological or behavioral pattern generally associated with subjective distress or disability that occurs in an individual, and which are not a part of normal development or culture.")
+        ),
+        TermParent(
+          id="http://purl.obolibrary.org/obo/DOID_4",
+          order=4,
+          label="disease",
+          definition=Some("A disease is a disposition (i) to undergo pathological processes that (ii) exists in an organism because of one or more disorders in that organism.")
+        )
+      )))),
+
     // disease, the root of the ontology tree
     "DOID_4" -> List(TermResource(
       id="http://purl.obolibrary.org/obo/DOID_4",

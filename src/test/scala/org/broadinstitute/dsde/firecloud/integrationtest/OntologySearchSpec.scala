@@ -27,6 +27,7 @@ class OntologySearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll w
     E_4325    : Ebola hemorrhagic fever < viral infectious disease < disease by infectious agent < disease
     L_1240    : leukemia < hematologic cancer < immune system cancer < organ system cancer < cancer < disease of cellular proliferation < disease
     HC_2531   : hematologic cancer < immune system cancer < organ system cancer < cancer < disease of cellular proliferation < disease
+    FASD_0050696: fetal alcohol spectrum disorder < (physical disorder|specific developmental disorder) < developmental disorder of mental health < disease of mental health < disease
     D_4       : Disease
     None      : no doid
    */
@@ -40,19 +41,19 @@ class OntologySearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll w
     "search for 'disease'" - {
       "should find all datasets with an ontology node" in {
         val searchResponse = searchFor("disease")
-        assertResult(5) {searchResponse.total}
+        assertResult(6) {searchResponse.total}
         assert(searchResponse.results.forall(js =>
           js.asJsObject.fields.contains("library:diseaseOntologyID")))
       }
     }
     "search for 'disease of mental health'" - {
-      "should find a dataset tagged to central sleep apnea, but not leukemia" in {
+      "should find datasets tagged to central sleep apnea and fetal alcohol spectrum disorder, but not leukemia" in {
         // leukemia has a parent of "disease of cellular proliferation". We won't match
         // that text because 1) "of" is a stop word, and 2) we need to match 3<75% tokens
         val searchResponse = searchFor("disease of mental health")
-        assertResult(1) {searchResponse.total}
+        assertResult(2) {searchResponse.total}
         validateResultNames(
-          Set("CSA_9220"),
+          Set("CSA_9220","FASD_0050696"),
           searchResponse
         )
       }
@@ -87,6 +88,38 @@ class OntologySearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll w
         )
       }
     }
+    "searching against an ontology node that has multiple branches in its DAG" - {
+      "should match against the leaf node" in {
+        val searchResponse = searchFor("fetal alcohol spectrum disorder")
+        assertResult(1) {searchResponse.total}
+        validateResultNames(
+          Set("FASD_0050696"),
+          searchResponse
+        )
+      }
+      "should match against either branch" in {
+        val searchResponse = searchFor("physical disorder")
+        assertResult(1) {searchResponse.total}
+        validateResultNames(
+          Set("FASD_0050696"),
+          searchResponse
+        )
+        val searchResponse2 = searchFor("specific developmental disorder")
+        assertResult(1) {searchResponse2.total}
+        validateResultNames(
+          Set("FASD_0050696"),
+          searchResponse2
+        )
+      }
+      "should match against parents above the branch" in {
+        val searchResponse = searchFor("developmental disorder of mental health")
+        assertResult(1) {searchResponse.total}
+        validateResultNames(
+          Set("FASD_0050696"),
+          searchResponse
+        )
+      }
+    }
     "searches that include parents" - {
       "should match minimum of 3<75% terms" in {
         val searchResponse = searchFor("disease cellular proliferation single origin coffee")
@@ -98,6 +131,10 @@ class OntologySearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll w
       }
       "should not span leaf and parents" in {
         val searchResponse = searchFor("ebola virus disease")
+        assertResult(0) {searchResponse.total}
+      }
+      "should not match on parent descriptions (only labels)" in {
+        val searchResponse = searchFor("undergo pathological processes")
         assertResult(0) {searchResponse.total}
       }
     }

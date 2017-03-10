@@ -15,6 +15,7 @@ object OntologySearchTestFixtures {
     ("E_4325", "Af iceland squid cold-pressed", 111, Some("DOID_4325")), // ebola
     ("L_1240", "3 wolf moon vape try-hard knausgaard", 222, Some("DOID_1240")), // leukemia
     ("HC_2531", "wolf freegan irony lomo", 222, Some("DOID_2531")), // hematologic cancer
+    ("FASD_0050696", "gastropub tattooed hammock mustache", 333, Some("DOID_0050696")), // fetal alcohol spectrum disorder
     ("D_4", "Neutra selvage chicharrones, prism taxidermy cray squid", 222, Some("DOID_4")), // disease
     ("None", "Health of activated charcoal portland", 222, None) // no doid
   )
