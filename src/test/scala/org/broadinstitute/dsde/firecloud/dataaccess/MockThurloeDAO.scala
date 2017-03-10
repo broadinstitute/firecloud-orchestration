@@ -20,79 +20,37 @@ class MockThurloeDAO extends ThurloeDAO {
   val normalUserId = "normal-user"
   val linkedAndInvalidExpiredDate = "linked-user-invalid-expire-date"
 
+  val baseProfile = Set(
+    FireCloudKeyValue(Some("firstName"), Some("Bobby")),
+    FireCloudKeyValue(Some("lastName"), Some("Testerson")),
+    FireCloudKeyValue(Some("title"), Some("Mr.")),
+    FireCloudKeyValue(Some("contactEmail"), Some("bobby.testerson@example.com")),
+    FireCloudKeyValue(Some("institute"), Some("Broad")),
+    FireCloudKeyValue(Some("institutionalProgram"), Some("Something")),
+    FireCloudKeyValue(Some("programLocationCity"), Some("Cambridge")),
+    FireCloudKeyValue(Some("programLocationState"), Some("MA")),
+    FireCloudKeyValue(Some("programLocationCountry"), Some("USA")),
+    FireCloudKeyValue(Some("pi"), Some("Abby Testerson")),
+    FireCloudKeyValue(Some("nonProfitStatus"), Some("true"))
+  )
+
   var mockKeyValues: Map[String, Set[FireCloudKeyValue]] =
     Map(
-      linkedUserId -> Set(
-        FireCloudKeyValue(Some("firstName"), Some("Bobby")),
-        FireCloudKeyValue(Some("lastName"), Some("Testerson")),
-        FireCloudKeyValue(Some("title"), Some("Mr.")),
-        FireCloudKeyValue(Some("contactEmail"), Some("bobby.testerson@example.com")),
-        FireCloudKeyValue(Some("institute"), Some("Broad")),
-        FireCloudKeyValue(Some("institutionalProgram"), Some("Something")),
-        FireCloudKeyValue(Some("programLocationCity"), Some("Cambridge")),
-        FireCloudKeyValue(Some("programLocationState"), Some("MA")),
-        FireCloudKeyValue(Some("programLocationCountry"), Some("USA")),
-        FireCloudKeyValue(Some("pi"), Some("Abby Testerson")),
-        FireCloudKeyValue(Some("nonProfitStatus"), Some("true")),
+      linkedUserId -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
-        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString))
+        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
       ),
-      linkedAndNoExpiredUserId -> Set(
-        FireCloudKeyValue(Some("firstName"), Some("Caleb")),
-        FireCloudKeyValue(Some("lastName"), Some("Testerson")),
-        FireCloudKeyValue(Some("title"), Some("Mr.")),
-        FireCloudKeyValue(Some("contactEmail"), Some("caleb.testerson@example.com")),
-        FireCloudKeyValue(Some("institute"), Some("Broad")),
-        FireCloudKeyValue(Some("institutionalProgram"), Some("Something")),
-        FireCloudKeyValue(Some("programLocationCity"), Some("Cambridge")),
-        FireCloudKeyValue(Some("programLocationState"), Some("MA")),
-        FireCloudKeyValue(Some("programLocationCountry"), Some("USA")),
-        FireCloudKeyValue(Some("pi"), Some("Abby Testerson")),
-        FireCloudKeyValue(Some("nonProfitStatus"), Some("true")),
-        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user"))
+      linkedAndNoExpiredUserId -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user")))
       ),
-      linkedButExpiredUserId -> Set(
-        FireCloudKeyValue(Some("firstName"), Some("Realmona")),
-        FireCloudKeyValue(Some("lastName"), Some("Testerson")),
-        FireCloudKeyValue(Some("title"), Some("Ms.")),
-        FireCloudKeyValue(Some("contactEmail"), Some("realmona.testerson@example.com")),
-        FireCloudKeyValue(Some("institute"), Some("Broad")),
-        FireCloudKeyValue(Some("institutionalProgram"), Some("Something")),
-        FireCloudKeyValue(Some("programLocationCity"), Some("Cambridge")),
-        FireCloudKeyValue(Some("programLocationState"), Some("MA")),
-        FireCloudKeyValue(Some("programLocationCountry"), Some("USA")),
-        FireCloudKeyValue(Some("pi"), Some("Abby Testerson")),
-        FireCloudKeyValue(Some("nonProfitStatus"), Some("true")),
+      linkedButExpiredUserId -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
-        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString))
+        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
       ),
-      normalUserId -> Set(
-        FireCloudKeyValue(Some("firstName"), Some("Abby")),
-        FireCloudKeyValue(Some("lastName"), Some("Testerson")),
-        FireCloudKeyValue(Some("title"), Some("Mrs.")),
-        FireCloudKeyValue(Some("contactEmail"), Some("abby.testerson@example.com")),
-        FireCloudKeyValue(Some("institute"), Some("Broad")),
-        FireCloudKeyValue(Some("institutionalProgram"), Some("Something")),
-        FireCloudKeyValue(Some("programLocationCity"), Some("Cambridge")),
-        FireCloudKeyValue(Some("programLocationState"), Some("MA")),
-        FireCloudKeyValue(Some("programLocationCountry"), Some("USA")),
-        FireCloudKeyValue(Some("pi"), Some("Myself")),
-        FireCloudKeyValue(Some("nonProfitStatus"), Some("true"))
-      ),
-      linkedAndInvalidExpiredDate -> Set(
-        FireCloudKeyValue(Some("firstName"), Some("RealmonaJr")),
-        FireCloudKeyValue(Some("lastName"), Some("Testerson")),
-        FireCloudKeyValue(Some("title"), Some("Ms.")),
-        FireCloudKeyValue(Some("contactEmail"), Some("realmonajr.testerson@example.com")),
-        FireCloudKeyValue(Some("institute"), Some("Broad")),
-        FireCloudKeyValue(Some("institutionalProgram"), Some("Something")),
-        FireCloudKeyValue(Some("programLocationCity"), Some("Cambridge")),
-        FireCloudKeyValue(Some("programLocationState"), Some("MA")),
-        FireCloudKeyValue(Some("programLocationCountry"), Some("USA")),
-        FireCloudKeyValue(Some("pi"), Some("Abby Testerson")),
-        FireCloudKeyValue(Some("nonProfitStatus"), Some("true")),
+      normalUserId -> baseProfile,
+      linkedAndInvalidExpiredDate -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
-        FireCloudKeyValue(Some("linkExpireTime"), Some("expiration-dates-cant-be-words!"))
+        FireCloudKeyValue(Some("linkExpireTime"), Some("expiration-dates-cant-be-words!")))
       )
     )
 

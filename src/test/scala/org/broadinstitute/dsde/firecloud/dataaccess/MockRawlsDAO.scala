@@ -132,7 +132,7 @@ class MockRawlsDAO  extends RawlsDAO {
       case "publishedreader" => Future(WorkspaceResponse(WorkspaceAccessLevels.Read, canShare = false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "publishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "unpublishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
-      case _ => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case _ => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
     }
   }
 

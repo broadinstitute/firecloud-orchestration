@@ -3306,8 +3306,6 @@ definitions:
       - linkedNihUsername
     type: object
     properties:
-      loginRequired:
-        type: boolean
       linkedNihUsername:
         type: string
       isDbgapAuthorized:
@@ -3316,12 +3314,6 @@ definitions:
         type: integer
         format: int64
         default: 0
-      secondsSinceLastLink:
-        type: integer
-        format: int64
-        default: 0
-      descriptionSinceLastLink:
-        type: string
 
   Profile:
     type: object
