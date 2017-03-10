@@ -195,7 +195,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat5(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
-  implicit val ESInnerFieldFormat = jsonFormat6(ESInnerField)
+  implicit val ESInnerFieldFormat = jsonFormat7(ESInnerField)
   implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
   implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
   implicit val ESTypeFormat = jsonFormat3(ESType.apply)

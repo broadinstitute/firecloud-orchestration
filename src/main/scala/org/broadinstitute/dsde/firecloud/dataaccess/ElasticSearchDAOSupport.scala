@@ -58,7 +58,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
       fieldSuggest -> ESType.suggestField("string"),
       fieldDiscoverableByGroups -> ESInternalType("string"),
       fieldOntologyParents -> ESNestedType(Map(
-        fieldOntologyParentsLabel -> ESInnerField("string"),
+        fieldOntologyParentsLabel -> ESInnerField("string", include_in_all=Some(false), copy_to=Some(ElasticSearch.fieldSuggest)),
         fieldOntologyParentsOrder -> ESInnerField("integer", include_in_all=Some(false))
       ))
     )

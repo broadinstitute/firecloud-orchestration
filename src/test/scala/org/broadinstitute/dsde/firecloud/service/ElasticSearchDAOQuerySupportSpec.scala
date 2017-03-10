@@ -256,14 +256,31 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
   }
 
   def validateSearchTerm(json:JsObject, expectedTerm:String, expectedField:String) = {
-    val matchClause = getMustMatchObject(json)
-    assertResult(Set(expectedField), s"search clause should execute against only $expectedField") {matchClause.fields.keySet}
-    val searchCriteria = matchClause.fields(expectedField).asJsObject
+    val shouldArray = getTextSearchShouldArray(json)
+    assertResult(2) {shouldArray.elements.size}
+
+    val allSearchMatch = shouldArray.elements.head.asJsObject
+    validateSearchCriteria(allSearchMatch, expectedTerm, expectedField, "2<67%")
+
+    val parentSearchNested = shouldArray.elements.tail.head.asJsObject
+    assertResult(Set("nested"), s"search on parents should be a nested query") {parentSearchNested.fields.keySet}
+    val parentSearchNestedQuery = parentSearchNested.fields("nested").asJsObject
+    assertResult(Set("query","path"), "nested parents query should be a query with path") {parentSearchNestedQuery.fields.keySet}
+    assertResult("parents", "nested parents query should have a path of 'parents'") {parentSearchNestedQuery.fields("path").asInstanceOf[JsString].value}
+    val parentSearchMatch = parentSearchNestedQuery.fields("query").asJsObject
+    validateSearchCriteria(parentSearchMatch, expectedTerm, "parents.label", "3<75%")
+  }
+
+  private def validateSearchCriteria(json:JsObject, expectedTerm:String, expectedField:String, expectedMinMatch:String) = {
+
+    assertResult(Set("match"), s"search on $expectedField should be a match clause") {json.fields.keySet}
+    val search = json.fields("match").asJsObject
+    assertResult(Set(expectedField), s"search clause should execute against only $expectedField") {search.fields.keySet}
+    val searchCriteria = search.fields(expectedField).asJsObject
     assertResult(Set("query","type","minimum_should_match"), s"search criteria should have 'query','type','minimum_should_match'") {searchCriteria.fields.keySet}
     assertResult(expectedTerm) {searchCriteria.fields("query").asInstanceOf[JsString].value}
     assertResult("boolean") {searchCriteria.fields("type").asInstanceOf[JsString].value}
-    assertResult("2<67%") {searchCriteria.fields("minimum_should_match").asInstanceOf[JsString].value}
-
+    assertResult(expectedMinMatch) {searchCriteria.fields("minimum_should_match").asInstanceOf[JsString].value}
   }
 
   private def getMustArray(json:JsObject):JsArray = {
@@ -283,11 +300,17 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     }
   }
 
-  private def getMustMatchObject(json:JsObject):JsObject = {
+  private def getTextSearchShouldArray(json:JsObject):JsArray = {
     val arr = getMustArray(json)
-    val matchClause = arr.elements.head.asJsObject
-    assertResult(Set("match"), "first element of must clause should be a match") {matchClause.fields.keySet}
-    matchClause.fields("match").asJsObject
+    val searchClause = arr.elements.head.asJsObject
+    assertResult(Set("bool"), "first element of text search clause should be a bool") {searchClause.fields.keySet}
+    val boolClause = searchClause.fields("bool").asJsObject
+    assertResult(Set("should"), "first element of text search bool clause should be a should") {boolClause.fields.keySet}
+    val shouldArray = boolClause.fields("should") match {
+      case arr:JsArray => arr
+      case _ => fail("text search should clause should be an array")
+    }
+    shouldArray
   }
 
   private def getMustBoolObject(json:JsObject):JsObject = {

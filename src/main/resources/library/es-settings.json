@@ -13,6 +13,10 @@
       "index_common_grams" : {
         "type": "common_grams",
         "common_words": ["tcga", "openaccess", "controlledaccess"]
+      },
+      "english_stop": {
+        "type":       "stop",
+        "stopwords":  "_english_"
       }
     },
     "analyzer": {
@@ -28,6 +32,7 @@
         "tokenizer":  "standard",
         "filter": [
           "lowercase",
+          "english_stop",
           "index_delimiter",
           "index_common_grams"
         ]

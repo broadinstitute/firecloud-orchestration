@@ -2,19 +2,9 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
-import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
-import spray.json.DefaultJsonProtocol._
-import spray.json.JsValue
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
-
-class TextSearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
-
-  val dur = Duration(2, MINUTES)
-
+class TextSearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with SearchResultValidation {
 
   override def beforeAll = {
     // use re-create here, since instantiating the DAO will create it in the first place
@@ -107,30 +97,5 @@ class TextSearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll with 
         )
       }
     }
-
   }
-
-  private def searchFor(txt:String) = {
-    val criteria = emptyCriteria.copy(searchString = Some(txt))
-    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String]), dur)
-  }
-
-  private def validateResultNames(expectedNames:Set[String], response:LibrarySearchResponse) = {
-    validateResultField("library:datasetName", expectedNames, response)
-  }
-
-  private def validateResultIndications(expectedIndications:Set[String], response:LibrarySearchResponse) = {
-    validateResultField("library:indication", expectedIndications, response)
-  }
-  private def validateResultField(attrName:String, expectedValues:Set[String], response:LibrarySearchResponse) = {
-    val actualValues:Set[String] = getResultField(attrName, response)
-    assertResult(expectedValues) {actualValues}
-  }
-
-  private def getResultField(attrName:String, response:LibrarySearchResponse):Set[String] = {
-    (response.results map {jsval:JsValue =>
-      jsval.asJsObject.fields(attrName).convertTo[String]
-    }).toSet
-  }
-
 }

@@ -8,7 +8,7 @@ object Ontology {
     ontology: String,
     usable: Boolean,
     label: String,
-    definition: String,
+    definition: Option[String] = None,
     synonyms: Option[List[String]] = None,
     parents: Option[List[TermParent]] = None
   )
@@ -17,7 +17,7 @@ object Ontology {
     id: String,
     order: Int,
     label: String,
-    definition: String,
+    definition: Option[String] = None,
     synonyms: Option[List[String]] = None
   ) {
     def toESTermParent: ESTermParent =
