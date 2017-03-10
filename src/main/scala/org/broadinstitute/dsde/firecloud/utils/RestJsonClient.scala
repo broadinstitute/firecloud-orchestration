@@ -22,7 +22,7 @@ trait RestJsonClient extends FireCloudRequestBuilding {
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
 
-  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false) = {
+  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false): Future[HttpResponse] = {
     implicit val userInfo:WithAccessToken = null
     doRequest(None)(req, compressed, useFireCloudHeader)
   }
