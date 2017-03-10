@@ -88,7 +88,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with EntityService
       "NotFound response is returned" in {
         Get(invalidFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(NotFound)
-          errorReportCheck("FireCloud", NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }

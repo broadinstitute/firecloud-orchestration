@@ -4,6 +4,8 @@ import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
+import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
+import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import spray.client.pipelining._
 import spray.http.HttpEncodings._
 import spray.http.HttpHeaders.`Accept-Encoding`
@@ -16,48 +18,46 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Created by davidan on 10/7/16.
   */
-trait RestJsonClient {
-
+trait RestJsonClient extends FireCloudRequestBuilding {
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
 
-  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false): Future[HttpResponse] = {
+  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false) = {
     implicit val userInfo:WithAccessToken = null
-    doRequest(req, compressed, false)
+    doRequest(None)(req, compressed, useFireCloudHeader)
   }
+  def userAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false)(implicit userInfo: WithAccessToken): Future[HttpResponse] = doRequest(Option(addCredentials(userInfo.accessToken)))(req, compressed, useFireCloudHeader)
+  def adminAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false): Future[HttpResponse] = doRequest(Option(addAdminCredentials))(req, compressed, useFireCloudHeader)
 
-  def userAuthedRequest(req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
-    doRequest(req, compressed, true)
-  }
-
-  private def doRequest(req: HttpRequest, compressed: Boolean, authed: Boolean)(implicit userInfo: WithAccessToken): Future[HttpResponse] = {
-    val basePipeline = if (compressed) {
-      addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
-    } else {
-      sendReceive
+  private def doRequest(addCreds: Option[RequestTransformer])(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false): Future[HttpResponse] = {
+    val pipeline = (compressed, useFireCloudHeader) match {
+      case (true, true) => addFireCloudCredentials ~> addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
+      case (true, false) => addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
+      case (false, true) => addFireCloudCredentials ~> addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
+      case _ => sendReceive
     }
-    val finalPipeline = if (authed) {
-      addCredentials(userInfo.accessToken) ~> basePipeline
-    } else {
-      basePipeline
+
+    val finalPipeline = addCreds match {
+      case Some(creds) => creds ~> pipeline
+      case None => pipeline
     }
     finalPipeline(req)
   }
 
-  def authedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
-    requestToObject(true, req, compressed)
+  def authedRequestToObject[T](req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T], ers: ErrorReportSource): Future[T] = {
+    requestToObject(true, req, compressed, useFireCloudHeader)
   }
 
-  def unAuthedRequestToObject[T](req: HttpRequest, compressed: Boolean = false)(implicit unmarshaller: Unmarshaller[T]): Future[T] = {
+  def unAuthedRequestToObject[T](req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false)(implicit unmarshaller: Unmarshaller[T], ers: ErrorReportSource): Future[T] = {
     implicit val userInfo:WithAccessToken = null
-    requestToObject(false, req, compressed)
+    requestToObject(false, req, compressed, useFireCloudHeader)
   }
 
-  private def requestToObject[T](auth: Boolean, req: HttpRequest, compressed: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T]): Future[T] = {
-    val resp = if (auth) {
-      userAuthedRequest(req, compressed)
+  def requestToObject[T](auth: Boolean, req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T], ers: ErrorReportSource): Future[T] = {
+    val resp = if(auth) {
+      userAuthedRequest(req, compressed, useFireCloudHeader)
     } else {
-      unAuthedRequest(req, compressed)
+      unAuthedRequest(req, compressed, useFireCloudHeader)
     }
 
     resp map { response =>

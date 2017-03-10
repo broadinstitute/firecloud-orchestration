@@ -7,10 +7,10 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
   */
 
 class Application (val agoraDAO: AgoraDAO,
+                   val googleServicesDAO: GoogleServicesDAO,
+                   val ontologyDAO: OntologyDAO,
                    val rawlsDAO: RawlsDAO,
                    val searchDAO: SearchDAO,
-                   val thurloeDAO: ThurloeDAO,
-                   val googleServicesDAO: GoogleServicesDAO,
-                   val ontologyDAO: OntologyDAO) {
+                   val thurloeDAO: ThurloeDAO) {
 
 }

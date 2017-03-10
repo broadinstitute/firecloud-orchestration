@@ -3303,7 +3303,6 @@ definitions:
 
   NIHStatus:
     required:
-      - loginRequired
       - linkedNihUsername
     type: object
     properties:
@@ -3313,10 +3312,6 @@ definitions:
         type: string
       isDbgapAuthorized:
         type: boolean
-      lastLinkTime:
-        type: integer
-        format: int64
-        default: 0
       linkExpireTime:
         type: integer
         format: int64

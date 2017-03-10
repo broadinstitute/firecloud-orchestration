@@ -54,7 +54,6 @@ case class Profile (
     pi: String,
     nonProfitStatus: String,
     linkedNihUsername: Option[String] = None,
-    lastLinkTime: Option[Long] = None,
     linkExpireTime: Option[Long] = None,
     isDbgapAuthorized: Option[Boolean] = None
   ) extends mappedPropVals {
@@ -94,10 +93,6 @@ object Profile {
       pi = mappedKVPs.get("pi").get,
       nonProfitStatus = mappedKVPs.get("nonProfitStatus").get,
       linkedNihUsername = mappedKVPs.get("linkedNihUsername"),
-      lastLinkTime = mappedKVPs.get("lastLinkTime") match {
-        case Some(time) => Some(time.toLong)
-        case _ => None
-      },
       linkExpireTime = mappedKVPs.get("linkExpireTime") match {
         case Some(time) => Some(time.toLong)
         case _ => None
@@ -110,7 +105,7 @@ object Profile {
   }
 }
 
-case class NIHLink (linkedNihUsername: String, lastLinkTime: Long, linkExpireTime: Long, isDbgapAuthorized: Boolean) extends mappedPropVals {
+case class NIHLink (linkedNihUsername: String, linkExpireTime: Long, isDbgapAuthorized: Boolean) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(linkedNihUsername), "linkedNihUsername must be non-empty")
 }
 

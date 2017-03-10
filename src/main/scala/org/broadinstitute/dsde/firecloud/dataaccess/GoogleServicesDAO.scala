@@ -3,7 +3,8 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.io.InputStream
 
 import akka.actor.ActorRefFactory
-import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, OAuthTokens}
+import org.broadinstitute.dsde.firecloud.model.{OAuthTokens, ObjectMetadata}
+import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import spray.http.{HttpRequest, HttpResponse}
 import spray.json.JsValue
 import spray.routing.RequestContext
@@ -11,6 +12,9 @@ import spray.routing.RequestContext
 import scala.concurrent.{ExecutionContext, Future}
 
 trait GoogleServicesDAO {
+
+  implicit val errorReportSource = ErrorReportSource("Google")
+
   def getAdminUserAccessToken: String
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
   def getObjectResourceUrl(bucketName: String, objectKey: String): String

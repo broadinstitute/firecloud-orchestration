@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
-import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
 import spray.client.pipelining.unmarshal
 import spray.http._
@@ -13,17 +13,13 @@ import scala.util.Try
 object ErrorReportExtensions {
   object FCErrorReport {
 
-    def apply(response: HttpResponse): ErrorReport = {
-      apply(errorReportSource.source, response)
-    }
-
-    def apply(source: String, response: HttpResponse): ErrorReport = {
+    def apply(response: HttpResponse)(implicit ers: ErrorReportSource): ErrorReport = {
       import spray.httpx.unmarshalling._
       val (message, causes) = response.entity.as[ErrorReport] match {
         case Right(re) => (re.message, Seq(re))
         case Left(err) => (response.entity.asString, Seq.empty)
       }
-      new ErrorReport(source, message, Option(response.status), causes, Seq.empty, None)
+      new ErrorReport(ers.source, message, Option(response.status), causes, Seq.empty, None)
     }
 
     def tryUnmarshal(response: HttpResponse) =

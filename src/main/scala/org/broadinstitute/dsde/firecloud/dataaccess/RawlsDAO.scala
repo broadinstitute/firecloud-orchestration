@@ -25,6 +25,8 @@ object RawlsDAO {
 
 trait RawlsDAO extends LazyLogging {
 
+  implicit val errorReportSource = ErrorReportSource("Rawls")
+
   lazy val rawlsUserRegistrationUrl = FireCloudConfig.Rawls.baseUrl + "/register/user"
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
@@ -60,6 +62,10 @@ trait RawlsDAO extends LazyLogging {
   def getAllLibraryPublishedWorkspaces: Future[Seq[Workspace]]
 
   def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList]
+
+  def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
+
+  def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
 
   def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userToken: UserInfo): Future[Seq[Entity]]
 
