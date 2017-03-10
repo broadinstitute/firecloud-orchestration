@@ -23,7 +23,7 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
   val httpMethods = List(HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT,
     HttpMethods.DELETE, HttpMethods.PATCH, HttpMethods.OPTIONS, HttpMethods.HEAD)
 
-  val uniqueId = "1234"
+  val uniqueId = "normal-user"
   val exampleKey = "favoriteColor"
   val exampleVal = "green"
   val fullProfile = BasicProfile(

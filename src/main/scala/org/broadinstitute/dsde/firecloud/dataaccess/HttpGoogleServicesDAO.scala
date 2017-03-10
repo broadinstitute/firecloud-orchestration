@@ -6,6 +6,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.storage.{Storage, StorageScopes}
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
@@ -61,8 +62,6 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
 object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding {
-
-  implicit val errorReportSource = ErrorReportSource("google")
 
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
@@ -161,7 +160,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     request.recover {
       case t: UnsuccessfulResponseException =>
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(t.response.status, t.response.entity.asString))
+        throw new FireCloudExceptionWithErrorReport(FCErrorReport(t.response))
     }
   }
 

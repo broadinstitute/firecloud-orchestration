@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._

@@ -104,6 +104,18 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
+  override def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
+    val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName)
+
+    adminAuthedRequest(Post(url, memberList)).map(_.status.isSuccess)
+  }
+
+  override def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
+    val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName)
+
+    adminAuthedRequest(Put(url, memberList)).map(_.status.isSuccess)
+  }
+
   override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[Entity]] = {
     authedRequestToObject[Seq[Entity]](Get(rawlsEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType)), true)
   }
