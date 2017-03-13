@@ -86,9 +86,11 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
           }
         } ~
         pathPrefix("tags") {
-          pathEnd {
-            requireUserInfo() { _ =>
-              passthrough(rawlsWorkspacesRoot + "/tags", HttpMethods.GET)
+          pathPrefix("autocomplete" / Segment) { (query) =>
+            pathEnd {
+              requireUserInfo() { _ =>
+                passthrough(rawlsWorkspacesRoot + "/tags/autocomplete/%s".format(query), HttpMethods.GET)
+              }
             }
           }
         } ~
