@@ -13,10 +13,15 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
+import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
+import org.broadinstitute.dsde.firecloud.model.UserInfo
+import spray.json.JsObject
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 
-class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
-  extends OntologyDAO with RestJsonClient with LazyLogging {
+class HttpDuosDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
+  extends DuosDAO with RestJsonClient with LazyLogging {
 
   override def search(term: String): Future[Option[List[TermResource]]] = {
     searchBlocking(term)
@@ -45,6 +50,17 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
         case Right(obj) => Some(obj)
         case Left(err) =>
           logger.warn(s"Error while retrieving ontology parents for id '$term': $err")
+          None
+      }
+    }
+  }
+
+  override def orspIdSearch(userInfo: UserInfo, orspId: String): Future[Option[JsObject]] = {
+    userAuthedRequest(Get(Uri(orspIdSearchUrl).withQuery(("name", orspId))))(userInfo) map { response =>
+      response.entity.as[JsObject] match {
+        case Right(obj) => Some(obj)
+        case Left(err) =>
+          logger.warn(s"Error while retrieving consent for orsp id '$orspId': $err")
           None
       }
     }
