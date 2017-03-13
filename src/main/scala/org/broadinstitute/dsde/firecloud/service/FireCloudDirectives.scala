@@ -46,7 +46,7 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
 
   private def generateExternalHttpPerRequestForMethod(requestCompression: Boolean, unencodedPath: String, inMethod: HttpMethod) = {
     val outMethod = new RequestBuilder(inMethod)
-    val path = encodeUri(unencodedPath)
+    val path = Uri(unencodedPath)
     // POST, PUT, PATCH
     if (inMethod.isEntityAccepted) {
       method(inMethod) {

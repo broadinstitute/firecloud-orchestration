@@ -60,17 +60,17 @@ class PassthroughDirectivesSpec extends BaseServiceSpec with HttpServiceBase
         }
       }
       "path with a single query parameter" - {
-        "should send the query parameter through" ignore {
+        "should send the query parameter through" in {
           validateUri("/one/2/three?key=value", Some(Map("key"->"value")))
         }
       }
       "path with multiple query parameters" - {
-        "should send the query parameters through" ignore {
+        "should send the query parameters through" in {
           validateUri("/one/2/three?key=value&key2=val2", Some(Map("key"->"value", "key2"->"val2")))
         }
       }
       "path with encoded query parameters" - {
-        "should send the query parameters through" ignore {
+        "should send the query parameters through" in {
           validateUri(
             "/one/2/three?key=value&key2=1%323",
             "/one/2/three?key=value&key2=123",
@@ -133,17 +133,17 @@ class PassthroughDirectivesSpec extends BaseServiceSpec with HttpServiceBase
             }
           }
           "path with a single query parameter" - {
-            "should send the query parameter through" ignore {
+            "should send the query parameter through" in {
               validateAllPaths("/one/2/three?key=value", Some(Map("key" -> "value")))
             }
           }
           "path with multiple query parameters" - {
-            "should send the query parameters through" ignore {
+            "should send the query parameters through" in {
               validateAllPaths("/one/2/three?key=value&key2=val2", Some(Map("key" -> "value", "key2" -> "val2")))
             }
           }
           "path with encoded query parameters" - {
-            "should send the query parameters through" ignore {
+            "should send the query parameters through" in {
               validateAllPaths(
                 "/one/2/three?key=value&key2=1%323",
                 "/one/2/three?key=value&key2=123",
