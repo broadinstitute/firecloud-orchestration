@@ -14,11 +14,13 @@ import spray.http._
 import spray.http.StatusCodes._
 import spray.json._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.scalatest.BeforeAndAfterEach
 import spray.json.DefaultJsonProtocol._
+
 import scala.collection.JavaConverters._
 
 
-class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
+class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach {
 
   def actorRefFactory = system
   var workspaceServer: ClientAndServer = _
@@ -80,6 +82,14 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
     workspaceServer.stop()
   }
 
+  override def beforeEach(): Unit = {
+    searchDao.reset
+  }
+
+  override def afterEach(): Unit = {
+    searchDao.reset
+  }
+
   "LibraryService" - {
 
     /* Handle passthrough handlers here */
@@ -135,35 +145,29 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
       }
       "POST on " + publishedPath() - {
         "should invoke indexDocument" in {
-          this.searchDao.indexDocumentInvoked = false
           new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
             assert(this.searchDao.deleteDocumentInvoked == false, "deleteDocument should not have been invoked")
-            this.searchDao.indexDocumentInvoked = false
           }
         }
       }
       "DELETE on " + publishedPath() - {
         "should invoke deleteDocument" in {
-          this.searchDao.deleteDocumentInvoked = false
           new RequestBuilder(HttpMethods.DELETE)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.deleteDocumentInvoked, "deleteDocument should have been invoked")
             assert(this.searchDao.indexDocumentInvoked == false, "indexDocument should not have been invoked")
-            this.searchDao.deleteDocumentInvoked = false
           }
         }
       }
     }
     "when updating fields for a published workspace" - {
       "should republish the workspace" in {
-        this.searchDao.indexDocumentInvoked = false
         val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
         new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
           assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
-          this.searchDao.indexDocumentInvoked = false
         }
       }
       "should be forbidden when reader" in {
@@ -181,18 +185,15 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
     "when retrieving datasets" - {
       "POST with no searchterm on " + librarySearchPath - {
         "should retrieve all datasets" in {
-          this.searchDao.findDocumentsInvoked = false
           val content = HttpEntity(ContentTypes.`application/json`, "{}")
           new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
-            this.searchDao.findDocumentsInvoked = false
           }
         }
       }
       "POST on " + librarySearchPath - {
         "should search for datasets" in {
-          this.searchDao.findDocumentsInvoked = false
           val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
           new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
@@ -200,13 +201,11 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.size == 0, "results array should be empty")
-            this.searchDao.findDocumentsInvoked = false
           }
         }
       }
       "POST on " + librarySuggestPath - {
         "should return autcomplete suggestions" in {
-          this.searchDao.autocompleteInvoked = false
           val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
           new RequestBuilder(HttpMethods.POST)(librarySuggestPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
@@ -214,20 +213,17 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.size == 0, "results array should be empty")
-            this.searchDao.autocompleteInvoked = false
           }
         }
       }
       "GET on " + libraryPopulateSuggestPath - {
         "should return autcomplete suggestions" in {
-          this.searchDao.populateSuggestInvoked = false
           new RequestBuilder(HttpMethods.GET)(libraryPopulateSuggestPath + "library:datasetOwner?q=aha") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.populateSuggestInvoked, "populateSuggestInvoked should have been invoked")
             val respdata = response.entity.asString
             assert(respdata.contains("library:datasetOwner"))
             assert(respdata.contains("aha"))
-            this.searchDao.populateSuggestInvoked = false
           }
         }
       }
