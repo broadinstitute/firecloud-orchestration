@@ -750,12 +750,11 @@ paths:
         - $ref: '#/parameters/methodNamespaceParam'
         - $ref: '#/parameters/methodNameParam'
         - $ref: '#/parameters/methodSnapshotId'
-        # GAWB-1303
-        # - name: onlyPayload
-        #   in: query
-        #   description: Boolean to return only the payload of the method.
-        #   required: false
-        #   type: string
+        - name: onlyPayload
+          in: query
+          description: Boolean to return only the payload of the method.
+          required: false
+          type: string
       responses:
         200:
           description: A single method.
