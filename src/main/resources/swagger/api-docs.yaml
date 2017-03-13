@@ -208,54 +208,55 @@ paths:
       parameters:
         - name: namespace
           in: query
-          description: Namespace of method.
+          description: Namespace of configuration.
           required: false
           type: string
         - name: name
           in: query
-          description: Name of method.
+          description: Name of configuration.
           required: false
           type: string
         - name: snapshotId
           in: query
-          description: Snapshot ID of method.
+          description: Snapshot ID of configuration.
           required: false
           type: number
         - name: synopsis
           in: query
-          description: Synopsis of method.
+          description: Synopsis of configuration.
           required: false
           type: string
         - name: documentation
           in: query
-          description: Documentation of method.
+          description: Documentation of configuration.
           required: false
           type: string
         - name: owner
           in: query
-          description: Owner of method.
+          description: Owner of configuration.
           required: false
           type: string
         - name: payload
           in: query
-          description: Payload of method in WDL.
+          description: Payload of configuration in WDL.
           required: false
           type: string
         - name: entityType
           in: query
-          description: Type of Method - Task or Workflow
+          description: Type of configuration - Task or Workflow
           required: false
           type: string
-        - name: excludedFields
-          in: query
-          description: Fields to exclude in JSON response.
-          required: false
-          type: string
-        - name: includedFields
-          in: query
-          description: Fields to include in JSON response
-          required: false
-          type: string
+        ########### disabled until these work in Agora
+        # - name: excludedFields
+        #   in: query
+        #   description: Fields to exclude in JSON response.
+        #   required: false
+        #   type: string
+        # - name: includedFields
+        #   in: query
+        #   description: Fields to include in JSON response
+        #   required: false
+        #   type: string
       responses:
         200:
           description: An array of configurations.
@@ -688,16 +689,17 @@ paths:
           description: Type of Method - Task or Workflow
           required: false
           type: string
-        - name: excludedFields
-          in: query
-          description: Fields to exclude in JSON response.
-          required: false
-          type: string
-        - name: includedFields
-          in: query
-          description: Fields to include in JSON response
-          required: false
-          type: string
+        ########### disabled until these work in Agora
+        # - name: excludedFields
+        #   in: query
+        #   description: Fields to exclude in JSON response.
+        #   required: false
+        #   type: string
+        # - name: includedFields
+        #   in: query
+        #   description: Fields to include in JSON response
+        #   required: false
+        #   type: string
       responses:
         200:
           description: An array of methods.
