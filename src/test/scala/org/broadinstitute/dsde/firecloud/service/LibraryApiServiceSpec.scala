@@ -148,7 +148,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
-            assert(this.searchDao.deleteDocumentInvoked == false, "deleteDocument should not have been invoked")
+            assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
           }
         }
       }
@@ -157,7 +157,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           new RequestBuilder(HttpMethods.DELETE)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.deleteDocumentInvoked, "deleteDocument should have been invoked")
-            assert(this.searchDao.indexDocumentInvoked == false, "indexDocument should not have been invoked")
+            assert(!this.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
           }
         }
       }
@@ -200,7 +200,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
             assert(this.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
             val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
             assert(respdata.total == 0, "total results should be 0")
-            assert(respdata.results.size == 0, "results array should be empty")
+            assert(respdata.results.isEmpty, "results array should be empty")
           }
         }
       }
@@ -212,7 +212,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
             assert(this.searchDao.autocompleteInvoked, "autocompleteInvoked should have been invoked")
             val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
             assert(respdata.total == 0, "total results should be 0")
-            assert(respdata.results.size == 0, "results array should be empty")
+            assert(respdata.results.isEmpty, "results array should be empty")
           }
         }
       }
