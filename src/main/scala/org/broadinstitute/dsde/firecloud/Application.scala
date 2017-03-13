@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 
 class Application (val agoraDAO: AgoraDAO,
                    val googleServicesDAO: GoogleServicesDAO,
-                   val ontologyDAO: DuosDAO,
+                   val duosDAO: DuosDAO,
                    val rawlsDAO: RawlsDAO,
                    val searchDAO: SearchDAO,
                    val thurloeDAO: ThurloeDAO) {

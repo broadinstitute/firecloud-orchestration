@@ -45,7 +45,7 @@ object LibraryService {
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO, app.ontologyDAO)
+    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO, app.duosDAO)
 }
 
 
