@@ -2297,6 +2297,28 @@ paths:
           description: Internal Server Error
       security: []
 
+  /api/duos/consent/orsp/{orspId}:
+    get:
+      tags:
+      - Library
+      operationId: duosConsentOrspId
+      summary: |
+        Passes through to DUOS' consent search method to find the consent matching the ORSP ID
+      parameters:
+        - name: orspId
+          in: path
+          description: The ORSP ID that the service will try to find a consent for.
+          required: true
+          type: string
+      responses:
+        200:
+          description: Consent
+        404:
+          description: No consent with the given name was found.
+        500:
+          description: Internal Server Error
+      security: []
+
   /error:
     get:
       tags:

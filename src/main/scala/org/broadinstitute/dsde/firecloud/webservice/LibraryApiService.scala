@@ -27,7 +27,7 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
 
   val libraryServiceConstructor: UserInfo => LibraryService
 
-  val duosAutocompleteUrl = FireCloudConfig.Duos.baseUrl + "/autocomplete"
+  val duosAutocompleteUrl = FireCloudConfig.Duos.baseOntologyUrl + "/autocomplete"
 
   val libraryRoutes: Route =
     path("duos" / "autocomplete" / Segment) { (searchTerm) =>
@@ -47,6 +47,13 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
     } ~
     pathPrefix("api") {
       requireUserInfo() { userInfo =>
+        path("duos" / "consent" / "orsp" / Segment) { (orspId) =>
+          get { requestContext =>
+            perRequest(requestContext,
+              LibraryService.props(libraryServiceConstructor, userInfo),
+              LibraryService.SearchOrspId(orspId))
+          }
+        } ~
         pathPrefix("library") {
           path("user" / "role" / "curator") {
             get { requestContext =>

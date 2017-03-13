@@ -32,6 +32,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
   private final val librarySuggestPath = "/api/library/suggest"
   private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
   private final val libraryGroupsPath = "/api/library/groups"
+  private final val duosConsentOrspIdPath = "/api/duos/consent/orsp/"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
@@ -237,6 +238,22 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             status should equal(OK)
             val respdata = response.entity.asString.parseJson.convertTo[Seq[String]]
             assert(respdata.toSet ==  FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSet)
+          }
+        }
+      }
+    }
+
+    "when searching on ORSP IDs" - {
+      "GET on " + duosConsentOrspIdPath - {
+        "should return a value for '12345'" in {
+          Get(duosConsentOrspIdPath + "12345") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            responseAs[String] should include ("12345")
+          }
+        }
+        "should return a Not Found error on 'missing'" in {
+          Get(duosConsentOrspIdPath + "missing") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(NotFound)
           }
         }
       }

@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
-import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{DuosDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
@@ -38,6 +38,7 @@ object LibraryService {
   case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
   case class Suggest(criteria: LibrarySearchParams) extends LibraryServiceMessage
   case class PopulateSuggest(field: String, text: String) extends LibraryServiceMessage
+  case class SearchOrspId(orspId: String) extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
@@ -51,7 +52,7 @@ object LibraryService {
 class LibraryService (protected val argUserInfo: UserInfo,
                       val rawlsDAO: RawlsDAO,
                       val searchDAO: SearchDAO,
-                      val ontologyDAO: OntologyDAO)
+                      val duosDAO: DuosDAO)
                      (implicit protected val executionContext: ExecutionContext) extends Actor
   with LibraryServiceSupport with AttributeSupport with RoleSupport with SprayJsonSupport with LazyLogging {
 
@@ -67,6 +68,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
     case FindDocuments(criteria: LibrarySearchParams) => findDocuments(criteria) pipeTo sender
     case Suggest(criteria: LibrarySearchParams) => suggest(criteria) pipeTo sender
     case PopulateSuggest(field: String, text: String) => populateSuggest(field: String, text: String) pipeTo sender
+    case SearchOrspId(orspId: String) => searchOrspId(orspId: String) pipeTo sender
   }
 
   def hasAccessOrCurator(workspaceResponse: WorkspaceResponse, neededLevel: WorkspaceAccessLevels.WorkspaceAccessLevel): Future[Boolean] = {
@@ -168,7 +170,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def publishDocument(ws: Workspace): Unit = {
-    indexableDocument(ws, ontologyDAO) map { searchDAO.indexDocument }
+    indexableDocument(ws, duosDAO) map { searchDAO.indexDocument }
   }
 
   def removeDocument(ws: Workspace): Unit = {
@@ -181,7 +183,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
       if (workspaces.isEmpty)
         Future(RequestComplete(NoContent))
       else {
-        val toIndex: Future[Seq[Document]] = Future.sequence(workspaces map { indexableDocument(_, ontologyDAO) })
+        val toIndex: Future[Seq[Document]] = Future.sequence(workspaces map { indexableDocument(_, duosDAO) })
         toIndex map { documents =>
           val indexedDocuments = searchDAO.bulkIndex(documents)
           if (indexedDocuments.hasFailures) {
@@ -214,6 +216,13 @@ class LibraryService (protected val argUserInfo: UserInfo,
   def populateSuggest(field: String, text: String): Future[PerRequestMessage] = {
     searchDAO.suggestionsForFieldPopulate(field, text) map {(RequestComplete(_))} recoverWith {
       case e: FireCloudException => Future(RequestCompleteWithErrorReport(BadRequest, s"suggestions not available for field %s".format(field)))
+    }
+  }
+
+  def searchOrspId(orspId: String): Future[PerRequestMessage] = {
+    val duosOrspIdSearchUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
+    duosDAO.orspIdSearch(userInfo, orspId) map { RequestComplete(_) } recoverWith {
+      case e: FireCloudException => Future(RequestCompleteWithErrorReport(NotFound, s"error searching for ORSP ID '%s'".format(orspId)))
     }
   }
 }

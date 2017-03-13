@@ -231,7 +231,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          Await.result(indexableDocument(w, ontologyDao), dur)
+          Await.result(indexableDocument(w, duosDao), dur)
         }
       }
     }
@@ -251,7 +251,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          Await.result(indexableDocument(w, ontologyDao), dur)
+          Await.result(indexableDocument(w, duosDao), dur)
         }
       }
     }
@@ -267,7 +267,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          Await.result(indexableDocument(w, ontologyDao), dur)
+          Await.result(indexableDocument(w, duosDao), dur)
         }
       }
     }
@@ -282,7 +282,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          Await.result(indexableDocument(w, ontologyDao), dur)
+          Await.result(indexableDocument(w, duosDao), dur)
         }
       }
     }
@@ -303,7 +303,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          Await.result(indexableDocument(w, ontologyDao), dur)
+          Await.result(indexableDocument(w, duosDao), dur)
         }
       }
     }
@@ -323,7 +323,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          Await.result(indexableDocument(w, ontologyDao), dur)
+          Await.result(indexableDocument(w, duosDao), dur)
         }
       }
     }
@@ -345,7 +345,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          Await.result(indexableDocument(w, ontologyDao), dur)
+          Await.result(indexableDocument(w, duosDao), dur)
         }
       }
     }
@@ -354,7 +354,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         val w = testWorkspace.copy(attributes = Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220")
         ))
-        val parentData = ontologyDao.data("DOID_9220").head.parents.get.map(_.toESTermParent)
+        val parentData = duosDao.data("DOID_9220").head.parents.get.map(_.toESTermParent)
         val expected = Document(testUUID.toString, Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
@@ -363,7 +363,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parentData.toJson.compactPrint)
         ))
         assertResult(expected) {
-          Await.result(indexableDocument(w, ontologyDao), dur)
+          Await.result(indexableDocument(w, duosDao), dur)
         }
       }
       "should generate indexable document with no parent info when DOID has no parents" in {
@@ -377,7 +377,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          Await.result(indexableDocument(w, ontologyDao), dur)
+          Await.result(indexableDocument(w, duosDao), dur)
         }
       }
       "should generate indexable document with no parent info when DOID not valid" in {
@@ -391,7 +391,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          Await.result(indexableDocument(w, ontologyDao), dur)
+          Await.result(indexableDocument(w, duosDao), dur)
         }
       }
     }
