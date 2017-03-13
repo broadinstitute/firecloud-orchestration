@@ -106,8 +106,8 @@ class PassthroughDirectivesSpec extends BaseServiceSpec with HttpServiceBase
       val pathPairs = Seq(
         ("ours",""),
         ("ours","theirs"),
-        // ("ours/twice","theirs"),
-        // ("ours/twice","theirs/twice"),
+        ("ours/twice","theirs"),
+        ("ours/twice","theirs/twice"),
         ("ours","theirs/twice")
       )
       pathPairs foreach { dirPairs: (String, String) =>
