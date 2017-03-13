@@ -4,6 +4,8 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model.Workspace
+import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
@@ -17,9 +19,19 @@ import spray.json._
  */
 object MockWorkspaceServer {
 
-  val mockValidWorkspace = WorkspaceEntity(
-    Some("namespace"),
-    Some("name")
+  val mockValidWorkspace = Workspace(
+    "namespace",
+    "name",
+    None,
+    "workspace_id",
+    "buckety_bucket",
+    DateTime.now(),
+    DateTime.now(),
+    "my_workspace_creator",
+    Map(), //attributes
+    Map(), //acls
+    Map(), //realm acls
+    false //locked
   )
 
   val mockValidId = randomPositiveInt()
@@ -61,7 +73,7 @@ object MockWorkspaceServer {
         request()
           .withMethod("POST")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions"
-            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name))
           .withHeader(authHeader))
       .callback(
         callback().
@@ -73,7 +85,7 @@ object MockWorkspaceServer {
         request()
           .withMethod("POST")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions"
-          .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get)))
+          .format(mockValidWorkspace.namespace, mockValidWorkspace.name)))
       .respond(
         response()
           .withHeaders(header)
@@ -85,7 +97,7 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions"
-          .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get))
+          .format(mockValidWorkspace.namespace, mockValidWorkspace.name))
           .withHeader(authHeader))
       .respond(
         response()
@@ -98,7 +110,7 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
-            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockValidId))
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockValidId))
           .withHeader(authHeader))
       .respond(
         response()
@@ -112,7 +124,7 @@ object MockWorkspaceServer {
         request()
           .withMethod("DELETE")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
-          .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockValidId))
+          .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockValidId))
           .withHeader(authHeader))
       .respond(
         response()
@@ -125,7 +137,7 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
-            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockInvalidId))
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId))
           .withHeader(authHeader))
       .respond(
         response()
@@ -139,7 +151,7 @@ object MockWorkspaceServer {
         request()
           .withMethod("DELETE")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
-            .format(mockValidWorkspace.namespace.get, mockValidWorkspace.name.get, mockInvalidId))
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId))
           .withHeader(authHeader))
       .respond(
         response()

@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.rawls.model.Attribute
 import spray.json._
 
 /**

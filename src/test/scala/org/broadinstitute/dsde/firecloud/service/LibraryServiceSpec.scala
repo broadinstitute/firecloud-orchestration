@@ -4,20 +4,25 @@ import java.net.URL
 import java.util.UUID
 
 import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOSupport
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
-import org.scalatest.FreeSpec
+import org.scalatest.FreeSpecLike
 import spray.json.{JsObject, _}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
+import org.joda.time.DateTime
 
 import scala.collection.JavaConversions._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.util.Try
 
-class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
+class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
   def toName(s:String) = AttributeName.fromDelimitedName(s)
 
   val libraryAttributePredicate = (k: AttributeName) => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name
@@ -28,17 +33,18 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
 
   val testUUID = UUID.randomUUID()
 
-  val testWorkspace = new RawlsWorkspace(workspaceId=testUUID.toString,
+  val testWorkspace = new Workspace(workspaceId=testUUID.toString,
     namespace="testWorkspaceNamespace",
     name="testWorkspaceName",
-    isLocked=Some(false),
+    realm=None,
+    isLocked=false,
     createdBy="createdBy",
-    createdDate="createdDate",
-    lastModified=None,
+    createdDate=DateTime.now(),
+    lastModified=DateTime.now(),
     attributes=Map.empty,
     bucketName="bucketName",
     accessLevels=Map.empty,
-    realm=None)
+    realmACLs=Map())
 
   val testLibraryMetadata =
     """
@@ -64,13 +70,14 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       |  "library:cellType" : "cell",
       |  "library:requiresExternalApproval" : false,
       |  "library:technology" : ["is an optional","array attribute"],
+      |  "library:useLimitationOption" : "orsp",
       |  "library:orsp" : "some orsp",
       |  "_discoverableByGroups" : ["Group1","Group2"]
       |}
     """.stripMargin
   val testLibraryMetadataJsObject = testLibraryMetadata.parseJson.asJsObject
 
-  val DURAdditionalJsObject =
+  val DULAdditionalJsObject =
     """
       |{
       |  "library:GRU"  : true,
@@ -84,8 +91,10 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
       |  "library:RS-PD": false
       |}
     """.stripMargin.parseJson.asJsObject
-  val DURfields = (testLibraryMetadataJsObject.fields-"library:orsp") ++ DURAdditionalJsObject.fields
-  val testLibraryDURMetadata = testLibraryMetadataJsObject.copy(DURfields).compactPrint
+  val DULfields = (testLibraryMetadataJsObject.fields-"library:orsp") ++ DULAdditionalJsObject.fields
+  val testLibraryDULMetadata = testLibraryMetadataJsObject.copy(DULfields).compactPrint
+
+  val dur = Duration(2, MINUTES)
 
   "LibraryService" - {
     "when new attrs are empty" - {
@@ -222,7 +231,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -242,7 +251,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -258,7 +267,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -273,7 +282,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -294,7 +303,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -314,7 +323,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -336,7 +345,53 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
         ))
         assertResult(expected) {
-          indexableDocument(w)
+          Await.result(indexableDocument(w, ontologyDao), dur)
+        }
+      }
+    }
+    "with diseaseOntologyID attribute" - {
+      "should generate indexable document with parent info when DOID valid" in {
+        val w = testWorkspace.copy(attributes = Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220")
+        ))
+        val parentData = ontologyDao.data("DOID_9220").head.parents.get.map(_.toESTermParent)
+        val expected = Document(testUUID.toString, Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parentData.toJson.compactPrint)
+        ))
+        assertResult(expected) {
+          Await.result(indexableDocument(w, ontologyDao), dur)
+        }
+      }
+      "should generate indexable document with no parent info when DOID has no parents" in {
+        val w = testWorkspace.copy(attributes = Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_4")
+        ))
+        val expected = Document(testUUID.toString, Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_4"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          Await.result(indexableDocument(w, ontologyDao), dur)
+        }
+      }
+      "should generate indexable document with no parent info when DOID not valid" in {
+        val w = testWorkspace.copy(attributes = Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_99999")
+        ))
+        val expected = Document(testUUID.toString, Map(
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_99999"),
+          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
+          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+        ))
+        assertResult(expected) {
+          Await.result(indexableDocument(w, ontologyDao), dur)
         }
       }
     }
@@ -365,7 +420,7 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(27){ex.getViolationCount}
+        assertResult(30){ex.getViolationCount}
       }
       "fails with one missing key" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
@@ -440,9 +495,9 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         validateJsonSchema(testLibraryMetadata, testSchema)
       }
-      "fails with one missing key from the DUR set" in {
+      "fails with one missing key from the DUL set" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val defaultData = testLibraryDURMetadata.parseJson.asJsObject
+        val defaultData = testLibraryDULMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields-"library:NPU").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
@@ -450,38 +505,71 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         // require violations inside the oneOf schemas are extra-nested, and can include errors from all
         // subschemas in the oneOf list. Not worth testing in detail.
       }
-      "validates on a complete metadata packet with all DUR keys" in {
+      "fails on a metadata packet with all DUL keys but the wrong option chosen" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        validateJsonSchema(testLibraryDURMetadata, testSchema)
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(testLibraryDULMetadata, testSchema)
+        }
+      }
+      "validates on a complete metadata packet with all DUL keys and the correct option chosen" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryDULMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields.updated("library:useLimitationOption", JsString("questionnaire"))).compactPrint
+        validateJsonSchema(sampleData, testSchema)
+      }
+
+      "has error messages for top-level missing keys" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields-"library:datasetName"-"library:datasetOwner").compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        val errorMessages = getSchemaValidationMessages(ex)
+        assert( errorMessages.contains("#: required key [library:datasetName] not found"),
+          "does not have library:datasetName in error messages" )
+        assert( errorMessages.contains("#: required key [library:datasetOwner] not found"),
+          "does not have library:datasetOwner in error messages" )
+      }
+      "has error message for missing key from the DUR set" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryDULMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields-"library:NPU").compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        val errorMessages = getSchemaValidationMessages(ex)
+        assert( errorMessages.contains("#: required key [library:NPU] not found"),
+          "does not have library:NPU in error messages" )
       }
     }
     "when creating schema mappings" - {
       "works for string type" in {
         val label = "library:attr"
         val `type` = "string"
-        val expected = label -> ESType(`type`)
+        val expected = label -> ESType(`type`, false, true, false)
         assertResult(expected) {
-          detailFromAttribute(label, AttributeDetail(`type`))
+          createType(label, AttributeDetail(`type`))
         }
       }
       "works for aggregatable string type" in {
         val label = "library:attr"
         val `type` = "string"
         val aggregateObject = JsObject("renderHint"->JsString("text"))
-        val expected = label -> ESAggregatableType(`type`)
+        val expected = label -> ESType(`type`, false, true, true)
         assertResult(expected) {
-          detailFromAttribute(label, AttributeDetail(`type`, None, Some(aggregateObject)))
+          createType(label, AttributeDetail(`type`, None, Some(aggregateObject)))
         }
-        val result = detailFromAttribute(label, AttributeDetail(`type`, None, Some(aggregateObject)))
+        val result = createType(label, AttributeDetail(`type`, None, Some(aggregateObject)))
       }
       "works for array type" in {
         val label = "library:attr"
         val `type` = "array"
         val subtype = "string"
         val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
-        val expected = label -> ESType(subtype)
+        val expected = label -> ESType(subtype, false, true, false)
         assertResult(expected) {
-          detailFromAttribute(label, detail)
+          createType(label, detail)
         }
       }
       "works for aggregatable array type" in {
@@ -490,9 +578,18 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val subtype = "string"
         val aggregateObject = JsObject("renderHint"->JsString("text"))
         val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)), Some(aggregateObject))
-        val expected = label -> ESAggregatableType(subtype)
+        val expected = label -> ESType(subtype, false, true, true)
         assertResult(expected) {
-          detailFromAttribute(label, detail)
+          createType(label, detail)
+        }
+      }
+      "works for populate suggest array type" in {
+        val label = "library:datatype"
+        val `type` = "string"
+        val detail = AttributeDetail(`type`, None, None, None, Option("populate"))
+        val expected = label -> ESType(`type`, true, true, false)
+        assertResult(expected) {
+          createType(label, detail)
         }
       }
       "mapping has valid json" in {
@@ -512,7 +609,32 @@ class LibraryServiceSpec extends FreeSpec with LibraryServiceSupport with Attrib
         val testJson = makeMapping(attrJson)
         assert(testJson.contains(ElasticSearch.fieldDiscoverableByGroups))
       }
-
+    }
+    "when finding documents" - {
+      val params = LibrarySearchParams(Some("test"), Map(), Map())
+      "don't add workspaceAccess to document if can't find workspace id for a document" in {
+        val doc = LibrarySearchResponse(params, 1, Seq(testLibraryMetadataJsObject: JsValue), Seq())
+        assertResult(doc) {
+          updateAccess(doc, Seq())
+        }
+      }
+      "set workspaceAccess to No Access if workspace is not returned from workspace list" in {
+        val result = testLibraryMetadataJsObject.copy(testLibraryMetadataJsObject.fields.updated("workspaceId", JsString("no.access.to.workspace.id")))
+        val expectedResult: JsValue = result.copy(result.fields.updated("workspaceAccess", JsString(WorkspaceAccessLevels.NoAccess.toString)))
+        val doc = LibrarySearchResponse(params, 1, Seq(result: JsValue), Seq())
+        assertResult(doc.copy(results=Seq(expectedResult))) {
+          updateAccess(doc, Seq())
+        }
+      }
+      "set workspaceAccess to workspace access level if workspace is returned from workspace list" in {
+        val workspaceList = Seq(WorkspaceListResponse(WorkspaceAccessLevels.Owner, testWorkspace, WorkspaceSubmissionStats(None, None, 0), Seq()))
+        val result = testLibraryMetadataJsObject.copy(testLibraryMetadataJsObject.fields.updated("workspaceId", JsString(testUUID.toString)))
+        val expectedResult: JsValue = result.copy(result.fields.updated("workspaceAccess", JsString(WorkspaceAccessLevels.Owner.toString)))
+        val doc = LibrarySearchResponse(params, 1, Seq(result: JsValue), Seq())
+        assertResult(doc.copy(results=Seq(expectedResult))) {
+          updateAccess(doc, workspaceList)
+        }
+      }
     }
   }
 }

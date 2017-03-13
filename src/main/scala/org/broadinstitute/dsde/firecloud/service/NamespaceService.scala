@@ -7,6 +7,8 @@ import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impFireCloudPermission
 import org.broadinstitute.dsde.firecloud.service.NamespaceService.{GetPermissions, PostPermissions}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import spray.http.StatusCodes._
@@ -14,7 +16,6 @@ import spray.httpx.SprayJsonSupport
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 

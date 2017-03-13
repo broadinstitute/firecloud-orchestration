@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.webservice.RegisterApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -13,15 +14,16 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
-class UserServiceSpec extends ServiceSpec with UserService {
+class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserService {
 
   def actorRefFactory = system
+  val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
   val httpMethods = List(HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT,
     HttpMethods.DELETE, HttpMethods.PATCH, HttpMethods.OPTIONS, HttpMethods.HEAD)
 
-  val uniqueId = "1234"
+  val uniqueId = "normal-user"
   val exampleKey = "favoriteColor"
   val exampleVal = "green"
   val fullProfile = BasicProfile(
@@ -172,7 +174,8 @@ class UserServiceSpec extends ServiceSpec with UserService {
 
     "when POST-ting a complete profile" - {
       "OK response is returned" in {
-        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
+            sealRoute(registerRoutes) ~> check {
           log.debug(s"POST /$ApiPrefix: " + status)
           status should equal(OK)
         }
@@ -183,7 +186,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
       "BadRequest response is returned" in {
         val incompleteProfile = Map("name" -> randomAlpha())
         Post(s"/$ApiPrefix", incompleteProfile) ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(registerRoutes) ~> check {
           log.debug(s"POST /$ApiPrefix: " + status)
           status should equal(BadRequest)
         }
@@ -202,7 +205,8 @@ class UserServiceSpec extends ServiceSpec with UserService {
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
           )
-        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
+            sealRoute(registerRoutes) ~> check {
           log.debug(s"POST /$ApiPrefix: " + status)
           status should equal(OK)
         }
@@ -227,7 +231,8 @@ class UserServiceSpec extends ServiceSpec with UserService {
               .withStatusCode(InternalServerError.intValue)
               .withBody(Conflict.intValue + " " + Conflict.reason)
           )
-        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
+            sealRoute(registerRoutes) ~> check {
           log.debug(s"POST /$ApiPrefix: " + status)
           status should equal(OK)
         }

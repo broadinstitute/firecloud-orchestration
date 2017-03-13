@@ -9,6 +9,8 @@ import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, Sea
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
+import org.elasticsearch.search.sort.SortOrder
+import org.elasticsearch.search.suggest.completion.{CompletionSuggestion, CompletionSuggestionFuzzyBuilder}
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -59,7 +61,10 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     query.must(criteria.searchString match {
       case None => matchAllQuery
       case Some(searchTerm) if searchTerm.trim == "" => matchAllQuery
-      case Some(searchTerm) => matchQuery(searchField, searchTerm)
+      case Some(searchTerm) =>
+        boolQuery
+          .should(matchQuery(searchField, searchTerm).minimumShouldMatch("2<67%"))
+          .should(nestedQuery("parents", matchQuery("parents.label", searchTerm).minimumShouldMatch("3<75%")))
     })
     val groupsQuery = boolQuery
     // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/query-dsl-exists-query.html
@@ -86,10 +91,24 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def createESSearchRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int): SearchRequestBuilder = {
-    client.prepareSearch(indexname)
+    createESSearchRequest(client, indexname, qmseq, from, size, None, None)
+  }
+
+  def createESSearchRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int, sortField: Option[String], sortDirection: Option[String]): SearchRequestBuilder = {
+    val search = client.prepareSearch(indexname)
       .setQuery(qmseq)
       .setFrom(from)
       .setSize(size)
+
+    if (sortField.isDefined) {
+      val direction = sortDirection match {
+        case Some("desc") => SortOrder.DESC
+        case _ => SortOrder.ASC
+      }
+      search.addSort(sortField.get + ".sort", direction)
+    }
+
+    search
   }
 
   def createESAutocompleteRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int): SearchRequestBuilder = {
@@ -102,7 +121,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String]): SearchRequestBuilder = {
-    val searchQuery = createESSearchRequest(client, indexname, createQuery(criteria, groups), criteria.from, criteria.size)
+    val searchQuery = createESSearchRequest(client, indexname, createQuery(criteria, groups), criteria.from, criteria.size, criteria.sortField, criteria.sortDirection)
     // if we are not collecting aggregation data (in the case of pagination), we can skip adding aggregations
     // if the search criteria contains elements from all of the aggregatable attributes, then we will be making
     // separate queries for each of them. so we can skip adding them in the main search query
@@ -174,6 +193,22 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     response
   }
 
+  def populateSuggestions(client: TransportClient, indexName: String, field: String, text: String) : Future[Seq[String]] = {
+    val suggestionName = "populateSuggestion"
+    val suggestion = new CompletionSuggestionFuzzyBuilder(suggestionName)
+    suggestion.text(text)
+    suggestion.field(field + ".suggest")
+    val suggestQuery = client.prepareSearch(indexName).addSuggestion(suggestion)
+    logger.debug(s"populate suggestions query: $suggestQuery.toJson")
+    val results = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](suggestQuery))
+
+    results map { suggestResult =>
+      val compSugg: CompletionSuggestion = suggestResult.getSuggest.getSuggestion(suggestionName)
+      val options : Seq[CompletionSuggestion.Entry.Option] = compSugg.getEntries.get(0).getOptions.asScala
+      options map { option: CompletionSuggestion.Entry.Option => option.getText.string }
+    }
+  }
+
   def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
 
     val searchQuery = buildAutocompleteQuery(client, indexname, criteria, groups)
@@ -182,7 +217,6 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchQuery))
 
     searchFuture map {searchResult =>
-
       // autocomplete query can return duplicate suggestions. De-dupe them here.
       val suggestions:List[JsString] = (searchResult.getHits.getHits.toList flatMap { hit =>
         if (hit.getHighlightFields.containsKey(fieldSuggest)) {

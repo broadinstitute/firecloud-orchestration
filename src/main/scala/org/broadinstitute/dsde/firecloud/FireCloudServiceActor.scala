@@ -21,6 +21,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with NamespaceApiService
   with NihApiService
   with OauthApiService
+  with RegisterApiService
   with StorageApiService
   with WorkspaceApiService
   {
@@ -36,14 +37,16 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val searchDAO:SearchDAO = new ElasticSearchDAO(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.indexName)
   val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
   val googleServicesDAO:GoogleServicesDAO = HttpGoogleServicesDAO
+  val ontologyDAO:OntologyDAO = new HttpOntologyDAO
 
-  val app:Application = new Application(agoraDAO, rawlsDAO, searchDAO, thurloeDAO, googleServicesDAO)
+  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, searchDAO, thurloeDAO)
 
   val exportEntitiesByTypeConstructor: (UserInfo) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
-  val nihServiceConstructor: () => NihService = NihService.constructor(app)
+  val nihServiceConstructor: () => NihServiceActor = NihService.constructor(app)
   val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
+  val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
@@ -59,7 +62,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     statusService.routes ~ nihRoutes ~ billingService.routes
 
   val userService = new UserService with ActorRefFactoryContext
-  val nihSyncService = new NIHSyncService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
 
   override lazy val log = LoggerFactory.getLogger(getClass)
@@ -84,22 +86,23 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   }
 
   // wraps route rejections in an ErrorReport
-  import org.broadinstitute.dsde.firecloud.model.ErrorReport.errorReportRejectionHandler
+  import org.broadinstitute.dsde.firecloud.model.errorReportRejectionHandler
 
   def receive = runRoute(
     appendTimestamp {
       logRequests {
-        swaggerUiService ~
-        testNihService ~
-        oauthRoutes ~
-        userService.routes ~
-        nihSyncService.routes ~
+        entityRoutes ~
         healthService.routes ~
         libraryRoutes ~
-        workspaceRoutes ~
         namespaceRoutes ~
-        entityRoutes ~
+        oauthRoutes ~
+        registerRoutes ~
         storageRoutes ~
+        swaggerUiService ~
+        syncRoute ~
+        testNihService ~
+        userService.routes ~
+        workspaceRoutes ~
         pathPrefix("api") {
           routes
         } ~
@@ -183,4 +186,3 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   }
 
 }
-

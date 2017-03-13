@@ -12,6 +12,9 @@ import spray.http.Uri
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
+import spray.json.DefaultJsonProtocol._
+import scala.collection.JavaConverters._
+
 
 import scala.concurrent.ExecutionContext
 
@@ -59,6 +62,16 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           } ~
+          path("groups") {
+            pathEndOrSingleSlash {
+              get {
+                respondWithJSON {
+                  requestContext =>
+                    requestContext.complete(OK, FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSeq)
+                }
+              }
+            }
+          } ~
           pathPrefix(Segment / Segment) { (namespace, name) =>
             path("metadata") {
               put {
@@ -66,6 +79,18 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                   perRequest(requestContext,
                     LibraryService.props(libraryServiceConstructor, userInfo),
                     LibraryService.UpdateAttributes(namespace, name, rawAttrsString))
+                }
+              }
+            } ~
+            path("discoverableGroups") {
+              put {
+                respondWithJSON {
+                  entity(as[Seq[String]]) { newGroups =>
+                    requestContext =>
+                      perRequest(requestContext,
+                        LibraryService.props(libraryServiceConstructor, userInfo),
+                        LibraryService.UpdateDiscoverableByGroups(namespace, name, newGroups))
+                  }
                 }
               }
             } ~
@@ -83,10 +108,12 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
             }
           } ~
           path("admin" / "reindex") {
-            post { requestContext =>
-              perRequest(requestContext,
-                LibraryService.props(libraryServiceConstructor, userInfo),
-                LibraryService.IndexAll)
+            post {
+              respondWithJSON { requestContext =>
+                perRequest(requestContext,
+                  LibraryService.props(libraryServiceConstructor, userInfo),
+                  LibraryService.IndexAll)
+              }
             }
           } ~
           pathPrefix("search") {
@@ -111,6 +138,18 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                       LibraryService.props(libraryServiceConstructor, userInfo),
                       LibraryService.Suggest(params))
                   }
+                }
+              }
+            }
+          } ~
+          pathPrefix("populate" / "suggest" / Segment ) { (field) =>
+            get {
+              parameter('q) { text =>
+                respondWithJSON {
+                  requestContext =>
+                    perRequest(requestContext,
+                      LibraryService.props(libraryServiceConstructor, userInfo),
+                      LibraryService.PopulateSuggest(field, text))
                 }
               }
             }

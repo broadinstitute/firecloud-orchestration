@@ -52,6 +52,8 @@ object FireCloudConfig {
     val overwriteGroupMembershipPath = workspace.getString("overwriteGroupMembershipPath")
     val submissionQueueStatusPath = workspace.getString("submissionQueueStatusPath")
     val submissionQueueStatusUrl = authUrl + submissionQueueStatusPath
+    val executionEngineVersionPath = workspace.getString("executionEngineVersionPath")
+    val executionEngineVersionUrl = authUrl + executionEngineVersionPath
 
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
@@ -70,7 +72,6 @@ object FireCloudConfig {
     val getAll = profile.getString("getAll")
     val getQuery = profile.getString("getQuery")
     val delete = profile.getString("delete")
-    val postNotify = profile.getString("postNotify")
   }
 
   object FireCloud {
@@ -92,21 +93,18 @@ object FireCloudConfig {
     val rawlsGroupName = nih.getString("rawlsGroupName")
   }
 
-  object Notification {
-    private val thurloe = config.getConfig("thurloe")
-    val activationTemplateId = thurloe.getString("activationTemplateId")
-    val workspaceAddedTemplateId = thurloe.getString("workspaceAddedTemplateId")
-    val workspaceRemovedTemplateId = thurloe.getString("workspaceRemovedTemplateId")
-    val workspaceInvitedTemplateId = thurloe.getString("workspaceInvitedTemplateId")
-  }
-
   object ElasticSearch {
     private val elasticsearch = config.getConfig("elasticsearch")
-    val servers: Seq[Authority] = (elasticsearch.getString("urls").split(',') map { hostport =>
+    val servers: Seq[Authority] = parseESServers(elasticsearch.getString("urls"))
+    val indexName = elasticsearch.getString("index")
+    val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
+  }
+
+  def parseESServers(confString: String): Seq[Authority] = {
+    confString.split(',') map { hostport =>
       val hp = hostport.split(':')
       Authority(Host(hp(0)), hp(1).toInt)
-    })
-    val indexName = elasticsearch.getString("index")
+    }
   }
 
   object GoogleCloud {

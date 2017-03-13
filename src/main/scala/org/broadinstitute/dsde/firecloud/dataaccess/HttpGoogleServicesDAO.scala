@@ -1,14 +1,16 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import akka.actor.{ActorSystem, ActorRefFactory}
+import akka.actor.{ActorRefFactory, ActorSystem}
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.storage.{Storage, StorageScopes}
-import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, FireCloudConfig}
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
-import org.broadinstitute.dsde.firecloud.model.{ErrorReport, OAuthUser, ObjectMetadata}
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
+import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.slf4j.LoggerFactory
@@ -158,7 +160,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     request.recover {
       case t: UnsuccessfulResponseException =>
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(t.response.status, t.response.entity.asString))
+        throw new FireCloudExceptionWithErrorReport(FCErrorReport(t.response))
     }
   }
 

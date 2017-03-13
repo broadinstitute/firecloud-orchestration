@@ -1,103 +1,45 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockAgoraDAO, MockRawlsDAO, MockSearchDAO, MockThurloeDAO}
+import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
-import org.broadinstitute.dsde.firecloud.webservice.NihApiService
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
+import org.scalatest.{FlatSpec, Matchers}
 
+import scala.concurrent.ExecutionContext
 
-class NihServiceSpec extends BaseServiceSpec with NihApiService {
+/**
+  * Created by mbemis on 3/7/17.
+  */
+class NihServiceSpec extends FlatSpec with Matchers with NihService {
 
-  def actorRefFactory = system
-  val nihServiceConstructor:() => NihService = NihService.constructor(app)
-  val uniqueId = "1234"
+  implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  val rawlsDao = new MockRawlsDAO
+  val thurloeDao = new MockThurloeDAO
+  val googleDao = new MockGoogleServicesDAO
 
-  val targetUri = "/nih/status"
+  val usernames = Map("fcSubjectId1" -> "nihUsername1", "fcSubjectId2" -> "nihUsername2")
 
-  "NIHService" - {
+  val expiretimes1 = Map("fcSubjectId1" -> DateUtils.nowMinus24Hours.toString, "fcSubjectId2" -> DateUtils.nowPlus24Hours.toString)
+  val currentUsernames1 = Map("fcSubjectId2" -> "nihUsername2")
 
-    "when GET-ting a profile with no NIH username" - {
-      "NotFound response is returned" in {
-        thurloeDao.nextGetProfileResponse = Some(thurloeDao.testProfile)
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
-          status should equal(NotFound)
-        }
-      }
+  val expiretimes2 = Map("fcSubjectId1" -> DateUtils.nowMinus24Hours.toString)
+  val expiretimes3 = Map("fcSubjectId1" -> DateUtils.nowMinus24Hours.toString, "fcSubjectId2" -> "not a number")
+
+  "NihService" should "only include unexpired users when handling expired and unexpired users" in {
+    assertResult(currentUsernames1) {
+      filterForCurrentUsers(usernames, expiretimes1)
     }
+  }
 
-    "when GET-ting a profile with missing lastLinkTime" - {
-      "loginRequired is true" in {
-        thurloeDao.nextGetProfileResponse = Some(thurloeDao.testProfile.copy(
-          linkedNihUsername = Some("nihuser")
-        ))
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
-          status should equal(OK)
-          val nihStatus = responseAs[NihStatus]
-          nihStatus.loginRequired shouldBe(true)
-        }
-      }
+  it should "not include users with no expiration times" in {
+    assertResult(Map()) {
+      filterForCurrentUsers(usernames, expiretimes2)
     }
+  }
 
-    // This is done after the previous test to ensure reset() is working.
-    "when GET-ting a non-existent profile" - {
-      "NotFound response is returned" in {
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
-          status should equal(NotFound)
-        }
-      }
+  it should "not include users with unparseable expiration times" in {
+    assertResult(Map()) {
+      filterForCurrentUsers(usernames, expiretimes3)
     }
-
-    "when GET-ting a profile with missing linkExpireTime" - {
-      "loginRequired is true" in {
-        thurloeDao.nextGetProfileResponse = Some(thurloeDao.testProfile.copy(
-          linkedNihUsername = Some("nihuser"),
-          lastLinkTime = Some(222)
-        ))
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
-          status should equal(OK)
-          val nihStatus = responseAs[NihStatus]
-          nihStatus.loginRequired shouldBe(true)
-        }
-      }
-    }
-
-    "when GET-ting a profile with recent lastLinkTime and future linkExpireTime" - {
-      "loginRequired is false" in {
-
-        val lastLinkTime = DateUtils.now
-        val linkExpireTime = DateUtils.nowPlus30Days
-
-        thurloeDao.nextGetProfileResponse = Some(thurloeDao.testProfile.copy(
-          linkedNihUsername = Some("nihuser"),
-          lastLinkTime = Some(lastLinkTime),
-          linkExpireTime = Some(linkExpireTime)
-        ))
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
-          status should equal(OK)
-          val nihStatus = responseAs[NihStatus]
-          nihStatus.loginRequired shouldBe(false)
-        }
-      }
-    }
-
-    "when GET-ting a profile with recent lastLinkTime and an expired linkExpireTime" - {
-      "loginRequired is true" in {
-
-        val lastLinkTime = DateUtils.now
-        val linkExpireTime = DateUtils.nowMinus24Hours
-
-        thurloeDao.nextGetProfileResponse = Some(thurloeDao.testProfile.copy(
-          linkedNihUsername = Some("nihuser"),
-          lastLinkTime = Some(lastLinkTime),
-          linkExpireTime = Some(linkExpireTime)
-        ))
-        Get(targetUri) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(nihRoutes) ~> check {
-          status should equal(OK)
-          val nihStatus = responseAs[NihStatus]
-          nihStatus.loginRequired shouldBe(true)
-        }
-      }
-    }
-
   }
 }

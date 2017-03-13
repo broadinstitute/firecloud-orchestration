@@ -2,13 +2,13 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{Notification, Profile, ThurloeNotification, _}
-import org.broadinstitute.dsde.firecloud.service.{FireCloudRequestBuilding, UserService}
-import org.broadinstitute.dsde.firecloud.utils.{DateUtils, RestJsonClient}
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.UserService
+import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import spray.client.pipelining._
-import spray.http.StatusCodes._
-import spray.http.{HttpResponse, OAuth2BearerToken, StatusCodes}
+import spray.http._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
@@ -19,69 +19,56 @@ import scala.util.{Failure, Success, Try}
  * Created by mbemis on 10/21/16.
  */
 class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
-  extends ThurloeDAO with FireCloudRequestBuilding with RestJsonClient {
-
-  def adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
-
-  override def sendNotifications(notifications: Seq[Notification]): Future[Try[Unit]] = {
-
-    val notificationPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> addHeader(fireCloudHeader) ~> sendReceive
-    val thurloeNotifications = notifications.map(n => ThurloeNotification(n.userId, n.userEmail, n.replyTo, n.notificationId, n.toMap))
-
-    notificationPipeline(Post(UserService.remotePostNotifyURL, thurloeNotifications)) map {
-      case response if response.status.isSuccess => Success(())
-      case _ => Failure(new FireCloudException(s"Unable to send notifications ${notifications}"))
-    }
-  }
+  extends ThurloeDAO with RestJsonClient {
 
   override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
-    val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~> sendReceive
-    pipeline(Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId))) map { response =>
-      response.status match {
-        case StatusCodes.OK => Some(Profile(unmarshal[ProfileWrapper].apply(response)))
-        case StatusCodes.NotFound => None
-        case _ => throwBadResponse(response)
+    wrapExceptions {
+      userAuthedRequest(Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId)), false, true)(userInfo) map { response =>
+        response.status match {
+          case StatusCodes.OK => Some(Profile(unmarshal[ProfileWrapper].apply(response)))
+          case StatusCodes.NotFound => None
+          case _ => throw new FireCloudException("Unable to get user profile")
+        }
       }
     }
   }
 
-  override def maybeUpdateNihLinkExpiration(userInfo: UserInfo, profile: Profile): Future[Unit] = {
-    profile.linkedNihUsername match {
-      case Some(nihUsername) =>
-        val profileExpiration = profile.linkExpireTime.getOrElse(0L)
-        val linkExpireSeconds = HttpThurloeDAO.calculateExpireTime(profile)
-        if (linkExpireSeconds != profileExpiration) {
-          val expireKVP = FireCloudKeyValue(Some("linkExpireTime"), Some(linkExpireSeconds.toString))
-          val expirePayload = ThurloeKeyValue(Some(userInfo.getUniqueId), Some(expireKVP))
-          val updateReq = Post(UserService.remoteSetKeyURL, expirePayload)
-          val pipeline = addFireCloudCredentials ~> addCredentials(userInfo.accessToken) ~>
-            sendReceive
-          pipeline(updateReq) map { _ => () }
-        } else
-          Future.successful(Unit)
-      case None => Future.successful(Unit)
+  override def getAllUserValuesForKey(key: String): Future[Map[String, String]] = {
+    val queryUri = Uri(UserService.remoteGetQueryURL).withQuery(Map("key"->key))
+    wrapExceptions {
+      adminAuthedRequest(Get(queryUri), false, true).map(unmarshal[Seq[ThurloeKeyValue]]).map { tkvs =>
+        val resultOptions = tkvs.map { tkv => (tkv.userId, tkv.keyValuePair.flatMap { kvp => kvp.value }) }
+        val actualResultsOnly = resultOptions collect { case (Some(firecloudSubjId), Some(thurloeValue)) => (firecloudSubjId, thurloeValue) }
+        actualResultsOnly.toMap
+      }
     }
   }
 
-  private def throwBadResponse(response: HttpResponse) = {
-    throw new FireCloudExceptionWithErrorReport(ErrorReport("Thurloe", response))
+  override def saveKeyValue(userInfo: UserInfo, key: String, value: String): Future[Try[Unit]] = {
+    wrapExceptions {
+      userAuthedRequest(Post(UserService.remoteSetKeyURL, ThurloeKeyValue(Some(userInfo.getUniqueId), Some(FireCloudKeyValue(Some(key), Some(value))))), false, true)(userInfo) map { response =>
+        Try(response.status match {
+          case StatusCodes.OK => ()
+          case _ => throw new FireCloudException(s"Unable to get save profile entry: ${key}/${value}")
+        })
+      }
+    }
   }
-}
 
-object HttpThurloeDAO {
-  // Not private to allow this to be called by tests.
-  def calculateExpireTime(profile:Profile): Long = {
-    (profile.lastLinkTime, profile.linkExpireTime) match {
-      case (Some(lastLink), Some(expire)) if (lastLink < DateUtils.nowMinus24Hours && expire > DateUtils.nowPlus24Hours) =>
-        // The user has not logged in to FireCloud within 24 hours, AND the user's expiration is
-        // more than 24 hours in the future. Reset the user's expiration.
-        DateUtils.nowPlus24Hours
-      case (Some(lastLink), Some(expire)) =>
-        // User in good standing; return the expire time unchanged
-        expire
-      case _ =>
-        // Either last-link or expire is missing. Reset the user's expiration.
-        DateUtils.nowPlus24Hours
+  override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Iterable[Try[Unit]]] = {
+    Future.sequence(keyValues.map { case (key, value) => saveKeyValue(userInfo, key, value)})
+  }
+
+  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit] = {
+    val profilePropertyMap = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
+    saveKeyValues(userInfo, profilePropertyMap) map({ _.forall({ _ => true})})
+  }
+
+  def wrapExceptions[T](codeBlock: => Future[T]): Future[T] = {
+    codeBlock.recover {
+      case t: Throwable => {
+        throw new FireCloudExceptionWithErrorReport(ErrorReport.apply(StatusCodes.InternalServerError, t))
+      }
     }
   }
 }

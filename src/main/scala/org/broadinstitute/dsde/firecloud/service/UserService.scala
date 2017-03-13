@@ -2,10 +2,10 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.core.{ProfileClient, ProfileClientActor}
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
@@ -48,8 +48,8 @@ object UserService {
   val rawlsRegisterUserPath = "/register/user"
   val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
 
-  val remotePostNotifyPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.postNotify
-  val remotePostNotifyURL = FireCloudConfig.Thurloe.baseUrl + remotePostNotifyPath
+  val realmsPath = FireCloudConfig.Rawls.authPrefix + "/user/realms"
+  val realmsUrl = FireCloudConfig.Rawls.baseUrl + realmsPath
 
   def groupPath(group: String): String = FireCloudConfig.Rawls.authPrefix + "/user/group/%s".format(group)
   def groupUrl(group: String): String = FireCloudConfig.Rawls.baseUrl + groupPath(group)
@@ -125,6 +125,11 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
         get {
           passthrough(UserService.billingAccountsUrl, HttpMethods.GET)
         }
+      } ~
+      path("profile" / "realms") {
+        get {
+          passthrough(UserService.realmsUrl, HttpMethods.GET)
+        }
       }
     } ~
     pathPrefix("register") {
@@ -143,15 +148,6 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
             requireUserInfo() { userInfo =>
               mapRequest(addFireCloudCredentials) {
                 passthrough(UserService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
-              }
-            }
-          } ~
-          post {
-            requireUserInfo() { userInfo =>
-              entity(as[BasicProfile]) {
-                profileData => requestContext =>
-                  perRequest(requestContext, Props(new ProfileClientActor(requestContext)),
-                    ProfileClient.UpdateProfile(userInfo, profileData))
               }
             }
           }

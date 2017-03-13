@@ -3,12 +3,12 @@ package org.broadinstitute.dsde.firecloud.core
 import akka.actor.{Actor, Props}
 import akka.event.Logging
 import akka.pattern.pipe
-
 import org.broadinstitute.dsde.firecloud.core.DeleteEntities.ProcessUrl
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, EntityId, ErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.firecloud.model.{EntityId, RequestCompleteWithErrorReport}
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding}
-
 import spray.client.pipelining._
 import spray.http.HttpResponse
 import spray.http.StatusCodes._
@@ -46,7 +46,7 @@ class DeleteEntitiesActor(requestContext: RequestContext, entities: Seq[EntityId
           case true =>
             RequestComplete(OK)
           case false =>
-            val errors = responses.filterNot(_.status.isSuccess) map { e => (e, ErrorReport.tryUnmarshal(e)) }
+            val errors = responses.filterNot(_.status.isSuccess) map { e => (e, FCErrorReport.tryUnmarshal(e)) }
             val errorReports = errors collect { case (_, Success(report)) => report }
             val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
             val errorMessage = {

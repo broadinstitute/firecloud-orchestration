@@ -2,8 +2,8 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.Actor
 import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, FireCloudException}
-import org.broadinstitute.dsde.firecloud.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.AttributeFormat
+import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
@@ -27,7 +27,7 @@ object TsvTypes {
       case "entity" => ENTITY
       case "update" => UPDATE
       case "membership" => MEMBERSHIP
-      case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "Invalid TSV type, supported types are: membership, entity, update"))
+      case _ => throw new FireCloudException(s"Invalid TSV type '$name', supported types are: membership, entity, update")
     }
   }
 }

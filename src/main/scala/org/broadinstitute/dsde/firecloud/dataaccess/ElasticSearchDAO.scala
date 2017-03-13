@@ -15,6 +15,7 @@ import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import collection.JavaConverters._
 import scala.concurrent.Future
 
 class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
@@ -57,17 +58,23 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     )
   }
 
-  override def bulkIndex(docs: Seq[Document]) = {
+  override def bulkIndex(docs: Seq[Document], refresh: Boolean = false) = {
     val bulkRequest = client.prepareBulk
+    // only set refresh to true if caller specified true, instead of the cleaner code: bulkRequest.setRefresh(refresh)
+    // this way, the ES client library can change its default for setRefresh, and we'll inherit the default.
+    if (refresh)
+      bulkRequest.setRefresh(true)
     docs map {
       case (doc:Document) => bulkRequest.add(client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint))
     }
     val bulkResponse = executeESRequest[BulkRequest, BulkResponse, BulkRequestBuilder](bulkRequest)
 
-    if (bulkResponse.hasFailures) {
-      logger.warn(bulkResponse.buildFailureMessage)
+    val msgs:Map[String,String] = if (bulkResponse.hasFailures) {
+      bulkResponse.getItems.filter(_.isFailed).map(f => f.getId -> f.getFailureMessage).toMap
+    } else {
+      Map.empty
     }
-    bulkResponse.buildFailureMessage
+    LibraryBulkIndexResponse(bulkResponse.getItems.length, bulkResponse.hasFailures, msgs)
   }
 
   override def indexDocument(doc: Document) = {
@@ -106,36 +113,22 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     findDocumentsWithAggregateInfo(client, indexName, criteria, groups)
   }
 
-  override def suggest(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
+  override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
     autocompleteSuggestions(client, indexName, criteria, groups)
   }
 
-  // see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html
-  //  and https://qbox.io/blog/multi-field-partial-word-autocomplete-in-elasticsearch-using-ngrams
-  // lazy is necessary here because we use it above
-  private final lazy val analysisSettings=
-  """
-    |{
-    |	"analysis": {
-    |		"filter": {
-    |			"autocomplete_filter": {
-    |				"type":     "edge_ngram",
-    |				"min_gram": 1,
-    |				"max_gram": 20
-    |			}
-    |		},
-    |		"analyzer": {
-    |			"autocomplete": {
-    |				"type":      "custom",
-    |				"tokenizer": "standard",
-    |				"filter": [
-    |					"lowercase",
-    |					"autocomplete_filter"
-    |				]
-    |			}
-    |		}
-    |	}
-    |}
-  """.stripMargin
+  override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {
+    populateSuggestions(client, indexName, field, text)
+  }
 
+  /* see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html
+   *  and https://qbox.io/blog/multi-field-partial-word-autocomplete-in-elasticsearch-using-ngrams
+   *  for explanation of the autocomplete analyzer.
+   *
+   * our default analyzer is based off the english analyzer (https://www.elastic.co/guide/en/elasticsearch/reference/2.4/analysis-lang-analyzer.html#english-analyzer)
+   *   but includes the word_delimiter filter for better searching on data containing underscores, e.g. "tcga_brca"
+   *   
+   * lazy is necessary here because we use it above
+   */
+  private final lazy val analysisSettings = FileUtils.readAllTextFromResource("library/es-settings.json")
 }

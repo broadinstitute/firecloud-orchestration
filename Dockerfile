@@ -1,5 +1,7 @@
 FROM phusion/baseimage
 
+ARG ESURLS
+
 # How to install OpenJDK 8 from:
 # http://ubuntuhandbook.org/index.php/2015/01/install-openjdk-8-ubuntu-14-04-12-04-lts/
 RUN add-apt-repository ppa:openjdk-r/ppa
@@ -29,13 +31,15 @@ WORKDIR /app
 
 # Grab dependencies.
 COPY build.sbt build.sbt
-COPY project/plugins.sbt project/plugins.sbt
+COPY project/* project/
 RUN sbt compile
 
 # Compile first to cache it.
 COPY src/main src/main
 COPY src/test src/test
 RUN sbt compile
+RUN sbt test
+RUN sbt -Desurls=$ESURLS it:test
 
 RUN sbt assembly
 

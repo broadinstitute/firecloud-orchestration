@@ -4,10 +4,11 @@ import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.core._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
-import spray.http.{Uri, HttpMethods}
+import spray.http.{HttpMethods, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
@@ -40,10 +41,10 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
               path("copy") {
                 post {
                   requireUserInfo() { _ =>
-                    entity(as[EntityCopyDefinition]) { copyRequest => requestContext =>
-                      val copyMethodConfig = new EntityCopyWithDestinationDefinition(
+                    entity(as[EntityCopyWithoutDestinationDefinition]) { copyRequest => requestContext =>
+                      val copyMethodConfig = new EntityCopyDefinition(
                         sourceWorkspace = copyRequest.sourceWorkspace,
-                        destinationWorkspace = WorkspaceName(Some(workspaceNamespace), Some(workspaceName)),
+                        destinationWorkspace = WorkspaceName(workspaceNamespace, workspaceName),
                         entityType = copyRequest.entityType,
                         entityNames = copyRequest.entityNames)
                       val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl, copyMethodConfig)

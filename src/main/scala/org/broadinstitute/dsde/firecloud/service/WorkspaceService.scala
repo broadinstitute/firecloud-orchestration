@@ -5,10 +5,12 @@ import akka.pattern._
 import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -54,8 +56,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   import WorkspaceService._
 
-  private implicit val impPlainAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
-
   override def receive: Receive = {
 
     case GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) =>
@@ -93,16 +93,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
     aclUpdate map { actualUpdates =>
-
-      val updateNotifications = actualUpdates.usersUpdated.map {
-        case removed if removed.accessLevel.equals(WorkspaceAccessLevels.NoAccess) => WorkspaceRemovedNotification(removed.subjectId, removed.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
-        case added => WorkspaceAddedNotification(added.subjectId, added.accessLevel.toString, workspaceNamespace, workspaceName, originEmail)
-      }
-
-      val inviteNotifications = actualUpdates.invitesSent.filterNot(_.accessLevel.equals(WorkspaceAccessLevels.NoAccess)).map(invite => WorkspaceInvitedNotification(invite.email, originEmail))
-
-      thurloeDAO.sendNotifications((updateNotifications ++ inviteNotifications))
-
       RequestComplete(actualUpdates)
     }
   }
@@ -110,9 +100,10 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
+      val attributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
       val attributes = workspaceResponse.workspace.attributes.filterKeys(_ != AttributeName.withDefaultNS("description"))
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
-      val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(impPlainAttributeFormat.write(attValue)) }).mkString("\t")
+      val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(attributeFormat.write(attValue)) }).mkString("\t")
       RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
         HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
         HttpHeaders.`Content-Type`(`text/plain`))

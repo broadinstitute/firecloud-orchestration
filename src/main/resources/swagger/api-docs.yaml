@@ -442,23 +442,34 @@ paths:
       operationId: reindexAll
       summary: |
         deletes and rebuilds the entire index of published library datasets
-      produces:
-        - text/plain
-        - application/json
       responses:
         200:
-          description: List of errors if partial success, "()" if all datasets indexed successfully
+          description: Indexing Success
           schema:
-            type: string
+            $ref: '#/definitions/LibraryBulkIndexResponse'
         204:
           description: No published datasets exist to index
           schema:
             type: string
         500:
-          description: Rawls Internal Error
+          description: Indexing Error
           schema:
-            $ref: '#/definitions/ErrorReport'
+            $ref: '#/definitions/LibraryBulkIndexResponse'
 
+  /api/library/groups:
+    get:
+      tags:
+        - Library
+      operationId: groups
+      summary: |
+        returns groups that can be used for discoverable datasets
+      responses:
+        200:
+          description: Names of the allowed groups
+          schema:
+            type: array
+            items:
+              type: string
   /api/library/search:
     post:
       tags:
@@ -493,6 +504,32 @@ paths:
         200:
           description: Search suggestions, with highlighting
 
+  /api/library/populate/suggest/{field}:
+    get:
+      tags:
+        - Library
+      operationId: populateSuggest
+      summary: |
+        suggestions for populating a field
+      parameters:
+        - in: path
+          name: field
+          description: the property to get suggestions for
+          type: string
+          required: true
+        - in: query
+          name: q
+          type: string
+          required: true
+          description: the initial text to complete
+      responses:
+        200:
+          description: Field specific suggestions
+        400:
+          description: Bad Request, specified field that was not configured for suggestions
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
   /api/library/user/role/curator:
     get:
       responses:
@@ -510,6 +547,32 @@ paths:
       summary: Query to see if you're a library curator
       operationId: isCurator
 
+  /api/library/{workspaceNamespace}/{workspaceName}/discoverableGroups:
+    put:
+      tags:
+        - Library
+      operationId: updateDiscoverableGroups
+      summary: |
+        set the groups that can discover this library dataset
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: discoverableGroups
+          description: List of group names, or empty list for no restrictions
+          required: true
+          in: body
+      responses:
+        200:
+          description: The groups that have been assigned to be able to discover the dataset
+          schema:
+            type: array
+            items:
+              type: string
+        500:
+          description: Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
   /api/library/{workspaceNamespace}/{workspaceName}/metadata:
     put:
       tags:
@@ -525,8 +588,7 @@ paths:
           required: true
           in: body
           schema:
-            type: object
-            title: JsObject of metadata to update
+            $ref: '#/definitions/LibraryMetadataInput'
       responses:
         200:
           description: Success
@@ -887,6 +949,22 @@ paths:
             - https://www.googleapis.com/auth/devstorage.full_control
             - https://www.googleapis.com/auth/cloud-billing
 
+  /api/profile/realms:
+    get:
+      tags:
+        - Profile
+      operationId: getRealms
+      summary: List realms for a user
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/RawlsRealmRef'
+        500:
+          description: Internal Server Error
+
   /api/refresh-token-status:
     get:
       tags:
@@ -998,6 +1076,29 @@ paths:
           description: No Such Method
         500:
           description: Internal Server Error
+
+  /api/version/executionEngine:
+    get:
+      tags:
+        - Version
+      operationId: executionEngineVersion
+      summary: Returns the currently deployed version of FireCloud's execution engine
+      responses:
+        200:
+          description: OK
+          schema:
+            {
+              "properties": {
+                "cromwell": {
+                  type: "string"
+                }
+              }
+            }
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
 
   /api/workspaces:
     get:
@@ -2038,7 +2139,7 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
         - name: workspaceUpdateJson
-          description: Attribute operations
+          description: Attribute operations. WARNING! This should not be used to change library metadata (republish will not happen). Use UpdateAttributes in the library section.
           required: true
           schema:
             type: array
@@ -2066,7 +2167,7 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
         - name: newAttributes
-          description: New attribute values, as Map[String, Attribute]
+          description: New attribute values, as Map[String, Attribute]. WARNING! This should not be used to change library metadata (republish will not happen). Use UpdateAttributes in the library section
           required: true
           schema:
             type: object
@@ -2504,6 +2605,7 @@ definitions:
     required:
       - projectName
       - role
+      - status
     type: object
     properties:
       projectName:
@@ -2512,6 +2614,12 @@ definitions:
       role:
         type: string
         description: the role of the current user in the project
+      status:
+        type: string
+        enum: ["Creating", "Ready", "Error"]
+      message:
+        type: string
+        description: informational message about the project
 
   CallMetadata:
     description: Stuff you need to know about calls
@@ -2929,6 +3037,36 @@ definitions:
         type: string
         description: the encoded/signed JWT
 
+  LibraryBulkIndexResponse:
+    type: object
+    properties:
+      totalCount:
+        type: number
+        description: the number of published workspaces sent to be indexed
+      hasFailures:
+        type: boolean
+        description: did the indexing operation result in any failures?
+        default: false
+      failureMessages:
+        type: object
+        description: Map[String,String] of id -> failure message
+
+  LibraryMetadataInput:
+    type: object
+    description: JSON-standard packet of metadata as defined by the Library schema
+    example: |
+      {
+        "library:requiresExternalApproval": false,
+        "library:contactEmail": "someone@broadinstitute.org",
+        "library:datasetName": "My Dataset",
+        "library:numSubjects": 123,
+        "library:datatype": ["Whole Exome", "Whole Genome"]
+        ...
+        additional JSON-standard fields as
+        defined by the Library schema
+        ...
+      }
+
   Me:
     type: object
     properties:
@@ -3165,30 +3303,17 @@ definitions:
 
   NIHStatus:
     required:
-      - loginRequired
       - linkedNihUsername
     type: object
     properties:
-      loginRequired:
-        type: boolean
       linkedNihUsername:
         type: string
       isDbgapAuthorized:
         type: boolean
-      lastLinkTime:
-        type: integer
-        format: int64
-        default: 0
       linkExpireTime:
         type: integer
         format: int64
         default: 0
-      secondsSinceLastLink:
-        type: integer
-        format: int64
-        default: 0
-      descriptionSinceLastLink:
-        type: string
 
   Profile:
     type: object
@@ -3243,6 +3368,14 @@ definitions:
       enabled:
         $ref: '#/definitions/ExtendedEnabled'
 
+  RawlsRealmRef:
+    type: object
+    description: a reference to a realm
+    properties:
+      realmName:
+        type: string
+        description: ''
+
   SearchTermRef:
     type: object
     properties:
@@ -3263,6 +3396,12 @@ definitions:
         type: integer
         default: 10
         description: How many results to return
+      sortField:
+        type: string
+        description: Field name on which to sort; defaults so sort by relevance if not specified
+      sortDirection:
+        type: string
+        description: asc or desc; defaults to asc if not specified
 
   StackTraceElement:
     description: ''
@@ -3490,9 +3629,12 @@ definitions:
       - workspaceId
       - bucketName
       - createdDate
+      - lastModified
       - createdBy
       - attributes
       - accessLevels
+      - realmACLs
+      - isLocked
     type: object
     properties:
       namespace:
@@ -3502,7 +3644,7 @@ definitions:
         type: string
         description: The name of the workspace
       realm:
-        $ref: '#/definitions/RawlsGroupRef'
+        $ref: '#/definitions/RawlsRealmRef'
         description: An optional realm for the workspace
       workspaceId:
         type: string
@@ -3538,6 +3680,7 @@ definitions:
     description: ''
     required:
       - acl
+    type: object
     properties:
       acl:
         type: object
@@ -3566,6 +3709,7 @@ definitions:
     required:
       - subjectId
       - accessLevel
+    type: object
     properties:
       subjectId:
         type: string
@@ -3581,6 +3725,7 @@ definitions:
       - invitesSent
       - invitesUpdated
       - usersNotFound
+    type: object
     properties:
       usersUpdated:
         type: array
@@ -3609,6 +3754,7 @@ definitions:
       - accessLevel
       - pending
       - canShare
+    type: object
     properties:
       accessLevel:
         type: string

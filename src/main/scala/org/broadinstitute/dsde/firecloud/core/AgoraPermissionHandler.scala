@@ -69,6 +69,8 @@ class AgoraPermissionActor (requestContext: RequestContext) extends Actor with F
 
   implicit val system = context.system
   import system.dispatcher
+  import spray.json.DefaultJsonProtocol._
+
   val log = Logging(system, getClass)
   val pipeline = authHeaders(requestContext) ~> sendReceive
 

@@ -5,10 +5,9 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
 import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
-
+import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FreeSpec, Inspectors, Matchers}
-
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -28,9 +27,9 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
           AttributeEntityReference(entityType = "sample", entityName = "sample_03"),
           AttributeEntityReference(entityType = "sample", entityName = "sample_04")))
         val sampleSetList = List(
-          RawlsEntity("sample_set_1", "sample_set", Map(AttributeName.withDefaultNS("foo") -> AttributeString("bar"), AttributeName.withDefaultNS("samples") -> samples)),
-          RawlsEntity("sample_set_2", "sample_set", Map(AttributeName.withDefaultNS("bar") -> AttributeString("foo"), AttributeName.withDefaultNS("samples") -> samples)),
-          RawlsEntity("sample_set_3", "sample_set", Map(AttributeName.withDefaultNS("baz") -> AttributeString("?#*"), AttributeName.withDefaultNS("samples") -> samples)))
+          Entity("sample_set_1", "sample_set", Map(AttributeName.withDefaultNS("foo") -> AttributeString("bar"), AttributeName.withDefaultNS("samples") -> samples)),
+          Entity("sample_set_2", "sample_set", Map(AttributeName.withDefaultNS("bar") -> AttributeString("foo"), AttributeName.withDefaultNS("samples") -> samples)),
+          Entity("sample_set_3", "sample_set", Map(AttributeName.withDefaultNS("baz") -> AttributeString("?#*"), AttributeName.withDefaultNS("samples") -> samples)))
 
         testEntityDataSet("sample_set", sampleSetList, None)
         testMembershipDataSet("sample_set", sampleSetList, sampleSetList.size * samples.list.size)
@@ -49,10 +48,10 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
           )
         }
         val sampleList = List(
-          RawlsEntity("sample_01", "sample", sampleAtts),
-          RawlsEntity("sample_02", "sample", sampleAtts),
-          RawlsEntity("sample_03", "sample", sampleAtts),
-          RawlsEntity("sample_04", "sample", sampleAtts)
+          Entity("sample_01", "sample", sampleAtts),
+          Entity("sample_02", "sample", sampleAtts),
+          Entity("sample_03", "sample", sampleAtts),
+          Entity("sample_04", "sample", sampleAtts)
         )
 
         val results = testEntityDataSet("sample", sampleList, None)
@@ -90,7 +89,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         val sampleSetAtts = {
           Map(AttributeName.withDefaultNS("samples") -> samples)
         }
-        val sampleSetList = List(RawlsEntity("sample_set_1", "sample_set", sampleSetAtts))
+        val sampleSetList = List(Entity("sample_set_1", "sample_set", sampleSetAtts))
         testMembershipDataSet("sample_set", sampleSetList, samples.list.size)
       }
     }
@@ -112,8 +111,8 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
             AttributeName.withDefaultNS("age") -> AttributeString("61")
           )
         }
-        val participantList = List(RawlsEntity("1143", "participant", participantAtts1),
-          RawlsEntity("1954", "participant", participantAtts2))
+        val participantList = List(Entity("1143", "participant", participantAtts1),
+          Entity("1954", "participant", participantAtts2))
 
         val results = testEntityDataSet("participant", participantList, None)
         results should contain theSameElementsAs Seq("entity:participant_id", "participant_id", "gender", "age")
@@ -127,7 +126,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         val participantSetAtts = {
           Map(AttributeName.withDefaultNS("participants") -> participants)
         }
-        val participantSetList = List(RawlsEntity("participant_set_1", "participant_set", participantSetAtts))
+        val participantSetList = List(Entity("participant_set_1", "participant_set", participantSetAtts))
         testMembershipDataSet("participant_set", participantSetList, participants.list.size)
       }
     }
@@ -151,8 +150,8 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
             AttributeName.withDefaultNS("header_1") -> AttributeString(MockUtils.randomAlpha())
           )
         }
-        val pairList = List(RawlsEntity("1", "pair", pairAtts1),
-          RawlsEntity("2", "pair", pairAtts2))
+        val pairList = List(Entity("1", "pair", pairAtts1),
+          Entity("2", "pair", pairAtts2))
 
         val results = testEntityDataSet("pair", pairList, None)
         results should contain theSameElementsAs Seq("entity:pair_id", "case_sample", "control_sample", "participant", "header_1")
@@ -166,14 +165,14 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
         val pairSetAtts = {
           Map(AttributeName.withDefaultNS("pairs") -> pairs)
         }
-        val pairSetList = List(RawlsEntity("pair_set_1", "pair_set", pairSetAtts))
+        val pairSetList = List(Entity("pair_set_1", "pair_set", pairSetAtts))
         testMembershipDataSet("pair_set", pairSetList, pairs.list.size)
       }
     }
 
   }
 
-  private def testEntityDataSet(entityType: String, entities: List[RawlsEntity], requestedHeaders: Option[IndexedSeq[String]], tsvType: TsvType = TsvTypes.ENTITY) = {
+  private def testEntityDataSet(entityType: String, entities: List[Entity], requestedHeaders: Option[IndexedSeq[String]], tsvType: TsvType = TsvTypes.ENTITY) = {
     val tsv = TSVFormatter.makeEntityTsvString(entities, entityType, requestedHeaders)
 
     tsv shouldNot be(empty)
@@ -196,7 +195,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
   private def testMembershipDataSet(
     entityType: String,
-    entities: List[RawlsEntity],
+    entities: List[Entity],
     expectedSize: Int
   ): Unit = {
     val collectionMemberType = ModelSchema.getPlural(ModelSchema.getCollectionMemberType(entityType).get.get)

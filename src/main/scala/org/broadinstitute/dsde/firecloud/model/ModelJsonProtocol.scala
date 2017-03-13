@@ -1,103 +1,18 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermResource, TermParent, ESTermParent}
 import spray.json._
-import spray.json.DefaultJsonProtocol._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 
 import scala.util.Try
 
-//Mix in one of these with your AttributeFormat so you can serialize lists
-//This also needs mixing in with an AttributeFormat because they're symbiotic
-sealed trait AttributeListSerializer {
-  def writeListType(obj: Attribute): JsValue
-
-  //distinguish between lists and RawJson types here
-  def readComplexType(json: JsValue): Attribute
-
-  def writeAttribute(obj: Attribute): JsValue
-  def readAttribute(json: JsValue): Attribute
-}
-
-//Serializes attribute lists to e.g. [1,2,3]
-//When reading in JSON, assumes that [] is an empty value list, not an empty ref list
-trait PlainArrayAttributeListSerializer extends AttributeListSerializer {
-  override def writeListType(obj: Attribute): JsValue = obj match {
-    //lists
-    case AttributeValueEmptyList => JsArray()
-    case AttributeValueList(l) => JsArray(l.map(writeAttribute):_*)
-    case AttributeEntityReferenceEmptyList => JsArray()
-    case AttributeEntityReferenceList(l) => JsArray(l.map(writeAttribute):_*)
-    case _ => throw new FireCloudException("you can't pass a non-list to writeListType")
-  }
-
-  override def readComplexType(json: JsValue): Attribute = json match {
-    case JsArray(a) =>
-      val attrList: Seq[Attribute] = a.map(readAttribute)
-      attrList match {
-        case e: Seq[_] if e.isEmpty => AttributeValueEmptyList
-        case v: Seq[AttributeValue @unchecked] if attrList.map(_.isInstanceOf[AttributeValue]).reduce(_&&_) => AttributeValueList(v)
-        case r: Seq[AttributeEntityReference @unchecked] if attrList.map(_.isInstanceOf[AttributeEntityReference]).reduce(_&&_) => AttributeEntityReferenceList(r)
-        case _ => AttributeValueRawJson(json) //heterogeneous array type? ok, we'll treat it as raw json
-      }
-    case _ => AttributeValueRawJson(json) //something else? ok, we'll treat it as raw json
-  }
-}
-
-//Serializes attribute lists to e.g. { "itemsType" : "AttributeValue", "items" : [1,2,3] }
-trait TypedAttributeListSerializer extends AttributeListSerializer {
-  val LIST_ITEMS_TYPE_KEY = "itemsType"
-  val LIST_ITEMS_KEY = "items"
-  val LIST_OBJECT_KEYS = Set(LIST_ITEMS_TYPE_KEY, LIST_ITEMS_KEY)
-
-  val VALUE_LIST_TYPE = "AttributeValue"
-  val REF_LIST_TYPE = "EntityReference"
-  val ALLOWED_LIST_TYPES = Seq(VALUE_LIST_TYPE, REF_LIST_TYPE)
-
-  def writeListType(obj: Attribute): JsValue = obj match {
-    //lists
-    case AttributeValueEmptyList => writeAttributeList(VALUE_LIST_TYPE, Seq.empty[AttributeValue])
-    case AttributeValueList(l) => writeAttributeList(VALUE_LIST_TYPE, l)
-    case AttributeEntityReferenceEmptyList => writeAttributeList(REF_LIST_TYPE, Seq.empty[AttributeEntityReference])
-    case AttributeEntityReferenceList(l) => writeAttributeList(REF_LIST_TYPE, l)
-    case _ => throw new FireCloudException("you can't pass a non-list to writeListType")
-  }
-
-  def readComplexType(json: JsValue): Attribute = json match {
-    case JsObject(members) if LIST_OBJECT_KEYS subsetOf members.keySet => readAttributeList(members)
-
-    //in this serializer, [1,2,3] is not the representation for an AttributeValueList, so it's raw json
-    case _ => AttributeValueRawJson(json)
-  }
-
-  def writeAttributeList[T <: Attribute](listType: String, list: Seq[T]): JsValue = {
-    JsObject( Map(LIST_ITEMS_TYPE_KEY -> JsString(listType), LIST_ITEMS_KEY -> JsArray(list.map( writeAttribute ).toSeq:_*)) )
-  }
-
-  def readAttributeList(jsMap: Map[String, JsValue]) = {
-    val attrList: Seq[Attribute] = jsMap(LIST_ITEMS_KEY) match {
-      case JsArray(elems) => elems.map(readAttribute)
-      case _ => throw new DeserializationException(s"the value of %s should be an array".format(LIST_ITEMS_KEY))
-    }
-
-    (jsMap(LIST_ITEMS_TYPE_KEY), attrList) match {
-      case (JsString(VALUE_LIST_TYPE), vals: Seq[AttributeValue @unchecked]) if attrList.isEmpty => AttributeValueEmptyList
-      case (JsString(VALUE_LIST_TYPE), vals: Seq[AttributeValue @unchecked]) if attrList.map(_.isInstanceOf[AttributeValue]).reduce(_&&_) => AttributeValueList(vals)
-
-      case (JsString(REF_LIST_TYPE), refs: Seq[AttributeEntityReference @unchecked]) if attrList.isEmpty => AttributeEntityReferenceEmptyList
-      case (JsString(REF_LIST_TYPE), refs: Seq[AttributeEntityReference @unchecked]) if attrList.map(_.isInstanceOf[AttributeEntityReference]).reduce(_&&_) => AttributeEntityReferenceList(refs)
-
-      case (JsString(s), _) if !ALLOWED_LIST_TYPES.contains(s) => throw new DeserializationException(s"illegal array type: $LIST_ITEMS_TYPE_KEY must be one of ${ALLOWED_LIST_TYPES.mkString(", ")}")
-      case _ => throw new DeserializationException("illegal array type: array elements don't match array type")
-    }
-  }
-}
-
-object ModelJsonProtocol {
+object ModelJsonProtocol extends WorkspaceJsonSupport {
+  import spray.json.DefaultJsonProtocol._
 
   def optionalEntryIntReader(fieldName: String, data: Map[String,JsValue]): Option[Int] = {
     optionalEntryReader[Option[Int]](fieldName, data, _.convertTo[Option[Int]], None)
@@ -139,6 +54,8 @@ object ModelJsonProtocol {
     val MAX_AGGREGATIONS = "maxAggregations"
     val FROM = "from"
     val SIZE = "size"
+    val SORT_FIELD = "sortField"
+    val SORT_DIR = "sortDirection"
 
     override def write(params: LibrarySearchParams): JsValue = {
       val fields:Seq[Option[(String, JsValue)]] = Seq(
@@ -146,6 +63,8 @@ object ModelJsonProtocol {
         Some(FIELD_AGGREGATIONS -> params.fieldAggregations.toJson),
         Some(FROM -> params.from.toJson),
         Some(SIZE -> params.size.toJson),
+        params.sortField map {SORT_FIELD -> JsString(_)},
+        params.sortDirection map {SORT_DIR -> JsString(_)},
         params.searchString map {SEARCH_STRING -> JsString(_)}
       )
 
@@ -166,7 +85,17 @@ object ModelJsonProtocol {
       val from = optionalEntryIntReader(FROM, data)
       val size = optionalEntryIntReader(SIZE, data)
 
-      LibrarySearchParams(term, filters, aggs, from, size)
+      val sortField = data.get(SORT_FIELD) match {
+        case Some(x:JsString) => Some(x.value)
+        case _ => None
+      }
+
+      val sortDirection = data.get(SORT_DIR) match {
+        case Some(x:JsString) => Some(x.value)
+        case _ => None
+      }
+
+      LibrarySearchParams(term, filters, aggs, from, size, sortField, sortDirection)
     }
   }
 
@@ -174,19 +103,17 @@ object ModelJsonProtocol {
     override def write(input: ESPropertyFields): JsValue = input match {
       case estype: ESType => estype.toJson
       case esinternaltype: ESInternalType => esinternaltype.toJson
-      case esaggtype: ESAggregatableType => esaggtype.toJson
       case esinnerfield: ESInnerField => esinnerfield.toJson
+      case esnestedtype: ESNestedType => esnestedtype.toJson
       case _ => throw new SerializationException("unexpected ESProperty type")
     }
 
     override def read(json: JsValue): ESPropertyFields = {
       val data = json.asJsObject.fields
-      if (data.contains("fields")) {
-        ESAggregatableTypeFormat.read(json)
-      } else if (data.contains("index")) {
-        ESInternalTypeFormat.read(json)
-      } else {
-        ESTypeFormat.read(json)
+      data match {
+        case x if x.contains("properties") => ESNestedTypeFormat.read(json)
+        case x if x.contains("fields") => ESTypeFormat.read(json)
+        case _ => ESInternalTypeFormat.read(json)
       }
     }
   }
@@ -211,80 +138,17 @@ object ModelJsonProtocol {
       }
   }
 
-  // see https://github.com/spray/spray-json#jsonformats-for-recursive-types
-  implicit val impErrorReport: RootJsonFormat[ErrorReport] = rootFormat(lazyFormat(jsonFormat5(ErrorReport)))
-
-  implicit object AttributeNameFormat extends RootJsonFormat[AttributeName] {
-    override def write(an: AttributeName): JsValue = JsString(AttributeName.toDelimitedName(an))
-
-    override def read(json: JsValue): AttributeName = json match {
-      case JsString(name) => AttributeName.fromDelimitedName(name)
-      case _ => throw new DeserializationException("unexpected json type")
-    }
-  }
-
-  trait AttributeFormat extends RootJsonFormat[Attribute] with AttributeListSerializer {
-    //Magic strings we use in JSON serialization
-
-    //Entity refs get serialized to e.g. { "entityType" : "sample", "entityName" : "theBestSample" }
-    val ENTITY_TYPE_KEY = "entityType"
-    val ENTITY_NAME_KEY = "entityName"
-    val ENTITY_OBJECT_KEYS = Set(ENTITY_TYPE_KEY, ENTITY_NAME_KEY)
-
-    override def write(obj: Attribute): JsValue = writeAttribute(obj)
-    def writeAttribute(obj: Attribute): JsValue = obj match {
-      //vals
-      case AttributeNull => JsNull
-      case AttributeBoolean(b) => JsBoolean(b)
-      case AttributeNumber(n) => JsNumber(n)
-      case AttributeString(s) => JsString(s)
-      case AttributeValueRawJson(j) => j
-      //ref
-      case AttributeEntityReference(entityType, entityName) => JsObject(Map(ENTITY_TYPE_KEY -> JsString(entityType), ENTITY_NAME_KEY -> JsString(entityName)))
-      //list types
-      case x: AttributeList[_] => writeListType(x)
-
-      case _ => throw new SerializationException(s"AttributeFormat doesn't know how to write JSON for type $obj.getClass.getSimpleName")
-    }
-
-    override def read(json: JsValue): Attribute = readAttribute(json)
-    def readAttribute(json: JsValue): Attribute = json match {
-      case JsNull => AttributeNull
-      case JsString(s) => AttributeString(s)
-      case JsBoolean(b) => AttributeBoolean(b)
-      case JsNumber(n) => AttributeNumber(n)
-      //NOTE: we handle AttributeValueRawJson in readComplexType below
-
-      case JsObject(members) if ENTITY_OBJECT_KEYS subsetOf members.keySet => (members(ENTITY_TYPE_KEY), members(ENTITY_NAME_KEY)) match {
-        case (JsString(typeKey), JsString(nameKey)) => AttributeEntityReference(typeKey, nameKey)
-        case _ => throw DeserializationException(s"the values for $ENTITY_TYPE_KEY and $ENTITY_NAME_KEY must be strings")
-      }
-
-      case _ => readComplexType(json)
-    }
-  }
-
-  implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with TypedAttributeListSerializer
-
   implicit val impMethod = jsonFormat8(MethodRepository.Method)
   implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
 
-  implicit val impWorkspaceName = jsonFormat2(WorkspaceName)
-  implicit val impWorkspaceEntity = jsonFormat5(WorkspaceEntity)
-  implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate)
-  implicit val impRawlsWorkspaceCreate = jsonFormat4(RawlsWorkspaceCreate)
+  implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate.apply)
 
-  implicit val impSubmissionStats = jsonFormat3(SubmissionStats)
-  implicit val impRawlsWorkspace = jsonFormat11(RawlsWorkspace)
-  implicit val impRawlsWorkspaceResponse = jsonFormat5(RawlsWorkspaceResponse)
   implicit val impUIWorkspace = jsonFormat12(UIWorkspace)
   implicit val impUIWorkspaceResponse = jsonFormat5(UIWorkspaceResponse)
 
-  implicit val impEntity = jsonFormat5(Entity)
+  //implicit val impEntity = jsonFormat5(Entity)
   implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
-  implicit val impRawlsEntity = jsonFormat3(RawlsEntity)
-  implicit val impEntityCopyDefinition = jsonFormat3(EntityCopyDefinition)
-  implicit val impEntityCopyWithDestinationDefinition = jsonFormat4(EntityCopyWithDestinationDefinition)
+  implicit val impEntityCopyWithoutDestinationDefinition = jsonFormat3(EntityCopyWithoutDestinationDefinition)
   implicit val impEntityId = jsonFormat2(EntityId)
   implicit val impEntityDelete = jsonFormat2(EntityDeleteDefinition)
 
@@ -306,10 +170,8 @@ object ModelJsonProtocol {
   implicit val impFireCloudKeyValue = jsonFormat2(FireCloudKeyValue)
   implicit val impThurloeKeyValue = jsonFormat2(ThurloeKeyValue)
   implicit val impBasicProfile = jsonFormat11(BasicProfile)
-  implicit val impProfile = jsonFormat15(Profile.apply)
+  implicit val impProfile = jsonFormat14(Profile.apply)
   implicit val impProfileWrapper = jsonFormat2(ProfileWrapper)
-
-  implicit val impNotification = jsonFormat5(ThurloeNotification)
 
   implicit val impTokenResponse = jsonFormat6(OAuthTokens.apply)
   implicit val impRawlsToken = jsonFormat1(RawlsToken)
@@ -326,25 +188,29 @@ object ModelJsonProtocol {
 
   implicit val impRawlsGroupMemberList = jsonFormat4(RawlsGroupMemberList)
 
-  implicit val impRawlsBucketUsageResponse = jsonFormat1(RawlsBucketUsageResponse)
   implicit val impWorkspaceStorageCostEstimate = jsonFormat1(WorkspaceStorageCostEstimate)
 
   implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)
 
-  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat4(AttributeDetail)))
+  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat5(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
-  implicit val ESInnerFieldFormat = jsonFormat6(ESInnerField)
+  implicit val ESInnerFieldFormat = jsonFormat7(ESInnerField)
   implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
-  implicit val ESAggregatableTypeFormat = jsonFormat3(ESAggregatableType.apply)
-  implicit val ESTypeFormat = jsonFormat2(ESType.apply)
+  implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
+  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
   implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
   implicit val impAggregationTermResult = jsonFormat2(AggregationTermResult)
   implicit val impAggregationFieldResults = jsonFormat2(AggregationFieldResults)
   implicit val impLibraryAggregationResponse = jsonFormat2(LibraryAggregationResponse)
   implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
-  
+  implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
+
+  implicit val impOntologyTermParent = jsonFormat5(TermParent)
+  implicit val impOntologyTermResource = jsonFormat7(TermResource)
+  implicit val impOntologyESTermParent = jsonFormat2(ESTermParent)
+
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
     case MalformedRequestContentRejection(errorMsg, _) :: _ =>

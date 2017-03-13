@@ -1,10 +1,11 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.model.{LibrarySearchResponse, UserInfo}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AddUpdateAttribute
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
@@ -13,6 +14,8 @@ import spray.http._
 import spray.http.StatusCodes._
 import spray.json._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import spray.json.DefaultJsonProtocol._
+import scala.collection.JavaConverters._
 
 
 class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
@@ -23,11 +26,44 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
   lazy val isCuratorPath = "/api/library/user/role/curator"
   private def publishedPath(ns:String="namespace", name:String="name") =
     "/api/library/%s/%s/published".format(ns, name)
+  private def setMetadataPath(ns: String = "republish", name: String = "name") =
+    "/api/library/%s/%s/metadata".format(ns, name)
   private final val librarySearchPath = "/api/library/search"
   private final val librarySuggestPath = "/api/library/suggest"
-  private final val libraryAggregationPath = librarySearchPath + "/aggregations"
+  private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
+  private final val libraryGroupsPath = "/api/library/groups"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
+
+  val testLibraryMetadata =
+    """
+      |{
+      |  "description" : "some description",
+      |  "userAttributeOne" : "one",
+      |  "userAttributeTwo" : "two",
+      |  "library:datasetName" : "name",
+      |  "library:datasetVersion" : "v1.0",
+      |  "library:datasetDescription" : "desc",
+      |  "library:datasetCustodian" : "cust",
+      |  "library:datasetDepositor" : "depo",
+      |  "library:contactEmail" : "name@example.com",
+      |  "library:datasetOwner" : "owner",
+      |  "library:institute" : ["inst","it","ute"],
+      |  "library:indication" : "indic",
+      |  "library:numSubjects" : 123,
+      |  "library:projectName" : "proj",
+      |  "library:datatype" : ["data","type"],
+      |  "library:dataCategory" : ["data","category"],
+      |  "library:dataUseRestriction" : "dur",
+      |  "library:studyDesign" : "study",
+      |  "library:cellType" : "cell",
+      |  "library:requiresExternalApproval" : false,
+      |  "library:useLimitationOption" : "orsp",
+      |  "library:technology" : ["is an optional","array attribute"],
+      |  "library:orsp" : "some orsp",
+      |  "_discoverableByGroups" : ["Group1","Group2"]
+      |}
+    """.stripMargin
 
   override def beforeAll(): Unit = {
 
@@ -69,6 +105,20 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
           }
         }
       }
+      "POST as writer on " + publishedPath() - {
+        "should be Forbidden for unpublished dataset" in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath("unpublishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(Forbidden)
+          }
+        }
+      }
+      "POST as writer on " + publishedPath() - {
+        "should be OK for published dataset" in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath("publishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+          }
+        }
+      }
       "POST as owner on " + publishedPath() - {
         "should be OK" in {
           new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
@@ -103,6 +153,27 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             assert(this.searchDao.indexDocumentInvoked == false, "indexDocument should not have been invoked")
             this.searchDao.deleteDocumentInvoked = false
           }
+        }
+      }
+    }
+    "when updating fields for a published workspace" - {
+      "should republish the workspace" in {
+        this.searchDao.indexDocumentInvoked = false
+        val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
+          this.searchDao.indexDocumentInvoked = false
+        }
+      }
+      "should be forbidden when reader" in {
+        new RequestBuilder(HttpMethods.POST)(publishedPath("publishedreader")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(Forbidden)
+        }
+      }
+      "should be allowed when writer" in {
+        new RequestBuilder(HttpMethods.POST)(publishedPath("publishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
         }
       }
     }
@@ -144,6 +215,28 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService {
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.size == 0, "results array should be empty")
             this.searchDao.autocompleteInvoked = false
+          }
+        }
+      }
+      "GET on " + libraryPopulateSuggestPath - {
+        "should return autcomplete suggestions" in {
+          this.searchDao.populateSuggestInvoked = false
+          new RequestBuilder(HttpMethods.GET)(libraryPopulateSuggestPath + "library:datasetOwner?q=aha") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            assert(this.searchDao.populateSuggestInvoked, "populateSuggestInvoked should have been invoked")
+            val respdata = response.entity.asString
+            assert(respdata.contains("library:datasetOwner"))
+            assert(respdata.contains("aha"))
+            this.searchDao.populateSuggestInvoked = false
+          }
+        }
+      }
+      "GET on " + libraryGroupsPath - {
+        "should return the all broad users group" in {
+          new RequestBuilder(HttpMethods.GET)(libraryGroupsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            val respdata = response.entity.asString.parseJson.convertTo[Seq[String]]
+            assert(respdata.toSet ==  FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSet)
           }
         }
       }

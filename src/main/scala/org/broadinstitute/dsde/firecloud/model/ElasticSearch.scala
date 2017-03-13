@@ -1,16 +1,19 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.AttributeFormat
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.{AttributeFormat, PlainArrayAttributeListSerializer}
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsValue}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 object ElasticSearch {
   final val fieldAll = "_all"
   final val fieldSuggest = "_suggest"
   final val fieldDiscoverableByGroups = "_discoverableByGroups"
+  final val fieldOntologyParents = "parents"
+  final val fieldOntologyParentsOrder = "order"
+  final val fieldOntologyParentsLabel = "label"
 }
 
 case class AttributeDefinition(properties: Map[String, AttributeDetail])
@@ -19,7 +22,8 @@ case class AttributeDetail(
   `type`: String,
   items: Option[AttributeDetail] = None,
   aggregate: Option[JsObject] = None,
-  indexable: Option[Boolean] = None
+  indexable: Option[Boolean] = None,
+  typeahead: Option[String] = None
 )
 
 
@@ -33,26 +37,46 @@ trait ESPropertyFields {
     include_in_all = Some(false),
     store = Some(true)
   )
+  // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/search-suggesters-completion.html
+  def completionField = ESInnerField(
+    "completion",
+    analyzer = Option("simple"),
+    search_analyzer = Option("simple")
+  )
   def rawField(`type`:String) = ESInnerField(`type`,
     index = Some("not_analyzed")
+  )
+  def sortField(`type`:String) = ESInnerField(`type`,
+    analyzer = Some("sort_analyzer"),
+    include_in_all = Some(false)
   )
 }
 
 // top-level field defs, for facet and non-facet types
-case class ESType(`type`: String, copy_to: String) extends ESPropertyFields
+case class ESType(`type`: String, fields: Option[Map[String,ESInnerField]], copy_to: Option[String] = None ) extends ESPropertyFields
 object ESType extends ESPropertyFields {
-  def apply(`type`: String):ESType = ESType(`type`, ElasticSearch.fieldSuggest)
+  def apply(`type`: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
+    val innerFields = Map.empty[String,ESInnerField] ++
+      (if (`type`.equals("string"))
+        Map("sort" -> sortField(`type`))
+      else
+        Map("sort" -> ESInnerField(`type`))) ++
+      (if (isAggregatable) Map("raw" -> rawField(`type`)) else Nil) ++
+      (if (hasPopulateSuggest) Map("suggest" -> completionField) else Nil)
+    if (hasSearchSuggest)
+      new ESType(`type`, Option(innerFields), Option(ElasticSearch.fieldSuggest))
+    else
+      new ESType(`type`, Option(innerFields))
+  }
+
 }
+
+case class ESNestedType(properties:Map[String,ESInnerField], `type`:String="nested") extends ESPropertyFields
 
 case class ESInternalType(
   `type`: String,
   index: String = "not_analyzed",
   include_in_all: Boolean = false) extends ESPropertyFields
-
-case class ESAggregatableType(`type`: String, fields: Map[String,ESInnerField], copy_to: String = ElasticSearch.fieldSuggest) extends ESPropertyFields
-object ESAggregatableType extends ESPropertyFields {
-  def apply(`type`: String):ESAggregatableType = ESAggregatableType(`type`, Map("raw" -> rawField(`type`)))
-}
 
 // def for ElasticSearch's multi-fields: https://www.elastic.co/guide/en/elasticsearch/reference/2.4/multi-fields.html
 // technically, the top-level fields and inner fields are the same thing, and we *could* use the same class.
@@ -62,7 +86,8 @@ case class ESInnerField(`type`: String,
                         search_analyzer: Option[String] = None,
                         index: Option[String] = None,
                         include_in_all: Option[Boolean] = None,
-                        store: Option[Boolean] = None) extends ESPropertyFields
+                        store: Option[Boolean] = None,
+                        copy_to: Option[String] = None) extends ESPropertyFields
 
 // classes for sending documents to ES to be indexed
 trait Indexable {
@@ -75,7 +100,7 @@ case class Document(val id: String, val content: JsObject) extends Indexable
 
 object Document {
   def apply(id: String, valMap: AttributeMap) = {
-    implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
+    implicit val impAttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
     new Document(id, valMap.toJson.asJsObject)
   }
 
@@ -98,11 +123,13 @@ case class LibrarySearchParams(
   filters: Map[String, Seq[String]],
   fieldAggregations: Map[String, Int],
   from: Int = 0,
-  size: Int = 10)
+  size: Int = 10,
+  sortField: Option[String] = None,
+  sortDirection: Option[String] = None)
 
 object LibrarySearchParams {
-  def apply(searchString: Option[String], filters: Map[String, Seq[String]], fieldAggregations: Map[String, Int], from: Option[Int], size: Option[Int]) = {
-    new LibrarySearchParams(searchString, filters, fieldAggregations, from.getOrElse(0), size.getOrElse(10))
+  def apply(searchString: Option[String], filters: Map[String, Seq[String]], fieldAggregations: Map[String, Int], from: Option[Int], size: Option[Int], sortField: Option[String], sortDirection: Option[String]) = {
+    new LibrarySearchParams(searchString, filters, fieldAggregations, from.getOrElse(0), size.getOrElse(10), sortField, sortDirection)
   }
 }
 
@@ -121,5 +148,7 @@ case class AggregationFieldResults(
   buckets: Seq[AggregationTermResult])
 
 case class AggregationTermResult(key: String, doc_count: Int)
+
+case class LibraryBulkIndexResponse(totalCount: Int, hasFailures: Boolean, failureMessages: Map[String,String])
 
 

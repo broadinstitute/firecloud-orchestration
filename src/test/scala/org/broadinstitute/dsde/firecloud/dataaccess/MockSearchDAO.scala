@@ -21,8 +21,9 @@ class MockSearchDAO extends SearchDAO {
   var deleteDocumentInvoked = false
   var findDocumentsInvoked = false
   var autocompleteInvoked = false
+  var populateSuggestInvoked = false
 
-  override def bulkIndex(docs: Seq[Document]) = Unit
+  override def bulkIndex(docs: Seq[Document], refresh:Boolean = false) = LibraryBulkIndexResponse(0, false, Map.empty)
 
   override def indexDocument(doc: Document) = {
     indexDocumentInvoked = true
@@ -37,9 +38,13 @@ class MockSearchDAO extends SearchDAO {
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
-  override def suggest(librarySearchParams: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
+  override def suggestionsFromAll(librarySearchParams: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
     autocompleteInvoked = true
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
+  override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {
+    populateSuggestInvoked = true
+    Future(Seq(field, text))
+  }
 }

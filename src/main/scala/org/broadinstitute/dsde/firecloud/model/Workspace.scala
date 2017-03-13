@@ -1,18 +1,9 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.Attributable.AttributeMap
-
-case class WorkspaceName(
-  namespace: Option[String] = None,
-  name: Option[String] = None)
-
-case class WorkspaceEntity(
-  namespace: Option[String] = None,
-  name: Option[String] = None,
-  createdDate: Option[String] = None,
-  createdBy: Option[String] = None,
-  attributes: Option[AttributeMap] = None)
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
+import org.broadinstitute.dsde.rawls.model._
 
 case class WorkspaceCreate(
   namespace: String,
@@ -20,55 +11,49 @@ case class WorkspaceCreate(
   attributes: AttributeMap,
   isProtected: Option[Boolean] = Some(false))
 
-case class RawlsWorkspaceCreate(
-  namespace: String,
-  name: String,
-  attributes: AttributeMap,
-  realm: Option[Map[String, String]] = None) {
-  def this(wc: WorkspaceCreate) =
-    this(wc.namespace, wc.name, wc.attributes,
-      if (wc.isProtected.getOrElse(false))
-        Some(Map("groupName" -> FireCloudConfig.Nih.rawlsGroupName))
-      else None)
+object WorkspaceCreate {
+  import scala.language.implicitConversions
+  implicit def toWorkspaceRequest(wc: WorkspaceCreate): WorkspaceRequest = {
+    val realm = if (wc.isProtected.getOrElse(false))
+      Some(RawlsRealmRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
+    else
+        None
+    WorkspaceRequest(wc.namespace, wc.name, realm, wc.attributes)
+  }
+
+  def isProtected(ws: Workspace): Boolean = {
+    ws.realm == Some(RawlsRealmRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
+  }
+
+  def toWorkspaceClone(wc: WorkspaceCreate): WorkspaceCreate = {
+    new WorkspaceCreate(
+      namespace = wc.namespace,
+      name = wc.name,
+      attributes = wc.attributes + (AttributeName("library","published") -> AttributeBoolean(false)),
+      isProtected = wc.isProtected)
+  }
+
 }
-
-case class RawlsWorkspaceResponse(
-  accessLevel: String,
-  canShare: Boolean,
-  workspace: RawlsWorkspace,
-  workspaceSubmissionStats: SubmissionStats,
-  owners: List[String])
-
-case class RawlsWorkspace(
-  workspaceId: String,
-  namespace: String,
-  name: String,
-  isLocked: Option[Boolean] = None,
-  createdBy: String,
-  createdDate: String,
-  lastModified: Option[String] = None,
-  attributes: AttributeMap,
-  bucketName: String,
-  accessLevels: Map[String, Map[String, String]],
-  realm: Option[Map[String, String]])
-
-case class RawlsEntity(name: String, entityType: String, attributes: AttributeMap)
-
-case class SubmissionStats(
-  lastSuccessDate: Option[String] = None,
-  lastFailureDate: Option[String] = None,
-  runningSubmissionsCount: Int)
 
 case class UIWorkspaceResponse(
   accessLevel: Option[String] = None,
   canShare: Option[Boolean] = None,
   workspace: Option[UIWorkspace] = None,
-  workspaceSubmissionStats: Option[SubmissionStats] = None,
+  workspaceSubmissionStats: Option[WorkspaceSubmissionStats] = None,
   owners: Option[List[String]] = None) {
-  def this(rwr: RawlsWorkspaceResponse) =
-    this(Option(rwr.accessLevel), Option(rwr.canShare), Option(new UIWorkspace(rwr.workspace)), Option(rwr.workspaceSubmissionStats), Option(rwr.owners))
+  def this(wr: WorkspaceResponse) =
+    this(Option(wr.accessLevel.toString), Option(wr.canShare), Option(new UIWorkspace(wr.workspace)), Option(wr.workspaceSubmissionStats), Option(wr.owners.toList))
+  def this(wlr: WorkspaceListResponse) =
+    this(Option(wlr.accessLevel.toString), None, Option(new UIWorkspace(wlr.workspace)), Option(wlr.workspaceSubmissionStats), Option(wlr.owners.toList))
 }
 
+/** A Firecloud UI focused result object that performs extra translation on the result from Rawls, specifically
+  * interpreting the NIH realm as a binary "protected" flag.
+  *
+  * Note: Depending on the direction that firecloud-orchestration takes in the future, we may keep this here or move
+  * this logic into firecloud-ui as part of https://broadinstitute.atlassian.net/browse/GAWB-1674. See discussion in
+  * https://github.com/broadinstitute/firecloud-orchestration/pull/388.
+  */
 case class UIWorkspace(
   workspaceId: String,
   namespace: String,
@@ -79,26 +64,19 @@ case class UIWorkspace(
   lastModified: Option[String] = None,
   attributes: AttributeMap,
   bucketName: String,
-  accessLevels: Map[String, Map[String, String]],
-  realm: Option[Map[String, String]],
+  accessLevels: Map[WorkspaceAccessLevel, RawlsGroupRef],
+  realm: Option[RawlsRealmRef],
   isProtected: Boolean) {
-  def this(rw: RawlsWorkspace) =
-    this(rw.workspaceId, rw.namespace, rw.name, rw.isLocked, rw.createdBy, rw.createdDate,
-      rw.lastModified, rw.attributes, rw.bucketName, rw.accessLevels, rw.realm,
-      rw.realm.flatMap(_.get("groupName").map(_ == FireCloudConfig.Nih.rawlsGroupName)).getOrElse(false))
+  def this(w: Workspace) =
+    this(w.workspaceId, w.namespace, w.name, Option(w.isLocked), w.createdBy, w.createdDate.toString,
+      Option(w.lastModified.toString), w.attributes, w.bucketName, w.accessLevels, w.realm,
+      w.realm.exists(_.realmName.value == FireCloudConfig.Nih.rawlsGroupName))
 }
 
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
 
-case class EntityCopyDefinition(
+case class EntityCopyWithoutDestinationDefinition(
   sourceWorkspace: WorkspaceName,
-  entityType: String,
-  entityNames: Seq[String]
-  )
-
-case class EntityCopyWithDestinationDefinition(
-  sourceWorkspace: WorkspaceName,
-  destinationWorkspace: WorkspaceName,
   entityType: String,
   entityNames: Seq[String]
   )
@@ -148,7 +126,5 @@ case class RawlsGroupMemberList(
   subGroupEmails: Option[Seq[String]] = None,
   userSubjectIds: Option[Seq[String]] = None,
   subGroupNames: Option[Seq[String]] = None)
-
-case class RawlsBucketUsageResponse(usageInBytes: BigInt)
 
 case class WorkspaceStorageCostEstimate(estimate: String)
