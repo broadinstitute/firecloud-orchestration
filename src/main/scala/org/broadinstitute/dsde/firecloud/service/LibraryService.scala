@@ -228,9 +228,9 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def searchOrspId(orspId: String): Future[PerRequestMessage] = {
-    val duosOrspIdSearchUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
     duosDAO.orspIdSearch(userInfo, orspId) map { RequestComplete(_) } recoverWith {
       case e: FireCloudException => Future(RequestCompleteWithErrorReport(NotFound, s"error searching for ORSP ID '%s'".format(orspId)))
     }
   }
+
 }
