@@ -3444,7 +3444,7 @@ definitions:
         type: string
         description: Expression that resolves to one or more entities matching the entity type
           in the method configuration. Leave blank for default.
-      readFromCache:
+      useCallCache:
         type: boolean
         description: Whether or not to read from cache for this submission
     required:
@@ -3452,7 +3452,7 @@ definitions:
       - methodConfigurationName
       - entityType
       - entityName
-      - readFromCache
+      - useCallCache
 
   SubmissionRequest:
     description: ''

@@ -119,7 +119,7 @@ case class SubmissionIngest(
   entityType: Option[String],
   entityName: Option[String],
   expression: Option[String],
-  readFromCache: Option[Boolean])
+  useCallCache: Option[Boolean])
 
 case class RawlsGroupMemberList(
   userEmails: Option[Seq[String]] = None,

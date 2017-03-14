@@ -43,7 +43,7 @@ object MockWorkspaceServer {
     entityType = Option(randomAlpha()),
     entityName = Option(randomAlpha()),
     expression = Option(randomAlpha()),
-    readFromCache = Option(randomBoolean())
+    useCallCache = Option(randomBoolean())
   ) 
   
   val mockInvalidSubmission = SubmissionIngest(
@@ -52,7 +52,7 @@ object MockWorkspaceServer {
     entityType = Option.empty,
     entityName = Option.empty,
     expression = Option.empty,
-    readFromCache = Option.empty
+    useCallCache = Option.empty
   )
 
   val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
