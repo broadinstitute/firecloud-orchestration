@@ -44,8 +44,6 @@ trait LibraryServiceSupport extends LazyLogging {
     logger.info(s"reindex: found ${nodes.size} unique ontology nodes")
 
     // query ontology for this set of nodes, save in a map
-    // use a single thread to throttle requests to ontology
-    // val ontologyContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
     val parentCache = Future.sequence(nodes map {id =>
       lookupParentNodes(id, ontologyDAO) map {parents:Seq[TermParent] => (id, parents)}
     })
