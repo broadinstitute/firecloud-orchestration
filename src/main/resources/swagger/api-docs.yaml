@@ -2311,8 +2311,12 @@ paths:
       responses:
         200:
           description: Consent
+          schema:
+            $ref: '#/definitions/Consent'
+        400:
+          description: The consent associated with the provided name has not been approved.
         404:
-          description: No Consent with the given name was found.
+          description: The consent associated with the provided name could not be found.
         500:
           description: Internal Server Error
 
@@ -2801,6 +2805,44 @@ definitions:
         type: string
         description: Type of the AgoraEntity -- Task or Workflow.
         default: Task
+
+  Consent:
+    type: object
+    properties:
+      consentId:
+        type: string
+        description: The ID of the entity.
+      requiresManualReview:
+        type: boolean
+        description: Describes if this consent has to be reviewed manually.
+      dataUseLetter:
+        type: string
+        description: The URL of the saved file.
+      useRestriction:
+        type: string
+        description: The UseRestriction of this consent. Used to match against another entities.
+      name:
+        type: string
+        description: Name to identify the consent.
+      dulName:
+        type: string
+        description: Name that identifies the Data Use Letter file.
+      createDate:
+        type: string
+        format: date
+        description: Creation Date.
+      lastUpdate:
+        type: string
+        format: date
+        description: Date of the last update.
+      sortDate:
+        type: string
+        format: date
+        description: The lastest modification date.
+      translatedUseRestriction:
+        type: string
+        format: date
+        description: The translated use restriction of the consent.
 
   CopyConfigurationIngest:
     type: object
