@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
@@ -22,14 +23,49 @@ import scala.language.postfixOps
 /**
   * Created by davidan on 10/2/16.
   */
-trait LibraryServiceSupport {
+trait LibraryServiceSupport extends LazyLogging {
 
   def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
     if (value) Seq(AddUpdateAttribute(LibraryService.publishedFlag, AttributeBoolean(true)))
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  def indexableDocument(workspace: Workspace, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Document] = {
+  def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Seq[Document]] = {
+    // find all the ontology nodes in this list of workspaces
+    val nodesSeq:Seq[String] = workspaces.collect {
+        case w if w.attributes.contains(AttributeName.withLibraryNS("diseaseOntologyID")) =>
+          w.attributes(AttributeName.withLibraryNS("diseaseOntologyID"))
+      }.collect {
+        case s:AttributeString => s.value
+      }
+    logger.info(s"reindex: found ${nodesSeq.size} workspaces with ontology nodes assigned")
+
+    val nodes = nodesSeq.toSet
+    logger.info(s"reindex: found ${nodes.size} unique ontology nodes")
+
+    // query ontology for this set of nodes, save in a map
+    // use a single thread to throttle requests to ontology
+    // val ontologyContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
+    val parentCache = Future.sequence(nodes map {id =>
+      lookupParentNodes(id, ontologyDAO) map {parents:Seq[TermParent] => (id, parents)}
+    })
+
+    // using the cached parent information, build the indexable documents
+    val docsResult: Future[Seq[Document]] = parentCache map { parentSet =>
+      val parentMap = parentSet.toMap.filter{
+        case (k,v) if v.nonEmpty => true
+      }
+      logger.info(s"reindex: have parent results for ${parentMap.size} ontology nodes")
+      workspaces map {w =>
+       indexableDocument(w, parentMap)
+      }
+    }
+
+    docsResult
+
+  }
+
+  def indexableDocument(workspace: Workspace, parentCache: Map[String,Seq[TermParent]])(implicit ec: ExecutionContext): Document = {
     val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {
@@ -46,15 +82,14 @@ trait LibraryServiceSupport {
 
     workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
-        lookupParentNodes(id.value, ontologyDAO) map {parents =>
-          val parentFields = if (parents.nonEmpty) {
-            fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parents.map(_.toESTermParent).toJson.compactPrint))
-          } else {
-            fields
-          }
-          Document(workspace.workspaceId, parentFields)
+        val parents = parentCache.get(id.value)
+        val parentFields = if (parents.isDefined) {
+          fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parents.get.map(_.toESTermParent).toJson.compactPrint))
+        } else {
+          fields
         }
-      case _ => Future(Document(workspace.workspaceId, fields))
+        Document(workspace.workspaceId, parentFields)
+      case _ => Document(workspace.workspaceId, fields)
     }
   }
 
@@ -64,7 +99,12 @@ trait LibraryServiceSupport {
     ontologyDAO.search(leafId) map {
       case Some(terms) if terms.nonEmpty =>
         terms.head.parents.getOrElse(Seq.empty)
-      case None => Seq.empty
+      case None => Seq.empty[TermParent]
+    } recoverWith {
+      case ex:Exception => {
+        logger.warn(s"exception getting term parents from ontology: ${ex.getMessage}")
+        Future(Seq.empty[TermParent])
+      }
     }
   }
 

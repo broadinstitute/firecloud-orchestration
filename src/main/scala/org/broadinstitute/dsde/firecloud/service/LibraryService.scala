@@ -168,7 +168,10 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def publishDocument(ws: Workspace): Unit = {
-    indexableDocument(ws, ontologyDAO) map { searchDAO.indexDocument }
+    indexableDocuments(Seq(ws), ontologyDAO) map { ws =>
+      assert(ws.size == 1)
+      searchDAO.indexDocument(ws.head)
+    }
   }
 
   def removeDocument(ws: Workspace): Unit = {
@@ -182,7 +185,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
         Future(RequestComplete(NoContent))
       else {
         logger.info("reindex: requesting ontology parents for workspaces ...")
-        val toIndex: Future[Seq[Document]] = Future.sequence(workspaces map { indexableDocument(_, ontologyDAO) })
+        val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO)
         toIndex map { documents =>
           logger.info("reindex: resetting index ...")
           searchDAO.recreateIndex()
