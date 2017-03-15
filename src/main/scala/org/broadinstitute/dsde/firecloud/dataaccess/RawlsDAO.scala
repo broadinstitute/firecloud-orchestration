@@ -57,6 +57,8 @@ trait RawlsDAO extends LazyLogging {
 
   def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse]
 
+  def accessCheck(workspaceIds: Seq[String])(implicit userToken: WithAccessToken): Future[Seq[WorkspacePermissionsPair]]
+
   def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace]
 
   def getAllLibraryPublishedWorkspaces: Future[Seq[Workspace]]

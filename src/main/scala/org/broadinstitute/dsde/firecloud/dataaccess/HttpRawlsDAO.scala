@@ -81,6 +81,12 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
     authedRequestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
 
+  override def accessCheck(workspaceIds: Seq[String])(implicit userToken: WithAccessToken): Future[Seq[WorkspacePermissionsPair]] = {
+    implicit val WorkspaceAccessLevelFormat = WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
+    implicit val WorkspacePermissionsPairFormat = jsonFormat2(WorkspacePermissionsPair)
+    authedRequestToObject[Seq[WorkspacePermissionsPair]]( Post(workspaceAccessCheckUrl, workspaceIds) )
+  }
+
   override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
     authedRequestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
   }
@@ -122,6 +128,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
   private def patchWorkspaceAclUrl(ns: String, name: String, inviteUsersNotFound: Boolean) = rawlsWorkspaceACLUrl.format(ns, name, inviteUsersNotFound)
+  private val workspaceAccessCheckUrl = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + "/access"
 
   override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
     userAuthedRequest(Get(RawlsDAO.refreshTokenDateUrl))(userInfo) map { response =>
