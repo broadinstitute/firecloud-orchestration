@@ -176,14 +176,19 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def indexAll: Future[PerRequestMessage] = {
+    logger.info("reindex: requesting workspaces from rawls ...")
     rawlsDAO.getAllLibraryPublishedWorkspaces flatMap { workspaces: Seq[Workspace] =>
-      searchDAO.recreateIndex()
       if (workspaces.isEmpty)
         Future(RequestComplete(NoContent))
       else {
+        logger.info("reindex: requesting ontology parents for workspaces ...")
         val toIndex: Future[Seq[Document]] = Future.sequence(workspaces map { indexableDocument(_, ontologyDAO) })
         toIndex map { documents =>
+          logger.info("reindex: resetting index ...")
+          searchDAO.recreateIndex()
+          logger.info("reindex: indexing datasets ...")
           val indexedDocuments = searchDAO.bulkIndex(documents)
+          logger.info("reindex: ... done.")
           if (indexedDocuments.hasFailures) {
             RequestComplete(InternalServerError, indexedDocuments)
           } else {
