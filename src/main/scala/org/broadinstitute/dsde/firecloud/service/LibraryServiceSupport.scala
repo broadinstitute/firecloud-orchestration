@@ -50,9 +50,7 @@ trait LibraryServiceSupport extends LazyLogging {
 
     // using the cached parent information, build the indexable documents
     val docsResult: Future[Seq[Document]] = parentCache map { parentSet =>
-      val parentMap = parentSet.toMap.filter{
-        case (k,v) if v.nonEmpty => true
-      }
+      val parentMap = parentSet.toMap.filter(e => e._2.nonEmpty) // remove nodes that have no parent
       logger.info(s"reindex: have parent results for ${parentMap.size} ontology nodes")
       workspaces map {w =>
        indexableDocument(w, parentMap)
@@ -63,7 +61,7 @@ trait LibraryServiceSupport extends LazyLogging {
 
   }
 
-  def indexableDocument(workspace: Workspace, parentCache: Map[String,Seq[TermParent]])(implicit ec: ExecutionContext): Document = {
+  private def indexableDocument(workspace: Workspace, parentCache: Map[String,Seq[TermParent]])(implicit ec: ExecutionContext): Document = {
     val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {
