@@ -98,7 +98,7 @@ trait LibraryServiceSupport extends LazyLogging {
       case None => Seq.empty[TermParent]
     } recoverWith {
       case ex:Exception => {
-        logger.warn(s"exception getting term parents from ontology: ${ex.getMessage}")
+        logger.warn(s"exception getting term and parents from ontology: ${ex.getMessage}")
         Future(Seq.empty[TermParent])
       }
     }
