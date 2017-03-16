@@ -11,14 +11,36 @@ import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 
 class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
   extends OntologyDAO with RestJsonClient with LazyLogging {
 
   override def search(term: String): Future[Option[List[TermResource]]] = {
-    unAuthedRequest(Get(Uri(ontologySearchUrl).withQuery(("id", term)))) map { response =>
+    searchBlocking(term)
+  }
+
+  @deprecated("uses blocking I/O, boo!", "2017-03-15")
+  private def searchBlocking(term: String): Future[Option[List[TermResource]]] = {
+    val targetUri = Uri(ontologySearchUrl).withQuery(("id", term))
+    logger.info(s"HttpOntologyDAO querying ${term} ...")
+    val response = Await.result(unAuthedRequest(Get(targetUri)), Duration(30, "seconds"))
+    logger.info(s"HttpOntologyDAO querying ${term}: ${response.status.defaultMessage}")
+    response.entity.as[List[TermResource]] match {
+      case Right(obj) => Future(Some(obj))
+      case Left(err) =>
+        logger.warn(s"Error while retrieving ontology parents for id '$term': $err")
+        Future(None)
+    }
+  }
+
+  private def searchAsync(term: String): Future[Option[List[TermResource]]] = {
+    val targetUri = Uri(ontologySearchUrl).withQuery(("id", term))
+    logger.info(s"HttpOntologyDAO querying ${term} ...")
+    unAuthedRequest(Get(targetUri)) map { response =>
+      logger.info(s"HttpOntologyDAO querying ${term}: ${response.status.defaultMessage}")
       response.entity.as[List[TermResource]] match {
         case Right(obj) => Some(obj)
         case Left(err) =>
@@ -27,4 +49,5 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
       }
     }
   }
+
 }
