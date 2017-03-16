@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{DuosDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
@@ -231,7 +231,11 @@ class LibraryService (protected val argUserInfo: UserInfo,
     // We need this implicit to unmarshal the consent in the response
     import ModelJsonProtocol.impDuosConsent
     duosDAO.orspIdSearch(userInfo, orspId) map { RequestComplete(_) } recoverWith {
-      case e: FireCloudException => Future(RequestCompleteWithErrorReport(NotFound, s"error searching for ORSP ID '%s'".format(orspId)))
+      case e: FireCloudExceptionWithErrorReport =>
+        val status = e.errorReport.statusCode.getOrElse(NotFound)
+        Future(RequestCompleteWithErrorReport(status, e.errorReport.message))
+      case e: FireCloudException =>
+        Future(RequestCompleteWithErrorReport(InternalServerError, s"error searching for ORSP ID '%s'".format(orspId)))
     }
   }
 

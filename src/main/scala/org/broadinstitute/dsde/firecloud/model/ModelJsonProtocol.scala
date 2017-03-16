@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.model.DUOS.Consent
+import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
@@ -209,6 +209,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
 
   implicit val impDuosConsent = jsonFormat10(Consent)
+  implicit val impDuosConsentError = jsonFormat2(ConsentError)
   implicit val impOntologyTermParent = jsonFormat5(TermParent)
   implicit val impOntologyTermResource = jsonFormat7(TermResource)
   implicit val impOntologyESTermParent = jsonFormat2(ESTermParent)

@@ -17,6 +17,11 @@ object DUOS {
     translatedUseRestriction: Option[String] = None
   )
 
+  case class ConsentError(
+    message: String,
+    code: Int
+  )
+
 }
 
 object Ontology {
