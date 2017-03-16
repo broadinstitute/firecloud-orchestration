@@ -32,7 +32,7 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
     generateExternalHttpPerRequestForMethod(requestCompression, unencodedPath, inMethod)
   } reduce (_ ~ _)
 
-  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = false) = pathPrefix(ourEndpointPath) {
+  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = false) = pathPrefix( separateOnSlashes(ourEndpointPath) ) {
     extract(_.request.method) { httpMethod =>
       unmatchedPath { remaining =>
         parameterMap { params =>
@@ -46,7 +46,7 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
 
   private def generateExternalHttpPerRequestForMethod(requestCompression: Boolean, unencodedPath: String, inMethod: HttpMethod) = {
     val outMethod = new RequestBuilder(inMethod)
-    val path = encodeUri(unencodedPath)
+    val path = Uri(unencodedPath)
     // POST, PUT, PATCH
     if (inMethod.isEntityAccepted) {
       method(inMethod) {

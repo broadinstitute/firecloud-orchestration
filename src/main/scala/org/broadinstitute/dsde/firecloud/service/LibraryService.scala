@@ -168,7 +168,10 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def publishDocument(ws: Workspace): Unit = {
-    indexableDocument(ws, ontologyDAO) map { searchDAO.indexDocument }
+    indexableDocuments(Seq(ws), ontologyDAO) map { ws =>
+      assert(ws.size == 1)
+      searchDAO.indexDocument(ws.head)
+    }
   }
 
   def removeDocument(ws: Workspace): Unit = {
@@ -176,14 +179,19 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def indexAll: Future[PerRequestMessage] = {
+    logger.info("reindex: requesting workspaces from rawls ...")
     rawlsDAO.getAllLibraryPublishedWorkspaces flatMap { workspaces: Seq[Workspace] =>
-      searchDAO.recreateIndex()
       if (workspaces.isEmpty)
         Future(RequestComplete(NoContent))
       else {
-        val toIndex: Future[Seq[Document]] = Future.sequence(workspaces map { indexableDocument(_, ontologyDAO) })
+        logger.info("reindex: requesting ontology parents for workspaces ...")
+        val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO)
         toIndex map { documents =>
+          logger.info("reindex: resetting index ...")
+          searchDAO.recreateIndex()
+          logger.info("reindex: indexing datasets ...")
           val indexedDocuments = searchDAO.bulkIndex(documents)
+          logger.info("reindex: ... done.")
           if (indexedDocuments.hasFailures) {
             RequestComplete(InternalServerError, indexedDocuments)
           } else {

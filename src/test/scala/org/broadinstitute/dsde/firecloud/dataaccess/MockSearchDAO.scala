@@ -47,4 +47,14 @@ class MockSearchDAO extends SearchDAO {
     populateSuggestInvoked = true
     Future(Seq(field, text))
   }
+
+  def reset = {
+    indexDocumentInvoked = false
+    deleteDocumentInvoked = false
+    findDocumentsInvoked = false
+    autocompleteInvoked = false
+    populateSuggestInvoked = false
+  }
+
+
 }
