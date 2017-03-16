@@ -2315,6 +2315,8 @@ paths:
             $ref: '#/definitions/Consent'
         400:
           description: The consent associated with the provided name has not been approved.
+        401:
+          description: Users must also be current DUOS users.
         404:
           description: The consent associated with the provided name could not be found.
         500:
