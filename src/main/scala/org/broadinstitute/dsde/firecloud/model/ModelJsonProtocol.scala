@@ -1,10 +1,11 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.model.DUOS.Consent
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
-import org.broadinstitute.dsde.firecloud.model.Ontology.{TermResource, TermParent, ESTermParent}
+import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
@@ -207,6 +208,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
   implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
 
+  implicit val impDuosConsent = jsonFormat10(Consent)
   implicit val impOntologyTermParent = jsonFormat5(TermParent)
   implicit val impOntologyTermResource = jsonFormat7(TermResource)
   implicit val impOntologyESTermParent = jsonFormat2(ESTermParent)

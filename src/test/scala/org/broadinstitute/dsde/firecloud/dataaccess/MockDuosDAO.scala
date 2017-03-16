@@ -1,8 +1,8 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.broadinstitute.dsde.firecloud.model.DUOS.Consent
 import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import spray.json.{JsObject, JsString}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -216,11 +216,11 @@ class MockDuosDAO extends DuosDAO {
   override def ontologySearch(term: String): Future[Option[List[TermResource]]] = Future(data.get(term))
 
   val orsp = Map(
-    "12345" -> Some(JsObject("12345" -> JsString("Test Orsp Translation"))),
+    "12345" -> Some(Consent(consentId = "12345", name = "ORSP-ID", translatedUseRestriction = Some("Translation"))),
     "missing" -> None
   )
 
-  override def orspIdSearch(userInfo: UserInfo, orspId: String): Future[Option[JsObject]] =
+  override def orspIdSearch(userInfo: UserInfo, orspId: String): Future[Option[Consent]] =
     Future(orsp.getOrElse(orspId, None))
 
 }
