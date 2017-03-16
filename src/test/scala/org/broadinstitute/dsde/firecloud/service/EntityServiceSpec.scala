@@ -39,9 +39,10 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
     sourceWorkspace = WorkspaceName(namespace="invalid", name="other-ws"),
     entityType = "sample", Seq("sample_01"))
 
-  val validEntityDelete = EntityDeleteDefinition(false, Seq(EntityId("sample","id"),EntityId("sample","bar")))
-  val invalidEntityDelete = validEntityCopy // we're testing that the payload can't be unmarshalled to an EntityDeleteDefinition
-  val mixedFailEntityDelete = EntityDeleteDefinition(false, Seq(EntityId("sample","foo"),EntityId("failme","kthxbai"),EntityId("sample","bar")))
+  val validEntityDelete = Seq(EntityId("sample","id"),EntityId("sample","bar"))
+  val invalidEntityDelete = validEntityCopy // we're testing that the payload can't be unmarshalled to a Seq[EntityId]
+  val mixedFailEntityDelete = Seq(EntityId("sample","foo"),EntityId("failme","kthxbai"),EntityId("sample","bar"))
+  val allFailEntityDelete = Seq(EntityId("failme","kthxbai"))
 
   def entityCopyWithDestination(copyDef: EntityCopyDefinition) = new EntityCopyDefinition(
     sourceWorkspace = copyDef.sourceWorkspace,
@@ -136,25 +137,12 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
     workspaceServer
       .when(
         request()
-          .withMethod("DELETE")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample/.+")
+          .withMethod("POST")
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/delete")
           .withHeader(MockUtils.authHeader))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header)
-          .withStatusCode(OK.intValue)
-      )
-    workspaceServer
-      .when(
-        request()
-          .withMethod("DELETE")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/failme/.+")
-          .withHeader(MockUtils.authHeader))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header)
-          .withStatusCode(NotFound.intValue)
-          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
+      .callback(
+        callback().
+          withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityDeleteCallback")
       )
   }
 
@@ -241,27 +229,36 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
       }
     }
 
-    "when calling bulk entity delete" - {
-      "response is OK" ignore {
+    "when calling bulk entity delete with a valid payload" - {
+      "response is NoContent" in {
         Post(validFireCloudEntitiesBulkDeletePath, validEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
-          status should be(OK)
+          status should be(NoContent)
         }
       }
     }
 
     "when calling bulk entity delete with an invalid payload" - {
-      "BadRequest is returned" ignore {
+      "BadRequest is returned" in {
         Post(validFireCloudEntitiesBulkDeletePath, invalidEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(BadRequest)
         }
       }
     }
 
-    "when calling bulk entity delete and expecting mixed success/fail" - {
-      "InternalServerError is returned with an ErrorReport" ignore {
+    "when calling bulk entity delete with some missing entities" - {
+      "BadRequest is returned with an ErrorReport" in {
         Post(validFireCloudEntitiesBulkDeletePath, mixedFailEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
-          status should be(InternalServerError)
-          errorReportCheck("FireCloud", InternalServerError)
+          status should be(BadRequest)
+          errorReportCheck("Rawls", BadRequest)
+        }
+      }
+    }
+
+    "when calling bulk entity delete with all missing entities" - {
+      "BadRequest is returned with an ErrorReport" in {
+        Post(validFireCloudEntitiesBulkDeletePath, allFailEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+          status should be(BadRequest)
+          errorReportCheck("Rawls", BadRequest)
         }
       }
     }

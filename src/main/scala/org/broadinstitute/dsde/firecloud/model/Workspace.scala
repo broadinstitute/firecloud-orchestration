@@ -82,7 +82,6 @@ case class EntityCopyWithoutDestinationDefinition(
   )
 
 case class EntityId(entityType: String, entityName: String)
-case class EntityDeleteDefinition(recursive: Boolean, entities: Seq[EntityId])
 
 case class MethodConfigurationId(
   name: Option[String] = None,

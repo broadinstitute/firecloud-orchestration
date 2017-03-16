@@ -53,15 +53,11 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                   }
                 }
               } ~
-              //TODO: Disabled as part of GAWB-423, re-enable as part of GAWB-422
-              //        path("delete") {
-              //          post {
-              //            entity(as[EntityDeleteDefinition]) { deleteDefinition => requestContext =>
-              //              perRequest(requestContext, Props(new DeleteEntitiesActor(requestContext, deleteDefinition.entities)),
-              //                DeleteEntities.ProcessUrl(baseRawlsEntitiesUrl))
-              //            }
-              //          }
-              //        } ~
+              path("delete") {
+                post {
+                  passthrough(encodeUri(baseRawlsEntitiesUrl + "/delete"), HttpMethods.POST)
+                }
+              } ~
               pathPrefix(Segment) { entityType =>
                 val entityTypeUrl = encodeUri(baseRawlsEntitiesUrl + "/" + entityType)
                 pathEnd {
