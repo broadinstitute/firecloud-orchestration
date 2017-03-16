@@ -56,6 +56,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val tsvImportPath = workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
+  private final val tagAutocompletePath = s"$workspacesRoot/tags/autocomplete/abc"
   private final val executionEngineVersionPath = FireCloudConfig.Rawls.authPrefix + "/version/executionEngine"
 
   private def catalogPath(ns:String=workspace.namespace, name:String=workspace.name) =
@@ -298,6 +299,16 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+    "Passthrough tests on the /workspaces/tags/autocomplete/segment path" - {
+      List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
+        s"MethodNotAllowed error is returned for $method" in {
+          new RequestBuilder(method)("/api/workspaces/tags/autocomplete/query") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(MethodNotAllowed)
+          }
+        }
+      }
+    }
+
   }
 
   "WorkspaceService Passthrough Tests" - {
@@ -439,7 +450,16 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
         }
       }
+
+    "Passthrough tests on the workspaces/tags/autocomplete/%s path" - {
+      "OK status is returned for GET" in {
+        stubRawlsService(HttpMethods.GET, tagAutocompletePath, OK)
+        Get(tagAutocompletePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
     }
+  }
 
   "Workspace Non-passthrough Tests" - {
     "POST on /workspaces with 'not protected' workspace request sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
