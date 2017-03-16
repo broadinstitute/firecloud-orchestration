@@ -2,11 +2,14 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.model.DUOS.Consent
+import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
+import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import spray.http.{StatusCodes, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
@@ -14,22 +17,6 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
-import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
-import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.rawls.model.ErrorReportSource
-import spray.json.JsObject
-
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
-import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
-import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
-import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.DUOS.Consent
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import spray.client.pipelining._
-import spray.http.Uri
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 
 
 class HttpDuosDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)

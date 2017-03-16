@@ -1,14 +1,13 @@
 package org.broadinstitute.dsde.firecloud
 
-import akka.actor.ActorContext
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.service._
+import org.broadinstitute.dsde.firecloud.webservice._
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
-import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.webservice._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps

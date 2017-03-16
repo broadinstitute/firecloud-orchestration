@@ -1,14 +1,20 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.DUOS.Consent
 import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
+import spray.http.StatusCodes
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 
 class MockDuosDAO extends DuosDAO {
+
+  implicit val errorReportSource = ErrorReportSource("Mock DUOS")
+
   val data = Map(
     // central sleep apnea
     "DOID_9220" -> List(TermResource(
@@ -215,12 +221,16 @@ class MockDuosDAO extends DuosDAO {
 
   override def search(term: String): Future[Option[List[TermResource]]] = Future(data.get(term))
 
-  val orsp = Map(
-    "12345" -> Some(Consent(consentId = "12345", name = "ORSP-ID", translatedUseRestriction = Some("Translation"))),
-    "missing" -> None
-  )
-
-  override def orspIdSearch(userInfo: UserInfo, orspId: String): Future[Option[Consent]] =
-    Future(orsp.getOrElse(orspId, None))
+  override def orspIdSearch(userInfo: UserInfo, orspId: String): Future[Option[Consent]] = {
+    orspId match {
+      case x if x.equals("unapproved") =>
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "Unapproved"))
+      case x if x.equals("missing") =>
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Not Found"))
+      case x if x.equals("12345") =>
+        Future(Some(Consent(consentId = "consent-id-12345", name = "12345", translatedUseRestriction = Some("Translation"))))
+      case _ => Future(None)
+    }
+  }
 
 }

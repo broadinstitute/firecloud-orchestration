@@ -1,21 +1,20 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.dataaccess._
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AddUpdateAttribute
+import org.broadinstitute.dsde.firecloud.model.DUOS.Consent
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import spray.http._
-import spray.http.StatusCodes._
-import spray.json._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.scalatest.BeforeAndAfterEach
+import spray.http.StatusCodes._
+import spray.http._
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 import scala.collection.JavaConverters._
 
@@ -239,16 +238,29 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
       }
     }
 
-    "when searching on ORSP IDs" - {
+    "when searching for ORSP IDs" - {
       "GET on " + duosConsentOrspIdPath - {
-        "should return a value for '12345'" in {
+        "should return a valid consent for '12345'" in {
           Get(duosConsentOrspIdPath + "12345") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            responseAs[String] should include ("12345")
+            val consent = response.entity.asString.parseJson.convertTo[Consent]
+            consent shouldNot equal(None)
+            consent.name should equal("12345")
           }
         }
-        "should return a Not Found error on 'missing'" in {
+        "should return a Bad Request error on 'unapproved'" in {
+          Get(duosConsentOrspIdPath + "unapproved") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+        "should return a Not Found error on known 'missing'" in {
           Get(duosConsentOrspIdPath + "missing") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(NotFound)
+          }
+        }
+        "should return a Not Found error on unknown missing" in {
+          val orspId = randomStringFromCharList(10, ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9'))
+          Get(duosConsentOrspIdPath + orspId) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(NotFound)
           }
         }
