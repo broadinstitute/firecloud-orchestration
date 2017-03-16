@@ -67,13 +67,13 @@ class HttpDuosDAO(implicit val system: ActorSystem, implicit val executionContex
               logger.warn(s"Error while retrieving consent for orsp id '$orspId': $err")
               None
           }
-        case x if x == StatusCodes.BadRequest || x == StatusCodes.NotFound =>
+        case x if x == StatusCodes.BadRequest || x == StatusCodes.NotFound || x == StatusCodes.Unauthorized =>
           logger.warn(s"Error while retrieving consent for orsp id '$orspId': $entityString")
           response.entity.as[ConsentError] match {
             case Right(consentError) =>
-              throw new FireCloudExceptionWithErrorReport(ErrorReport(consentError.code, consentError.message))
+              throw new FireCloudExceptionWithErrorReport(ErrorReport(x, consentError.message))
             case Left(err) =>
-              throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
+              throw new FireCloudExceptionWithErrorReport(ErrorReport(x, response.toString))
           }
         case _ =>
           logger.error(response.toString)
