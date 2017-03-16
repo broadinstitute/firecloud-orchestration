@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
-import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermResource, TermParent, ESTermParent}
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete

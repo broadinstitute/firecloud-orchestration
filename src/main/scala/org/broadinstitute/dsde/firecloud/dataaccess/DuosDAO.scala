@@ -13,7 +13,7 @@ trait DuosDAO {
   lazy val ontologySearchUrl = FireCloudConfig.Duos.baseOntologyUrl + "/search"
   lazy val orspIdSearchUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
 
-  def ontologySearch(term: String): Future[Option[List[TermResource]]]
+  def search(term: String): Future[Option[List[TermResource]]]
 
   def orspIdSearch(userInfo: UserInfo, orspId: String): Future[Option[Consent]]
 

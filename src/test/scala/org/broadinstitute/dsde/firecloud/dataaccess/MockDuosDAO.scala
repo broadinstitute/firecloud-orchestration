@@ -213,7 +213,7 @@ class MockDuosDAO extends DuosDAO {
     ))
   )
 
-  override def ontologySearch(term: String): Future[Option[List[TermResource]]] = Future(data.get(term))
+  override def search(term: String): Future[Option[List[TermResource]]] = Future(data.get(term))
 
   val orsp = Map(
     "12345" -> Some(Consent(consentId = "12345", name = "ORSP-ID", translatedUseRestriction = Some("Translation"))),

@@ -91,7 +91,7 @@ trait LibraryServiceSupport extends LazyLogging {
 
   // wraps the duosDao call, handles Nones/nulls, and returns a [Future[Seq].
   // the Seq is populated if the leaf node exists and has parents; Seq is empty otherwise.
-  def lookupParentNodes(leafId:String, duosDao: OntologyDAO)(implicit ec: ExecutionContext):Future[Seq[TermParent]] = {
+  def lookupParentNodes(leafId:String, duosDao: DuosDAO)(implicit ec: ExecutionContext):Future[Seq[TermParent]] = {
     duosDao.search(leafId) map {
       case Some(terms) if terms.nonEmpty =>
         terms.head.parents.getOrElse(Seq.empty)
