@@ -110,9 +110,6 @@
       "title": "Project Name",
       "type": "string",
       "inputHint": "e.g. TCGA, TopMed, ExAC ; tag all relevant associated projects",
-      "aggregate": {
-        "renderHint": "checkbox"
-      },
       "typeahead": "populate"
     },
     "library:dataCategory": {
@@ -161,9 +158,6 @@
     "library:dataUseRestriction": {
       "title": "Data Use Limitation",
       "type": "string",
-      "aggregate": {
-        "renderHint": "checkbox"
-      },
       "typeahead": "populate"
     },
     "library:studyDesign": {
