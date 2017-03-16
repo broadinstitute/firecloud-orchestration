@@ -228,6 +228,8 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def searchOrspId(orspId: String): Future[PerRequestMessage] = {
+    // We need this implicit to unmarshal the consent in the response
+    import ModelJsonProtocol.impDuosConsent
     duosDAO.orspIdSearch(userInfo, orspId) map { RequestComplete(_) } recoverWith {
       case e: FireCloudException => Future(RequestCompleteWithErrorReport(NotFound, s"error searching for ORSP ID '%s'".format(orspId)))
     }
