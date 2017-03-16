@@ -2221,6 +2221,25 @@ paths:
         500:
           description: Internal Error
 
+  /api/workspaces/tags/autocomplete/{query}:
+      get:
+        tags:
+         - Workspaces
+        operationId: getTags
+        summary: |
+          Get all tags used in FireCloud (for autocomplete)
+        parameters:
+          - name: query
+            description: Query string
+            required: true
+            type: string
+            in: path
+        responses:
+          200:
+            description: List of all tags used in FireCloud
+          500:
+            description: Rawls Internal Error
+
   /cookie-authed/download/b/{bucket}/o/{object}:
     get:
       tags:
