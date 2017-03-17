@@ -124,6 +124,9 @@
       "type": "array",
       "items": { "type": "string" },
       "inputHint": "e.g. Whole Exome, Whole Genome, Exome Panel, Genotyping Array, RNA-Seq, Methylation Array; include all relevant",
+      "aggregate": {
+        "renderHint": "checkbox"
+      },
       "typeahead": "populate"
     },
     "library:reference": {
