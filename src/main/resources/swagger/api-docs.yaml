@@ -2822,11 +2822,9 @@ definitions:
         description: Creation Date in date-time milliseconds
       lastUpdate:
         type: number
-        format: date
         description: Date of the last update in date-time milliseconds
       sortDate:
         type: number
-        format: date
         description: The lastest modification date in date-time milliseconds
       requiresManualReview:
         type: boolean
@@ -2842,7 +2840,6 @@ definitions:
         description: Name that identifies the Data Use Letter file.
       translatedUseRestriction:
         type: string
-        format: date
         description: The translated use restriction of the consent.
 
   CopyConfigurationIngest:
