@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.dataaccess.{DuosDAO, RawlsDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
@@ -45,14 +45,14 @@ object LibraryService {
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO, app.duosDAO)
+    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO, app.ontologyDAO)
 }
 
 
 class LibraryService (protected val argUserInfo: UserInfo,
                       val rawlsDAO: RawlsDAO,
                       val searchDAO: SearchDAO,
-                      val duosDAO: DuosDAO)
+                      val ontologyDAO: OntologyDAO)
                      (implicit protected val executionContext: ExecutionContext) extends Actor
   with LibraryServiceSupport with AttributeSupport with RoleSupport with SprayJsonSupport with LazyLogging {
 
@@ -170,7 +170,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def publishDocument(ws: Workspace): Unit = {
-    indexableDocuments(Seq(ws), duosDAO) map { ws =>
+    indexableDocuments(Seq(ws), ontologyDAO) map { ws =>
       assert(ws.size == 1)
       searchDAO.indexDocument(ws.head)
     }
@@ -187,7 +187,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
         Future(RequestComplete(NoContent))
       else {
         logger.info("reindex: requesting ontology parents for workspaces ...")
-        val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, duosDAO)
+        val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO)
         toIndex map { documents =>
           logger.info("reindex: resetting index ...")
           searchDAO.recreateIndex()
@@ -230,7 +230,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   def searchOrspId(orspId: String): Future[PerRequestMessage] = {
     // We need this implicit to unmarshal the consent in the response
     import ModelJsonProtocol.impDuosConsent
-    duosDAO.orspIdSearch(userInfo, orspId) map { RequestComplete(_) } recoverWith {
+    ontologyDAO.orspIdSearch(userInfo, orspId) map { RequestComplete(_) } recoverWith {
       case e: FireCloudExceptionWithErrorReport =>
         val status = e.errorReport.statusCode.getOrElse(NotFound)
         Future(RequestCompleteWithErrorReport(status, e.errorReport.message))

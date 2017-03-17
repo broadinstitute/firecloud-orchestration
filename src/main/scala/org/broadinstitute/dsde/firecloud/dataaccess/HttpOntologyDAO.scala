@@ -19,8 +19,8 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 
-class HttpDuosDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
-  extends DuosDAO with RestJsonClient with LazyLogging {
+class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
+  extends OntologyDAO with RestJsonClient with LazyLogging {
 
   implicit val errorReportSource = ErrorReportSource("DUOS")
 

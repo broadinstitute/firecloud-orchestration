@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.{DuosDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
@@ -30,7 +30,7 @@ trait LibraryServiceSupport extends LazyLogging {
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  def indexableDocuments(workspaces: Seq[Workspace], duosDao: DuosDAO)(implicit ec: ExecutionContext): Future[Seq[Document]] = {
+  def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
     val nodesSeq:Seq[String] = workspaces.collect {
         case w if w.attributes.contains(AttributeName.withLibraryNS("diseaseOntologyID")) =>
@@ -45,7 +45,7 @@ trait LibraryServiceSupport extends LazyLogging {
 
     // query ontology for this set of nodes, save in a map
     val parentCache = Future.sequence(nodes map {id =>
-      lookupParentNodes(id, duosDao) map {parents:Seq[TermParent] => (id, parents)}
+      lookupParentNodes(id, ontologyDAO) map {parents:Seq[TermParent] => (id, parents)}
     })
 
     // using the cached parent information, build the indexable documents
@@ -89,10 +89,10 @@ trait LibraryServiceSupport extends LazyLogging {
     }
   }
 
-  // wraps the duosDao call, handles Nones/nulls, and returns a [Future[Seq].
+  // wraps the ontologyDAO call, handles Nones/nulls, and returns a [Future[Seq].
   // the Seq is populated if the leaf node exists and has parents; Seq is empty otherwise.
-  def lookupParentNodes(leafId:String, duosDao: DuosDAO)(implicit ec: ExecutionContext):Future[Seq[TermParent]] = {
-    duosDao.search(leafId) map {
+  def lookupParentNodes(leafId:String, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext):Future[Seq[TermParent]] = {
+    ontologyDAO.search(leafId) map {
       case Some(terms) if terms.nonEmpty =>
         terms.head.parents.getOrElse(Seq.empty)
       case None => Seq.empty[TermParent]

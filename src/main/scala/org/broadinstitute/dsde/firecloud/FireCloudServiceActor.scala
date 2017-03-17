@@ -1,13 +1,14 @@
 package org.broadinstitute.dsde.firecloud
 
+import akka.actor.ActorContext
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
-import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.webservice._
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
+import org.broadinstitute.dsde.firecloud.service._
+import org.broadinstitute.dsde.firecloud.webservice._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
@@ -36,9 +37,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val searchDAO:SearchDAO = new ElasticSearchDAO(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.indexName)
   val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
   val googleServicesDAO:GoogleServicesDAO = HttpGoogleServicesDAO
-  val duosDAO:DuosDAO = new HttpDuosDAO
+  val ontologyDAO:OntologyDAO = new HttpOntologyDAO
 
-  val app:Application = new Application(agoraDAO, googleServicesDAO, duosDAO, rawlsDAO, searchDAO, thurloeDAO)
+  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, searchDAO, thurloeDAO)
 
   val exportEntitiesByTypeConstructor: (UserInfo) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)

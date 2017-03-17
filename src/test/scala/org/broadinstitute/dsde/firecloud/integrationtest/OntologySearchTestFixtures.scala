@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
-import org.broadinstitute.dsde.firecloud.dataaccess.MockDuosDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
 import org.broadinstitute.dsde.firecloud.model.Document
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeValueRawJson, _}
@@ -20,12 +20,12 @@ object OntologySearchTestFixtures {
     ("None", "Health of activated charcoal portland", 222, None) // no doid
   )
 
-  val duosDAO = new MockDuosDAO
+  val ontologyDAO = new MockOntologyDAO
 
   val fixtureDocs:Seq[Document] = datasetTuples map {x:(String,String,Int,Option[String]) =>
     val phenoAttrs:AttributeMap = x._4 match {
       case Some(doid) =>
-        val term = duosDAO.data(doid).head
+        val term = ontologyDAO.data(doid).head
         val diseaseAttrs = Map(
           AttributeName("library","diseaseOntologyID") -> AttributeString(doid),
           AttributeName("library","diseaseOntologyLabel") -> AttributeString(term.label)

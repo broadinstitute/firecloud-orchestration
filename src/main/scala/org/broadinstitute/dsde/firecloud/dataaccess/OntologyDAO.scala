@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.model.UserInfo
 import scala.concurrent.Future
 
 
-trait DuosDAO {
+trait OntologyDAO {
 
   lazy val ontologySearchUrl = FireCloudConfig.Duos.baseOntologyUrl + "/search"
   lazy val orspIdSearchUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
