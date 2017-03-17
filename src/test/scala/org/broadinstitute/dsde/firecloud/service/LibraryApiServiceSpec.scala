@@ -68,6 +68,24 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
       |}
     """.stripMargin
 
+  val incompleteMetadata =
+    """
+      |{
+      |  "userAttributeOne" : "one",
+      |  "userAttributeTwo" : "two",
+      |  "library:dataCategory" : ["data","category"],
+      |  "library:dataUseRestriction" : "dur",
+      |  "library:studyDesign" : "study",
+      |  "library:cellType" : "cell",
+      |  "library:requiresExternalApproval" : false,
+      |  "library:useLimitationOption" : "orsp",
+      |  "library:technology" : ["is an optional","array attribute"],
+      |  "library:orsp" : "some orsp",
+      |  "_discoverableByGroups" : ["Group1","Group2"]
+      |}
+    """.stripMargin
+
+
   override def beforeAll(): Unit = {
     consentServer = startClientAndServer(consentServerPort)
 
@@ -114,6 +132,35 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
                 status should equal(MethodNotAllowed)
               }
           }
+        }
+      }
+    }
+
+    "when saving metadata" - {
+      "complete data can be saved for an unpublished workspace" in {
+          val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
+          new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+          }
+        }
+      "incomplete data can be saved for an unpublished workspace" in {
+        val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "complete data can be saved for a published workspace" in {
+        val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "cannot save incomplete data save if already published dataset" in {
+        val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(BadRequest)
         }
       }
     }
