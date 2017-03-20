@@ -141,9 +141,9 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   override def getCatalog(ns: String, name: String)(implicit userToken: WithAccessToken): Future[Seq[WorkspaceCatalog]] =
-    requestToObject[Seq[WorkspaceCatalog]]( Get(workspaceCatalogUrl(ns, name)) )
+    authedRequestToObject[Seq[WorkspaceCatalog]](Get(workspaceCatalogUrl(ns, name)), true)
 
   override def patchCatalog(ns: String, name: String, catalogUpdates: Seq[WorkspaceCatalog])(implicit userToken: WithAccessToken): Future[WorkspaceCatalogUpdateResponseList] =
-    requestToObject[WorkspaceCatalogUpdateResponseList]( Patch(workspaceCatalogUrl(ns, name), catalogUpdates) )
+    authedRequestToObject[WorkspaceCatalogUpdateResponseList](Patch(workspaceCatalogUrl(ns, name), catalogUpdates), true)
 
 }

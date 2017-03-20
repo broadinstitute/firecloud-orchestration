@@ -53,7 +53,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
                       val searchDAO: SearchDAO,
                       val ontologyDAO: OntologyDAO)
                      (implicit protected val executionContext: ExecutionContext) extends Actor
-  with LibraryServiceSupport with AttributeSupport with PermissionSupport with SprayJsonSupport with LazyLogging {
+  with LibraryServiceSupport with AttributeSupport with PermissionsSupport with SprayJsonSupport with LazyLogging {
 
   lazy val log = LoggerFactory.getLogger(getClass)
 

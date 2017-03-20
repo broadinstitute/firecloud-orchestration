@@ -58,6 +58,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
   private final val executionEngineVersionPath = FireCloudConfig.Rawls.authPrefix + "/version/executionEngine"
 
+  private def catalogPath(ns:String=workspace.namespace, name:String=workspace.name) =
+    workspacesRoot + "/%s/%s/catalog".format(ns, name)
+
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
   val nihProtectedRealm = RawlsRealmRef(RawlsGroupName("dbGapAuthorizedUsers"))
@@ -107,9 +110,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     false
   )
 
-  val protectedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, protectedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
-  val realmRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, realmRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
-  val nonRealmedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, nonRealmedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val protectedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, protectedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val realmRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, realmRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val nonRealmedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, nonRealmedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
 
   var rawlsServer: ClientAndServer = _
 
@@ -501,6 +504,46 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
         responseAs[Workspace] should equal(rawlsResponse)
+      }
+    }
+
+    "Catalog permission tests on /workspaces/.../.../catalog" - {
+      "when calling PATCH" - {
+        "should be Forbidden as reader" in {
+          val content = HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
+          new RequestBuilder(HttpMethods.PATCH)(catalogPath("reader"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(Forbidden)
+          }
+        }
+        "should be Forbidden as writer" in {
+          val content = HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
+          new RequestBuilder(HttpMethods.PATCH)(catalogPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(Forbidden)
+          }
+        }
+        "should be OK as owner" in {
+          val content = HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
+          new RequestBuilder(HttpMethods.PATCH)(catalogPath(), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(OK)
+            val expected = WorkspaceCatalogUpdateResponseList(Seq(WorkspaceCatalogResponse("userid", true)),Seq.empty)
+//            val respdata = response.entity.asString.parseJson.convertTo[WorkspaceCatalogUpdateResponseList]
+//            val resp = respdata.usersUpdated.head
+            responseAs[WorkspaceCatalogUpdateResponseList] should equal (expected)
+
+          }
+        }
+      }
+      "when calling GET" - {
+        "should be OK as reader" in {
+          new RequestBuilder(HttpMethods.GET)(catalogPath("reader")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(OK)
+          }
+        }
+        "should be OK as writer" in {
+          new RequestBuilder(HttpMethods.GET)(catalogPath("unpublishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(OK)
+          }
+        }
       }
     }
 
