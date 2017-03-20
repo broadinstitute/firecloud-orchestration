@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.utils.RoleSupport
+import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport}
 import org.everit.json.schema.ValidationException
 import org.slf4j.LoggerFactory
 import spray.json._
@@ -53,7 +53,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
                       val searchDAO: SearchDAO,
                       val ontologyDAO: OntologyDAO)
                      (implicit protected val executionContext: ExecutionContext) extends Actor
-  with LibraryServiceSupport with AttributeSupport with RoleSupport with SprayJsonSupport with LazyLogging {
+  with LibraryServiceSupport with AttributeSupport with PermissionSupport with SprayJsonSupport with LazyLogging {
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -67,14 +67,6 @@ class LibraryService (protected val argUserInfo: UserInfo,
     case FindDocuments(criteria: LibrarySearchParams) => findDocuments(criteria) pipeTo sender
     case Suggest(criteria: LibrarySearchParams) => suggest(criteria) pipeTo sender
     case PopulateSuggest(field: String, text: String) => populateSuggest(field: String, text: String) pipeTo sender
-  }
-
-  def hasAccessOrCurator(workspaceResponse: WorkspaceResponse, neededLevel: WorkspaceAccessLevels.WorkspaceAccessLevel): Future[Boolean] = {
-    val wsaccess = workspaceResponse.accessLevel >= neededLevel
-    if (!wsaccess)
-      tryIsCurator(userInfo)
-    else
-      Future.successful(wsaccess)
   }
 
   def isPublished(workspaceResponse: WorkspaceResponse): Boolean = {

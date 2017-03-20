@@ -12,7 +12,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
-import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
+import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
 import spray.http.MediaTypes._
@@ -20,7 +20,8 @@ import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
+import spray.http.StatusCodes.Forbidden
+
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -30,6 +31,8 @@ import scala.util.Try
  */
 object WorkspaceService {
   sealed trait WorkspaceServiceMessage
+  case class GetCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo) extends WorkspaceServiceMessage
+  case class UpdateCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog], userInfo: UserInfo) extends WorkspaceServiceMessage
   case class GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
   case class SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) extends WorkspaceServiceMessage
   case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) extends WorkspaceServiceMessage
@@ -44,7 +47,8 @@ object WorkspaceService {
     new WorkspaceService(userToken, app.rawlsDAO, app.thurloeDAO, app.googleServicesDAO)
 }
 
-class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO) extends Actor with AttributeSupport with TSVFileSupport {
+class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO) (implicit protected val executionContext: ExecutionContext) extends Actor
+  with AttributeSupport with TSVFileSupport with PermissionsSupport {
 
   implicit val system = context.system
 
@@ -58,6 +62,10 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   override def receive: Receive = {
 
+    case GetCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo) =>
+      getCatalog(workspaceNamespace, workspaceName, userInfo) pipeTo sender
+    case UpdateCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog], userInfo: UserInfo) =>
+      updateCatalog(workspaceNamespace, workspaceName, updates, userInfo) pipeTo sender
     case GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) =>
       getStorageCostEstimate(workspaceNamespace, workspaceName) pipeTo sender
     case SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =>
@@ -86,6 +94,29 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       // between the time we retrieved them and here, where we update them.
       val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, newAttributes, _.namespace != AttributeName.libraryNamespace)
       rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
+    }
+  }
+
+  def getCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+    hasAccessOrAdmin(workspaceNamespace, workspaceName, WorkspaceAccessLevels.Read, userInfo) flatMap { hasAccess =>
+      if (hasAccess) {
+        rawlsDAO.getCatalog(workspaceNamespace, workspaceName) map (RequestComplete(_))
+      }
+      else {
+        Future.successful(RequestCompleteWithErrorReport(Forbidden, "must have read+ for the workspace or be an admin to get catalog permissions"))
+      }
+    }
+  }
+
+  def updateCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog], userInfo: UserInfo): Future[PerRequestMessage] = {
+    // can update if admin or owner of workspace
+    hasAccessOrAdmin(workspaceNamespace, workspaceName, WorkspaceAccessLevels.Owner, userInfo) flatMap { hasAccess =>
+      if (hasAccess) {
+        rawlsDAO.patchCatalog(workspaceNamespace, workspaceName, updates) map (RequestComplete(_))
+      }
+      else {
+        Future.successful(RequestCompleteWithErrorReport(Forbidden, "must be an owner or admin to set catalog permissions"))
+      }
     }
   }
 

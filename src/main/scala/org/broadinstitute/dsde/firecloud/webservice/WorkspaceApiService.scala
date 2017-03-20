@@ -169,6 +169,24 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           } ~
+          path("catalog") {
+            get {
+              requireUserInfo() { userInfo => requestContext =>
+                perRequest(requestContext,
+                  WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                  WorkspaceService.GetCatalog(workspaceNamespace, workspaceName, userInfo))
+              }
+            } ~
+            patch {
+              requireUserInfo() { userInfo =>
+                entity(as[Seq[WorkspaceCatalog]]) { updates => requestContext =>
+                  perRequest(requestContext,
+                    WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                    WorkspaceService.UpdateCatalog(workspaceNamespace, workspaceName, updates, userInfo))
+                }
+              }
+            }
+          } ~
           path("checkBucketReadAccess") {
             requireUserInfo() { _ =>
               passthrough(workspacePath + "/checkBucketReadAccess", HttpMethods.GET)

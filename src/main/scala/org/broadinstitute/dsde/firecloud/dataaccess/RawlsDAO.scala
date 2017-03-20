@@ -72,4 +72,8 @@ trait RawlsDAO extends LazyLogging {
   def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]]
 
   def saveRefreshToken(userInfo: UserInfo, refreshToken: String): Future[Unit]
+
+  def getCatalog(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Seq[WorkspaceCatalog]]
+
+  def patchCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog])(implicit userToken: WithAccessToken): Future[WorkspaceCatalogUpdateResponseList]
 }
