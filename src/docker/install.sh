@@ -9,7 +9,7 @@ sbt compile
 sbt test
 sbt assembly
 
-ORCH_JAR=$(find target | grep 'FirecloudOrchestration.*\.jar')
+ORCH_JAR=$(find target | grep 'FireCloud-Orchestration.*\.jar')
 mv $ORCH_JAR .
 sbt clean
 
