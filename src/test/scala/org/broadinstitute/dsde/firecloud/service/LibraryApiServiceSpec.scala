@@ -1,21 +1,20 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.dataaccess._
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AddUpdateAttribute
+import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import spray.http._
-import spray.http.StatusCodes._
-import spray.json._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.scalatest.BeforeAndAfterEach
+import spray.http.StatusCodes._
+import spray.http._
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 import scala.collection.JavaConverters._
 
@@ -24,6 +23,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
 
   def actorRefFactory = system
   var workspaceServer: ClientAndServer = _
+  var consentServer: ClientAndServer = _
 
   lazy val isCuratorPath = "/api/library/user/role/curator"
   private def publishedPath(ns:String="namespace", name:String="name") =
@@ -34,6 +34,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
   private final val librarySuggestPath = "/api/library/suggest"
   private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
   private final val libraryGroupsPath = "/api/library/groups"
+  private def duosConsentOrspIdPath(orspId: String): String = "/api/duos/consent/orsp/%s".format(orspId)
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
 
@@ -76,10 +77,38 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
+
+    val consentPath = "/api/consent"
+    val consent = Consent(consentId = "consent-id-12345", name = "12345", translatedUseRestriction = Some("Translation"))
+    val consentError = ConsentError(message = "Unapproved", code = BadRequest.intValue)
+    val consentNotFound = ConsentError(message = "Not Found", code = NotFound.intValue)
+    consentServer = startClientAndServer(consentServerPort)
+    consentServer
+      .when(request().withMethod("GET").withPath(consentPath).withHeader(authHeader).withQueryStringParameter("name", "12345"))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          .withBody(consent.toJson.prettyPrint)
+      )
+    consentServer
+      .when(request().withMethod("GET").withPath(consentPath).withHeader(authHeader).withQueryStringParameter("name", "unapproved"))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(BadRequest.intValue)
+          .withBody(consentError.toJson.prettyPrint)
+      )
+    consentServer
+      .when(request().withMethod("GET").withPath(consentPath).withHeader(authHeader).withQueryStringParameter("name", "missing"))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
+          .withBody(consentNotFound.toJson.prettyPrint)
+      )
   }
 
   override def afterAll(): Unit = {
     workspaceServer.stop()
+    consentServer.stop()
   }
 
   override def beforeEach(): Unit = {
@@ -236,6 +265,40 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           }
         }
       }
+    }
+
+    "when searching for ORSP IDs" - {
+
+      "DELETE, POST, PUT, POST should receive a MethodNotAllowed" in {
+        List(HttpMethods.DELETE, HttpMethods.POST, HttpMethods.PUT, HttpMethods.PATCH) map {
+          method =>
+            new RequestBuilder(method)(duosConsentOrspIdPath("anything")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
+        }
+      }
+
+      "GET on " + duosConsentOrspIdPath("12345") - {
+        "should return a valid consent for '12345'" ignore {
+          Get(duosConsentOrspIdPath("12345")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+            val consent = response.entity.asString.parseJson.convertTo[Consent]
+            consent shouldNot equal(None)
+            consent.name should equal("12345")
+          }
+        }
+        "should return a Bad Request error on 'unapproved'" ignore {
+          Get(duosConsentOrspIdPath("unapproved")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+        "should return a Not Found error on known 'missing'" ignore {
+          Get(duosConsentOrspIdPath("missing")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(NotFound)
+          }
+        }
+      }
+
     }
   }
 }

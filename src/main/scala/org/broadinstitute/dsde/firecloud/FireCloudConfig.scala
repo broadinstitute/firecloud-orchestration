@@ -114,6 +114,7 @@ object FireCloudConfig {
 
   object Duos {
     private val duos = config.getConfig("duos")
-    val baseUrl = duos.getString("baseUrl")
+    val baseConsentUrl = duos.getString("baseConsentUrl")
+    val baseOntologyUrl = duos.getString("baseOntologyUrl")
   }
 }

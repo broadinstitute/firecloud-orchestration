@@ -8,7 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait OntologyDAO {
 
-  lazy val ontologySearchUrl = FireCloudConfig.Duos.baseUrl + "/search"
+  lazy val ontologySearchUrl = FireCloudConfig.Duos.baseOntologyUrl + "/search"
 
   def search(term: String): Future[Option[List[TermResource]]]
 }

@@ -8,14 +8,13 @@ import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloud
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.client.pipelining._
 import spray.http.StatusCodes._
-import spray.http.Uri
+import spray.http.{HttpMethods, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
 import spray.json.DefaultJsonProtocol._
+
 import scala.collection.JavaConverters._
-
-
 import scala.concurrent.ExecutionContext
 
 trait LibraryApiService extends HttpService with FireCloudRequestBuilding
@@ -27,7 +26,8 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
 
   val libraryServiceConstructor: UserInfo => LibraryService
 
-  val duosAutocompleteUrl = FireCloudConfig.Duos.baseUrl + "/autocomplete"
+  val duosAutocompleteUrl = FireCloudConfig.Duos.baseOntologyUrl + "/autocomplete"
+  val consentUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
 
   val libraryRoutes: Route =
     path("duos" / "autocomplete" / Segment) { (searchTerm) =>
@@ -47,6 +47,12 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
     } ~
     pathPrefix("api") {
       requireUserInfo() { userInfo =>
+        path("duos" / "consent" / "orsp" / Segment) { (orspId) =>
+          get { requestContext =>
+            val orspUri = Uri(FireCloudConfig.Duos.baseConsentUrl + "/api/consent").withQuery(("name", orspId))
+            passthrough(orspUri.toString, HttpMethods.GET)
+          }
+        } ~
         pathPrefix("library") {
           path("user" / "role" / "curator") {
             get { requestContext =>
