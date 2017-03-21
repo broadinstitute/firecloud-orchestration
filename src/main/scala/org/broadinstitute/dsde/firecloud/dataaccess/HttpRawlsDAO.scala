@@ -81,8 +81,16 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
     authedRequestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
 
-  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
+  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] =
     authedRequestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
+
+  override def adminGetWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
+    adminAuthedRequestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
+
+  override def adminPatchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation]): Future[Workspace] = {
+    adminAuthedRequestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
+//    val resp: Future[HttpResponse] = Patch(getWorkspaceUrl(ns, name), attributeOperations)
+//    adminAuthedRequestToObject[Workspace]()
   }
 
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate],inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] =
