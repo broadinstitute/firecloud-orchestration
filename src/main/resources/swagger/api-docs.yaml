@@ -1246,7 +1246,7 @@ paths:
             items:
               $ref: '#/definitions/WorkspaceCatalog'
         403:
-          description: Insufficient permissions to get workspace ACLs (must be owner or admin)
+          description: Insufficient permissions to get workspace catalog permission (must be owner or admin)
           schema:
             $ref: '#/definitions/ErrorReport'
         404:
@@ -1271,12 +1271,8 @@ paths:
           description: Successful Request
           schema:
             $ref: '#/definitions/WorkspaceCatalogUpdateResponseList'
-        400:
-          description: Attempting to change access controls you can't (your own, or public-access group)
-          schema:
-            $ref: '#/definitions/ErrorReport'
         403:
-          description: Insufficient permissions to edit workspace ACLs (must be owner)
+          description: Insufficient permissions to change catalog permissions
           schema:
             $ref: '#/definitions/ErrorReport'
         404:
@@ -1287,7 +1283,7 @@ paths:
           description: Rawls Internal Error
           schema:
             $ref: '#/definitions/ErrorReport'
-      description: Edit access control list for a workspace
+      description: Set catalog permisisons for a workspace
       tags:
         - Workspaces
       summary: Update catalog permission

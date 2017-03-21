@@ -3,8 +3,9 @@ package org.broadinstitute.dsde.firecloud.utils
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken, errorReportSource}
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, WorkspaceAccessLevels, WorkspaceResponse}
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, WorkspaceAccessLevels}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
+import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import spray.http.{HttpRequest, StatusCodes}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,7 +37,13 @@ trait PermissionsSupport {
     }
   }
 
-  def hasAccessOrAdmin(workspaceNamespace: String, workspaceName: String, neededLevel: WorkspaceAccessLevels.WorkspaceAccessLevel, userInfo: UserInfo): Future[Boolean] = {
+  def asPermitted(ns: String, name: String, lvl: WorkspaceAccessLevel, userInfo: UserInfo)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
+    hasAccessOrAdmin(ns, name, lvl, userInfo) flatMap { isPermitted =>
+      if (isPermitted) op else Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must have at least ${lvl.toString} access.")))
+    }
+  }
+  
+  def hasAccessOrAdmin(workspaceNamespace: String, workspaceName: String, neededLevel: WorkspaceAccessLevel, userInfo: UserInfo): Future[Boolean] = {
     tryIsAdmin(userInfo) flatMap { isadmin =>
       if (!isadmin) {
         rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo.asInstanceOf[WithAccessToken]) map { ws =>
@@ -47,32 +54,5 @@ trait PermissionsSupport {
       }
     }
   }
-
-  def hasAccessOrAdminFromWorkspace(workspaceResponse: WorkspaceResponse, neededLevel: WorkspaceAccessLevels.WorkspaceAccessLevel, userInfo: UserInfo): Future[Boolean] = {
-    val wsaccess = workspaceResponse.accessLevel >= neededLevel
-    if (!wsaccess)
-      tryIsAdmin(userInfo)
-    else
-      Future.successful(wsaccess)
-  }
-
-  def hasAccessOrCurator(workspaceNamespace: String, workspaceName: String, neededLevel: WorkspaceAccessLevels.WorkspaceAccessLevel, userInfo: UserInfo): Future[Boolean] = {
-    tryIsCurator(userInfo) map { iscurator =>
-      if (!iscurator) {
-        rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo.asInstanceOf[WithAccessToken]) map { ws =>
-          ws.accessLevel >= neededLevel
-        }
-      }
-      true
-    }
-  }
-
-  def hasAccessOrCurator(workspaceResponse: WorkspaceResponse, neededLevel: WorkspaceAccessLevels.WorkspaceAccessLevel, userInfo: UserInfo): Future[Boolean] = {
-    val wsaccess = workspaceResponse.accessLevel >= neededLevel
-    if (!wsaccess)
-      tryIsCurator(userInfo)
-    else
-      Future.successful(wsaccess)
-  }
-
 }
+

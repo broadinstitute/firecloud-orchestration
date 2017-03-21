@@ -526,8 +526,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           new RequestBuilder(HttpMethods.PATCH)(catalogPath(), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
             val expected = WorkspaceCatalogUpdateResponseList(Seq(WorkspaceCatalogResponse("userid", true)),Seq.empty)
-//            val respdata = response.entity.asString.parseJson.convertTo[WorkspaceCatalogUpdateResponseList]
-//            val resp = respdata.usersUpdated.head
             responseAs[WorkspaceCatalogUpdateResponseList] should equal (expected)
 
           }

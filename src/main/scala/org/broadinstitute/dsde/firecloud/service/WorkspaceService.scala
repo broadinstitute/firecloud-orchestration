@@ -98,36 +98,24 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   }
 
   def getCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = {
-    hasAccessOrAdmin(workspaceNamespace, workspaceName, WorkspaceAccessLevels.Read, userInfo) flatMap { hasAccess =>
-      if (hasAccess) {
-        rawlsDAO.getCatalog(workspaceNamespace, workspaceName) map (RequestComplete(_))
-      }
-      else {
-        Future.successful(RequestCompleteWithErrorReport(Forbidden, "must have read+ for the workspace or be an admin to get catalog permissions"))
-      }
+    asPermitted(workspaceNamespace, workspaceName, WorkspaceAccessLevels.Read, userInfo) {
+      rawlsDAO.getCatalog(workspaceNamespace, workspaceName) map (RequestComplete(_))
     }
   }
 
   def updateCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog], userInfo: UserInfo): Future[PerRequestMessage] = {
     // can update if admin or owner of workspace
-    hasAccessOrAdmin(workspaceNamespace, workspaceName, WorkspaceAccessLevels.Owner, userInfo) flatMap { hasAccess =>
-      if (hasAccess) {
-        rawlsDAO.patchCatalog(workspaceNamespace, workspaceName, updates) map (RequestComplete(_))
-      }
-      else {
-        Future.successful(RequestCompleteWithErrorReport(Forbidden, "must be an owner or admin to set catalog permissions"))
-      }
+    asPermitted(workspaceNamespace, workspaceName, WorkspaceAccessLevels.Owner, userInfo) {
+      rawlsDAO.patchCatalog(workspaceNamespace, workspaceName, updates) map (RequestComplete(_))
     }
   }
 
   def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) = {
-
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
     aclUpdate map { actualUpdates =>
       RequestComplete(actualUpdates)
     }
   }
-
 
   def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
