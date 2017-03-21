@@ -15,6 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 trait PermissionsSupport {
   protected val rawlsDAO: RawlsDAO
+//  implicit val userInfo: UserInfo
   implicit protected val executionContext: ExecutionContext
 
   def tryIsAdmin(userInfo: UserInfo): Future[Boolean] = {
@@ -39,11 +40,11 @@ trait PermissionsSupport {
 
   def asPermitted(ns: String, name: String, lvl: WorkspaceAccessLevel, userInfo: UserInfo)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
     hasAccessOrAdmin(ns, name, lvl, userInfo) flatMap { isPermitted =>
-      if (isPermitted) op else Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must have at least ${lvl.toString} access.")))
+      if (isPermitted) op else Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must be an admin or have at least ${lvl.toString} access.")))
     }
   }
   
-  def hasAccessOrAdmin(workspaceNamespace: String, workspaceName: String, neededLevel: WorkspaceAccessLevel, userInfo: UserInfo): Future[Boolean] = {
+  private def hasAccessOrAdmin(workspaceNamespace: String, workspaceName: String, neededLevel: WorkspaceAccessLevel, userInfo: UserInfo): Future[Boolean] = {
     tryIsAdmin(userInfo) flatMap { isadmin =>
       if (!isadmin) {
         rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo.asInstanceOf[WithAccessToken]) map { ws =>
