@@ -205,6 +205,9 @@
     "library:primaryDiseaseSite": {
       "title": "Primary Disease Site",
       "type": "string",
+      "aggregate": {
+        "renderHint": "checkbox"
+      },
       "typeahead": "populate"
     },
     "library:useLimitationOption": {
