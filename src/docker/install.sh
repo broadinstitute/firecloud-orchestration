@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# script to sbt build the orch jar
 
 set -e
 ORCH_DIR=$1
@@ -12,7 +12,3 @@ sbt assembly
 ORCH_JAR=$(find target | grep 'FireCloud-Orchestration.*\.jar')
 mv $ORCH_JAR .
 sbt clean
-
-
-# TODO: integration tests - make these own script?
-# sbt -Desurls=$ESURLS it:test
