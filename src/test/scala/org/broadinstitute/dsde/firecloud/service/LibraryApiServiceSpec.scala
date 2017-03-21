@@ -278,6 +278,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         }
       }
 
+      // TODO - figure out why these aren't working. The requests from library never seem to make it to mock server.
       "GET on " + duosConsentOrspIdPath("12345") - {
         "should return a valid consent for '12345'" ignore {
           Get(duosConsentOrspIdPath("12345")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
