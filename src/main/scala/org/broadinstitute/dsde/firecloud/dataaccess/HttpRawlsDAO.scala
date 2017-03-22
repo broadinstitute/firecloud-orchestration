@@ -84,14 +84,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] =
     authedRequestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
 
-  override def adminGetWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
-    adminAuthedRequestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
-
-  override def adminPatchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation]): Future[Workspace] = {
-    adminAuthedRequestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
-//    val resp: Future[HttpResponse] = Patch(getWorkspaceUrl(ns, name), attributeOperations)
-//    adminAuthedRequestToObject[Workspace]()
-  }
+  override def adminPatchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation]): Future[Workspace] =
+    adminAuthedRequestToObject[Workspace]( Patch(getAdminWorkspaceUrl(ns, name), attributeOperations) )
 
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate],inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] =
     authedRequestToObject[WorkspaceACLUpdateResponseList]( Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates) )
@@ -129,6 +123,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
+  private def getAdminWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + "/admin" + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
   private def patchWorkspaceAclUrl(ns: String, name: String, inviteUsersNotFound: Boolean) = rawlsWorkspaceACLUrl.format(ns, name, inviteUsersNotFound)
   private def workspaceCatalogUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s/catalog".format(ns, name)
 
