@@ -150,17 +150,20 @@ class LibraryService (protected val argUserInfo: UserInfo,
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
       val pub = isPublished(workspaceResponse)
+      val invalidMetadata = workspaceResponse.workspace.attributes.get(
+        AttributeName(AttributeName.libraryNamespace, "invalidDataset")).orElse(Some(AttributeBoolean(false)))
       if (pub == value)
         Future(RequestComplete(NoContent))
-      else {
+      else if (invalidMetadata == Some(AttributeBoolean(false))) {
         rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(value)) map { ws =>
-          if (value)
-            publishDocument(ws)
+          if (value) 
+              publishDocument(ws)
           else
             removeDocument(ws)
           RequestComplete(ws)
         }
-      }
+      } else
+        Future(RequestCompleteWithErrorReport(BadRequest, s"You need to complete filling out the metadata before publishing the workspace"))
     }
   }
 

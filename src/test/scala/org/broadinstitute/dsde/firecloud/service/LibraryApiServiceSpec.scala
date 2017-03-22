@@ -68,6 +68,28 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
       |}
     """.stripMargin
 
+  val incompleteMetadata =
+    """
+      |{
+      |  "description" : "some description",
+      |  "userAttributeOne" : "one",
+      |  "userAttributeTwo" : "two",
+      |  "library:datasetName" : "name"
+      |  "library:datasetCustodian" : "cust",
+      |  "library:datasetDepositor" : "depo",
+      |  "library:contactEmail" : "name@example.com",
+      |  "library:datasetOwner" : "owner",
+      |  "library:institute" : ["inst","it","ute"],
+      |  "library:indication" : "indic",
+      |  "library:numSubjects" : 123,
+      |  "library:useLimitationOption" : "orsp",
+      |  "library:technology" : ["is an optional","array attribute"],
+      |  "library:orsp" : "some orsp",
+      |  "_discoverableByGroups" : ["Group1","Group2"]
+      |}
+    """.stripMargin
+
+
   override def beforeAll(): Unit = {
     consentServer = startClientAndServer(consentServerPort)
 
@@ -116,6 +138,28 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           }
         }
       }
+    }
+
+    "when saving metadata" - {
+      "complete data can be saved" in {
+          val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
+          new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+          }
+        }
+      "incomplete data can be saved" in {
+        val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
+        print("content: " + content)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+
+
+    // can't publish with incomplete metadata
+
+    // can unpublish with incomplete metadata ??
+
     }
 
     "when calling publish" - {
