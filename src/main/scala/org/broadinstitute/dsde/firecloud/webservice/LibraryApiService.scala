@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloud
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.client.pipelining._
 import spray.http.StatusCodes._
-import spray.http.{HttpMethods, Uri}
+import spray.http.Uri
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
@@ -49,8 +49,8 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
       requireUserInfo() { userInfo =>
         path("duos" / "consent" / "orsp" / Segment) { (orspId) =>
           get { requestContext =>
-            val orspUri = Uri(FireCloudConfig.Duos.baseConsentUrl + "/api/consent").withQuery(("name", orspId))
-            passthrough(orspUri.toString, HttpMethods.GET)
+            val extReq = Get(Uri(consentUrl).withQuery(("name", orspId)))
+            externalHttpPerRequest(requestContext, extReq)
           }
         } ~
         pathPrefix("library") {
