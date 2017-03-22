@@ -1964,7 +1964,7 @@ paths:
     delete:
       tags:
       - Submissions
-      operationId: deleteSubmission
+      operationId: abortSubmission
       summary: |
         abort a submission
       parameters:
@@ -1973,7 +1973,7 @@ paths:
         - $ref: '#/parameters/submissionIdParam'
       responses:
         204:
-          description: successful deletion
+          description: Aborted successfully
         404:
           description: Submission not found
         500:
