@@ -568,6 +568,14 @@ paths:
             type: array
             items:
               type: string
+        403:
+          description: Insufficient permissions to change catalog permissions (must be owner or have grant or catalog with access to the workspace)
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Workspace, user or group not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
         500:
           description: Error
           schema:
@@ -1245,10 +1253,6 @@ paths:
             type: array
             items:
               $ref: '#/definitions/WorkspaceCatalog'
-        403:
-          description: Insufficient permissions to get workspace catalog permission (must be owner or admin)
-          schema:
-            $ref: '#/definitions/ErrorReport'
         404:
           description: Workspace not found
           schema:
@@ -1272,7 +1276,7 @@ paths:
           schema:
             $ref: '#/definitions/WorkspaceCatalogUpdateResponseList'
         403:
-          description: Insufficient permissions to change catalog permissions
+          description: Insufficient permissions to change catalog permissions (must be owner or admin)
           schema:
             $ref: '#/definitions/ErrorReport'
         404:
