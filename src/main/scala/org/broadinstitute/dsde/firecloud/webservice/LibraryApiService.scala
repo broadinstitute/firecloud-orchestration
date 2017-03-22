@@ -13,9 +13,8 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
 import spray.json.DefaultJsonProtocol._
+
 import scala.collection.JavaConverters._
-
-
 import scala.concurrent.ExecutionContext
 
 trait LibraryApiService extends HttpService with FireCloudRequestBuilding
@@ -27,7 +26,8 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
 
   val libraryServiceConstructor: UserInfo => LibraryService
 
-  val duosAutocompleteUrl = FireCloudConfig.Duos.baseUrl + "/autocomplete"
+  val duosAutocompleteUrl = FireCloudConfig.Duos.baseOntologyUrl + "/autocomplete"
+  val consentUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
 
   val libraryRoutes: Route =
     path("duos" / "autocomplete" / Segment) { (searchTerm) =>
@@ -47,6 +47,12 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
     } ~
     pathPrefix("api") {
       requireUserInfo() { userInfo =>
+        path("duos" / "consent" / "orsp" / Segment) { (orspId) =>
+          get { requestContext =>
+            val extReq = Get(Uri(consentUrl).withQuery(("name", orspId)))
+            externalHttpPerRequest(requestContext, extReq)
+          }
+        } ~
         pathPrefix("library") {
           path("user" / "role" / "curator") {
             get { requestContext =>
