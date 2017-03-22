@@ -3,7 +3,7 @@
     "filter": {
       "autocomplete_filter": {
         "type":     "edge_ngram",
-        "min_gram": 1,
+        "min_gram": 3,
         "max_gram": 20
       },
       "index_delimiter" : {
@@ -25,6 +25,8 @@
         "tokenizer": "standard",
         "filter": [
           "lowercase",
+          "index_delimiter",
+          "index_common_grams",
           "autocomplete_filter"
         ]
       },

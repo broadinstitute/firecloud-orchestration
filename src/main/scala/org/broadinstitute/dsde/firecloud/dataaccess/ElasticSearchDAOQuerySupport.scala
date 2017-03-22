@@ -115,7 +115,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     createESSearchRequest(client, indexname, qmseq, from, size)
       .setFetchSource(false)
       .addHighlightedField(fieldSuggest)
-      .setHighlighterFragmentSize(75)
+      .setHighlighterFragmentSize(50)
       .setHighlighterPreTags("<strong class='es-highlight'>")
       .setHighlighterPostTags("</strong>")
   }
