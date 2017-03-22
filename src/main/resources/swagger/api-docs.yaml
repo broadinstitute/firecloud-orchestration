@@ -2221,7 +2221,7 @@ paths:
         500:
           description: Internal Error
 
-  /api/workspaces/tags/autocomplete/{query}:
+  /api/workspaces/tags:
       get:
         tags:
          - Workspaces
@@ -2229,14 +2229,17 @@ paths:
         summary: |
           Get all tags used in FireCloud (for autocomplete)
         parameters:
-          - name: query
+          - in: query
             description: Query string
-            required: true
+            name: q
+            required: false
             type: string
-            in: path
         responses:
           200:
-            description: List of all tags used in FireCloud
+            description: list of all tags used in FireCloud and their associated frequencies
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceTag'
           500:
             description: Rawls Internal Error
 
@@ -3932,3 +3935,16 @@ definitions:
       isProtected:
         type: boolean
         description: Whether or not the data should be restricted to dbGaP-enabled users.  Optional, default false.
+
+  WorkspaceTag:
+    required:
+      - tag
+      - count
+    type: object
+    properties:
+      tag:
+        type: string
+        description: tag string
+      count:
+        type: number
+        description: number of usages of the tag across Firecloud

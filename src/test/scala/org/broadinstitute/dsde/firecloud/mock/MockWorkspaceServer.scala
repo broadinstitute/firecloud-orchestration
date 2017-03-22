@@ -11,6 +11,7 @@ import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
+import org.mockserver.model.Parameter._
 import spray.http.StatusCodes._
 import spray.json._
 
@@ -165,7 +166,8 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath(s"${workspaceBasePath}/tags/autocomplete/abc")
-          .withHeader(authHeader))
+          .withHeader(authHeader)
+          .withQueryStringParameter("q", "abc"))
       .respond(
         response()
           .withHeaders(header)

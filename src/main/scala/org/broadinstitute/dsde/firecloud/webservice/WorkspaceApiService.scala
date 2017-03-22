@@ -86,10 +86,15 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
           }
         } ~
         pathPrefix("tags") {
-          pathPrefix("autocomplete" / Segment) { (query) =>
-            pathEnd {
-              requireUserInfo() { _ =>
-                passthrough(rawlsWorkspacesRoot + "/tags/autocomplete/%s".format(query), HttpMethods.GET)
+          pathEnd {
+            requireUserInfo() { _ =>
+              parameter('q.?) { queryString =>
+                val baseUri = Uri(rawlsWorkspacesRoot + "/tags")
+                val uri = queryString match {
+                  case Some(query) => baseUri.withQuery(("q", query))
+                  case None => baseUri
+                }
+                passthrough(uri.toString, HttpMethods.GET)
               }
             }
           }

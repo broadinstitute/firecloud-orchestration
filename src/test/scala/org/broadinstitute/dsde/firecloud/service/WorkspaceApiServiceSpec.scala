@@ -56,7 +56,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val tsvImportPath = workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
-  private final val tagAutocompletePath = s"$workspacesRoot/tags/autocomplete/abc"
+  private final val tagAutocompletePath = s"$workspacesRoot/tags"
   private final val executionEngineVersionPath = FireCloudConfig.Rawls.authPrefix + "/version/executionEngine"
 
   private def catalogPath(ns:String=workspace.namespace, name:String=workspace.name) =
@@ -299,10 +299,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-    "Passthrough tests on the /workspaces/tags/autocomplete/segment path" - {
+    "Passthrough tests on the /workspaces/tags path" - {
       List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
         s"MethodNotAllowed error is returned for $method" in {
-          new RequestBuilder(method)("/api/workspaces/tags/autocomplete/query") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/tags") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -451,10 +451,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
 
-    "Passthrough tests on the workspaces/tags/autocomplete/%s path" - {
+    // how to add queries?
+    "Passthrough tests on the workspaces/tags path" - {
       "OK status is returned for GET" in {
         stubRawlsService(HttpMethods.GET, tagAutocompletePath, OK)
-        Get(tagAutocompletePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Get(Uri(tagAutocompletePath).withQuery(("q", "tag"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
