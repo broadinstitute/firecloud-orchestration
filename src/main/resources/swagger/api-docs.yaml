@@ -2287,6 +2287,8 @@ paths:
             $ref: '#/definitions/Consent'
         400:
           description: The consent associated with the provided name has not been approved.
+        401:
+          description: Invalid authorization, must be a FireCloud user.
         404:
           description: The consent associated with the provided name could not be found.
         500:
