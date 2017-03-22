@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
@@ -38,6 +38,7 @@ object LibraryService {
   case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
   case class Suggest(criteria: LibrarySearchParams) extends LibraryServiceMessage
   case class PopulateSuggest(field: String, text: String) extends LibraryServiceMessage
+  case class SearchOrspId(orspId: String) extends LibraryServiceMessage
 
   def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
     Props(libraryServiceConstructor(userInfo))
@@ -67,6 +68,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
     case FindDocuments(criteria: LibrarySearchParams) => findDocuments(criteria) pipeTo sender
     case Suggest(criteria: LibrarySearchParams) => suggest(criteria) pipeTo sender
     case PopulateSuggest(field: String, text: String) => populateSuggest(field: String, text: String) pipeTo sender
+    case SearchOrspId(orspId: String) => searchOrspId(orspId: String) pipeTo sender
   }
 
   def hasAccessOrCurator(workspaceResponse: WorkspaceResponse, neededLevel: WorkspaceAccessLevels.WorkspaceAccessLevel): Future[Boolean] = {
@@ -224,4 +226,17 @@ class LibraryService (protected val argUserInfo: UserInfo,
       case e: FireCloudException => Future(RequestCompleteWithErrorReport(BadRequest, s"suggestions not available for field %s".format(field)))
     }
   }
+
+  def searchOrspId(orspId: String): Future[PerRequestMessage] = {
+    // We need this implicit to unmarshal the consent in the response
+    import ModelJsonProtocol.impDuosConsent
+    ontologyDAO.orspIdSearch(userInfo, orspId) map { RequestComplete(_) } recoverWith {
+      case e: FireCloudExceptionWithErrorReport =>
+        val status = e.errorReport.statusCode.getOrElse(NotFound)
+        Future(RequestCompleteWithErrorReport(status, e.errorReport.message))
+      case e: FireCloudException =>
+        Future(RequestCompleteWithErrorReport(InternalServerError, s"error searching for ORSP ID '%s'".format(orspId)))
+    }
+  }
+
 }
