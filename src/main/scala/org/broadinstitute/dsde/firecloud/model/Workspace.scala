@@ -38,13 +38,14 @@ object WorkspaceCreate {
 case class UIWorkspaceResponse(
   accessLevel: Option[String] = None,
   canShare: Option[Boolean] = None,
+  catalog: Option[Boolean] = None,
   workspace: Option[UIWorkspace] = None,
   workspaceSubmissionStats: Option[WorkspaceSubmissionStats] = None,
   owners: Option[List[String]] = None) {
   def this(wr: WorkspaceResponse) =
-    this(Option(wr.accessLevel.toString), Option(wr.canShare), Option(new UIWorkspace(wr.workspace)), Option(wr.workspaceSubmissionStats), Option(wr.owners.toList))
+    this(Option(wr.accessLevel.toString), Option(wr.canShare), Option(wr.catalog), Option(new UIWorkspace(wr.workspace)), Option(wr.workspaceSubmissionStats), Option(wr.owners.toList))
   def this(wlr: WorkspaceListResponse) =
-    this(Option(wlr.accessLevel.toString), None, Option(new UIWorkspace(wlr.workspace)), Option(wlr.workspaceSubmissionStats), Option(wlr.owners.toList))
+    this(Option(wlr.accessLevel.toString), None, None, Option(new UIWorkspace(wlr.workspace)), Option(wlr.workspaceSubmissionStats), Option(wlr.owners.toList))
 }
 
 /** A Firecloud UI focused result object that performs extra translation on the result from Rawls, specifically

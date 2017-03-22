@@ -568,6 +568,14 @@ paths:
             type: array
             items:
               type: string
+        403:
+          description: Insufficient permissions to change catalog permissions (must be owner or have grant or catalog with access to the workspace)
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Workspace, user or group not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
         500:
           description: Error
           schema:
@@ -1235,6 +1243,66 @@ paths:
       responses:
         '200':
           description: Successful Request
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/catalog:
+    get:
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceCatalog'
+        404:
+          description: Workspace not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: Get catalog permissions for a workspace
+      tags:
+        - Workspaces
+      summary: Get workspace catalog permission
+      operationId: getCatalog
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+    patch:
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkspaceCatalogUpdateResponseList'
+        403:
+          description: Insufficient permissions to change catalog permissions (must be owner or admin)
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Workspace, user or group not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: Set catalog permisisons for a workspace
+      tags:
+        - Workspaces
+      summary: Update catalog permission
+      operationId: updateCatalog
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: body
+          description: Series of Catalog updates for workspace
+          name: catalogUpdates
+          required: true
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceCatalog'
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/checkBucketReadAccess:
     get:
@@ -3780,6 +3848,49 @@ definitions:
       canShare:
         type: boolean
         description: True if the user can share the workspace with others, false otherwise
+
+  WorkspaceCatalog:
+    description: ''
+    required:
+      - email
+      - catalog
+    properties:
+      email:
+        type: string
+        description: email address of the user or group whose permissions will be changed
+      catalog:
+        type: boolean
+        description: Set to true if you want this user to be able to perform library related operations on the workspace
+
+  WorkspaceCatalogResponse:
+    description: ''
+    required:
+      - subjectId
+      - catalog
+    properties:
+      subjectId:
+        type: string
+        description: subject id of the user or group whose permissions were changed
+      catalog:
+        type: boolean
+        description: Set to true if you want this user to be able to perform library related operations on the workspace
+
+  WorkspaceCatalogUpdateResponseList:
+    description: ''
+    required:
+      - usersUpdated
+      - emailsNotFound
+    properties:
+      usersUpdated:
+        type: array
+        description: the users or groups who were updated
+        items:
+          $ref: '#/definitions/WorkspaceCatalogResponse'
+      emailsNotFound:
+        type: array
+        description: the emails of users or groups who were not found
+        items:
+          type: string
 
   WorkspaceIngest:
     required:
