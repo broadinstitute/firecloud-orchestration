@@ -124,10 +124,10 @@ trait LibraryServiceSupport extends LazyLogging {
     rawlsDAO.getGroupsForUser map {FireCloudConfig.ElasticSearch.discoverGroupNames intersect _}
   }
 
-  def updateAccess(docs: LibrarySearchResponse, workspaces: Seq[WorkspaceListResponse]) = {
+  def updateAccess(docs: LibrarySearchResponse, permissions: Seq[WorkspacePermissionsPair]) = {
 
-    val accessMap = workspaces map { workspaceResponse: WorkspaceListResponse =>
-      workspaceResponse.workspace.workspaceId -> workspaceResponse.accessLevel
+    val accessMap = permissions map { perm: WorkspacePermissionsPair =>
+      perm.workspaceId -> perm.accessLevel
     } toMap
 
     val updatedResults = docs.results.map { document =>
