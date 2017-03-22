@@ -31,7 +31,7 @@ trait LibraryPermissionsSupport extends PermissionsSupport {
       if (allowed)
         op
       else
-        Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must be a curator and owner or have catalog and read+.")))
+        Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must be a curator and either be an owner or have catalog with read+.")))
     }
   }
 
@@ -44,7 +44,7 @@ trait LibraryPermissionsSupport extends PermissionsSupport {
     if (canModify(workspaceResponse))
       op
     else
-      Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must be an owner or have catalog or share permissions.")))
+      Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must have write+ or catalog with read permissions.")))
   }
 
   private def canModifyDiscoverability(workspaceResponse: WorkspaceResponse): Boolean = {
