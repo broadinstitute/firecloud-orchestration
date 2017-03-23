@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
+import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOQuerySupport
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 import spray.json.JsString
@@ -8,7 +9,7 @@ import spray.json.JsString
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, MINUTES}
 
-class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
+class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with ElasticSearchDAOQuerySupport {
 
   override def beforeAll = {
     // use re-create here, since instantiating the DAO will create it in the first place
@@ -77,8 +78,6 @@ class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     Await.result(searchDAO.suggestionsFromAll(criteria, Seq.empty[String]), dur)
   }
 
-  final val HL_START = "<strong class='es-highlight'>"
-  final val HL_END = "</strong>"
   private def stripHighlight(txt:String) = {
     txt.replace(HL_START,"").replace(HL_END,"")
   }

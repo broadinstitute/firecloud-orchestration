@@ -21,6 +21,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
 
+  final val HL_START = "<strong class='es-highlight'>"
+  final val HL_END = "</strong>"
+
   /** ES queries - below is similar to what will be created by the query builders
     * {"query":{"match_all":{}}}"
     * {"query":{
@@ -116,8 +119,8 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       .setFetchSource(false)
       .addHighlightedField(fieldSuggest)
       .setHighlighterFragmentSize(50)
-      .setHighlighterPreTags("<strong class='es-highlight'>")
-      .setHighlighterPostTags("</strong>")
+      .setHighlighterPreTags(HL_START)
+      .setHighlighterPostTags(HL_END)
   }
 
   def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String]): SearchRequestBuilder = {
