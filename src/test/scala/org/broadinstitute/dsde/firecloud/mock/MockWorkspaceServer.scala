@@ -160,20 +160,6 @@ object MockWorkspaceServer {
           .withStatusCode(NotFound.intValue)
           .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
       )
-
-    MockWorkspaceServer.workspaceServer
-      .when(
-        request()
-          .withMethod("GET")
-          .withPath(s"${workspaceBasePath}/tags/autocomplete/abc")
-          .withHeader(authHeader)
-          .withQueryStringParameter("q", "abc"))
-      .respond(
-        response()
-          .withHeaders(header)
-          .withStatusCode(OK.intValue)
-      )
-
   }
 
 }

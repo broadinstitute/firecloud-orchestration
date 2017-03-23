@@ -2228,6 +2228,7 @@ paths:
         operationId: getTags
         summary: |
           Get all tags used in FireCloud (for autocomplete)
+        description: list of all tags used in FireCloud and their associated frequencies
         parameters:
           - in: query
             description: Query string
@@ -2236,10 +2237,10 @@ paths:
             type: string
         responses:
           200:
-            description: list of all tags used in FireCloud and their associated frequencies
-            type: array
-            items:
-              $ref: '#/definitions/WorkspaceTag'
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/WorkspaceTag'
           500:
             description: Rawls Internal Error
 
