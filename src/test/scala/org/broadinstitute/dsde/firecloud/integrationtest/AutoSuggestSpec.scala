@@ -36,6 +36,7 @@ class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
 
       val testCases: Seq[(String, Seq[String])] = Seq(
         ("brca open",    Seq("TCGA_BRCA_OpenAccess")),
+        ("brca o",       Seq("TCGA_BRCA_OpenAccess")),
         ("BRCA_Cont",    Seq("TCGA_BRCA_ControlledAccess")),
         ("glio",         Seq("Glioblastoma multiforme")),
         ("thy",          Seq("Thyroid carcinoma", "Thymoma", "TCGA_THYM_ControlledAccess")),
@@ -43,7 +44,6 @@ class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
         ("kidn",         Seq("Kidney Chromophobe","Kidney Renal Clear Cell Carcinoma","Kidney Renal Papillary Cell Carcinoma")),
         ("Mesothelioma", Seq("Mesothelioma")),
         ("xyz",          Seq.empty[String]),
-        ("tc",           Seq.empty[String]), // we have a min ngram of 3
         ("idney",        Seq.empty[String]), // we only do leading-edge ngrams
         ("access",       Seq.empty[String])  // we only do leading-edge ngrams
       )

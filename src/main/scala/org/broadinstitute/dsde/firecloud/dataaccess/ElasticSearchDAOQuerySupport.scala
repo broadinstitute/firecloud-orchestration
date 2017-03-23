@@ -59,14 +59,19 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     */
 
 
-  def createQuery(criteria: LibrarySearchParams, groups: Seq[String], searchField: String = fieldAll): QueryBuilder = {
+  def createQuery(criteria: LibrarySearchParams, groups: Seq[String], searchField: String = fieldAll, phrase: Boolean = false): QueryBuilder = {
     val query: BoolQueryBuilder = boolQuery // outer query, all subqueries should be added to the must list
     query.must(criteria.searchString match {
       case None => matchAllQuery
       case Some(searchTerm) if searchTerm.trim == "" => matchAllQuery
       case Some(searchTerm) =>
+        val fieldSearch = if (phrase) {
+          matchPhraseQuery(searchField, searchTerm).minimumShouldMatch("2<67%")
+        } else {
+          matchQuery(searchField, searchTerm).minimumShouldMatch("2<67%")
+        }
         boolQuery
-          .should(matchQuery(searchField, searchTerm).minimumShouldMatch("2<67%"))
+          .should(fieldSearch)
           .should(nestedQuery("parents", matchQuery("parents.label", searchTerm).minimumShouldMatch("3<75%")))
     })
     val groupsQuery = boolQuery
@@ -140,7 +145,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def buildAutocompleteQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String]): SearchRequestBuilder = {
-    createESAutocompleteRequest(client, indexname, createQuery(criteria, groups, searchField=fieldSuggest), 0, 8)
+    createESAutocompleteRequest(client, indexname, createQuery(criteria, groups, searchField=fieldSuggest, phrase=true), 0, 8)
   }
 
   def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String]): Seq[SearchRequestBuilder] = {
