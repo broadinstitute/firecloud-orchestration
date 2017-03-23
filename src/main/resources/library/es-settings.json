@@ -25,6 +25,8 @@
         "tokenizer": "standard",
         "filter": [
           "lowercase",
+          "index_delimiter",
+          "index_common_grams",
           "autocomplete_filter"
         ]
       },
