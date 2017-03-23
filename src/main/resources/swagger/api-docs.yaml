@@ -109,7 +109,7 @@ paths:
             - email
             - profile
 
-  /api/billing/{projectId}/{role}/{userEmail}:
+  /api/billing/{projectId}/{role}/{email}:
     put:
       responses:
         200:
@@ -139,8 +139,8 @@ paths:
           type: string
           enum: ["user", "owner"]
         - in: path
-          description: User Email
-          name: userEmail
+          description: email of user or group to add
+          name: email
           required: true
           type: string
       tags:
@@ -181,8 +181,8 @@ paths:
           type: string
           enum: ["user", "owner"]
         - in: path
-          description: User Email
-          name: userEmail
+          description: email of user or group to add
+          name: email
           required: true
           type: string
       tags:
@@ -411,6 +411,212 @@ paths:
           description: User does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
+
+  /api/groups:
+    get:
+      responses:
+        200:
+          description: Successfully listed group membership
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ManagedGroupAccess'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      tags:
+        - Groups
+      summary: get the list of the groups that the caller is a member of
+      operationId: getGroups
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
+  /api/groups/{groupName}:
+    get:
+      responses:
+        200:
+          description: Successfully loaded group
+          schema:
+            $ref: '#/definitions/ManagedGroupWithMembers'
+        403:
+          description: You must be an owner of this group in order to view members
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Group not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Group name
+          name: groupName
+          required: true
+          type: string
+      tags:
+        - Groups
+      summary: view the members in a group
+      operationId: getGroup
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+    post:
+      responses:
+        201:
+          description: Successfully created group
+        409:
+          description: Group already exists
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Group name
+          name: groupName
+          required: true
+          type: string
+      tags:
+        - Groups
+      summary: create a new group
+      operationId: createGroup
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+    delete:
+      responses:
+        200:
+          description: Successfully Deleted Group
+        403:
+          description: You must be an owner of this group in order to delete it
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Group not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        409:
+          description: Group is in use and cannot be deleted
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Group name
+          name: groupName
+          required: true
+          type: string
+      tags:
+        - Groups
+      summary: delete a group that the caller owns
+      operationId: deleteGroup
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
+  /api/groups/{groupName}/{role}/{email}:
+    put:
+      responses:
+        200:
+          description: Successfully Added User To Group
+        403:
+          description: You must be an owner of this group in order to add members
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: User not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Group name
+          name: groupName
+          required: true
+          type: string
+        - in: path
+          description: role of user for group
+          name: role
+          required: true
+          type: string
+          enum: ["user", "owner"]
+        - in: path
+          description: email of user or group to add
+          name: email
+          required: true
+          type: string
+      tags:
+        - Groups
+      summary: add a user to a group the caller owns
+      operationId: addUserToGroup
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+    delete:
+      responses:
+        200:
+          description: Successfully Removed User From Group
+        403:
+          description: You must be an owner of this group in order to remove members
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: User not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Group name
+          name: groupName
+          required: true
+          type: string
+        - in: path
+          description: role of user for group
+          name: role
+          required: true
+          type: string
+          enum: ["user", "owner"]
+        - in: path
+          description: email of user or group to add
+          name: email
+          required: true
+          type: string
+      tags:
+        - Groups
+      summary: remove a user from a group the caller owns
+      operationId: removeUserFromGroup
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
 
   /api/inputsOutputs:
     post:
@@ -955,22 +1161,6 @@ paths:
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
             - https://www.googleapis.com/auth/cloud-billing
-
-  /api/profile/realms:
-    get:
-      tags:
-        - Profile
-      operationId: getRealms
-      summary: List realms for a user
-      responses:
-        200:
-          description: OK
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/RawlsRealmRef'
-        500:
-          description: Internal Server Error
 
   /api/refresh-token-status:
     get:
@@ -3173,6 +3363,50 @@ definitions:
         ...
       }
 
+  ManagedGroupRef:
+    description: a reference to a group that can be managed by users
+    type: object
+    required:
+      - usersGroupName
+    properties:
+      usersGroupName:
+        type: string
+
+  ManagedGroupAccess:
+    description: an element of a list of groups a user has access to
+    type: object
+    required:
+      - managedGroupRef
+      - accessLevel
+    properties:
+      managedGroupRef:
+        $ref: '#/definitions/ManagedGroupRef'
+      accessLevel:
+        type: string
+        enum: ["user", "owner"]
+
+  ManagedGroupWithMembers:
+    description: a group with all of its members
+    type: object
+    required:
+      - usersGroup
+      - ownersGroup
+      - usersEmails
+      - ownersEmails
+    properties:
+      usersGroup:
+        $ref: '#/definitions/RawlsGroupShort'
+      ownersGroup:
+        $ref: '#/definitions/RawlsGroupShort'
+      usersEmails:
+        type: array
+        items:
+          type: string
+      ownersEmails:
+        type: array
+        items:
+          type: string
+
   Me:
     type: object
     properties:
@@ -3474,14 +3708,6 @@ definitions:
       enabled:
         $ref: '#/definitions/ExtendedEnabled'
 
-  RawlsRealmRef:
-    type: object
-    description: a reference to a realm
-    properties:
-      realmName:
-        type: string
-        description: ''
-
   SearchTermRef:
     type: object
     properties:
@@ -3750,7 +3976,7 @@ definitions:
         type: string
         description: The name of the workspace
       realm:
-        $ref: '#/definitions/RawlsRealmRef'
+        $ref: '#/definitions/ManagedGroupRef'
         description: An optional realm for the workspace
       workspaceId:
         type: string

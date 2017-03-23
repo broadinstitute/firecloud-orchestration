@@ -51,8 +51,14 @@ object UserService {
   val realmsPath = FireCloudConfig.Rawls.authPrefix + "/user/realms"
   val realmsUrl = FireCloudConfig.Rawls.baseUrl + realmsPath
 
-  def groupPath(group: String): String = FireCloudConfig.Rawls.authPrefix + "/user/group/%s".format(group)
-  def groupUrl(group: String): String = FireCloudConfig.Rawls.baseUrl + groupPath(group)
+  val rawlsGroupBasePath = FireCloudConfig.Rawls.authPrefix + "/groups"
+  val rawlsGroupBaseUrl = FireCloudConfig.Rawls.baseUrl + rawlsGroupBasePath
+
+  def rawlsGroupPath(group: String) = rawlsGroupBasePath + "/%s".format(group)
+  def rawlsGroupUrl(group: String) = FireCloudConfig.Rawls.baseUrl + rawlsGroupPath(group)
+
+  def rawlsGroupMemberPath(group: String, role: String, email: String) = rawlsGroupPath(group) + "/%s/%s".format(role, email)
+  def rawlsGroupMemberUrl(group: String, role: String, email: String) = FireCloudConfig.Rawls.baseUrl + rawlsGroupMemberPath(group, role, email)
 
 }
 
@@ -126,9 +132,32 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
           passthrough(UserService.billingAccountsUrl, HttpMethods.GET)
         }
       } ~
-      path("profile" / "realms") {
-        get {
-          passthrough(UserService.realmsUrl, HttpMethods.GET)
+      pathPrefix("groups") {
+        pathEnd {
+          get {
+            passthrough(UserService.rawlsGroupBaseUrl, HttpMethods.GET)
+          }
+        } ~
+        pathPrefix(Segment) { groupName =>
+          pathEnd {
+            get {
+              passthrough(UserService.rawlsGroupUrl(groupName), HttpMethods.GET)
+            } ~
+            post {
+              passthrough(UserService.rawlsGroupUrl(groupName), HttpMethods.POST)
+            } ~
+            delete {
+              passthrough(UserService.rawlsGroupUrl(groupName), HttpMethods.DELETE)
+            }
+          } ~
+          path(Segment / Segment) { (role, email) =>
+            put {
+              passthrough(UserService.rawlsGroupMemberUrl(groupName, role, email), HttpMethods.PUT)
+            } ~
+            delete {
+              passthrough(UserService.rawlsGroupMemberUrl(groupName, role, email), HttpMethods.DELETE)
+            }
+          }
         }
       }
     } ~
