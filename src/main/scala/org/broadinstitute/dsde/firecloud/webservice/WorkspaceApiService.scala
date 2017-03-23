@@ -196,7 +196,8 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             post {
               requireUserInfo() { _ =>
                 entity(as[WorkspaceCreate]) { createRequest => requestContext =>
-                  val extReq = Post(workspacePath + "/clone", WorkspaceCreate.toWorkspaceRequest(createRequest))
+                  val extReq = Post(workspacePath + "/clone",
+                    WorkspaceCreate.toWorkspaceRequest(WorkspaceCreate.toWorkspaceClone(createRequest)))
                   externalHttpPerRequest(requestContext, extReq)
                 }
               }

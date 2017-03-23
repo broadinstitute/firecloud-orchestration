@@ -162,7 +162,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
   def stubRawlsCloneWorkspace(namespace: String, name: String, realm: Option[RawlsRealmRef] = None, attributes: Attributable.AttributeMap = Map()): (WorkspaceRequest, Workspace) = {
-    val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, realm, attributes)
+    val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
+    val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, realm, attributes + published)
     val rawlsResponse = Workspace(namespace, name, realm, "foo", "bar", DateTime.now(), DateTime.now(), "bob", attributes, Map(), Map())
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
