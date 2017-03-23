@@ -10,6 +10,7 @@
 #   ./docker/build.sh jar -d push
 
 set -ex
+PROJECT=firecloud-orchestration
 
 function make_jar()
 {
@@ -34,6 +35,7 @@ function docker_cmd()
 }
 
 GIT_BRANCH=${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}  # default to current branch
+REPO=${REPO:-broadinstitute/$PROJECT}
 while [ "$1" != "" ]; do
     case $1 in
         jar) make_jar ;;
