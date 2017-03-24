@@ -110,8 +110,21 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             }
           } ~
           path("methodconfigs") {
-            requireUserInfo() { _ =>
-              passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
+            get {
+              requireUserInfo() { _ =>
+                passthrough(workspacePath + "/methodconfigs", HttpMethods.GET)
+              }
+            } ~
+            post {
+              requireUserInfo() { _ =>
+                entity(as[MethodConfiguration]) { methodConfig =>
+                  requestContext =>
+                    if (methodConfig.outputs.collect { case param if param._2.value.startsWith("this.library:") => param }.isEmpty)
+                      passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
+                    else
+                      requestContext.complete(StatusCodes.Forbidden, "Can not modify library attributes")
+                }
+              }
             }
           } ~
           path("importEntities") {
