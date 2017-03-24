@@ -133,9 +133,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       .withHeaders(MockUtils.header).withStatusCode(status.intValue)
     if (body.isDefined) response.withBody(body.get)
     rawlsServer
-        .when(request)
-        .respond(response)
-    }
+      .when(request)
+      .respond(response)
+  }
 
   /** Stubs the mock Rawls service for creating a new workspace. This represents the expected Rawls API and response
     * behavior for of successful web service request.
