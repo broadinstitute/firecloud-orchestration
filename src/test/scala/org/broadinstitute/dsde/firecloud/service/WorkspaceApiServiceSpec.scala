@@ -20,6 +20,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
+
 class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
 
   def actorRefFactory = system
@@ -123,14 +124,18 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param path   request path
     * @param status status for the response
     */
-  def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None): Unit = {
+  def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None): Unit = {
+    val request = org.mockserver.model.HttpRequest.request()
+      .withMethod(method.name)
+      .withPath(path)
+    if (query.isDefined) request.withQueryStringParameter(query.get._1, query.get._2)
     val response = org.mockserver.model.HttpResponse.response()
       .withHeaders(MockUtils.header).withStatusCode(status.intValue)
     if (body.isDefined) response.withBody(body.get)
     rawlsServer
-      .when(request().withMethod(method.name).withPath(path))
-      .respond(response)
-  }
+        .when(request)
+        .respond(response)
+    }
 
   /** Stubs the mock Rawls service for creating a new workspace. This represents the expected Rawls API and response
     * behavior for of successful web service request.
@@ -451,11 +456,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
 
-    // how to add queries?
     "Passthrough tests on the workspaces/tags path" - {
       "OK status is returned for GET" in {
-        stubRawlsService(HttpMethods.GET, tagAutocompletePath, OK)
-        Get(Uri(tagAutocompletePath).withQuery(("q", "tag"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        stubRawlsService(HttpMethods.GET, tagAutocompletePath, OK, query=Some("q", "tag"))
+        Get("/api/workspaces/tags", ("q", "tag"))
+        new RequestBuilder(HttpMethods.GET)("/api/workspaces/tags?q=tag") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
