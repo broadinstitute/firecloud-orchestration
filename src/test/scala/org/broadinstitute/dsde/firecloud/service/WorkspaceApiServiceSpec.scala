@@ -458,7 +458,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the workspaces/tags path" - {
       "OK status is returned for GET" in {
-        val tagJsonString = "{ \"tag\": \"tagtest\", \"count\": 3 }"
+        val tagJsonString = """{ "tag": "tagtest", "count": 3 }"""
         stubRawlsService(HttpMethods.GET, tagAutocompletePath, OK, Some(tagJsonString), Some("q", "tag"))
         Get("/api/workspaces/tags", ("q", "tag"))
         new RequestBuilder(HttpMethods.GET)("/api/workspaces/tags?q=tag") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
