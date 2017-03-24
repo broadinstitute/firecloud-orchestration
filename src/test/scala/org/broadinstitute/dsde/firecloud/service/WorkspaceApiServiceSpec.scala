@@ -20,6 +20,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
+
 class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
 
   def actorRefFactory = system
@@ -56,6 +57,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val tsvImportPath = workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
+  private final val tagAutocompletePath = s"$workspacesRoot/tags"
   private final val executionEngineVersionPath = FireCloudConfig.Rawls.authPrefix + "/version/executionEngine"
 
   private def catalogPath(ns:String=workspace.namespace, name:String=workspace.name) =
@@ -122,12 +124,16 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param path   request path
     * @param status status for the response
     */
-  def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None): Unit = {
+  def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None): Unit = {
+    val request = org.mockserver.model.HttpRequest.request()
+      .withMethod(method.name)
+      .withPath(path)
+    if (query.isDefined) request.withQueryStringParameter(query.get._1, query.get._2)
     val response = org.mockserver.model.HttpResponse.response()
       .withHeaders(MockUtils.header).withStatusCode(status.intValue)
     if (body.isDefined) response.withBody(body.get)
     rawlsServer
-      .when(request().withMethod(method.name).withPath(path))
+      .when(request)
       .respond(response)
   }
 
@@ -299,6 +305,16 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+    "Passthrough tests on the /workspaces/tags path" - {
+      List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
+        s"MethodNotAllowed error is returned for $method" in {
+          new RequestBuilder(method)("/api/workspaces/tags") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(MethodNotAllowed)
+          }
+        }
+      }
+    }
+
   }
 
   "WorkspaceService Passthrough Tests" - {
@@ -440,7 +456,20 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
         }
       }
+
+    "Passthrough tests on the workspaces/tags path" - {
+      "OK status is returned for GET" in {
+        val tagJsonString = """{ "tag": "tagtest", "count": 3 }"""
+        stubRawlsService(HttpMethods.GET, tagAutocompletePath, OK, Some(tagJsonString), Some("q", "tag"))
+        Get("/api/workspaces/tags", ("q", "tag"))
+        new RequestBuilder(HttpMethods.GET)("/api/workspaces/tags?q=tag") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          rawlsServer.verify(request().withPath(tagAutocompletePath).withMethod("GET").withQueryStringParameter("q", "tag"))
+          status should equal(OK)
+          responseAs[String] should equal(tagJsonString)
+        }
+      }
     }
+  }
 
   "Workspace Non-passthrough Tests" - {
     "POST on /workspaces with 'not protected' workspace request sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {

@@ -11,6 +11,7 @@ import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
+import org.mockserver.model.Parameter._
 import spray.http.StatusCodes._
 import spray.json._
 
@@ -159,7 +160,6 @@ object MockWorkspaceServer {
           .withStatusCode(NotFound.intValue)
           .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
       )
-
   }
 
 }
