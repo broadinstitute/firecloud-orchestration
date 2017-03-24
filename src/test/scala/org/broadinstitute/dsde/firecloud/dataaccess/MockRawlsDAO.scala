@@ -96,7 +96,9 @@ class MockRawlsDAO  extends RawlsDAO {
 
   override def isDbGapAuthorized(userInfo: UserInfo): Future[Boolean] = Future.successful(true)
 
-  override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = Future.successful(false)
+  override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = {
+    Future.successful(userInfo.id == "curator")
+  }
 
   override def registerUser(userInfo: UserInfo): Future[Unit] = Future.successful(())
 
@@ -130,8 +132,10 @@ class MockRawlsDAO  extends RawlsDAO {
       case "reader" => Future(WorkspaceResponse(WorkspaceAccessLevels.Read, canShare = false, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
       case "publishedreader" => Future(WorkspaceResponse(WorkspaceAccessLevels.Read, canShare = false, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "publishedreadercatalog" => Future(WorkspaceResponse(WorkspaceAccessLevels.Read, canShare = false, catalog=true, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "publishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "unpublishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, catalog=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "publishedowner" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case _ => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
     }
   }
@@ -145,6 +149,10 @@ class MockRawlsDAO  extends RawlsDAO {
   }
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
+    Future.successful(newWorkspace)
+  }
+
+  override def adminPatchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation]): Future[Workspace] = {
     Future.successful(newWorkspace)
   }
 

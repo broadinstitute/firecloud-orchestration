@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.utils
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken, errorReportSource}
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, WorkspaceAccessLevels}
+import org.broadinstitute.dsde.rawls.model.{ErrorReport}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import spray.http.{HttpRequest, StatusCodes}
