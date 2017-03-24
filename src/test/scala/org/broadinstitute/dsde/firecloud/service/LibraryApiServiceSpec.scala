@@ -137,17 +137,30 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
     }
 
     "when saving metadata" - {
-      "complete data can be saved" in {
+      "complete data can be saved for an unpublished workspace" in {
           val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
           new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
           }
         }
-      "incomplete data can be saved" in {
-        // in dev, this would return a 400
+      "incomplete data can be saved for an unpublished workspace" in {
         val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
         new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
+        }
+      }
+
+      "complete data can be saved for a published workspace" in {
+        val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "cannot save incomplete data save if already published dataset" in {
+        val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(BadRequest)
         }
       }
     }
