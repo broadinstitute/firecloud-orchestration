@@ -71,17 +71,13 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
   val incompleteMetadata =
     """
       |{
-      |  "description" : "some description",
       |  "userAttributeOne" : "one",
       |  "userAttributeTwo" : "two",
-      |  "library:datasetName" : "name"
-      |  "library:datasetCustodian" : "cust",
-      |  "library:datasetDepositor" : "depo",
-      |  "library:contactEmail" : "name@example.com",
-      |  "library:datasetOwner" : "owner",
-      |  "library:institute" : ["inst","it","ute"],
-      |  "library:indication" : "indic",
-      |  "library:numSubjects" : 123,
+      |  "library:dataCategory" : ["data","category"],
+      |  "library:dataUseRestriction" : "dur",
+      |  "library:studyDesign" : "study",
+      |  "library:cellType" : "cell",
+      |  "library:requiresExternalApproval" : false,
       |  "library:useLimitationOption" : "orsp",
       |  "library:technology" : ["is an optional","array attribute"],
       |  "library:orsp" : "some orsp",
