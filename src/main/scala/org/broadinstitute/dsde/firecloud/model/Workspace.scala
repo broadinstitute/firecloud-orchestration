@@ -15,14 +15,14 @@ object WorkspaceCreate {
   import scala.language.implicitConversions
   implicit def toWorkspaceRequest(wc: WorkspaceCreate): WorkspaceRequest = {
     val realm = if (wc.isProtected.getOrElse(false))
-      Some(RawlsRealmRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
+      Some(ManagedGroupRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
     else
         None
     WorkspaceRequest(wc.namespace, wc.name, realm, wc.attributes)
   }
 
   def isProtected(ws: Workspace): Boolean = {
-    ws.realm == Some(RawlsRealmRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
+    ws.realm == Some(ManagedGroupRef(RawlsGroupName(FireCloudConfig.Nih.rawlsGroupName)))
   }
 
   def toWorkspaceClone(wc: WorkspaceCreate): WorkspaceCreate = {
@@ -66,12 +66,12 @@ case class UIWorkspace(
   attributes: AttributeMap,
   bucketName: String,
   accessLevels: Map[WorkspaceAccessLevel, RawlsGroupRef],
-  realm: Option[RawlsRealmRef],
+  realm: Option[ManagedGroupRef],
   isProtected: Boolean) {
   def this(w: Workspace) =
     this(w.workspaceId, w.namespace, w.name, Option(w.isLocked), w.createdBy, w.createdDate.toString,
       Option(w.lastModified.toString), w.attributes, w.bucketName, w.accessLevels, w.realm,
-      w.realm.exists(_.realmName.value == FireCloudConfig.Nih.rawlsGroupName))
+      w.realm.exists(_.usersGroupName.value == FireCloudConfig.Nih.rawlsGroupName))
 }
 
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)

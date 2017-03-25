@@ -90,6 +90,48 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
           .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
       )
 
+    workspaceServer
+      .when(request.withMethod("GET").withPath(UserService.rawlsGroupBasePath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("POST").withPath(UserService.rawlsGroupPath("example-group")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("DELETE").withPath(UserService.rawlsGroupPath("example-group")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("GET").withPath(UserService.rawlsGroupPath("example-group")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("PUT").withPath(UserService.rawlsGroupMemberPath("example-group", "owner", "test@test.test")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("DELETE").withPath(UserService.rawlsGroupMemberPath("example-group", "owner", "test@test.test")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
     profileServer = startClientAndServer(thurloeServerPort)
     // Generate a mock response for all combinations of profile properties
     // to ensure that all posts to any combination will yield a successful response.
@@ -192,6 +234,61 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
         }
       }
     }
+
+    "when GET-ting my group membership" - {
+      "OK response is returned" in {
+        Get("/api/groups") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when POST-ing to create a group" - {
+      "Created response is returned" in {
+        Post("/api/groups/example-group") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(Created)
+        }
+      }
+    }
+
+    "when GET-ting membership of a group" - {
+      "OK response is returned" in {
+        Get("/api/groups/example-group") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when DELETE-ing to create a group" - {
+      "OK response is returned" in {
+        Delete("/api/groups/example-group") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when PUT-ting to add a member to a group" - {
+      "OK response is returned" in {
+        Put("/api/groups/example-group/owner/test@test.test") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when DELETE-ing to remove a member from a group" - {
+      "OK response is returned" in {
+        Delete("/api/groups/example-group/owner/test@test.test") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
   }
 
   "UserService Edge Cases" - {

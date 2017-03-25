@@ -65,7 +65,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
-  val nihProtectedRealm = RawlsRealmRef(RawlsGroupName("dbGapAuthorizedUsers"))
+  val nihProtectedRealm = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
 
   val protectedRawlsWorkspace = Workspace(
     "attributes",
@@ -85,7 +85,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   val realmRawlsWorkspace = Workspace(
     "attributes",
     "att",
-    Some(RawlsRealmRef(RawlsGroupName("secret_realm"))), //realm
+    Some(ManagedGroupRef(RawlsGroupName("secret_realm"))), //realm
     "id",
     "", //bucketname
     DateTime.now(),
@@ -148,7 +148,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param realm     (optional) realm for the new workspace
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
-  def stubRawlsCreateWorkspace(namespace: String, name: String, realm: Option[RawlsRealmRef] = None): (WorkspaceRequest, Workspace) = {
+  def stubRawlsCreateWorkspace(namespace: String, name: String, realm: Option[ManagedGroupRef] = None): (WorkspaceRequest, Workspace) = {
     val rawlsRequest = WorkspaceRequest(namespace, name, realm, Map())
     val rawlsResponse = Workspace(namespace, name, realm, "foo", "bar", DateTime.now(), DateTime.now(), "bob", Map(), Map(), Map())
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
@@ -167,7 +167,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param attributes (optional) attributes expected to be given to rawls for the new cloned workspace
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
-  def stubRawlsCloneWorkspace(namespace: String, name: String, realm: Option[RawlsRealmRef] = None, attributes: Attributable.AttributeMap = Map()): (WorkspaceRequest, Workspace) = {
+  def stubRawlsCloneWorkspace(namespace: String, name: String, realm: Option[ManagedGroupRef] = None, attributes: Attributable.AttributeMap = Map()): (WorkspaceRequest, Workspace) = {
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, realm, attributes + published)
     val rawlsResponse = Workspace(namespace, name, realm, "foo", "bar", DateTime.now(), DateTime.now(), "bob", attributes, Map(), Map())

@@ -9,6 +9,8 @@ import org.broadinstitute.dsde.firecloud.model.Ontology.{TermResource, TermParen
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
+import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
+import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
 
 import scala.util.Try
 

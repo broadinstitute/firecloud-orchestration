@@ -14,7 +14,7 @@ object Dependencies {
     "ch.qos.logback" % "logback-classic" % "1.1.3",
     "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
     "org.broadinstitute.dsde.vault" %%  "vault-common"  % "0.1-19-ca8b927",
-    "org.broadinstitute.dsde" %%  "rawls-model"  % "0.1-1b0dae5d"
+    "org.broadinstitute.dsde" %%  "rawls-model"  % "0.1-518a712-SNAP"
       exclude("com.typesafe.scala-logging", "scala-logging_2.11"),
     "io.spray"            %%  "spray-can"     % sprayV,
     "io.spray"            %%  "spray-routing" % sprayV,
