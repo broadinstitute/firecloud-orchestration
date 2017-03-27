@@ -16,6 +16,7 @@ object MockUtils {
   val methodsServerPort = 8989
   val thurloeServerPort = 8991
   val consentServerPort = 8992
+  val ontologyServerPort = 8993
 
    def randomPositiveInt(): Int = {
      scala.util.Random.nextInt(9) + 1

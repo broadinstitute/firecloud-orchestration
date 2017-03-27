@@ -38,10 +38,10 @@ trait LibraryServiceSupport extends LazyLogging {
       }.collect {
         case s:AttributeString => s.value
       }
-    logger.info(s"reindex: found ${nodesSeq.size} workspaces with ontology nodes assigned")
+    logger.debug(s"found ${nodesSeq.size} workspaces with ontology nodes assigned")
 
     val nodes = nodesSeq.toSet
-    logger.info(s"reindex: found ${nodes.size} unique ontology nodes")
+    logger.debug(s"found ${nodes.size} unique ontology nodes")
 
     // query ontology for this set of nodes, save in a map
     val parentCache = Future.sequence(nodes map {id =>
@@ -51,7 +51,7 @@ trait LibraryServiceSupport extends LazyLogging {
     // using the cached parent information, build the indexable documents
     val docsResult: Future[Seq[Document]] = parentCache map { parentSet =>
       val parentMap = parentSet.toMap.filter(e => e._2.nonEmpty) // remove nodes that have no parent
-      logger.info(s"reindex: have parent results for ${parentMap.size} ontology nodes")
+      logger.debug(s"have parent results for ${parentMap.size} ontology nodes")
       workspaces map {w =>
        indexableDocument(w, parentMap)
       }
