@@ -43,7 +43,7 @@ trait RestJsonClient extends FireCloudRequestBuilding {
       case (true, true) => addFireCloudCredentials ~> addHeader (`Accept-Encoding`(gzip)) ~> sr ~> decode(Gzip)
       case (true, false) => addHeader (`Accept-Encoding`(gzip)) ~> sr ~> decode(Gzip)
       case (false, true) => addFireCloudCredentials ~> sr
-      case _ => sendReceive
+      case _ => sr
     }
 
     val finalPipeline = addCreds.map(creds => creds ~> pipeline).getOrElse(pipeline)
