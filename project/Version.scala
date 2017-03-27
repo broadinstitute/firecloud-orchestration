@@ -1,41 +1,26 @@
 import sbt.Keys._
 import sbt._
 
+
 object Version {
-  val versionRoot = "0.1"
+  val baseModelVersion = "0.1"
 
   def getVersionString = {
-    // Get the revision, or -1 (later will be bumped to zero)
-    val versionRevision = {
-      try {
-        ("git rev-list --count HEAD" #|| "echo -1").!!.trim.toInt
-      } catch {
-        case e: Exception =>
-          0
-      }
-    }
+    def getLastModelCommitFromGit = { s"""git rev-parse --short HEAD""" !! }
 
-    // Set the suffix to None...
-    val versionSuffix = {
-      try {
-        // ...except when there are no modifications...
-        if ("git diff --quiet HEAD".! == 0) {
-          // ...then set the suffix to the revision "dash" git hash
-          Option(versionRevision + "-" + "git rev-parse --short HEAD".!!.trim)
-        } else {
-          None
-        }
-      } catch {
-        case e: Exception =>
-          None
-      }
-    }
+    // either specify git model hash as an env var or derive it
+    // if building from the broadinstitute/scala-baseimage docker image use env var
+    // (scala-baseimage doesn't have git in it)
+    val lastModelCommit = sys.env.getOrElse("GIT_MODEL_HASH", getLastModelCommitFromGit ).trim()
+    val version = baseModelVersion + "-" + lastModelCommit
 
-    versionRoot + "-" + versionSuffix.getOrElse((versionRevision + 1) + "-SNAPSHOT")
+    // The project isSnapshot string passed in via command line settings, if desired.
+    val isSnapshot = sys.props.getOrElse("project.isSnapshot", "true").toBoolean
 
+    // For now, obfuscate SNAPSHOTs from sbt's developers: https://github.com/sbt/sbt/issues/2687#issuecomment-236586241
+    if (isSnapshot) s"$version-SNAPSHOT" else version
   }
 
   val rootVersionSettings: Seq[Setting[_]] =
     Seq(version := getVersionString)
-
 }

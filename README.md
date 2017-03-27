@@ -65,6 +65,13 @@ You can create a file `src/test/resources/ittest.conf` to override configuration
 You do not *need* to create this file; the it tests will look in your runtime `config/` directory if ittest.conf does
 not exist. Additionally, you can pass ElasticSearch urls using `-Desulrs=host:port,host:port` on the sbt command line.
 
+## Docker
+
+To build the orch jar with docker, and then build the orch docker image, run:
+```
+./script/build.sh jar -d build 
+```
+
 ## Debugging
 
 Remote debugging is enabled for firecloud-orchestration on port 5051.
