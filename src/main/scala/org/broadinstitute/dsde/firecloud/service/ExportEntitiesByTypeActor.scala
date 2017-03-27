@@ -66,10 +66,10 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   private def getZipBytes(entityType: String, membershipData: String, entityData: String): Array[Byte] = {
     val bos = new ByteArrayOutputStream()
     val zos = new ZipOutputStream(bos)
-    zos.putNextEntry(new ZipEntry(entityType + "_membership.txt"))
+    zos.putNextEntry(new ZipEntry(entityType + "_membership.tsv"))
     zos.write(membershipData.getBytes)
     zos.closeEntry()
-    zos.putNextEntry(new ZipEntry(entityType + "_entity.txt"))
+    zos.putNextEntry(new ZipEntry(entityType + "_entity.tsv"))
     zos.write(entityData.getBytes)
     zos.closeEntry()
     zos.finish()
