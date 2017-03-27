@@ -5,7 +5,7 @@ import akka.io.IO
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
@@ -24,8 +24,16 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
   extends OntologyDAO with RestJsonClient with LazyLogging {
 
   private val ontologyUri = Uri(FireCloudConfig.Duos.baseOntologyUrl)
-  private val ontologyHostSetup = Http.HostConnectorSetup(ontologyUri.authority.host.address,
-    ontologyUri.authority.port, ontologyUri.scheme.equalsIgnoreCase("https"))
+
+  private val (ontologyPort, sslEncryption) = (ontologyUri.authority.port, ontologyUri.scheme) match {
+    case (0, "https") => (443, true)
+    case (0, "http") => (80, false)
+    case (port:Int, "https") => (port, true)
+    case (port:Int, "http") => (port, false)
+    case _ => throw new FireCloudException(s"Could not parse ontologyUri: ${ontologyUri.toString}")
+  }
+
+  private val ontologyHostSetup = Http.HostConnectorSetup(ontologyUri.authority.host.address, ontologyPort, sslEncryption)
 
   override def search(term: String): Future[Option[List[TermResource]]] = {
     searchAsync(term)
