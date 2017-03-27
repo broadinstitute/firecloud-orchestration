@@ -7,20 +7,26 @@
 #   jar : build orch jar
 #   -d | --docker : provide arg either "build" or "push", to build and push docker image
 # Jenkins build job should run with all options, for example,
-#   ./docker/build.sh jar -d push
+#   ./script/build.sh jar -d push
 
 set -ex
 PROJECT=firecloud-orchestration
 
 function make_jar()
 {
-    docker run --rm -v $PWD:/working -w /working -v jar-cache:/root/.ivy -v jar-cache:/root/.ivy2 broadinstitute/scala-baseimage /working/src/docker/install.sh /working
+    # Set for versioning the jar
+    GIT_MODEL_HASH=$(git rev-parse --short ${GIT_BRANCH})
+
+    docker run --rm -e GIT_MODEL_HASH=${GIT_MODEL_HASH} \
+        -v $PWD:/working -w /working -v jar-cache:/root/.ivy -v jar-cache:/root/.ivy2 \
+        broadinstitute/scala-baseimage /working/src/docker/install.sh /working
 }
 
 function docker_cmd()
 {
-    if [ $DOCKER_CMD="build" ] || [ $DOCKER_CMD="push" ]; then
+    if [ $DOCKER_CMD = "build" ] || [ $DOCKER_CMD = "push" ]; then
         echo "building docker image..."
+
         GIT_SHA=$(git rev-parse ${GIT_BRANCH})
         echo GIT_SHA=$GIT_SHA > env.properties  # for jenkins jobs
         docker build -t $REPO:${GIT_SHA:0:12} .
