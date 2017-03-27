@@ -23,33 +23,20 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
   extends OntologyDAO with RestJsonClient with LazyLogging {
 
-  private val ontologyHostSetup = Http.HostConnectorSetup(FireCloudConfig.Duos.baseOntologyUrl,
-    port = 443, sslEncryption = true)
+  private val ontologyUri = Uri(FireCloudConfig.Duos.baseOntologyUrl)
+  private val ontologyHostSetup = Http.HostConnectorSetup(ontologyUri.authority.host.address,
+    ontologyUri.authority.port, ontologyUri.scheme.equalsIgnoreCase("https"))
 
   override def search(term: String): Future[Option[List[TermResource]]] = {
-    searchBlocking(term)
-  }
-
-  @deprecated("uses blocking I/O, boo!", "2017-03-15")
-  private def searchBlocking(term: String): Future[Option[List[TermResource]]] = {
-    val targetUri = Uri(ontologySearchUrl).withQuery(("id", term))
-    logger.info(s"HttpOntologyDAO querying ${term} ...")
-    val response = Await.result(unAuthedRequest(Get(targetUri)), Duration(30, "seconds"))
-    logger.info(s"HttpOntologyDAO querying ${term}: ${response.status.defaultMessage}")
-    response.entity.as[List[TermResource]] match {
-      case Right(obj) => Future(Some(obj))
-      case Left(err) =>
-        logger.warn(s"Error while retrieving ontology parents for id '$term': $err")
-        Future(None)
-    }
+    searchAsync(term)
   }
 
   private def searchAsync(term: String): Future[Option[List[TermResource]]] = {
     getHostConnector flatMap { hostConnector =>
       val targetUri = Uri(ontologySearchUrl).withQuery(("id", term))
-      logger.info(s"HttpOntologyDAO querying ${term} ...")
+      logger.debug(s"HttpOntologyDAO querying ${term} ...")
       unAuthedRequest(Get(targetUri), connector = Some(hostConnector)) map { response =>
-        logger.info(s"HttpOntologyDAO querying ${term}: ${response.status.defaultMessage}")
+        logger.debug(s"HttpOntologyDAO querying ${term}: ${response.status.defaultMessage}")
         response.entity.as[List[TermResource]] match {
           case Right(obj) => Some(obj)
           case Left(err) =>
