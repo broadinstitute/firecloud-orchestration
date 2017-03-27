@@ -27,8 +27,10 @@ trait RestJsonClient extends FireCloudRequestBuilding {
     implicit val userInfo:WithAccessToken = null
     doRequest(None)(req, compressed, useFireCloudHeader, connector)
   }
+
   def userAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false, connector: Option[ActorRef] = None)(implicit userInfo: WithAccessToken): Future[HttpResponse] =
     doRequest(Option(addCredentials(userInfo.accessToken)))(req, compressed, useFireCloudHeader, connector)
+
   def adminAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false, connector: Option[ActorRef] = None): Future[HttpResponse] =
     doRequest(Option(addAdminCredentials))(req, compressed, useFireCloudHeader, connector)
 
