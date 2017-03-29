@@ -3700,6 +3700,17 @@ definitions:
         type: string
         description: ''
 
+  RawlsGroupShort:
+    type: object
+    description: a reference to a group
+    properties:
+      groupName:
+        type: string
+        description: 'the name of the group'
+      groupEmail:
+        type: string
+        description: 'the email associated with the group'
+
   RawlsMe:
     type: object
     properties:
