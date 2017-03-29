@@ -14,11 +14,11 @@ import scala.concurrent.Future
  */
 trait LibraryPermissionsSupport extends PermissionsSupport {
 
-  private def hasCatalog(workspaceResponse: WorkspaceResponse): Boolean = {
+  protected def hasCatalog(workspaceResponse: WorkspaceResponse): Boolean = {
     workspaceResponse.catalog && workspaceResponse.accessLevel >= WorkspaceAccessLevels.Read
   }
 
-  private def canChangePublished(workspaceResponse: WorkspaceResponse, userInfo: UserInfo): Future[Boolean] = {
+  protected def canChangePublished(workspaceResponse: WorkspaceResponse, userInfo: UserInfo): Future[Boolean] = {
     tryIsCurator(userInfo) map { iscurator =>
       // must be curator and then be owner or have catalog with at least read for the workspace
       iscurator &&
@@ -35,7 +35,7 @@ trait LibraryPermissionsSupport extends PermissionsSupport {
     }
   }
 
-  private def canModify(workspaceResponse: WorkspaceResponse): Boolean = {
+  protected def canModify(workspaceResponse: WorkspaceResponse): Boolean = {
     workspaceResponse.accessLevel >= WorkspaceAccessLevels.Write ||
       hasCatalog(workspaceResponse)
   }
@@ -47,7 +47,7 @@ trait LibraryPermissionsSupport extends PermissionsSupport {
       Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must have write+ or catalog with read permissions.")))
   }
 
-  private def canModifyDiscoverability(workspaceResponse: WorkspaceResponse): Boolean = {
+  protected def canModifyDiscoverability(workspaceResponse: WorkspaceResponse): Boolean = {
     workspaceResponse.accessLevel >= WorkspaceAccessLevels.Owner ||
       workspaceResponse.canShare ||
       hasCatalog(workspaceResponse)

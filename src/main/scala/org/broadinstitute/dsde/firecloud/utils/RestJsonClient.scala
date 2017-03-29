@@ -86,13 +86,4 @@ trait RestJsonClient extends FireCloudRequestBuilding {
       }
     }
   }
-
-  def requestToObject[T](auth: Boolean, req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false)(implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T], ers: ErrorReportSource): Future[T] = {
-    val resp = if(auth) {
-      userAuthedRequest(req, compressed, useFireCloudHeader)
-    } else {
-      unAuthedRequest(req, compressed, useFireCloudHeader)
-    }
-    resultsToObject(resp)
-  }
 }

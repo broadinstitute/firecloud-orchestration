@@ -507,13 +507,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-    "Forbidden error is returned for HTTP POST with library attributes in output" in {
-      val methodConfigs = MethodConfiguration("namespace", "name", "root", Map.empty, Map.empty, Map("value" -> AttributeString("this.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
-      Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(Forbidden)
-      }
-    }
-
     "POST on /workspaces/.../.../clone for 'not protected' workspace sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
       val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name")
 
