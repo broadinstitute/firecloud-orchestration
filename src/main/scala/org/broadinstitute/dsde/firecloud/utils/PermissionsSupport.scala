@@ -15,7 +15,6 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 trait PermissionsSupport {
   protected val rawlsDAO: RawlsDAO
-//  implicit val userInfo: UserInfo
   implicit protected val executionContext: ExecutionContext
 
   def tryIsAdmin(userInfo: UserInfo): Future[Boolean] = {

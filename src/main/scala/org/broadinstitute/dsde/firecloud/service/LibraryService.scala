@@ -5,7 +5,7 @@ import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
-import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.{WorkspaceAccessLevels, _}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -53,7 +53,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
                       val searchDAO: SearchDAO,
                       val ontologyDAO: OntologyDAO)
                      (implicit protected val executionContext: ExecutionContext) extends Actor
-  with LibraryServiceSupport with AttributeSupport with LibraryPermissionsSupport with PermissionsSupport with SprayJsonSupport with LazyLogging {
+  with LibraryServiceSupport with AttributeSupport with LibraryPermissionsSupport with SprayJsonSupport with LazyLogging {
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -77,11 +77,11 @@ class LibraryService (protected val argUserInfo: UserInfo,
     if (newGroups.forall { g => FireCloudConfig.ElasticSearch.discoverGroupNames.contains(g) }) {
       rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
         val remove = Seq(RemoveAttribute(discoverableWSAttribute))
-        val operations = newGroups map (group => AddListMember(discoverableWSAttribute, new AttributeString(group)))
+        val operations = newGroups map (group => AddListMember(discoverableWSAttribute, AttributeString(group)))
         // this is technically vulnerable to a race condition in which the workspace attributes have changed
         // between the time we retrieved them and here, where we update them.
         withDiscoverabilityModifyPermissions(workspaceResponse) {
-          adminPatchWorkspaceAndRepublish(ns, name, remove ++ operations, isPublished(workspaceResponse)) map (RequestComplete(_))
+          internalPatchWorkspaceAndRepublish(workspaceResponse.accessLevel, ns, name, remove ++ operations, isPublished(workspaceResponse)) map (RequestComplete(_))
         }
       }
     } else {
@@ -117,10 +117,23 @@ class LibraryService (protected val argUserInfo: UserInfo,
                 k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
               // this is technically vulnerable to a race condition in which the workspace attributes have changed
               // between the time we retrieved them and here, where we update them.
-              if (userAttrs.contains(discoverableWSAttribute))
-                withDiscoverabilityModifyPermissions(workspaceResponse){adminPatchWorkspaceAndRepublish(ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))}
-              else
-                withModifyPermissions(workspaceResponse){adminPatchWorkspaceAndRepublish(ns, name, allOperations, isPublished(workspaceResponse))map (RequestComplete(_))}
+              if (userAttrs.contains(discoverableWSAttribute)) {
+                if (userAttrs.size == 1)
+                  withDiscoverabilityModifyPermissions(workspaceResponse) {
+                    internalPatchWorkspaceAndRepublish(workspaceResponse.accessLevel, ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))
+                  }
+                else
+                  withDiscoverabilityModifyPermissions(workspaceResponse){
+                    withModifyPermissions(workspaceResponse){
+                      internalPatchWorkspaceAndRepublish(workspaceResponse.accessLevel, ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))
+                    }
+                  }
+              }
+              else {
+                withModifyPermissions(workspaceResponse){
+                  internalPatchWorkspaceAndRepublish(workspaceResponse.accessLevel, ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))
+                }
+              }
             }
           }
         }
@@ -128,11 +141,14 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   /*
-   * Uses admin credentials to update the workspace in rawls. Will republish if it is currently in the published state.
-   * You must do your own permissions check before using this method
+   * Uses admin credentials if necessary to update the workspace in rawls. Will republish if it is currently in the published state.
+   * Code that uses this should ensure the user has the required properties (especially is they do not have write+)
    */
-  def adminPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean) : Future[Workspace] = {
-    rawlsDAO.adminPatchWorkspaceAttributes(ns, name, allOperations) map { newws =>
+  def internalPatchWorkspaceAndRepublish(acl: WorkspaceAccessLevels.WorkspaceAccessLevel, ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
+    (if (acl >= WorkspaceAccessLevels.Write)
+      rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations)
+    else
+      rawlsDAO.adminPatchWorkspaceAttributes(ns, name, allOperations)) map { newws =>
       if (isPublished) {
         // if already published, republish
         // we do not need to delete before republish
@@ -148,7 +164,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
       val pub = isPublished(workspaceResponse)
       if (pub == value)
-        Future(RequestCompleteWithErrorReport(NotModified, s"No changes needed"))
+        Future(RequestComplete(NoContent))
       else {
         withChangePublishedPermissions(workspaceResponse, userInfo){
           rawlsDAO.adminPatchWorkspaceAttributes(ns, name, updatePublishAttribute(value)) map { ws =>
