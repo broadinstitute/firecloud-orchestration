@@ -113,31 +113,48 @@ class LibraryService (protected val argUserInfo: UserInfo,
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
           case Success(x) => {
             rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
+              val modDiscoverability = isDiscoverableDifferent(workspaceResponse, userAttrs)
+              val skipAttributes =
+              // if discoverable by groups is not being changed, then skip it (i.e. don't delete)
+              // this user may not have permission to modify, but it gets sent with the other attributes
+                if (modDiscoverability)
+                  Seq(publishedFlag)
+                else
+                // skip setting discoverable
+                  Seq(publishedFlag, discoverableWSAttribute)
               val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
-                k => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name)
+                k => k.namespace == AttributeName.libraryNamespace && !skipAttributes.contains(k))
               // this is technically vulnerable to a race condition in which the workspace attributes have changed
               // between the time we retrieved them and here, where we update them.
-              if (userAttrs.contains(discoverableWSAttribute)) {
-                if (userAttrs.size == 1)
-                  withDiscoverabilityModifyPermissions(workspaceResponse) {
-                    internalPatchWorkspaceAndRepublish(workspaceResponse.accessLevel, ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))
-                  }
-                else
-                  withDiscoverabilityModifyPermissions(workspaceResponse){
-                    withModifyPermissions(workspaceResponse){
-                      internalPatchWorkspaceAndRepublish(workspaceResponse.accessLevel, ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))
-                    }
-                  }
-              }
-              else {
-                withModifyPermissions(workspaceResponse){
-                  internalPatchWorkspaceAndRepublish(workspaceResponse.accessLevel, ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))
-                }
+              (if (modDiscoverability)
+                withModifyAndDiscoverabilityModifyPermissions _
+              else withModifyPermissions _
+                ) (workspaceResponse) {
+                internalPatchWorkspaceAndRepublish(workspaceResponse.accessLevel, ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))
               }
             }
           }
         }
     }
+  }
+
+  def isDiscoverableDifferent(workspaceResponse: WorkspaceResponse, userAttrs: AttributeMap) = {
+    val attrs = Seq(workspaceResponse.workspace.attributes.get(discoverableWSAttribute),userAttrs.get(discoverableWSAttribute))
+    val output: Seq[Seq[String]] = attrs map { _ match {
+          case Some(x) if x.isInstanceOf[AttributeValueList] => x.asInstanceOf[AttributeValueList].list.asInstanceOf[Seq[AttributeString]] map { str => str.value }
+          case _ => Seq.empty
+        }
+      }
+
+    val current = output.head
+    val newvals = output.last
+
+    if (current.isEmpty && newvals.isEmpty)
+      false
+    else if (!current.isEmpty && !newvals.isEmpty) {
+      !(current.toSet.diff(newvals.toSet)).isEmpty
+    } else
+    true
   }
 
   /*
