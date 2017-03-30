@@ -45,7 +45,7 @@ object FireCloudConfig {
     val entityQueryPath = workspace.getString("entityQueryPath")
     val importEntitiesPath = workspace.getString("importEntitiesPath")
     val workspacesEntitiesCopyPath = workspace.getString("workspacesEntitiesCopyPath")
-    val workspacesEntitiesCopyUrl = authUrl + workspacesEntitiesCopyPath
+    def workspacesEntitiesCopyUrl(linkExistingEntities: Boolean) = authUrl + workspacesEntitiesCopyPath + "?linkExistingEntities=%s".format(linkExistingEntities)
     val submissionsPath = workspace.getString("submissionsPath")
     val submissionsUrl = authUrl + submissionsPath
     val submissionsIdPath = workspace.getString("submissionsIdPath")
