@@ -60,4 +60,11 @@ trait LibraryPermissionsSupport extends PermissionsSupport {
       Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must be an owner or have catalog or share permissions.")))
   }
 
+  def withModifyAndDiscoverabilityModifyPermissions(workspaceResponse: WorkspaceResponse)(op: => Future[PerRequestMessage]): Future[PerRequestMessage] = {
+    if (canModify(workspaceResponse) && canModifyDiscoverability(workspaceResponse))
+      op
+    else
+      Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must be an owner or have catalog with read permissions.")))
+  }
+
 }
