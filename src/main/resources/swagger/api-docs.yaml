@@ -269,10 +269,10 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     post:
-      summary: Add a Method.
+      summary: Add a configuration.
       description: |
-        Inserts a method into the method repository and
-        gives the owner full access permissions. Must supply a namespace
+        Inserts a method configuration into the method repository and
+        gives the owner full access permissions. Must supply a namespace,
         name, payload, and entityType. Cannot supply a snapshotId
       parameters:
         - name: body
@@ -3005,7 +3005,7 @@ definitions:
         type: string
         description: Documentation of the Configuration.
         default: |
-          Example configuraion with an associated method.
+          Example configuration with an associated method.
       payload:
         type: string
         description: Payload of method -- must be in WDL format
@@ -3699,6 +3699,17 @@ definitions:
       groupName:
         type: string
         description: ''
+
+  RawlsGroupShort:
+    type: object
+    description: a reference to a group
+    properties:
+      groupName:
+        type: string
+        description: 'the name of the group'
+      groupEmail:
+        type: string
+        description: 'the email associated with the group'
 
   RawlsMe:
     type: object
