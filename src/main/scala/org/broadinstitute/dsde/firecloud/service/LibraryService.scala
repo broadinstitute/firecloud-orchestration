@@ -5,7 +5,7 @@ import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
-import org.broadinstitute.dsde.rawls.model.{WorkspaceAccessLevels, _}
+import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -53,7 +53,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
                       val searchDAO: SearchDAO,
                       val ontologyDAO: OntologyDAO)
                      (implicit protected val executionContext: ExecutionContext) extends Actor
-  with LibraryServiceSupport with AttributeSupport with LibraryPermissionsSupport with SprayJsonSupport with LazyLogging {
+  with LibraryServiceSupport with AttributeSupport with PermissionsSupport with SprayJsonSupport with LazyLogging {
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -76,13 +76,11 @@ class LibraryService (protected val argUserInfo: UserInfo,
   def updateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]): Future[PerRequestMessage] = {
     if (newGroups.forall { g => FireCloudConfig.ElasticSearch.discoverGroupNames.contains(g) }) {
       rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-        val remove = Seq(RemoveAttribute(discoverableWSAttribute))
-        val operations = newGroups map (group => AddListMember(discoverableWSAttribute, AttributeString(group)))
         // this is technically vulnerable to a race condition in which the workspace attributes have changed
         // between the time we retrieved them and here, where we update them.
-        withDiscoverabilityModifyPermissions(workspaceResponse) {
-          internalPatchWorkspaceAndRepublish(workspaceResponse.accessLevel, ns, name, remove ++ operations, isPublished(workspaceResponse)) map (RequestComplete(_))
-        }
+        val remove = Seq(RemoveAttribute(discoverableWSAttribute))
+        val operations = newGroups map (group => AddListMember(discoverableWSAttribute, AttributeString(group)))
+          internalPatchWorkspaceAndRepublish(ns, name, remove ++ operations, isPublished(workspaceResponse)) map (RequestComplete(_))
       }
     } else {
       Future(RequestCompleteWithErrorReport(BadRequest, s"groups must be subset of allowable groups: %s".format(FireCloudConfig.ElasticSearch.discoverGroupNames.toArray.mkString(", "))))
@@ -111,48 +109,40 @@ class LibraryService (protected val argUserInfo: UserInfo,
             Future(RequestCompleteWithErrorReport(BadRequest, errorMessages.mkString("; "), errorReports))
           case Failure(e) =>
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
-          case Success(x) => {
+          case Success(x) =>
             rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
               val modDiscoverability = isDiscoverableDifferent(workspaceResponse, userAttrs)
               val skipAttributes =
-              // if discoverable by groups is not being changed, then skip it (i.e. don't delete)
-              // this user may not have permission to modify, but it gets sent with the other attributes
                 if (modDiscoverability)
                   Seq(publishedFlag)
                 else
-                // skip setting discoverable
+                  // if discoverable by groups is not being changed, then skip it (i.e. don't delete from ws)
                   Seq(publishedFlag, discoverableWSAttribute)
-              val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
-                k => k.namespace == AttributeName.libraryNamespace && !skipAttributes.contains(k))
+
               // this is technically vulnerable to a race condition in which the workspace attributes have changed
               // between the time we retrieved them and here, where we update them.
-              (if (modDiscoverability)
-                withModifyAndDiscoverabilityModifyPermissions _
-              else withModifyPermissions _
-                ) (workspaceResponse) {
-                internalPatchWorkspaceAndRepublish(workspaceResponse.accessLevel, ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))
-              }
+              val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
+                k => k.namespace == AttributeName.libraryNamespace && !skipAttributes.contains(k))
+              internalPatchWorkspaceAndRepublish(ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))
             }
-          }
         }
     }
   }
 
-  def isDiscoverableDifferent(workspaceResponse: WorkspaceResponse, userAttrs: AttributeMap) = {
-    val attrs = Seq(workspaceResponse.workspace.attributes.get(discoverableWSAttribute),userAttrs.get(discoverableWSAttribute))
-    val output: Seq[Seq[String]] = attrs map { _ match {
-          case Some(x) if x.isInstanceOf[AttributeValueList] => x.asInstanceOf[AttributeValueList].list.asInstanceOf[Seq[AttributeString]] map { str => str.value }
-          case _ => Seq.empty
-        }
+  def isDiscoverableDifferent(workspaceResponse: WorkspaceResponse, userAttrs: AttributeMap): Boolean = {
+    def convert(list: Option[Attribute]): Seq[String] = {
+      list match {
+        case Some(x) if x.isInstanceOf[AttributeValueList] => x.asInstanceOf[AttributeValueList].list.asInstanceOf[Seq[AttributeString]] map { str => str.value }
+        case _ => Seq.empty
       }
-
-    val current = output.head
-    val newvals = output.last
+    }
+    val current = convert(workspaceResponse.workspace.attributes.get(discoverableWSAttribute))
+    val newvals = convert(userAttrs.get(discoverableWSAttribute))
 
     if (current.isEmpty && newvals.isEmpty)
       false
-    else if (!current.isEmpty && !newvals.isEmpty) {
-      !(current.toSet.diff(newvals.toSet)).isEmpty
+    else if (current.nonEmpty && newvals.nonEmpty) {
+      current.toSet.diff(newvals.toSet).nonEmpty
     } else
     true
   }
@@ -161,11 +151,8 @@ class LibraryService (protected val argUserInfo: UserInfo,
    * Uses admin credentials if necessary to update the workspace in rawls. Will republish if it is currently in the published state.
    * Code that uses this should ensure the user has the required properties (especially is they do not have write+)
    */
-  def internalPatchWorkspaceAndRepublish(acl: WorkspaceAccessLevels.WorkspaceAccessLevel, ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
-    (if (acl >= WorkspaceAccessLevels.Write)
-      rawlsDAO.patchWorkspaceAttributes(ns, name, allOperations)
-    else
-      rawlsDAO.adminPatchWorkspaceAttributes(ns, name, allOperations)) map { newws =>
+  def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
+      rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>
       if (isPublished) {
         // if already published, republish
         // we do not need to delete before republish
@@ -183,14 +170,12 @@ class LibraryService (protected val argUserInfo: UserInfo,
       if (pub == value)
         Future(RequestComplete(NoContent))
       else {
-        withChangePublishedPermissions(workspaceResponse, userInfo){
-          rawlsDAO.adminPatchWorkspaceAttributes(ns, name, updatePublishAttribute(value)) map { ws =>
-            if (value)
-              publishDocument(ws)
-            else
-              removeDocument(ws)
-            RequestComplete(ws)
-          }
+        rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(value)) map { ws =>
+          if (value)
+            publishDocument(ws)
+          else
+            removeDocument(ws)
+          RequestComplete(ws)
         }
       }
     }
@@ -239,7 +224,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
         docs <- docsFuture
         ids <- idsFuture
       } yield updateAccess(docs, ids)
-      (RequestComplete(searchResults))
+      RequestComplete(searchResults)
     }
   }
 
@@ -249,7 +234,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def populateSuggest(field: String, text: String): Future[PerRequestMessage] = {
-    searchDAO.suggestionsForFieldPopulate(field, text) map {(RequestComplete(_))} recoverWith {
+    searchDAO.suggestionsForFieldPopulate(field, text) map {RequestComplete(_)} recoverWith {
       case e: FireCloudException => Future(RequestCompleteWithErrorReport(BadRequest, s"suggestions not available for field %s".format(field)))
     }
   }
