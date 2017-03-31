@@ -41,8 +41,8 @@ class RegisterService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
       Future[PerRequestMessage] = {
     for {
       _ <- thurloeDao.saveProfile(userInfo, basicProfile)
-      _ <- thurloeDao.saveKeyValue(
-          userInfo, "isRegistrationComplete", Profile.currentVersion.toString
+      _ <- thurloeDao.saveKeyValues(
+          userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString)
         )
       isRegistered <- rawlsDao.isRegistered(userInfo)
       _ <- if (!isRegistered) {

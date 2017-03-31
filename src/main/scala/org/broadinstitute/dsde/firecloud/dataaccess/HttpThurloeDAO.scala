@@ -44,24 +44,21 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     }
   }
 
-  override def saveKeyValue(userInfo: UserInfo, key: String, value: String): Future[Try[Unit]] = {
+  override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Try[Unit]] = {
+    val thurloeKeyValues = keyValues.map { case (key, value) => ThurloeKeyValue(Some(userInfo.getUniqueId), Some(FireCloudKeyValue(Some(key), Some(value)))) }
     wrapExceptions {
-      userAuthedRequest(Post(UserService.remoteSetKeyURL, ThurloeKeyValue(Some(userInfo.getUniqueId), Some(FireCloudKeyValue(Some(key), Some(value))))), false, true)(userInfo) map { response =>
+      userAuthedRequest(Post(UserService.remoteSetKeyURL, thurloeKeyValues), false, true)(userInfo) map { response =>
         Try(response.status match {
           case StatusCodes.OK => ()
-          case _ => throw new FireCloudException(s"Unable to get save profile entry: ${key}/${value}")
+          case _ => throw new FireCloudException(s"Unable to update profile entries: ${keyValues}")
         })
       }
     }
   }
 
-  override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Iterable[Try[Unit]]] = {
-    Future.sequence(keyValues.map { case (key, value) => saveKeyValue(userInfo, key, value)})
-  }
-
   override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit] = {
     val profilePropertyMap = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
-    saveKeyValues(userInfo, profilePropertyMap) map({ _.forall({ _ => true})})
+    saveKeyValues(userInfo, profilePropertyMap).map(_ => ())
   }
 
   def wrapExceptions[T](codeBlock: => Future[T]): Future[T] = {

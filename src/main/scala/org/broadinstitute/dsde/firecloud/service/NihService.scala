@@ -90,13 +90,10 @@ trait NihService extends LazyLogging {
     val syncWhiteListResult = syncWhitelistUser(userInfo.getUniqueId, nihLink.linkedNihUsername)
     val profilePropertyMap = nihLink.propertyValueMap
     val propertyUpdates = thurloeDao.saveKeyValues(userInfo, profilePropertyMap)
-    val profileResponse = propertyUpdates.map { responses =>
-      val allSucceeded = responses.forall(_.isSuccess)
 
-      allSucceeded match {
-        case true => RequestComplete(OK)
-        case false => RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link.")
-      }
+    val profileResponse = propertyUpdates.map { response =>
+      if(response.isSuccess) RequestComplete(OK)
+      else RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link.")
     }
 
     syncWhiteListResult flatMap { _ => profileResponse } recover { case t => RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link", t) }
