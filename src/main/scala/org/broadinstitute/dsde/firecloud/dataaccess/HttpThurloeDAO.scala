@@ -45,7 +45,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   }
 
   override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Try[Unit]] = {
-    val thurloeKeyValues = keyValues.map { case (key, value) => ThurloeKeyValue(Some(userInfo.getUniqueId), Some(FireCloudKeyValue(Some(key), Some(value)))) }
+    val thurloeKeyValues = ThurloeKeyValues(Some(userInfo.getUniqueId), Some(keyValues.map { case (key, value) => FireCloudKeyValue(Some(key), Some(value)) }.toSeq))
     wrapExceptions {
       userAuthedRequest(Post(UserService.remoteSetKeyURL, thurloeKeyValues), false, true)(userInfo) map { response =>
         Try(response.status match {
