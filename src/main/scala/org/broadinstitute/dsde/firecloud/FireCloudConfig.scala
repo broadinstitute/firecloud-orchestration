@@ -54,7 +54,8 @@ object FireCloudConfig {
     val submissionQueueStatusUrl = authUrl + submissionQueueStatusPath
     val executionEngineVersionPath = workspace.getString("executionEngineVersionPath")
     val executionEngineVersionUrl = authUrl + executionEngineVersionPath
-    val notificationsPath = authUrl + workspace.getString("notificationsPath")
+    val notificationsPath = workspace.getString("notificationsPath")
+    val notificationsUrl = authUrl + notificationsPath
 
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
