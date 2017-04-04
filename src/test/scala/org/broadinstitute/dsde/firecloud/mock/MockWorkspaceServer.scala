@@ -57,6 +57,7 @@ object MockWorkspaceServer {
   )
 
   val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
+  val notificationsBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.notificationsPath
 
   var workspaceServer: ClientAndServer = _
 
@@ -159,6 +160,30 @@ object MockWorkspaceServer {
           .withHeaders(header)
           .withStatusCode(NotFound.intValue)
           .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"$notificationsBasePath/workspace/${mockValidWorkspace.namespace}/${mockValidWorkspace.name}")
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"$notificationsBasePath/general")
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
       )
   }
 

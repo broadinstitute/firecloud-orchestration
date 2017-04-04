@@ -24,6 +24,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with RegisterApiService
   with StorageApiService
   with WorkspaceApiService
+  with NotificationsApiService
   {
 
   implicit val system = context.system
@@ -103,6 +104,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         testNihService ~
         userService.routes ~
         workspaceRoutes ~
+        notificationsRoutes ~
         pathPrefix("api") {
           routes
         } ~
