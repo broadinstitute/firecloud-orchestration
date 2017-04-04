@@ -1116,6 +1116,55 @@ paths:
         500:
           description: Internal server error retrieving NIH status
 
+  '/api/notifications/general':
+    get:
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/NotificationType'
+      tags:
+        - Notifications
+      summary: Gets the general notifications available
+      operationId: generalNotifications
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
+  '/api/notifications/workspace/{workspaceNamespace}/{workspaceName}':
+    get:
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/NotificationType'
+      parameters:
+        - in: path
+          description: workspace namespace
+          name: workspaceNamespace
+          required: true
+          type: string
+        - in: path
+          description: workspace name
+          name: workspaceName
+          required: true
+          type: string
+      tags:
+        - Notifications
+      summary: Gets the notifications available for a workspace
+      operationId: workspaceNotifications
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
   /api/profile/billing:
     get:
       tags:
@@ -2731,54 +2780,6 @@ paths:
         200:
           description: OK
 
-  '/api/notifications/workspace/{workspaceNamespace}/{workspaceName}':
-    get:
-      responses:
-        200:
-          description: Success
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/NotificationType'
-      parameters:
-        - in: path
-          description: workspace namespace
-          name: workspaceNamespace
-          required: true
-          type: string
-        - in: path
-          description: workspace name
-          name: workspaceName
-          required: true
-          type: string
-      tags:
-        - notifications
-      summary: Gets the notifications available for a workspace
-      operationId: workspaceNotifications
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-  '/api/notifications/general':
-    get:
-      responses:
-        200:
-          description: Success
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/NotificationType'
-      tags:
-        - notifications
-      summary: Gets the general notifications available
-      operationId: generalNotifications
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-
 ##########################################################################################
 ## PARAMETERS
 ##########################################################################################
@@ -3703,6 +3704,17 @@ definitions:
         format: int64
         default: 0
 
+  NotificationType:
+    description: key and description of a notification
+    required:
+      - notificationKey
+      - description
+    properties:
+      notificationKey:
+        type: string
+      description:
+        type: string
+
   Profile:
     type: object
     properties:
@@ -4234,14 +4246,3 @@ definitions:
       count:
         type: number
         description: number of usages of the tag across Firecloud
-
-  NotificationType:
-    description: key and description of a notification
-    required:
-      - notificationKey
-      - description
-    properties:
-      notificationKey:
-        type: string
-      description:
-        type: string
