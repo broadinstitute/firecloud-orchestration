@@ -2650,10 +2650,11 @@ paths:
 
   /status:
     get:
+      operationId: status
       tags:
         - Status
-      operationId: status
-      summary: An orchestrated status check for underlying systems: Agora, Thurloe, Elasticsearch, Rawls
+      summary: |
+        An orchestrated status check for underlying systems: Agora, Thurloe, Elasticsearch, Rawls
       responses:
         200:
           description: Success
