@@ -111,7 +111,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
           case Success(x) =>
             rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-              val modDiscoverability = isDiscoverableDifferent(workspaceResponse, userAttrs)
+              val modDiscoverability = userAttrs.contains(discoverableWSAttribute) && isDiscoverableDifferent(workspaceResponse, userAttrs)
               val skipAttributes =
                 if (modDiscoverability)
                   Seq(publishedFlag)
