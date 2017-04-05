@@ -2648,6 +2648,19 @@ paths:
           description: Success
       security: []
 
+  /status:
+    get:
+      tags:
+        - Status
+      operationId: status
+      summary: An orchestrated status check for underlying systems: Agora, Thurloe, Elasticsearch, Rawls
+      responses:
+        200:
+          description: Success
+        500:
+          description: Problem with one or more systems. See response for details.
+      security: []
+
   /handle-oauth-code:
     post:
       tags:
