@@ -31,5 +31,4 @@ trait AttributeSupport {
     // handle removals before upserts
     removeOperations ++ updateOperations
   }
-
 }

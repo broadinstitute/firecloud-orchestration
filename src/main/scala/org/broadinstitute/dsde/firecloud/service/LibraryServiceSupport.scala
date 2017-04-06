@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.everit.json.schema.{Schema, ValidationException}
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.{JSONObject, JSONTokener}
@@ -143,6 +144,24 @@ trait LibraryServiceSupport extends LazyLogging {
     }
 
     docs.copy(results = updatedResults)
+  }
+
+  def isDiscoverableDifferent(workspaceResponse: WorkspaceResponse, userAttrs: AttributeMap): Boolean = {
+    def convert(list: Option[Attribute]): Seq[String] = {
+      list match {
+        case Some(x) if x.isInstanceOf[AttributeValueList] => x.asInstanceOf[AttributeValueList].list.asInstanceOf[Seq[AttributeString]] map { str => str.value }
+        case _ => Seq.empty
+      }
+    }
+    val current = convert(workspaceResponse.workspace.attributes.get(LibraryService.discoverableWSAttribute))
+    val newvals = convert(userAttrs.get(LibraryService.discoverableWSAttribute))
+
+    if (current.isEmpty && newvals.isEmpty)
+      false
+    else if (current.nonEmpty && newvals.nonEmpty) {
+      current.toSet != newvals.toSet
+    } else
+      true
   }
 
 }
