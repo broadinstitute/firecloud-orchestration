@@ -129,8 +129,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   /*
-   * Uses admin credentials if necessary to update the workspace in rawls. Will republish if it is currently in the published state.
-   * Code that uses this should ensure the user has the required properties (especially is they do not have write+)
+   * Will republish if it is currently in the published state.
    */
   def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
       rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>

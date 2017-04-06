@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, Workspace}
+import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import spray.client.pipelining._
 import spray.http.HttpEncodings._
 import spray.http.HttpHeaders.`Accept-Encoding`
