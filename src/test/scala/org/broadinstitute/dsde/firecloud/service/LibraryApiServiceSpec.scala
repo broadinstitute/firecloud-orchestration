@@ -119,44 +119,14 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
     }
 
     "when calling publish" - {
-      "POST as reader on " + publishedPath() - {
-        "should be Forbidden" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath("reader")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(Forbidden)
-          }
-        }
-      }
-      "POST as writer on " + publishedPath() - {
-        "should be Forbidden for unpublished dataset" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath("unpublishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(Forbidden)
-          }
-        }
-      }
-      "POST as writer on " + publishedPath() - {
-        "should be Forbidden for published dataset" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath("unpublishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(Forbidden)
-          }
-        }
-      }
-      "POST as owner on " + publishedPath() - {
-        "as curator should be OK" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("curator") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-          }
-        }
-      }
-      "POST as project_owner on " + publishedPath() - {
-        "as curator should be OK" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath("projectowner")) ~> dummyUserIdHeaders("curator") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-          }
-        }
-      }
       "POST on " + publishedPath() - {
-        "as curator should invoke indexDocument" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("curator") ~> sealRoute(libraryRoutes) ~> check {
+        "should return No Content for already published workspace " in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath("publishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(NoContent)
+          }
+        }
+        "should return OK and invoke indexDocument for unpublished workspace" in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
             assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
@@ -164,8 +134,13 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         }
       }
       "DELETE on " + publishedPath() - {
-        "as curator should invoke deleteDocument" in {
-          new RequestBuilder(HttpMethods.DELETE)(publishedPath("publishedowner")) ~> dummyUserIdHeaders("curator") ~> sealRoute(libraryRoutes) ~> check {
+        "should be No Content for unpublished workspace" in {
+          new RequestBuilder(HttpMethods.DELETE)(publishedPath("unpublishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(NoContent)
+          }
+        }
+        "as return OK and invoke deleteDocument for published workspace" in {
+          new RequestBuilder(HttpMethods.DELETE)(publishedPath("publishedowner")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.deleteDocumentInvoked, "deleteDocument should have been invoked")
             assert(!this.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
@@ -173,37 +148,6 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         }
       }
     }
-    "when updating fields for a published workspace" - {
-      "should republish the workspace for writer" in {
-        val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-          status should equal(OK)
-          assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
-        }
-      }
-      "should be forbidden when reader" in {
-        val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedreader"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-          status should equal(Forbidden)
-          assert(!this.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
-        }
-      }
-      "should be allowed when writer" in {
-        val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-          status should equal(OK)
-          assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
-        }
-      }
-      "should be allowed when reader and catalog" in {
-        val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedreadercatalog"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-          status should equal(OK)
-          assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
-        }
-      }
-    }
-
     "when retrieving datasets" - {
       "POST with no searchterm on " + librarySearchPath - {
         "should retrieve all datasets" in {

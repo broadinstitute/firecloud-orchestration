@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
@@ -87,10 +87,6 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
-  /*
-   * Library metadata attributes can only be modified by someone with write or higher permissions,
-   * or with a combination of read and catalog permissions
-   */
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
     // attributes come in as standard json so we can use json schema for validation. Thus,
     // we need to use the plain-array deserialization.
@@ -111,6 +107,9 @@ class LibraryService (protected val argUserInfo: UserInfo,
             Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
           case Success(x) =>
             rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
+              // because not all editors can update discoverableByGroups, if the request does not include discoverableByGroups
+              // or if it is not being changed, don't include it in the update operations (less restrictive permissions will
+              // be checked by rawls)
               val modDiscoverability = userAttrs.contains(discoverableWSAttribute) && isDiscoverableDifferent(workspaceResponse, userAttrs)
               val skipAttributes =
                 if (modDiscoverability)
@@ -129,24 +128,6 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
-  def isDiscoverableDifferent(workspaceResponse: WorkspaceResponse, userAttrs: AttributeMap): Boolean = {
-    def convert(list: Option[Attribute]): Seq[String] = {
-      list match {
-        case Some(x) if x.isInstanceOf[AttributeValueList] => x.asInstanceOf[AttributeValueList].list.asInstanceOf[Seq[AttributeString]] map { str => str.value }
-        case _ => Seq.empty
-      }
-    }
-    val current = convert(workspaceResponse.workspace.attributes.get(discoverableWSAttribute))
-    val newvals = convert(userAttrs.get(discoverableWSAttribute))
-
-    if (current.isEmpty && newvals.isEmpty)
-      false
-    else if (current.nonEmpty && newvals.nonEmpty) {
-      current.toSet.diff(newvals.toSet).nonEmpty
-    } else
-    true
-  }
-
   /*
    * Uses admin credentials if necessary to update the workspace in rawls. Will republish if it is currently in the published state.
    * Code that uses this should ensure the user has the required properties (especially is they do not have write+)
@@ -161,7 +142,6 @@ class LibraryService (protected val argUserInfo: UserInfo,
       newws
     }
   }
-
 
   // should only be used to change published state
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
