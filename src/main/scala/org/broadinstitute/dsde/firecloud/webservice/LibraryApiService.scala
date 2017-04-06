@@ -45,15 +45,6 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
         }
       }
     } ~
-    path("status") {
-      respondWithJSON {
-        complete {
-          JsObject(
-            "Status" -> JsString("It works!")
-          ).toString
-        }
-      }
-    } ~
     pathPrefix("api") {
       requireUserInfo() { userInfo =>
         path("duos" / "consent" / "orsp" / Segment) { (orspId) =>

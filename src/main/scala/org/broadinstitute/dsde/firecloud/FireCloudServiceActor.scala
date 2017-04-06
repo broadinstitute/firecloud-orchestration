@@ -25,6 +25,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with StorageApiService
   with WorkspaceApiService
   with NotificationsApiService
+  with StatusApiService
   {
 
   implicit val system = context.system
@@ -60,7 +61,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val billingService = new BillingService with ActorRefFactoryContext
   val routes = methodsService.routes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    statusService.routes ~ nihRoutes ~ billingService.routes
+    statusService.statusRoutes ~ nihRoutes ~ billingService.routes
 
   val userService = new UserService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
@@ -111,7 +112,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         pathPrefix("cookie-authed") {
           // insecure cookie-authed routes
           cookieAuthedRoutes
-        }
+        } ~
+        publicStatusRoutes
       }
     }
   )

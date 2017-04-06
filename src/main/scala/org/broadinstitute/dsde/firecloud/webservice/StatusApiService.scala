@@ -11,7 +11,7 @@ import spray.routing._
 
 class StatusApiServiceActor extends Actor with StatusApiService {
   def actorRefFactory = context
-  def receive = runRoute(routes)
+  def receive = runRoute(statusRoutes ~ publicStatusRoutes)
 }
 
 trait StatusApiService extends HttpService with PerRequestCreator with FireCloudDirectives {
@@ -20,7 +20,7 @@ trait StatusApiService extends HttpService with PerRequestCreator with FireCloud
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private implicit val executionContext = actorRefFactory.dispatcher
 
-  val routes: Route =
+  val statusRoutes: Route =
     pathPrefix(ApiPrefix) {
       pathEnd {
         respondWithJSON {
@@ -38,4 +38,16 @@ trait StatusApiService extends HttpService with PerRequestCreator with FireCloud
         }
       }
     }
+
+  val publicStatusRoutes: Route = {
+    path("status") {
+      respondWithJSON {
+        complete {
+          JsObject(
+            "Status" -> JsString("It works!")
+          ).toString
+        }
+      }
+    }
+  }
 }
