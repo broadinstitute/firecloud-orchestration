@@ -25,8 +25,7 @@ object StatusService {
     new StatusService
   }
 
-//  sealed trait StatusServiceMessage
-  case class CollectStatusInfo() // extends StatusServiceMessage
+  case class CollectStatusInfo()
 }
 
 class StatusService (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
