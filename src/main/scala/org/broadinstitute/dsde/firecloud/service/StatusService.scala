@@ -4,6 +4,7 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.pattern._
 import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.dataaccess.SearchDAO
 import org.broadinstitute.dsde.firecloud.model.SystemStatus
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.StatusService.CollectStatusInfo
@@ -22,16 +23,22 @@ object StatusService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext): StatusService = {
-    new StatusService
+    new StatusService(app.searchDAO)
   }
 
   case class CollectStatusInfo()
 }
 
-class StatusService (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
+class StatusService (val searchDAO: SearchDAO)
+                    (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
 
   def collectStatusInfo(): Future[PerRequestMessage] = {
-    Future(RequestComplete(SystemStatus("Hello world")))
+
+    if (searchDAO.indexExists()) {
+      Future(RequestComplete(SystemStatus("Search is up")))
+    } else {
+      Future(RequestComplete(SystemStatus("Problem with search")))
+    }
   }
 
   def receive = {
