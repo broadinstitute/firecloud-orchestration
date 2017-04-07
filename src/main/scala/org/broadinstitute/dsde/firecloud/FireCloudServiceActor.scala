@@ -51,17 +51,17 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
+  val statusServiceConstructor: () => StatusService = StatusService.constructor(app)
 
   // routes under /api
 
   val methodsService = new MethodsService with ActorRefFactoryContext
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
-  val statusService = new StatusApiService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
   val routes = methodsService.routes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    statusService.statusRoutes ~ nihRoutes ~ billingService.routes
+    statusRoutes ~ nihRoutes ~ billingService.routes
 
   val userService = new UserService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
@@ -106,14 +106,14 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         userService.routes ~
         workspaceRoutes ~
         notificationsRoutes ~
+        publicStatusRoutes ~
         pathPrefix("api") {
           routes
         } ~
         pathPrefix("cookie-authed") {
           // insecure cookie-authed routes
           cookieAuthedRoutes
-        } ~
-        publicStatusRoutes
+        }
       }
     }
   )

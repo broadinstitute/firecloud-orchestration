@@ -215,6 +215,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impOntologyTermResource = jsonFormat7(TermResource)
   implicit val impOntologyESTermParent = jsonFormat2(ESTermParent)
 
+  implicit val impStatus = jsonFormat1(SystemStatus)
+
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
     case MalformedRequestContentRejection(errorMsg, _) :: _ =>

@@ -3,22 +3,18 @@ package org.broadinstitute.dsde.firecloud.webservice
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import akka.actor.Actor
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, MethodsService, PerRequestCreator}
+import org.broadinstitute.dsde.firecloud.service._
 import spray.json._
 import spray.routing._
-
-class StatusApiServiceActor extends Actor with StatusApiService {
-  def actorRefFactory = context
-  def receive = runRoute(statusRoutes ~ publicStatusRoutes)
-}
 
 trait StatusApiService extends HttpService with PerRequestCreator with FireCloudDirectives {
 
   private final val ApiPrefix = "status"
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private implicit val executionContext = actorRefFactory.dispatcher
+
+  val statusServiceConstructor: () => StatusService
 
   val statusRoutes: Route =
     pathPrefix(ApiPrefix) {
@@ -41,13 +37,10 @@ trait StatusApiService extends HttpService with PerRequestCreator with FireCloud
 
   val publicStatusRoutes: Route = {
     path("status") {
-      respondWithJSON {
-        complete {
-          JsObject(
-            "Status" -> JsString("It works!")
-          ).toString
-        }
-      }
+      requestContext =>
+        perRequest(r = requestContext, props = StatusService.props(statusServiceConstructor), StatusService.CollectStatusInfo())
     }
   }
+
+
 }
