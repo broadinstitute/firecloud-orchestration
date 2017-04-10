@@ -48,10 +48,8 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     val thurloeKeyValues = ThurloeKeyValues(Some(userInfo.getUniqueId), Some(keyValues.map { case (key, value) => FireCloudKeyValue(Some(key), Some(value)) }.toSeq))
     wrapExceptions {
       userAuthedRequest(Post(UserService.remoteSetKeyURL, thurloeKeyValues), false, true)(userInfo) map { response =>
-        Try(response.status match {
-          case StatusCodes.OK => ()
-          case _ => throw new FireCloudException(s"Unable to update profile entries: ${keyValues}")
-        })
+        if(response.status.isSuccess) Try(())
+        else Try(throw new FireCloudException(s"Unable to update user profile"))
       }
     }
   }
