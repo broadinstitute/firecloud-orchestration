@@ -1601,15 +1601,25 @@ paths:
           in: body
           schema:
             $ref: '#/definitions/CopyEntity'
+        - name: linkExistingEntities
+          description: true to link new entities to existing entities, false to fail instead of link
+          required: false
+          default: false
+          type: boolean
+          in: query
       responses:
-        200:
-          description: No response was specified
         201:
           description: Successful Request
+          schema:
+            $ref: '#/definitions/EntityCopyResponse'
         404:
           description: Source Workspace or source entities does not exist
         409:
-          description: One or more entities of that name/type already exist
+          description: There are conflicts in your copy operation. Retry with the paramater linkExistingEntities=true to link all soft conflicts to the entities that already exist in your workspace.
+          schema:
+            $ref: '#/definitions/EntityCopyResponse'
+        422:
+          description: Destination workspace must match source's authorization domain, if the source has one
         500:
           description: Internal Error
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
@@ -2820,6 +2830,19 @@ parameters:
 ##########################################################################################
 definitions:
 
+  AttributeEntityReference:
+    description: ''
+    required:
+      - entityType
+      - entityName
+    properties:
+      entityType:
+        type: string
+        description: The type of the entity
+      entityName:
+        type: string
+        description: The name of the entity
+
   AttributeUpdateOperation:
     type: object
     properties:
@@ -3189,6 +3212,42 @@ definitions:
         type: object
         description: Map[String,Attribute]
 
+  EntityCopyResponse:
+    description: ''
+    required:
+      - entitiesCopied
+      - softConflicts
+      - hardConflicts
+    properties:
+      entitiesCopied:
+        type: array
+        description: 'the entities that were successfully copied into the workspace'
+        items:
+          $ref: '#/definitions/AttributeEntityReference'
+      hardConflicts:
+        type: array
+        description: 'these entities already exist in your workspace'
+        items:
+          $ref: '#/definitions/EntityHardConflict'
+      softConflicts:
+        type: array
+        description: 'the conflicts within your entity subtrees. note that this will be empty if there are hard conflicts'
+        items:
+          $ref: '#/definitions/EntitySoftConflict'
+
+  EntityHardConflict:
+    description: ''
+    required:
+      - entityType
+      - entityName
+    properties:
+      entityType:
+        type: string
+        description: 'the type of the entity'
+      entityName:
+        type: string
+        description: 'the name of the entity'
+
   EntityID:
     type: object
     properties:
@@ -3258,6 +3317,25 @@ definitions:
       filteredPageCount:
         type: number
         description: count of pages after filtering; honors pageSize parameter
+
+  EntitySoftConflict:
+    description: ''
+    required:
+      - entityType
+      - entityName
+      - conflicts
+    properties:
+      entityType:
+        type: string
+        description: 'the type of the entity'
+      entityName:
+        type: string
+        description: 'the name of the entity'
+      conflicts:
+        type: array
+        description: 'the next entity in the path to the conflict'
+        items:
+          $ref: '#/definitions/EntitySoftConflict'
 
   Error:
     type: object
