@@ -473,6 +473,8 @@ paths:
       responses:
         201:
           description: Successfully created group
+          schema:
+            $ref: '#/definitions/ManagedGroupWithMembers'
         409:
           description: Group already exists
           schema:
