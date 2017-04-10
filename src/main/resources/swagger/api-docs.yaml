@@ -2831,6 +2831,7 @@ parameters:
 definitions:
 
   AttributeEntityReference:
+    type: object
     description: ''
     required:
       - entityType
@@ -3213,6 +3214,7 @@ definitions:
         description: Map[String,Attribute]
 
   EntityCopyResponse:
+    type: object
     description: ''
     required:
       - entitiesCopied
@@ -3236,6 +3238,7 @@ definitions:
           $ref: '#/definitions/EntitySoftConflict'
 
   EntityHardConflict:
+    type: object
     description: ''
     required:
       - entityType
@@ -3319,6 +3322,7 @@ definitions:
         description: count of pages after filtering; honors pageSize parameter
 
   EntitySoftConflict:
+    type: object
     description: ''
     required:
       - entityType
@@ -4188,6 +4192,7 @@ definitions:
         description: True if the user can share the workspace with others, false otherwise
 
   WorkspaceCatalog:
+    type: object
     description: ''
     required:
       - email
@@ -4201,6 +4206,7 @@ definitions:
         description: Set to true if you want this user to be able to perform library related operations on the workspace
 
   WorkspaceCatalogResponse:
+    type: object
     description: ''
     required:
       - subjectId
@@ -4214,6 +4220,7 @@ definitions:
         description: Set to true if you want this user to be able to perform library related operations on the workspace
 
   WorkspaceCatalogUpdateResponseList:
+    type: object
     description: ''
     required:
       - usersUpdated
