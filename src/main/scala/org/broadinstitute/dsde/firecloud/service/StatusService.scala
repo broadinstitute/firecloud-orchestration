@@ -43,7 +43,7 @@ class StatusService (val searchDAO: SearchDAO,
       if (status) {
         Future(RequestComplete(SystemStatus("Agora is up")))
       } else {
-        Future(RequestComplete(SystemStatus("Agora is down")))
+        Future(RequestComplete(SystemStatus(s"Agora is down: $message")))
       }
     }
 
