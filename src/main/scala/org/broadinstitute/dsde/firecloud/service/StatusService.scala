@@ -4,7 +4,7 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.pattern._
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.SearchDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO, AgoraDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.SystemStatus
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.StatusService.CollectStatusInfo
@@ -23,13 +23,16 @@ object StatusService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext): StatusService = {
-    new StatusService(app.searchDAO)
+    new StatusService(app.searchDAO, app.agoraDAO, app.thurloeDAO, app.rawlsDAO)
   }
 
   case class CollectStatusInfo()
 }
 
-class StatusService (val searchDAO: SearchDAO)
+class StatusService (val searchDAO: SearchDAO,
+                     val agoraDAO: AgoraDAO,
+                     val thurloeDAO: ThurloeDAO,
+                     val rawlsDAO: RawlsDAO)
                     (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
 
   def collectStatusInfo(): Future[PerRequestMessage] = {
