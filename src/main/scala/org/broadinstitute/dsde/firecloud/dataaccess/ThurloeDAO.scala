@@ -19,4 +19,6 @@ trait ThurloeDAO extends LazyLogging {
   def saveKeyValue(userInfo: UserInfo, key: String, value: String): Future[Try[Unit]]
   def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit]
   def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Iterable[Try[Unit]]]
+
+  def status: Future[(Boolean, Option[String])]
 }

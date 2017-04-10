@@ -39,6 +39,14 @@ class StatusService (val searchDAO: SearchDAO,
 
 //    https://agora.dsde-dev.broadinstitute.org/status
 
+    thurloeDAO.status.flatMap { case (status, message) =>
+      if (status) {
+        Future(RequestComplete(SystemStatus("Thurloe is up")))
+      } else {
+        Future(RequestComplete(SystemStatus("Problem with Thurloe: $message")))
+      }
+    }
+
     agoraDAO.status.flatMap { case (status, message) =>
       if (status) {
         Future(RequestComplete(SystemStatus("Agora is up")))
@@ -47,11 +55,11 @@ class StatusService (val searchDAO: SearchDAO,
       }
     }
 
-//    if (searchDAO.indexExists()) {
-//      Future(RequestComplete(SystemStatus("Search is up")))
-//    } else {
-//      Future(RequestComplete(SystemStatus("Problem with search")))
-//    }
+    if (searchDAO.indexExists()) {
+      Future(RequestComplete(SystemStatus("Search is up")))
+    } else {
+      Future(RequestComplete(SystemStatus("Problem with search")))
+    }
   }
 
   def receive = {

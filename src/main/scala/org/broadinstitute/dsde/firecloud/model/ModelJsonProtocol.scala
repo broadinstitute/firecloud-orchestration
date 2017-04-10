@@ -217,6 +217,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impStatus = jsonFormat1(SystemStatus)
   implicit val impAgoraStatus = jsonFormat2(AgoraStatus)
+  implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
