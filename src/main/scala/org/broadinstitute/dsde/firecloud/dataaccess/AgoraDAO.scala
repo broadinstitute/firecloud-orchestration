@@ -13,4 +13,6 @@ trait AgoraDAO {
   def getNamespacePermissions(ns: String, entity: String)(implicit userInfo: UserInfo): Future[List[AgoraPermission]]
   def postNamespacePermissions(ns: String, entity: String, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]]
 
+  def status: Future[(Boolean, Option[String])]
+
 }

@@ -34,7 +34,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     def actorRefFactory = context
   }
 
-  val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora.authUrl)
+  val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora.authUrl, FireCloudConfig.Agora.baseUrl)
   val rawlsDAO:RawlsDAO = new HttpRawlsDAO
   val searchDAO:SearchDAO = new ElasticSearchDAO(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.indexName)
   val thurloeDAO:ThurloeDAO = new HttpThurloeDAO

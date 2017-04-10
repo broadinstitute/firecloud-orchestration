@@ -37,11 +37,21 @@ class StatusService (val searchDAO: SearchDAO,
 
   def collectStatusInfo(): Future[PerRequestMessage] = {
 
-    if (searchDAO.indexExists()) {
-      Future(RequestComplete(SystemStatus("Search is up")))
-    } else {
-      Future(RequestComplete(SystemStatus("Problem with search")))
+//    https://agora.dsde-dev.broadinstitute.org/status
+
+    agoraDAO.status.flatMap { case (status, message) =>
+      if (status) {
+        Future(RequestComplete(SystemStatus("Agora is up")))
+      } else {
+        Future(RequestComplete(SystemStatus("Agora is down")))
+      }
     }
+
+//    if (searchDAO.indexExists()) {
+//      Future(RequestComplete(SystemStatus("Search is up")))
+//    } else {
+//      Future(RequestComplete(SystemStatus("Problem with search")))
+//    }
   }
 
   def receive = {
