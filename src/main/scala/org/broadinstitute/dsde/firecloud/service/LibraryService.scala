@@ -131,7 +131,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   /*
    * Will republish if it is currently in the published state.
    */
-  def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
+  private def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
       rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>
       if (isPublished) {
         // if already published, republish
