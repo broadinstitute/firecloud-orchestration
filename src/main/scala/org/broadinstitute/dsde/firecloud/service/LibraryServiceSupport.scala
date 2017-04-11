@@ -146,7 +146,11 @@ trait LibraryServiceSupport extends LazyLogging {
     docs.copy(results = updatedResults)
   }
 
+  // this method will determine if the user is makings a change to discoverableByGroups
+  // if the attribute does not exist on the workspace, it is the same as the empty list
   def isDiscoverableDifferent(workspaceResponse: WorkspaceResponse, userAttrs: AttributeMap): Boolean = {
+
+    //This converts the Seq of Attribute to a Seq of String (or the empty list) so we can compare the strings,
     def convert(list: Option[Attribute]): Seq[String] = {
       list match {
         case Some(x) if x.isInstanceOf[AttributeValueList] => x.asInstanceOf[AttributeValueList].list.asInstanceOf[Seq[AttributeString]] map { str => str.value }
@@ -161,6 +165,7 @@ trait LibraryServiceSupport extends LazyLogging {
     else if (current.nonEmpty && newvals.nonEmpty) {
       current.toSet != newvals.toSet
     } else
+      // one of the values is the empty list and the other is not
       true
   }
 
