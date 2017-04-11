@@ -500,7 +500,7 @@ paths:
             - profile
     delete:
       responses:
-        200:
+        204:
           description: Successfully Deleted Group
         403:
           description: You must be an owner of this group in order to delete it
@@ -537,7 +537,7 @@ paths:
   /api/groups/{groupName}/{role}/{email}:
     put:
       responses:
-        200:
+        204:
           description: Successfully Added User To Group
         403:
           description: You must be an owner of this group in order to add members
@@ -579,7 +579,7 @@ paths:
             - profile
     delete:
       responses:
-        200:
+        204:
           description: Successfully Removed User From Group
         403:
           description: You must be an owner of this group in order to remove members
