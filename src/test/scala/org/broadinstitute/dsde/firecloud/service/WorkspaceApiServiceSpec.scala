@@ -169,7 +169,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     */
   def stubRawlsCloneWorkspace(namespace: String, name: String, realm: Option[ManagedGroupRef] = None, attributes: Attributable.AttributeMap = Map()): (WorkspaceRequest, Workspace) = {
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
-    val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, realm, attributes + published)
+    val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
+    val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, realm, attributes + published + discoverable)
     val rawlsResponse = Workspace(namespace, name, realm, "foo", "bar", DateTime.now(), DateTime.now(), "bob", attributes, Map(), Map())
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
@@ -530,12 +531,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-    "When cloning a published workspace, the clone should be published (really it shouldn't, but it needs more work; see GAWB-1659 and https://github.com/broadinstitute/firecloud-orchestration/pull/389)" in {
+    "When cloning a published workspace, the clone should not be published" in {
       val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name",
-        attributes = Map(AttributeName("library", "published") -> AttributeBoolean(true)))
+        attributes = Map(AttributeName("library", "published") -> AttributeBoolean(false), AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList))
 
       val published = AttributeName("library", "published") -> AttributeBoolean(true)
-      val orchestrationRequest = WorkspaceCreate("namespace", "name", Map(published))
+      val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
+      val orchestrationRequest = WorkspaceCreate("namespace", "name", Map(published, discoverable))
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
