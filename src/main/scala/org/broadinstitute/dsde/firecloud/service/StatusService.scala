@@ -36,45 +36,21 @@ class StatusService (val searchDAO: SearchDAO,
                     (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
 
   def collectStatusInfo(): Future[PerRequestMessage] = {
-//    val rawls = rawlsDAO.status.map { status =>
-//        if (status) {
-//          SystemStatus(isOK = true, "Thurloe is up")
-//        } else {
-//          SystemStatus(false, s"Problem with Rawls.")
-//        }
-//    }
-//
-//    val thurloe = thurloeDAO.status.map { case (status, message) =>
-//      if (status) {
-//        SystemStatus(true, "Thurloe is up")
-//      } else {
-//        SystemStatus(false, s"Problem with Thurloe: $message")
-//      }
-//    }
-//
-//    val agora = agoraDAO.status.map { case (status, message) =>
-//      if (status) {
-//        SystemStatus(true, "Agora is up")
-//      } else {
-//        SystemStatus(false, s"Agora is down: $message")
-//      }
-//    }
-//
-//    val search = {
-//      if (searchDAO.indexExists()) {
-//        SystemStatus(true, "Search is up")
-//      } else {
-//        SystemStatus(false, "Problem with search")
-//      }
-//    }
-
     for {
-      rawlsStatus <- rawlsDAO.status
-      (thurloeStatus, thurloeMessage) <- thurloeDAO.status
-      (agoraStatus, agoraMessage) <- agoraDAO.status
-      searchResult <- Future(searchDAO.indexExists())
+      rawlsOK <- rawlsDAO.status
+      (thurloeOK, thurloeMessage) <- thurloeDAO.status
+      (agoraOK, agoraMessage) <- agoraDAO.status
+      searchOK <- Future(searchDAO.indexExists())
     } yield {
-      RequestComplete(SystemStatus(rawlsStatus && thurloeStatus && agoraStatus && searchResult, "No problem here"))
+      var allOK = rawlsOK && thurloeOK && agoraOK && searchOK
+      var messages: Array[String] = Array()
+
+      if (!rawlsOK) messages :+ "Problem with Rawls"
+      if (!thurloeOK) messages :+ s"Problem with Thurloe: $thurloeMessage"
+      if (!agoraOK) messages :+ s"Problem with Agora: $agoraMessage"
+      if (!searchOK) messages :+ "Problem with Search"
+
+      RequestComplete(SystemStatus(allOK, messages.mkString("\r\n")))
     }
   }
 
