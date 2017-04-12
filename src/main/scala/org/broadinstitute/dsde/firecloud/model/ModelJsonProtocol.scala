@@ -141,6 +141,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
       }
   }
 
+  // If your compiler says, "could not find implicit value for parameter unmarshaller", add to this list
   implicit val impMethod = jsonFormat8(MethodRepository.Method)
   implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
 
@@ -215,9 +216,10 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impOntologyTermResource = jsonFormat7(TermResource)
   implicit val impOntologyESTermParent = jsonFormat2(ESTermParent)
 
-  implicit val impStatus = jsonFormat1(SystemStatus)
+  implicit val impStatus = jsonFormat2(SystemStatus)
   implicit val impAgoraStatus = jsonFormat2(AgoraStatus)
   implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
+  implicit val implRawlsStatus = jsonFormat1(RawlsStatus)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

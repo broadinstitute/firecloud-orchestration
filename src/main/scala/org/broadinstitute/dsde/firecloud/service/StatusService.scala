@@ -36,29 +36,45 @@ class StatusService (val searchDAO: SearchDAO,
                     (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
 
   def collectStatusInfo(): Future[PerRequestMessage] = {
+//    val rawls = rawlsDAO.status.map { status =>
+//        if (status) {
+//          SystemStatus(isOK = true, "Thurloe is up")
+//        } else {
+//          SystemStatus(false, s"Problem with Rawls.")
+//        }
+//    }
+//
+//    val thurloe = thurloeDAO.status.map { case (status, message) =>
+//      if (status) {
+//        SystemStatus(true, "Thurloe is up")
+//      } else {
+//        SystemStatus(false, s"Problem with Thurloe: $message")
+//      }
+//    }
+//
+//    val agora = agoraDAO.status.map { case (status, message) =>
+//      if (status) {
+//        SystemStatus(true, "Agora is up")
+//      } else {
+//        SystemStatus(false, s"Agora is down: $message")
+//      }
+//    }
+//
+//    val search = {
+//      if (searchDAO.indexExists()) {
+//        SystemStatus(true, "Search is up")
+//      } else {
+//        SystemStatus(false, "Problem with search")
+//      }
+//    }
 
-//    https://agora.dsde-dev.broadinstitute.org/status
-
-    thurloeDAO.status.flatMap { case (status, message) =>
-      if (status) {
-        Future(RequestComplete(SystemStatus("Thurloe is up")))
-      } else {
-        Future(RequestComplete(SystemStatus("Problem with Thurloe: $message")))
-      }
-    }
-
-    agoraDAO.status.flatMap { case (status, message) =>
-      if (status) {
-        Future(RequestComplete(SystemStatus("Agora is up")))
-      } else {
-        Future(RequestComplete(SystemStatus(s"Agora is down: $message")))
-      }
-    }
-
-    if (searchDAO.indexExists()) {
-      Future(RequestComplete(SystemStatus("Search is up")))
-    } else {
-      Future(RequestComplete(SystemStatus("Problem with search")))
+    for {
+      rawlsStatus <- rawlsDAO.status
+      (thurloeStatus, thurloeMessage) <- thurloeDAO.status
+      (agoraStatus, agoraMessage) <- agoraDAO.status
+      searchResult <- Future(searchDAO.indexExists())
+    } yield {
+      RequestComplete(SystemStatus(rawlsStatus && thurloeStatus && agoraStatus && searchResult, "No problem here"))
     }
   }
 
