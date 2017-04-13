@@ -9,7 +9,6 @@ import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, UserInfo}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import spray.client.pipelining._
 import spray.http.Uri
-import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 

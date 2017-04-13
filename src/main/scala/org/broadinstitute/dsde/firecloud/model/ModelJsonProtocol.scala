@@ -141,7 +141,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
       }
   }
 
-  // If your compiler says, "could not find implicit value for parameter unmarshaller", add to this list
+  // Spray build error about missing implicit for parameter unmarshaller? Add it here.
   implicit val impMethod = jsonFormat8(MethodRepository.Method)
   implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
 
