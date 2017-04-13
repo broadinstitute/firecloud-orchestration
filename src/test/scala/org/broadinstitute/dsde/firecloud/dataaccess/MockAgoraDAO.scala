@@ -24,4 +24,6 @@ class MockAgoraDAO extends AgoraDAO {
     Future(List(MockAgoraDAO.agoraPermission))
   }
 
+  override def status: Future[(Boolean, Option[String])] = Future((true, None))
+
 }

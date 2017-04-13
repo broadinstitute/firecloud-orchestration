@@ -90,4 +90,6 @@ class MockThurloeDAO extends ThurloeDAO {
     Future.successful(userValuesForKey)
   }
 
+  override def status: Future[(Boolean, Option[String])] = Future((true, None))
+
 }
