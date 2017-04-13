@@ -1125,7 +1125,6 @@ paths:
       responses:
         200:
           description: OK
-
           schema:
             type: array
             items:
@@ -1161,6 +1160,24 @@ paths:
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
             - https://www.googleapis.com/auth/cloud-billing
+
+  /api/profile/preferences:
+    post:
+      tags:
+        - Profile
+      operationId: billing
+      summary: Update the preferences for the user
+      parameters:
+        - name: preferences
+          in: body
+          description: The preferences to set as a Map[String, String]
+          required: true
+          type: Map[String, String]
+      responses:
+        204:
+          description: Success (No Content)
+        500:
+          description: Internal Server Error
 
   /api/refresh-token-status:
     get:
