@@ -34,7 +34,7 @@ class HttpAgoraDAO(agoraAuthedUrl: String, agoraBaseUrl: String)(implicit val sy
     response map { response =>
       response.status match {
         case "up" => (true, None)
-        case "down" => (false, Some(response.message.mkString("\r\n")))
+        case "down" => (false, if (response.message.length > 0) Some(response.message.mkString("\r\n")) else None)
       }
     }
   }

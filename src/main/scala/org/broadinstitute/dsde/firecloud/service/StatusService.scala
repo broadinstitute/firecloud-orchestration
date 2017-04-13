@@ -4,13 +4,14 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.pattern._
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SearchDAO, AgoraDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO, SearchDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.SystemStatus
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.StatusService.CollectStatusInfo
 import spray.httpx.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impStatus
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext
 
@@ -42,15 +43,15 @@ class StatusService (val searchDAO: SearchDAO,
       (agoraOK, agoraMessage) <- agoraDAO.status
       searchOK <- Future(searchDAO.indexExists())
     } yield {
-      var allOK = rawlsOK && thurloeOK && agoraOK && searchOK
-      var messages: Array[String] = Array()
+      val allOK = rawlsOK && thurloeOK && agoraOK && searchOK
+      var messages: ListBuffer[String] = ListBuffer()
 
-      if (!rawlsOK) messages :+ "Problem with Rawls"
-      if (!thurloeOK) messages :+ s"Problem with Thurloe: $thurloeMessage"
-      if (!agoraOK) messages :+ s"Problem with Agora: $agoraMessage"
-      if (!searchOK) messages :+ "Problem with Search"
+      if (!rawlsOK) messages += "Problem with Rawls"
+      if (!thurloeOK) messages += "Problem with Thurloe: " + thurloeMessage.getOrElse("(No further information available)")
+      if (!agoraOK) messages += "Problem with Agora: " + agoraMessage.getOrElse("(No further information available)")
+      if (!searchOK) messages += "Problem with Search"
 
-      RequestComplete(SystemStatus(allOK, messages.mkString("\r\n")))
+      RequestComplete(SystemStatus(allOK, messages.mkString("; ")))
     }
   }
 
