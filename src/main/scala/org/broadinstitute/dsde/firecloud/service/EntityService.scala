@@ -12,6 +12,8 @@ import spray.http.{HttpMethods, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
+import scala.util.Try
+
 trait EntityService extends HttpService with PerRequestCreator with FireCloudDirectives
   with FireCloudRequestBuilding with StandardUserInfoDirectives {
 
@@ -41,14 +43,18 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
               path("copy") {
                 post {
                   requireUserInfo() { _ =>
-                    entity(as[EntityCopyWithoutDestinationDefinition]) { copyRequest => requestContext =>
-                      val copyMethodConfig = new EntityCopyDefinition(
-                        sourceWorkspace = copyRequest.sourceWorkspace,
-                        destinationWorkspace = WorkspaceName(workspaceNamespace, workspaceName),
-                        entityType = copyRequest.entityType,
-                        entityNames = copyRequest.entityNames)
-                      val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl, copyMethodConfig)
-                      externalHttpPerRequest(requestContext, extReq)
+                    parameter('linkExistingEntities.?) { linkExistingEntities =>
+                      entity(as[EntityCopyWithoutDestinationDefinition]) { copyRequest =>
+                        val linkExistingEntitiesBool = Try(linkExistingEntities.getOrElse("false").toBoolean).getOrElse(false)
+                        requestContext =>
+                          val copyMethodConfig = new EntityCopyDefinition(
+                            sourceWorkspace = copyRequest.sourceWorkspace,
+                            destinationWorkspace = WorkspaceName(workspaceNamespace, workspaceName),
+                            entityType = copyRequest.entityType,
+                            entityNames = copyRequest.entityNames)
+                          val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl(linkExistingEntitiesBool), copyMethodConfig)
+                          externalHttpPerRequest(requestContext, extReq)
+                      }
                     }
                   }
                 }
