@@ -10,14 +10,14 @@ import spray.routing._
 
 trait StatusApiService extends HttpService with PerRequestCreator with FireCloudDirectives {
 
-  private final val ApiPrefix = "status"
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private implicit val executionContext = actorRefFactory.dispatcher
 
   val statusServiceConstructor: () => StatusService
 
-  val statusRoutes: Route =
-    pathPrefix(ApiPrefix) {
+  // Routes under the /api/ path require authentication, others do not
+  val apiStatusRoutes: Route =
+    pathPrefix("status") {
       pathEnd {
         respondWithJSON {
           complete {

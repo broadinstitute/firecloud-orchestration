@@ -146,13 +146,13 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def patchCatalog(ns: String, name: String, catalogUpdates: Seq[WorkspaceCatalog])(implicit userToken: WithAccessToken): Future[WorkspaceCatalogUpdateResponseList] =
     authedRequestToObject[WorkspaceCatalogUpdateResponseList](Patch(workspaceCatalogUrl(ns, name), catalogUpdates), true)
 
-  override def status: Future[Boolean] = {
-    val response = unAuthedRequestToObject[RawlsStatus](Get(Uri(FireCloudConfig.Rawls.baseUrl).withPath(Uri.Path("/version"))))
+  override def status: Future[SubsystemStatus] = {
+    val rawlsStatus = unAuthedRequestToObject[RawlsStatus](Get(Uri(FireCloudConfig.Rawls.baseUrl).withPath(Uri.Path("/version"))))
 
-    response map { response =>
-      response.version match {
-        case Some(version) => true
-        case _ => false
+    rawlsStatus map { rawlsStatus =>
+      rawlsStatus.version match {
+        case Some(version) => SubsystemStatus(true, None)
+        case _ => SubsystemStatus(false, None)
       }
     }
   }

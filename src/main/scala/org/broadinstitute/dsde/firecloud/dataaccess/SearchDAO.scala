@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 import scala.concurrent.Future
 
-trait SearchDAO extends LazyLogging {
+trait SearchDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def initIndex(): Unit
   def recreateIndex(): Unit

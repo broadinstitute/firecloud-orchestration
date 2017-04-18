@@ -23,7 +23,7 @@ object RawlsDAO {
   private def pathToUrl(path: String) = FireCloudConfig.Rawls.baseUrl + path
 }
 
-trait RawlsDAO extends LazyLogging {
+trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   implicit val errorReportSource = ErrorReportSource("Rawls")
 
@@ -76,6 +76,4 @@ trait RawlsDAO extends LazyLogging {
   def getCatalog(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Seq[WorkspaceCatalog]]
 
   def patchCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog])(implicit userToken: WithAccessToken): Future[WorkspaceCatalogUpdateResponseList]
-
-  def status: Future[Boolean]
 }

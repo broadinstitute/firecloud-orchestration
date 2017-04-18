@@ -34,7 +34,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     def actorRefFactory = context
   }
 
-  val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora.authUrl, FireCloudConfig.Agora.baseUrl)
+  val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora)
   val rawlsDAO:RawlsDAO = new HttpRawlsDAO
   val searchDAO:SearchDAO = new ElasticSearchDAO(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.indexName)
   val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
@@ -59,9 +59,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
-  val routes = methodsService.routes ~
+  val apiRoutes = methodsService.routes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    statusRoutes ~ nihRoutes ~ billingService.routes
+    apiStatusRoutes ~ nihRoutes ~ billingService.routes
 
   val userService = new UserService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
@@ -108,7 +108,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         notificationsRoutes ~
         publicStatusRoutes ~
         pathPrefix("api") {
-          routes
+          apiRoutes
         } ~
         pathPrefix("cookie-authed") {
           // insecure cookie-authed routes

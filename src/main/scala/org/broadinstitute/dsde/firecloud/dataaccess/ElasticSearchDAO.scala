@@ -14,11 +14,12 @@ import org.elasticsearch.client.transport.TransportClient
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
-import spray.json.DefaultJsonProtocol._
-import collection.JavaConverters._
-import scala.concurrent.Future
+}
 
-class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
+import collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
+
+class ElasticSearchDAO(servers: Seq[Authority], indexName: String)( implicit val executionContext: ExecutionContext ) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
   private val client: TransportClient = buildClient(servers)
   private final val datatype = "dataset"
@@ -131,4 +132,8 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
    * lazy is necessary here because we use it above
    */
   private final lazy val analysisSettings = FileUtils.readAllTextFromResource("library/es-settings.json")
+
+  override def status: Future[SubsystemStatus] = {
+    Future(SubsystemStatus(this.indexExists(), None))
+  }
 }

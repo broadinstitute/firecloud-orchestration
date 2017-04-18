@@ -5,12 +5,13 @@ import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
-import org.broadinstitute.dsde.firecloud.model.Ontology.{TermResource, TermParent, ESTermParent}
+import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
+import spray.json.DefaultJsonProtocol.jsonFormat2
 
 import scala.util.Try
 
@@ -141,7 +142,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
       }
   }
 
-  // Spray build error about missing implicit for parameter unmarshaller? Add it here.
+  // Build error about missing implicit for Spray parameter unmarshaller? Add an entry here.
   implicit val impMethod = jsonFormat8(MethodRepository.Method)
   implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
 
@@ -216,7 +217,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impOntologyTermResource = jsonFormat7(TermResource)
   implicit val impOntologyESTermParent = jsonFormat2(ESTermParent)
 
-  implicit val impStatus = jsonFormat2(SystemStatus)
+  implicit val impSubsystemStatus = jsonFormat2(SubsystemStatus)
+  implicit val impSystemStatus = jsonFormat2(SystemStatus)
   implicit val impAgoraStatus = jsonFormat2(AgoraStatus)
   implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
   implicit val implRawlsStatus = jsonFormat1(RawlsStatus)
