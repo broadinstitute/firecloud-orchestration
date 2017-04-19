@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
@@ -14,7 +13,7 @@ import org.elasticsearch.client.transport.TransportClient
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
-}
+
 
 import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}

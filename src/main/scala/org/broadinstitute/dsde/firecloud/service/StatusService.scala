@@ -5,9 +5,11 @@ import akka.actor.Props
 import akka.pattern._
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO, SearchDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impSystemStatus
 import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, SystemStatus}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.StatusService.CollectStatusInfo
+import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
 
@@ -43,7 +45,11 @@ class StatusService (val searchDAO: SearchDAO,
     } yield {
       val statusMap = Map("Rawls" -> rawlsStatus, "Thurloe" -> thurloeStatus, "Agora" -> agoraStatus, "Search" -> searchStatus)
 
-      RequestComplete(SystemStatus(statusMap.values.count(_.ok == true) == 0, statusMap))
+      if (statusMap.values.count(_.ok == false) == 0)
+        RequestComplete(SystemStatus(true, statusMap))
+      else
+        RequestComplete(StatusCodes.InternalServerError, SystemStatus(false, statusMap))
+
     }
   }
 
