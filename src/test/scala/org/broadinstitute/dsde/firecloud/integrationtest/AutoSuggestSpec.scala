@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOQuerySupport
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
-import spray.json.JsString
+import spray.json.{JsObject, JsString}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, MINUTES}
@@ -58,8 +58,25 @@ class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
           }
           // remove highlighting from the suggestion so we can match it easier
           val suggestions = (searchResponse.results map {
-            case js:JsString => stripHighlight(js.value)
-            case _ => fail("suggestion object should be a JsString")
+            case jso:JsObject =>
+              val flds = jso.fields
+              assert(flds.contains("suggestion"), "suggestion result should have a `suggestion` key")
+              val sugg = flds("suggestion")
+              sugg match {
+                case js:JsString =>
+                  val suggStr = js.value
+                  // if ES returns a highlight, ensure the highlight is valid for the source
+                  val hlt = flds.get("highlight")
+                  hlt match {
+                    case Some(js:JsString) =>
+                      assert(suggStr.contains(js.value), "if highlight exists, suggestion should contain highlight")
+                    case None => // nothing to valildate here
+                    case _ => fail("if highlight key exists, should be a JsString")
+                  }
+                  suggStr
+                case _ => fail("suggestion key should be a JsString")
+              }
+            case _ => fail("suggestion object should be a JsObject")
           }).toSet
           // mangle the expected to lowercase and Set-ify it
           val ex = expected.map(_.toLowerCase).toSet
@@ -76,10 +93,6 @@ class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   private def suggestionsFor(txt:String) = {
     val criteria = emptyCriteria.copy(searchString = Some(txt))
     Await.result(searchDAO.suggestionsFromAll(criteria, Seq.empty[String]), dur)
-  }
-
-  private def stripHighlight(txt:String) = {
-    txt.replace(HL_START,"").replace(HL_END,"")
   }
 
 }
