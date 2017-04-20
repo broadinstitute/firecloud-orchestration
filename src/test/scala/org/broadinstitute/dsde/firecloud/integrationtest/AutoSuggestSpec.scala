@@ -43,6 +43,7 @@ class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
         ("test",         Seq("testing123","test indication")),
         ("kidn",         Seq("Kidney Chromophobe","Kidney Renal Clear Cell Carcinoma","Kidney Renal Papillary Cell Carcinoma")),
         ("Mesothelioma", Seq("Mesothelioma")),
+        ("encodingtest", Seq("ZZZ <encodingtest>&foo")), // make sure the result is not encoded
         ("xyz",          Seq.empty[String]),
         ("idney",        Seq.empty[String]), // we only do leading-edge ngrams
         ("access",       Seq.empty[String])  // we only do leading-edge ngrams

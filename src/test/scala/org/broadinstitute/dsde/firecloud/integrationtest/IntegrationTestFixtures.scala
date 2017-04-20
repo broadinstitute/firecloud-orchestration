@@ -35,7 +35,8 @@ object IntegrationTestFixtures {
     ("TCGA_BRCA_OpenAccess", "Breast Invasive Carcinoma", 2),
     ("TCGA_CHOL_ControlledAccess", "Cholangiocarcinoma", 3),
     ("TCGA_COAD_ControlledAccess", "Colon adenocarcinoma", 3),
-    ("TCGA_COAD_OpenAccess", "Colon adenocarcinoma", 3)
+    ("TCGA_COAD_OpenAccess", "Colon adenocarcinoma", 3),
+    ("ZZZ <encodingtest>&foo", "results won't be escaped", 1)
   )
 
   val fixtureDocs:Seq[Document] = datasetTuples map {x:(String,String,Int) =>

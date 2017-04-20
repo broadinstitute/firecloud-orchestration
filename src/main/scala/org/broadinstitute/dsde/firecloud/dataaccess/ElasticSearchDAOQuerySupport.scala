@@ -128,7 +128,6 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       .setHighlighterFragmentSize(50)
       .setHighlighterPreTags(HL_START)
       .setHighlighterPostTags(HL_END)
-      .setHighlighterEncoder("html")
   }
 
   def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String]): SearchRequestBuilder = {
