@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
 import org.scalatest.FreeSpecLike
@@ -269,6 +270,16 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
+      }
+      "should be the different for attribute operations" in {
+        val empty = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq.empty))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+        assert(isDiscoverableDifferent(empty, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))))
+        val one = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+        assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))))
+        assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq.empty))))
+        val two = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+        assert(isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"))))))
+        assert(!isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"),AttributeString("group1"))))))
       }
     }
     "with no attributes in workspace" - {

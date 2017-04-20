@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.everit.json.schema.{Schema, ValidationException}
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.{JSONObject, JSONTokener}
@@ -145,4 +146,20 @@ trait LibraryServiceSupport extends LazyLogging {
     docs.copy(results = updatedResults)
   }
 
+  // this method will determine if the user is making a change to discoverableByGroups
+  // if the attribute does not exist on the workspace, it is the same as the empty list
+  def isDiscoverableDifferent(workspaceResponse: WorkspaceResponse, userAttrs: AttributeMap): Boolean = {
+
+    def convert(list: Option[Attribute]): Seq[AttributeValue] = {
+      list match {
+        case Some(x:AttributeValueList) => x.list
+        case _ => Seq.empty[AttributeValue]
+      }
+    }
+
+    val current = convert(workspaceResponse.workspace.attributes.get(LibraryService.discoverableWSAttribute))
+    val newvals = convert(userAttrs.get(LibraryService.discoverableWSAttribute))
+
+    current.toSet != newvals.toSet
+  }
 }
