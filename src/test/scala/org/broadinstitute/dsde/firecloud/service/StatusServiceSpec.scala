@@ -1,14 +1,14 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockAgoraDAO, MockRawlsDAO, MockSearchDAO, MockThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.SystemStatus
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impSystemStatus
 import org.broadinstitute.dsde.firecloud.webservice.StatusApiService
-import spray.http.StatusCodes.OK
-import spray.routing.HttpService
 
-import scala.concurrent.Future
+import spray.http.StatusCodes.{OK, InternalServerError}
+import spray.routing.HttpService
+import spray.httpx.SprayJsonSupport._
+
 
 /**
   * Created by anichols on 4/13/17.
@@ -23,7 +23,9 @@ class StatusServiceSpec extends BaseServiceSpec with HttpService with StatusApiS
 
     Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
       status should be(OK)
-      response.entity shouldNot be(empty)
+      val response = responseAs[SystemStatus]
+      response.ok should be(true)
+      response.systems.size should be(4)
     }
 
   }

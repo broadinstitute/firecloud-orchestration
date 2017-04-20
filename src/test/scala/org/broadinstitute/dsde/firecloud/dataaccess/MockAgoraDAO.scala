@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{ACLNames, AgoraPermission}
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, UserInfo}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -24,6 +24,6 @@ class MockAgoraDAO extends AgoraDAO {
     Future(List(MockAgoraDAO.agoraPermission))
   }
 
-  override def status: Future[(Boolean, Option[String])] = Future((true, None))
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true, None))
 
 }
