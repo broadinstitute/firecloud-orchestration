@@ -13,7 +13,6 @@ import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
 
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext
 
@@ -38,10 +37,18 @@ class StatusService (val searchDAO: SearchDAO,
 
   def collectStatusInfo(): Future[PerRequestMessage] = {
     for {
-      rawlsStatus <- rawlsDAO.status
-      thurloeStatus <- thurloeDAO.status
-      agoraStatus <- agoraDAO.status
-      searchStatus <- searchDAO.status
+      rawlsStatus <- rawlsDAO.status recover {
+        case e: Exception => SubsystemStatus(false, Some(Array(e.getMessage)))
+      }
+      thurloeStatus <- thurloeDAO.status recover {
+        case e: Exception => SubsystemStatus(false, Some(Array(e.getMessage)))
+      }
+      agoraStatus <- agoraDAO.status recover {
+        case e: Exception => SubsystemStatus(false, Some(Array(e.getMessage)))
+      }
+      searchStatus <- searchDAO.status recover {
+        case e: Exception => SubsystemStatus(false, Some(Array(e.getMessage)))
+      }
     } yield {
       val statusMap = Map("Rawls" -> rawlsStatus, "Thurloe" -> thurloeStatus, "Agora" -> agoraStatus, "Search" -> searchStatus)
 
