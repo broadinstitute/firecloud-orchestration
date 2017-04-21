@@ -153,8 +153,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
     rawlsStatus map { rawlsStatus =>
       rawlsStatus.version match {
-        case Some(version) => SubsystemStatus(true, None)
-        case _ => SubsystemStatus(false, None)
+        case Some(version) => SubsystemStatus(true)
+        case _ => SubsystemStatus(false)
       }
     }
   }

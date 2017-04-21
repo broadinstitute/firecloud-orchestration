@@ -5,7 +5,7 @@ import com.typesafe.config.Config
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraPermission
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, ReportsSubsystemStatus, SubsystemStatus, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, SubsystemStatus, UserInfo}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import spray.client.pipelining._
 import spray.http.Uri
@@ -32,7 +32,7 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
 
     agoraStatus map { agoraStatus =>
       agoraStatus.status match {
-        case "up" => SubsystemStatus(true, None)
+        case "up" => SubsystemStatus(true)
         case _ => SubsystemStatus(false, if (agoraStatus.message.length > 0) Some(agoraStatus.message) else None)
       }
     }

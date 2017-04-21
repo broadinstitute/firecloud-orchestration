@@ -187,5 +187,5 @@ class MockRawlsDAO  extends RawlsDAO {
     Future.successful(WorkspaceCatalogUpdateResponseList(responses, Seq.empty))
   }
 
-  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true, None))
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
 }

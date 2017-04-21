@@ -72,8 +72,8 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
 
     thurloeStatus map { thurloeStatus =>
       thurloeStatus.status match {
-        case "up" => SubsystemStatus(true, None)
-        case "down" => SubsystemStatus(false, if (thurloeStatus.error.isDefined) Some(Array(thurloeStatus.error.get)) else None)
+        case "up" => SubsystemStatus(true)
+        case "down" => SubsystemStatus(false, if (thurloeStatus.error.isDefined) Some(List(thurloeStatus.error.get)) else None)
       }
     }
   }

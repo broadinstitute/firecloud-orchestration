@@ -88,6 +88,6 @@ class MockThurloeDAO extends ThurloeDAO {
     Future.successful(userValuesForKey)
   }
 
-  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true, None))
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
 
 }

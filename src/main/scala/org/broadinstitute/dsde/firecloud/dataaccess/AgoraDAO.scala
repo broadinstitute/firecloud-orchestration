@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraPermission
-import org.broadinstitute.dsde.firecloud.model.{ReportsSubsystemStatus, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
 import scala.concurrent.Future
