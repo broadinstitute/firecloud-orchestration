@@ -1168,6 +1168,31 @@ paths:
             - openid
             - email
             - profile
+  '/api/notifications/workspace/{workspaceNamespace}/{workspaceName}/sendChangeNotification':
+    post:
+      responses:
+      200:
+        description: Success
+      parameters:
+        - in: path
+          description: workspace namespace
+          name: workspaceNamespace
+          required: true
+          type: string
+        - in: path
+          description: workspace name
+          name: workspaceName
+          required: true
+          type: string
+      tags:
+        - Notifications
+      summary: Sends notifications for change to workspace
+      operationId: changedWorkspaceNotification
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
 
   /api/profile/billing:
     get:
