@@ -10,9 +10,13 @@ import scala.util.Try
 /**
  * Created by mbemis on 10/21/16.
  */
+object ThurloeDAO {
+  lazy val serviceName = "Thurloe"
+}
+
 trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
 
-  implicit val errorReportSource = ErrorReportSource("Thurloe")
+  implicit val errorReportSource = ErrorReportSource(ThurloeDAO.serviceName)
 
   def getProfile(userInfo: UserInfo): Future[Option[Profile]]
   def getAllUserValuesForKey(key: String): Future[Map[String, String]]

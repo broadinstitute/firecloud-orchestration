@@ -18,6 +18,8 @@ object RawlsDAO {
   lazy val refreshTokenUrl = authedUrl("/user/refreshToken")
   lazy val refreshTokenDateUrl = authedUrl("/user/refreshTokenDate")
 
+  lazy val serviceName = "Rawls"
+
   def groupUrl(group: String): String = authedUrl(s"/user/group/$group")
   private def authedUrl(path: String) = pathToUrl(FireCloudConfig.Rawls.authPrefix + path)
   private def pathToUrl(path: String) = FireCloudConfig.Rawls.baseUrl + path
@@ -25,7 +27,7 @@ object RawlsDAO {
 
 trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
-  implicit val errorReportSource = ErrorReportSource("Rawls")
+  implicit val errorReportSource = ErrorReportSource(RawlsDAO.serviceName)
 
   lazy val rawlsUserRegistrationUrl = FireCloudConfig.Rawls.baseUrl + "/register/user"
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl

@@ -7,7 +7,6 @@ import com.typesafe.config.ConfigFactory
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchParams
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.util.{Failure, Success, Try}
 

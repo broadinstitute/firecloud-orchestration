@@ -32,6 +32,10 @@ object StatusService {
 class StatusService (val app: Application)
                     (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
 
+  override def receive = {
+    case CollectStatusInfo => collectStatusInfo() pipeTo sender
+  }
+
   def collectStatusInfo(): Future[PerRequestMessage] = {
     val subsystemExceptionHandler: PartialFunction[Throwable, SubsystemStatus] = {
       case e: Exception => SubsystemStatus(false, Some(List(e.getMessage)))
@@ -43,9 +47,9 @@ class StatusService (val app: Application)
       agoraStatus <- app.agoraDAO.status recover subsystemExceptionHandler
       searchStatus <- app.searchDAO.status recover subsystemExceptionHandler
     } yield {
-      val statusMap = Map("Rawls" -> rawlsStatus, "Thurloe" -> thurloeStatus, "Agora" -> agoraStatus, "Search" -> searchStatus)
+      val statusMap = Map(RawlsDAO.serviceName -> rawlsStatus, ThurloeDAO.serviceName -> thurloeStatus, AgoraDAO.serviceName -> agoraStatus, SearchDAO.serviceName -> searchStatus)
 
-      if (statusMap.values.count(_.ok == false) == 0)
+      if (statusMap.values.forall(_.ok))
         RequestComplete(SystemStatus(true, statusMap))
       else
         RequestComplete(StatusCodes.InternalServerError, SystemStatus(false, statusMap))
@@ -53,7 +57,4 @@ class StatusService (val app: Application)
     }
   }
 
-  def receive = {
-    case CollectStatusInfo => collectStatusInfo() pipeTo sender
-  }
 }
