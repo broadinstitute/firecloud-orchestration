@@ -36,19 +36,15 @@ class StatusService (val searchDAO: SearchDAO,
                     (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
 
   def collectStatusInfo(): Future[PerRequestMessage] = {
+    val subsystemExceptionHandler: PartialFunction[Throwable, SubsystemStatus] = {
+      case e: Exception => SubsystemStatus(false, Some(Array(e.getMessage)))
+    }
+
     for {
-      rawlsStatus <- rawlsDAO.status recover {
-        case e: Exception => SubsystemStatus(false, Some(Array(e.getMessage)))
-      }
-      thurloeStatus <- thurloeDAO.status recover {
-        case e: Exception => SubsystemStatus(false, Some(Array(e.getMessage)))
-      }
-      agoraStatus <- agoraDAO.status recover {
-        case e: Exception => SubsystemStatus(false, Some(Array(e.getMessage)))
-      }
-      searchStatus <- searchDAO.status recover {
-        case e: Exception => SubsystemStatus(false, Some(Array(e.getMessage)))
-      }
+      rawlsStatus <- rawlsDAO.status recover subsystemExceptionHandler
+      thurloeStatus <- thurloeDAO.status recover subsystemExceptionHandler
+      agoraStatus <- agoraDAO.status recover subsystemExceptionHandler
+      searchStatus <- searchDAO.status recover subsystemExceptionHandler
     } yield {
       val statusMap = Map("Rawls" -> rawlsStatus, "Thurloe" -> thurloeStatus, "Agora" -> agoraStatus, "Search" -> searchStatus)
 

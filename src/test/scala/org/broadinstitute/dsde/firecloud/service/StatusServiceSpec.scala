@@ -4,8 +4,7 @@ import org.broadinstitute.dsde.firecloud.model.SystemStatus
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impSystemStatus
 import org.broadinstitute.dsde.firecloud.webservice.StatusApiService
-
-import spray.http.StatusCodes.{OK, InternalServerError}
+import spray.http.StatusCodes.{OK}
 import spray.routing.HttpService
 import spray.httpx.SprayJsonSupport._
 
