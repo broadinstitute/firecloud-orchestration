@@ -7,8 +7,12 @@ import spray.http.StatusCodes
 import spray.routing.HttpService
 import spray.testkit.ScalatestRouteTest
 
+import scala.concurrent.duration._
+
 class NotificationsApiServiceSpec extends FlatSpec with BeforeAndAfterAll with HttpService with ScalatestRouteTest with NotificationsApiService with Matchers with FireCloudRequestBuilding {
   def actorRefFactory = system
+
+  implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
 
   override def beforeAll(): Unit = {
     MockWorkspaceServer.startWorkspaceServer()
