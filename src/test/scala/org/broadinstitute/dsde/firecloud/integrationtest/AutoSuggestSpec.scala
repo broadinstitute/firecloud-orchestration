@@ -71,7 +71,7 @@ class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
                   hlt match {
                     case Some(js:JsString) =>
                       assert(suggStr.contains(js.value), "if highlight exists, suggestion should contain highlight")
-                    case None => // nothing to valildate here
+                    case None => // nothing to validate here
                     case _ => fail("if highlight key exists, should be a JsString")
                   }
                   suggStr
