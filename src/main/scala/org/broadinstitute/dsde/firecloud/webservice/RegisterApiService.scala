@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.utils.{DateUtils, StandardUserInfoDirec
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport._
+import spray.json.DefaultJsonProtocol._
 import spray.routing._
 
 trait RegisterApiService extends HttpService with PerRequestCreator with FireCloudDirectives with StandardUserInfoDirectives {
@@ -27,6 +28,21 @@ trait RegisterApiService extends HttpService with PerRequestCreator with FireClo
             entity(as[BasicProfile]) { basicProfile => requestContext =>
               perRequest(requestContext, RegisterService.props(registerServiceConstructor),
                 RegisterService.CreateUpdateProfile(userInfo, basicProfile)
+              )
+            }
+          }
+        }
+      }
+    }
+
+  val profileRoutes: Route =
+    pathPrefix("profile") {
+      path("preferences") {
+        post {
+          requireUserInfo() { userInfo =>
+            entity(as[Map[String, String]]) { preferences => requestContext =>
+              perRequest(requestContext, RegisterService.props(registerServiceConstructor),
+                RegisterService.UpdateProfilePreferences(userInfo, preferences)
               )
             }
           }

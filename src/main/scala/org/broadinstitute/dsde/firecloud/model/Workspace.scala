@@ -29,7 +29,7 @@ object WorkspaceCreate {
     new WorkspaceCreate(
       namespace = wc.namespace,
       name = wc.name,
-      attributes = wc.attributes + (AttributeName("library","published") -> AttributeBoolean(false)),
+      attributes = wc.attributes + (AttributeName("library","published") -> AttributeBoolean(false)) + (AttributeName("library","discoverableByGroups") -> AttributeValueEmptyList),
       isProtected = wc.isProtected)
   }
 

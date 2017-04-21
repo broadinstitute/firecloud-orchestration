@@ -74,7 +74,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
       status should equal(OK)
       val linkExpireTime = responseAs[NihStatus].linkExpireTime.get
       //gives a 60 second window to make sure that the link was updated to *approximately* now + 30 days
-      assert(DateUtils.nowPlus30Days - 60000L < linkExpireTime && linkExpireTime <= DateUtils.nowPlus30Days)
+      assert(DateUtils.nowPlus30Days - 60000L <= linkExpireTime && linkExpireTime <= DateUtils.nowPlus30Days)
     }
     assert(services.rawlsDao.groups(dbGapAuthorizedUsersGroupName).contains(services.thurloeDao.linkedButExpiredUserId))
   }

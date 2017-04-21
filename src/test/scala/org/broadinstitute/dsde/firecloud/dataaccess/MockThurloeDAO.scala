@@ -64,18 +64,15 @@ class MockThurloeDAO extends ThurloeDAO {
     Future.successful(profileWrapper)
   }
 
-  override def saveKeyValue(userInfo: UserInfo, key: String, value: String): Future[Try[Unit]] = {
-    val newKVsForUser = (userInfo.id -> (mockKeyValues(userInfo.id).filterNot(_.key == Some(key)) + FireCloudKeyValue(Option(key), Option(value))))
+  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit] = {
+    saveKeyValues(userInfo, profile.propertyValueMap).map(_ => ())
+  }
+
+  override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Try[Unit]] = {
+    val newKVsForUser = (userInfo.id -> (mockKeyValues(userInfo.id) ++ keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value))}))
     mockKeyValues = mockKeyValues + newKVsForUser
     Future.successful(Success(()))
-  }
 
-  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit] = {
-    Future.sequence(profile.propertyValueMap.map { case (key, value) => saveKeyValue(userInfo, key, value) }) map({ _.forall({ _ => true }) })
-  }
-
-  override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Iterable[Try[Unit]]] = {
-    Future.sequence(keyValues.map { case (key, value) => saveKeyValue(userInfo, key, value) })
   }
 
   override def getAllUserValuesForKey(key: String): Future[Map[String, String]] = {

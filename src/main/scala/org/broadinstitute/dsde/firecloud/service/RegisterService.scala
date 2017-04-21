@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.RegisterService.CreateUpdateProfile
+import org.broadinstitute.dsde.firecloud.service.RegisterService.{CreateUpdateProfile, UpdateProfilePreferences}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import spray.http._
@@ -18,6 +18,8 @@ import scala.concurrent.{ExecutionContext, Future}
 object RegisterService {
   sealed trait ServiceMessage
   case class CreateUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile)
+    extends ServiceMessage
+  case class UpdateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String])
     extends ServiceMessage
 
   def props(service: () => RegisterService): Props = {
@@ -35,14 +37,16 @@ class RegisterService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
   override def receive = {
     case CreateUpdateProfile(userInfo, basicProfile) =>
       createUpdateProfile(userInfo, basicProfile) pipeTo sender
+    case UpdateProfilePreferences(userInfo, preferences) =>
+      updateProfilePreferences(userInfo, preferences) pipeTo sender
   }
 
   private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile):
       Future[PerRequestMessage] = {
     for {
       _ <- thurloeDao.saveProfile(userInfo, basicProfile)
-      _ <- thurloeDao.saveKeyValue(
-          userInfo, "isRegistrationComplete", Profile.currentVersion.toString
+      _ <- thurloeDao.saveKeyValues(
+          userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString)
         )
       isRegistered <- rawlsDao.isRegistered(userInfo)
       _ <- if (!isRegistered) {
@@ -52,4 +56,9 @@ class RegisterService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
       RequestComplete(StatusCodes.OK)
     }
   }
+
+  private def updateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]): Future[PerRequestMessage] = {
+    thurloeDao.saveKeyValues(userInfo, preferences).map(_ => RequestComplete(StatusCodes.NoContent))
+  }
+
 }
