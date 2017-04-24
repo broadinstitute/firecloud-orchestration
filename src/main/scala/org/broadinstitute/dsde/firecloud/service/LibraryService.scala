@@ -156,8 +156,8 @@ class LibraryService (protected val argUserInfo: UserInfo,
         Future(RequestComplete(NoContent))
       else if (invalidMetadata == Some(AttributeBoolean(false))) {
         rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(value)) map { ws =>
-          if (value) 
-              publishDocument(ws)
+          if (value)
+            publishDocument(ws)
           else
             removeDocument(ws)
           RequestComplete(ws)
