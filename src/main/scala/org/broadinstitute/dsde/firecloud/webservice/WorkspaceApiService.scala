@@ -219,6 +219,11 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               passthrough(workspacePath + "/checkBucketReadAccess", HttpMethods.GET)
             }
           } ~
+          path("sendChangeNotifications") {
+            requireUserInfo() { _ =>
+              passthrough(workspacePath + "/sendChangeNotifications", HttpMethods.POST)
+            }
+          }
           path("clone") {
             post {
               requireUserInfo() { _ =>
