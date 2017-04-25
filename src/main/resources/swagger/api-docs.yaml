@@ -2237,7 +2237,7 @@ paths:
         500:
           description: Internal Server Error
 
-  /api/workspace/{workspaceNamespace}/{workspaceName}/sendChangeNotification:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/sendChangeNotification:
     post:
       responses:
       200:
