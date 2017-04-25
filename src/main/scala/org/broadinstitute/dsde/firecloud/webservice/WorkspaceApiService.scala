@@ -118,11 +118,10 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             post {
               requireUserInfo() { _ =>
                 entity(as[MethodConfiguration]) { methodConfig =>
-                  requestContext =>
                     if (methodConfig.outputs.collect { case param if param._2.value.startsWith("this.library:") => param }.isEmpty)
                       passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
                     else
-                      requestContext.complete(StatusCodes.Forbidden, "Methods and configurations can not create or modify library attributes")
+                      complete(StatusCodes.Forbidden, "Methods and configurations can not create or modify library attributes")
                 }
               }
             }
