@@ -228,16 +228,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
         }
       }
-      "Forbidden error is returned for HTTP POST with library attributes on entities in output" in {
-        val methodConfigs = MethodConfiguration("namespace", "name", "root", Map.empty, Map.empty, Map("value" -> AttributeString("this.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
-        Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-          status should equal(Forbidden)
-        }
-      }
-      "Forbidden error is returned for HTTP POST with library attributes on workspaces in output" in {
-        val methodConfigs = MethodConfiguration("namespace", "name", "root", Map.empty, Map.empty, Map("value" -> AttributeString("workspace.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
-        Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-          status should equal(Forbidden)
+      Seq("this","workspace") foreach { prefix =>
+        s"Forbidden error is returned for HTTP POST with an output to $prefix.library:" in {
+          val methodConfigs = MethodConfiguration("namespace", "name", "root", Map.empty, Map.empty, Map("value" -> AttributeString(s"$prefix.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
+          Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(Forbidden)
+          }
         }
       }
     }
