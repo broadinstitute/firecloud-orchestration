@@ -11,6 +11,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impSystemStatus
 import org.broadinstitute.dsde.firecloud.webservice.StatusApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
+import org.mockserver.model.HttpError
 import org.mockserver.model.HttpRequest.request
 import spray.http.StatusCodes.{BadRequest, InternalServerError, NotFound, NotImplemented, OK}
 import spray.routing.HttpService
@@ -30,13 +31,10 @@ class StatusServiceSpecMockServer extends BaseServiceSpec with HttpService with 
   val customApp = new Application(new HttpAgoraDAO(FireCloudConfig.Agora), googleServicesDao, ontologyDao, rawlsDao, searchDao, thurloeDao)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(customApp)
 
-  var searchServer: ClientAndServer  = startClientAndServer(MockUtils.searchServerPort)
-  var thurloeServer: ClientAndServer = startClientAndServer(MockUtils.thurloeServerPort)
-  var rawlsServer: ClientAndServer   = startClientAndServer(MockUtils.workspaceServerPort) // Rawls = workspace
   var agoraServer: ClientAndServer   = startClientAndServer(MockUtils.methodsServerPort) // Agora = methods
 
   override def afterAll(): Unit = {
-    Seq(searchServer, thurloeServer, rawlsServer, agoraServer).map(_.stop())
+    agoraServer.stop()
   }
 
   agoraServer.when(
@@ -115,6 +113,20 @@ class StatusServiceSpecMockServer extends BaseServiceSpec with HttpService with 
     }
   }
 
+  agoraServer.when(
+    request().withMethod("GET").withPath("/status")
+  ).error((new HttpError).withDropConnection(true))
+
+  "StatusService reports failure when Agora drops connection" in {
+    Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
+      status.intValue should be(InternalServerError.intValue)
+      val response = responseAs[SystemStatus]
+      response.ok should be(false)
+      response.systems("Agora").ok should be(false)
+      response.systems("Agora").messages should be(Some(List("Premature connection close (the server doesn't appear to support request pipelining)")))
+      response.systems.size should be(4)
+    }
+  }
 }
 
 class StatusServiceSpecMockDAOs extends BaseServiceSpec with HttpService with StatusApiService {
@@ -123,7 +135,7 @@ class StatusServiceSpecMockDAOs extends BaseServiceSpec with HttpService with St
 
   val statusServiceConstructor: () => StatusService = StatusService.constructor(app)
 
-  "StatusService carries on despite exception in Agora DAO" in {
+  "StatusService carries on despite exception in Agora Mock DAO" in {
     Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
       status.intValue should be(500)
       val response = responseAs[SystemStatus]
