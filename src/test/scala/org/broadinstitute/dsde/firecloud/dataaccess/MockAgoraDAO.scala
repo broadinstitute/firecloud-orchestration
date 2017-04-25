@@ -24,6 +24,8 @@ class MockAgoraDAO extends AgoraDAO {
     Future(List(MockAgoraDAO.agoraPermission))
   }
 
-  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
+  def status: Future[SubsystemStatus] = {
+    Future(throw new Exception("Agora Mock DAO exception"))
+  }
 
 }

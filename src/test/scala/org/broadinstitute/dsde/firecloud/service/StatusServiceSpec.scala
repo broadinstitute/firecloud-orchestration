@@ -20,7 +20,7 @@ import spray.httpx.SprayJsonSupport._
 /**
   * Created by anichols on 4/13/17.
   */
-class StatusServiceSpec extends BaseServiceSpec with HttpService with StatusApiService {
+class StatusServiceSpecMockServer extends BaseServiceSpec with HttpService with StatusApiService {
 
   def actorRefFactory = system
 
@@ -47,9 +47,9 @@ class StatusServiceSpec extends BaseServiceSpec with HttpService with StatusApiS
       .withBody("""{ "status": "down", "message": ["Agora is down"] }""")
   )
 
-  "StatusService indicates Agora failure" in {
+  "StatusService indicates Agora failure when \"down\" response" in {
     Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
-      status should be(InternalServerError)
+      status.intValue should be(InternalServerError.intValue)
       val response = responseAs[SystemStatus]
       response.ok should be(false)
       response.systems("Agora").ok should be(false)
@@ -68,14 +68,73 @@ class StatusServiceSpec extends BaseServiceSpec with HttpService with StatusApiS
 
   "StatusService indicates OK" in {
     Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
-      status should be(OK)
+      status.intValue should be(OK.intValue)
       val response = responseAs[SystemStatus]
       response.ok should be(true)
       response.systems("Agora").ok should be(true)
       response.systems("Agora").messages should be(None)
       response.systems.size should be(4)
     }
-
   }
 
+  agoraServer.when(
+    request().withMethod("GET").withPath("/status")
+  ).respond(
+    org.mockserver.model.HttpResponse.response()
+      .withHeaders(MockUtils.header)
+      .withBody("bogus non-JSON response")
+  )
+
+  "StatusService indicates failure with non-JSON response" in {
+    Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
+      status.intValue should be(InternalServerError.intValue)
+      val response = responseAs[SystemStatus]
+      response.ok should be(false)
+      response.systems("Agora").ok should be(false)
+      response.systems("Agora").messages should be(Some(List("bogus non-JSON response")))
+      response.systems.size should be(4)
+    }
+  }
+
+  agoraServer.when(
+    request().withMethod("GET").withPath("/status")
+  ).respond(
+    org.mockserver.model.HttpResponse.response()
+      .withHeaders(MockUtils.header)
+      .withBody("")
+  )
+
+  "StatusService indicates failure with empty response" in {
+    Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
+      status.intValue should be(InternalServerError.intValue)
+      val response = responseAs[SystemStatus]
+      response.ok should be(false)
+      response.systems("Agora").ok should be(false)
+      response.systems("Agora").messages should be(Some(List("")))
+      response.systems.size should be(4)
+    }
+  }
+
+}
+
+class StatusServiceSpecMockDAOs extends BaseServiceSpec with HttpService with StatusApiService {
+
+  def actorRefFactory = system
+
+  val statusServiceConstructor: () => StatusService = StatusService.constructor(app)
+
+  "StatusService carries on despite exception in Agora DAO" in {
+    Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
+      status.intValue should be(500)
+      val response = responseAs[SystemStatus]
+      response.ok should be(false)
+      response.systems("Agora").ok should be(false)
+      response.systems("Thurloe").ok should be(true)
+      response.systems("Rawls").ok should be(true)
+      response.systems("Search").ok should be(true)
+      response.systems("Agora").messages should be(Some(List("Agora Mock DAO exception")))
+      response.systems.size should be(4)
+    }
+
+  }
 }

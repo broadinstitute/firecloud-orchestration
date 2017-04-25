@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import scala.concurrent.Future
 
 object SearchDAO {
-  lazy val serviceName = "SearchDAO"
+  lazy val serviceName = "Search"
 }
 
 trait SearchDAO extends LazyLogging with ReportsSubsystemStatus {

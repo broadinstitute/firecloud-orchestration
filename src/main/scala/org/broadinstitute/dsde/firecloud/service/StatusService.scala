@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.Actor
 import akka.actor.Props
 import akka.pattern._
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO, SearchDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impSystemStatus
 import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, SystemStatus}
@@ -37,8 +37,11 @@ class StatusService (val app: Application)
   }
 
   def collectStatusInfo(): Future[PerRequestMessage] = {
-    val subsystemExceptionHandler: PartialFunction[Throwable, SubsystemStatus] = {
+    val subsystemExceptionHandler: PartialFunction[Any, SubsystemStatus] = {
+      case fcExceptionWithError: FireCloudExceptionWithErrorReport => SubsystemStatus(false, Some(List(fcExceptionWithError.errorReport.message)))
+      case fcException: FireCloudException => SubsystemStatus(false, Some(List(fcException.toString)))
       case e: Exception => SubsystemStatus(false, Some(List(e.getMessage)))
+      case _: Any => SubsystemStatus(false)
     }
 
     for {
