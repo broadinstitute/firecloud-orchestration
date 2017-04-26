@@ -58,6 +58,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   lazy val log = LoggerFactory.getLogger(getClass)
 
   implicit val userInfo = argUserInfo
+  implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
   override def receive = {
     case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => updateAttributes(ns, name, attrsJsonString) pipeTo sender
@@ -87,28 +88,29 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
+  private def isInvalid(attrsJsonString: String): (Boolean, Option[String]) = {
+    val validationResult = Try(schemaValidate(attrsJsonString))
+    validationResult match {
+      case Failure(ve: ValidationException) => (true, Some(getSchemaValidationMessages(ve).mkString("; ")))
+      case Failure(e) => (true, Some(e.getMessage))
+      case Success(x) => (false, None)
+    }
+  }
+
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
     // attributes come in as standard json so we can use json schema for validation. Thus,
     // we need to use the plain-array deserialization.
-    implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
     // we accept a string here, not a JsValue so we can most granularly handle json parsing
 
     Try(attrsJsonString.parseJson.asJsObject.convertTo[AttributeMap]) match {
       case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid json supplied", ex))
       case Failure(e) => Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
       case Success(userAttrs) =>
-        val validationResult = Try( schemaValidate(attrsJsonString) )
-        val validationErrors: (Boolean, Option[String]) = validationResult match {
-          case Failure(ve: ValidationException) =>
-            val errorMessages = getSchemaValidationMessages(ve)
-            (true, Some(errorMessages.mkString("; ")))
-          case Failure(e) => (true, Some(e.getMessage))
-          case Success(x) => (false, None)
-        }
+        val (invalid, errorMessage): (Boolean, Option[String]) = isInvalid(attrsJsonString)
         rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
           val published = isPublished(workspaceResponse)
-          if (published && validationErrors._1) {
-            Future.successful(RequestCompleteWithErrorReport(BadRequest, validationErrors._2.getOrElse(BadRequest.defaultMessage)))
+          if (published && invalid) {
+            Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
           } else {
             // because not all editors can update discoverableByGroups, if the request does not include discoverableByGroups
             // or if it is not being changed, don't include it in the update operations (less restrictive permissions will
@@ -124,9 +126,9 @@ class LibraryService (protected val argUserInfo: UserInfo,
             // this is technically vulnerable to a race condition in which the workspace attributes have changed
             // between the time we retrieved them and here, where we update them.
             val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs ++
-              Map(AttributeName(AttributeName.libraryNamespace, "invalidDataset") -> AttributeBoolean(validationErrors._1)),
+              Map(AttributeName(AttributeName.libraryNamespace, "invalidDataset") -> AttributeBoolean(invalid)),
               k => k.namespace == AttributeName.libraryNamespace && !skipAttributes.contains(k))
-            internalPatchWorkspaceAndRepublish(ns, name, allOperations, published) map (RequestComplete(_)) // do we want to show the error message from validationErrors._2 anywhere ??
+            internalPatchWorkspaceAndRepublish(ns, name, allOperations, published) map (RequestComplete(_))
           }
         }
     }
@@ -146,24 +148,40 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
+  private def isInvalidWorkspace(workspace: Workspace): (Boolean, Option[String]) = {
+    val invalidMetadata = workspace.attributes.
+      get(AttributeName(AttributeName.libraryNamespace, "invalidDataset"))
+    if (!invalidMetadata.isDefined || invalidMetadata == Some(AttributeBoolean(true))) {
+      // recheck for required attributes
+      // if the invalidMetadata was not set and the workspace is invalid, should we persist it here?
+      isInvalid(workspace.attributes.toJson.compactPrint)
+    }
+    else (false, None)
+  }
+
   // should only be used to change published state
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
       val pub = isPublished(workspaceResponse)
-      val invalidMetadata = workspaceResponse.workspace.attributes.get(
-        AttributeName(AttributeName.libraryNamespace, "invalidDataset")).orElse(Some(AttributeBoolean(false)))
       if (pub == value)
         Future(RequestComplete(NoContent))
-      else if (invalidMetadata == Some(AttributeBoolean(false))) {
-        rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(value)) map { ws =>
-          if (value)
-            publishDocument(ws)
-          else
-            removeDocument(ws)
-          RequestComplete(ws)
+      else {
+        val (invalid, errorMessage) = if (value)
+          // only need to check for valid attributes if we are actually publishing
+          isInvalidWorkspace(workspaceResponse.workspace)
+        else (false, None)
+        if (invalid) {
+          Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
+        } else {
+          rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(value)) map { ws =>
+            if (value)
+              publishDocument(ws)
+            else
+              removeDocument(ws)
+            RequestComplete(ws)
+          }
         }
-      } else
-        Future(RequestCompleteWithErrorReport(BadRequest, s"You need to complete filling out the metadata before publishing the workspace"))
+      }
     }
   }
 

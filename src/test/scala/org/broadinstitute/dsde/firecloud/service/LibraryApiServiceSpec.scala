@@ -172,10 +172,18 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
             status should equal(NoContent)
           }
         }
-        "should return OK and invoke indexDocument for unpublished workspace" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        "should return OK and invoke indexDocument for unpublished workspace with valid dataset" in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath("libraryValid")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
+            assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
+          }
+        }
+        "should return BadRequest and not invoke indexDocument for unpublished workspace with invalid dataset" in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(BadRequest)
+            System.out.println(response)
+            assert(!this.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
             assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
           }
         }

@@ -70,6 +70,32 @@ class MockRawlsDAO  extends RawlsDAO {
     false
   )
 
+  private val unpublishedRawlsWorkspaceLibraryValid = Workspace(
+    "attributes",
+    "att",
+    None, //realm
+    "id",
+    "", //bucketname
+    DateTime.now(),
+    DateTime.now(),
+    "ansingh",
+    Map(AttributeName("default", "a") -> AttributeBoolean(true),
+      AttributeName("default", "b") -> AttributeNumber(1.23),
+      AttributeName("default", "c") -> AttributeString(""),
+      AttributeName("library", "invalidDataset") -> AttributeBoolean(false),
+      AttributeName("library", "projectName") -> AttributeString("testing"),
+      AttributeName("default", "d") -> AttributeString("escape quo\"te"),
+      AttributeName("default", "e") -> AttributeString("v1"),
+      AttributeName("default", "f") -> AttributeValueList(Seq(
+        AttributeString("v6"),
+        AttributeNumber(999),
+        AttributeBoolean(true)
+      ))),
+    Map(), //acls
+    Map(), //realm acls,
+    false
+  )
+
   val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
   val publishedRawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
 
@@ -136,6 +162,7 @@ class MockRawlsDAO  extends RawlsDAO {
       case "publishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "unpublishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, catalog=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "publishedowner" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "libraryValid" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, unpublishedRawlsWorkspaceLibraryValid, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case _ => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
     }
   }
