@@ -133,7 +133,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
       val statusResponse = responseAs[SystemStatus]
       statusResponse.ok should be(false)
       statusResponse.systems(AgoraDAO.serviceName).ok should be(false)
-      statusResponse.systems(AgoraDAO.serviceName).messages.get.length should be >= 1
+      statusResponse.systems(AgoraDAO.serviceName).messages.get.nonEmpty should be(true)
       statusResponse.systems.size should be(4)
     }
   }
