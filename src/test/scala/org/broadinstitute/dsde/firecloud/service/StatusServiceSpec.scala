@@ -1,19 +1,16 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, HttpAgoraDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpAgoraDAO
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.mock.MockUtils.authHeader
-import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
 import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, SystemStatus}
-import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impSystemStatus
 import org.broadinstitute.dsde.firecloud.webservice.StatusApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpError
 import org.mockserver.model.HttpRequest.request
-import spray.http.StatusCodes.{BadRequest, InternalServerError, NotFound, NotImplemented, OK}
+import spray.http.StatusCodes.{InternalServerError, OK}
 import spray.routing.HttpService
 import spray.httpx.SprayJsonSupport._
 
