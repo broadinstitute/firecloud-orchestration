@@ -15,7 +15,7 @@ object Dependencies {
     "com.getsentry.raven" % "raven-logback" % "7.8.6",
     "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
     "org.broadinstitute.dsde.vault" %%  "vault-common"  % "0.1-19-ca8b927",
-    "org.broadinstitute.dsde" %%  "rawls-model"  % "0.1-518a712-SNAP"
+    "org.broadinstitute.dsde" %%  "rawls-model"  % "0.1-9847bee-SNAP"
       exclude("com.typesafe.scala-logging", "scala-logging_2.11"),
     "io.spray"            %%  "spray-can"     % sprayV,
     "io.spray"            %%  "spray-routing" % sprayV,

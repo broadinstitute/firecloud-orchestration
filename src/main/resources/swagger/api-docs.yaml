@@ -4133,13 +4133,14 @@ definitions:
       - namespace
       - name
       - workspaceId
+      - authorizationDomain
       - bucketName
       - createdDate
       - lastModified
       - createdBy
       - attributes
       - accessLevels
-      - realmACLs
+      - authDomainACLs
       - isLocked
     type: object
     properties:
@@ -4149,7 +4150,7 @@ definitions:
       name:
         type: string
         description: The name of the workspace
-      realm:
+      authorizationDomain:
         $ref: '#/definitions/ManagedGroupRef'
         description: An optional realm for the workspace
       workspaceId:
@@ -4175,7 +4176,7 @@ definitions:
       accessLevels:
         type: object
         description: Map[String, RawlsGroupRef]
-      realmACLs:
+      authDomainACLs:
          type: object
          description: Map[String, RawlsGroupRef]
       isLocked:
@@ -4336,9 +4337,9 @@ definitions:
         additionalProperties:
           type: string
         description: Map of attributes
-      isProtected:
-        type: boolean
-        description: Whether or not the data should be restricted to dbGaP-enabled users.  Optional, default false.
+      authorizationDomain:
+        $ref: '#/definitions/ManagedGroupRef'
+        description: The Authorization Domain to restrict the data to.  Optional, default None.
 
   WorkspaceTag:
     required:

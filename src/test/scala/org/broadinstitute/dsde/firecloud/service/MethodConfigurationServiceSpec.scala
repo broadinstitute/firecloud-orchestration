@@ -28,7 +28,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
     "my_workspace_creator",
     Map(), //attributes
     Map(), //acls
-    Map(), //realm acls
+    Map(), //authdomain acls
     false //locked
   )
 

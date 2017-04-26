@@ -23,7 +23,7 @@ class MockRawlsDAO  extends RawlsDAO {
   private val rawlsWorkspaceWithAttributes = Workspace(
     "attributes",
     "att",
-    None, //realm
+    None, //authdomain
     "id",
     "", //bucketname
     DateTime.now(),
@@ -40,14 +40,14 @@ class MockRawlsDAO  extends RawlsDAO {
         AttributeBoolean(true)
       ))),
     Map(), //acls
-    Map(), //realm acls
+    Map(), //authdomain acls
     false
   )
 
   private val publishedRawlsWorkspaceWithAttributes = Workspace(
     "attributes",
     "att",
-    None, //realm
+    None, //authdomain
     "id",
     "", //bucketname
     DateTime.now(),
@@ -66,7 +66,7 @@ class MockRawlsDAO  extends RawlsDAO {
         AttributeBoolean(true)
       ))),
     Map(), //acls
-    Map(), //realm acls,
+    Map(), //authdomain acls,
     false
   )
 
@@ -77,7 +77,7 @@ class MockRawlsDAO  extends RawlsDAO {
     new Workspace(
       namespace = "namespace",
       name = "name",
-      realm = None,
+      authorizationDomain = None,
       workspaceId = "workspaceId",
       bucketName = "bucketName",
       createdDate = DateTime.now(),
@@ -85,7 +85,7 @@ class MockRawlsDAO  extends RawlsDAO {
       createdBy = "createdBy",
       attributes = Map(),
       accessLevels = Map(),
-      realmACLs = Map(),
+      authDomainACLs = Map(),
       isLocked = true
     )
   }

@@ -5,12 +5,12 @@ import org.scalatest.{Assertions, FreeSpec}
 
 class WorkspaceModelSpec extends FreeSpec with Assertions {
 
-  val wc = WorkspaceCreate("namespace", "name", Map())
+  val wc = WorkspaceCreate("namespace", "name", None, Map())
 
   "Workspace Model" - {
 
     "Workspace Create is not protected" in {
-      assert(!wc.isProtected.getOrElse(false))
+      assert(!wc.authorizationDomain.isDefined)
     }
 
     "Workspace Clone is unpublished" in {
@@ -18,13 +18,13 @@ class WorkspaceModelSpec extends FreeSpec with Assertions {
     }
 
     "Workspace with published attribute is unpublished when cloned" in {
-      val publishedWC = WorkspaceCreate("namespace", "name", Map(AttributeName("library","published") -> AttributeBoolean(true)))
+      val publishedWC = WorkspaceCreate("namespace", "name", None, Map(AttributeName("library","published") -> AttributeBoolean(true)))
       assert(!isPublished(WorkspaceCreate.toWorkspaceClone(publishedWC)))
     }
 
-    "Workspace Request has no realm" in {
+    "Workspace Request has no authorization domain" in {
       val request = WorkspaceCreate.toWorkspaceRequest(wc)
-      assert(request.realm.isEmpty)
+      assert(request.authorizationDomain.isEmpty)
     }
 
   }

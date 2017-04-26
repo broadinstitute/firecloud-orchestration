@@ -36,7 +36,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "my_workspace_creator",
     Map(), //attributes
     Map(), //acls
-    Map(), //realm acls
+    Map(), //authdomain acls
     false //locked
   )
 
@@ -65,12 +65,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
 
-  val nihProtectedRealm = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
+  val nihProtectedAuthDomain = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
 
   val protectedRawlsWorkspace = Workspace(
     "attributes",
     "att",
-    Some(nihProtectedRealm), //realm
+    Some(nihProtectedAuthDomain), //authdomain
     "id",
     "", //bucketname
     DateTime.now(),
@@ -78,14 +78,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "mb",
     Map(), //attrs
     Map(), //acls
-    Map(), //realm acls
+    Map(), //authdomain acls
     false
   )
 
-  val realmRawlsWorkspace = Workspace(
+  val authDomainRawlsWorkspace = Workspace(
     "attributes",
     "att",
-    Some(ManagedGroupRef(RawlsGroupName("secret_realm"))), //realm
+    Some(ManagedGroupRef(RawlsGroupName("secret_realm"))), //authdomain
     "id",
     "", //bucketname
     DateTime.now(),
@@ -93,14 +93,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "mb",
     Map(), //attrs
     Map(), //acls
-    Map(), //realm acls
+    Map(), //authdomain acls
     false
   )
 
-  val nonRealmedRawlsWorkspace = Workspace(
+  val nonAuthDomainRawlsWorkspace = Workspace(
     "attributes",
     "att",
-    None, //realm
+    None, //authdomain
     "id",
     "", //bucketname
     DateTime.now(),
@@ -108,13 +108,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "mb",
     Map(), //attrs
     Map(), //acls
-    Map(), //realm acls
+    Map(), //authdomain acls
     false
   )
 
   val protectedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, protectedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
-  val realmRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, realmRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
-  val nonRealmedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, nonRealmedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, authDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, nonAuthDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
 
   var rawlsServer: ClientAndServer = _
 
@@ -143,14 +143,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * NOTE: This does NOT contain any orchestration business logic! It only creates the request/response objects and
     * configures the stub Rawls server.
     *
-    * @param namespace namespace for the new workspace
-    * @param name      name for the new workspace
-    * @param realm     (optional) realm for the new workspace
+    * @param namespace  namespace for the new workspace
+    * @param name       name for the new workspace
+    * @param authDomain (optional) authorization domain for the new workspace
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
-  def stubRawlsCreateWorkspace(namespace: String, name: String, realm: Option[ManagedGroupRef] = None): (WorkspaceRequest, Workspace) = {
-    val rawlsRequest = WorkspaceRequest(namespace, name, realm, Map())
-    val rawlsResponse = Workspace(namespace, name, realm, "foo", "bar", DateTime.now(), DateTime.now(), "bob", Map(), Map(), Map())
+  def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Option[ManagedGroupRef] = None): (WorkspaceRequest, Workspace) = {
+    val rawlsRequest = WorkspaceRequest(namespace, name, authDomain, Map())
+    val rawlsResponse = Workspace(namespace, name, authDomain, "foo", "bar", DateTime.now(), DateTime.now(), "bob", Map(), Map(), Map())
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -163,15 +163,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     *
     * @param namespace  namespace for the new cloned workspace
     * @param name       name for the new cloned workspace
-    * @param realm      (optional) realm for the new cloned workspace
+    * @param authDomain (optional) authorization domain for the new cloned workspace
     * @param attributes (optional) attributes expected to be given to rawls for the new cloned workspace
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
-  def stubRawlsCloneWorkspace(namespace: String, name: String, realm: Option[ManagedGroupRef] = None, attributes: Attributable.AttributeMap = Map()): (WorkspaceRequest, Workspace) = {
+  def stubRawlsCloneWorkspace(namespace: String, name: String, authDomain: Option[ManagedGroupRef] = None, attributes: Attributable.AttributeMap = Map()): (WorkspaceRequest, Workspace) = {
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
-    val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, realm, attributes + published + discoverable)
-    val rawlsResponse = Workspace(namespace, name, realm, "foo", "bar", DateTime.now(), DateTime.now(), "bob", attributes, Map(), Map())
+    val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, authDomain, attributes + published + discoverable)
+    val rawlsResponse = Workspace(namespace, name, authDomain, "foo", "bar", DateTime.now(), DateTime.now(), "bob", attributes, Map(), Map())
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -341,38 +341,25 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "Passthrough tests on the GET /workspaces/%s/%s path" - {
-      s"OK status is returned for HTTP GET (dbGap workspace)" in {
-        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(protectedRawlsWorkspaceResponse.toJson.compactPrint))
+      s"OK status is returned for HTTP GET (workspace in authdomain)" in {
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(authDomainRawlsWorkspaceResponse.toJson.compactPrint))
         Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
-        }
-      }
-
-      s"OK status is returned for HTTP GET (other realm workspace)" in {
-        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(realmRawlsWorkspaceResponse.toJson.compactPrint))
-        Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-          status should equal(OK)
-          //generally this is not how we want to treat the response
-          //it should already be returned as JSON but for some strange reason it's being returned as text/plain
-          //here we take the plain text and force it to be json so we can get the test to work
-          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
-          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.realm.isDefined)
+          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.isDefined)
         }
       }
 
       s"OK status is returned for HTTP GET (non-realmed workspace)" in {
-        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(nonRealmedRawlsWorkspaceResponse.toJson.compactPrint))
+        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(nonAuthDomainRawlsWorkspaceResponse.toJson.compactPrint))
         Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.isProtected)
-          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.realm.isDefined)
+          assert(!entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.isDefined)
         }
       }
 
@@ -482,7 +469,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "POST on /workspaces with 'not protected' workspace request sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
       val (rawlsRequest, rawlsResponse) = stubRawlsCreateWorkspace("namespace", "name")
 
-      val orchestrationRequest = WorkspaceCreate("namespace", "name", Map())
+      val orchestrationRequest = WorkspaceCreate("namespace", "name", None, Map())
       Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
@@ -491,10 +478,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "POST on /workspaces with 'protected' workspace request sends NIH-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (rawlsRequest, rawlsResponse) = stubRawlsCreateWorkspace("namespace", "name", realm = Option(nihProtectedRealm))
+      val (rawlsRequest, rawlsResponse) = stubRawlsCreateWorkspace("namespace", "name", authDomain = Option(nihProtectedAuthDomain))
 
-      val isProtected: Option[Boolean] = Option(true)
-      val orchestrationRequest = WorkspaceCreate("namespace", "name", Map(), isProtected)
+      val orchestrationRequest = WorkspaceCreate("namespace", "name", Option(nihProtectedAuthDomain), Map())
       Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
@@ -511,7 +497,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "POST on /workspaces/.../.../clone for 'not protected' workspace sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
       val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name")
 
-      val orchestrationRequest: WorkspaceCreate = WorkspaceCreate("namespace", "name", Map())
+      val orchestrationRequest: WorkspaceCreate = WorkspaceCreate("namespace", "name", None, Map())
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
@@ -520,10 +506,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "POST on /workspaces/.../.../clone for 'protected' workspace sends NIH-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name", realm = Option(nihProtectedRealm))
+      val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name", authDomain = Option(nihProtectedAuthDomain))
 
-      val isProtected: Option[Boolean] = Option(true)
-      val orchestrationRequest: WorkspaceCreate = WorkspaceCreate("namespace", "name", Map(), isProtected)
+      val orchestrationRequest: WorkspaceCreate = WorkspaceCreate("namespace", "name", Option(nihProtectedAuthDomain), Map())
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
@@ -537,7 +522,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       val published = AttributeName("library", "published") -> AttributeBoolean(true)
       val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
-      val orchestrationRequest = WorkspaceCreate("namespace", "name", Map(published, discoverable))
+      val orchestrationRequest = WorkspaceCreate("namespace", "name", None, Map(published, discoverable))
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)

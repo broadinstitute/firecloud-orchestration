@@ -37,7 +37,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
   val testWorkspace = new Workspace(workspaceId=testUUID.toString,
     namespace="testWorkspaceNamespace",
     name="testWorkspaceName",
-    realm=None,
+    authorizationDomain=None,
     isLocked=false,
     createdBy="createdBy",
     createdDate=DateTime.now(),
@@ -45,7 +45,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     attributes=Map.empty,
     bucketName="bucketName",
     accessLevels=Map.empty,
-    realmACLs=Map())
+    authDomainACLs=Map())
 
   val testLibraryMetadata =
     """
