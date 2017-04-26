@@ -39,9 +39,9 @@ class StatusService (val app: Application)
   def collectStatusInfo(): Future[PerRequestMessage] = {
     val subsystemExceptionHandler: PartialFunction[Any, SubsystemStatus] = {
       case fcExceptionWithError: FireCloudExceptionWithErrorReport => SubsystemStatus(false, Some(List(fcExceptionWithError.errorReport.message)))
-      case fcException: FireCloudException => SubsystemStatus(false, Some(List(fcException.toString)))
+      case fcException: FireCloudException => SubsystemStatus(false, Some(List(fcException.getMessage)))
       case e: Exception => SubsystemStatus(false, Some(List(e.getMessage)))
-      case _: Any => SubsystemStatus(false)
+      case x: Any => SubsystemStatus(false, Some(List(x.toString)))
     }
 
     for {
