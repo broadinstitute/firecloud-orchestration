@@ -2242,6 +2242,8 @@ paths:
       responses:
       200:
         description: Success
+      403:
+        description: Insufficient permisions to send notification on this workspace
       parameters:
         - in: path
           description: workspace namespace
