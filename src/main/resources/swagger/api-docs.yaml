@@ -4152,7 +4152,7 @@ definitions:
         description: The name of the workspace
       authorizationDomain:
         $ref: '#/definitions/ManagedGroupRef'
-        description: An optional realm for the workspace
+        description: An optional authorization domain for the workspace
       workspaceId:
         type: string
         description: A UUID associated with the workspace
