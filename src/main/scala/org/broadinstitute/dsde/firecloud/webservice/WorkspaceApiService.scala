@@ -223,7 +223,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             requireUserInfo() { _ =>
               passthrough(workspacePath + "/sendChangeNotification", HttpMethods.POST)
             }
-          }
+          } ~
           path("clone") {
             post {
               requireUserInfo() { _ =>
