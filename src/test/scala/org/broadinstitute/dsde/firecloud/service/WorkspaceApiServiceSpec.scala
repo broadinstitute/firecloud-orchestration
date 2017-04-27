@@ -302,6 +302,17 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+    "Passthrough tests on the /workspaces/segment/segment/sendChangeNotification path" - {
+      "MethodNotAllowed error is returned for HTTP GET, PATCH, PUT, DELETE methods" in {
+        List(HttpMethods.GET, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
+          method =>
+          new RequestBuilder(method)("/api/workspaces/namespace/name/sendChangeNotification") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(MethodNotAllowed)
+          }
+        }
+      }
+    }
+
     "Passthrough tests on the /workspaces/segment/segment/bucketUsage path" - {
       List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
         s"MethodNotAllowed error is returned for $method" in {
