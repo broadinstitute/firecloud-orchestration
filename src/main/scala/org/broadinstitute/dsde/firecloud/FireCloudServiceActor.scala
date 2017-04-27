@@ -25,6 +25,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with StorageApiService
   with WorkspaceApiService
   with NotificationsApiService
+  with StatusApiService
   {
 
   implicit val system = context.system
@@ -33,7 +34,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     def actorRefFactory = context
   }
 
-  val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora.authUrl)
+  val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora)
   val rawlsDAO:RawlsDAO = new HttpRawlsDAO
   val searchDAO:SearchDAO = new ElasticSearchDAO(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.indexName)
   val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
@@ -50,17 +51,17 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
+  val statusServiceConstructor: () => StatusService = StatusService.constructor(app)
 
   // routes under /api
 
   val methodsService = new MethodsService with ActorRefFactoryContext
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
-  val statusService = new StatusService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
-  val routes = methodsService.routes ~ profileRoutes ~
+  val apiRoutes = methodsService.routes ~ profileRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    statusService.routes ~ nihRoutes ~ billingService.routes
+    apiStatusRoutes ~ nihRoutes ~ billingService.routes
 
   val userService = new UserService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
@@ -106,8 +107,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         userService.routes ~
         workspaceRoutes ~
         notificationsRoutes ~
+        publicStatusRoutes ~
         pathPrefix("api") {
-          routes
+          apiRoutes
         } ~
         pathPrefix("cookie-authed") {
           // insecure cookie-authed routes

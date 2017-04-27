@@ -13,7 +13,7 @@ import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWit
 import org.joda.time.DateTime
 import spray.client.pipelining._
 import spray.http.StatusCodes._
-import spray.http.{HttpResponse, OAuth2BearerToken}
+import spray.http.{HttpResponse, OAuth2BearerToken, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
@@ -147,5 +147,16 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   override def patchCatalog(ns: String, name: String, catalogUpdates: Seq[WorkspaceCatalog])(implicit userToken: WithAccessToken): Future[WorkspaceCatalogUpdateResponseList] =
     authedRequestToObject[WorkspaceCatalogUpdateResponseList](Patch(workspaceCatalogUrl(ns, name), catalogUpdates), true)
+
+  override def status: Future[SubsystemStatus] = {
+    val rawlsStatus = unAuthedRequestToObject[RawlsStatus](Get(Uri(FireCloudConfig.Rawls.baseUrl).withPath(Uri.Path("/version"))))
+
+    rawlsStatus map { rawlsStatus =>
+      rawlsStatus.version match {
+        case Some(version) => SubsystemStatus(true)
+        case _ => SubsystemStatus(false)
+      }
+    }
+  }
 
 }

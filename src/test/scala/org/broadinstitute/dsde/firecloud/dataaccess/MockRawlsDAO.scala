@@ -186,4 +186,6 @@ class MockRawlsDAO  extends RawlsDAO {
     val responses = updates.map(cat => WorkspaceCatalogResponse(cat.email.substring(0, cat.email.indexOf("@"))+"id", cat.catalog))
     Future.successful(WorkspaceCatalogUpdateResponseList(responses, Seq.empty))
   }
+
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
 }

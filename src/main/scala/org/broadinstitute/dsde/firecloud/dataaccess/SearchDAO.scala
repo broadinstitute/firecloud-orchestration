@@ -3,10 +3,17 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
 import scala.concurrent.Future
 
-trait SearchDAO extends LazyLogging {
+object SearchDAO {
+  lazy val serviceName = "Search"
+}
+
+trait SearchDAO extends LazyLogging with ReportsSubsystemStatus {
+
+  implicit val errorReportSource = ErrorReportSource(RawlsDAO.serviceName)
 
   def initIndex(): Unit
   def recreateIndex(): Unit

@@ -2,8 +2,9 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.util.NoSuchElementException
 
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, Profile, ProfileWrapper, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, Profile, ProfileWrapper, SubsystemStatus, UserInfo}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Success, Try}
@@ -86,5 +87,7 @@ class MockThurloeDAO extends ThurloeDAO {
 
     Future.successful(userValuesForKey)
   }
+
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
 
 }

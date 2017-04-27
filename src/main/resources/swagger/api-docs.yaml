@@ -2679,6 +2679,24 @@ paths:
           description: Success
       security: []
 
+  /status:
+    get:
+      operationId: status
+      tags:
+        - Status
+      summary: |
+        An orchestrated status check for underlying systems: Agora, Thurloe, Elasticsearch, Rawls
+      responses:
+        200:
+          description: All systems OK.
+          schema:
+            $ref: '#/definitions/SystemStatus'
+        500:
+          description: Problem with one or more systems. See response for details.
+          schema:
+            $ref: '#/definitions/SystemStatus'
+      security: []
+
   /handle-oauth-code:
     post:
       tags:
@@ -4055,6 +4073,32 @@ definitions:
           $ref: '#/definitions/SubmissionValidationEntityInputs'
       request:
         $ref: '#/definitions/SubmissionRequest'
+
+  SystemStatus:
+    description: report status of systems Orchestration calls out to
+    type: object
+    required:
+      - ok
+      - systems
+    properties:
+      ok:
+        type: boolean
+        description: whether any system(s) need attention
+
+      systems:
+        type: object
+        description: Map[String, SubsystemStatus]
+
+  SubsystemStatus:
+    description: specifics for each subsystem
+    properties:
+      ok:
+        type: boolean
+        description: whether this system needs attention
+      messages:
+        type: array
+        items:
+          type: string
 
   SubmissionValidationValue:
     description: result of an expression parse for one of the inputs
