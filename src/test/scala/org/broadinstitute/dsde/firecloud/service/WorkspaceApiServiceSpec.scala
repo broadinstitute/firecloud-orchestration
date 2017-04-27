@@ -50,6 +50,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val tsvAttributesExportPath = workspacesRoot + "/%s/%s/exportAttributesTSV".format(workspace.namespace, workspace.name)
   private final val batchUpsertPath = s"${workspacesRoot}/${workspace.namespace}/${workspace.name}/entities/batchUpsert"
   private final val aclPath = workspacesRoot + "/%s/%s/acl".format(workspace.namespace, workspace.name)
+  private final val sendChangeNotificationPath = workspacesRoot + "/%s/%s/sendChangeNotification".format(workspace.namespace, workspace.name)
   private final val clonePath = workspacesRoot + "/%s/%s/clone".format(workspace.namespace, workspace.name)
   private final val lockPath = workspacesRoot + "/%s/%s/lock".format(workspace.namespace, workspace.name)
   private final val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace, workspace.name)
@@ -422,6 +423,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "OK status is returned for HTTP GET" in {
         stubRawlsService(HttpMethods.GET, aclPath, OK)
         Get(aclPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "Passthrough tests on the /workspaces/%s/%s/sendChangeNotification path" - {
+      "OK status is returned for POST" in {
+        stubRawlsService(HttpMethods.POST, sendChangeNotificationPath, OK)
+        Post(sendChangeNotificationPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
