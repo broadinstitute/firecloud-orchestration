@@ -420,7 +420,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: '#/definitions/ManagedGroupAccess'
+              $ref: '#/definitions/ManagedGroupAccessResponse'
         500:
           description: FireCloud Internal Error
           schema:
@@ -3524,18 +3524,19 @@ definitions:
       usersGroupName:
         type: string
 
-  ManagedGroupAccess:
+  ManagedGroupAccessResponse:
     description: an element of a list of groups a user has access to
     type: object
     required:
       - groupName
-      - accessLevel
+      - accessLevels
     properties:
       groupName:
         type: string
-      accessLevel:
-        type: string
-        enum: ["user", "owner"]
+      accessLevels:
+        type: array
+        items:
+          type: string
 
   ManagedGroupWithMembers:
     description: a group with all of its members
