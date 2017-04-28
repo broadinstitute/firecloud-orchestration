@@ -53,7 +53,7 @@ class SortSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLo
       "finds the correct first result" in {
         val searchResponse = sortBy("library:datasetName", "desc")
         assertResult(IntegrationTestFixtures.datasetTuples.size) {searchResponse.total}
-        validateFirstResult("library:datasetName", "testing123", searchResponse)
+        validateFirstResult("library:datasetName", "ZZZ <encodingtest>&foo", searchResponse)
       }
     }
     "sort by datasetName with no sort order" - {
