@@ -25,14 +25,14 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
   def respondWithJSON = respondWithMediaType(`application/json`)
 
   def passthrough(unencodedPath: String, methods: HttpMethod*) = methods map { inMethod =>
-    generateExternalHttpPerRequestForMethod(requestCompression = false, unencodedPath, inMethod)
+    generateExternalHttpPerRequestForMethod(requestCompression = true, unencodedPath, inMethod)
   } reduce (_ ~ _)
 
   def passthrough(requestCompression: Boolean, unencodedPath: String, methods: HttpMethod*) = methods map { inMethod =>
     generateExternalHttpPerRequestForMethod(requestCompression, unencodedPath, inMethod)
   } reduce (_ ~ _)
 
-  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = false) = pathPrefix( separateOnSlashes(ourEndpointPath) ) {
+  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = true) = pathPrefix( separateOnSlashes(ourEndpointPath) ) {
     extract(_.request.method) { httpMethod =>
       unmatchedPath { remaining =>
         parameterMap { params =>
