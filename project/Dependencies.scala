@@ -33,6 +33,7 @@ object Dependencies {
     "com.google.apis" % "google-api-services-compute" % "v1-rev120-1.22.0",
     "com.jason-goodwin"   %% "authentikat-jwt" % "0.4.1",
     "com.sun.mail"         % "javax.mail" % "1.5.6",
+    "com.univocity"        % "univocity-parsers" % "2.4.1",
     "org.ocpsoft.prettytime" % "prettytime" % "4.0.1.Final",
     "org.everit.json"      %  "org.everit.json.schema" % "1.4.1",
     "org.specs2"          %%  "specs2-core"   % "3.7"  % "test",
