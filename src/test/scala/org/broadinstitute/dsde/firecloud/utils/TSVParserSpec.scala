@@ -4,13 +4,6 @@ import org.scalatest.FlatSpec
 import org.broadinstitute.dsde.firecloud.EntityClient
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVLoadFiles, MockTSVStrings}
 
-/**
- * Created with IntelliJ IDEA.
- * User: hussein
- * Date: 07/23/2015
- * Time: 15:57
- */
-
 class TSVParserSpec extends FlatSpec {
   "TSV parser" should "throw an exception when given an empty file to parse" in {
     intercept[RuntimeException] {
@@ -133,6 +126,27 @@ class TSVParserSpec extends FlatSpec {
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
       EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType)
+    }
+  }
+
+  it should "handle quoted values" in {
+    val expected = MockTSVLoadFiles.validQuotedValues
+    assertResult(expected) {
+      TSVParser.parse(MockTSVStrings.quotedValues)
+    }
+  }
+
+  it should "handle quoted values containing tabs" in {
+    val expected = MockTSVLoadFiles.validQuotedValuesWithTabs
+    assertResult(expected) {
+      TSVParser.parse(MockTSVStrings.quotedValuesWithTabs)
+    }
+  }
+
+  it should "handle windows newline separators" in {
+    val expected = MockTSVLoadFiles.validQuotedValues
+    assertResult(expected) {
+      TSVParser.parse(MockTSVStrings.windowsNewline)
     }
   }
 }
