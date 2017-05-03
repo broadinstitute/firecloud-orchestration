@@ -12,7 +12,6 @@
   * Authorization
   * Encryption
   * Audit trails
-- [ ] **Submitter**: If you're adding new libraries, sign us up to security updates for them
 - [ ] Tell the tech lead (TL) that the PR exists if they wants to look at it
 - [ ] Anoint a lead reviewer (LR). **Assign PR to LR**
 * Review cycle:
