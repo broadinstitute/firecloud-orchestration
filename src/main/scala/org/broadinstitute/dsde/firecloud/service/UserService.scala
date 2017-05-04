@@ -48,9 +48,6 @@ object UserService {
   val rawlsRegisterUserPath = "/register/user"
   val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
 
-  val realmsPath = FireCloudConfig.Rawls.authPrefix + "/user/realms"
-  val realmsUrl = FireCloudConfig.Rawls.baseUrl + realmsPath
-
   val rawlsGroupBasePath = FireCloudConfig.Rawls.authPrefix + "/groups"
   val rawlsGroupBaseUrl = FireCloudConfig.Rawls.baseUrl + rawlsGroupBasePath
 
