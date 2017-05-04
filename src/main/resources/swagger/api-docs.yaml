@@ -45,11 +45,11 @@ paths:
         204:
           description: Successfully Created Billing Project in FireCloud and Google
         400:
-          description: FireCloud billing user must be an administrator of the billing account
+          description: FireCloud billing user must be an admin of the billing account
           schema:
             $ref: '#/definitions/ErrorReport'
         403:
-          description: You must be an administrator of the google billing account
+          description: You must be an admin of the google billing account
           schema:
             $ref: '#/definitions/ErrorReport'
         409:
@@ -443,7 +443,7 @@ paths:
           schema:
             $ref: '#/definitions/ManagedGroupWithMembers'
         403:
-          description: You must be an owner of this group in order to view members
+          description: You must be an admin of this group in order to view members
           schema:
             $ref: '#/definitions/ErrorReport'
         404:
@@ -503,7 +503,7 @@ paths:
         204:
           description: Successfully Deleted Group
         403:
-          description: You must be an owner of this group in order to delete it
+          description: You must be an admin of this group in order to delete it
           schema:
             $ref: '#/definitions/ErrorReport'
         404:
@@ -540,7 +540,7 @@ paths:
         204:
           description: Successfully Added User To Group
         403:
-          description: You must be an owner of this group in order to add members
+          description: You must be an admin of this group in order to add members
           schema:
             $ref: '#/definitions/ErrorReport'
         404:
@@ -562,7 +562,7 @@ paths:
           name: role
           required: true
           type: string
-          enum: ["user", "owner"]
+          enum: ["member", "admin"]
         - in: path
           description: email of user or group to add
           name: email
@@ -582,7 +582,7 @@ paths:
         204:
           description: Successfully Removed User From Group
         403:
-          description: You must be an owner of this group in order to remove members
+          description: You must be an admin of this group in order to remove members
           schema:
             $ref: '#/definitions/ErrorReport'
         404:
@@ -604,7 +604,7 @@ paths:
           name: role
           required: true
           type: string
-          enum: ["user", "owner"]
+          enum: ["member", "admin"]
         - in: path
           description: email of user or group to add
           name: email
@@ -3542,20 +3542,20 @@ definitions:
     description: a group with all of its members
     type: object
     required:
-      - usersGroup
-      - ownersGroup
-      - usersEmails
-      - ownersEmails
+      - membersGroup
+      - adminsGroup
+      - membersEmails
+      - adminsEmails
     properties:
-      usersGroup:
+      membersGroup:
         $ref: '#/definitions/RawlsGroupShort'
-      ownersGroup:
+      adminsGroup:
         $ref: '#/definitions/RawlsGroupShort'
-      usersEmails:
+      membersEmails:
         type: array
         items:
           type: string
-      ownersEmails:
+      adminsEmails:
         type: array
         items:
           type: string
