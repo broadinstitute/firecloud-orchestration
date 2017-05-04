@@ -125,8 +125,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
 
             // this is technically vulnerable to a race condition in which the workspace attributes have changed
             // between the time we retrieved them and here, where we update them.
-            val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs ++
-              Map(AttributeName(AttributeName.libraryNamespace, "invalidDataset") -> AttributeBoolean(invalid)),
+            val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
               k => k.namespace == AttributeName.libraryNamespace && !skipAttributes.contains(k))
             internalPatchWorkspaceAndRepublish(ns, name, allOperations, published) map (RequestComplete(_))
           }
@@ -148,17 +147,6 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
-  private def isInvalidWorkspace(workspace: Workspace): (Boolean, Option[String]) = {
-    val invalidMetadata = workspace.attributes.
-      get(AttributeName(AttributeName.libraryNamespace, "invalidDataset"))
-    if (!invalidMetadata.isDefined || invalidMetadata == Some(AttributeBoolean(true))) {
-      // recheck for required attributes
-      // if the invalidMetadata was not set and the workspace is invalid, should we persist it here?
-      isInvalid(workspace.attributes.toJson.compactPrint)
-    }
-    else (false, None)
-  }
-
   // should only be used to change published state
   def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
@@ -168,7 +156,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
       else {
         val (invalid, errorMessage) = if (value)
           // only need to check for valid attributes if we are actually publishing
-          isInvalidWorkspace(workspaceResponse.workspace)
+          isInvalid(workspaceResponse.workspace.attributes.toJson.compactPrint)
         else (false, None)
         if (invalid) {
           Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
