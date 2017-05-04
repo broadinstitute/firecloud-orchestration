@@ -2237,6 +2237,35 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/sendChangeNotification:
+    post:
+      responses:
+      200:
+        description: Success
+      403:
+        description: Insufficient permisions to send notification on this workspace
+      parameters:
+        - in: path
+          description: workspace namespace
+          name: workspaceNamespace
+          required: true
+          type: string
+        - in: path
+          description: workspace name
+          name: workspaceName
+          required: true
+          type: string
+      tags:
+        - Workspaces
+      summary: Sends notifications for change to workspace
+      operationId: changedWorkspaceNotification
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
     get:
       tags:
