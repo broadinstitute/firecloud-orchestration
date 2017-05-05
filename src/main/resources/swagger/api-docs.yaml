@@ -3566,9 +3566,9 @@ definitions:
     description: a reference to a group that can be managed by users
     type: object
     required:
-      - usersGroupName
+      - membersGroupName
     properties:
-      usersGroupName:
+      membersGroupName:
         type: string
 
   ManagedGroupAccessResponse:
@@ -3576,14 +3576,15 @@ definitions:
     type: object
     required:
       - groupName
-      - accessLevels
+      - groupEmail
+      - role
     properties:
       groupName:
         type: string
-      accessLevels:
-        type: array
-        items:
-          type: string
+      groupEmail:
+        type: string
+      role:
+        type: string
 
   ManagedGroupWithMembers:
     description: a group with all of its members
