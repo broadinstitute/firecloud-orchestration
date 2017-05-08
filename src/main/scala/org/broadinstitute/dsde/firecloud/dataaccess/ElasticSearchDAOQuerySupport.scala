@@ -9,6 +9,7 @@ import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, Sea
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.elasticsearch.search.sort.SortOrder
 import org.elasticsearch.search.suggest.completion.{CompletionSuggestion, CompletionSuggestionFuzzyBuilder}
 import spray.json._
@@ -122,12 +123,12 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def createESAutocompleteRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int): SearchRequestBuilder = {
+    val hb = new HighlightBuilder()
+      .field(fieldSuggest).fragmentSize(50)
+      .preTags(HL_START).postTags(HL_END)
+
     createESSearchRequest(client, indexname, qmseq, from, size)
-      .setFetchSource(false)
-      .addHighlightedField(fieldSuggest)
-      .setHighlighterFragmentSize(50)
-      .setHighlighterPreTags(HL_START)
-      .setHighlighterPostTags(HL_END)
+      .setFetchSource(false).highlighter(hb)
   }
 
   def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String]): SearchRequestBuilder = {
