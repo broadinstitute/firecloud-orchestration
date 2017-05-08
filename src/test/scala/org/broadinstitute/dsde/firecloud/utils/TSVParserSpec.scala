@@ -56,6 +56,36 @@ class TSVParserSpec extends FlatSpec {
     }
   }
 
+  it should "handle quoted values" in {
+    val expected = MockTSVLoadFiles.validQuotedValues
+    assertResult(expected) {
+      TSVParser.parse(MockTSVStrings.quotedValues)
+    }
+  }
+
+  it should "handle quoted values containing tabs" in {
+    val expected = MockTSVLoadFiles.validQuotedValuesWithTabs
+    assertResult(expected) {
+      TSVParser.parse(MockTSVStrings.quotedValuesWithTabs)
+    }
+  }
+
+  it should "handle windows newline separators" in {
+    val expected = MockTSVLoadFiles.validQuotedValues
+    assertResult(expected) {
+      TSVParser.parse(MockTSVStrings.windowsNewline)
+    }
+  }
+
+  it should "replace missing fields with empty strings" in {
+    assertResult(MockTSVLoadFiles.missingFields1) {
+      TSVParser.parse(MockTSVStrings.missingFields1)
+    }
+    assertResult(MockTSVLoadFiles.missingFields2) {
+      TSVParser.parse(MockTSVStrings.missingFields2)
+    }
+  }
+
   "EntityClient.backwardsCompatStripIdSuffixes" should "fix up the names of attributes for certain reference types for pairs" in {
     val entityType: String = "pair"
     val requiredAttributes: Map[String, String] = Map("case_sample_id" -> "sample",
@@ -126,27 +156,6 @@ class TSVParserSpec extends FlatSpec {
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
       EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType)
-    }
-  }
-
-  it should "handle quoted values" in {
-    val expected = MockTSVLoadFiles.validQuotedValues
-    assertResult(expected) {
-      TSVParser.parse(MockTSVStrings.quotedValues)
-    }
-  }
-
-  it should "handle quoted values containing tabs" in {
-    val expected = MockTSVLoadFiles.validQuotedValuesWithTabs
-    assertResult(expected) {
-      TSVParser.parse(MockTSVStrings.quotedValuesWithTabs)
-    }
-  }
-
-  it should "handle windows newline separators" in {
-    val expected = MockTSVLoadFiles.validQuotedValues
-    assertResult(expected) {
-      TSVParser.parse(MockTSVStrings.windowsNewline)
     }
   }
 }
