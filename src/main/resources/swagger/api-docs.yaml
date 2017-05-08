@@ -4447,6 +4447,6 @@ definitions:
         description: tag string
         default: "a tag"
       count:
+        type: number
         description: number of usages of the tag across Firecloud
         default: 5
-        type: number
