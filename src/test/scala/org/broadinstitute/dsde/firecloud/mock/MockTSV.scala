@@ -207,6 +207,17 @@ object MockTSVStrings {
     List("baz", "biz").tabbed
   ).windowsNewlineSeparated
 
+  val missingFields1 = List(
+    List("foo", "bar", "baz").tabbed,
+    List("biz", "", "buz").tabbed
+  ).newlineSeparated
+
+  val missingFields2 = List(
+    List("foo", "bar", "baz").tabbed,
+    List("", "", "buz").tabbed,
+    List("abc", "123", "").tabbed
+  ).newlineSeparated
+
 }
 
 object MockTSVLoadFiles {
@@ -229,6 +240,8 @@ object MockTSVLoadFiles {
   val validRemoveAddAttribute = TSVLoadFile("workspace", Seq("a1", "a2"), Seq(Seq("__DELETE__", "v2")))
   val validQuotedValues = TSVLoadFile("foo", Seq("foo", "bar"), Seq(Seq("baz", "biz")))
   val validQuotedValuesWithTabs = TSVLoadFile("foo", Seq("foo", "bar"), Seq(Seq("baz", "this\thas\ttabs")))
+  val missingFields1 = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Seq("biz", "", "buz")))
+  val missingFields2 = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Seq("", "", "buz"), Seq("abc", "123", "")))
 }
 
 object MockTSVFormData {
