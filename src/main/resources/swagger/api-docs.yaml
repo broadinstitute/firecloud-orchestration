@@ -4115,10 +4115,30 @@ definitions:
       ok:
         type: boolean
         description: whether any system(s) need attention
-
+        default: false
       systems:
         type: object
         description: Map[String, SubsystemStatus]
+        default: {
+                   "ok": false,
+                   "systems": {
+                     "Rawls": {
+                       "ok": true
+                     },
+                     "Thurloe": {
+                       "ok": false,
+                       "messages": [
+                         "Thurloe misbehavior message"
+                       ]
+                     },
+                     "Agora": {
+                       "ok": true
+                     },
+                     "Search": {
+                       "ok": true
+                     }
+                   }
+                 }
 
   SubsystemStatus:
     description: specifics for each subsystem
@@ -4425,6 +4445,8 @@ definitions:
       tag:
         type: string
         description: tag string
+        default: "a tag"
       count:
-        type: number
         description: number of usages of the tag across Firecloud
+        default: 5
+        type: number
