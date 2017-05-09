@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.apache.lucene.search.join.ScoreMode
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -12,7 +13,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.elasticsearch.search.sort.SortOrder
 import org.elasticsearch.search.suggest.{SuggestBuilder, SuggestBuilders}
-import org.elasticsearch.search.suggest.completion.{CompletionSuggestion}
+import org.elasticsearch.search.suggest.completion.CompletionSuggestion
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -77,7 +78,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
         }
         boolQuery
           .should(fieldSearch)
-          .should(nestedQuery("parents", matchQuery("parents.label", searchTerm).minimumShouldMatch("3<75%")))
+          .should(nestedQuery("parents", matchQuery("parents.label", searchTerm).minimumShouldMatch("3<75%"), ScoreMode.Avg))
     })
     val groupsQuery = boolQuery
     // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/query-dsl-exists-query.html
