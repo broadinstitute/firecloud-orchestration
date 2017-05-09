@@ -40,6 +40,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     false //locked
   )
 
+  val jobId = "testOp"
+
   // Mock remote endpoints
   private final val workspacesRoot = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   private final val workspacesPath = workspacesRoot + "/%s/%s".format(workspace.namespace, workspace.name)
@@ -60,6 +62,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
   private final val tagAutocompletePath = s"$workspacesRoot/tags"
   private final val executionEngineVersionPath = FireCloudConfig.Rawls.authPrefix + "/version/executionEngine"
+  private final val genomicsOperationsPath = s"$workspacesRoot/genomics/operations/$jobId"
 
   private def catalogPath(ns:String=workspace.namespace, name:String=workspace.name) =
     workspacesRoot + "/%s/%s/catalog".format(ns, name)
@@ -483,6 +486,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           rawlsServer.verify(request().withPath(tagAutocompletePath).withMethod("GET").withQueryStringParameter("q", "tag"))
           status should equal(OK)
           responseAs[String] should equal(tagJsonString)
+        }
+      }
+    }
+
+    "Passthrough tests on the /workspaces/genomics/operations/%s path" - {
+      "OK status is returned for GET" in {
+        stubRawlsService(HttpMethods.GET, genomicsOperationsPath, OK)
+        Get(genomicsOperationsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal (OK)
         }
       }
     }
