@@ -11,7 +11,8 @@ import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.elasticsearch.search.sort.SortOrder
-import org.elasticsearch.search.suggest.completion.{CompletionSuggestion, CompletionSuggestionFuzzyBuilder}
+import org.elasticsearch.search.suggest.{SuggestBuilder, SuggestBuilders}
+import org.elasticsearch.search.suggest.completion.{CompletionSuggestion}
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -206,10 +207,13 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
 
   def populateSuggestions(client: TransportClient, indexName: String, field: String, text: String) : Future[Seq[String]] = {
     val suggestionName = "populateSuggestion"
-    val suggestion = new CompletionSuggestionFuzzyBuilder(suggestionName)
-    suggestion.text(text)
-    suggestion.field(field + ".suggest")
-    val suggestQuery = client.prepareSearch(indexName).addSuggestion(suggestion)
+    val suggestion = new SuggestBuilder()
+        .addSuggestion(suggestionName,
+          SuggestBuilders.completionSuggestion(field + ".suggest")
+            .text(text))
+
+    val suggestQuery = client.prepareSearch(indexName).suggest(suggestion)
+
     logger.debug(s"populate suggestions query: $suggestQuery.toJson")
     val results = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](suggestQuery))
 
