@@ -200,7 +200,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       allResults <- allFutures
     ) yield LibrarySearchResponse(
       criteria,
-      allResults.last.getHits.totalHits().toInt,
+      allResults.last.getHits.getTotalHits().toInt,
       allResults.last.getHits.getHits.toList map { hit => hit.getSourceAsString.parseJson },
       allResults flatMap { aggResp => getAggregationsFromResults(aggResp.getAggregations) }
     )
