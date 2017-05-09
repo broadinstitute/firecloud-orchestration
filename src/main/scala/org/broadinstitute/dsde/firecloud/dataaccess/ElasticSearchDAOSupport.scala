@@ -30,7 +30,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
     new PreBuiltTransportClient(settings).addTransportAddresses(addresses: _*)
   }
 
-  def executeESRequest[T <: ActionRequest[T], U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): U = {
+  def executeESRequest[T <: ActionRequest, U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): U = {
     val tick = System.currentTimeMillis
     val responseTry = Try(req.get())
     val elapsed = System.currentTimeMillis - tick
