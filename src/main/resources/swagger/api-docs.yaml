@@ -4115,11 +4115,11 @@ definitions:
       ok:
         type: boolean
         description: whether any system(s) need attention
-        default: false
+        example: false
       systems:
         type: object
         description: Map[String, SubsystemStatus]
-        default: {
+        example: {
                    "ok": false,
                    "systems": {
                      "Rawls": {
@@ -4445,8 +4445,8 @@ definitions:
       tag:
         type: string
         description: tag string
-        default: "a tag"
+        example: "a tag"
       count:
         type: number
         description: number of usages of the tag across Firecloud
-        default: 5
+        example: 5
