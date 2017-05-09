@@ -58,6 +58,8 @@ class LibraryService (protected val argUserInfo: UserInfo,
   lazy val log = LoggerFactory.getLogger(getClass)
 
   implicit val userInfo = argUserInfo
+  // attributes come in as standard json so we can use json schema for validation. Thus,
+  // we need to use the plain-array deserialization.
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
   override def receive = {
@@ -98,8 +100,6 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
-    // attributes come in as standard json so we can use json schema for validation. Thus,
-    // we need to use the plain-array deserialization.
     // we accept a string here, not a JsValue so we can most granularly handle json parsing
 
     Try(attrsJsonString.parseJson.asJsObject.convertTo[AttributeMap]) match {
@@ -148,26 +148,29 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   // should only be used to change published state
-  def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
+  def setWorkspaceIsPublished(ns: String, name: String, publishArg: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-      val pub = isPublished(workspaceResponse)
-      if (pub == value)
+      val currentPublished = isPublished(workspaceResponse)
+      // only need to validate metadata if we are actually publishing
+      val (invalid, errorMessage) = if (publishArg && !currentPublished)
+        isInvalid(workspaceResponse.workspace.attributes.toJson.compactPrint)
+      else
+        (false, None)
+
+      if (currentPublished == publishArg)
+        // user request would result in no change; just return as noop.
         Future(RequestComplete(NoContent))
+      else if (invalid)
+        // user requested a publish, but metadata is invalid; return error.
+        Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
       else {
-        val (invalid, errorMessage) = if (value)
-          // only need to check for valid attributes if we are actually publishing
-          isInvalid(workspaceResponse.workspace.attributes.toJson.compactPrint)
-        else (false, None)
-        if (invalid) {
-          Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
-        } else {
-          rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(value)) map { ws =>
-            if (value)
-              publishDocument(ws)
-            else
-              removeDocument(ws)
-            RequestComplete(ws)
-          }
+        // user requested a change in published flag, and metadata is valid; make the change.
+        rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(publishArg)) map { ws =>
+          if (publishArg)
+            publishDocument(ws)
+          else
+            removeDocument(ws)
+          RequestComplete(ws)
         }
       }
     }
