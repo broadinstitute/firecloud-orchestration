@@ -71,7 +71,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     log.debug(requestContext.request.toString)
     route(requestContext)
   }
-  val appendTimestamp = mapHttpResponse { response =>
+
+  // So we have the time when users send us error screenshots
+  val appendTimestampOnFailure = mapHttpResponse { response =>
     if (response.status.isFailure) {
       try {
         import spray.json._
@@ -91,7 +93,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   import org.broadinstitute.dsde.firecloud.model.errorReportRejectionHandler
 
   def receive = runRoute(
-    appendTimestamp {
+    appendTimestampOnFailure {
       logRequests {
         entityRoutes ~
         healthService.routes ~
