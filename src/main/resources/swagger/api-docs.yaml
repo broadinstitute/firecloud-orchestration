@@ -4119,26 +4119,17 @@ definitions:
       systems:
         type: object
         description: Map[String, SubsystemStatus]
-        example: {
-                   "ok": false,
-                   "systems": {
-                     "Rawls": {
-                       "ok": true
-                     },
-                     "Thurloe": {
-                       "ok": false,
-                       "messages": [
-                         "Thurloe misbehavior message"
-                       ]
-                     },
-                     "Agora": {
-                       "ok": true
-                     },
-                     "Search": {
-                       "ok": true
-                     }
-                   }
-                 }
+        example:
+          Agora:
+            ok: true
+          Rawls:
+            ok: true
+          Search:
+            ok: true
+          Thurloe:
+            ok: false
+            messages:
+              - "Thurloe misbehavior message"
 
   SubsystemStatus:
     description: specifics for each subsystem
