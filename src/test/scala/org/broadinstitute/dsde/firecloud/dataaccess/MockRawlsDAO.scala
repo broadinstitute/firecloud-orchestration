@@ -70,6 +70,42 @@ class MockRawlsDAO  extends RawlsDAO {
     false
   )
 
+  private val unpublishedRawlsWorkspaceLibraryValid = Workspace(
+    "attributes",
+    "att",
+    None, //realm
+    "id",
+    "", //bucketname
+    DateTime.now(),
+    DateTime.now(),
+    "ansingh",
+    Map(
+      AttributeName.withLibraryNS("datasetName") -> AttributeString("name"),
+      AttributeName.withLibraryNS("datasetVersion") -> AttributeString("v1.0"),
+      AttributeName.withLibraryNS("datasetDescription") -> AttributeString("desc"),
+      AttributeName.withLibraryNS("datasetCustodian") -> AttributeString("cust"),
+      AttributeName.withLibraryNS("datasetDepositor") -> AttributeString("depo"),
+      AttributeName.withLibraryNS("contactEmail") -> AttributeString("name@example.com"),
+      AttributeName.withLibraryNS("datasetOwner") -> AttributeString("owner"),
+      AttributeName.withLibraryNS("institute") -> AttributeValueList(Seq( AttributeString("inst"),AttributeString("it"),AttributeString("ute") )),
+      AttributeName.withLibraryNS("indication") -> AttributeString("indic"),
+      AttributeName.withLibraryNS("numSubjects") -> AttributeNumber(123),
+      AttributeName.withLibraryNS("projectName") -> AttributeString("proj"),
+      AttributeName.withLibraryNS("datatype") -> AttributeValueList(Seq( AttributeString("data"),AttributeString("type") )),
+      AttributeName.withLibraryNS("dataCategory") -> AttributeValueList(Seq( AttributeString("data"),AttributeString("category") )),
+      AttributeName.withLibraryNS("dataUseRestriction") -> AttributeString("dur"),
+      AttributeName.withLibraryNS("studyDesign") -> AttributeString("study"),
+      AttributeName.withLibraryNS("cellType") -> AttributeString("cell"),
+      AttributeName.withLibraryNS("requiresExternalApproval") -> AttributeBoolean(false),
+      AttributeName.withLibraryNS("useLimitationOption") -> AttributeString("orsp"),
+      AttributeName.withLibraryNS("technology") -> AttributeValueList(Seq( AttributeString("is an optional"),AttributeString("array attribute") )),
+      AttributeName.withLibraryNS("orsp") -> AttributeString("some orsp")
+    ),
+    Map(), //acls
+    Map(), //realm acls,
+    false
+  )
+
   val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
   val publishedRawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
 
@@ -136,6 +172,7 @@ class MockRawlsDAO  extends RawlsDAO {
       case "publishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "unpublishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, catalog=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "publishedowner" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "libraryValid" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, unpublishedRawlsWorkspaceLibraryValid, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case _ => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
     }
   }

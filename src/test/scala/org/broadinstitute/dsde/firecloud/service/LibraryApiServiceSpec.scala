@@ -68,6 +68,24 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
       |}
     """.stripMargin
 
+  val incompleteMetadata =
+    """
+      |{
+      |  "userAttributeOne" : "one",
+      |  "userAttributeTwo" : "two",
+      |  "library:dataCategory" : ["data","category"],
+      |  "library:dataUseRestriction" : "dur",
+      |  "library:studyDesign" : "study",
+      |  "library:cellType" : "cell",
+      |  "library:requiresExternalApproval" : false,
+      |  "library:useLimitationOption" : "orsp",
+      |  "library:technology" : ["is an optional","array attribute"],
+      |  "library:orsp" : "some orsp",
+      |  "_discoverableByGroups" : ["Group1","Group2"]
+      |}
+    """.stripMargin
+
+
   override def beforeAll(): Unit = {
     consentServer = startClientAndServer(consentServerPort)
 
@@ -118,6 +136,35 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
       }
     }
 
+    "when saving metadata" - {
+      "complete data can be saved for an unpublished workspace" in {
+          val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
+          new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(OK)
+          }
+        }
+      "incomplete data can be saved for an unpublished workspace" in {
+        val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "complete data can be saved for a published workspace" in {
+        val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "cannot save incomplete data save if already published dataset" in {
+        val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+    }
+
     "when calling publish" - {
       "POST on " + publishedPath() - {
         "should return No Content for already published workspace " in {
@@ -125,10 +172,18 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
             status should equal(NoContent)
           }
         }
-        "should return OK and invoke indexDocument for unpublished workspace" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        "should return OK and invoke indexDocument for unpublished workspace with valid dataset" in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath("libraryValid")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
+            assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
+          }
+        }
+        "should return BadRequest and not invoke indexDocument for unpublished workspace with invalid dataset" in {
+          new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+            status should equal(BadRequest)
+            System.out.println(response)
+            assert(!this.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
             assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
           }
         }

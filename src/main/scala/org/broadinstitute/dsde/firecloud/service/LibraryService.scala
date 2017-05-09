@@ -58,6 +58,9 @@ class LibraryService (protected val argUserInfo: UserInfo,
   lazy val log = LoggerFactory.getLogger(getClass)
 
   implicit val userInfo = argUserInfo
+  // attributes come in as standard json so we can use json schema for validation. Thus,
+  // we need to use the plain-array deserialization.
+  implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
   override def receive = {
     case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => updateAttributes(ns, name, attrsJsonString) pipeTo sender
@@ -87,43 +90,45 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
+  private def isInvalid(attrsJsonString: String): (Boolean, Option[String]) = {
+    val validationResult = Try(schemaValidate(attrsJsonString))
+    validationResult match {
+      case Failure(ve: ValidationException) => (true, Some(getSchemaValidationMessages(ve).mkString("; ")))
+      case Failure(e) => (true, Some(e.getMessage))
+      case Success(x) => (false, None)
+    }
+  }
+
   def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
-    // attributes come in as standard json so we can use json schema for validation. Thus,
-    // we need to use the plain-array deserialization.
-    implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
     // we accept a string here, not a JsValue so we can most granularly handle json parsing
 
     Try(attrsJsonString.parseJson.asJsObject.convertTo[AttributeMap]) match {
       case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid json supplied", ex))
       case Failure(e) => Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
       case Success(userAttrs) =>
-        val validationResult = Try( schemaValidate(attrsJsonString) )
-        validationResult match {
-          case Failure(ve: ValidationException) =>
-            val errorMessages = getSchemaValidationMessages(ve)
-            val errorReports = errorMessages map {ErrorReport(_)}
-            Future(RequestCompleteWithErrorReport(BadRequest, errorMessages.mkString("; "), errorReports))
-          case Failure(e) =>
-            Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
-          case Success(x) =>
-            rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-              // because not all editors can update discoverableByGroups, if the request does not include discoverableByGroups
-              // or if it is not being changed, don't include it in the update operations (less restrictive permissions will
-              // be checked by rawls)
-              val modDiscoverability = userAttrs.contains(discoverableWSAttribute) && isDiscoverableDifferent(workspaceResponse, userAttrs)
-              val skipAttributes =
-                if (modDiscoverability)
-                  Seq(publishedFlag)
-                else
-                  // if discoverable by groups is not being changed, then skip it (i.e. don't delete from ws)
-                  Seq(publishedFlag, discoverableWSAttribute)
+        val (invalid, errorMessage): (Boolean, Option[String]) = isInvalid(attrsJsonString)
+        rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
+          val published = isPublished(workspaceResponse)
+          if (published && invalid) {
+            Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
+          } else {
+            // because not all editors can update discoverableByGroups, if the request does not include discoverableByGroups
+            // or if it is not being changed, don't include it in the update operations (less restrictive permissions will
+            // be checked by rawls)
+            val modDiscoverability = userAttrs.contains(discoverableWSAttribute) && isDiscoverableDifferent(workspaceResponse, userAttrs)
+            val skipAttributes =
+              if (modDiscoverability)
+                Seq(publishedFlag)
+              else
+              // if discoverable by groups is not being changed, then skip it (i.e. don't delete from ws)
+                Seq(publishedFlag, discoverableWSAttribute)
 
-              // this is technically vulnerable to a race condition in which the workspace attributes have changed
-              // between the time we retrieved them and here, where we update them.
-              val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
-                k => k.namespace == AttributeName.libraryNamespace && !skipAttributes.contains(k))
-              internalPatchWorkspaceAndRepublish(ns, name, allOperations, isPublished(workspaceResponse)) map (RequestComplete(_))
-            }
+            // this is technically vulnerable to a race condition in which the workspace attributes have changed
+            // between the time we retrieved them and here, where we update them.
+            val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
+              k => k.namespace == AttributeName.libraryNamespace && !skipAttributes.contains(k))
+            internalPatchWorkspaceAndRepublish(ns, name, allOperations, published) map (RequestComplete(_))
+          }
         }
     }
   }
@@ -143,14 +148,25 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   // should only be used to change published state
-  def setWorkspaceIsPublished(ns: String, name: String, value: Boolean): Future[PerRequestMessage] = {
+  def setWorkspaceIsPublished(ns: String, name: String, publishArg: Boolean): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-      val pub = isPublished(workspaceResponse)
-      if (pub == value)
+      val currentPublished = isPublished(workspaceResponse)
+      // only need to validate metadata if we are actually publishing
+      val (invalid, errorMessage) = if (publishArg && !currentPublished)
+        isInvalid(workspaceResponse.workspace.attributes.toJson.compactPrint)
+      else
+        (false, None)
+
+      if (currentPublished == publishArg)
+        // user request would result in no change; just return as noop.
         Future(RequestComplete(NoContent))
+      else if (invalid)
+        // user requested a publish, but metadata is invalid; return error.
+        Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
       else {
-        rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(value)) map { ws =>
-          if (value)
+        // user requested a change in published flag, and metadata is valid; make the change.
+        rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(publishArg)) map { ws =>
+          if (publishArg)
             publishDocument(ws)
           else
             removeDocument(ws)
