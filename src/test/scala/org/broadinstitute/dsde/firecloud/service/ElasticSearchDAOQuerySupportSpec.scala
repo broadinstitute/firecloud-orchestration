@@ -168,7 +168,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
           val arr = getMustArray(jsonRequest)
           val matchAllClause = arr.elements.head.asJsObject
           assertResult(Set("match_all"), "first element of must clause should be a match") {matchAllClause.fields.keySet}
-          assertResult(JsObject(Map.empty[String, JsValue])) {matchAllClause.fields("match_all").asJsObject}
+          assertResult(JsObject(("boost",JsNumber(1.0)))) {matchAllClause.fields("match_all").asJsObject}
           // calling getMustBoolObject will validate it down to that level
           getMustBoolObject(jsonRequest)
         }
@@ -288,7 +288,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
       case Some(a:JsObject) =>
         assertResult(Set("bool"), "query should be an outer bool clause") {a.fields.keySet}
         val outerbool = a.fields("bool").asJsObject
-        assertResult(Set("must"), "outer bool clause should be a must clause") {outerbool.fields.keySet}
+        assert(outerbool.fields.keySet.contains("must"), "outer bool clause should include a must clause")
         val must = outerbool.fields("must")
         must match {
           case arr:JsArray =>
@@ -305,7 +305,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     val searchClause = arr.elements.head.asJsObject
     assertResult(Set("bool"), "first element of text search clause should be a bool") {searchClause.fields.keySet}
     val boolClause = searchClause.fields("bool").asJsObject
-    assertResult(Set("should"), "first element of text search bool clause should be a should") {boolClause.fields.keySet}
+    assert(boolClause.fields.keySet.contains("should"), "first element of text search bool clause should inculde a should")
     val shouldArray = boolClause.fields("should") match {
       case arr:JsArray => arr
       case _ => fail("text search should clause should be an array")
