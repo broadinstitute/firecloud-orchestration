@@ -182,7 +182,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
   // TODO: does an expanded facet properly expand?
 
   def getSearchRequestAsJson(baseQuery:SearchRequestBuilder): JsObject = {
-    baseQuery.internalBuilder().buildAsBytes(XContentType.JSON).toUtf8.parseJson.asJsObject
+    baseQuery.toString.parseJson.asJsObject
   }
   def getFromValue(json:JsObject): Option[Int] = {
     json.fields.get("from") match {
