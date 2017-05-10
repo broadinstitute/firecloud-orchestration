@@ -534,6 +534,35 @@ paths:
             - email
             - profile
 
+  /api/groups/{groupName}/requestAccess:
+      post:
+        responses:
+          200:
+            description: Successfully requested access
+          404:
+            description: Group not found
+            schema:
+              $ref: '#/definitions/ErrorReport'
+          500:
+            description: FireCloud Internal Error
+            schema:
+              $ref: '#/definitions/ErrorReport'
+        parameters:
+          - in: path
+            description: Group name
+            name: groupName
+            required: true
+            type: string
+        tags:
+          - Groups
+        summary: request access to a group
+        operationId: requestAccessToGroup
+        security:
+          - googleoauth:
+              - openid
+              - email
+              - profile
+
   /api/groups/{groupName}/{role}/{email}:
     put:
       responses:

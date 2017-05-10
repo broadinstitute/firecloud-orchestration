@@ -147,6 +147,11 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
               passthrough(UserService.rawlsGroupUrl(groupName), HttpMethods.DELETE)
             }
           } ~
+          path("requestAccess") {
+            post {
+              passthrough(UserService.rawlsGroupUrl(groupName) + "/requestAccess", HttpMethods.POST)
+            }
+          } ~
           path(Segment / Segment) { (role, email) =>
             put {
               passthrough(UserService.rawlsGroupMemberUrl(groupName, role, email), HttpMethods.PUT)
