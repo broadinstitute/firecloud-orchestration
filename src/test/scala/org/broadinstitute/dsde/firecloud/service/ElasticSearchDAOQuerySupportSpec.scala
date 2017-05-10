@@ -267,7 +267,8 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     val parentSearchNested = shouldArray.elements.tail.head.asJsObject
     assertResult(Set("nested"), s"search on parents should be a nested query") {parentSearchNested.fields.keySet}
     val parentSearchNestedQuery = parentSearchNested.fields("nested").asJsObject
-    assertResult(Set("query","path"), "nested parents query should be a query with path") {parentSearchNestedQuery.fields.keySet}
+    assert(parentSearchNestedQuery.fields.keySet.contains("query"), "nested parents query should contain a query")
+    assert(parentSearchNestedQuery.fields.keySet.contains("path"), "nested parents query should  contain a path")
     assertResult("parents", "nested parents query should have a path of 'parents'") {parentSearchNestedQuery.fields("path").asInstanceOf[JsString].value}
     val parentSearchMatch = parentSearchNestedQuery.fields("query").asJsObject
     validateSearchCriteria(parentSearchMatch, expectedTerm, "parents.label", "3<75%")
@@ -279,9 +280,9 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     val search = json.fields("match").asJsObject
     assertResult(Set(expectedField), s"search clause should execute against only $expectedField") {search.fields.keySet}
     val searchCriteria = search.fields(expectedField).asJsObject
-    assertResult(Set("query","type","minimum_should_match"), s"search criteria should have 'query','type','minimum_should_match'") {searchCriteria.fields.keySet}
+    assert(searchCriteria.fields.keySet.contains("query"), s"search criteria should contain 'query'")
+    assert(searchCriteria.fields.keySet.contains("minimum_should_match"), s"search criteria should contain 'minimum_should_match'")
     assertResult(expectedTerm) {searchCriteria.fields("query").asInstanceOf[JsString].value}
-    assertResult("boolean") {searchCriteria.fields("type").asInstanceOf[JsString].value}
     assertResult(expectedMinMatch) {searchCriteria.fields("minimum_should_match").asInstanceOf[JsString].value}
   }
 
