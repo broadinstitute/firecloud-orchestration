@@ -242,12 +242,14 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
 
   def validateGroupTerm(json:JsObject, expectedGroup:Option[String]) = {
     val groupBoolClause = getMustBoolObject(json)
-    val groupbool = groupBoolClause.fields("bool")
+    val groupbool = groupBoolClause.fields("bool").asJsObject
     expectedGroup match {
       case Some(group) =>
-        assertResult(expectedDiscoverableGroup(group), "group criteria should include expected group name") {groupbool}
+        assertDiscoverableGroups(groupbool, Some(group))
+        // assertResult(expectedDiscoverableGroup(group), "group criteria should include expected group name") {groupbool}
       case None =>
-        assertResult(expectedNoDiscoverableGroups, "group criteria should be just the must-not-exists") {groupbool}
+        assertDiscoverableGroups(groupbool, None)
+        // assertResult(expectedNoDiscoverableGroups, "group criteria should be just the must-not-exists") {groupbool}
     }
   }
 
@@ -320,39 +322,28 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     groupBoolClause
   }
 
-  private val expectedNoDiscoverableGroups = """{
-                                               |  "should":{
-                                               |		"bool":{
-                                               |		   "must_not":{
-                                               |			  "exists":{
-                                               |				 "field":"_discoverableByGroups"
-                                               |			  }
-                                               |		   }
-                                               |		}
-                                               |	 }
-                                               |}""".stripMargin.parseJson
-
-  private def expectedDiscoverableGroup(group:String):JsValue = {
-    s"""{
-      |  "should":[
-      |	 {
-      |		"bool":{
-      |		   "must_not":{
-      |			  "exists":{
-      |				 "field":"_discoverableByGroups"
-      |			  }
-      |		   }
-      |		}
-      |	 },
-      |	 {
-      |		"terms":{
-      |		   "_discoverableByGroups":[
-      |			  "$group"
-      |		   ]
-      |		}
-      |	 }
-      |  ]
-      |}""".stripMargin.parseJson
+  private def assertDiscoverableGroups(json:JsObject, expectedGroup: Option[String]) = {
+    val should = json.fields.get("should")
+    should match {
+      case Some(ja:JsArray) =>
+        val expectedLength = if (expectedGroup.isEmpty) 1 else 2
+        assertResult(expectedLength, s"should clause should have $expectedLength item(s)") {ja.elements.length}
+        // don't bother asserting the types and keys below; will throw exception and fail test if
+        // there's a problem.
+        val mustNotField = ja.elements(0).asJsObject
+          .fields("bool").asJsObject
+            .fields("must_not").asInstanceOf[JsArray].elements(0).asJsObject
+              .fields("exists").asJsObject
+                .fields("field")
+        assertResult(ElasticSearch.fieldDiscoverableByGroups) {mustNotField.asInstanceOf[JsString].value}
+        expectedGroup foreach { grp =>
+          val actualGroups = ja.elements(1).asJsObject
+            .fields("terms").asJsObject
+                .fields(ElasticSearch.fieldDiscoverableByGroups)
+          assertResult(Set(JsString(grp))) {actualGroups.asInstanceOf[JsArray].elements.toSet}
+        }
+      case _ => fail("should clause should exist and be a JsArray")
+    }
   }
 
 
