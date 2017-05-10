@@ -1466,6 +1466,27 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/accessInstructions:
+    get:
+      tags:
+        - Workspaces
+      operationId: getWorkspaceAccessInstructions
+      summary: Get workspace access instructions (if any)
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceAccessInstructions'
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/acl:
     get:
       tags:
@@ -4357,6 +4378,20 @@ definitions:
         description: the users or groups who were not found
         items:
           $ref: '#/definitions/WorkspaceACLUpdate'
+
+  WorkspaceAccessInstructions:
+    description: ''
+    required:
+      - authorizationDomain
+      - instructions
+    type: object
+    properties:
+      authorizationDomain:
+        type: string
+        description: The name of the authorization domain with instructions
+      instructions:
+        type: string
+        description: The instructions for applying to the authorization domain
 
   WorkspaceAccessEntry:
     description: ''
