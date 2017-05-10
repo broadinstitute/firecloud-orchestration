@@ -12,6 +12,8 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.8.8.1",
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
+    "org.apache.logging.log4j" % "log4j-api" % "2.8.2", // elasticsearch requires log4j ...
+    "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.8.2", // ... but we redirect log4j to logback.
     "ch.qos.logback" % "logback-classic" % "1.1.3",
     "com.getsentry.raven" % "raven-logback" % "7.8.6",
     "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
