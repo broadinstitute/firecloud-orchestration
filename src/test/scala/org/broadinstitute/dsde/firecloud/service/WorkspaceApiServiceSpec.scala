@@ -51,6 +51,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val batchUpsertPath = s"${workspacesRoot}/${workspace.namespace}/${workspace.name}/entities/batchUpsert"
   private final val aclPath = workspacesRoot + "/%s/%s/acl".format(workspace.namespace, workspace.name)
   private final val sendChangeNotificationPath = workspacesRoot + "/%s/%s/sendChangeNotification".format(workspace.namespace, workspace.name)
+  private final val accessInstructionsPath = workspacesRoot + "/%s/%s/accessInstructions".format(workspace.namespace, workspace.name)
   private final val clonePath = workspacesRoot + "/%s/%s/clone".format(workspace.namespace, workspace.name)
   private final val lockPath = workspacesRoot + "/%s/%s/lock".format(workspace.namespace, workspace.name)
   private final val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace, workspace.name)
@@ -316,6 +317,17 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+    "Passthrough tests on the /workspaces/segment/segment/accessInstructions path" - {
+      "MethodNotAllowed error is returned for HTTP POST, PATCH, PUT, DELETE methods" in {
+        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
+          method =>
+            new RequestBuilder(method)("/api/workspaces/namespace/name/accessInstructions") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
+        }
+      }
+    }
+
     "Passthrough tests on the /workspaces/segment/segment/bucketUsage path" - {
       List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
         s"MethodNotAllowed error is returned for $method" in {
@@ -426,6 +438,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+    "Passthrough tests on the /workspaces/%s/%s/accessInstructions path" - {
+      "OK status is returned for GET" in {
+        stubRawlsService(HttpMethods.GET, accessInstructionsPath, OK)
+        Get(accessInstructionsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
 
     "Passthrough tests on the /workspaces/%s/%s/lock path" - {
       "OK status is returned for PUT" in {

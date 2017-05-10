@@ -537,7 +537,7 @@ paths:
   /api/groups/{groupName}/requestAccess:
       post:
         responses:
-          200:
+          204:
             description: Successfully requested access
           404:
             description: Group not found
