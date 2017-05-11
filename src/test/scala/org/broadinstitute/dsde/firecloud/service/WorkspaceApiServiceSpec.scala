@@ -339,6 +339,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
+    "Passthrough tests on the /workspaces/genomics/operations/%s path" - {
+      List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
+        s"MethodNotAllowed error is returned for $method" in {
+          new RequestBuilder(method)(genomicsOperationsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(MethodNotAllowed)
+          }
+        }
+      }
+    }
   }
 
   "WorkspaceService Passthrough Tests" - {
