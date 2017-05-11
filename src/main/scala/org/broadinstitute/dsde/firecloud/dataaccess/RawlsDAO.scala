@@ -47,6 +47,8 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def isDbGapAuthorized(userInfo: UserInfo): Future[Boolean]
 
+  def isTargetAuthorized(userInfo: UserInfo): Future[Boolean]
+
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
 
   def registerUser(userInfo: UserInfo): Future[Unit]

@@ -49,7 +49,16 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   override def isDbGapAuthorized(userInfo: UserInfo): Future[Boolean] = {
-    userAuthedRequest(Get(RawlsDAO.groupUrl(FireCloudConfig.Nih.rawlsGroupName)))(userInfo) map {
+    userAuthedRequest(Get(RawlsDAO.groupUrl(FireCloudConfig.Nih.dbGapRawlsGroupName)))(userInfo) map {
+      response => response.status match {
+        case OK => true
+        case _ => false
+      }
+    }
+  }
+
+  override def isTargetAuthorized(userInfo: UserInfo): Future[Boolean] = {
+    userAuthedRequest(Get(RawlsDAO.groupUrl(FireCloudConfig.Nih.targetRawlsGroupName)))(userInfo) map {
       response => response.status match {
         case OK => true
         case _ => false

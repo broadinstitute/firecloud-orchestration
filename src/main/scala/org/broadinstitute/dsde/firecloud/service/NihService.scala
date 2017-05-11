@@ -96,11 +96,11 @@ trait NihService extends LazyLogging {
       else RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link.")
     }
 
-    syncWhiteListResult flatMap { _ => profileResponse } recover { case t => RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link", t) }
+    syncWhiteListResult flatMap { _ => profileResponse } recover { case t => RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH linkfoosooooo", t) }
   }
 
-  private def getWhitelist(): Set[String] = {
-    val (bucket, file) = (FireCloudConfig.Nih.whitelistBucket, FireCloudConfig.Nih.whitelistFile)
+  private def getDbGapWhitelist(): Set[String] = {
+    val (bucket, file) = (FireCloudConfig.Nih.whitelistBucket, FireCloudConfig.Nih.dbGapWhitelistFile)
     val whitelist = Source.fromInputStream(googleDao.getBucketObjectAsInputStream(bucket, file))
 
     whitelist.getLines().toSet
@@ -108,12 +108,12 @@ trait NihService extends LazyLogging {
 
   // This syncs the entire whitelist
   def syncWhitelistFull(): Future[PerRequestMessage] = {
-    val whitelist = getWhitelist()
+    val dbGapWhitelist = getDbGapWhitelist()
 
     // The list of users that, according to Thurloe, have active links and are
     // on the dbGap whitelist
     val nihEnabledFireCloudUsers = getCurrentNihUsernameMap(thurloeDao) map { mapping =>
-      mapping.collect { case (fcUser, nihUser) if whitelist contains nihUser => fcUser }.toSeq
+      mapping.collect { case (fcUser, nihUser) if dbGapWhitelist contains nihUser => fcUser }.toSeq
     }
 
     val memberList = nihEnabledFireCloudUsers map { subjectIds => {
@@ -123,7 +123,7 @@ trait NihService extends LazyLogging {
     // The request to rawls to completely overwrite the dbGapAuthorizedUsers group
     // with the list of actively linked users on the whitelist
     val rawlsRequest = memberList flatMap { members =>
-      rawlsDao.adminOverwriteGroupMembership(FireCloudConfig.Nih.rawlsGroupName, members)
+      rawlsDao.adminOverwriteGroupMembership(FireCloudConfig.Nih.dbGapRawlsGroupName, members)
     }
 
     rawlsRequest map { response =>
@@ -134,13 +134,13 @@ trait NihService extends LazyLogging {
 
   // This syncs an individual user with the whitelist, used when NIH linking (dbGap)
   def syncWhitelistUser(subjectId: String, linkedNihUsername: String): Future[PerRequestMessage] = {
-    val whitelist = getWhitelist()
+    val dbGapWhitelist = getDbGapWhitelist()
 
-    val memberList = if(whitelist contains linkedNihUsername) {
+    val memberList = if(dbGapWhitelist contains linkedNihUsername) {
       RawlsGroupMemberList(userSubjectIds = Some(Seq(subjectId)))
     } else throw new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "Error updating NIH link."))
 
-    rawlsDao.adminAddMemberToGroup(FireCloudConfig.Nih.rawlsGroupName, memberList) map { response =>
+    rawlsDao.adminAddMemberToGroup(FireCloudConfig.Nih.dbGapRawlsGroupName, memberList) map { response =>
       if(response) RequestComplete(NoContent)
       else RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link.")
     }

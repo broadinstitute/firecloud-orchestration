@@ -91,8 +91,10 @@ object FireCloudConfig {
   object Nih {
     private val nih = config.getConfig("nih")
     val whitelistBucket = nih.getString("whitelistBucket")
-    val whitelistFile = nih.getString("whitelistFile")
-    val rawlsGroupName = nih.getString("rawlsGroupName")
+    val dbGapWhitelistFile = nih.getString("dbGapWhitelistFile")
+    val targethitelistFile = nih.getString("targetWhitelistFile")
+    val dbGapRawlsGroupName = nih.getString("dbGapRawlsGroupName")
+    val targetRawlsGroupName = nih.getString("targetRawlsGroupName")
   }
 
   object ElasticSearch {
