@@ -1481,7 +1481,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: '#/definitions/WorkspaceAccessInstructions'
+              $ref: '#/definitions/ManagedGroupAccessInstructions'
         404:
           description: Workspace not found
         500:
@@ -2290,10 +2290,10 @@ paths:
   /api/workspaces/{workspaceNamespace}/{workspaceName}/sendChangeNotification:
     post:
       responses:
-      200:
-        description: Success
-      403:
-        description: Insufficient permisions to send notification on this workspace
+        200:
+          description: Success
+        403:
+          description: Insufficient permisions to send notification on this workspace
       parameters:
         - in: path
           description: workspace namespace
@@ -3621,6 +3621,20 @@ definitions:
       usersGroupName:
         type: string
 
+  ManagedGroupAccessInstructions:
+    description: ''
+    required:
+      - groupName
+      - instructions
+    type: object
+    properties:
+      groupName:
+        type: string
+        description: The name of the Group with instructions
+      instructions:
+        type: string
+        description: The instructions for applying to the Group
+
   ManagedGroupAccessResponse:
     description: an element of a list of groups a user has access to
     type: object
@@ -4378,20 +4392,6 @@ definitions:
         description: the users or groups who were not found
         items:
           $ref: '#/definitions/WorkspaceACLUpdate'
-
-  WorkspaceAccessInstructions:
-    description: ''
-    required:
-      - authorizationDomain
-      - instructions
-    type: object
-    properties:
-      authorizationDomain:
-        type: string
-        description: The name of the authorization domain with instructions
-      instructions:
-        type: string
-        description: The instructions for applying to the authorization domain
 
   WorkspaceAccessEntry:
     description: ''
