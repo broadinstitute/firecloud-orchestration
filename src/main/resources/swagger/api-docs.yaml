@@ -2555,6 +2555,8 @@ paths:
       responses:
         200:
           description: Operations info
+        404:
+          description: jobId not found
         500:
           description: Rawls Internal Error
 
