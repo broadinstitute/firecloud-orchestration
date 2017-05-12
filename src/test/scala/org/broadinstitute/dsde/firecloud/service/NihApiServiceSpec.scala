@@ -44,15 +44,14 @@ class NihApiServiceSpec extends ApiServiceSpec {
   it should "return OK when NIH linking with a valid JWT and the user is on the whitelist" in withDefaultApiServices { services =>
     assert(!services.rawlsDao.groups(dbGapAuthorizedUsersGroupName).contains(services.thurloeDao.normalUserId))
     Post("/nih/callback", validJwtOnWhitelist) ~> dummyUserIdHeaders(services.thurloeDao.normalUserId) ~> sealRoute(services.nihRoutes) ~> check {
-      println(response)
       status should equal(OK)
     }
     assert(services.rawlsDao.groups(dbGapAuthorizedUsersGroupName).contains(services.thurloeDao.normalUserId))
   }
 
-  it should "return InternalServerError when NIH linking with a valid JWT and the user is NOT on the whitelist" in withDefaultApiServices { services =>
+  it should "return OK when NIH linking with a valid JWT and the user is NOT on the whitelist" in withDefaultApiServices { services =>
     Post("/nih/callback", validJwtNotOnWhitelist) ~> dummyUserIdHeaders(services.thurloeDao.normalUserId) ~> sealRoute(services.nihRoutes) ~> check {
-      status should equal(InternalServerError)
+      status should equal(OK)
     }
     assert(!services.rawlsDao.groups(dbGapAuthorizedUsersGroupName).contains(services.thurloeDao.normalUserId))
   }
@@ -89,7 +88,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
     Post("/sync_whitelist") ~> sealRoute(services.syncRoute) ~> check {
       status should equal(NoContent)
     }
-    assert(services.rawlsDao.groups(dbGapAuthorizedUsersGroupName).equals(Set(services.thurloeDao.linkedUserId)))
+    assert(services.rawlsDao.groups(dbGapAuthorizedUsersGroupName).contains(services.thurloeDao.linkedUserId))
   }
 
 

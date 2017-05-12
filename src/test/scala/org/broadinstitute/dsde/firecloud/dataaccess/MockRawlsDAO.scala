@@ -18,7 +18,8 @@ import scala.concurrent.Future
   */
 class MockRawlsDAO  extends RawlsDAO {
 
-  var groups: Map[String, Set[String]] = Map("dbGapAuthorizedUsers" -> Set("linked-user", "linked-user-expired-link", "linked-user-no-expire-date", "linked-user-invalid-expire-date"))
+  var groups: Map[String, Set[String]] = Map("dbGapAuthorizedUsers" -> Set("linked-user", "linked-user-expired-link", "linked-user-no-expire-date", "linked-user-invalid-expire-date"),
+    "targetAuthorizedUsers" -> Set("linked-user", "linked-user-expired-link", "linked-user-no-expire-date", "linked-user-invalid-expire-date"))
 
   private val rawlsWorkspaceWithAttributes = Workspace(
     "attributes",
