@@ -57,14 +57,12 @@ trait NihApiService extends HttpService with PerRequestCreator with FireCloudDir
                 // JWT standard uses epoch time for dates, so we'll follow that convention here.
                 val linkExpireTime = DateUtils.nowPlus30Days
 
-                // TODO: DSDEEPB-2512 isDbgapAuthorized should be removed entirely, since /api/nih/status reads it from rawls
-                val isDbgapAuthorized = false
-                val nihLink = NIHLink(linkedNihUsername, linkExpireTime, isDbgapAuthorized)
+                val nihLink = NihLink(linkedNihUsername, linkExpireTime)
 
                 // update this user's dbGaP access in rawls, assuming the user exists in the whitelist
                 // and save the NIH link keys into Thurloe
                 perRequest(requestContext, NihService.props(nihServiceConstructor),
-                  NihService.UpdateNIHLinkAndSyncSelf(userInfo, nihLink))
+                  NihService.UpdateNihLinkAndSyncSelf(userInfo, nihLink))
 
               }
             }

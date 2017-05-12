@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.service.NihWhitelistAccess
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import spray.json.DefaultJsonProtocol._
 
@@ -58,8 +59,7 @@ case class Profile (
     pi: String,
     nonProfitStatus: String,
     linkedNihUsername: Option[String] = None,
-    linkExpireTime: Option[Long] = None,
-    isDbgapAuthorized: Option[Boolean] = None
+    linkExpireTime: Option[Long] = None
   ) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
   require(ProfileValidator.nonEmpty(lastName), "last name must be non-empty")
@@ -100,16 +100,12 @@ object Profile {
       linkExpireTime = mappedKVPs.get("linkExpireTime") match {
         case Some(time) => Some(time.toLong)
         case _ => None
-      },
-      isDbgapAuthorized = mappedKVPs.get("isDbgapAuthorized") match {
-        case Some(auth) => Some(auth.toBoolean)
-        case _ => None
       }
     )
   }
 }
 
-case class NIHLink (linkedNihUsername: String, linkExpireTime: Long, isDbgapAuthorized: Boolean) extends mappedPropVals {
+case class NihLink(linkedNihUsername: String, linkExpireTime: Long) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(linkedNihUsername), "linkedNihUsername must be non-empty")
 }
 
