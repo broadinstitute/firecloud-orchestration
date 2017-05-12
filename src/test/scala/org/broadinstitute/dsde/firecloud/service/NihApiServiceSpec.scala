@@ -11,7 +11,7 @@ import spray.http.StatusCodes._
 import scala.concurrent.ExecutionContext
 
 class NihApiServiceSpec extends ApiServiceSpec {
-  val dbGapAuthorizedUsersGroupName = FireCloudConfig.Nih.rawlsGroupName
+  val dbGapAuthorizedUsersGroupName = FireCloudConfig.Nih.whitelists.filter(_.name.equals("dbGaP")).head.groupToSync
   val validJwtOnWhitelist = JWTWrapper("eyJhbGciOiJIUzI1NiJ9.ZmlyZWNsb3VkLWRldg.NPXbSpTmAOUvJ1HX85TauAARnlMKfqBsPjumCC7zE7s")
   val validJwtNotOnWhitelist = JWTWrapper("eyJhbGciOiJIUzI1NiJ9.bm90LWEtcmVhbC11c2Vy.L6JKlzZ9zp2mvDAbhGKRJIbW99x4cN-UjWJNZuSdnbc")
 
