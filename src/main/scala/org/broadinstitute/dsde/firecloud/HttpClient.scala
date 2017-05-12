@@ -57,7 +57,10 @@ class HttpClient (requestContext: RequestContext) extends Actor
         log.debug("Got response: " + response)
         context.parent ! RequestCompleteWithHeaders(response, response.headers:_*)
       case Failure(error) =>
-        log.error("External request failed", error)
+        // Per docs: "the detail message associated with `cause` is not automatically incorporated
+        // into this exception 's detail message", so add it explicitly
+        val message = "External request failed to " + externalRequest.uri + " (" + error.getMessage + ")"
+        log.error(message, new Exception(message, error))
         context.parent ! RequestCompleteWithErrorReport(InternalServerError, "External request failed: " + error.getMessage, error)
     }
   }
