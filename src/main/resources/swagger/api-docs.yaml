@@ -21,6 +21,7 @@ security:
       - email
       - profile
       - https://www.googleapis.com/auth/devstorage.full_control
+      - https://www.googleapis.com/auth/genomics
 
 securityDefinitions:
   googleoauth:
@@ -33,6 +34,7 @@ securityDefinitions:
       profile: profile authorization
       https://www.googleapis.com/auth/devstorage.full_control: GCS storage
       https://www.googleapis.com/auth/cloud-billing: GCS billing
+      https://www.googleapis.com/auth/genomics: GCS genomics
 
 ##########################################################################################
 ## PATHS
