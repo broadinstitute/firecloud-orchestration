@@ -1,9 +1,8 @@
 package org.broadinstitute.dsde.firecloud
 
 import scala.collection.JavaConverters._
-import java.util.Map.Entry
 
-import com.typesafe.config.{ConfigFactory, ConfigObject, ConfigValue}
+import com.typesafe.config.{ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.service.NihWhitelist
 import spray.http.Uri.{Authority, Host}
 
@@ -95,12 +94,7 @@ object FireCloudConfig {
   object Nih {
     private val nih = config.getConfig("nih")
     val whitelistBucket = nih.getString("whitelistBucket")
-    val dbGapWhitelistFile = "users.txt"
-    val targetWhitelistFile = "target-users.txt"
-    val dbGapRawlsGroupName = "dbGapAuthorizedUsers"
-    val targetRawlsGroupName = "targetAuthorizedUsers"
-
-    val whitelists : Set[NihWhitelist] = {
+    val whitelists: Set[NihWhitelist] = {
       val whitelistConfigs = nih.getConfig("whitelists")
 
       whitelistConfigs.root.asScala.map { case (name, configObject: ConfigObject) =>

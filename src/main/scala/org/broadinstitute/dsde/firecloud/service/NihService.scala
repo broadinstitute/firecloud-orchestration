@@ -20,22 +20,22 @@ import scala.util.{Failure, Success, Try}
 
 
 case class NihStatus(
-  linkedNihUsername: Option[String] = None,
-  whitelistAuthorization: Set[NihWhitelistAccess],
-  linkExpireTime: Option[Long] = None)
+                      linkedNihUsername: Option[String] = None,
+                      whitelistStatuses: Set[NihWhitelistStatus],
+                      linkExpireTime: Option[Long] = None)
 
 case class NihWhitelist(
   name: String,
   groupToSync: String,
   whitelistFile: String)
 
-case class NihWhitelistAccess(name: String, authorized: Boolean)
+case class NihWhitelistStatus(name: String, authorized: Boolean)
 
 object NihStatus {
-  implicit val impNihWhitelistAccess = jsonFormat2(NihWhitelistAccess)
+  implicit val impNihWhitelistAccess = jsonFormat2(NihWhitelistStatus)
   implicit val impNihStatus = jsonFormat3(NihStatus.apply)
 
-  def apply(profile: Profile, whitelistAccess: Set[NihWhitelistAccess]): NihStatus = {
+  def apply(profile: Profile, whitelistAccess: Set[NihWhitelistStatus]): NihStatus = {
     new NihStatus(
       profile.linkedNihUsername,
       whitelistAccess,
@@ -81,7 +81,7 @@ trait NihService extends LazyLogging {
       case Some(profile) =>
         profile.linkedNihUsername match {
           case Some(_) =>
-            Future.sequence(nihWhitelists.map(whitelistDef => rawlsDao.isGroupMember(userInfo, whitelistDef.groupToSync).map(isMember => NihWhitelistAccess(whitelistDef.name, isMember)))).map { whitelistMembership =>
+            Future.sequence(nihWhitelists.map(whitelistDef => rawlsDao.isGroupMember(userInfo, whitelistDef.groupToSync).map(isMember => NihWhitelistStatus(whitelistDef.name, isMember)))).map { whitelistMembership =>
               RequestComplete(NihStatus(profile.copy(linkExpireTime = Option(profile.linkExpireTime.getOrElse(0L))), whitelistMembership))
             }
           case None => Future.successful(RequestComplete(NotFound))
