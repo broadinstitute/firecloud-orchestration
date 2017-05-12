@@ -100,9 +100,9 @@ object FireCloudConfig {
       whitelistConfigs.root.asScala.map { case (name, configObject: ConfigObject) =>
         val config = configObject.toConfig
         val rawlsGroup = config.getString("rawlsGroup")
-        val file = config.getString("file")
+        val fileName = config.getString("fileName")
 
-        NihWhitelist(name, rawlsGroup, file)
+        NihWhitelist(name, rawlsGroup, fileName)
       }
     }.toSet
   }

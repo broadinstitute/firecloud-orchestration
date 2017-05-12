@@ -25,9 +25,9 @@ case class NihStatus(
                       linkExpireTime: Option[Long] = None)
 
 case class NihWhitelist(
-  name: String,
-  groupToSync: String,
-  whitelistFile: String)
+                         name: String,
+                         groupToSync: String,
+                         fileName: String)
 
 case class NihWhitelistStatus(name: String, authorized: Boolean)
 
@@ -91,7 +91,7 @@ trait NihService extends LazyLogging {
   }
 
   private def downloadNihWhitelist(whitelist: NihWhitelist): Set[String] = {
-    val usersList = Source.fromInputStream(googleDao.getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, whitelist.whitelistFile))
+    val usersList = Source.fromInputStream(googleDao.getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, whitelist.fileName))
 
     usersList.getLines().toSet
   }
