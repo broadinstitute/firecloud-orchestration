@@ -4,13 +4,20 @@ import spray.http._
 
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 
-/**
- * Created with IntelliJ IDEA.
- * User: hussein
- * Date: 07/28/2015
- * Time: 16:59
- */
 object MockTSVStrings {
+
+  /*
+   * Utilities for generating test data.
+   */
+  private implicit class TSVListSupport(elems: List[String]) {
+    def tabbed: String = elems.mkString("\t")
+    def newlineSeparated: String = elems.mkString("\n")
+    def windowsNewlineSeparated: String = elems.mkString("\r\n")
+  }
+
+  private implicit class TSVStringSupport(str: String) {
+    def quoted: String = s""""$str""""
+  }
 
   /*
    * TSVs for testing pure TSV parsing only.
@@ -20,141 +27,197 @@ object MockTSVStrings {
   val onlyNewlines = "\n\n\n\n\n\n"
 
   val rowTooLong = List(
-      List("foo", "bar", "baz").mkString("\t"),
-      List("this", "line's", "fine").mkString("\t"),
-      List("this", "line's", "too", "long").mkString("\t")
-    ).mkString("\n")
+      List("foo", "bar", "baz").tabbed,
+      List("this", "line's", "fine").tabbed,
+      List("this", "line's", "too", "long").tabbed
+    ).newlineSeparated
 
   val rowTooShort = List(
-    List("foo", "bar", "baz").mkString("\t"),
-    List("this", "line's", "fine").mkString("\t"),
-    List("too", "short").mkString("\t")
-  ).mkString("\n")
+    List("foo", "bar", "baz").tabbed,
+    List("this", "line's", "fine").tabbed,
+    List("too", "short").tabbed
+  ).newlineSeparated
 
   val tooManyTabs = List(
-    List("foo", "bar", "baz").mkString("\t"),
-    List("this", "line's", "fine").mkString("\t"),
-    List("too", "many", "tabs\t").mkString("\t")
-  ).mkString("\n")
+    List("foo", "bar", "baz").tabbed,
+    List("this", "line's", "fine").tabbed,
+    List("too", "many", "tabs\t").tabbed
+  ).newlineSeparated
 
   val validOneLine = List(
-      List("foo", "bar", "baz").mkString("\t"),
-      List("woop", "de", "doo").mkString("\t")
-    ).mkString("\n")
+      List("foo", "bar", "baz").tabbed,
+      List("woop", "de", "doo").tabbed
+    ).newlineSeparated
 
   val trailingNewlines = validOneLine + "\n\n\n\n"
 
   val validMultiline = List(
-    List("foo", "bar", "baz").mkString("\t"),
-    List("woop", "de", "doo").mkString("\t"),
-    List("hip", "hip", "hooray").mkString("\t")
-  ).mkString("\n")
+    List("foo", "bar", "baz").tabbed,
+    List("woop", "de", "doo").tabbed,
+    List("hip", "hip", "hooray").tabbed
+  ).newlineSeparated
 
   /*
    * TSVs for testing the TSV import code.
    */
   val missingTSVType = List(
-    List("sample_id", "bar", "baz").mkString("\t"),
-    List("woop", "de", "doo").mkString("\t"),
-    List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
+    List("sample_id", "bar", "baz").tabbed,
+    List("woop", "de", "doo").tabbed,
+    List("hip", "hip", "hooray").tabbed).newlineSeparated
 
   val nonexistentTSVType = List(
-    List("wobble:sample_id", "bar", "baz").mkString("\t"),
-    List("woop", "de", "doo").mkString("\t"),
-    List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
+    List("wobble:sample_id", "bar", "baz").tabbed,
+    List("woop", "de", "doo").tabbed,
+    List("hip", "hip", "hooray").tabbed).newlineSeparated
 
   val malformedEntityType = List(
-    List("entity:sampleid", "bar", "baz").mkString("\t"),
-    List("woop", "de", "doo").mkString("\t"),
-    List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
+    List("entity:sampleid", "bar", "baz").tabbed,
+    List("woop", "de", "doo").tabbed,
+    List("hip", "hip", "hooray").tabbed).newlineSeparated
 
   //membership TSVs
   val membershipUnknownFirstColumnHeader = List(
-    List("membership:sampel_id", "bar").mkString("\t"),
-    List("woop", "de").mkString("\t"),
-    List("hip", "hip").mkString("\t")).mkString("\n")
+    List("membership:sampel_id", "bar").tabbed,
+    List("woop", "de").tabbed,
+    List("hip", "hip").tabbed).newlineSeparated
 
   val membershipNotCollectionType = List(
-    List("membership:sample_id", "bar").mkString("\t"),
-    List("woop", "de").mkString("\t"),
-    List("hip", "hip").mkString("\t")).mkString("\n")
+    List("membership:sample_id", "bar").tabbed,
+    List("woop", "de").tabbed,
+    List("hip", "hip").tabbed).newlineSeparated
 
   val membershipMissingMembersHeader = List( //missing sample_id
-    List("membership:sample_set_id").mkString("\t"),
-    List("sset_1").mkString("\t"),
-    List("sset_2").mkString("\t")).mkString("\n")
+    List("membership:sample_set_id").tabbed,
+    List("sset_1").tabbed,
+    List("sset_2").tabbed).newlineSeparated
 
   val membershipExtraAttributes = List(
-    List("membership:sample_set_id", "sample_id", "other_attribute").mkString("\t"),
-    List("woop", "de", "doo").mkString("\t"),
-    List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
+    List("membership:sample_set_id", "sample", "other_attribute").tabbed,
+    List("woop", "de", "doo").tabbed,
+    List("hip", "hip", "hooray").tabbed).newlineSeparated
 
   val membershipValid = List(
-    List("membership:sample_set_id", "sample_id").mkString("\t"),
-    List("sset_01", "sample_01").mkString("\t"),
-    List("sset_01", "sample_02").mkString("\t")).mkString("\n")
+    List("membership:sample_set_id", "sample").tabbed,
+    List("sset_01", "sample_01").tabbed,
+    List("sset_01", "sample_02").tabbed).newlineSeparated
 
   //entity TSVs
   val entityUnknownFirstColumnHeader = List(
-    List("entity:sampel_id", "bar", "baz").mkString("\t"),
-    List("woop", "de", "doo").mkString("\t"),
-    List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
+    List("entity:sampel_id", "bar", "baz").tabbed,
+    List("woop", "de", "doo").tabbed,
+    List("hip", "hip", "hooray").tabbed).newlineSeparated
 
   val entityHasDupes = List(
-    List("entity:participant_id", "some_attribute").mkString("\t"),
-    List("part_01", "de").mkString("\t"),
-    List("part_01", "hip").mkString("\t")).mkString("\n")
+    List("entity:participant_id", "some_attribute").tabbed,
+    List("part_01", "de").tabbed,
+    List("part_01", "hip").tabbed).newlineSeparated
 
   val entityHasCollectionMembers = List(
-    List("entity:sample_set_id", "sample_id").mkString("\t"),
-    List("sset_01", "sample_01").mkString("\t"),
-    List("sset_01", "sample_02").mkString("\t")).mkString("\n")
+    List("entity:sample_set_id", "sample").tabbed,
+    List("sset_01", "sample_01").tabbed,
+    List("sset_01", "sample_02").tabbed).newlineSeparated
 
-  val entityUpdateMissingRequiredAttrs = List( //missing participant_id
-    List("entity:sample_id", "some_attribute").mkString("\t"),
-    List("sample_01", "de").mkString("\t"),
-    List("sample_02", "hip").mkString("\t")).mkString("\n")
+  val entityUpdateMissingRequiredAttrs = List( //missing participant
+    List("entity:sample_id", "some_attribute").tabbed,
+    List("sample_01", "de").tabbed,
+    List("sample_02", "hip").tabbed).newlineSeparated
 
   val entityUpdateWithRequiredAttrs = List(
-    List("entity:sample_id", "participant_id").mkString("\t"),
-    List("sample_01", "part_01").mkString("\t"),
-    List("sample_02", "part_02").mkString("\t")).mkString("\n")
+    List("entity:sample_id", "participant").tabbed,
+    List("sample_01", "part_01").tabbed,
+    List("sample_02", "part_02").tabbed).newlineSeparated
 
   val entityUpdateWithRequiredAndOptionalAttrs = List(
-    List("entity:sample_id", "participant_id", "some_attribute").mkString("\t"),
-    List("sample_01", "part_01", "foo").mkString("\t"),
-    List("sample_02", "part_02", "bar").mkString("\t")).mkString("\n")
+    List("entity:sample_id", "participant", "some_attribute").tabbed,
+    List("sample_01", "part_01", "foo").tabbed,
+    List("sample_02", "part_02", "bar").tabbed).newlineSeparated
 
   //update TSVs
   val updateUnknownFirstColumnHeader = List(
-    List("update:sampel_id", "bar", "baz").mkString("\t"),
-    List("woop", "de", "doo").mkString("\t"),
-    List("hip", "hip", "hooray").mkString("\t")).mkString("\n")
+    List("update:sampel_id", "bar", "baz").tabbed,
+    List("woop", "de", "doo").tabbed,
+    List("hip", "hip", "hooray").tabbed).newlineSeparated
 
   val updateHasDupes = List(
-    List("update:participant_id", "some_attribute").mkString("\t"),
-    List("part_01", "de").mkString("\t"),
-    List("part_01", "hip").mkString("\t")).mkString("\n")
+    List("update:participant_id", "some_attribute").tabbed,
+    List("part_01", "de").tabbed,
+    List("part_01", "hip").tabbed).newlineSeparated
 
   val updateHasCollectionMembers = List(
-    List("update:sample_set_id", "sample_id").mkString("\t"),
-    List("sset_01", "sample_01").mkString("\t"),
-    List("sset_01", "sample_02").mkString("\t")).mkString("\n")
+    List("update:sample_set_id", "sample").tabbed,
+    List("sset_01", "sample_01").tabbed,
+    List("sset_01", "sample_02").tabbed).newlineSeparated
 
-  val updateMissingRequiredAttrs = List( //missing participant_id
-    List("update:sample_id", "some_attribute").mkString("\t"),
-    List("sample_01", "de").mkString("\t"),
-    List("sample_02", "hip").mkString("\t")).mkString("\n")
+  val updateMissingRequiredAttrs = List( //missing participant
+    List("update:sample_id", "some_attribute").tabbed,
+    List("sample_01", "de").tabbed,
+    List("sample_02", "hip").tabbed).newlineSeparated
 
   val updateWithRequiredAttrs = List(
-    List("update:sample_id", "participant_id").mkString("\t"),
-    List("sample_01", "part_01").mkString("\t"),
-    List("sample_02", "part_02").mkString("\t")).mkString("\n")
+    List("update:sample_id", "participant").tabbed,
+    List("sample_01", "part_01").tabbed,
+    List("sample_02", "part_02").tabbed).newlineSeparated
 
   val updateWithRequiredAndOptionalAttrs = List(
-    List("update:sample_id", "participant_id", "some_attribute").mkString("\t"),
-    List("sample_01", "part_01", "foo").mkString("\t"),
-    List("sample_02", "part_02", "bar").mkString("\t")).mkString("\n")
+    List("update:sample_id", "participant", "some_attribute").tabbed,
+    List("sample_01", "part_01", "foo").tabbed,
+    List("sample_02", "part_02", "bar").tabbed).newlineSeparated
+
+
+  val addNewWorkspaceAttributes = List(
+        List("workspace:attributeName1", "attributeName2", "attributeName3").tabbed,
+        List("\"attributeValue1\"", "true", "800").tabbed).newlineSeparated
+
+  val duplicateKeysWorkspaceAttributes = List(
+    List("workspace:a1", "a1").tabbed,
+    List("v1", "v2").tabbed).newlineSeparated
+
+  val wrongHeaderWorkspaceAttributes = List(
+    List("a3", "a4").tabbed,
+    List("v3", "v4").tabbed).newlineSeparated
+
+  val tooManyNamesWorkspaceAttributes = List(
+    List("workspace:a5", "a6", "a7").tabbed,
+    List("v5", "v6").tabbed).newlineSeparated
+
+  val tooManyValuesWorkspaceAttributes = List(
+    List("workspace:a5", "a6").tabbed,
+    List("v5", "v6", "v7").tabbed).newlineSeparated
+
+  val tooManyRowsWorkspaceAttributes = List(
+    List("workspace:a5", "a6").tabbed,
+    List("v5", "v6", "v7").tabbed,
+    List("v8", "v9", "v10").tabbed).newlineSeparated
+
+  val tooFewRowsWorkspaceAttributes = List(
+    List("workspace:a5", "a6").tabbed).newlineSeparated
+
+  val quotedValues = List(
+    List("foo".quoted, "bar".quoted).tabbed,
+    List("baz".quoted, "biz".quoted).tabbed
+  ).newlineSeparated
+
+  val quotedValuesWithTabs = List(
+    List("foo".quoted, "bar".quoted).tabbed,
+    List("baz".quoted, List("this", "has", "tabs").tabbed.quoted).tabbed
+  ).newlineSeparated
+
+  val windowsNewline = List(
+    List("foo", "bar").tabbed,
+    List("baz", "biz").tabbed
+  ).windowsNewlineSeparated
+
+  val missingFields1 = List(
+    List("foo", "bar", "baz").tabbed,
+    List("biz", "", "buz").tabbed
+  ).newlineSeparated
+
+  val missingFields2 = List(
+    List("foo", "bar", "baz").tabbed,
+    List("", "", "buz").tabbed,
+    List("abc", "123", "").tabbed
+  ).newlineSeparated
+
 }
 
 object MockTSVLoadFiles {
@@ -169,6 +232,16 @@ object MockTSVLoadFiles {
     Seq(
       Seq("woop", "de", "doo"),
       Seq("hip", "hip", "hooray")))
+
+  val validWorkspaceAttributes = TSVLoadFile("workspace", Seq("a1", "a2", "a3"), Seq(Seq("v1", "2", "[1,2,3]")))
+  val validOneWorkspaceAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("v1")))
+  val validEmptyStrWSAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("")))
+  val validRemoveWSAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("__DELETE__")))
+  val validRemoveAddAttribute = TSVLoadFile("workspace", Seq("a1", "a2"), Seq(Seq("__DELETE__", "v2")))
+  val validQuotedValues = TSVLoadFile("foo", Seq("foo", "bar"), Seq(Seq("baz", "biz")))
+  val validQuotedValuesWithTabs = TSVLoadFile("foo", Seq("foo", "bar"), Seq(Seq("baz", "this\thas\ttabs")))
+  val missingFields1 = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Seq("biz", "", "buz")))
+  val missingFields2 = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Seq("", "", "buz"), Seq("abc", "123", "")))
 }
 
 object MockTSVFormData {
@@ -201,4 +274,13 @@ object MockTSVFormData {
   val updateMissingRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.updateMissingRequiredAttrs)
   val updateWithRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAttrs)
   val updateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAndOptionalAttrs)
+
+  val addNewWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.addNewWorkspaceAttributes)
+  val duplicateKeysWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.duplicateKeysWorkspaceAttributes)
+  val wrongHeaderWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.wrongHeaderWorkspaceAttributes)
+  val tooManyNamesWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.tooManyNamesWorkspaceAttributes)
+  val tooManyValuesWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.tooManyValuesWorkspaceAttributes)
+  val tooManyRowsWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.tooManyRowsWorkspaceAttributes)
+  val tooFewRowsWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.tooFewRowsWorkspaceAttributes)
+
 }

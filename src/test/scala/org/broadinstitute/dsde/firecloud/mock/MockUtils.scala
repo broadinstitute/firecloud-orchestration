@@ -3,7 +3,9 @@ package org.broadinstitute.dsde.firecloud.mock
 import java.text.SimpleDateFormat
 import java.util.Date
 
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.mockserver.model.Header
+import spray.http.StatusCode
 
 object MockUtils {
 
@@ -13,6 +15,9 @@ object MockUtils {
   val workspaceServerPort = 8990
   val methodsServerPort = 8989
   val thurloeServerPort = 8991
+  val consentServerPort = 8992
+  val ontologyServerPort = 8993
+  val searchServerPort = 9292
 
    def randomPositiveInt(): Int = {
      scala.util.Random.nextInt(9) + 1
@@ -22,6 +27,10 @@ object MockUtils {
      val chars = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
      randomStringFromCharList(randomPositiveInt(), chars)
    }
+
+  def randomBoolean(): Boolean = {
+    scala.util.Random.nextBoolean()
+  }
 
    def randomStringFromCharList(length: Int, chars: Seq[Char]): String = {
      val sb = new StringBuilder
@@ -36,4 +45,7 @@ object MockUtils {
      isoDateFormat.format(new Date())
    }
 
- }
+  def rawlsErrorReport(statusCode: StatusCode) =
+    ErrorReport("Rawls", "dummy text", Option(statusCode), Seq(), Seq(), None)
+
+}

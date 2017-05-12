@@ -1,10 +1,14 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import org.broadinstitute.dsde.firecloud.model.{HttpResponseWithErrorReport, ErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
+import org.broadinstitute.dsde.firecloud.model.HttpResponseWithErrorReport
+import org.broadinstitute.dsde.firecloud.model.errorReportSource
 import org.broadinstitute.dsde.firecloud.service.PerRequest._
-import org.broadinstitute.dsde.firecloud.HttpClient
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, HttpClient}
 import spray.http.StatusCodes._
 import spray.http.{HttpHeader, HttpHeaders, HttpRequest, RequestProcessingException}
 import spray.httpx.marshalling.ToResponseMarshaller
@@ -41,6 +45,10 @@ trait PerRequest extends Actor {
     case RequestComplete_(response, marshaller) => complete(response)(marshaller)
     case RequestCompleteWithHeaders_(response, headers, marshaller) => complete(response, headers: _*)(marshaller)
     case ReceiveTimeout => complete(HttpResponseWithErrorReport(GatewayTimeout, "Request Timed Out"))
+    case Failure(t) =>
+      // failed Futures will end up in this case
+      handleException(t)
+      stop(self)
     case x =>
       val message = "Unsupported response message sent to PerRequest actor: " + Option(x).getOrElse("null").toString
       system.log.error(message)
@@ -70,6 +78,9 @@ trait PerRequest extends Actor {
   override val supervisorStrategy =
     OneForOneStrategy() {
 
+      case e: FireCloudExceptionWithErrorReport =>
+        r.complete((e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport))
+        Stop
       case e: RequestProcessingException =>
         r.complete(HttpResponseWithErrorReport(InternalServerError, e))
         Stop
@@ -77,6 +88,15 @@ trait PerRequest extends Actor {
         r.complete(HttpResponseWithErrorReport(InternalServerError, e))
         Stop
     }
+
+  def handleException(e: Throwable): Unit = {
+    import spray.httpx.SprayJsonSupport._
+    e match {
+      case e: FireCloudExceptionWithErrorReport =>
+        complete((e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport))
+      case _ => complete((InternalServerError, ErrorReport(InternalServerError, e)))
+    }
+  }
 }
 
 
@@ -123,5 +143,10 @@ trait PerRequestCreator {
 
   /** convenience for HttpClient */
   def externalHttpPerRequest(r: RequestContext, request: HttpRequest) =
-    perRequest(r, Props(new HttpClient(r)), HttpClient.PerformExternalRequest(request))
+    perRequest(r, Props(new HttpClient(r)), HttpClient.PerformExternalRequest(requestCompression = true, request))
+
+  /** overloaded convenience method for HttpClient */
+  def externalHttpPerRequest(requestCompression: Boolean, r: RequestContext, request: HttpRequest) =
+    perRequest(r, Props(new HttpClient(r)), HttpClient.PerformExternalRequest(requestCompression, request))
+
 }

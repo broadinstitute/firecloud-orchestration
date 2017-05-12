@@ -1,12 +1,15 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
-import spray.http.HttpHeaders.{RawHeader, Authorization}
+import spray.http.HttpHeaders.{Authorization, RawHeader}
 import spray.http._
 import spray.routing.RequestContext
 
 
 trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
+
+  val fireCloudHeader = HttpHeaders.RawHeader("X-FireCloud-Id", FireCloudConfig.FireCloud.fireCloudId)
 
   // TODO: would be much better to make requestContext implicit, so callers don't have to always pass it in
   // TODO: this could probably be rewritten more tersely in idiomatic scala - for instance, don't create
@@ -20,10 +23,10 @@ trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
 
     authorizationHeader match {
       // if we have authorization credentials, apply them to the outgoing request
-      case Some(c) => addCredentials(c)
+      case Some(c) => addCredentials(c) ~> addFireCloudCredentials
       // else, noop. But the noop needs to return an identity function in order to compile.
       // alternately, we could throw an error here, since we assume some authorization should exist.
-      case None => (r: HttpRequest) => r
+      case None => (r: HttpRequest) => r ~> addFireCloudCredentials
     }
 
   }
@@ -42,5 +45,7 @@ trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
 
   // with great power comes great responsibility!
   def addAdminCredentials = addCredentials(OAuth2BearerToken(HttpGoogleServicesDAO.getAdminUserAccessToken))
+
+  def addFireCloudCredentials = addHeader(fireCloudHeader)
 
 }

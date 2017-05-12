@@ -38,10 +38,6 @@ object ModelSchema {
   def getRequiredAttributes(entityType: String): Try[Map[String, String]] = {
     getTypeSchema(entityType).map(_.requiredAttributes)
   }
-
-  def getAttributeRenamingMap(entityType: String): Try[Map[String,String]] = {
-    getTypeSchema(entityType).map(_.attributeRenaming.getOrElse(Map.empty))
-  }
 }
 
 object EntityTypes {
@@ -49,11 +45,17 @@ object EntityTypes {
     Source.fromURL(getClass.getResource(FireCloudConfig.Rawls.model)).mkString.parseJson ).schema
 }
 
+/**
+ * Metadata for entities in our model
+ *
+ * @param plural Used to name the members attribute of collection types, e.g. sample_set.samples
+ * @param requiredAttributes (Attribute name -> stringified type) Might be an entity type defined by the ModelSchema.
+ * @param memberType If defined, we're a collection type, and this is the entity type of our members
+ */
 case class EntityMetadata(
-  plural: String,                         //Used to name the members attribute of collection types, e.g. sample_set.samples
-  requiredAttributes: Map[String, String],//(Attribute name -> stringified type) Might be an entity type defined by the ModelSchema.
-  attributeRenaming: Option[Map[String, String]],// for when we don't like the names in the column headers
-  memberType: Option[String]              //If defined, we're a collection type, and this is the entity type of our members
+  plural: String,
+  requiredAttributes: Map[String, String],
+  memberType: Option[String]
 )
 
 case class EntityModel(schema : Map[String, EntityMetadata]) //entity name -> stuff about it

@@ -4,87 +4,197 @@ info:
   title: FireCloud
   description: |
     Genome analysis execution service.
-  version: "0.0.1"
+  version: "0.1"
   license:
     name: BSD
     url: http://opensource.org/licenses/BSD-3-Clause
   termsOfService: https://github.com/broadinstitute/firecloud-orchestration
 
-basePath: /service
+basePath: /
 
+produces:
+  - application/json
+
+security:
+  - googleoauth:
+      - openid
+      - email
+      - profile
+      - https://www.googleapis.com/auth/devstorage.full_control
+
+securityDefinitions:
+  googleoauth:
+    type: oauth2
+    authorizationUrl: 'https://accounts.google.com/o/oauth2/auth'
+    flow: implicit
+    scopes:
+      openid: open id authorization
+      email: email authorization
+      profile: profile authorization
+      https://www.googleapis.com/auth/devstorage.full_control: GCS storage
+      https://www.googleapis.com/auth/cloud-billing: GCS billing
+
+##########################################################################################
+## PATHS
+##########################################################################################
 paths:
-  /api/workspaces:
-    get:
-      tags:
-      - Workspaces
-      operationId: listWorkspaces
-      summary: |
-        Lists workspaces.
-      produces:
-      - application/json
-      - text/plain
+
+  /api/billing:
+    post:
       responses:
-        200:
-          description: List of workspaces.
+        204:
+          description: Successfully Created Billing Project in FireCloud and Google
+        400:
+          description: FireCloud billing user must be an admin of the billing account
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        403:
+          description: You must be an admin of the google billing account
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        409:
+          description: project already exists in FireCloud or google
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: body
+          description: create project request
+          name: createProjectRequest
+          required: true
+          schema:
+            $ref: '#/definitions/CreateRawlsBillingProjectFullRequest'
+      tags:
+        - Billing
+      summary: create billing project in FireCloud and google
+      operationId: createBillingProjectFull
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-    post:
-      tags:
-        - Workspaces
-      operationId: createWorkspace
-      summary: Create workspace
-      produces:
-        - application/json
+            - https://www.googleapis.com/auth/cloud-billing
+
+  /api/billing/{projectId}/members:
+    get:
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BillingProjectMember'
+        403:
+          description: You must be a project owner to view the members of a project
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
       parameters:
-        - name: workspace
-          description: New workspace information
+        - in: path
+          description: Project ID
+          name: projectId
           required: true
           type: string
-          in: body
-          schema:
-            $ref: WorkspaceIngest
-      responses:
-        200:
-          description: No response was specified
-        201:
-          description: Successful Request
-        403:
-          description: Unable to create bucket for workspace
-        409:
-          description: Workspace by that name already exists
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/methods:
-    get:
       tags:
-      - Method Repository
-      operationId: listMethodRepositoryMethods
-      summary: |
-        Lists Method Repository methods.
-      produces:
-      - application/json
-      responses:
-        200:
-          description: List of Method Repository methods.
+        - Billing
+      summary: list members of billing project the caller owns
+      operationId: listBillingProjectMembers
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+
+  /api/billing/{projectId}/{role}/{email}:
+    put:
+      responses:
+        200:
+          description: Successfully Added User To Billing Project
+        403:
+          description: You must be a project owner to add a user to a billing project
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: User not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Project ID
+          name: projectId
+          required: true
+          type: string
+        - in: path
+          description: role of user for project
+          name: role
+          required: true
+          type: string
+          enum: ["user", "owner"]
+        - in: path
+          description: email of user or group to add
+          name: email
+          required: true
+          type: string
+      tags:
+        - Billing
+      summary: add user to billing project the caller owns
+      operationId: addUserToBillingProject
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+    delete:
+      responses:
+        200:
+          description: Successfully Removed User From Billing Project
+        403:
+          description: You must be a project owner to add a user to a billing project
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: User not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Project ID
+          name: projectId
+          required: true
+          type: string
+        - in: path
+          description: role of user for project
+          name: role
+          required: true
+          type: string
+          enum: ["user", "owner"]
+        - in: path
+          description: email of user or group to add
+          name: email
+          required: true
+          type: string
+      tags:
+        - Billing
+      summary: remove user from billing project the caller owns
+      operationId: removeUserFromBillingProject
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
   /api/configurations:
     get:
       tags:
@@ -92,225 +202,150 @@ paths:
       operationId: listMethodRepositoryConfigurations
       summary: |
         List Method Repository configurations.
-      produces:
-      - application/json
+      description: |
+        The configurations endpoint returns all configurations the requester
+        has permissions to read that fit the filter criteria.
+      parameters:
+        - name: namespace
+          in: query
+          description: Namespace of configuration.
+          required: false
+          type: string
+        - name: name
+          in: query
+          description: Name of configuration.
+          required: false
+          type: string
+        - name: snapshotId
+          in: query
+          description: Snapshot ID of configuration.
+          required: false
+          type: number
+        - name: synopsis
+          in: query
+          description: Synopsis of configuration.
+          required: false
+          type: string
+        - name: documentation
+          in: query
+          description: Documentation of configuration.
+          required: false
+          type: string
+        - name: owner
+          in: query
+          description: Owner of configuration.
+          required: false
+          type: string
+        - name: payload
+          in: query
+          description: Payload of configuration in WDL.
+          required: false
+          type: string
+        - name: entityType
+          in: query
+          description: Type of configuration - Task or Workflow
+          required: false
+          type: string
+        ########### disabled until these work in Agora
+        # - name: excludedFields
+        #   in: query
+        #   description: Fields to exclude in JSON response.
+        #   required: false
+        #   type: string
+        # - name: includedFields
+        #   in: query
+        #   description: Fields to include in JSON response
+        #   required: false
+        #   type: string
       responses:
         200:
-          description: List of Method Repository configurations.
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/template:
+          description: An array of configurations.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ConfigurationResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
     post:
+      summary: Add a configuration.
+      description: |
+        Inserts a method configuration into the method repository and
+        gives the owner full access permissions. Must supply a namespace,
+        name, payload, and entityType. Cannot supply a snapshotId
+      parameters:
+        - name: body
+          in: body
+          description: Agora Entity
+          required: false
+          schema:
+            $ref: '#/definitions/ConfigurationQuery'
       tags:
         - Method Repository
-      operationId: createMethodTemplate
-      summary: Create a Method Configuration template from a Method
-      produces:
-        - application/json
-      parameters:
-        - name: methodName
-          description: name of Method to use for template
-          required: true
-          type: string
-          in: body
-          schema:
-            $ref: MethodID
       responses:
-        200:
-          description: Method Configuration template
-        400:
-          description: Method WDL can't be parsed
-        404:
-          description: No Such Method
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/inputsOutputs:
-    post:
-      tags:
-        - Method Repository
-      operationId: getMethodIO
-      summary: Get information about a method's inputs and outputs
-      produces:
-        - application/json
-      parameters:
-        - name: methodName
-          description: name of Method to look up
-          required: true
-          type: string
-          in: body
+        201:
+          description: Method successfully added.
           schema:
-            $ref: MethodID
-      responses:
-        200:
-          description: Method Configuration inputs and outputs
+            $ref: '#/definitions/ConfigurationResponse'
         400:
-          description: Method WDL can't be parsed
-        404:
-          description: No Such Method
+          description: Malformed input.
+          schema:
+            $ref: '#/definitions/Error'
         500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+          description: Internal error.
+          schema:
+            $ref: '#/definitions/Error'
+
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
       tags:
         - Method Repository
       operationId: getMethodRepositoryConfiguration
       summary: Get a Method Repository configuration
-      produces:
-        - application/json
       parameters:
-        - name: namespace
-          description: Method Configuration namespace
-          required: true
-          type: string
-          in: path
-        - name: name
-          description: Method Configuration name
-          required: true
-          type: string
-          in: path
-        - name: snapshotId
-          description: Method Configuration snapshot ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/configNamespaceParam'
+        - $ref: '#/parameters/configNameParam'
+        - $ref: '#/parameters/configSnapshotId'
       responses:
         200:
           description: Method Repository configuration detail
         500:
           description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/methods/{namespace}/{name}/{snapshotId}/permissions:
-    get:
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
       tags:
         - Method Repository
-      operationId: getMethodACL
-      summary: get ACL permissions on a Method Repository method
-      produces:
-        - application/json
+      summary: Redact a single configuration.
+      description: |
+        Redacts a configuration and all of its associated configurations
       parameters:
-        - name: namespace
-          description: Method namespace
-          required: true
-          type: string
-          in: path
-        - name: name
-          description: Method name
-          required: true
-          type: string
-          in: path
-        - name: snapshotId
-          description: Method snapshot ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/configNamespaceParam'
+        - $ref: '#/parameters/configNameParam'
+        - $ref: '#/parameters/configSnapshotId'
       responses:
         200:
-          description: the indicated method ACL
+          description: >
+            An integer showing how many configurations were deleted. Should be
+            1.
           schema:
-            $ref: '#/definitions/MethodConfigACL'
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-    post:
-      tags:
-        - Method Repository
-      operationId: setMethodACL
-      summary: set ACL permissions on a Method Repository method
-      produces:
-        - application/json
-      parameters:
-        - name: namespace
-          description: Method namespace
-          required: true
-          type: string
-          in: path
-        - name: name
-          description: Method name
-          required: true
-          type: string
-          in: path
-        - name: snapshotId
-          description: Method snapshot ID
-          required: true
-          type: string
-          in: path
-        - name: payload
-          description: the ACLs to upsert
-          required: true
-          in: body
+            type: number
+        default:
+          description: Error upon redaction
           schema:
-            $ref: '#/definitions/MethodConfigACL'
-      responses:
-        200:
-          description: the indicated method ACL once the posted changes have been applied
-          schema:
-            $ref: '#/definitions/MethodConfigACL'
-        400:
-          description: Bad Request
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+            $ref: '#/definitions/Error'
+
   /api/configurations/{namespace}/{name}/{snapshotId}/permissions:
     get:
       tags:
         - Method Repository
       operationId: getConfigACL
       summary: get ACL permissions on a Method Repository configuration
-      produces:
-        - application/json
       parameters:
-        - name: namespace
-          description: Method Configuration namespace
-          required: true
-          type: string
-          in: path
-        - name: name
-          description: Method Configuration name
-          required: true
-          type: string
-          in: path
-        - name: snapshotId
-          description: Method Configuration snapshot ID
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/configNamespaceParam'
+        - $ref: '#/parameters/configNameParam'
+        - $ref: '#/parameters/configSnapshotId'
       responses:
         200:
           description: the indicated configuration ACL
@@ -318,42 +353,16 @@ paths:
             $ref: '#/definitions/MethodConfigACL'
         500:
           description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Method Repository
       operationId: setConfigACL
       summary: set ACL permissions on a Method Repository configuration
-      produces:
-        - application/json
       parameters:
-        - name: namespace
-          description: Method Configuration namespace
-          required: true
-          type: string
-          in: path
-        - name: name
-          description: Method Configuration name
-          required: true
-          type: string
-          in: path
-        - name: snapshotId
-          description: Method Configuration snapshot ID
-          required: true
-          type: string
-          in: path
-        - name: payload
-          description: the ACLs to upsert
-          required: true
-          in: body
-          schema:
-            $ref: '#/definitions/MethodConfigACL'
+        - $ref: '#/parameters/configNamespaceParam'
+        - $ref: '#/parameters/configNameParam'
+        - $ref: '#/parameters/configSnapshotId'
+        - $ref: '#/parameters/configACLPayload'
       responses:
         200:
           description: the indicated configuration ACL once the posted changes have been applied
@@ -363,1211 +372,882 @@ paths:
           description: Bad Request
         500:
           description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}:
+
+  /api/configurations/{namespace}/permissions:
     get:
       tags:
-        - Workspaces
-      operationId: getWorkspace
-      summary: Get workspace
-      produces:
-        - application/json
+        - Method Repository
+      operationId: getConfigNamespaceACL
+      summary: get ACL permissions on a Method Repository Configuration Namespace
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/configNamespaceParam'
       responses:
         200:
-          description: Successful Request
-        404:
-          description: Workspace does not exist
+          description: List of the indicated configuration namespace ACL permissions
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        403:
+          description: user does not have correct permissions to manage namespace permissions or the indicated namespace was not found
         500:
           description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: setConfigNamespaceACL
+      summary: set ACL permissions on a Method Repository Configuration Namespace
+      parameters:
+        - $ref: '#/parameters/configNamespaceParam'
+        - $ref: '#/parameters/configACLPayload'
+      responses:
+        200:
+          description: the indicated configuration ACL once the posted changes have been applied
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Invalid content format
+        403:
+          description: User does not have correct permissions to manage namespace permissions or the indicated namespace was not found
+        500:
+          description: Internal Server Error
+
+  /api/groups:
+    get:
+      responses:
+        200:
+          description: Successfully listed group membership
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ManagedGroupAccessResponse'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      tags:
+        - Groups
+      summary: get the list of the groups that the caller is a member of
+      operationId: getGroups
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+
+  /api/groups/{groupName}:
+    get:
+      responses:
+        200:
+          description: Successfully loaded group
+          schema:
+            $ref: '#/definitions/ManagedGroupWithMembers'
+        403:
+          description: You must be an admin of this group in order to view members
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Group not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Group name
+          name: groupName
+          required: true
+          type: string
+      tags:
+        - Groups
+      summary: view the members in a group
+      operationId: getGroup
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+    post:
+      responses:
+        201:
+          description: Successfully created group
+          schema:
+            $ref: '#/definitions/ManagedGroupWithMembers'
+        409:
+          description: Group already exists
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Group name
+          name: groupName
+          required: true
+          type: string
+      tags:
+        - Groups
+      summary: create a new group
+      operationId: createGroup
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
     delete:
-      tags:
-        - Workspaces
-      operationId: deleteWorkspace
-      summary: Delete workspace
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
       responses:
-        202:
-          description: Request Accepted
+        204:
+          description: Successfully Deleted Group
+        403:
+          description: You must be an admin of this group in order to delete it
+          schema:
+            $ref: '#/definitions/ErrorReport'
         404:
-          description: Workspace does not exist
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/acl:
-    get:
-      tags:
-        - Workspaces
-      operationId: getWorkspaceAcl
-      summary: Get workspace ACL
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-      responses:
-        200:
-          description: Successful Request
-        400:
-          description: Can't retrieve ACL for workspace
-        404:
-          description: Workspace not found
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-    patch:
-      tags:
-        - Workspaces
-      operationId: updateWorkspaceACL
-      summary: Update workspace ACL
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: aclUpdates
-          description: Series of ACL updates for workspace
-          required: true
-          type: List[Map[string, string]]
-          in: body
-      responses:
-        200:
-          description: Successful Request
-        400:
-          description: Can't set ACL for workspace
-        404:
-          description: Workspace not found
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/clone:
-    post:
-      tags:
-        - Workspaces
-      operationId: cloneWorkspace
-      summary: Clone Workspace
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-      responses:
-        201:
-          description: Successful Request
-        400:
-          description: Unable to create resources for workspace
-        404:
-          description: Source workspace not found
+          description: Group not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
         409:
-          description: Destination workspace already exists
+          description: Group is in use and cannot be deleted
+          schema:
+            $ref: '#/definitions/ErrorReport'
         500:
-          description: Internal Server Error
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Group name
+          name: groupName
+          required: true
+          type: string
+      tags:
+        - Groups
+      summary: delete a group that the caller owns
+      operationId: deleteGroup
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/lock:
+
+  /api/groups/{groupName}/{role}/{email}:
     put:
-      tags:
-        - Workspaces
-      operationId: lockWorkspace
-      summary: Lock Workspace
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
       responses:
-        200:
-          description: No response was specified
         204:
-          description: Successful Request
+          description: Successfully Added User To Group
         403:
-          description: Not Owner
+          description: You must be an admin of this group in order to add members
+          schema:
+            $ref: '#/definitions/ErrorReport'
         404:
-          description: Workspace Not Found
+          description: User not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
         500:
-          description: Internal Server Error
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Group name
+          name: groupName
+          required: true
+          type: string
+        - in: path
+          description: role of user for group
+          name: role
+          required: true
+          type: string
+          enum: ["member", "admin"]
+        - in: path
+          description: email of user or group to add
+          name: email
+          required: true
+          type: string
+      tags:
+        - Groups
+      summary: add a user to a group the caller owns
+      operationId: addUserToGroup
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
-    put:
-      tags:
-        - Workspaces
-      operationId: unlockWorkspace
-      summary: Unlock Workspace
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+    delete:
       responses:
-        200:
-          description: No response was specified
         204:
-          description: Successful Request
+          description: Successfully Removed User From Group
         403:
-          description: Not Owner
+          description: You must be an admin of this group in order to remove members
+          schema:
+            $ref: '#/definitions/ErrorReport'
         404:
-          description: Workspace Not Found
+          description: User not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
         500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
-    get:
-      type: EntityWithType
-      tags:
-      - Entities
-      operationId: getEntitiesWithType
-      summary: |
-        List of entities in a workspace with type and attribute information
-      produces:
-        - application/json
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
+        - in: path
+          description: Group name
+          name: groupName
           required: true
           type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
+        - in: path
+          description: role of user for group
+          name: role
           required: true
           type: string
-          in: path
-      responses:
-        200:
-          description: List of entities
-        404:
-          description: Workspace or entities not found.
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities:
-    get:
-      type: String
+          enum: ["member", "admin"]
+        - in: path
+          description: email of user or group to add
+          name: email
+          required: true
+          type: string
       tags:
-      - Entities
-      operationId: getEntityTypes
-      summary: |
-        List of entity types in a workspace
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-      responses:
-        200:
-          description: List of entity types in workspace
-        404:
-          description: Workspace does not exist
-        500:
-          description: Internal Server Error
+        - Groups
+      summary: remove a user from a group the caller owns
+      operationId: removeUserFromGroup
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
+
+  /api/inputsOutputs:
     post:
       tags:
-      - Entities
-      operationId: copyEntities
-      summary: |
-        Copy entities from one workspace to another
-      produces:
-        - application/json
+        - Method Repository
+      operationId: getMethodIO
+      summary: Get information about a method's inputs and outputs
       parameters:
-        - name: workspaceNamespace
-          description: Destination Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Destination Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: body
-          description: Entities to Copy
+        - name: methodName
+          description: name of Method to look up
           required: true
           in: body
           schema:
-            $ref: CopyEntity
+            $ref: '#/definitions/MethodID'
       responses:
         200:
-          description: No response was specified
-        201:
-          description: Successful Request
+          description: Method Configuration inputs and outputs
+        400:
+          description: Method WDL can't be parsed
         404:
-          description: Source Workspace or source entities does not exist
-        409:
-          description: One or more entities of that name/type already exist
+          description: No Such Method
         500:
-          description: Internal Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
+          description: Internal Server Error
+
+  /api/library/admin/reindex:
     post:
       tags:
-      - Entities
-      operationId: deleteEntities
-      summary: Bulk delete entities from a workspace
-      produces:
-        - application/json
+        - Library
+      operationId: reindexAll
+      summary: |
+        deletes and rebuilds the entire index of published library datasets
+      responses:
+        200:
+          description: Indexing Success
+          schema:
+            $ref: '#/definitions/LibraryBulkIndexResponse'
+        204:
+          description: No published datasets exist to index
+          schema:
+            type: string
+        500:
+          description: Indexing Error
+          schema:
+            $ref: '#/definitions/LibraryBulkIndexResponse'
+
+  /api/library/groups:
+    get:
+      tags:
+        - Library
+      operationId: groups
+      summary: |
+        returns groups that can be used for discoverable datasets
+      responses:
+        200:
+          description: Names of the allowed groups
+          schema:
+            type: array
+            items:
+              type: string
+  /api/library/search:
+    post:
+      tags:
+        - Library
+      operationId: FindDocuments
+      summary: |
+        searches published library datasets
       parameters:
-        - name: workspaceNamespace
-          description: Destination Workspace Namespace
-          required: true
+        - in: body
+          name: searchParams
+          description: Search terms and pagination parameters
+          schema:
+            $ref: '#/definitions/SearchTermRef'
+      responses:
+        200:
+          description: Matching datasets
+
+  /api/library/suggest:
+    post:
+      tags:
+        - Library
+      operationId: searchSuggest
+      summary: |
+        search suggestions
+      parameters:
+        - in: body
+          name: searchParams
+          description: Search terms and pagination parameters
+          schema:
+            $ref: '#/definitions/SearchTermRef'
+      responses:
+        200:
+          description: Search suggestions, with highlighting
+
+  /api/library/populate/suggest/{field}:
+    get:
+      tags:
+        - Library
+      operationId: populateSuggest
+      summary: |
+        suggestions for populating a field
+      parameters:
+        - in: path
+          name: field
+          description: the property to get suggestions for
           type: string
-          in: path
-        - name: workspaceName
-          description: Destination Workspace Name
           required: true
+        - in: query
+          name: q
           type: string
-          in: path
-        - name: body
-          description: Entities to delete
+          required: true
+          description: the initial text to complete
+      responses:
+        200:
+          description: Field specific suggestions
+        400:
+          description: Bad Request, specified field that was not configured for suggestions
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
+  /api/library/user/role/curator:
+    get:
+      responses:
+        200:
+          description: are you a curator?
+          schema:
+            $ref: '#/definitions/CuratorStatus'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: "gets the curator status of a user"
+      tags:
+        - Profile
+      summary: Query to see if you're a library curator
+      operationId: isCurator
+
+  /api/library/{workspaceNamespace}/{workspaceName}/discoverableGroups:
+    put:
+      tags:
+        - Library
+      operationId: updateDiscoverableGroups
+      summary: |
+        set the groups that can discover this library dataset
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: discoverableGroups
+          description: List of group names, or empty list for no restrictions
+          required: true
+          in: body
+      responses:
+        200:
+          description: The groups that have been assigned to be able to discover the dataset
+          schema:
+            type: array
+            items:
+              type: string
+        403:
+          description: Insufficient permissions to change catalog permissions (must be owner or have grant or catalog with access to the workspace)
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Workspace, user or group not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
+  /api/library/{workspaceNamespace}/{workspaceName}/metadata:
+    put:
+      tags:
+        - Library
+      operationId: putLibraryMetadata
+      summary: |
+        put the entire metadata for a library dataset
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: libraryMetadataJson
+          description: Library metadata
           required: true
           in: body
           schema:
-            $ref: DeleteEntities
-      responses:
-        200:
-          description: Successful Request
-        400:
-          description: Malformed Request
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
-    get:
-      type: Entity
-      tags:
-      - Entities
-      operationId: getEntities
-      summary: |
-        List of entities in a workspace
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: entityType
-          description: Entity Type
-          required: true
-          type: string
-          in: path
-      responses:
-        200:
-          description: List of entities in workspace
-        404:
-          description: Workspace or entity type does not exist
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
-    get:
-      type: file
-      tags:
-      - Entities
-      operationId: downloadEntitiesTSV
-      summary: |
-        TSV file containing workspace entities of the specified type
-      produces:
-        - text/plain
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: entityType
-          description: Entity Type
-          required: true
-          type: string
-          in: path
-      responses:
-        200:
-          description: Workspace entities of specified type in TSV format
-        404:
-          description: Workspace or entity type does not exist
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}:
-    get:
-      tags:
-        - Entities
-      operationId: getEntity
-      summary: Get entity in a workspace
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: entityType
-          description: Entity Type
-          required: true
-          type: string
-          in: path
-        - name: entityName
-          description: Entity Name
-          required: true
-          type: string
-          in: path
+            $ref: '#/definitions/LibraryMetadataInput'
       responses:
         200:
           description: Success
-        404:
-          description: Workspace or Entity does not exist
+          schema:
+            $ref: '#/definitions/Workspace'
         500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-    delete:
-      tags:
-        - Entities
-      operationId: deleteEntity
-      summary: Delete entity in a workspace
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: entityType
-          description: Entity Type
-          required: true
-          type: string
-          in: path
-        - name: entityName
-          description: Entity Name
-          required: true
-          type: string
-          in: path
-      responses:
-        200:
-          description: No response was specified
-        204:
-          description: Successful Request
-        404:
-          description: Workspace or Entity does not exist
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
-    get:
-      tags:
-        - Method Configurations
-        - Workspaces
-      operationId: listWorkspaceMethodConfigs
-      summary: List of Method Configurations in a workspace
-      produces:
-        - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-      responses:
-        200:
-          description: List of Method Configurations
-        404:
-          description: Workspace does not exist
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
+  /api/library/{workspaceNamespace}/{workspaceName}/published:
     post:
       tags:
-        - Method Configurations
-        - Workspaces
-      operationId: postWorkspaceMethodConfig
-      summary: Create a Method Configuration in a workspace
-      produces:
-        - application/json
+        - Library
+      operationId: publishLibraryWorkspace
+      summary: |
+        publish the workspace in the Library
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: methodConfigJson
-          description: Method Configuration contents
-          required: true
-          type: string
-          in: body
-          schema:
-            $ref: NewMethodConfigIngest
-      responses:
-        201:
-          description: Successful Request
-        404:
-          description: Workspace not found
-        409:
-          description: Method Configuration already exists
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}:
-    get:
-      tags:
-        - Method Configurations
-      operationId: getWorkspaceMethodConfig
-      summary: Get a method configuration in a workspace
-      produces: application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: configNamespace
-          description: Configuration Namespace
-          required: true
-          type: string
-          in: path
-        - name: configName
-          description: Configuration Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
-          description: Successful
-        404:
-          description: Workspace or Method Configuration not found
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-    put:
-      tags:
-        - Method Configurations
-      operationId: updateWorkspaceMethodConfig
-      summary: Update a method configuration in a workspace
-      produces: application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: configNamespace
-          description: Configuration Namespace
-          required: true
-          type: string
-          in: path
-        - name: configName
-          description: Configuration Name
-          required: true
-          type: string
-          in: path
-        - name: body
-          description: Method Config to Update
-          required: true
-          type: string
-          in: body
+          description: Success
           schema:
-            $ref: ConfigurationIngest
-      responses:
-        200:
-          description: Successful
-        404:
-          description: Workspace or Method Configuration not found
+            $ref: '#/definitions/Workspace'
+        204:
+          description: Dataset already in requested published state
+        403:
+          description: You must be the workspace owner and library curator to publish a workspace to the library
         500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
     delete:
       tags:
-        - Method Configurations
-      operationId: deleteWorkspaceMethodConfig
-      summary: Delete a method configuration in a workspace
-      produces: application/json
+        - Library
+      operationId: unpublishLibraryWorkspace
+      summary: |
+        unpublish the workspace in the Library
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: configNamespace
-          description: Configuration Namespace
-          required: true
-          type: string
-          in: path
-        - name: configName
-          description: Configuration Name
-          required: true
-          type: string
-          in: path
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
       responses:
         200:
-          description: Successful request
-        404:
-          description: Workspace or Method Configuration not found
+          description: Success
+          schema:
+            $ref: '#/definitions/Workspace'
+        403:
+          description: You must be the workspace owner and library curator to unpublish a workspace from the library
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
+  /api/methods:
+    get:
+      tags:
+        - Method Repository
+      operationId: listMethodRepositoryMethods
+      summary: |
+        Lists Method Repository methods.
+      parameters:
+        - name: namespace
+          in: query
+          description: Namespace of method.
+          required: false
+          type: string
+        - name: name
+          in: query
+          description: Name of method.
+          required: false
+          type: string
+        - name: snapshotId
+          in: query
+          description: Snapshot ID of method.
+          required: false
+          type: number
+        - name: synopsis
+          in: query
+          description: Synopsis of method.
+          required: false
+          type: string
+        - name: documentation
+          in: query
+          description: Documentation of method.
+          required: false
+          type: string
+        - name: owner
+          in: query
+          description: Owner of method.
+          required: false
+          type: string
+        - name: payload
+          in: query
+          description: Payload of method in WDL.
+          required: false
+          type: string
+        - name: entityType
+          in: query
+          description: Type of Method - Task or Workflow
+          required: false
+          type: string
+        ########### disabled until these work in Agora
+        # - name: excludedFields
+        #   in: query
+        #   description: Fields to exclude in JSON response.
+        #   required: false
+        #   type: string
+        # - name: includedFields
+        #   in: query
+        #   description: Fields to include in JSON response
+        #   required: false
+        #   type: string
+      responses:
+        200:
+          description: An array of methods.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Add a Method.
+      description: |
+        Inserts a method into the method repository and
+        gives the owner full access permissions. Must supply a namespace
+        name, payload, and entityType. Cannot supply a snapshotId
+      tags:
+        - Method Repository
+      parameters:
+        - name: body
+          in: body
+          description: Agora Entity
+          required: false
+          schema:
+            $ref: '#/definitions/MethodQuery'
+      responses:
+        201:
+          description: Method successfully added.
+          schema:
+            $ref: '#/definitions/MethodResponse'
+        400:
+          description: Malformed input.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal error.
+          schema:
+            $ref: '#/definitions/Error'
+
+  /api/methods/{namespace}/{name}/{snapshotId}:
+    get:
+      tags:
+        - Method Repository
+      summary: Find a single method.
+      description: |
+        Returns one method that matches the namespace,
+        name, and snapshotId.
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
+        - name: onlyPayload
+          in: query
+          description: Boolean to return only the payload of the method.
+          required: false
+          type: string
+      responses:
+        200:
+          description: A single method.
+          schema:
+            $ref: '#/definitions/MethodResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - Method Repository
+      summary: Redact a single method.
+      description: |
+        Redacts a method and all of its associated configurations
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
+      responses:
+        200:
+          description: |
+            An integer showing how many methods were deleted.
+          schema:
+            type: number
+        default:
+          description: Error upon redaction
+          schema:
+            $ref: '#/definitions/Error'
+
+  /api/methods/{namespace}/{name}/{snapshotId}/permissions:
+    get:
+      tags:
+        - Method Repository
+      operationId: getMethodACL
+      summary: get ACL permissions on a Method Repository method
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
+      responses:
+        200:
+          description: the indicated method ACL
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
         500:
           description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: setMethodACL
+      summary: set ACL permissions on a Method Repository method
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
+        - $ref: '#/parameters/configACLPayload'
+      responses:
+        200:
+          description: the indicated method ACL once the posted changes have been applied
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Bad Request
+        500:
+          description: Internal Server Error
+
+  /api/methods/{namespace}/permissions:
+    get:
+      tags:
+        - Method Repository
+      operationId: getMethodNamespaceACL
+      summary: get ACL permissions on a Method Repository Method Namespace
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+      responses:
+        200:
+          description: List of indicated method namespace ACL permissions
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        403:
+          description: user does not have correct permissions to manage namespace permissions or the indicated namespace was not found
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Repository
+      operationId: setMethodNamespaceACL
+      summary: set ACL permissions on a Method Repository Method Namespace
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/configACLPayload'
+      responses:
+        200:
+          description: the indicated method namespace ACL permissions once the posted changes have been applied
+          schema:
+            $ref: '#/definitions/MethodConfigACL'
+        400:
+          description: Invalid content format
+        403:
+          description: User does not have correct permissions to manage namespace permissions or the indicated namespace was not found
+        500:
+          description: Internal Server Error
+
+  /api/nih/callback:
+    post:
+      tags:
+        - NIH
+      operationId: NIHCallback
+      summary: Updates a user's NIH link from a JWT
+      parameters:
+        - name: jwt
+          description: JWT from NIH login
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/JWTWrapper'
+      responses:
+        200:
+          description: Successfully updated NIH link
+        400:
+          description: Invalid or malformed JWT
+        401:
+          description: Unauthorized
+        500:
+          description: Internal server error saving NIH link to profile
+
+  /api/nih/status:
+    get:
+      tags:
+        - NIH
+      operationId: NIHStatus
+      summary: "Retrieves info about a user's NIH link"
+      responses:
+        200:
+          description: Successfully retrieved NIH status
+          schema:
+            $ref: '#/definitions/NIHStatus'
+        204:
+          description: isDbgapAuthorized key missing from status
+        404:
+          description: linkedNihUsername key missing from status
+        500:
+          description: Internal server error retrieving NIH status
+
+  '/api/notifications/general':
+    get:
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/NotificationType'
+      tags:
+        - Notifications
+      summary: Gets the general notifications available
+      operationId: generalNotifications
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs/{configNamespace}/{configName}/validate:
+
+  '/api/notifications/workspace/{workspaceNamespace}/{workspaceName}':
     get:
       responses:
-        '200':
-          description: Successful Request
+        200:
+          description: Success
           schema:
-            $ref: '#/definitions/ValidatedMethodConfiguration'
-        '404':
-          description: Workspace or Method Configuration does not exist
-        '500':
-          description: Rawls Internal Error
-      description: ''
-      tags:
-        - Method Configurations
-      summary: get syntax validation information for a method configuration
-      operationId: validate_method_configuration
+            type: array
+            items:
+              $ref: '#/definitions/NotificationType'
       parameters:
         - in: path
-          description: Workspace Namespace
+          description: workspace namespace
           name: workspaceNamespace
           required: true
           type: string
         - in: path
-          description: Workspace Name
+          description: workspace name
           name: workspaceName
           required: true
           type: string
-        - in: path
-          description: Method Configuration Namespace
-          name: configNamespace
-          required: true
-          type: string
-        - in: path
-          description: Method Configuration Name
-          name: configName
-          required: true
-          type: string
+      tags:
+        - Notifications
+      summary: Gets the notifications available for a workspace
+      operationId: workspaceNotifications
       security:
-        - bearer:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
+  /api/profile/billing:
+    get:
+      tags:
+        - Profile
+      operationId: billing
+      summary: List billing projects for a user
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BillingProjectMembership'
+        404:
+          description: User Not Found
+        500:
+          description: Internal Server Error
+
+  /api/profile/billingAccounts:
+    get:
+      tags:
+        - Profile
+      operationId: billingAccounts
+      summary: List billing accounts for a user
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BillingAccount'
+        403:
+          description: Forbidden - redirect to Google to enable appropriate scopes
+          schema:
+            $ref: '#/definitions/BillingAccountRedirect'
+        500:
+          description: Internal Server Error
+      security:
         - googleoauth:
             - openid
             - email
             - profile
             - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/rename:
+            - https://www.googleapis.com/auth/cloud-billing
+
+  /api/profile/preferences:
     post:
       tags:
-        - Method Configurations
-      operationId: renameWorkspaceMethodConfig
-      summary: Rename a method configuration in a workspace
-      produces: application/json
+        - Profile
+      operationId: billing
+      summary: Update the preferences for the user
       parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: configNamespace
-          description: Configuration Namespace
-          required: true
-          type: string
-          in: path
-        - name: configName
-          description: Configuration Name
-          required: true
-          type: string
-          in: path
-        - name: rename
-          description: Method Config Rename
-          required: true
-          type: string
+        - name: preferences
           in: body
-          schema:
-            $ref: MethodConfigRename
+          description: The preferences to set as a Map[String, String]
+          required: true
+          type: Map[String, String]
       responses:
         204:
-          description: Successful request
-        404:
-          description: Workspace or Method Configuration not found
-        409:
-          description: Method Configuration with that name already exists
+          description: Success (No Content)
         500:
           description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
-    post:
-      tags:
-        - Method Configurations
-        - Method Repository
-      operationId: copyFromMethodRepo
-      summary: Copy a Method Repository Configuration into a workspace
-      produces: application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: configToCopy
-          description: Method Configuration to Copy
-          required: true
-          type: string
-          in: body
-          schema:
-            $ref: CopyConfigurationIngest
-      responses:
-        201:
-          description: Successful request
-        404:
-          description: Source method configuration does not exist
-        409:
-          description: Destination method configuration by that name already exists
-        422:
-          description: Error parsing source method configuration
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyToMethodRepo:
-    post:
-      tags:
-        - Method Configurations
-        - Method Repository
-      operationId: copyToMethodRepo
-      summary: Copy a Method Config in a workspace to the Method Repository
-      produces: application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: configToCopy
-          description: Method Configuration to Copy
-          required: true
-          type: string
-          in: body
-          schema:
-            $ref: PublishConfigurationIngest
-      responses:
-        201:
-          description: Successful request
-        404:
-          description: Source method configuration does not exist
-        409:
-          description: Destination method configuration by that name already exists
-        422:
-          description: Error parsing source method configuration
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
+
+  /api/refresh-token-status:
     get:
       tags:
-      - Submissions
-      operationId: listSubmissions
-      summary: |
-        List submissions.
-      produces:
-      - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
+        - OAuth
+      operationId: getRefreshTokenStatus
+      summary: Returns the status of the current user's refresh token.
       responses:
         200:
-          description: List of submissions
-        404:
-          description: Workspace not found
-        500:
-          description: Internal Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-    post:
-      tags:
-      - Submissions
-      operationId: createSubmission
-      summary: |
-        Create a submission.
-      produces:
-      - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: submission
-          description: Post Submission
-          required: true
-          type: string
-          in: body
+          description: OK
           schema:
-            $ref: SubmissionIngest
-      responses:
-        201:
-          description: Successful Request
-        400:
-          description: Expression eval failed or entities are not of type required by method config
-        404:
-          description: Method Configuration or Entity not found
-        409:
-          description: Method Configuration failed to resolve input expressions with the supplied Entity
-        500:
-          description: Internal Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
-    delete:
-      tags:
-      - Submissions
-      operationId: deleteSubmission
-      summary: |
-        abort a submission
-      produces:
-      - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: submissionId
-          description: Submission ID
-          required: true
-          type: string
-          in: path
-      responses:
-        204:
-          description: successful deletion
-        404:
-          description: Submission not found
-        500:
-          description: Internal Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-    get:
-      tags:
-      - Submissions
-      operationId: monitorSubmission
-      summary: |
-        Monitor submission status
-      produces:
-      - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: submissionId
-          description: Submission ID
-          required: true
-          type: string
-          in: path
-      responses:
-        200:
-          description: monitor a submission status
-        404:
-          description: Submission not found
-        500:
-          description: Internal Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
-    get:
-      tags:
-      - Submissions
-      operationId: workflowOutputsInSubmission
-      summary: |
-        Get workflow outputs.
-      produces:
-      - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: submissionId
-          description: Submission ID
-          required: true
-          type: string
-          in: path
-        - name: workflowId
-          description: Workflow ID
-          required: true
-          type: string
-          in: path
-      responses:
-        200:
-          description: Get workflow outputs
-        404:
-          description: Submission or Workflow not found
-        500:
-          description: Internal Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/updateAttributes:
-    patch:
-      tags:
-      - Workspaces
-      operationId: updateAttributes
-      summary: |
-        Modify attributes on a workspace.
-      produces:
-      - application/json
-      parameters:
-        - name: workspaceNamespace
-          description: Workspace Namespace
-          required: true
-          type: string
-          in: path
-        - name: workspaceName
-          description: Workspace Name
-          required: true
-          type: string
-          in: path
-        - name: workspaceUpdateJson
-          description: Attribute operations
-          required: true
-          type: array
-          items:
-            $ref: AttributeUpdateOperation
-          in: body
-      responses:
-        200:
-          description: Success
-        400:
-          description: Invalid operation
-        404:
-          description: Workspace not found
-        500:
-          description: Internal Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+            required:
+              - requiresRefresh
+            properties:
+              requiresRefresh:
+                type: boolean
+
   /api/status:
     get:
       tags:
@@ -1575,22 +1255,12 @@ paths:
       operationId: status
       summary: |
         Returns the workspace service url, methods repository url, and the current timestamp.
-      produces:
-      - application/json
-      parameters:
       responses:
         200:
           description: Success
         500:
           description: Internal Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-        - bearer:
+
   /api/status/ping:
     get:
       tags:
@@ -1599,21 +1269,13 @@ paths:
       summary: |
         Returns the current timestamp.
       produces:
-      - text/plain
-      parameters:
+        - text/plain
       responses:
         200:
           description: Success
         500:
           description: Internal Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-        - bearer:
+
   /api/storage/{bucket}/{object}:
     get:
       tags:
@@ -1622,9 +1284,7 @@ paths:
       summary: |
         Get metadata about an object stored in GCS.
       description: |
-        Mirror of Google's Cloud Storage json API. See https://cloud.google.com/storage/docs/json_api/v1/objects/get
-      produces:
-      - application/json
+        Mirror of Google's Cloud Storage json API. See https://cloud.google.com/storage/docs/json_api/v1/objects/get Also includes estimated egress charge to NA
       parameters:
         - name: bucket
           description: Name of the bucket in which the object resides.
@@ -1643,13 +1303,1453 @@ paths:
           description: Not Found
         500:
           description: Internal Error
+
+  /api/submissions/queueStatus:
+    get:
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkflowQueueStatusResponse'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: List workflow counts by queueing state
+      tags:
+        - Submissions
+      summary: workflow queue status
+      operationId: workflowQueueStatus
+
+  /api/template:
+    post:
+      tags:
+        - Method Repository
+      operationId: createMethodTemplate
+      summary: Create a Method Configuration template from a Method
+      parameters:
+        - name: methodName
+          description: name of Method to use for template
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/MethodID'
+      responses:
+        200:
+          description: Method Configuration template
+        400:
+          description: Method WDL can't be parsed
+        404:
+          description: No Such Method
+        500:
+          description: Internal Server Error
+
+  /api/version/executionEngine:
+    get:
+      tags:
+        - Version
+      operationId: executionEngineVersion
+      summary: Returns the currently deployed version of FireCloud's execution engine
+      responses:
+        200:
+          description: OK
+          schema:
+            {
+              "properties": {
+                "cromwell": {
+                  type: "string"
+                }
+              }
+            }
       security:
-        - bearer:
         - googleoauth:
             - openid
             - email
             - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+
+  /api/workspaces:
+    get:
+      tags:
+      - Workspaces
+      operationId: listWorkspaces
+      summary: |
+        Lists workspaces.
+      produces:
+        - application/json
+        - text/plain
+      responses:
+        200:
+          description: List of workspaces.
+    post:
+      tags:
+        - Workspaces
+      operationId: createWorkspace
+      summary: Create workspace
+      parameters:
+        - name: workspace
+          description: New workspace information
+          required: true
+          in: body
+          schema:
+            type: object
+            $ref: '#/definitions/WorkspaceIngest'
+      responses:
+        200:
+          description: No response was specified
+        201:
+          description: Successful Request
+        403:
+          description: Unable to create bucket for workspace
+        409:
+          description: Workspace by that name already exists
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}:
+    get:
+      tags:
+        - Workspaces
+      operationId: getWorkspace
+      summary: Get workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Successful Request
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+    delete:
+      tags:
+        - Workspaces
+      operationId: deleteWorkspace
+      summary: Delete workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        202:
+          description: Request Accepted
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/acl:
+    get:
+      tags:
+        - Workspaces
+      operationId: getWorkspaceAcl
+      summary: Get workspace ACL
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkspaceACL'
+        400:
+          description: Can't retrieve ACL for workspace
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Server Error
+    patch:
+      tags:
+        - Workspaces
+      operationId: updateWorkspaceACL
+      summary: Update workspace ACL
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: query
+          description: true to invite unregistered users, false to ignore
+          name: inviteUsersNotFound
+          required: true
+          default: false
+          type: boolean
+        - name: aclUpdates
+          description: Series of ACL updates for workspace
+          required: true
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceACLUpdate'
+          in: body
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkspaceACLUpdateResponseList'
+        400:
+          description: Can't set ACL for workspace
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/bucketUsage:
+    get:
+      tags:
+        - Workspaces
+      operationId: getBucketUsage
+      summary: Get bucket usage
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        '200':
+          description: Successful Request
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/catalog:
+    get:
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceCatalog'
+        404:
+          description: Workspace not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: Get catalog permissions for a workspace
+      tags:
+        - Workspaces
+      summary: Get workspace catalog permission
+      operationId: getCatalog
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+    patch:
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkspaceCatalogUpdateResponseList'
+        403:
+          description: Insufficient permissions to change catalog permissions (must be owner or admin)
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Workspace, user or group not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: Set catalog permisisons for a workspace
+      tags:
+        - Workspaces
+      summary: Update catalog permission
+      operationId: updateCatalog
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: body
+          description: Series of Catalog updates for workspace
+          name: catalogUpdates
+          required: true
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceCatalog'
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/checkBucketReadAccess:
+    get:
+      description: Read a workspace bucket
+      tags:
+        - Workspaces
+      summary: Read workspace bucket
+      operationId: readBucket
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Successful Request
+        403:
+          description: Insufficient permissions to access workspace bucket
+        404:
+          description: Workspace Not Found
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/clone:
+    post:
+      tags:
+        - Workspaces
+      operationId: cloneWorkspace
+      summary: Clone Workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: workspace
+          description: Cloned workspace information
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/WorkspaceIngest'
+      responses:
+        201:
+          description: Successful Request
+        400:
+          description: Unable to create resources for workspace
+        404:
+          description: Source workspace not found
+        409:
+          description: Destination workspace already exists
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities:
+    get:
+      tags:
+      - Entities
+      operationId: getEntityTypes
+      summary: |
+        List of entity types in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: List of entity types in workspace
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
+    get:
+      tags:
+      - Entities
+      operationId: getEntitiesWithType
+      summary: |
+        List of entities in a workspace with type and attribute information
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: List of entities
+        404:
+          description: Workspace or entities not found.
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
+    post:
+      tags:
+      - Entities
+      operationId: copyEntities
+      summary: |
+        Copy entities from one workspace to another
+      parameters:
+        - name: workspaceNamespace
+          description: Destination Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Destination Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: body
+          description: Entities to Copy
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/CopyEntity'
+        - name: linkExistingEntities
+          description: true to link new entities to existing entities, false to fail instead of link
+          required: false
+          default: false
+          type: boolean
+          in: query
+      responses:
+        201:
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/EntityCopyResponse'
+        404:
+          description: Source Workspace or source entities does not exist
+        409:
+          description: There are conflicts in your copy operation. Retry with the paramater linkExistingEntities=true to link all soft conflicts to the entities that already exist in your workspace.
+          schema:
+            $ref: '#/definitions/EntityCopyResponse'
+        422:
+          description: Destination workspace must match source's authorization domain, if the source has one
+        500:
+          description: Internal Error
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
+    post:
+      tags:
+      - Entities
+      operationId: deleteEntities
+      summary: Bulk delete entities from a workspace
+      parameters:
+        - name: workspaceNamespace
+          description: Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: body
+          description: Entities to delete
+          required: true
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/EntityID'
+      responses:
+        204:
+          description: Successful Request
+        400:
+          description: Not all Entities exist
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        409:
+          description: Cannot create dangling references when deleting Entities - must specify whole set
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/EntityID'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
+    get:
+      tags:
+      - Entities
+      operationId: getEntities
+      summary: |
+        List of entities in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/entityTypeParam'
+      responses:
+        200:
+          description: List of entities in workspace
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Entity'
+        404:
+          description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}:
+    get:
+      tags:
+        - Entities
+      operationId: getEntity
+      summary: Get entity in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/entityTypeParam'
+        - $ref: '#/parameters/entityNameParam'
+      responses:
+        200:
+          description: Success
+        404:
+          description: Workspace or Entity does not exist
+        500:
+          description: Internal Server Error
+    patch:
+      responses:
+        200:
+          description: Entity updated
+          schema:
+            $ref: '#/definitions/Entity'
+        400:
+          description: Attribute does not exist
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        403:
+          description: User does not have permission to update attributes in the namespace
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Workspace or Entity not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: Update an entity
+      tags:
+        - Entities
+      summary: Update entity in a workspace
+      operationId: update_entity
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/entityTypeParam'
+        - $ref: '#/parameters/entityNameParam'
+        - in: body
+          description: Update operations for attributes
+          name: attributeUpdateJson
+          required: false
+          schema:
+            $ref: '#/definitions/AttributeUpdateOperation'
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
+    get:
+      tags:
+      - Workspaces
+      operationId: exportAttributesTSV
+      summary: |
+        TSV file containing workspace attributes
+      produces:
+        - text/plain
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Workspace attributes in TSV format
+          schema:
+            type: file
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
+    get:
+      tags:
+      - Entities
+      operationId: downloadEntitiesTSV
+      summary: |
+        TSV file containing workspace entities of the specified type
+      produces:
+        - text/plain
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/entityTypeParam'
+        - name: attributeNames
+          description: comma separated list of ordered attribute names to be in downloaded tsv
+          type: string
+          in: query
+      responses:
+        200:
+          description: Workspace entities of specified type in TSV format
+          schema:
+            type: file
+        404:
+          description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
+    get:
+      tags:
+        - Entities
+      operationId: entityQuery
+      summary: Paginated query for entities in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/entityTypeParam'
+        - name: page
+          description: Page number, 1-indexed (default 1)
+          default: 1
+          minimum: 1
+          type: number
+          in: query
+        - name: pageSize
+          description: Page size (default 10)
+          default: 10
+          minimum: 1
+          type: number
+          in: query
+        - name: sortField
+          description: Sort field (default "name")
+          default: name
+          type: string
+          in: query
+        - name: sortDirection
+          description: Sort direction (asc or desc, default asc)
+          default: asc
+          enum: ["asc","desc"]
+          type: string
+          in: query
+        - name: filterTerms
+          description: Filter terms
+          type: string
+          in: query
+      responses:
+        200:
+          description: List of entities in workspace
+          schema:
+            $ref: '#/definitions/EntityQueryResponse'
+        404:
+          description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importAttributesTSV:
+    post:
+      tags:
+      - Workspaces
+      operationId: importAttributesTSV
+      summary: Import workspace attributes from a tsv file
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: attributes
+          in: formData
+          description: A valid TSV import file
+          required: true
+          type: file
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Bad Request
+        404:
+          description: Source Workspace not found
+        500:
+          description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importEntities:
+    post:
+      tags:
+        - Entities
+      operationId: importEntities
+      summary: Import entities from a tsv file
+      consumes:
+        - multipart/form-data
+      parameters:
+        - name: workspaceNamespace
+          description: Destination Workspace Namespace
+          required: true
+          type: string
+          in: path
+        - name: workspaceName
+          description: Destination Workspace Name
+          required: true
+          type: string
+          in: path
+        - name: entities
+          in: formData
+          description: A valid TSV import file
+          required: true
+          type: file
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Bad Request
+        404:
+          description: Source Workspace not found
+        500:
+          description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/lock:
+    put:
+      tags:
+        - Workspaces
+      operationId: lockWorkspace
+      summary: Lock Workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: No response was specified
+        204:
+          description: Successful Request
+        403:
+          description: Not Owner
+        404:
+          description: Workspace Not Found
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}:
+    get:
+      tags:
+        - Method Configurations
+      operationId: getWorkspaceMethodConfig
+      summary: Get a method configuration in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: configNamespace
+          description: Configuration Namespace
+          required: true
+          type: string
+          in: path
+        - name: configName
+          description: Configuration Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Successful
+        404:
+          description: Workspace or Method Configuration not found
+        500:
+          description: Internal Server Error
+    put:
+      tags:
+        - Method Configurations
+      operationId: updateWorkspaceMethodConfig
+      summary: Update a method configuration in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: configNamespace
+          description: Configuration Namespace
+          required: true
+          type: string
+          in: path
+        - name: configName
+          description: Configuration Name
+          required: true
+          type: string
+          in: path
+        - name: body
+          description: Method Config to Update
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/ConfigurationIngest'
+      responses:
+        200:
+          description: Successful
+        404:
+          description: Workspace or Method Configuration not found
+        500:
+          description: Internal Server Error
+    delete:
+      tags:
+        - Method Configurations
+      operationId: deleteWorkspaceMethodConfig
+      summary: Delete a method configuration in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: configNamespace
+          description: Configuration Namespace
+          required: true
+          type: string
+          in: path
+        - name: configName
+          description: Configuration Name
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Successful request
+        404:
+          description: Workspace or Method Configuration not found
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/rename:
+    post:
+      tags:
+        - Method Configurations
+      operationId: renameWorkspaceMethodConfig
+      summary: Rename a method configuration in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: configNamespace
+          description: Configuration Namespace
+          required: true
+          type: string
+          in: path
+        - name: configName
+          description: Configuration Name
+          required: true
+          type: string
+          in: path
+        - name: rename
+          description: Method Config Rename
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/MethodConfigRename'
+      responses:
+        204:
+          description: Successful request
+        404:
+          description: Workspace or Method Configuration not found
+        409:
+          description: Method Configuration with that name already exists
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/validate:
+    get:
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/ValidatedMethodConfiguration'
+        404:
+          description: Workspace or Method Configuration does not exist
+        500:
+          description: Rawls Internal Error
+      tags:
+        - Method Configurations
+      summary: get syntax validation information for a method configuration
+      operationId: validate_method_configuration
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: path
+          description: Method Configuration Namespace
+          name: configNamespace
+          required: true
+          type: string
+        - in: path
+          description: Method Configuration Name
+          name: configName
+          required: true
+          type: string
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
+    post:
+      tags:
+        - Method Configurations
+        - Method Repository
+      operationId: copyFromMethodRepo
+      summary: Copy a Method Repository Configuration into a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: configToCopy
+          description: Method Configuration to Copy
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/CopyConfigurationIngest'
+      responses:
+        201:
+          description: Successful request
+        404:
+          description: Source method configuration does not exist
+        409:
+          description: Destination method configuration by that name already exists
+        422:
+          description: Error parsing source method configuration
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyToMethodRepo:
+    post:
+      tags:
+        - Method Configurations
+        - Method Repository
+      operationId: copyToMethodRepo
+      summary: Copy a Method Config in a workspace to the Method Repository
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: configToCopy
+          description: Method Configuration to Copy
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/PublishConfigurationIngest'
+      responses:
+        201:
+          description: Successful request
+        404:
+          description: Source method configuration does not exist
+        409:
+          description: Destination method configuration by that name already exists
+        422:
+          description: Error parsing source method configuration
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
+    get:
+      tags:
+        - Method Configurations
+        - Workspaces
+      operationId: listWorkspaceMethodConfigs
+      summary: List of Method Configurations in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: List of Method Configurations
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Configurations
+        - Workspaces
+      operationId: postWorkspaceMethodConfig
+      summary: Create a Method Configuration in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: methodConfigJson
+          description: Method Configuration contents
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/NewMethodConfigIngest'
+      responses:
+        201:
+          description: Successful Request
+        404:
+          description: Workspace not found
+        409:
+          description: Method Configuration already exists
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/sendChangeNotification:
+    post:
+      responses:
+        200:
+          description: Success
+        403:
+          description: Insufficient permisions to send notification on this workspace
+      parameters:
+        - in: path
+          description: workspace namespace
+          name: workspaceNamespace
+          required: true
+          type: string
+        - in: path
+          description: workspace name
+          name: workspaceName
+          required: true
+          type: string
+      tags:
+        - Workspaces
+      summary: Sends notifications for change to workspace
+      operationId: changedWorkspaceNotification
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
+    get:
+      tags:
+      - Workspaces
+      operationId: getStorageCostEstimate
+      summary: Calculate an estimate of the monthly storage cost for the workspace bucket
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Storage cost estimate
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
+    get:
+      tags:
+      - Submissions
+      operationId: listSubmissions
+      summary: |
+        List submissions.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: List of submissions
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+    post:
+      tags:
+      - Submissions
+      operationId: createSubmission
+      summary: |
+        Create a submission.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: submission
+          description: Post Submission
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/SubmissionIngest'
+      responses:
+        201:
+          description: Successful Request
+        400:
+          description: Expression eval failed or entities are not of type required by method config
+        404:
+          description: Method Configuration or Entity not found
+        409:
+          description: Method Configuration failed to resolve input expressions with the supplied Entity
+        500:
+          description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
+    delete:
+      tags:
+      - Submissions
+      operationId: abortSubmission
+      summary: |
+        abort a submission
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/submissionIdParam'
+      responses:
+        204:
+          description: Aborted successfully
+        404:
+          description: Submission not found
+        500:
+          description: Internal Error
+    get:
+      tags:
+      - Submissions
+      operationId: monitorSubmission
+      summary: |
+        Monitor submission status
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/submissionIdParam'
+      responses:
+        200:
+          description: monitor a submission status
+        404:
+          description: Submission not found
+        500:
+          description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/validate:
+    post:
+      responses:
+        200:
+          description: Validation Response
+          schema:
+            $ref: '#/definitions/SubmissionValidationReport'
+        400:
+          description: Expression evaluation failed or entities are not of type required by method config
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Workspace, Method Configuration or Entity not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        502:
+          description: Trouble talking to Agora
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: Validate expression syntax for a submission
+      tags:
+        - Submissions
+      summary: Validate submission
+      operationId: validateSubmission
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: body
+          description: Description of a submission.
+          name: submission
+          required: true
+          schema:
+            $ref: '#/definitions/SubmissionRequest'
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}:
+    get:
+      responses:
+        200:
+          description: Successful Request
+        404:
+          description: Workspace, Submission or Workflow not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      description: Get call-level metadata for workflow
+      tags:
+        - Submissions
+      summary: Get call-level metadata for workflow
+      operationId: workflowMetadata
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/submissionIdParam'
+        - $ref: '#/parameters/workflowIdParam'
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
+    get:
+      tags:
+      - Submissions
+      operationId: workflowOutputsInSubmission
+      summary: |
+        Get workflow outputs.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/submissionIdParam'
+        - $ref: '#/parameters/workflowIdParam'
+      responses:
+        200:
+          description: Get workflow outputs
+        404:
+          description: Submission or Workflow not found
+        500:
+          description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
+    put:
+      tags:
+        - Workspaces
+      operationId: unlockWorkspace
+      summary: Unlock Workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: No response was specified
+        204:
+          description: Successful Request
+        403:
+          description: Not Owner
+        404:
+          description: Workspace Not Found
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/updateAttributes:
+    patch:
+      tags:
+      - Workspaces
+      operationId: updateAttributes
+      summary: |
+        Modify attributes on a workspace.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: workspaceUpdateJson
+          description: Attribute operations. WARNING! This should not be used to change library metadata (republish will not happen). Use UpdateAttributes in the library section.
+          required: true
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/AttributeUpdateOperation'
+          in: body
+      responses:
+        200:
+          description: Success
+        400:
+          description: Invalid operation
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/setAttributes:
+    patch:
+      tags:
+      - Workspaces
+      operationId: setAttributes
+      summary: |
+        Set attributes on a workspace.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: newAttributes
+          description: New attribute values, as Map[String, Attribute]. WARNING! This should not be used to change library metadata (republish will not happen). Use UpdateAttributes in the library section
+          required: true
+          schema:
+            type: object
+          in: body
+      responses:
+        200:
+          description: Success
+        400:
+          description: Malformed request
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+
+  /api/workspaces/tags:
+      get:
+        tags:
+         - Workspaces
+        operationId: getTags
+        summary: |
+          Get all tags used in FireCloud (for autocomplete)
+        description: list of all tags used in FireCloud and their associated frequencies
+        parameters:
+          - in: query
+            description: Query string
+            name: q
+            required: false
+            type: string
+        responses:
+          200:
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/WorkspaceTag'
+          500:
+            description: Rawls Internal Error
+
+  /cookie-authed/download/b/{bucket}/o/{object}:
+    get:
+      tags:
+      - Storage
+      operationId: getStorageDownload
+      summary: |
+        Download GCS object using a cookie token
+      description: |
+        **Important**: this file download does not work within the swagger UI. It is here for documentation
+        purposes. You can fill in the fields and submit; once you do so, you will get an error, but swagger
+        will populate the "Request URL" field. You can then copy and paste that field into a new tab to
+        achieve your download.
+      parameters:
+        - name: bucket
+          description: Name of the bucket in which the object resides.
+          required: true
+          type: string
+          in: path
+        - name: object
+          description: Name of the object. (be sure to urlencode)
+          required: true
+          type: string
+          in: path
+      responses:
+        200:
+          description: Success
+          schema:
+            type: file
+        404:
+          description: Not Found
+        500:
+          description: Internal Error
+      security: []
+
+  /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
+    get:
+      tags:
+      - Workspaces
+      operationId: browserDownloadAttributes
+      summary: |
+        TSV file containing workspace attributes (allows cookie-based authentication)
+      produces:
+      - text/plain
+      parameters:
+         - $ref: '#/parameters/workspaceNamespaceParam'
+         - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Workspace attributes in TSV format
+          schema:
+            type: file
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+      security: []
+
+  /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
+    post:
+      tags:
+      - Entities
+      operationId: browserDownloadEntitiesTSV
+      summary: |
+        TSV file containing workspace entities of the specified type
+      description: |
+        swagger-ui seems to not handle file downloads, so this endpoint won't function through the ui.
+        It is here for documentation purposes only.
+      produces:
+        - text/plain
+        - application/octet-stream
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/entityTypeParam'
+        - name: FCtoken
+          description: valid access token to use for authentication
+          type: string
+          in: formData
+          required: true
+        - name: attributeNames
+          description: comma separated list of ordered attribute names to be in downloaded tsv
+          type: string
+          in: formData
+          allowEmptyValue: true
+      responses:
+        200:
+          description: Workspace entities of specified type in TSV format
+          schema:
+            type: file
+        404:
+          description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
+      security: []
+
+  /duos/autocomplete/{queryTerm}:
+    get:
+      tags:
+      - Library
+      operationId: duosAutocomplete
+      summary: |
+        Passes through to DUOS' autocomplete method to select ontology terms of disease type that match the query term.
+      parameters:
+        - name: queryTerm
+          in: path
+          description: The query term (word fragment) which the service should try and complete.
+          required: true
+          type: string
+      responses:
+        200:
+          description: Array of results.
+        500:
+          description: Internal Server Error
+      security: []
+
+  /api/duos/consent/orsp/{orspId}:
+    get:
+      tags:
+      - Library
+      operationId: duosConsentOrspId
+      summary: Find Consent by ORSP ID
+      parameters:
+        - name: orspId
+          in: path
+          description: Finds the consent for the provided ORSP ID.
+          required: true
+          type: string
+      responses:
+        200:
+          description: Consent
+          schema:
+            $ref: '#/definitions/Consent'
+        400:
+          description: The consent associated with the provided name has not been approved.
+        401:
+          description: Invalid authorization, must be a FireCloud user.
+        404:
+          description: The consent associated with the provided name could not be found.
+        500:
+          description: Internal Server Error
+
+  /error:
+    get:
+      tags:
+      - Status
+      operationId: error
+      summary: |
+        An error status endpoint for load balancing purposes
+      responses:
+        503:
+          description: Service Unavailable
+      security: []
+
+  /health:
+    get:
+      tags:
+      - Status
+      operationId: health
+      summary: |
+        A health status endpoint for load balancing purposes
+      responses:
+        200:
+          description: Success
+      security: []
+
+  /status:
+    get:
+      operationId: status
+      tags:
+        - Status
+      summary: |
+        An orchestrated status check for underlying systems: Agora, Thurloe, Elasticsearch, Rawls
+      responses:
+        200:
+          description: All systems OK.
+          schema:
+            $ref: '#/definitions/SystemStatus'
+        500:
+          description: Problem with one or more systems. See response for details.
+          schema:
+            $ref: '#/definitions/SystemStatus'
+      security: []
+
+  /handle-oauth-code:
+    post:
+      tags:
+        - OAuth
+      operationId: handleOauthCode
+      summary: Handles OAuth code from authenticated client
+      description: This code allows the server to acquire a refresh token.
+      parameters:
+        - in: body
+          name: body
+          schema:
+            required:
+              - code
+              - redirectUri
+            properties:
+              code:
+                type: string
+              redirectUri:
+                type: string
+      responses:
+        204:
+          description: All set
+      security: []
+
   /me:
     get:
       tags:
@@ -1659,8 +2759,6 @@ paths:
       responses:
         200:
           description: OK
-          produces:
-          - application/json
           schema:
             $ref: '#/definitions/Me'
         401:
@@ -1671,25 +2769,37 @@ paths:
           description: Not Found. User is authenticated to Google but not a FireCloud member.
         500:
           description: Internal Server Error determining user status.
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+        503:
+          description: Service Unavailable. Could not reach underlying services to determine user status.
+
+  /register:
+    get:
+      tags:
+        - Profile
+      operationId: getUserStatus
+      summary: Passes through to the Rawls userinfo API and returns its response
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/RawlsMe'
+        404:
+          description: User Not Found.
+        500:
+          description: Internal Server Error determining Rawls user status.
+
   /register/profile:
     get:
       tags:
         - Profile
       operationId: getAll
       summary: Returns a list of all keys and values stored in the user profile service for the currently logged-in user.
-      parameters:
+      produces:
+        - application/json
+        - text/plain
       responses:
         200:
           description: OK
-          produces:
-          - application/json
           schema:
             {
               "properties": {
@@ -1717,28 +2827,17 @@ paths:
             }
         500:
           description: Internal server error
-          produces: text/plain
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
     post:
       tags:
         - Profile
       operationId: setProfile
       summary: Sets a profile object in the user profile service for the currently logged-in user.
-      consumes:
-      - application/json
       parameters:
       - name: profile
         description: A complete profile
-        type: string
         in: body
         schema:
-          $ref: Profile
+          $ref: '#/definitions/Profile'
       responses:
         200:
           description: OK
@@ -1746,13 +2845,7 @@ paths:
           description: Bad request
         500:
           description: Internal server error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
+
   /register/userinfo:
     get:
       tags:
@@ -1764,212 +2857,241 @@ paths:
       responses:
         200:
           description: OK
-          produces:
-          - application/json
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/profile/billing:
-    get:
-      tags:
-        - Profile
-      operationId: billing
-      summary: List billing projects for a user
-      responses:
-        200:
-          description: OK
-          produces:
-          - application/json
-          schema:
-            {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-        404:
-          description: User Not Found
-        500:
-          description: Internal Server Error
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /login:
-    get:
-      tags:
-        - OAuth
-      operationId: login
-      summary: Starts the authentication flow for a user
-      description: This is an unauthenticated endpoint at /login (not /api/login) that initiates the OAuth flow.
-        Authentication cannot be initiated from within swagger, because auth requires the entire browser
-        to redirect, and swagger uses ajax. To test, fill in your desired query params, then copy and paste the
-        request url into your browser address bar.
-      parameters:
-      - name: path
-        in: query
-        description: The url fragment to use after finishing authentication
-        required: false
-        type: string
-      - name: prompt
-        in: query
-        description: use "force" to always request a new refresh token
-        required: false
-        type: string
-        enum: ["auto","force"]
-        default: "auto"
-      - name: callback
-        in: query
-        description: The host to use after finishing authentication. Include the scheme, but no trailing slash, e.g. https://firecloud.broadinstitute.org
-        required: false
-        type: string
-      responses:
-        307:
-          description: Successful redirect after authentication
-        401:
-          description: Unauthorized
-        500:
-          description: Internal server error
-  /api/nih/callback:
-    post:
-      tags:
-        - NIH
-      operationId: NIHCallback
-      summary: Updates a user's NIH link from a JWT
-      parameters:
-        - name: jwt
-          description: JWT from NIH login
-          required: true
-          type: string
-          in: body
-          schema:
-            $ref: JWTWrapper
-      responses:
-        200:
-          description: Successfully updated NIH link
-        400:
-          description: Invalid or malformed JWT
-        401:
-          description: Unauthorized
-        500:
-          description: Internal server error saving NIH link to profile
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /api/nih/status:
-    get:
-      tags:
-        - NIH
-      operationId: NIHStatus
-      summary: Retrieves info about a user's NIH link
-      parameters:
-      responses:
-        200:
-          description: Successfully retrieved NIH status
-          produces:
-            - application/json
-          schema:
-            $ref: NIHStatus
-        204:
-          description: isDbgapAuthorized key missing from status
-        404:
-          description: linkedNihUsername key missing from status
-        500:
-          description: Internal server error retrieving NIH status
-      security:
-        - bearer:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-  /sync_whitelist:
-    post:
-      tags:
-        - NIH
-      operationId: NIHSyncWhitelist
-      summary: Downloads the NIH Whitelist and Updates Rawls groups approrpriately
-      responses:
-        204:
-          description: Successfully synced NIH whitelist
-        500:
-          description: Internal server error syncing NIH whitelist
-securityDefinitions:
-  googleoauth:
-    type: oauth2
-    authorizationUrl: 'https://accounts.google.com/o/oauth2/auth'
-    flow: implicit
-    scopes:
-      openid: open id authorization
-      email: email authorization
-      profile: profile authorization
-      https://www.googleapis.com/auth/devstorage.full_control: GCS storage
-  bearer:
-    type: apiKey
-    name: Authorization
-    in: header
+
+##########################################################################################
+## PARAMETERS
+##########################################################################################
+parameters:
+  workspaceNamespaceParam:
+    name: workspaceNamespace
+    description: Workspace Namespace
+    required: true
+    type: string
+    in: path
+  workspaceNameParam:
+    name: workspaceName
+    description: Workspace Name
+    required: true
+    type: string
+    in: path
+  methodNamespaceParam:
+    name: namespace
+    description: Method Namespace
+    required: true
+    type: string
+    in: path
+  methodNameParam:
+    name: name
+    description: Method Name
+    required: true
+    type: string
+    in: path
+  methodSnapshotId:
+    name: snapshotId
+    description: Method snapshot ID
+    required: true
+    type: string
+    in: path
+  configNamespaceParam:
+    name: namespace
+    description: Method Configuration Namespace
+    required: true
+    type: string
+    in: path
+  configNameParam:
+    name: name
+    description: Method Configuration Name
+    required: true
+    type: string
+    in: path
+  configSnapshotId:
+    name: snapshotId
+    description: Method Configuration snapshot ID
+    required: true
+    type: string
+    in: path
+  configACLPayload:
+    name: payload
+    description: the ACLs to upsert
+    required: true
+    in: body
+    schema:
+      $ref: '#/definitions/MethodConfigACL'
+  entityTypeParam:
+    name: entityType
+    description: Entity Type
+    required: true
+    type: string
+    in: path
+  entityNameParam:
+    name: entityName
+    description: Entity Name
+    required: true
+    type: string
+    in: path
+  submissionIdParam:
+    name: submissionId
+    description: Submission ID
+    required: true
+    type: string
+    in: path
+  workflowIdParam:
+    name: workflowId
+    description: Workflow ID
+    required: true
+    type: string
+    in: path
+
+##########################################################################################
+## DEFINITIONS
+##########################################################################################
 definitions:
-  WorkspaceIngest:
-    properties:
-      namespace:
-        type: string
-        description: New workspace namespace
-      name:
-        type: string
-        description: New workspace name
-      attributes:
-        type: object
-        additionalProperties:
-          type: string
-        description: Map of attributes
-  MethodConfigACL:
-    type: array
-    items:
-      properties:
-        user:
-          type: string
-          description: a user's ID or "public"
-        role:
-          type: string
-          description: one of "NO ACCESS", "READER", or "OWNER"
-      required:
-        - userId
-        - accessLevel
-  SubmissionIngest:
-    properties:
-      methodConfigurationNamespace:
-        type: string
-        description: Namespace of the method configuration to execute.
-      methodConfigurationName:
-        type: string
-        description: Name of the method configuration to execute.
-      entityType:
-        type: string
-        description: Type of root entity for expression.
-      entityName:
-        type: string
-        description: Name of root entity for expression.
-      expression:
-        type: string
-        description: Expression that resolves to one or more entities matching the entity type
-          in the method configuration. Leave blank for default.
+
+  AttributeEntityReference:
+    type: object
+    description: ''
     required:
-      - methodConfigurationNamespace
-      - methodConfigurationName
       - entityType
       - entityName
+    properties:
+      entityType:
+        type: string
+        description: The type of the entity
+      entityName:
+        type: string
+        description: The name of the entity
+
+  AttributeUpdateOperation:
+    type: object
+    properties:
+      op:
+        type: string
+        description: Operation to perform on the attribute
+      attributeName:
+        type: string
+        description: The name of the attribute
+      addUpdateAttribute:
+        type: string
+        description: The value of the attribute (if adding/updating)
+    required:
+      - op
+      - attributeName
+
+  BillingAccount:
+    description: 'Details for a single billing account'
+    required:
+      - accountName
+      - firecloudHasAccess
+      - displayName
+    type: object
+    properties:
+      accountName:
+        type: string
+        description: name of billing account
+      firecloudHasAccess:
+        type: boolean
+        description: whether the Firecloud service has been given access to this billing account
+      displayName:
+        type: string
+        description: display name of billing account
+
+  BillingAccountRedirect:
+    description: 'Google redirect URL to enable appropriate scopes'
+    required:
+      - redirect
+    type: object
+    properties:
+      redirect:
+        type: string
+        description: URL to redirect to
+
+  BillingProjectMember:
+    description: ''
+    required:
+      - email
+      - role
+    type: object
+    properties:
+      email:
+        type: string
+        description: the email of the user
+      role:
+        type: string
+        description: the role of the user in the project
+
+  BillingProjectMembership:
+    description: ''
+    required:
+      - projectName
+      - role
+      - status
+    type: object
+    properties:
+      projectName:
+        type: string
+        description: the name of the project to create
+      role:
+        type: string
+        description: the role of the current user in the project
+      status:
+        type: string
+        enum: ["Creating", "Ready", "Error"]
+      message:
+        type: string
+        description: informational message about the project
+
+  CallMetadata:
+    description: Stuff you need to know about calls
+    type: object
+    properties:
+      inputs:
+        type: object
+        description: map from input names onto resolved values
+      executionStatus:
+        type: string
+        description: status of call
+      executionEvents:
+        type: array
+        items:
+          $ref: '#/definitions/ExecutionEvent'
+      backendStatus:
+        type: string
+        description: status of the backend
+      backendLogs:
+        type: object
+        description: map of log files from backend
+      outputs:
+        type: object
+        description: map from output names to local files
+      start:
+        type: string
+        format: date-time
+        description: starting time of call
+      end:
+        type: string
+        format: date-time
+        description: ending time of call
+      jobId:
+        type: string
+        description: unique ID of job
+      returnCode:
+        type: integer
+        description: result code
+      backend:
+        type: string
+        description: type of backend executing the call
+      stdout:
+        type: string
+        description: location of stdout
+      stderr:
+        type: string
+        description: location of stderr
+      shardIndex:
+        type: integer
+        description: call index within a scatter block, as reported by execution service
+
   ConfigurationIngest:
+    type: object
     properties:
       namespace:
         type: string
@@ -1981,20 +3103,20 @@ definitions:
         type: string
         description: Root entity type
       workspaceName:
-        type: Map[String, String]
-        description: Map with corresponding workspace-related information - name and namespace
+        type: object
+        description: Map[String, String] with corresponding workspace-related information - name and namespace
       methodRepoMethod:
-        type: Map[String, String]
-        description: Map with corresponding method-related information
+        type: object
+        description: Map[String, String] with corresponding method-related information
       outputs:
-        type: Map[String, String]
-        description: Map with outputs information
+        type: object
+        description: Map[String, String] with outputs information
       inputs:
-        type: Map[String, String]
-        description: Map with inputs information
+        type: object
+        description: Map[String, String] with inputs information
       prerequisites:
-        type: Map[String, String]
-        description: Map of prerequisites (keys unused, will be removed in the future)
+        type: object
+        description: Map[String, String] of prerequisites (keys unused, will be removed in the future)
     required:
       - namespace
       - name
@@ -2004,22 +3126,118 @@ definitions:
       - outputs
       - inputs
       - prerequisites
-  MethodConfigRename:
+
+  ConfigurationQuery:
+    type: object
     properties:
       namespace:
         type: string
-        description: Method configuration namespace
+        description: Namespace which contains Configuration.
+        default: YOUR_NAMESPACE
       name:
         type: string
-        description: Method configuration name
-      workspaceName:
-        type: Map[String, String]
-        description: Map with corresponding workspace-related information - name and namespace
-    required:
-      - namespace
-      - name
-      - workspaceName
+        description: Name of the Configuration.
+        default: quick-BWA-config
+      synopsis:
+        type: string
+        description: Synopsis which contains Configuration.
+        default: Quick synopsis of configuration.
+      documentation:
+        type: string
+        description: Documentation of the Configuration.
+        default: |
+          Example configuration with an associated method.
+      payload:
+        type: string
+        description: Payload of method -- must be in WDL format
+        default: >
+          { "methodRepoMethod": { "methodNamespace": "YOUR_NAMESPACE",
+          "methodName": "BWA", "methodVersion": 1}}
+      entityType:
+        type: string
+        description: Can only be Configuration.
+        default: Configuration
+
+  ConfigurationResponse:
+    type: object
+    properties:
+      method:
+        type: object
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      snapshotId:
+        type: integer
+        description: SnapshotId of AgoraEntity
+      synopsis:
+        type: string
+        description: Synopsis which contains AgoraEntity.
+        default: Quickly aligns short nucleotide sequences.
+      documentation:
+        type: string
+        description: Documentation of the AgoraEntity. MUST BE REQUESTED EXPLICITLY.
+        default: |
+          BWA is a software package for mapping low-divergent sequences
+          against a large reference genome, such as the human genome.
+          It consists of three algorithms: BWA-backtrack, BWA-SW and BWA-MEM.
+      createDate:
+        type: string
+        description: Timestamp of creation
+      url:
+        type: string
+        description: URL where resource can be accessed.
+      payload:
+        type: string
+        description: Payload of method -- must be in WDL format. MUST BE REQUESTED EXPLICITLY.
+        default: >
+          { "methodRepoMethod": { "methodNamespace": "YOUR_NAMESPACE",
+          "methodName": "BWA", "methodVersion": 1}}
+      entityType:
+        type: string
+        description: Type of the AgoraEntity -- Task or Workflow.
+        default: Task
+
+  Consent:
+    type: object
+    properties:
+      consentId:
+        type: string
+        description: The ID of the entity.
+      name:
+        type: string
+        description: Name used to identify the consent.
+      createDate:
+        type: number
+        description: Creation Date in date-time milliseconds
+      lastUpdate:
+        type: number
+        description: Date of the last update in date-time milliseconds
+      sortDate:
+        type: number
+        description: The lastest modification date in date-time milliseconds
+      requiresManualReview:
+        type: boolean
+        description: Describes if this consent has to be reviewed manually.
+      dataUseLetter:
+        type: string
+        description: The URL of the saved file.
+      useRestriction:
+        type: object
+        description: The UseRestriction of this consent. Used to match against another entities.
+      dulName:
+        type: string
+        description: Name that identifies the Data Use Letter file.
+      translatedUseRestriction:
+        type: string
+        description: The translated use restriction of the consent.
+
   CopyConfigurationIngest:
+    type: object
     properties:
       configurationNamespace:
         type: string
@@ -2042,7 +3260,557 @@ definitions:
       - configurationSnapshotId
       - destinationNamespace
       - destinationName
+
+  CopyEntity:
+    type: object
+    properties:
+      sourceWorkspace:
+        $ref: '#/definitions/Namespace'
+        description: Source Workspace Namespace
+      entityType:
+        type: string
+        description: Entity Type
+      entityNames:
+        type: array
+        items:
+          type: string
+        description: List of entity names to be copied
+
+  CreateRawlsBillingProjectFullRequest:
+    description: ''
+    required:
+      - projectName
+      - billingAccount
+    type: object
+    properties:
+      projectName:
+        type: string
+        description: the name of the project to create
+      billingAccount:
+        type: string
+        description: the id of the billing account to use, must start with 'billingAccounts/'
+
+  CuratorStatus:
+    description: is the user a curator?
+    required:
+      - curator
+    type: object
+    properties:
+      curator:
+        type: boolean
+
+  Enabled:
+    type: object
+    properties:
+      google:
+        type: boolean
+        description: User enabled via Google?
+      ldap:
+        type: boolean
+        description: User enabled in LDAP?
+      allUsersGroup:
+        type: boolean
+        description: User is a member of the "All Users" group?
+
+  Entity:
+    description: ''
+    required:
+      - name
+      - entityType
+      - attributes
+    type: object
+    properties:
+      name:
+        type: string
+        description: The name of the entity
+      entityType:
+        type: string
+        description: The type of the entity
+      attributes:
+        type: object
+        description: Map[String,Attribute]
+
+  EntityCopyResponse:
+    type: object
+    description: ''
+    required:
+      - entitiesCopied
+      - softConflicts
+      - hardConflicts
+    properties:
+      entitiesCopied:
+        type: array
+        description: 'the entities that were successfully copied into the workspace'
+        items:
+          $ref: '#/definitions/AttributeEntityReference'
+      hardConflicts:
+        type: array
+        description: 'these entities already exist in your workspace'
+        items:
+          $ref: '#/definitions/EntityHardConflict'
+      softConflicts:
+        type: array
+        description: 'the conflicts within your entity subtrees. note that this will be empty if there are hard conflicts'
+        items:
+          $ref: '#/definitions/EntitySoftConflict'
+
+  EntityHardConflict:
+    type: object
+    description: ''
+    required:
+      - entityType
+      - entityName
+    properties:
+      entityType:
+        type: string
+        description: 'the type of the entity'
+      entityName:
+        type: string
+        description: 'the name of the entity'
+
+  EntityID:
+    type: object
+    properties:
+      entityType:
+        type: string
+        description: Entity Type
+      entityName:
+        type: string
+        description: Entity Name
+
+  EntityQueryParameters:
+    description: ''
+    required:
+      - page
+      - pageSize
+      - sortField
+      - sortDirection
+    type: object
+    properties:
+      page:
+        type: number
+        description: page number, 1-indexed positive integer
+      pageSize:
+        type: number
+        description: count of items per page, positive integer
+      sortField:
+        type: string
+        description: field to sort by
+      sortDirection:
+        type: string
+        description: asc or desc
+      filterTerms:
+        type: string
+        description: terms to filter results by
+
+  EntityQueryResponse:
+    description: ''
+    required:
+      - parameters
+      - resultMetadata
+      - results
+    type: object
+    properties:
+      parameters:
+        $ref: '#/definitions/EntityQueryParameters'
+      resultMetadata:
+        $ref: '#/definitions/EntityQueryResultMetadata'
+      results:
+        type: array
+        items:
+          $ref: '#/definitions/Entity'
+
+  EntityQueryResultMetadata:
+    description: ''
+    required:
+      - unfilteredCount
+      - filteredCount
+      - filteredPageCount
+    type: object
+    properties:
+      unfilteredCount:
+        type: number
+        description: count of results before filtering
+      filteredCount:
+        type: number
+        description: count of results after filtering
+      filteredPageCount:
+        type: number
+        description: count of pages after filtering; honors pageSize parameter
+
+  EntitySoftConflict:
+    type: object
+    description: ''
+    required:
+      - entityType
+      - entityName
+      - conflicts
+    properties:
+      entityType:
+        type: string
+        description: 'the type of the entity'
+      entityName:
+        type: string
+        description: 'the name of the entity'
+      conflicts:
+        type: array
+        description: 'the next entity in the path to the conflict'
+        items:
+          $ref: '#/definitions/EntitySoftConflict'
+
+  Error:
+    type: object
+    properties:
+      code:
+        type: integer
+        default: 500
+      message:
+        type: string
+        default: Internal Server Error
+
+  ErrorReport:
+    description: ''
+    required:
+      - source
+      - message
+      - causes
+      - stackTrace
+    type: object
+    properties:
+      source:
+        type: string
+        description: service causing error
+      message:
+        type: string
+        description: what went wrong
+      statusCode:
+        type: integer
+        description: HTTP status code
+      causes:
+        type: array
+        description: errors triggering this one
+        items:
+          $ref: '#/definitions/ErrorReport'
+      stackTrace:
+        type: array
+        description: stack trace
+        items:
+          $ref: '#/definitions/StackTraceElement'
+
+  ExecutionEvent:
+    description: ''
+    required:
+      - description
+      - startTime
+    type: object
+    properties:
+      description:
+        type: string
+        description: Description of the event
+      startTime:
+        type: string
+        format: date-time
+        description: When the event started
+      endTime:
+        type: string
+        format: date-time
+        description: When the event finished
+
+  ExtendedEnabled:
+    allOf:
+      - $ref: '#/definitions/Enabled'
+    type: object
+    properties:
+      allUsersGroup:
+        type: boolean
+        description: User is a member of the "All Users" group?
+
+  JWTWrapper:
+    type: object
+    properties:
+      jwt:
+        type: string
+        description: the encoded/signed JWT
+
+  LibraryBulkIndexResponse:
+    type: object
+    properties:
+      totalCount:
+        type: number
+        description: the number of published workspaces sent to be indexed
+      hasFailures:
+        type: boolean
+        description: did the indexing operation result in any failures?
+        default: false
+      failureMessages:
+        type: object
+        description: Map[String,String] of id -> failure message
+
+  LibraryMetadataInput:
+    type: object
+    description: JSON-standard packet of metadata as defined by the Library schema
+    example: |
+      {
+        "library:requiresExternalApproval": false,
+        "library:contactEmail": "someone@broadinstitute.org",
+        "library:datasetName": "My Dataset",
+        "library:numSubjects": 123,
+        "library:datatype": ["Whole Exome", "Whole Genome"]
+        ...
+        additional JSON-standard fields as
+        defined by the Library schema
+        ...
+      }
+
+  ManagedGroupRef:
+    description: a reference to a group that can be managed by users
+    type: object
+    required:
+      - membersGroupName
+    properties:
+      membersGroupName:
+        type: string
+
+  ManagedGroupAccessResponse:
+    description: an element of a list of groups a user has access to
+    type: object
+    required:
+      - groupName
+      - groupEmail
+      - role
+    properties:
+      groupName:
+        type: string
+      groupEmail:
+        type: string
+      role:
+        type: string
+
+  ManagedGroupWithMembers:
+    description: a group with all of its members
+    type: object
+    required:
+      - membersGroup
+      - adminsGroup
+      - membersEmails
+      - adminsEmails
+    properties:
+      membersGroup:
+        $ref: '#/definitions/RawlsGroupShort'
+      adminsGroup:
+        $ref: '#/definitions/RawlsGroupShort'
+      membersEmails:
+        type: array
+        items:
+          type: string
+      adminsEmails:
+        type: array
+        items:
+          type: string
+
+  Me:
+    type: object
+    properties:
+      userInfo:
+        $ref: '#/definitions/UserInfo'
+      enabled:
+        $ref: '#/definitions/Enabled'
+
+  MethodConfigACL:
+    type: array
+    items:
+      properties:
+        user:
+          type: string
+          description: a user's ID or "public"
+        role:
+          type: string
+          description: one of "NO ACCESS", "READER", or "OWNER"
+      required:
+        - user
+        - role
+
+  MethodConfigRename:
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: Method configuration namespace
+      name:
+        type: string
+        description: Method configuration name
+      workspaceName:
+        type: object
+        description: Map[String, String] with corresponding workspace-related information - name and namespace
+    required:
+      - namespace
+      - name
+      - workspaceName
+
+  MethodConfiguration:
+    description: ''
+    required:
+      - namespace
+      - name
+      - rootEntityType
+      - inputs
+      - methodRepoMethod
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: 'This method configuration''s namespace'
+      name:
+        type: string
+        description: The name of the method configuration
+      rootEntityType:
+        type: string
+        description: The root entity type that the method will be running on
+      prerequisites:
+        type: object
+        description: Map[String, String]
+      inputs:
+        type: object
+        description: Map[String, String]
+      outputs:
+        type: object
+        description: Map[String, String]
+      methodRepoMethod:
+        $ref: '#/definitions/MethodRepoMethod'
+        description: The properties of the method from the method store that this config is associated with
+
+  MethodID:
+    type: object
+    properties:
+      methodNamespace:
+        type: string
+        description: Method namespace
+      methodName:
+        type: string
+        description: Method name
+      methodVersion:
+        type: integer
+        default: 0
+        description: Method version
+    required:
+      - methodNamespace
+      - methodName
+      - methodVersion
+
+  MethodQuery:
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      synopsis:
+        type: string
+        description: Synopsis which contains AgoraEntity.
+        default: Quickly aligns short nucleotide sequences.
+      documentation:
+        type: string
+        description: Documentation of the AgoraEntity.
+        default: |
+          BWA is a software package for mapping low-divergent sequences
+          against a large reference genome, such as the human genome.
+          It consists of three algorithms: BWA-backtrack, BWA-SW and BWA-MEM.
+      payload:
+        type: string
+        description: Payload of method -- must be in WDL format
+        default: >
+          task wc {File in_file command { cat ${in_file} | wc -l } output { Int
+          count = read_int(stdout()) }}
+      entityType:
+        type: string
+        description: Type of the AgoraEntity -- Task or Workflow.
+        default: Task
+
+  MethodRepoMethod:
+    description: ''
+    required:
+      - methodNamespace
+      - methodName
+      - methodVersion
+    type: object
+    properties:
+      methodNamespace:
+        type: string
+        description: The namespace of method from method store
+      methodName:
+        type: string
+        description: The name of method from method store
+      methodVersion:
+        type: integer
+        description: The version of method from method store
+
+  MethodResponse:
+    required:
+      - managers
+      - namespace
+      - name
+      - snapshotId
+    type: object
+    properties:
+      managers:
+        type: array
+        items:
+          type: string
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      snapshotId:
+        type: integer
+        description: SnapshotId of AgoraEntity
+      synopsis:
+        type: string
+        description: Synopsis which contains AgoraEntity.
+        default: Quickly aligns short nucleotide sequences.
+      documentation:
+        type: string
+        description: Documentation of the AgoraEntity. MUST BE REQUESTED EXPLICITLY.
+        default: |
+          BWA is a software package for mapping low-divergent sequences
+          against a large reference genome, such as the human genome.
+          It consists of three algorithms: BWA-backtrack, BWA-SW and BWA-MEM.
+      createDate:
+        type: string
+        description: Timestamp of creation
+      url:
+        type: string
+        description: URL where resource can be accessed.
+      payload:
+        type: string
+        description: Payload of method -- must be in WDL format. MUST BE REQUESTED EXPLICITLY.
+        default: >
+          task wc {File in_file command { cat ${in_file} | wc -l } output { Int
+          count = read_int(stdout()) }}
+      entityType:
+        type: string
+        description: Type of the AgoraEntity -- Task or Workflow.
+        default: Task
+
+  Namespace:
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: Entity namespace
+      name:
+        type: string
+        description: Entity name
+
   NewMethodConfigIngest:
+    type: object
     properties:
       namespace:
         type: string
@@ -2054,17 +3822,17 @@ definitions:
         type: string
         description: Method configuration root entity type
       inputs:
-        type: Map[string, string]
-        description: Input map
+        type: object
+        description: Input map - Map[string, string]
       outputs:
-        type: Map[string, string]
-        description: Output map
+        type: object
+        description: Output map - Map[string, string]
       prerequisites:
-        type: Map[string, string]
-        description: Prerequisites map
+        type: object
+        description: Prerequisites map - Map[string, string]
       methodRepoMethod:
-        type: Map
-        description: Method ID
+        type: object
+        description: Method ID - Map
     required:
       - namespace
       - name
@@ -2073,7 +3841,50 @@ definitions:
       - outputs
       - prerequisites
       - methodRepoMethod
+
+  NIHStatus:
+    required:
+      - linkedNihUsername
+    type: object
+    properties:
+      linkedNihUsername:
+        type: string
+      isDbgapAuthorized:
+        type: boolean
+      linkExpireTime:
+        type: integer
+        format: int64
+        default: 0
+
+  NotificationType:
+    description: key and description of a notification
+    required:
+      - notificationKey
+      - description
+    properties:
+      notificationKey:
+        type: string
+      description:
+        type: string
+
+  Profile:
+    type: object
+    properties:
+      name:
+        type: string
+        description: User's full name
+      email:
+        type: string
+        description: User's email address
+      institution:
+        type: string
+        description: User's home institution
+      pi:
+        type: string
+        description: Primary Investigator
+
   PublishConfigurationIngest:
+    type: object
     properties:
       configurationNamespace:
         type: string
@@ -2092,183 +3903,263 @@ definitions:
       - configurationName
       - sourceNamespace
       - sourceName
-  AttributeUpdateOperation:
+
+  RawlsGroupRef:
+    type: object
+    description: a reference to a group
     properties:
-      op:
+      groupName:
         type: string
-        description: Operation to perform on the attribute
-      attributeName:
+        description: ''
+
+  RawlsGroupShort:
+    type: object
+    description: a reference to a group
+    properties:
+      groupName:
         type: string
-        description: The name of the attribute
-      addUpdateAttribute:
+        description: 'the name of the group'
+      groupEmail:
         type: string
-        description: The value of the attribute (if adding/updating)
+        description: 'the email associated with the group'
+
+  RawlsMe:
+    type: object
+    properties:
+      userInfo:
+        $ref: '#/definitions/UserInfo'
+      enabled:
+        $ref: '#/definitions/ExtendedEnabled'
+
+  SearchTermRef:
+    type: object
+    properties:
+      searchString:
+        type: string
+        description: The term to search for
+      filters:
+        type: object
+        description: Map[String, Array[String]] Each entry contains the column name (i.e. "library:indication") and a list of terms that will be or'ed in the query (["cancer", "sleep apnea"])
+      fieldAggregations:
+        type: object
+        description: Map[String, Int] The list of fields for which you would like to retrieve aggregations and the number of aggregations to return. Default is 5. Specify 0 to get all
+      from:
+        type: integer
+        default: 0
+        description: Where in the results list to start (used for pagination)
+      size:
+        type: integer
+        default: 10
+        description: How many results to return
+      sortField:
+        type: string
+        description: Field name on which to sort; defaults so sort by relevance if not specified
+      sortDirection:
+        type: string
+        description: asc or desc; defaults to asc if not specified
+
+  StackTraceElement:
+    description: ''
     required:
-      - op
-      - attributeName
-  CopyEntity:
+      - className
+      - methodName
+      - fileName
+      - lineNumber
+    type: object
     properties:
-      sourceWorkspace:
-        schema:
-          $ref: Namespace
-        description: Source Workspace Namespace
-      entityType:
+      className:
         type: string
-        description: Entity Type
-      entityNames:
-        type: array
-        items:
-          type: string
-        description: List of entity names to be copied
-  Namespace:
-    properties:
-      namespace:
-        type: string
-        description: Entity namespace
-      name:
-        type: string
-        description: Entity name
-  DeleteEntities:
-    properties:
-      recursive:
-        type: boolean
-        default: false
-        description: Whether or not to recursively delete (currently unimplemented)
-      entities:
-        type: array
-        items:
-          $ref: EntityID
-        description: List of entities to be deleted
-    required:
-      - recursive
-      - entities
-  EntityID:
-    properties:
-      entityType:
-        type: string
-        description: Entity Type
-      entityName:
-        type: string
-        description: Entity Name
-  MethodID:
-    properties:
-      methodNamespace:
-        type: string
-        description: Method namespace
+        description: class name
       methodName:
         type: string
-        description: Method name
-      methodVersion:
-        type: int
-        default: 0
-        description: Method version
+        description: method name
+      fileName:
+        type: string
+        description: source file name
+      lineNumber:
+        type: integer
+        description: line number
+
+  SubmissionIngest:
+    type: object
+    properties:
+      methodConfigurationNamespace:
+        type: string
+        description: Namespace of the method configuration to execute.
+      methodConfigurationName:
+        type: string
+        description: Name of the method configuration to execute.
+      entityType:
+        type: string
+        description: Type of root entity for expression.
+      entityName:
+        type: string
+        description: Name of root entity for expression.
+      expression:
+        type: string
+        description: Expression that resolves to one or more entities matching the entity type
+          in the method configuration. Leave blank for default.
+      useCallCache:
+        type: boolean
+        description: Whether or not to read from cache for this submission
     required:
-      - methodNamespace
-      - methodName
-      - methodVersion
-  MethodConfiguration:
+      - methodConfigurationNamespace
+      - methodConfigurationName
+      - entityType
+      - entityName
+      - useCallCache
+
+  SubmissionRequest:
     description: ''
     required:
-      - namespace
-      - name
-      - rootEntityType
-      - inputs
-      - methodRepoMethod
+      - methodConfigurationNamespace
+      - methodConfigurationName
+      - entityType
+      - entityName
+    type: object
     properties:
-      namespace:
+      methodConfigurationNamespace:
         type: string
-        description: 'This method configuration''s namespace'
-      name:
+        description: Namespace of the method configuration to execute.
+      methodConfigurationName:
         type: string
-        description: The name of the method configuration
-      rootEntityType:
+        description: Name of the method configuration to execute.
+      entityType:
         type: string
-        description: The root entity type that the method will be running on
-      prerequisites:
-        $ref: ''
-      inputs:
-        $ref: ''
-      outputs:
-        $ref: ''
-      methodRepoMethod:
-        $ref: '#/definitions/MethodRepoMethod'
-        description: The properties of the method from the method store that this config is associated with
-  ValidatedMethodConfiguration:
-    description: ''
+        description: Type of root entity for expression.
+      entityName:
+        type: string
+        description: Name of root entity for expression.
+      expression:
+        type: string
+        description: Expression that resolves to one or more entities matching the entity type in the method configuration.
+
+  SubmissionValidationEntityInputs:
+    description: the results of parsing each of the inputs for one entity
     required:
-      -methodConfiguration
-      -validInputs
-      -invalidInputs
-      -validOutputs
-      -invalidOutputs
+      - entityName
+      - inputResolutions
+    type: object
     properties:
-      validInputs:
+      entityName:
+        type: string
+        description: name of entity
+      inputResolutions:
+        type: array
+        description: input resolution
+        items:
+          $ref: '#/definitions/SubmissionValidationValue'
+
+  SubmissionValidationHeader:
+    description: common values for all the entities -- the entity type and the input descriptions
+    required:
+      - entityType
+      - inputExpressions
+    type: object
+    properties:
+      entityType:
+        type: string
+        description: type of entity
+      inputExpressions:
+        type: array
+        description: input descriptions
+        items:
+          $ref: '#/definitions/SubmissionValidationInput'
+
+  SubmissionValidationInput:
+    description: 'method configuration input parameter, it''s name and the associated expression from the method config'
+    required:
+      - wdlName
+      - expression
+    type: object
+    properties:
+      wdlName:
+        type: string
+        description: name of input
+      expression:
+        type: string
+        description: expression for input
+
+  SubmissionValidationReport:
+    description: the results of parsing each input for each entity
+    required:
+      - request
+      - header
+      - validEntities
+      - invalidEntities
+    type: object
+    properties:
+      header:
+        $ref: '#/definitions/SubmissionValidationHeader'
+        description: common values for all entities
+      validEntities:
+        type: array
+        description: runnable entities
+        items:
+          $ref: '#/definitions/SubmissionValidationEntityInputs'
+      invalidEntities:
+        type: array
+        description: non-runnable entities
+        items:
+          $ref: '#/definitions/SubmissionValidationEntityInputs'
+      request:
+        $ref: '#/definitions/SubmissionRequest'
+
+  SystemStatus:
+    description: report status of systems Orchestration calls out to
+    type: object
+    required:
+      - ok
+      - systems
+    properties:
+      ok:
+        type: boolean
+        description: whether any system(s) need attention
+        example: false
+      systems:
+        type: object
+        description: Map[String, SubsystemStatus]
+        example:
+          Agora:
+            ok: true
+          Rawls:
+            ok: true
+          Search:
+            ok: true
+          Thurloe:
+            ok: false
+            messages:
+              - "Thurloe misbehavior message"
+
+  SubsystemStatus:
+    description: specifics for each subsystem
+    properties:
+      ok:
+        type: boolean
+        description: whether this system needs attention
+      messages:
         type: array
         items:
           type: string
-      invalidInputs:
-        $ref: ''
-      validOutputs:
-        type: array
-        items:
-          type: string
-      invalidOutputs:
-        $ref: ''
-      methodConfiguration:
-        $ref: '#/definitions/MethodConfiguration'
-  Profile:
-    properties:
-      name:
-        type: string
-        description: User's full name
-      email:
-        type: string
-        description: User's email address
-      institution:
-        type: string
-        description: User's home institution
-      pi:
-        type: string
-        description: Primary Investigator
-  JWTWrapper:
-    properties:
-      jwt:
-        type: string
-        description: the encoded/signed JWT
-  NIHStatus:
+
+  SubmissionValidationValue:
+    description: result of an expression parse for one of the inputs
     required:
-      - loginRequired
-      - linkedNihUsername
+      - inputName
+    type: object
     properties:
-      loginRequired:
-        type: boolean
-      linkedNihUsername:
+      value:
         type: string
-      isDbgapAuthorized:
-        type: boolean
-      lastLinkTime:
-        type: long
-        format: int64
-        default: 0
-      linkExpireTime:
-        type: long
-        format: int64
-        default: 0
-      secondsSinceLastLink:
-        type: long
-        format: int64
-        default: 0
-      descriptionSinceLastLink:
+        description: the value of the input expression for the specified entity
+      error:
         type: string
-  Enabled:
-    properties:
-      google:
-        type: boolean
-        description: User enabled via Google?
-      ldap:
-        type: boolean
-        description: User enabled in LDAP?
+        description: parsing error(s)
+      inputName:
+        type: string
+        description: name of input
+
   UserInfo:
+    type: object
     properties:
       userSubjectId:
         type: string
@@ -2276,9 +4167,277 @@ definitions:
       userEmail:
         type: string
         description: User's email
-  Me:
+
+  ValidatedMethodConfiguration:
+    description: ''
+    required:
+      - methodConfiguration
+      - validInputs
+      - invalidInputs
+      - validOutputs
+      - invalidOutputs
+    type: object
     properties:
-      userInfo:
-        $ref: '#/definitions/UserInfo'
-      enabled:
-        $ref: '#/definitions/Enabled'
+      validInputs:
+        type: array
+        items:
+          type: string
+      invalidInputs:
+        type: object
+        description: Map[String, String]
+      validOutputs:
+        type: array
+        items:
+          type: string
+      invalidOutputs:
+        type: object
+        description: Map[String, String]
+      methodConfiguration:
+        $ref: '#/definitions/MethodConfiguration'
+
+  WorkflowQueueStatusResponse:
+    description: Information about the status of workflows and the workflow queue
+    required:
+      - estimatedQueueTimeMS
+      - workflowsBeforeNextUserWorkflow
+      - workflowCountsByStatus
+    type: object
+    properties:
+      estimatedQueueTimeMS:
+        type: integer
+        description: estimated milliseconds until the current queue is submitted
+      workflowsBeforeNextUserWorkflow:
+        type: integer
+        description: the number of workflows in the queue ahead of the user's first workflow
+      workflowCountsByStatus:
+        type: object
+        description: Map[String,Int]
+
+  Workspace:
+    description: ''
+    required:
+      - namespace
+      - name
+      - workspaceId
+      - authorizationDomain
+      - bucketName
+      - createdDate
+      - lastModified
+      - createdBy
+      - attributes
+      - accessLevels
+      - authDomainACLs
+      - isLocked
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: The namespace the workspace belongs to
+      name:
+        type: string
+        description: The name of the workspace
+      authorizationDomain:
+        $ref: '#/definitions/ManagedGroupRef'
+        description: An optional authorization domain for the workspace
+      workspaceId:
+        type: string
+        description: A UUID associated with the workspace
+      bucketName:
+        type: string
+        description: The name of the bucket associated with the workspace
+      createdDate:
+        type: string
+        format: date-time
+        description: 'The date the workspace was created in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
+      lastModified:
+        type: string
+        format: date-time
+        description: 'The date the workspace was last modified in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
+      createdBy:
+        type: string
+        description: The user who created the workspace
+      attributes:
+        type: object
+        description: Map[String, Attribute]
+      accessLevels:
+        type: object
+        description: Map[String, RawlsGroupRef]
+      authDomainACLs:
+         type: object
+         description: Map[String, RawlsGroupRef]
+      isLocked:
+        type: boolean
+        description: Can the Workspace currently be modified?
+
+  WorkspaceACL:
+    description: ''
+    required:
+      - acl
+    type: object
+    properties:
+      acl:
+        type: object
+        description: Map[String, WorkspaceAccessEntry]
+
+  WorkspaceACLUpdate:
+    description: ''
+    required:
+      - email
+      - accessLevel
+      - canShare
+    type: object
+    properties:
+      email:
+        type: string
+        description: email address of the user or group whose permissions will be changed
+      accessLevel:
+        type: string
+        description: The access level to grant to this user or group (OWNER, READER, WRITER, NO ACCESS)
+      canShare:
+        type: boolean
+        description: Set to true if you want this user to be able to share the workspace with other users
+
+  WorkspaceACLUpdateResponse:
+    description: ''
+    required:
+      - subjectId
+      - accessLevel
+    type: object
+    properties:
+      subjectId:
+        type: string
+        description: id of the user or group whose permissions will be changed
+      accessLevel:
+        type: string
+        description: The access level granted to this user or group (OWNER, READER, WRITER, NO ACCESS)
+
+  WorkspaceACLUpdateResponseList:
+    description: ''
+    required:
+      - usersUpdated
+      - invitesSent
+      - invitesUpdated
+      - usersNotFound
+    type: object
+    properties:
+      usersUpdated:
+        type: array
+        description: the users or groups who were updated
+        items:
+          $ref: '#/definitions/WorkspaceACLUpdateResponse'
+      invitesSent:
+        type: array
+        description: the list of invites that were sent
+        items:
+          $ref: '#/definitions/WorkspaceACLUpdate'
+      invitesUpdated:
+        type: array
+        description: the list of invites that were updated
+        items:
+          $ref: '#/definitions/WorkspaceACLUpdate'
+      usersNotFound:
+        type: array
+        description: the users or groups who were not found
+        items:
+          $ref: '#/definitions/WorkspaceACLUpdate'
+
+  WorkspaceAccessEntry:
+    description: ''
+    required:
+      - accessLevel
+      - pending
+      - canShare
+    type: object
+    properties:
+      accessLevel:
+        type: string
+        description: The access level granted to this user or group (OWNER, READER, WRITER, NO ACCESS)
+      pending:
+        type: boolean
+        description: The status of the users access
+      canShare:
+        type: boolean
+        description: True if the user can share the workspace with others, false otherwise
+
+  WorkspaceCatalog:
+    type: object
+    description: ''
+    required:
+      - email
+      - catalog
+    properties:
+      email:
+        type: string
+        description: email address of the user or group whose permissions will be changed
+      catalog:
+        type: boolean
+        description: Set to true if you want this user to be able to perform library related operations on the workspace
+
+  WorkspaceCatalogResponse:
+    type: object
+    description: ''
+    required:
+      - subjectId
+      - catalog
+    properties:
+      subjectId:
+        type: string
+        description: subject id of the user or group whose permissions were changed
+      catalog:
+        type: boolean
+        description: Set to true if you want this user to be able to perform library related operations on the workspace
+
+  WorkspaceCatalogUpdateResponseList:
+    type: object
+    description: ''
+    required:
+      - usersUpdated
+      - emailsNotFound
+    properties:
+      usersUpdated:
+        type: array
+        description: the users or groups who were updated
+        items:
+          $ref: '#/definitions/WorkspaceCatalogResponse'
+      emailsNotFound:
+        type: array
+        description: the emails of users or groups who were not found
+        items:
+          type: string
+
+  WorkspaceIngest:
+    required:
+      - namespace
+      - name
+      - attributes
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: New workspace namespace
+      name:
+        type: string
+        description: New workspace name
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
+        description: Map of attributes
+      authorizationDomain:
+        $ref: '#/definitions/ManagedGroupRef'
+        description: The Authorization Domain to restrict the data to.  Optional, default None.
+
+  WorkspaceTag:
+    required:
+      - tag
+      - count
+    type: object
+    properties:
+      tag:
+        type: string
+        description: tag string
+        example: "a tag"
+      count:
+        type: number
+        description: number of usages of the tag across Firecloud
+        example: 5

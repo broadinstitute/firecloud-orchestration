@@ -1,104 +1,179 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.EntityWithType
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.model.ModelSchema
+import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.service.TsvTypes
+import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
+import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FreeSpec, Inspectors, Matchers}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
+import scala.Array
 import scala.io.Source
 
 class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Inspectors {
 
   "TSVFormatter" - {
 
-    "should work with sample data" in {
-      val sampleAtts = {
-        Map(
-          "sample_type" -> "Blood".toJson,
-          "header_1" -> MockUtils.randomAlpha().toJson,
-          "header_2" -> MockUtils.randomAlpha().toJson,
-          "participant_id" -> """{"entityType":"participant","entityName":"participant_name"}""".parseJson
-        )
+    "Sparse data fields should pass for" - {
+
+      "Entity and Membership Set Data" in {
+        val samples = AttributeEntityReferenceList(Seq(
+          AttributeEntityReference(entityType = "sample", entityName = "sample_01"),
+          AttributeEntityReference(entityType = "sample", entityName = "sample_02"),
+          AttributeEntityReference(entityType = "sample", entityName = "sample_03"),
+          AttributeEntityReference(entityType = "sample", entityName = "sample_04")))
+        val sampleSetList = List(
+          Entity("sample_set_1", "sample_set", Map(AttributeName.withDefaultNS("foo") -> AttributeString("bar"), AttributeName.withDefaultNS("samples") -> samples)),
+          Entity("sample_set_2", "sample_set", Map(AttributeName.withDefaultNS("bar") -> AttributeString("foo"), AttributeName.withDefaultNS("samples") -> samples)),
+          Entity("sample_set_3", "sample_set", Map(AttributeName.withDefaultNS("baz") -> AttributeString("?#*"), AttributeName.withDefaultNS("samples") -> samples)))
+
+        testEntityDataSet("sample_set", sampleSetList, None)
+        testMembershipDataSet("sample_set", sampleSetList, sampleSetList.size * samples.list.size)
       }
-      val sampleList = List(
-        EntityWithType("sample_01", "sample", Some(sampleAtts)),
-        EntityWithType("sample_02", "sample", Some(sampleAtts)),
-        EntityWithType("sample_03", "sample", Some(sampleAtts)),
-        EntityWithType("sample_04", "sample", Some(sampleAtts))
-      )
-      testDataSet("sample", sampleList)
     }
 
-    "should work with pair data" in {
-      val pairAtts = {
-        Map(
-          "case_sample_id" -> """{"entityType": "sample", "entityName": "HCC1143"}""".parseJson,
-          "control_sample_id" -> """{"entityType": "sample", "entityName": "HCC1143_BL"}""".parseJson,
-          "participant_id" -> """{"entityType":"participant","entityName":"subject_HCC1143"}""".parseJson,
-          "header_1" -> MockUtils.randomAlpha().toJson,
-          "header_2" -> MockUtils.randomAlpha().toJson
+    "Sample tests should pass for" - {
+
+      "Entity Data" in {
+        val sampleAtts = {
+          Map(
+            AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
+            AttributeName.withDefaultNS("header_1") -> AttributeString(MockUtils.randomAlpha()),
+            AttributeName.withDefaultNS("header_2") -> AttributeString(MockUtils.randomAlpha()),
+            AttributeName.withDefaultNS("participant") -> AttributeEntityReference("participant","participant_name")
+          )
+        }
+        val sampleList = List(
+          Entity("sample_01", "sample", sampleAtts),
+          Entity("sample_02", "sample", sampleAtts),
+          Entity("sample_03", "sample", sampleAtts),
+          Entity("sample_04", "sample", sampleAtts)
         )
+
+        val results = testEntityDataSet("sample", sampleList, None)
+        results should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant")
+        results.head should be ("entity:sample_id")
+
+        val results2 = testEntityDataSet("sample", sampleList, Option(IndexedSeq.empty))
+        results2 should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant")
+        results2.head should be ("entity:sample_id")
+
+        val results3 = testEntityDataSet("sample", sampleList, Option(IndexedSeq("")))
+        results3 should contain theSameElementsAs Seq("entity:sample_id", "sample_type", "header_1", "header_2", "participant")
+        results3.head should be ("entity:sample_id")
+
+        Seq(
+          IndexedSeq("header_2", "does_not_exist", "header_1"),
+          IndexedSeq("header_2", "sample_id", "header_1"),
+          IndexedSeq("header_1", "header_2"),
+          IndexedSeq("header_1")
+        ).foreach { requestedHeaders =>
+          val resultsWithSpecificHeaders = testEntityDataSet("sample", sampleList, Option(requestedHeaders), TsvTypes.UPDATE)
+          resultsWithSpecificHeaders should contain theSameElementsInOrderAs Seq("update:sample_id") ++ requestedHeaders.filterNot(_.equals("sample_id"))
+        }
+
+        testEntityDataSet("sample", sampleList, Option(IndexedSeq("participant"))) should contain theSameElementsInOrderAs Seq("entity:sample_id", "participant")
+
       }
-      val pairList = List(EntityWithType("pair_01", "pair", Some(pairAtts)))
-      testDataSet("pair", pairList)
+
+      "Set Data" in {
+        val samples = AttributeEntityReferenceList(Seq(
+          AttributeEntityReference(entityType = "sample", entityName = "sample_01"),
+          AttributeEntityReference(entityType = "sample", entityName = "sample_02"),
+          AttributeEntityReference(entityType = "sample", entityName = "sample_03"),
+          AttributeEntityReference(entityType = "sample", entityName = "sample_04")))
+        val sampleSetAtts = {
+          Map(AttributeName.withDefaultNS("samples") -> samples)
+        }
+        val sampleSetList = List(Entity("sample_set_1", "sample_set", sampleSetAtts))
+        testMembershipDataSet("sample_set", sampleSetList, samples.list.size)
+      }
     }
 
-    "should work with participant_set data" in {
-      val participantSetAtts = {
-        Map(
-          "disease" -> "lung cancer".toJson,
-          "case_sample_id" -> """{"entityType": "sample", "entityName": "HCC1143"}""".parseJson,
-          "control_sample_id" -> """{"entityType": "sample", "entityName": "HCC1143_BL"}""".parseJson,
-          "participant_id" -> """{"entityType":"participant_set","entityName":"subject_HCC1143"}""".parseJson,
-          "gender" -> "male".toJson,
-          "header_1" -> MockUtils.randomAlpha().toJson,
-          "header_2" -> MockUtils.randomAlpha().toJson
-        )
+    "Participant tests should pass for" - {
+
+      "Entity Data" in {
+        val participantAtts1 = {
+          Map(
+            AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference(entityType = "participant", entityName = "1143"),
+            AttributeName.withDefaultNS("gender") -> AttributeString("F"),
+            AttributeName.withDefaultNS("age") -> AttributeString("52")
+          )
+        }
+        val participantAtts2 = {
+          Map(
+            AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference(entityType = "participant", entityName = "1954"),
+            AttributeName.withDefaultNS("gender") -> AttributeString("M"),
+            AttributeName.withDefaultNS("age") -> AttributeString("61")
+          )
+        }
+        val participantList = List(Entity("1143", "participant", participantAtts1),
+          Entity("1954", "participant", participantAtts2))
+
+        val results = testEntityDataSet("participant", participantList, None)
+        results should contain theSameElementsAs Seq("entity:participant_id", "participant_id", "gender", "age")
+        results.head should be ("entity:participant_id")
       }
-      val participantSetList = List(EntityWithType("participant_set_01", "participant_set", Some(participantSetAtts)))
-      testDataSet("participant_set", participantSetList)
+
+      "Set Data" in {
+        val participants = AttributeEntityReferenceList(Seq(
+          AttributeEntityReference(entityType = "participant", entityName = "subject_HCC1143"),
+          AttributeEntityReference(entityType = "participant", entityName = "subject_HCC1144")))
+        val participantSetAtts = {
+          Map(AttributeName.withDefaultNS("participants") -> participants)
+        }
+        val participantSetList = List(Entity("participant_set_1", "participant_set", participantSetAtts))
+        testMembershipDataSet("participant_set", participantSetList, participants.list.size)
+      }
     }
 
-    "should work with sample_set data" in {
-      val sampleSetAtts = {
-        Map(
-          "sample_id" -> """{"entityType": "sample", "entityName": "HCC1143"}""".parseJson,
-          "control_sample_id" -> """{"entityType": "sample", "entityName": "HCC1143_BL"}""".parseJson,
-          "participant_id" -> """{"entityType":"participant_set","entityName":"subject_HCC1143"}""".parseJson,
-          "gender" -> "male".toJson,
-          "header_1" -> MockUtils.randomAlpha().toJson
-        )
-      }
-      val sampleSetList = List(
-        EntityWithType("sample_set_01", "sample_set", Some(sampleSetAtts)),
-        EntityWithType("sample_set_02", "sample_set", Some(sampleSetAtts)),
-        EntityWithType("sample_set_03", "sample_set", Some(sampleSetAtts))
-      )
-      testDataSet("sample_set", sampleSetList)
-    }
+    "Pair tests should pass for" - {
 
-    "should work with pair_set data" in {
-      val pairSetAtts = {
-        Map(
-          "pair_id" -> """{"entityType": "pair", "entityName": "HCC1143_pair"}""".parseJson,
-          "sample_id" -> """{"entityType": "sample", "entityName": "HCC1143"}""".parseJson,
-          "header_1" -> MockUtils.randomAlpha().toJson,
-          "header_2" -> MockUtils.randomAlpha().toJson
-        )
+      "Entity data" in {
+        val pairAtts1 = {
+          Map(
+            AttributeName.withDefaultNS("case_sample") -> AttributeEntityReference(entityType = "sample", entityName = "345"),
+            AttributeName.withDefaultNS("control_sample") -> AttributeEntityReference(entityType = "sample", entityName = "456"),
+            AttributeName.withDefaultNS("participant") -> AttributeEntityReference(entityType = "participant", entityName = "1143"),
+            AttributeName.withDefaultNS("header_1") -> AttributeString(MockUtils.randomAlpha())
+          )
+        }
+        val pairAtts2 = {
+          Map(
+            AttributeName.withDefaultNS("case_sample") -> AttributeEntityReference(entityType = "sample", entityName = "567"),
+            AttributeName.withDefaultNS("control_sample") -> AttributeEntityReference(entityType = "sample", entityName = "678"),
+            AttributeName.withDefaultNS("participant") -> AttributeEntityReference(entityType = "participant", entityName = "1954"),
+            AttributeName.withDefaultNS("header_1") -> AttributeString(MockUtils.randomAlpha())
+          )
+        }
+        val pairList = List(Entity("1", "pair", pairAtts1),
+          Entity("2", "pair", pairAtts2))
+
+        val results = testEntityDataSet("pair", pairList, None)
+        results should contain theSameElementsAs Seq("entity:pair_id", "case_sample", "control_sample", "participant", "header_1")
+        results.head should be ("entity:pair_id")
       }
-      val pairSetList = List(EntityWithType("pair_set_01", "pair_set", Some(pairSetAtts)))
-      testDataSet("pair_set", pairSetList)
+
+      "Set data" in {
+        val pairs = AttributeEntityReferenceList(Seq(
+          AttributeEntityReference(entityType = "pair", entityName = "1"),
+          AttributeEntityReference(entityType = "pair", entityName = "2")))
+        val pairSetAtts = {
+          Map(AttributeName.withDefaultNS("pairs") -> pairs)
+        }
+        val pairSetList = List(Entity("pair_set_1", "pair_set", pairSetAtts))
+        testMembershipDataSet("pair_set", pairSetList, pairs.list.size)
+      }
     }
 
   }
 
-  private def testDataSet(entityType: String, entities: List[EntityWithType]): Unit = {
-    val headerRenamingMap: Map[String, String] = ModelSchema.getAttributeRenamingMap(entityType)
-      .getOrElse(Map.empty[String, String])
-    val tsv = TSVFormatter.makeTsvString(entities, entityType)
+  private def testEntityDataSet(entityType: String, entities: List[Entity], requestedHeaders: Option[IndexedSeq[String]], tsvType: TsvType = TsvTypes.ENTITY) = {
+    val tsv = TSVFormatter.makeEntityTsvString(entities, entityType, requestedHeaders)
 
     tsv shouldNot be(empty)
 
@@ -109,11 +184,30 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
     val headers = lines.head.split("\t")
 
-    // Make sure that all of the post-rename values exist in the list of headers from the TSV file
-    forAll (headerRenamingMap.values.toList) { x => headers should contain(x) }
+    // make sure all required headers are present
+    headers(0) should be(s"${tsvType.toString}:${entityType}_id")
 
-    // Conversely, the TSV file should not have any of the pre-rename values
-    forAll (headerRenamingMap.keys.toList) { x => headers shouldNot contain(x) }
+    // Check that all lines have the same number of columns as the header.
+    lines foreach( _.split("\t", -1).size should equal(headers.size) )
+
+    headers
+  }
+
+  private def testMembershipDataSet(
+    entityType: String,
+    entities: List[Entity],
+    expectedSize: Int
+  ): Unit = {
+    val collectionMemberType = ModelSchema.getPlural(ModelSchema.getCollectionMemberType(entityType).get.get)
+    val tsv = TSVFormatter.makeMembershipTsvString(entities, entityType, ModelSchema.getCollectionMemberType(entityType).get.get, collectionMemberType.getOrElse(entityType))
+    tsv shouldNot be(empty)
+
+    val lines: List[String] = Source.fromString(tsv).getLines().toList
+    lines.size should equal(expectedSize + 1) // Add 1 for the header line.
+
+    lines map { _.split("\t", -1).size should equal(2) }
+
+    lines.head.split("\t") should be(Array(s"${TsvTypes.MEMBERSHIP.toString}:${entityType}_id", ModelSchema.getCollectionMemberType(entityType).get.get))
   }
 
 }

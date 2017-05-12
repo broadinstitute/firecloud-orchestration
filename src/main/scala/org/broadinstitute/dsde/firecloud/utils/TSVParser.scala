@@ -1,11 +1,8 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-/**
- * Created with IntelliJ IDEA.
- * User: hussein
- * Date: 07/23/2015
- * Time: 14:01
- */
+import java.io.StringReader
+import scala.collection.JavaConverters._
+import com.univocity.parsers.csv.{CsvParser, CsvParserSettings}
 
 case class TSVLoadFile(
   firstColumnHeader:String, //The first header column, used to determine the type of entities being imported
@@ -14,23 +11,35 @@ case class TSVLoadFile(
 )
 
 object TSVParser {
-  private def parseLine( tsvLine: String, tsvLineNo: Int, nCols: Int ) = {
-    val fields = tsvLine.split("\t", -1) //note we don't trim the line here in case the last element is deliberately empty
-    if( fields.length != nCols ) {
-      throw new RuntimeException("TSV parsing error in line " + tsvLineNo.toString + ": wrong number of fields")
-    }
-    fields.toList
+  private lazy val parser: CsvParser = {
+    // Note we're using a CsvParser with a tab delimiter rather a TsvParser.
+    // This is because the CSV formatter handles quotations correctly while the TSV formatter doesn't.
+    // See https://github.com/uniVocity/univocity-parsers#csv-format
+    val settings = new CsvParserSettings
+    // Automatically detect what the line separator is (e.g. \n for Unix, \r\n for Windows).
+    settings.setLineSeparatorDetectionEnabled(true)
+    settings.getFormat().setDelimiter('\t')
+    new CsvParser(settings)
   }
 
-  def parse( tsvString : String ) : TSVLoadFile = {
-    val tsvIt = scala.io.Source.fromString(tsvString.replaceAll("\n+$","")).getLines()
-     if (!tsvIt.hasNext) {
-       throw new RuntimeException("TSV parsing error: no header")
-     }
+  private def parseLine(tsvLine: Array[String], tsvLineNo: Int, nCols: Int): List[String] = {
+    if (tsvLine.length != nCols) {
+      throw new RuntimeException(s"TSV parsing error in line $tsvLineNo: wrong number of fields")
+    }
+    tsvLine.toList
+  }
 
-    val headers = tsvIt.next().split("\t", -1)
-    val nCols = headers.length
-    val tsvData = tsvIt.zipWithIndex.map { case (line, idx) => parseLine( line, idx, nCols ) }
-    TSVLoadFile(headers.head, headers.toList, tsvData.toList)
+  def parse(tsvString: String): TSVLoadFile = {
+    val allRows = parser.parseAll(new StringReader(tsvString)).asScala
+      // The CsvParser returns null for missing fields, however the application expects the
+      // empty string. This replaces all nulls with the empty string.
+      .map(_.map(s => Option(s).getOrElse("")))
+      .toList
+    allRows match {
+      case h :: t =>
+        val tsvData = t.zipWithIndex.map { case (line, idx) => parseLine(line, idx, h.length) }
+        TSVLoadFile(h.head, h.toList, tsvData)
+      case _ => throw new RuntimeException("TSV parsing error: no header")
+    }
   }
 }

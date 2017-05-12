@@ -1,12 +1,12 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.rawls.model.Attribute
+import spray.json._
+
 /**
  * Created by tsharpe on 7/28/15.
  */
-sealed trait Attribute
-case class AttributeNull() extends Attribute
-case class AttributeString(value: String) extends Attribute
-case class AttributeReference(entityType: String, entityName: String) extends Attribute
+
 case class EntityUpdateDefinition( name: String,
                                    entityType: String,
-                                   operations: Seq[Map[String,Attribute]] )
+                                   operations: Seq[Map[String, Attribute]] )

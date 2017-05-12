@@ -2,7 +2,9 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{CopyConfigurationIngest, PublishConfigurationIngest, WorkspaceEntity}
+import org.broadinstitute.dsde.firecloud.model.{CopyConfigurationIngest, PublishConfigurationIngest}
+import org.broadinstitute.dsde.rawls.model.Workspace
+import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -15,7 +17,20 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
   def actorRefFactory = system
 
   var workspaceServer: ClientAndServer = _
-  private final val mockWorkspace = WorkspaceEntity(Some("namespace"), Some("name"))
+  private final val mockWorkspace = Workspace(
+    "namespace",
+    "name",
+    None,
+    "workspace_id",
+    "buckety_bucket",
+    DateTime.now(),
+    DateTime.now(),
+    "my_workspace_creator",
+    Map(), //attributes
+    Map(), //acls
+    Map(), //authdomain acls
+    false //locked
+  )
 
   override def beforeAll(): Unit = {
     workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
@@ -31,10 +46,10 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
         workspaceServer
           .when(request().withMethod(method.name).withPath(
             MethodConfigurationService.remoteMethodConfigPath(
-              mockWorkspace.namespace.get,
-              mockWorkspace.name.get,
-              mockWorkspace.namespace.get,
-              mockWorkspace.name.get)))
+              mockWorkspace.namespace,
+              mockWorkspace.name,
+              mockWorkspace.namespace,
+              mockWorkspace.name)))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -43,10 +58,10 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
     workspaceServer
       .when(request().withMethod("POST").withPath(
         MethodConfigurationService.remoteMethodConfigRenamePath(
-          mockWorkspace.namespace.get,
-          mockWorkspace.name.get,
-          mockWorkspace.namespace.get,
-          mockWorkspace.name.get)))
+          mockWorkspace.namespace,
+          mockWorkspace.name,
+          mockWorkspace.namespace,
+          mockWorkspace.name)))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -54,10 +69,10 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
     workspaceServer
       .when(request().withMethod("GET").withPath(
         MethodConfigurationService.remoteMethodConfigValidatePath(
-          mockWorkspace.namespace.get,
-          mockWorkspace.name.get,
-          mockWorkspace.namespace.get,
-          mockWorkspace.name.get)))
+          mockWorkspace.namespace,
+          mockWorkspace.name,
+          mockWorkspace.namespace,
+          mockWorkspace.name)))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -113,10 +128,10 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
       }
 
       val localMethodConfigPath = "/workspaces/%s/%s/method_configs/%s/%s".format(
-        mockWorkspace.namespace.get,
-        mockWorkspace.name.get,
-        mockWorkspace.namespace.get,
-        mockWorkspace.name.get)
+        mockWorkspace.namespace,
+        mockWorkspace.name,
+        mockWorkspace.namespace,
+        mockWorkspace.name)
 
       s"GET, PUT, and DELETE on $localMethodConfigPath " - {
         "should not receive a MethodNotAllowed" in {
@@ -186,8 +201,8 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
 
     "when copying a method FROM the method repo" - {
       val validCopyFromRepoUrl = s"/workspaces/%s/%s/method_configs/copyFromMethodRepo".format(
-        mockWorkspace.namespace.get,
-        mockWorkspace.name.get
+        mockWorkspace.namespace,
+        mockWorkspace.name
       )
       val configurationCopyFormData = CopyConfigurationIngest(
         configurationNamespace = Option("namespace"),
@@ -219,8 +234,8 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
 
     "when copying a method TO the method repo" - {
       val validCopyToRepoUrl = s"/workspaces/%s/%s/method_configs/copyToMethodRepo".format(
-        mockWorkspace.namespace.get,
-        mockWorkspace.name.get
+        mockWorkspace.namespace,
+        mockWorkspace.name
       )
       val configurationPublishFormData = PublishConfigurationIngest(
         configurationNamespace = Option("configNamespace"),

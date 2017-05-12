@@ -1,7 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import spray.http.{Uri, HttpMethod}
+import org.parboiled.common.FileUtils
+import spray.http.{HttpMethod, Uri}
 import spray.http.MediaTypes._
+import spray.routing._
+import spray.util._
 
 import scala.util.Try
 
@@ -22,37 +25,82 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
   def respondWithJSON = respondWithMediaType(`application/json`)
 
   def passthrough(unencodedPath: String, methods: HttpMethod*) = methods map { inMethod =>
-    val outMethod = new RequestBuilder(inMethod)
-
-    val path = encodeUri(unencodedPath)
-
-    // POST, PUT, PATCH
-    if (inMethod.isEntityAccepted) {
-      method(inMethod) {
-        respondWithJSON { requestContext =>
-          externalHttpPerRequest(requestContext, outMethod(path, requestContext.request.entity))
-        }
-      }
-    }
-    else {
-      // GET, DELETE
-      method(inMethod) { requestContext =>
-        externalHttpPerRequest(requestContext, outMethod(path))
-      }
-    }
-
+    generateExternalHttpPerRequestForMethod(requestCompression = true, unencodedPath, inMethod)
   } reduce (_ ~ _)
 
-  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String) = pathPrefix(ourEndpointPath) {
+  def passthrough(requestCompression: Boolean, unencodedPath: String, methods: HttpMethod*) = methods map { inMethod =>
+    generateExternalHttpPerRequestForMethod(requestCompression, unencodedPath, inMethod)
+  } reduce (_ ~ _)
+
+  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = true) = pathPrefix( separateOnSlashes(ourEndpointPath) ) {
     extract(_.request.method) { httpMethod =>
       unmatchedPath { remaining =>
         parameterMap { params =>
-          passthrough(Uri(encodeUri(targetEndpointUrl + remaining)).withQuery(params).toString, httpMethod)
+          passthrough(requestCompression, Uri(encodeUri(targetEndpointUrl + remaining)).withQuery(params).toString, httpMethod)
         }
       }
     }
   }
 
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
+
+  private def generateExternalHttpPerRequestForMethod(requestCompression: Boolean, unencodedPath: String, inMethod: HttpMethod) = {
+    val outMethod = new RequestBuilder(inMethod)
+    val path = Uri(unencodedPath)
+    // POST, PUT, PATCH
+    if (inMethod.isEntityAccepted) {
+      method(inMethod) {
+        respondWithJSON { requestContext =>
+          externalHttpPerRequest(requestCompression, requestContext, outMethod(path, requestContext.request.entity))
+        }
+      }
+    }
+    else {
+      // GET, DELETE
+      method(inMethod) { requestContext =>
+        externalHttpPerRequest(requestCompression, requestContext, outMethod(path))
+      }
+    }
+  }
+
+  // convert our standard set of OAuth parameters path / prompt / callback to the form suitable for generating the callback
+  def oauthParams(innerRoute: (String, String) => Route): Route = parameters("path".?, "prompt".?, "callback".?) { (userpath, prompt, callback) =>
+
+    /*
+     * prompt:    either "force" or "auto". Anything else will be treated as "auto".
+     *              "force" always requests a new refresh token, prompting the user for offline permission.
+     *              "auto" allows Google to determine if it thinks the user needs a new refresh token,
+     *                which is not necessarily in sync with rawls' cache.
+     *
+     * callback:  once OAuth is done and we have an access token from Google, to what hostname should we
+     *              return the browser? Example: "https://portal.firecloud.org/"
+     * path:      once OAuth is done and we have an access token from Google, to what fragment should we
+     *              return the browser? Example: "workspaces"
+     *
+     * The FireCloud UI typically calls /login with a callback parameter containing the hostname of the UI.
+     *  It does not typically pass a path parameter.
+     *  It never passes a prompt parameter; this exists to allow developers to call /login manually to
+     *    get a new refresh token.
+     */
+
+    // create a hash-delimited string of the callback+path and pass into the state param.
+    // the state param is defined by and required by the OAuth standard, and we override its typical
+    // usage here to pass the UI's hostname/fragment through the OAuth dance.
+    // TODO: future story: generate and persist unique security token along with the callback/path
+    val state = callback.getOrElse("") + "#" + userpath.getOrElse("")
+
+    // if the user requested "force" then "force"; if the user specified something else, or nothing, use "auto".
+    // this allows the end user/UI to control when we force-request a new refresh token. Default to auto,
+    // to allow Google to decide; we'll verify in our token store after this step completes.
+    val approvalPrompt = prompt match {
+      case Some("force") => "force"
+      case _ => "auto"
+    }
+
+    innerRoute(state, approvalPrompt)
+  }
+
+  def withResourceFileContents(path: String)(innerRoute: String => Route): Route =
+    innerRoute( FileUtils.readAllTextFromResource(path) )
 
 }

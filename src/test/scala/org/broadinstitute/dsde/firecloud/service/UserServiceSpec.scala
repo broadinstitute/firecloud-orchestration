@@ -1,41 +1,43 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.webservice.RegisterApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-
 import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
-class UserServiceSpec extends ServiceSpec with UserService {
+class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserService {
 
   def actorRefFactory = system
+  val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
   val httpMethods = List(HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT,
     HttpMethods.DELETE, HttpMethods.PATCH, HttpMethods.OPTIONS, HttpMethods.HEAD)
 
-  val uniqueId = "1234"
+  val uniqueId = "normal-user"
   val exampleKey = "favoriteColor"
   val exampleVal = "green"
   val fullProfile = BasicProfile(
     firstName= randomAlpha(),
     lastName = randomAlpha(),
     title = randomAlpha(),
+    contactEmail = Option.empty,
     institute = randomAlpha(),
     institutionalProgram = randomAlpha(),
     programLocationCity = randomAlpha(),
     programLocationState = randomAlpha(),
     programLocationCountry = randomAlpha(),
     pi = randomAlpha(),
-    nonProfitStatus = randomAlpha(),
-    billingAccountName = Some(randomAlpha())
+    nonProfitStatus = randomAlpha()
   )
   val allProperties: Map[String, String] = fullProfile.propertyValueMap
 
@@ -68,6 +70,13 @@ class UserServiceSpec extends ServiceSpec with UserService {
       )
 
     workspaceServer
+      .when(request.withMethod("GET").withPath(RawlsDAO.refreshTokenDateUrl))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
       .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
@@ -81,13 +90,55 @@ class UserServiceSpec extends ServiceSpec with UserService {
           .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
       )
 
+    workspaceServer
+      .when(request.withMethod("GET").withPath(UserService.rawlsGroupBasePath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("POST").withPath(UserService.rawlsGroupPath("example-group")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("DELETE").withPath(UserService.rawlsGroupPath("example-group")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("GET").withPath(UserService.rawlsGroupPath("example-group")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("PUT").withPath(UserService.rawlsGroupMemberPath("example-group", "owner", "test@test.test")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    workspaceServer
+      .when(request.withMethod("DELETE").withPath(UserService.rawlsGroupMemberPath("example-group", "owner", "test@test.test")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
     profileServer = startClientAndServer(thurloeServerPort)
     // Generate a mock response for all combinations of profile properties
     // to ensure that all posts to any combination will yield a successful response.
     allProperties.keys foreach {
       key =>
         profileServer
-          .when(request().withMethod("POST").withPath(
+          .when(request().withMethod("POST").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(
             UserService.remoteGetKeyPath.format(uniqueId, key)))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -98,7 +149,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
     List(HttpMethods.GET, HttpMethods.POST, HttpMethods.DELETE) foreach {
       method =>
         profileServer
-          .when(request().withMethod(method.name).withPath(
+          .when(request().withMethod(method.name).withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(
             UserService.remoteGetKeyPath.format(uniqueId, exampleKey)))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -106,13 +157,13 @@ class UserServiceSpec extends ServiceSpec with UserService {
           )
     }
     profileServer
-      .when(request().withMethod("GET").withPath(UserService.remoteGetAllPath.format(uniqueId)))
+      .when(request().withMethod("GET").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(UserService.remoteGetAllPath.format(uniqueId)))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
     profileServer
-      .when(request().withMethod("POST").withPath(UserService.remoteSetKeyPath))
+      .when(request().withMethod("POST").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(UserService.remoteSetKeyPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -146,6 +197,14 @@ class UserServiceSpec extends ServiceSpec with UserService {
       }
     }
 
+    "when calling GET for user refresh token date service" - {
+      "MethodNotAllowed response is not returned" in {
+        Get("/api/profile/refreshTokenDate") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status shouldNot equal(MethodNotAllowed)
+        }
+      }
+    }
+
     "when GET-ting all profile information" - {
       "MethodNotAllowed response is not returned" in {
         Get(s"/$ApiPrefix") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
@@ -157,7 +216,8 @@ class UserServiceSpec extends ServiceSpec with UserService {
 
     "when POST-ting a complete profile" - {
       "OK response is returned" in {
-        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
+            sealRoute(registerRoutes) ~> check {
           log.debug(s"POST /$ApiPrefix: " + status)
           status should equal(OK)
         }
@@ -168,12 +228,67 @@ class UserServiceSpec extends ServiceSpec with UserService {
       "BadRequest response is returned" in {
         val incompleteProfile = Map("name" -> randomAlpha())
         Post(s"/$ApiPrefix", incompleteProfile) ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(registerRoutes) ~> check {
           log.debug(s"POST /$ApiPrefix: " + status)
           status should equal(BadRequest)
         }
       }
     }
+
+    "when GET-ting my group membership" - {
+      "OK response is returned" in {
+        Get("/api/groups") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when POST-ing to create a group" - {
+      "Created response is returned" in {
+        Post("/api/groups/example-group") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(Created)
+        }
+      }
+    }
+
+    "when GET-ting membership of a group" - {
+      "OK response is returned" in {
+        Get("/api/groups/example-group") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when DELETE-ing to create a group" - {
+      "OK response is returned" in {
+        Delete("/api/groups/example-group") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when PUT-ting to add a member to a group" - {
+      "OK response is returned" in {
+        Put("/api/groups/example-group/owner/test@test.test") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when DELETE-ing to remove a member from a group" - {
+      "OK response is returned" in {
+        Delete("/api/groups/example-group/owner/test@test.test") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
   }
 
   "UserService Edge Cases" - {
@@ -187,7 +302,8 @@ class UserServiceSpec extends ServiceSpec with UserService {
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
           )
-        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
+            sealRoute(registerRoutes) ~> check {
           log.debug(s"POST /$ApiPrefix: " + status)
           status should equal(OK)
         }
@@ -212,7 +328,8 @@ class UserServiceSpec extends ServiceSpec with UserService {
               .withStatusCode(InternalServerError.intValue)
               .withBody(Conflict.intValue + " " + Conflict.reason)
           )
-        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
+            sealRoute(registerRoutes) ~> check {
           log.debug(s"POST /$ApiPrefix: " + status)
           status should equal(OK)
         }
@@ -348,7 +465,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
     }
 
     "when calling /me and rawls returns an unexpected HTTP response code" - {
-      "InternalServerError response is returned" in {
+      "echo the error code from rawls" in {
 
         workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
         workspaceServer
@@ -358,7 +475,7 @@ class UserServiceSpec extends ServiceSpec with UserService {
               .withHeaders(MockUtils.header).withStatusCode(EnhanceYourCalm.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
-          status should equal(InternalServerError)
+          status should equal(EnhanceYourCalm)
         }
       }
     }

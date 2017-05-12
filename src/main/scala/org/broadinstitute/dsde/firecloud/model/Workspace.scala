@@ -1,48 +1,48 @@
 package org.broadinstitute.dsde.firecloud.model
 
-case class WorkspaceName(
-  namespace: Option[String] = None,
-  name: Option[String] = None)
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
+import org.broadinstitute.dsde.rawls.model._
 
-case class WorkspaceEntity(
-  namespace: Option[String] = None,
-  name: Option[String] = None,
-  createdDate: Option[String] = None,
-  createdBy: Option[String] = None,
-  attributes: Option[Map[String, String]] = None)
+case class WorkspaceCreate(
+  namespace: String,
+  name: String,
+  authorizationDomain: Option[ManagedGroupRef] = None,
+  attributes: AttributeMap)
+
+object WorkspaceCreate {
+  import scala.language.implicitConversions
+  implicit def toWorkspaceRequest(wc: WorkspaceCreate): WorkspaceRequest = {
+    WorkspaceRequest(wc.namespace, wc.name, wc.authorizationDomain, wc.attributes)
+  }
+
+  def toWorkspaceClone(wc: WorkspaceCreate): WorkspaceCreate = {
+    new WorkspaceCreate(
+      namespace = wc.namespace,
+      name = wc.name,
+      authorizationDomain = wc.authorizationDomain,
+      attributes = wc.attributes + (AttributeName("library","published") -> AttributeBoolean(false)) + (AttributeName("library","discoverableByGroups") -> AttributeValueEmptyList))
+  }
+}
+
+case class UIWorkspaceResponse(
+  accessLevel: Option[String] = None,
+  canShare: Option[Boolean] = None,
+  catalog: Option[Boolean] = None,
+  workspace: Option[Workspace] = None,
+  workspaceSubmissionStats: Option[WorkspaceSubmissionStats] = None,
+  owners: Option[List[String]] = None)
 
 case class EntityCreateResult(entityType: String, entityName: String, succeeded: Boolean, message: String)
 
-case class EntityCopyDefinition(
+case class EntityCopyWithoutDestinationDefinition(
   sourceWorkspace: WorkspaceName,
-  entityType: String,
-  entityNames: Seq[String]
-  )
-
-case class EntityCopyWithDestinationDefinition(
-  sourceWorkspace: WorkspaceName,
-  destinationWorkspace: WorkspaceName,
   entityType: String,
   entityNames: Seq[String]
   )
 
 case class EntityId(entityType: String, entityName: String)
-case class EntityDeleteDefinition(recursive: Boolean, entities: Seq[EntityId])
-
-case class MethodConfiguration(
-  name: Option[String] = None,
-  namespace: Option[String] = None,
-  rootEntityType: Option[String] = None,
-  workspaceName: Option[Map[String, String]] = None,
-  methodRepoMethod: Option[Map[String, String]] = None,
-  outputs: Option[Map[String, String]] = None,
-  inputs: Option[Map[String, String]] = None,
-  prerequisites: Option[Map[String, String]] = None)
-
-case class MethodConfigurationRename(
-  name: Option[String] = None,
-  namespace: Option[String] = None,
-  workspaceName: Option[Map[String, String]] = None)
 
 case class MethodConfigurationId(
   name: Option[String] = None,
@@ -78,10 +78,13 @@ case class SubmissionIngest(
   methodConfigurationName: Option[String],
   entityType: Option[String],
   entityName: Option[String],
-  expression: Option[String])
+  expression: Option[String],
+  useCallCache: Option[Boolean])
 
 case class RawlsGroupMemberList(
   userEmails: Option[Seq[String]] = None,
   subGroupEmails: Option[Seq[String]] = None,
   userSubjectIds: Option[Seq[String]] = None,
   subGroupNames: Option[Seq[String]] = None)
+
+case class WorkspaceStorageCostEstimate(estimate: String)

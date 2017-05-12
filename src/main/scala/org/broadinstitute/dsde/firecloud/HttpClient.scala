@@ -2,6 +2,8 @@ package org.broadinstitute.dsde.firecloud
 
 import java.text.SimpleDateFormat
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
+import spray.httpx.encoding.Gzip
+import spray.http.HttpEncodings._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -9,18 +11,18 @@ import scala.util.{Failure, Success}
 import akka.actor.{Actor, Props}
 import org.slf4j.{Logger, LoggerFactory}
 import spray.client.pipelining._
-import spray.http.HttpHeaders.Cookie
+import spray.http.HttpHeaders.{`Accept-Encoding`, Cookie}
 import spray.http._
 import spray.routing.RequestContext
 import spray.http.StatusCodes._
 
 import org.broadinstitute.dsde.firecloud.HttpClient.PerformExternalRequest
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestCompleteWithHeaders
+import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 
 object HttpClient {
 
-  case class PerformExternalRequest(request: HttpRequest)
+  case class PerformExternalRequest(requestCompression: Boolean, request: HttpRequest)
 
   def props(requestContext: RequestContext): Props = Props(new HttpClient(requestContext))
 
@@ -41,21 +43,26 @@ class HttpClient (requestContext: RequestContext) extends Actor
 
   override def receive: Receive = {
 
-    case PerformExternalRequest(externalRequest: HttpRequest) =>
-      createResponseFutureFromExternalRequest(requestContext, externalRequest)
+    case PerformExternalRequest(requestCompression: Boolean, externalRequest: HttpRequest) =>
+      createResponseFutureFromExternalRequest(requestCompression, requestContext, externalRequest)
 
   }
 
   def createResponseFutureFromExternalRequest(
+      requestCompression: Boolean,
       requestContext: RequestContext,
       externalRequest: HttpRequest): Unit = {
     val pipeline: HttpRequest => Future[HttpResponse] =
-      authHeaders(requestContext) ~> addHeader(Cookie(requestContext.request.cookies)) ~>
-        logRequest(log) ~> sendReceive
+      requestCompression match {
+        case true =>
+          authHeaders(requestContext) ~> addHeaders(`Accept-Encoding`(gzip)) ~> logRequest(log) ~> sendReceive ~> decode(Gzip)
+        case _ =>
+          authHeaders(requestContext) ~> logRequest(log) ~> sendReceive
+      }
     pipeline(externalRequest) onComplete {
       case Success(response) =>
         log.debug("Got response: " + response)
-        context.parent ! RequestCompleteWithHeaders(response, response.headers:_*)
+        context.parent ! RequestComplete(response)
       case Failure(error) =>
         // Per docs: "the detail message associated with `cause` is not automatically incorporated
         // into this exception 's detail message", so add it explicitly
@@ -69,7 +76,7 @@ class HttpClient (requestContext: RequestContext) extends Actor
 
 trait LogRequestBuilding extends spray.httpx.RequestBuilding {
   def logRequest(log: Logger): RequestTransformer = { request =>
-    log.debug("Sending request: " + request)
+    if (log.isDebugEnabled) {log.debug("Sending request: " + request)}
     request
   }
 }

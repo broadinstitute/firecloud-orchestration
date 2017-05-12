@@ -1,6 +1,7 @@
 *.class
 *.log
-/env.sh
+configure.rb
+config/
 
 # sbt specific
 .sbtopts
@@ -67,3 +68,5 @@ atlassian-ide-plugin.xml
 com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
+
+*.pid

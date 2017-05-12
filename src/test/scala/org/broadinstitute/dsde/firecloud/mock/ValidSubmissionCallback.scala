@@ -19,6 +19,7 @@ class ValidSubmissionCallback extends ExpectationCallback {
       case x if x.entityName.isDefined &&
         x.entityType.isDefined &&
         x.expression.isDefined &&
+        x.useCallCache.isDefined &&
         x.methodConfigurationName.isDefined &&
         x.methodConfigurationNamespace.isDefined =>
         response()
@@ -29,7 +30,7 @@ class ValidSubmissionCallback extends ExpectationCallback {
         response()
           .withHeaders(header)
           .withStatusCode(BadRequest.intValue)
-          .withBody(MockWorkspaceServer.rawlsErrorReport(BadRequest).toJson.compactPrint)
+          .withBody(MockUtils.rawlsErrorReport(BadRequest).toJson.compactPrint)
     }
 
   }

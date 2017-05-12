@@ -21,17 +21,17 @@ class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
   }
 
   val localSubmissionsPath = FireCloudConfig.Rawls.submissionsPath.format(
-    MockWorkspaceServer.mockValidWorkspace.namespace.get,
-    MockWorkspaceServer.mockValidWorkspace.name.get)
+    MockWorkspaceServer.mockValidWorkspace.namespace,
+    MockWorkspaceServer.mockValidWorkspace.name)
 
   val localSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
-    MockWorkspaceServer.mockValidWorkspace.namespace.get,
-    MockWorkspaceServer.mockValidWorkspace.name.get,
+    MockWorkspaceServer.mockValidWorkspace.namespace,
+    MockWorkspaceServer.mockValidWorkspace.name,
     MockWorkspaceServer.mockValidId)
 
   val localInvalidSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
-    MockWorkspaceServer.mockValidWorkspace.namespace.get,
-    MockWorkspaceServer.mockValidWorkspace.name.get,
+    MockWorkspaceServer.mockValidWorkspace.namespace,
+    MockWorkspaceServer.mockValidWorkspace.name,
     MockWorkspaceServer.mockInvalidId)
 
   "SubmissionService" - {
