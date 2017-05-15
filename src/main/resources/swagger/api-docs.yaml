@@ -2543,7 +2543,7 @@ paths:
           500:
             description: Rawls Internal Error
 
-  /api/workspaces/genomics/operations/{jobId}:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/genomics/operations/{jobId}:
     get:
       tags:
         - Workspaces
@@ -2551,6 +2551,8 @@ paths:
       summary: |
         Retrieve operations info from Google Genomics API
       parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - $ref: '#/parameters/jobIdParam'
       responses:
         200:

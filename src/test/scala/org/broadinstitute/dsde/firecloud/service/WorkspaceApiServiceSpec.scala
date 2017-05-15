@@ -62,7 +62,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
   private final val tagAutocompletePath = s"$workspacesRoot/tags"
   private final val executionEngineVersionPath = FireCloudConfig.Rawls.authPrefix + "/version/executionEngine"
-  private final val genomicsOperationsPath = s"$workspacesRoot/genomics/operations/$jobId"
+  private final val genomicsOperationsPath = s"$workspacesPath/genomics/operations/$jobId"
 
   private def catalogPath(ns:String=workspace.namespace, name:String=workspace.name) =
     workspacesRoot + "/%s/%s/catalog".format(ns, name)
