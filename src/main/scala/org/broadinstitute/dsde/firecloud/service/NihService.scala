@@ -81,7 +81,9 @@ trait NihService extends LazyLogging {
       case Some(profile) =>
         profile.linkedNihUsername match {
           case Some(_) =>
-            Future.sequence(nihWhitelists.map(whitelistDef => rawlsDao.isGroupMember(userInfo, whitelistDef.groupToSync).map(isMember => NihWhitelistStatus(whitelistDef.name, isMember)))).map { whitelistMembership =>
+            Future.traverse(nihWhitelists) { whitelistDef =>
+              rawlsDao.isGroupMember(userInfo, whitelistDef.groupToSync).map(isMember => NihWhitelistStatus(whitelistDef.name, isMember))
+            }.map { whitelistMembership =>
               RequestComplete(NihStatus(profile.copy(linkExpireTime = Option(profile.linkExpireTime.getOrElse(0L))), whitelistMembership))
             }
           case None => Future.successful(RequestComplete(NotFound))
@@ -98,7 +100,7 @@ trait NihService extends LazyLogging {
 
   // This syncs all of the whitelists in full
   def syncNihWhitelistsFull: Future[PerRequestMessage] = {
-    val whitelistSyncResults = Future.sequence(nihWhitelists.map(syncNihWhitelistAllUsers))
+    val whitelistSyncResults = Future.traverse(nihWhitelists)(syncNihWhitelistAllUsers)
 
     whitelistSyncResults map { response =>
       if(response.forall(x => x)) RequestComplete(NoContent)
@@ -136,10 +138,9 @@ trait NihService extends LazyLogging {
   def updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink): Future[PerRequestMessage] = {
     //first, link the NIH account. it doesn't matter if they're on a whitelist or not
     //next, sync the appropriate rawls groups based on which whitelists the user is a member of
-    val linkResult = for {
-      linkNihResult <- linkNihAccount(userInfo, nihLink)
-      _ <- Future.sequence(nihWhitelists.map(syncNihWhitelistForUser(userInfo.getUniqueId, nihLink.linkedNihUsername, _)))
-    } yield linkNihResult
+    val linkResult = linkNihAccount(userInfo, nihLink).andThen { case _ =>
+      nihWhitelists.foreach(syncNihWhitelistForUser(userInfo.getUniqueId, nihLink.linkedNihUsername, _))
+    }
 
     linkResult.map { response =>
       if(response.isSuccess) RequestComplete(OK)
