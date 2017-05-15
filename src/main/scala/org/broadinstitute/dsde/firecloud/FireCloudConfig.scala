@@ -110,6 +110,7 @@ object FireCloudConfig {
   object ElasticSearch {
     private val elasticsearch = config.getConfig("elasticsearch")
     val servers: Seq[Authority] = parseESServers(elasticsearch.getString("urls"))
+    val clusterName = elasticsearch.getString("clusterName")
     val indexName = elasticsearch.getString("index")
     val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
   }

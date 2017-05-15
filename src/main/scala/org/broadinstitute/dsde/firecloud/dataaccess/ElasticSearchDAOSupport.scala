@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.net.InetAddress
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -22,7 +22,7 @@ trait ElasticSearchDAOSupport extends LazyLogging {
   def buildClient(servers:Seq[Authority]): TransportClient = {
     // cluster name is constant across environments; no need to add it to config
     val settings = Settings.builder
-      .put("cluster.name", "firecloud-elasticsearch")
+      .put("cluster.name", FireCloudConfig.ElasticSearch.clusterName)
       .build
     val addresses = servers map { server =>
       new InetSocketTransportAddress(InetAddress.getByName(server.host.address), server.port)
