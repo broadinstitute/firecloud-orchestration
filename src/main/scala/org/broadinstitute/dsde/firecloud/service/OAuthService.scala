@@ -9,7 +9,6 @@ import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.compute.ComputeScopes
-import com.google.api.services.genomics.GenomicsScopes
 import com.google.api.services.storage.StorageScopes
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
@@ -56,7 +55,7 @@ class OAuthService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
     val clientSecrets = GoogleClientSecrets.load(
       jsonFactory, new StringReader(FireCloudConfig.Auth.googleSecretJson))
     var authScopes = Seq("profile", "email")
-    authScopes ++= Seq(StorageScopes.DEVSTORAGE_FULL_CONTROL, ComputeScopes.COMPUTE, GenomicsScopes.GENOMICS)
+    authScopes ++= Seq(StorageScopes.DEVSTORAGE_FULL_CONTROL, ComputeScopes.COMPUTE)
     val flow = new GoogleAuthorizationCodeFlow.Builder(
       httpTransport, jsonFactory, clientSecrets, authScopes
     ).build

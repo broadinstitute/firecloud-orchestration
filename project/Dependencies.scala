@@ -32,7 +32,6 @@ object Dependencies {
     ("com.google.api-client" % "google-api-client" % "1.22.0").exclude("com.google.guava", "guava-jdk5"),
     "com.google.apis" % "google-api-services-storage" % "v1-rev58-1.21.0",
     "com.google.apis" % "google-api-services-compute" % "v1-rev120-1.22.0",
-    "com.google.apis" % "google-api-services-genomics" % "v1-rev89-1.22.0",
     "com.jason-goodwin"   %% "authentikat-jwt" % "0.4.1",
     "com.sun.mail"         % "javax.mail" % "1.5.6",
     "com.univocity"        % "univocity-parsers" % "2.4.1",
