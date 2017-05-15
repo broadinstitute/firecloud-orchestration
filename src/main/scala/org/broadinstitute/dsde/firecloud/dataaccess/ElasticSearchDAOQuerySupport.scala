@@ -29,6 +29,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   final val HL_END = "</strong>"
   final val HL_REGEX:Regex = s"$HL_START(.+?)$HL_END".r.unanchored
 
+  final val AGG_MAX_SIZE = 100
+  final val AGG_DEFAULT_SIZE = 5
+
   /** ES queries - below is similar to what will be created by the query builders
     * {"query":{"match_all":{}}}"
     * {"query":{
@@ -96,10 +99,15 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def addAggregationsToQuery(searchReq: SearchRequestBuilder, aggFields: Map[String, Int]): SearchRequestBuilder = {
-    aggFields.keys foreach { property: String =>
+    // The UI sends 0 to indicate unbounded size for an aggregate. However, we don't actually
+    // want unbounded/infinite; we impose a server-side limit here, instead of asking the UI to
+    // know what the limit should be.
+    val aggregates = aggFields map { case (k:String,v:Int) => if (v == 0) (k,AGG_MAX_SIZE) else (k,v) }
+
+    aggregates.keys foreach { property: String =>
       // property here is specifying which attribute to collect aggregation info for
       // we use field.raw here because we want it to use the unanalyzed form of the data for the aggregations
-      searchReq.addAggregation(AggregationBuilders.terms(property).field(property + ".raw").size(aggFields.getOrElse(property, 5)))
+      searchReq.addAggregation(AggregationBuilders.terms(property).field(property + ".raw").size(aggregates.getOrElse(property, AGG_DEFAULT_SIZE)))
     }
     searchReq
   }
