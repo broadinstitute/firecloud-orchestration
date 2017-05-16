@@ -31,6 +31,17 @@ object MethodRepository {
     entityType: Option[String] = None
   )
 
+  case class EntityId(
+    namespace: String,
+    name: String,
+    snapshotId: Int
+  )
+
+  case class CopyPermissions(
+    source: EntityId,
+    target: EntityId
+  )
+
   // represents a method/config permission as exposed to the user from the orchestration layer
   case class FireCloudPermission(
     user: String,
