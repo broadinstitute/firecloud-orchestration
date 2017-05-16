@@ -103,7 +103,7 @@ trait NihService extends LazyLogging {
     val whitelistSyncResults = Future.traverse(nihWhitelists)(syncNihWhitelistAllUsers)
 
     whitelistSyncResults map { response =>
-      if(response.forall(x => x)) RequestComplete(NoContent)
+      if(response.forall(isSuccess => isSuccess)) RequestComplete(NoContent)
       else RequestCompleteWithErrorReport(InternalServerError, "Error synchronizing NIH whitelist")
     }
   }
