@@ -65,7 +65,7 @@ class HttpClient (requestContext: RequestContext) extends Actor
         context.parent ! RequestComplete(response)
       case Failure(error) =>
         val message = s"External request failed to ${externalRequest.uri.toString()}"
-        val customException = new Exception(message, error)
+        val customException = new FireCloudException(message, error)
 
         log.error(message, customException)
         context.parent ! RequestCompleteWithErrorReport(InternalServerError, message, customException)
