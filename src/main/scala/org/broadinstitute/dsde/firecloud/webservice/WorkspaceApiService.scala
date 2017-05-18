@@ -222,6 +222,11 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   WorkspaceService.GetStorageCostEstimate(workspaceNamespace, workspaceName))
               }
             }
+          } ~
+          path("genomics" / "operations" / Segment) { jobId =>
+            requireUserInfo() { _ =>
+              passthrough(s"$workspacePath/genomics/operations/$jobId", HttpMethods.GET)
+            }
           }
         }
       } ~
