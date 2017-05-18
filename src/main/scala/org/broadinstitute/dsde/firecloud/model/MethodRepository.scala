@@ -31,7 +31,7 @@ object MethodRepository {
     entityType: Option[String] = None
   )
 
-  case class EntityId(
+  case class MethodId(
     namespace: String,
     name: String,
     snapshotId: Int
@@ -47,7 +47,7 @@ object MethodRepository {
   )
 
   case class EditMethodRequest(
-    source: EntityId,
+    source: MethodId,
     synopsis: String,
     documentation: String,
     payload: String,
@@ -55,7 +55,7 @@ object MethodRepository {
   )
 
   case class EditMethodResponse(
-    method: EntityId,
+    method: MethodId,
     message: Option[String] = None,
     error: Option[Throwable] = None
   )
