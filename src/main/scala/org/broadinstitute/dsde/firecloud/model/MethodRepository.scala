@@ -37,11 +37,6 @@ object MethodRepository {
     snapshotId: Int
   )
 
-  case class CopyPermissions(
-    source: EntityId,
-    target: EntityId
-  )
-
   case class MethodCreate(
     namespace: String,
     name: String,

@@ -5,7 +5,7 @@ import akka.pattern._
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{CopyPermissions, EditMethodRequest, EntityId}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{EditMethodRequest, EntityId, Method}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.AgoraEntityService.EditMethod
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -38,8 +38,7 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
     val source = req.source
     val newMethod = agoraDAO.postMethod(source.namespace, source.name, req.synopsis, req.documentation, req.payload)
     newMethod flatMap { method =>
-      val copyPermissions = CopyPermissions(source, EntityId(method.namespace.get, method.name.get, method.snapshotId.get))
-      setMethodPermissions(copyPermissions) flatMap { _ =>
+      setMethodPermissions(source, method) flatMap { _ =>
         if (req.redactOldSnapshot) {
           agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { _ =>
             RequestComplete(OK)
@@ -57,11 +56,10 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
     }
   }
 
-  def setMethodPermissions(copyPermissions: CopyPermissions): Future[PerRequestMessage] = {
-    val (source, target) = (copyPermissions.source, copyPermissions.target)
+  def setMethodPermissions(source: EntityId, target: Method): Future[PerRequestMessage] = {
     val resultPerms = for {
       sourcePerms <- agoraDAO.getMethodPermissions(source.namespace, source.name, source.snapshotId)
-      resultPerms <- agoraDAO.postMethodPermissions(target.namespace, target.name, target.snapshotId, sourcePerms)
+      resultPerms <- agoraDAO.postMethodPermissions(target.namespace.get, target.name.get, target.snapshotId.get, sourcePerms)
     } yield resultPerms
 
     resultPerms map {
