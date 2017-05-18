@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.CopyPermissions
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.EditMethodRequest
 import org.broadinstitute.dsde.firecloud.service.{AgoraEntityService, FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.model.UserInfo
@@ -16,13 +16,13 @@ trait AgoraEntityApiService extends HttpService with FireCloudRequestBuilding wi
   val agoraEntityServiceConstructor: UserInfo => AgoraEntityService
 
   val agoraEntityRoutes: Route = {
-    pathPrefix("api" / "copyPermissions") {
+    pathPrefix("api" / "methods" / "edit") {
       requireUserInfo() { userInfo =>
-        entity(as[CopyPermissions]) { copyPermissions =>
+        entity(as[EditMethodRequest]) { editMethodRequest =>
           post { requestContext =>
             perRequest(requestContext,
               AgoraEntityService.props(agoraEntityServiceConstructor, userInfo),
-              AgoraEntityService.CopyMethodPermissions(copyPermissions))
+              AgoraEntityService.EditMethod(editMethodRequest))
           }
         }
       }
