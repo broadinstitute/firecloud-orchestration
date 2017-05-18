@@ -39,22 +39,19 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
     val newMethod = agoraDAO.postMethod(source.namespace, source.name, req.synopsis, req.documentation, req.payload)
     newMethod flatMap { method =>
       val copyPermissions = CopyPermissions(source, EntityId(method.namespace.get, method.name.get, method.snapshotId.get))
-      val x: Future[PerRequestMessage] = setMethodPermissions(copyPermissions) flatMap { _ =>
+      setMethodPermissions(copyPermissions) flatMap { _ =>
         if (req.redactOldSnapshot) {
-          val f = agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId)
-          val y: Future[RequestComplete[_ >: (StatusCode, ErrorReport) with Success <: Product with Serializable]] = f map { _ =>
+          agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { _ =>
             RequestComplete(OK)
           } recover {
             case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Error while redacting old snapshot")
           }
-          y
         } else {
           Future(RequestComplete(OK))
         }
       } recover {
         case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Error while copying permissions")
       }
-      x
     } recover {
       case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Failed to create the new snapshot")
     }
