@@ -5,7 +5,7 @@ import akka.pattern._
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{EditMethodRequest, EditMethodResponse, EntityId, Method}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{EditMethodRequest, EditMethodResponse, MethodId}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.AgoraEntityService.EditMethod
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -37,7 +37,7 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
   def editMethod(req: EditMethodRequest): Future[PerRequestMessage] = {
     val source = req.source
     agoraDAO.postMethod(source.namespace, source.name, req.synopsis, req.documentation, req.payload) flatMap { method =>
-      val newId = EntityId(method.namespace.get, method.name.get, method.snapshotId.get)
+      val newId = MethodId(method.namespace.get, method.name.get, method.snapshotId.get)
       setMethodPermissions(source, newId) flatMap { _ =>
         if (req.redactOldSnapshot) {
           agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { _ =>
@@ -56,7 +56,7 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
     }
   }
 
-  def setMethodPermissions(source: EntityId, target: EntityId): Future[PerRequestMessage] = {
+  def setMethodPermissions(source: MethodId, target: MethodId): Future[PerRequestMessage] = {
     val resultPerms = for {
       sourcePerms <- agoraDAO.getMethodPermissions(source.namespace, source.name, source.snapshotId)
       resultPerms <- agoraDAO.postMethodPermissions(target.namespace, target.name, target.snapshotId, sourcePerms)
