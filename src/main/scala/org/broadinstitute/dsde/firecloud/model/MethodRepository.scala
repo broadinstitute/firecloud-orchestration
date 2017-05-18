@@ -25,7 +25,7 @@ object MethodRepository {
     name: Option[String] = None,
     snapshotId: Option[Int] = None,
     synopsis: Option[String] = None,
-    owner: Option[String] = None,
+    documentation: Option[String] = None,
     createDate: Option[String] = None,
     url: Option[String] = None,
     entityType: Option[String] = None
@@ -40,6 +40,23 @@ object MethodRepository {
   case class CopyPermissions(
     source: EntityId,
     target: EntityId
+  )
+
+  case class MethodCreate(
+    namespace: String,
+    name: String,
+    synopsis: String,
+    documentation: String,
+    payload: String,
+    entityType: String
+  )
+
+  case class EditMethodRequest(
+    source: EntityId,
+    synopsis: String,
+    documentation: String,
+    payload: String,
+    redactOldSnapshot: Boolean
   )
 
   // represents a method/config permission as exposed to the user from the orchestration layer

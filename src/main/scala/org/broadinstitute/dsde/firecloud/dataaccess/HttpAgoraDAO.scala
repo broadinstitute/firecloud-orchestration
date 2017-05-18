@@ -3,12 +3,12 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, CopyPermissions, EntityId}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, Method, MethodCreate}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, SubsystemStatus, UserInfo}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import spray.client.pipelining._
-import spray.http.Uri
+import spray.http.{HttpResponse, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
@@ -30,6 +30,13 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
 
   override def postNamespacePermissions(ns: String, entity: String, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] =
     authedRequestToObject[List[AgoraPermission]]( Post(getNamespaceUrl(ns, entity), perms) )
+
+  override def postMethod(ns: String, name: String, synopsis: String, documentation: String, payload: String)(implicit userInfo: UserInfo): Future[Method] =
+    authedRequestToObject[Method](
+      Post(s"${config.authUrl}/methods", MethodCreate(ns, name, synopsis, documentation, payload, "Workflow")))
+
+  override def redactMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[HttpResponse] =
+    userAuthedRequest(Delete(s"${config.authUrl}/methods/$ns/$name/$snapshotId"))
 
   override def getMethodPermissions(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] =
     authedRequestToObject[List[AgoraPermission]]( Get(getMethodPermissionsUrl(ns, name, snapshotId)) )

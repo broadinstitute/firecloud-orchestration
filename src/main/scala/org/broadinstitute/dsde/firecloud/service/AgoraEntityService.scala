@@ -5,10 +5,12 @@ import akka.pattern._
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.CopyPermissions
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{CopyPermissions, EditMethodRequest, EntityId}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
-import org.broadinstitute.dsde.firecloud.service.AgoraEntityService.CopyMethodPermissions
+import org.broadinstitute.dsde.firecloud.service.AgoraEntityService.EditMethod
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import spray.http.StatusCode
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 
@@ -16,7 +18,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object AgoraEntityService {
   sealed trait AgoraEntityServiceMessage
-  case class CopyMethodPermissions(copyPermissions: CopyPermissions)
+  case class EditMethod(editMethod: EditMethodRequest)
 
   def props(agoraEntityServiceConstructor: UserInfo => AgoraEntityService, userInfo: UserInfo): Props = {
     Props(agoraEntityServiceConstructor(userInfo))
@@ -29,10 +31,36 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
   implicit val userInfo = argUserInfo
 
   override def receive: Receive = {
-    case CopyMethodPermissions(copyPermissions: CopyPermissions) => { copyMethodPermissions(copyPermissions) } pipeTo sender
+    case EditMethod(editMethodRequest: EditMethodRequest) => { editMethod(editMethodRequest) } pipeTo sender
   }
 
-  def copyMethodPermissions(copyPermissions: CopyPermissions): Future[PerRequestMessage] = {
+  def editMethod(req: EditMethodRequest): Future[PerRequestMessage] = {
+    val source = req.source
+    val newMethod = agoraDAO.postMethod(source.namespace, source.name, req.synopsis, req.documentation, req.payload)
+    newMethod flatMap { method =>
+      val copyPermissions = CopyPermissions(source, EntityId(method.namespace.get, method.name.get, method.snapshotId.get))
+      val x: Future[PerRequestMessage] = setMethodPermissions(copyPermissions) flatMap { _ =>
+        if (req.redactOldSnapshot) {
+          val f = agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId)
+          val y: Future[RequestComplete[_ >: (StatusCode, ErrorReport) with Success <: Product with Serializable]] = f map { _ =>
+            RequestComplete(OK)
+          } recover {
+            case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Error while redacting old snapshot")
+          }
+          y
+        } else {
+          Future(RequestComplete(OK))
+        }
+      } recover {
+        case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Error while copying permissions")
+      }
+      x
+    } recover {
+      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Failed to create the new snapshot")
+    }
+  }
+
+  def setMethodPermissions(copyPermissions: CopyPermissions): Future[PerRequestMessage] = {
     val (source, target) = (copyPermissions.source, copyPermissions.target)
     val resultPerms = for {
       sourcePerms <- agoraDAO.getMethodPermissions(source.namespace, source.name, source.snapshotId)
