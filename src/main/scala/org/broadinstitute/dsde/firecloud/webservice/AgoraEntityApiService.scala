@@ -5,7 +5,6 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impEditMethodRe
 import org.broadinstitute.dsde.firecloud.service.{AgoraEntityService, FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import spray.httpx.SprayJsonSupport
 import spray.httpx.SprayJsonSupport._
 import spray.routing.{HttpService, Route}
 
