@@ -1,13 +1,11 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, Method, MethodCreate}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, SubsystemStatus, UserInfo}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import spray.client.pipelining._
 import spray.http.{HttpResponse, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
