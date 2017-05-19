@@ -32,7 +32,7 @@ object Dependencies {
     "com.typesafe.akka"             %% "akka-testkit"        % akkaV     % "test",
     "com.typesafe.akka"             %% "akka-slf4j"          % akkaV,
 
-    "org.elasticsearch.client"       % "transport"           % "5.3.0",
+    "org.elasticsearch.client"       % "transport"           % "5.3.2",
 
     "com.google.api-client"          % "google-api-client"   % "1.22.0"
       exclude("com.google.guava", "guava-jdk5"),
