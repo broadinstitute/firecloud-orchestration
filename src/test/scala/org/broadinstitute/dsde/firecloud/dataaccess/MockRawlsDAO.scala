@@ -18,8 +18,10 @@ import scala.concurrent.Future
   */
 class MockRawlsDAO  extends RawlsDAO {
 
-  var groups: Map[String, Set[String]] = Map("dbGapAuthorizedUsers" -> Set("linked-user", "linked-user-expired-link", "linked-user-no-expire-date", "linked-user-invalid-expire-date"),
-    "targetAuthorizedUsers" -> Set("linked-user", "linked-user-expired-link", "linked-user-no-expire-date", "linked-user-invalid-expire-date"))
+  var groups: Map[String, Set[String]] = Map(
+    "TCGA_dbGaP_Authorized" -> Set("tcga-linked", "linked-user-expired-link", "linked-user-no-expire-date", "linked-user-invalid-expire-date"),
+    "TARGET_dbGaP_Authorized" -> Set("linked-user", "linked-user-expired-link", "linked-user-no-expire-date", "linked-user-invalid-expire-date")
+  )
 
   private val rawlsWorkspaceWithAttributes = Workspace(
     "attributes",
@@ -142,6 +144,7 @@ class MockRawlsDAO  extends RawlsDAO {
   override def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
     val userEmailsToAdd = memberList.userSubjectIds.getOrElse(Seq[String]()).toSet
     val groupWithNewMembers = (groupName -> ((groups(groupName).filterNot(userEmailsToAdd.contains)) ++ userEmailsToAdd))
+    println(s"${groupName} + ${memberList}")
     groups = groups + groupWithNewMembers
 
     Future.successful(true)

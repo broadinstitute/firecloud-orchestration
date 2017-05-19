@@ -15,11 +15,23 @@ import scala.util.{Success, Try}
  */
 class MockThurloeDAO extends ThurloeDAO {
 
-  val linkedUserId = "linked-user"
-  val linkedAndNoExpiredUserId = "linked-user-no-expire-date"
-  val linkedButExpiredUserId = "linked-user-expired-link"
-  val normalUserId = "normal-user"
-  val linkedAndInvalidExpiredDate = "linked-user-invalid-expire-date"
+  val TCGA_LINKED = "tcga-linked"
+  val TCGA_LINKED_NO_EXPIRE_DATE = "tcga-linked-no-expire-date"
+  val TCGA_LINKED_EXPIRED = "tcga-linked-expired"
+  val TCGA_LINKED_INVALID_EXPIRE_DATE = "tcga-linked-user-invalid-expire-date"
+  val TCGA_UNLINKED = "tcga-unlinked"
+
+  val TARGET_LINKED = "target-linked"
+  val TARGET_LINKED_NO_EXPIRE_DATE = "target-linked-no-expire-date"
+  val TARGET_LINKED_EXPIRED = "target-linked-expired"
+  val TARGET_LINKED_INVALID_EXPIRE_DATE = "target-user-invalid-expire-date"
+  val TARGET_UNLINKED = "target-unlinked"
+
+  val TCGA_AND_TARGET_LINKED = "tcga-and-target-linked"
+  val TCGA_AND_TARGET_LINKED_NO_EXPIRE_DATE = "tcga-and-target-linked-no-expire-date"
+  val TCGA_AND_TARGET_LINKED_EXPIRED = "tcga-and-target-linked-expired"
+  val TCGA_AND_TARGET_LINKED_INVALID_EXPIRE_DATE = "tcga-and-target-user-invalid-expire-date"
+  val TCGA_AND_TARGET_UNLINKED = "tcga-and-target-unlinked"
 
   val baseProfile = Set(
     FireCloudKeyValue(Some("firstName"), Some("Bobby")),
@@ -37,19 +49,21 @@ class MockThurloeDAO extends ThurloeDAO {
 
   var mockKeyValues: Map[String, Set[FireCloudKeyValue]] =
     Map(
-      linkedUserId -> baseProfile.++(Set(
+      TCGA_UNLINKED -> baseProfile,
+      TARGET_UNLINKED -> baseProfile,
+      TCGA_AND_TARGET_UNLINKED -> baseProfile,
+      TCGA_LINKED -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
       ),
-      linkedAndNoExpiredUserId -> baseProfile.++(Set(
+      TCGA_LINKED_NO_EXPIRE_DATE -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user")))
       ),
-      linkedButExpiredUserId -> baseProfile.++(Set(
+      TCGA_LINKED_EXPIRED -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
       ),
-      normalUserId -> baseProfile,
-      linkedAndInvalidExpiredDate -> baseProfile.++(Set(
+      TCGA_LINKED_INVALID_EXPIRE_DATE -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
         FireCloudKeyValue(Some("linkExpireTime"), Some("expiration-dates-cant-be-words!")))
       )
