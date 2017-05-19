@@ -147,7 +147,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impMethodId = jsonFormat3(MethodId)
   implicit val impMethodCreate = jsonFormat6(MethodCreate)
   implicit val impEditMethodRequest = jsonFormat5(EditMethodRequest)
-  implicit val impEditMethodResponse = jsonFormat3(EditMethodResponse)
+  implicit val impEditMethodResponse = jsonFormat2(EditMethodResponse)
 
   implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate.apply)
 
