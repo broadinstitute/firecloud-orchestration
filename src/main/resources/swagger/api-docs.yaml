@@ -534,6 +534,35 @@ paths:
             - email
             - profile
 
+  /api/groups/{groupName}/requestAccess:
+      post:
+        responses:
+          204:
+            description: Successfully requested access
+          404:
+            description: Group not found
+            schema:
+              $ref: '#/definitions/ErrorReport'
+          500:
+            description: FireCloud Internal Error
+            schema:
+              $ref: '#/definitions/ErrorReport'
+        parameters:
+          - in: path
+            description: Group name
+            name: groupName
+            required: true
+            type: string
+        tags:
+          - Groups
+        summary: request access to a group
+        operationId: requestAccessToGroup
+        security:
+          - googleoauth:
+              - openid
+              - email
+              - profile
+
   /api/groups/{groupName}/{role}/{email}:
     put:
       responses:
@@ -1434,6 +1463,27 @@ paths:
           description: Request Accepted
         404:
           description: Workspace does not exist
+        500:
+          description: Internal Server Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/accessInstructions:
+    get:
+      tags:
+        - Workspaces
+      operationId: getWorkspaceAccessInstructions
+      summary: Get workspace access instructions (if any)
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ManagedGroupAccessInstructions'
+        404:
+          description: Workspace not found
         500:
           description: Internal Server Error
 
@@ -3595,6 +3645,20 @@ definitions:
     properties:
       membersGroupName:
         type: string
+
+  ManagedGroupAccessInstructions:
+    description: ''
+    required:
+      - groupName
+      - instructions
+    type: object
+    properties:
+      groupName:
+        type: string
+        description: The name of the Group with instructions
+      instructions:
+        type: string
+        description: The instructions for applying to the Group
 
   ManagedGroupAccessResponse:
     description: an element of a list of groups a user has access to

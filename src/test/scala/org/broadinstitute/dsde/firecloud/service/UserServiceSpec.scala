@@ -132,6 +132,13 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
 
+    workspaceServer
+      .when(request.withMethod("POST").withPath(UserService.rawlsGroupRequestAccessPath("example-group")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(NoContent.intValue)
+      )
+
     profileServer = startClientAndServer(thurloeServerPort)
     // Generate a mock response for all combinations of profile properties
     // to ensure that all posts to any combination will yield a successful response.
@@ -285,6 +292,15 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
         Delete("/api/groups/example-group/owner/test@test.test") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
           status should equal(OK)
+        }
+      }
+    }
+
+    "when POST-ing to request access to a group" - {
+      "OK response is returned" in {
+        Post("/api/groups/example-group/requestAccess") ~>
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          status should equal(NoContent)
         }
       }
     }

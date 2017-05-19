@@ -57,6 +57,9 @@ object UserService {
   def rawlsGroupMemberPath(group: String, role: String, email: String) = rawlsGroupPath(group) + "/%s/%s".format(role, email)
   def rawlsGroupMemberUrl(group: String, role: String, email: String) = FireCloudConfig.Rawls.baseUrl + rawlsGroupMemberPath(group, role, email)
 
+  def rawlsGroupRequestAccessPath(group: String) = rawlsGroupPath(group) + "/requestAccess"
+  def rawlsGroupRequestAccessUrl(group: String) = FireCloudConfig.Rawls.baseUrl + rawlsGroupRequestAccessPath(group)
+
 }
 
 // TODO: this should use UserInfoDirectives, not StandardUserInfoDirectives. That would require a refactoring
@@ -145,6 +148,11 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
             } ~
             delete {
               passthrough(UserService.rawlsGroupUrl(groupName), HttpMethods.DELETE)
+            }
+          } ~
+          path("requestAccess") {
+            post {
+              passthrough(UserService.rawlsGroupRequestAccessUrl(groupName), HttpMethods.POST)
             }
           } ~
           path(Segment / Segment) { (role, email) =>
