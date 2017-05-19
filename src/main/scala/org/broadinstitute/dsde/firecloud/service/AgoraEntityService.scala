@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{EditMethodRequest, EditMethodResponse, MethodId}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.AgoraEntityService.EditMethod
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -13,6 +14,8 @@ import org.broadinstitute.dsde.rawls.model.ErrorReport
 import spray.http.StatusCode
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
+import spray.httpx.SprayJsonSupport._
+import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -43,13 +46,13 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
           agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { _ =>
             RequestComplete(OK, EditMethodResponse(newId))
           } recover {
-            case e: Throwable => RequestComplete(Created, EditMethodResponse(newId, Some("Error while redacting old snapshot"), Some(e)))
+            case _ => RequestComplete(Created, EditMethodResponse(newId, Some("Error while redacting old snapshot")))
           }
         } else {
           Future(RequestComplete(OK, EditMethodResponse(newId)))
         }
       } recover {
-        case e: Throwable => RequestComplete(Created, EditMethodResponse(newId, Some("Error while copying permissions"), Some(e)))
+        case _ => RequestComplete(Created, EditMethodResponse(newId, Some("Error while copying permissions")))
       }
     } recover {
       case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Failed to create the new snapshot", e)

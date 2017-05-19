@@ -56,8 +56,7 @@ object MethodRepository {
 
   case class EditMethodResponse(
     method: MethodId,
-    message: Option[String] = None,
-    error: Option[Throwable] = None
+    message: Option[String] = None
   )
 
   // represents a method/config permission as exposed to the user from the orchestration layer
