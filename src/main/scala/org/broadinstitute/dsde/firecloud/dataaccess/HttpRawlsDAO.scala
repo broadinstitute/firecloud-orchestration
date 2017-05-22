@@ -154,8 +154,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
     def parseRawlsMessages(rs: RawlsStatus): Option[List[String]] = {
       val rawlsMessages = rs.systems.toList.flatMap {
-        case (k, v) if v.messages.nonEmpty =>
-          Some(s"$k: ${v.messages.mkString(", ")}")
+        case (k, RawlsSubsystemStatus(subsystem, Some(messages))) if messages.nonEmpty =>
+          Some(s"$k: ${messages.mkString(", ")}")
         case _ => None
       }
       if (rawlsMessages.nonEmpty) Some(rawlsMessages) else None
