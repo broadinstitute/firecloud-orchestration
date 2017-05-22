@@ -1,24 +1,24 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
-import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
-import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
+import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import spray.client.pipelining._
 import spray.http.StatusCodes._
-import spray.http.{HttpResponse, OAuth2BearerToken, Uri}
+import spray.http.{OAuth2BearerToken, Uri}
 import spray.httpx.SprayJsonSupport._
-import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 /**
   * Created by davidan on 9/23/16.
@@ -149,13 +149,28 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     authedRequestToObject[WorkspaceCatalogUpdateResponseList](Patch(workspaceCatalogUrl(ns, name), catalogUpdates), true)
 
   override def status: Future[SubsystemStatus] = {
-    val rawlsStatus = unAuthedRequestToObject[RawlsStatus](Get(Uri(FireCloudConfig.Rawls.baseUrl).withPath(Uri.Path("/version"))))
+    val rawlsStatus = unAuthedRequestToObject[RawlsStatus](Get(Uri(FireCloudConfig.Rawls.baseUrl).withPath(Uri.Path("/status"))))
 
-    rawlsStatus map { rawlsStatus =>
-      rawlsStatus.version match {
-        case Some(version) => SubsystemStatus(true)
-        case _ => SubsystemStatus(false)
+    def parseRawlsMessages(rs: RawlsStatus): Option[List[String]] = {
+      val rawlsMessages = rs.systems.toList.flatMap {
+        case (k, v) if v.messages.nonEmpty =>
+          Some(s"$k: ${v.messages.mkString(", ")}")
+        case _ => None
       }
+      if (rawlsMessages.nonEmpty) Some(rawlsMessages) else None
+    }
+
+    rawlsStatus.map { status =>
+      SubsystemStatus(status.ok, parseRawlsMessages(status))
+    }.recoverWith { case e: FireCloudExceptionWithErrorReport =>
+      // Rawls returns 500 on status check failures, but the JSON data should still be sent in the
+      // response body and stored in the ErrorReport. Try to parse a RawlsStatus from the error report
+      // (if it exists) so we can display it to the user. If this fails, then we will recover from the error below.
+      Future(e.errorReport.message.parseJson.convertTo[RawlsStatus]).map { recoveredStatus =>
+        SubsystemStatus(recoveredStatus.ok, parseRawlsMessages(recoveredStatus))
+      }
+    }.recover {
+      case NonFatal(e) => SubsystemStatus(false, Some(List(e.getMessage)))
     }
   }
 
