@@ -83,7 +83,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
     assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(services.thurloeDao.TCGA_AND_TARGET_UNLINKED))
   }
 
-  it should "return OK when NIH linking with a valid JWT and the user is NOT on the whitelist (TCGA)" in withDefaultApiServices { services =>
+  it should "link a valid NIH account that isn't on any whitelists but not sync them to TCGA or TARGET groups" in withDefaultApiServices { services =>
     Post("/nih/callback", validJwtNotOnWhitelist) ~> dummyUserIdHeaders(services.thurloeDao.TCGA_AND_TARGET_UNLINKED) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
     }
@@ -93,25 +93,26 @@ class NihApiServiceSpec extends ApiServiceSpec {
 
   it should "return OK when an expired user re-links. their new link time should be 30 days in the future" in withDefaultApiServices { services =>
     //verify that their link is indeed already expired
-    Get("/nih/status") ~> dummyUserIdHeaders(services.thurloeDao.TCGA_LINKED_EXPIRED) ~> sealRoute(services.nihRoutes) ~> check {
+    Get("/nih/status") ~> dummyUserIdHeaders(services.thurloeDao.TCGA_AND_TARGET_LINKED_EXPIRED) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
       assert(responseAs[NihStatus].linkExpireTime.get < DateUtils.now)
     }
 
     //link them using a valid JWT for a user on the whitelist
-    Post("/nih/callback", firecloudDevJwt) ~> dummyUserIdHeaders(services.thurloeDao.TCGA_LINKED_EXPIRED) ~> sealRoute(services.nihRoutes) ~> check {
+    Post("/nih/callback", firecloudDevJwt) ~> dummyUserIdHeaders(services.thurloeDao.TCGA_AND_TARGET_LINKED_EXPIRED) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
     }
 
     //verify that their link expiration has been updated
-    Get("/nih/status") ~> dummyUserIdHeaders(services.thurloeDao.TCGA_LINKED_EXPIRED) ~> sealRoute(services.nihRoutes) ~> check {
+    Get("/nih/status") ~> dummyUserIdHeaders(services.thurloeDao.TCGA_AND_TARGET_LINKED_EXPIRED) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
       val linkExpireTime = responseAs[NihStatus].linkExpireTime.get
 
       assert(linkExpireTime >= DateUtils.nowMinus1Hour) //link expire time is fresh
       assert(linkExpireTime <= DateUtils.nowPlus30Days) //link expire time is approx 30 days in the future
     }
-    assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(services.thurloeDao.TCGA_LINKED_EXPIRED))
+    assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(services.thurloeDao.TCGA_AND_TARGET_LINKED_EXPIRED))
+    assert(services.rawlsDao.groups(targetDbGaPAuthorized).contains(services.thurloeDao.TCGA_AND_TARGET_LINKED_EXPIRED))
   }
 
   /* Test scenario:
@@ -119,10 +120,11 @@ class NihApiServiceSpec extends ApiServiceSpec {
      1 user that is linked but they have no expiration date stored in their profile. they should be removed
      1 user that is linked and has active TCGA access. they should remain in the dbGapAuthorizedUsers group
    */
-  it should "return NoContent and properly sync the whitelist for users of different link statusesa across whitelists" in withDefaultApiServices { services =>
+  it should "return NoContent and properly sync the whitelist for users of different link statuses across whitelists" in withDefaultApiServices { services =>
     Post("/sync_whitelist") ~> sealRoute(services.syncRoute) ~> check {
       status should equal(NoContent)
     }
-    assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(services.thurloeDao.TCGA_LINKED))
+    assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).equals(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED)))
+    assert(services.rawlsDao.groups(targetDbGaPAuthorized).equals(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TARGET_LINKED)))
   }
 }

@@ -22,15 +22,11 @@ class MockThurloeDAO extends ThurloeDAO {
   val TCGA_UNLINKED = "tcga-unlinked"
 
   val TARGET_LINKED = "target-linked"
-  val TARGET_LINKED_NO_EXPIRE_DATE = "target-linked-no-expire-date"
   val TARGET_LINKED_EXPIRED = "target-linked-expired"
-  val TARGET_LINKED_INVALID_EXPIRE_DATE = "target-user-invalid-expire-date"
   val TARGET_UNLINKED = "target-unlinked"
 
   val TCGA_AND_TARGET_LINKED = "tcga-and-target-linked"
-  val TCGA_AND_TARGET_LINKED_NO_EXPIRE_DATE = "tcga-and-target-linked-no-expire-date"
   val TCGA_AND_TARGET_LINKED_EXPIRED = "tcga-and-target-linked-expired"
-  val TCGA_AND_TARGET_LINKED_INVALID_EXPIRE_DATE = "tcga-and-target-user-invalid-expire-date"
   val TCGA_AND_TARGET_UNLINKED = "tcga-and-target-unlinked"
 
   val baseProfile = Set(
@@ -49,11 +45,8 @@ class MockThurloeDAO extends ThurloeDAO {
 
   var mockKeyValues: Map[String, Set[FireCloudKeyValue]] =
     Map(
-      TCGA_UNLINKED -> baseProfile,
-      TARGET_UNLINKED -> baseProfile,
-      TCGA_AND_TARGET_UNLINKED -> baseProfile,
       TCGA_LINKED -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
+        FireCloudKeyValue(Some("linkedNihUsername"), Some("tcga-user")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
       ),
       TCGA_LINKED_NO_EXPIRE_DATE -> baseProfile.++(Set(
@@ -66,7 +59,30 @@ class MockThurloeDAO extends ThurloeDAO {
       TCGA_LINKED_INVALID_EXPIRE_DATE -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
         FireCloudKeyValue(Some("linkExpireTime"), Some("expiration-dates-cant-be-words!")))
-      )
+      ),
+      TCGA_UNLINKED -> baseProfile,
+
+
+      TARGET_LINKED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("linkedNihUsername"), Some("target-user")),
+        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
+      ),
+      TARGET_LINKED_EXPIRED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
+        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
+      ),
+      TARGET_UNLINKED -> baseProfile,
+
+
+      TCGA_AND_TARGET_LINKED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
+        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
+      ),
+      TCGA_AND_TARGET_LINKED_EXPIRED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
+        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
+      ),
+      TCGA_AND_TARGET_UNLINKED -> baseProfile
     )
 
   override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
