@@ -53,7 +53,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
     assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(services.thurloeDao.TCGA_AND_TARGET_UNLINKED))
   }
 
-  it should "sync when user is on TCGA whitelist but not TARGET" in withDefaultApiServices { services =>
+  it should "link and sync when user is on TCGA whitelist but not TARGET" in withDefaultApiServices { services =>
     assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(services.thurloeDao.TCGA_UNLINKED))
     assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(services.thurloeDao.TCGA_UNLINKED))
     Post("/nih/callback", tcgaUserJwt) ~> dummyUserIdHeaders(services.thurloeDao.TCGA_UNLINKED) ~> sealRoute(services.nihRoutes) ~> check {
@@ -63,7 +63,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
     assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(services.thurloeDao.TCGA_UNLINKED))
   }
 
-  it should "sync when user is on TARGET whitelist but not TCGA" in withDefaultApiServices { services =>
+  it should "link and sync when user is on TARGET whitelist but not TCGA" in withDefaultApiServices { services =>
     assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(services.thurloeDao.TARGET_UNLINKED))
     assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(services.thurloeDao.TARGET_UNLINKED))
     Post("/nih/callback", targetUserJwt) ~> dummyUserIdHeaders(services.thurloeDao.TARGET_UNLINKED) ~> sealRoute(services.nihRoutes) ~> check {
@@ -73,7 +73,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
     assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(services.thurloeDao.TARGET_UNLINKED))
   }
 
-  it should "sync when user is on both the TARGET and TCGA whitelists" in withDefaultApiServices { services =>
+  it should "link and sync when user is on both the TARGET and TCGA whitelists" in withDefaultApiServices { services =>
     assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(services.thurloeDao.TCGA_AND_TARGET_UNLINKED))
     assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(services.thurloeDao.TCGA_AND_TARGET_UNLINKED))
     Post("/nih/callback", firecloudDevJwt) ~> dummyUserIdHeaders(services.thurloeDao.TCGA_AND_TARGET_UNLINKED) ~> sealRoute(services.nihRoutes) ~> check {
@@ -83,7 +83,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
     assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(services.thurloeDao.TCGA_AND_TARGET_UNLINKED))
   }
 
-  it should "link a valid NIH account that isn't on any whitelists but not sync them to TCGA or TARGET groups" in withDefaultApiServices { services =>
+  it should "link but not sync when user is on neither the TARGET nor the TCGA whitelist" in withDefaultApiServices { services =>
     Post("/nih/callback", validJwtNotOnWhitelist) ~> dummyUserIdHeaders(services.thurloeDao.TCGA_AND_TARGET_UNLINKED) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
     }
