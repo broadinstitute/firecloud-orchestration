@@ -262,7 +262,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
         case _ =>
           // Google did not return a profile for this user; abort.
           log.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.asString}")
-          requestContext.complete(userResponse)
+          requestContext.complete(Unauthorized, "There was a problem authorizing your download. Please reload the page and try again.")
       }
     }
   }
