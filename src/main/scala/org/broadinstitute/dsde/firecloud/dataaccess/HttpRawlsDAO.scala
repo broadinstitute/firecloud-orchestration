@@ -12,7 +12,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import spray.client.pipelining._
 import spray.http.StatusCodes._
-import spray.http.{OAuth2BearerToken, Uri}
+import spray.http.{OAuth2BearerToken, StatusCodes, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
@@ -163,7 +163,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
     rawlsStatus.map { status =>
       SubsystemStatus(status.ok, parseRawlsMessages(status))
-    }.recoverWith { case e: FireCloudExceptionWithErrorReport =>
+    }.recoverWith { case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Some(StatusCodes.InternalServerError.intValue) =>
       // Rawls returns 500 on status check failures, but the JSON data should still be sent in the
       // response body and stored in the ErrorReport. Try to parse a RawlsStatus from the error report
       // (if it exists) so we can display it to the user. If this fails, then we will recover from the error below.
