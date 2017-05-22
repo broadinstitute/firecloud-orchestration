@@ -163,7 +163,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
     rawlsStatus.map { status =>
       SubsystemStatus(status.ok, parseRawlsMessages(status))
-    }.recoverWith { case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Some(StatusCodes.InternalServerError.intValue) =>
+    }.recoverWith { case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Some(StatusCodes.InternalServerError) =>
       // Rawls returns 500 on status check failures, but the JSON data should still be sent in the
       // response body and stored in the ErrorReport. Try to parse a RawlsStatus from the error report
       // (if it exists) so we can display it to the user. If this fails, then we will recover from the error below.
