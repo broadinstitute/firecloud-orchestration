@@ -43,13 +43,18 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
           agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { _ =>
             RequestComplete(OK, EditMethodResponse(newId))
           } recover {
-            case _ => RequestComplete(Created, EditMethodResponse(newId, Some("Error while redacting old snapshot")))
+            case _ =>
+              val msg = "The new snapshot was created, but there was an error while redacting the previous snapshot."
+              RequestComplete(OK, EditMethodResponse(newId, Some(msg)))
           }
         } else {
           Future(RequestComplete(OK, EditMethodResponse(newId)))
         }
       } recover {
-        case _ => RequestComplete(Created, EditMethodResponse(newId, Some("Error while copying permissions")))
+        case _ =>
+          val msg = "The new snapshot was created, but there was an error while copying permissions." +
+            (if (req.redactOldSnapshot) " The previous snapshot was not redacted." else "")
+          RequestComplete(OK, EditMethodResponse(newId, Some(msg)))
       }
     } recover {
       case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Failed to create the new snapshot", e)
