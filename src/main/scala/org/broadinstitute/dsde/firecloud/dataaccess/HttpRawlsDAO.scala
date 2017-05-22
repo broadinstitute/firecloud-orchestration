@@ -14,6 +14,7 @@ import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http.{OAuth2BearerToken, Uri}
 import spray.httpx.SprayJsonSupport._
+import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
