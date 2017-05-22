@@ -15,6 +15,8 @@ import scala.util.{Success, Try}
  */
 class MockThurloeDAO extends ThurloeDAO {
 
+  val NORMAL_USER = "normal-user"
+
   val TCGA_LINKED = "tcga-linked"
   val TCGA_LINKED_NO_EXPIRE_DATE = "tcga-linked-no-expire-date"
   val TCGA_LINKED_EXPIRED = "tcga-linked-expired"
@@ -45,6 +47,8 @@ class MockThurloeDAO extends ThurloeDAO {
 
   var mockKeyValues: Map[String, Set[FireCloudKeyValue]] =
     Map(
+      NORMAL_USER -> baseProfile,
+      //TCGA users
       TCGA_LINKED -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("tcga-user")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
@@ -61,8 +65,7 @@ class MockThurloeDAO extends ThurloeDAO {
         FireCloudKeyValue(Some("linkExpireTime"), Some("expiration-dates-cant-be-words!")))
       ),
       TCGA_UNLINKED -> baseProfile,
-
-
+      //TARGET users
       TARGET_LINKED -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("target-user")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
@@ -72,8 +75,7 @@ class MockThurloeDAO extends ThurloeDAO {
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
       ),
       TARGET_UNLINKED -> baseProfile,
-
-
+      //TCGA and TARGET users
       TCGA_AND_TARGET_LINKED -> baseProfile.++(Set(
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
