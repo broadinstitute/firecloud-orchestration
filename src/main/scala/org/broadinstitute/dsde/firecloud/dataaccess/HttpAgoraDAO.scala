@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, Method, MethodCreate}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, SubsystemStatus, UserInfo}
@@ -31,7 +31,9 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
 
   override def postMethod(ns: String, name: String, synopsis: String, documentation: String, payload: String)(implicit userInfo: UserInfo): Future[Method] =
     authedRequestToObject[Method](
-      Post(s"${config.authUrl}/methods", MethodCreate(ns, name, synopsis, documentation, payload, "Workflow")))
+      Post(s"${config.authUrl}/methods", MethodCreate(ns, name, synopsis, documentation, payload, "Workflow"))) recover {
+        case e:Exception => throw new AgoraException("postMethod", e)
+      }
 
   override def redactMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[HttpResponse] =
     userAuthedRequest(Delete(s"${config.authUrl}/methods/$ns/$name/$snapshotId"))
@@ -54,3 +56,6 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
   }
 
 }
+
+// move this Exception out of this file!
+class AgoraException(val method:String, val innerException: Exception) extends FireCloudException
