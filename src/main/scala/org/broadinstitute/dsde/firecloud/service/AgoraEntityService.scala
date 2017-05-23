@@ -39,25 +39,25 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
 
   def editMethod(req: EditMethodRequest): Future[PerRequestMessage] = {
     val source = req.source
-    agoraDAO.postMethod(source.namespace, source.name, req.synopsis, req.documentation, req.payload) flatMap { method =>
-      val newId = MethodId(method.namespace.get, method.name.get, method.snapshotId.get)
+    agoraDAO.postMethod(source.namespace, source.name, req.synopsis, req.documentation, req.payload) flatMap { newMethod =>
+      val newId = MethodId(newMethod.namespace.get, newMethod.name.get, newMethod.snapshotId.get)
       setMethodPermissions(source, newId) flatMap { _ =>
         if (req.redactOldSnapshot) {
           agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { _ =>
-            RequestComplete(OK, EditMethodResponse(newId))
+            RequestComplete(OK, EditMethodResponse(newMethod))
           } recover {
             case _ =>
               val msg = "The new snapshot was created, but there was an error while redacting the previous snapshot."
-              RequestComplete(OK, EditMethodResponse(newId, Some(msg)))
+              RequestComplete(OK, EditMethodResponse(newMethod, Some(msg)))
           }
         } else {
-          Future(RequestComplete(OK, EditMethodResponse(newId)))
+          Future(RequestComplete(OK, EditMethodResponse(newMethod)))
         }
       } recover {
         case _ =>
           val msg = "The new snapshot was created, but there was an error while copying permissions." +
             (if (req.redactOldSnapshot) " The previous snapshot was not redacted." else "")
-          RequestComplete(OK, EditMethodResponse(newId, Some(msg)))
+          RequestComplete(OK, EditMethodResponse(newMethod, Some(msg)))
       }
     } recover {
       case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Failed to create the new snapshot", e)

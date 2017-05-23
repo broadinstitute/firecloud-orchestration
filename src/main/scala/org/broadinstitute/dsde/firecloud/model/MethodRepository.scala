@@ -28,6 +28,7 @@ object MethodRepository {
     documentation: Option[String] = None,
     createDate: Option[String] = None,
     url: Option[String] = None,
+    payload: Option[String] = None,
     entityType: Option[String] = None
   )
 
@@ -55,7 +56,7 @@ object MethodRepository {
   )
 
   case class EditMethodResponse(
-    method: MethodId,
+    method: Method,
     message: Option[String] = None
   )
 

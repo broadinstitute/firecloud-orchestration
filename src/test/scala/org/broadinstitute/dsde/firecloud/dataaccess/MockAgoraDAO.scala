@@ -36,6 +36,7 @@ class MockAgoraDAO extends AgoraDAO {
         snapshotId = Some(2),
         synopsis = Some(synopsis),
         documentation = Some(documentation),
+        payload = Some(payload),
         createDate = Some("01-01-1970"),
         entityType = Some("Workflow")
       ))
@@ -43,18 +44,24 @@ class MockAgoraDAO extends AgoraDAO {
   }
 
   override def redactMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[HttpResponse] = {
-    // TODO: allow calling unit tests to receive success or failure
-    Future(HttpResponse())
+    (ns, name) match {
+      case ("exception", "redactError") => throw new FireCloudExceptionWithErrorReport(ErrorReport("intentional error for unit tests"))
+      case _ => Future(HttpResponse())
+    }
   }
 
   override def getMethodPermissions(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
-    // TODO: allow calling unit tests to receive success or failure
-    Future(List(MockAgoraDAO.agoraPermission))
+    (ns, name) match {
+      case ("exceptions", "permGetError") => throw new FireCloudExceptionWithErrorReport(ErrorReport("intentional error for unit tests"))
+      case _ => Future(List(MockAgoraDAO.agoraPermission))
+    }
   }
 
   override def postMethodPermissions(ns: String, name: String, snapshotId: Int, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
-    // TODO: allow calling unit tests to receive success or failure
-    Future(List(MockAgoraDAO.agoraPermission))
+    (ns, name) match {
+      case ("exceptions", "permPostError") => throw new FireCloudExceptionWithErrorReport(ErrorReport("intentional error for unit tests"))
+      case _ => Future(perms)
+    }
   }
 
   def status: Future[SubsystemStatus] = {
