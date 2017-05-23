@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
-import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, AgoraException}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{EditMethodRequest, EditMethodResponse, MethodId}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
@@ -53,6 +53,7 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
         } else {
           Future(RequestComplete(OK, EditMethodResponse(newId)))
         }
+      // remove all these inner recovers ...
       } recover {
         case _ =>
           val msg = "The new snapshot was created, but there was an error while copying permissions." +
@@ -60,6 +61,13 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
           RequestComplete(OK, EditMethodResponse(newId, Some(msg)))
       }
     } recover {
+      case ae: AgoraException => ae.method match {
+        case "postMethod" => // here is where we handle errors posting the method
+          RequestCompleteWithErrorReport(InternalServerError, "Failed to create the new snapshot", ae)
+        case "permissionsGet" => // etc etc
+          RequestComplete(OK, "some other thing")
+        case _ => RequestComplete(OK, "default case")
+      }
       case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Failed to create the new snapshot", e)
     }
   }
