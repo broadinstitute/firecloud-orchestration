@@ -1,12 +1,12 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
+import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
-import spray.http.{HttpResponse, OAuth2BearerToken, StatusCodes}
+import spray.http.StatusCodes
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -215,6 +215,14 @@ class MockRawlsDAO  extends RawlsDAO {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
     } else {
       Future.successful(Seq.empty)
+    }
+  }
+
+  override def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
+    if (workspaceName == "invalid") {
+      Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
+    } else {
+      Future.successful(null)
     }
   }
 

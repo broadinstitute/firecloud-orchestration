@@ -7,15 +7,18 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
+import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
 import org.broadinstitute.dsde.rawls.model.StatusJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
 import org.joda.time.DateTime
 import spray.client.pipelining._
 import spray.http.StatusCodes._
+import spray.http.{OAuth2BearerToken, Uri}
 import spray.http.{OAuth2BearerToken, StatusCodes, Uri}
 import spray.httpx.SprayJsonSupport._
-import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -122,6 +125,10 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[Entity]] = {
     authedRequestToObject[Seq[Entity]](Get(rawlsEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType)), true)
+  }
+
+  override def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
+    authedRequestToObject[EntityQueryResponse](Get(rawlsQueryEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType, query)), true)
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
