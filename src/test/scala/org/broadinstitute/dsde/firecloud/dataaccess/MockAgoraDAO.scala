@@ -1,26 +1,18 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{ACLNames, AgoraPermission, Method}
 import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, UserInfo}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import spray.http.HttpResponse
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 object MockAgoraDAO {
-  def agoraPermission = AgoraPermission(
+  val agoraPermission = AgoraPermission(
     user = Some("test-user@broadinstitute.org"),
     roles = Some(ACLNames.ListOwner)
-  )
-
-  def method = Method(
-    namespace = Some("test-namespace"),
-    name = Some("test-name"),
-    snapshotId = Some(1),
-    synopsis = Some("test-synopsis"),
-    documentation = Some("test-documentation"),
-    createDate = Some("01-01-1970"),
-    entityType = Some("Workflow")
   )
 }
 
@@ -35,18 +27,33 @@ class MockAgoraDAO extends AgoraDAO {
   }
 
   override def postMethod(ns: String, name: String, synopsis: String, documentation: String, payload: String)(implicit userInfo: UserInfo): Future[Method] = {
-    Future(MockAgoraDAO.method)
+    // based on what the unit test passed in, return success or failure
+    (ns, name) match {
+      case ("exceptions", "postError") => throw new FireCloudExceptionWithErrorReport(ErrorReport("intentional error for unit tests"))
+      case _ => Future(Method(
+        namespace = Some(ns),
+        name = Some(name),
+        snapshotId = Some(2),
+        synopsis = Some(synopsis),
+        documentation = Some(documentation),
+        createDate = Some("01-01-1970"),
+        entityType = Some("Workflow")
+      ))
+    }
   }
 
   override def redactMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[HttpResponse] = {
+    // TODO: allow calling unit tests to receive success or failure
     Future(HttpResponse())
   }
 
   override def getMethodPermissions(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
+    // TODO: allow calling unit tests to receive success or failure
     Future(List(MockAgoraDAO.agoraPermission))
   }
 
   override def postMethodPermissions(ns: String, name: String, snapshotId: Int, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
+    // TODO: allow calling unit tests to receive success or failure
     Future(List(MockAgoraDAO.agoraPermission))
   }
 
