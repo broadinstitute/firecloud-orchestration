@@ -1118,7 +1118,9 @@ paths:
         - $ref: '#/parameters/editMethodRequest'
       responses:
         200:
-          description: Creating the new method succeeded.
+          description: Creating the new method succeeded. Check the response for any partial failures.
+          schema:
+            $ref: '#/definitions/EditMethodResponse'
         500:
           description: Internal Server Error
 
@@ -3445,6 +3447,58 @@ definitions:
       - documentation
       - payload
       - redactOldSnapshot
+
+  EditMethodResponse:
+    description: response of an edit method operation
+    type: object
+    properties:
+      method:
+        description: the created Method
+        type: object
+        properties:
+          namespace:
+            description: Method namespace
+            type: string
+          name:
+            description: Method name
+            type: string
+          snapshotId:
+            description: Method snapshot ID
+            type: integer
+          synopsis:
+            description: Method synopsis
+            type: string
+          documentation:
+            description: Method documentation
+            type: string
+          createDate:
+            description: Timestamp of Method creation
+            type: string
+          url:
+            description: Method URL
+            type: string
+          payload:
+            description: Method WDL
+            type: string
+          entityType:
+            description: Method type
+            type: string
+        required:
+          - namespace
+          - name
+          - snapshotId
+          - synopsis
+          - documentation
+          - createDate
+          - url
+          - payload
+          - entityType
+      message:
+        description: info about partial failures, if present
+        type: string
+    required:
+      - method
+
 
   Enabled:
     type: object
