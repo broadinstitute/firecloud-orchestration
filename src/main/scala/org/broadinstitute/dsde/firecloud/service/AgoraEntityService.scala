@@ -2,10 +2,9 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
 import akka.pattern._
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
+import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, AgoraException}
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, EditMethodRequest, EditMethodResponse, MethodId}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{EditMethodRequest, EditMethodResponse, MethodId}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.AgoraEntityService.EditMethod
@@ -18,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object AgoraEntityService {
   sealed trait AgoraEntityServiceMessage
-  case class EditMethod(editMethod: EditMethodRequest)
+  case class EditMethod(editMethod: EditMethodRequest) extends AgoraEntityServiceMessage
 
   def props(agoraEntityServiceConstructor: UserInfo => AgoraEntityService, userInfo: UserInfo): Props = {
     Props(agoraEntityServiceConstructor(userInfo))

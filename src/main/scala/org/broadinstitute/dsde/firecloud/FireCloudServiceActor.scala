@@ -26,6 +26,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with WorkspaceApiService
   with NotificationsApiService
   with StatusApiService
+  with AgoraEntityApiService
   {
 
   implicit val system = context.system
@@ -52,6 +53,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(app)
+  val agoraEntityServiceConstructor: (UserInfo) => AgoraEntityService = AgoraEntityService.constructor(app)
 
   // routes under /api
 
@@ -110,6 +112,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         workspaceRoutes ~
         notificationsRoutes ~
         publicStatusRoutes ~
+        agoraEntityRoutes ~
         pathPrefix("api") {
           apiRoutes
         } ~

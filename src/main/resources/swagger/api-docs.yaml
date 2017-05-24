@@ -1108,6 +1108,20 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/methods/edit:
+    post:
+      tags:
+        - Method Repository
+      operationId: editMethod
+      summary: edit Method to create a new snapshot
+      parameters:
+        - $ref: '#/parameters/editMethodRequest'
+      responses:
+        200:
+          description: Creating the new method succeeded.
+        500:
+          description: Internal Server Error
+
   /api/nih/callback:
     post:
       tags:
@@ -3016,6 +3030,13 @@ parameters:
     required: true
     type: string
     in: path
+  editMethodRequest:
+    name: editMethodRequest
+    description: Edit Method Request
+    required: true
+    in: body
+    schema:
+      $ref: '#/definitions/EditMethodRequest'
 
 ##########################################################################################
 ## DEFINITIONS
@@ -3383,6 +3404,47 @@ definitions:
       authorized:
         type: boolean
         description: true if you have access to the dataset, false otherwise
+
+  EditMethodRequest:
+    description: info to edit a method
+    type: object
+    properties:
+      source:
+        description: ID of base method to edit
+        type: object
+        properties:
+          namespace:
+            type: string
+            description: Method namespace
+          name:
+            type: string
+            description: Method name
+          snapshotId:
+            type: integer
+            default: 0
+            description: Method version
+        required:
+          - namespace
+          - name
+          - snapshotId
+      synopsis:
+        description: synopsis for new snapshot
+        type: string
+      documentation:
+        description: documentation for new snapshot
+        type: string
+      payload:
+        description: WDL for new snapshot
+        type: string
+      redactOldSnapshot:
+        description: whether or not to redact the source snapshot upon success
+        type: boolean
+    required:
+      - source
+      - synopsis
+      - documentation
+      - payload
+      - redactOldSnapshot
 
   Enabled:
     type: object
