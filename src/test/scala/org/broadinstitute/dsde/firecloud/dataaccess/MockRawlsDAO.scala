@@ -19,8 +19,8 @@ import scala.concurrent.Future
 class MockRawlsDAO  extends RawlsDAO {
 
   var groups: Map[String, Set[String]] = Map(
-    "TCGA_dbGaP_Authorized" -> Set("tcga-linked", "tcga-linked-no-expire-date", "tcga-linked-expired", "tcga-linked-user-invalid-expire-date", "tcga-and-target-linked", "tcga-and-target-linked-expired"),
-    "TARGET_dbGaP_Authorized" -> Set("target-linked", "target-linked-expired", "tcga-and-target-linked", "tcga-and-target-linked-expired")
+    "TCGA-dbGaP-Authorized" -> Set("tcga-linked", "tcga-linked-no-expire-date", "tcga-linked-expired", "tcga-linked-user-invalid-expire-date", "tcga-and-target-linked", "tcga-and-target-linked-expired"),
+    "TARGET-dbGaP-Authorized" -> Set("target-linked", "target-linked-expired", "tcga-and-target-linked", "tcga-and-target-linked-expired")
   )
 
   private val rawlsWorkspaceWithAttributes = Workspace(
