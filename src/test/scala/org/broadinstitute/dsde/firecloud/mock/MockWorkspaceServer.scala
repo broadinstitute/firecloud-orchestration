@@ -185,7 +185,6 @@ object MockWorkspaceServer {
           .withHeaders(header)
           .withStatusCode(OK.intValue)
       )
-
   }
 
 }
