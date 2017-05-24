@@ -23,7 +23,7 @@ import scala.util.{Failure, Success, Try}
 
 case class NihStatus(
                       linkedNihUsername: Option[String] = None,
-                      whitelistStatuses: Set[NihWhitelistStatus],
+                      datasetPermissions: Set[NihDatasetPermission],
                       linkExpireTime: Option[Long] = None)
 
 case class NihWhitelist(
@@ -31,13 +31,13 @@ case class NihWhitelist(
                          groupToSync: String,
                          fileName: String)
 
-case class NihWhitelistStatus(name: String, authorized: Boolean)
+case class NihDatasetPermission(name: String, authorized: Boolean)
 
 object NihStatus {
-  implicit val impNihWhitelistAccess = jsonFormat2(NihWhitelistStatus)
+  implicit val impNihDatasetPermission = jsonFormat2(NihDatasetPermission)
   implicit val impNihStatus = jsonFormat3(NihStatus.apply)
 
-  def apply(profile: Profile, whitelistAccess: Set[NihWhitelistStatus]): NihStatus = {
+  def apply(profile: Profile, whitelistAccess: Set[NihDatasetPermission]): NihStatus = {
     new NihStatus(
       profile.linkedNihUsername,
       whitelistAccess,
@@ -84,7 +84,7 @@ trait NihService extends LazyLogging {
         profile.linkedNihUsername match {
           case Some(_) =>
             Future.traverse(nihWhitelists) { whitelistDef =>
-              rawlsDao.isGroupMember(userInfo, whitelistDef.groupToSync).map(isMember => NihWhitelistStatus(whitelistDef.name, isMember))
+              rawlsDao.isGroupMember(userInfo, whitelistDef.groupToSync).map(isMember => NihDatasetPermission(whitelistDef.name, isMember))
             }.map { whitelistMembership =>
               RequestComplete(NihStatus(profile, whitelistMembership))
             }
@@ -147,15 +147,19 @@ trait NihService extends LazyLogging {
   }
 
   def updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink): Future[PerRequestMessage] = {
-    //first, link the NIH account. it doesn't matter if they're on a whitelist or not
-    //next, sync the appropriate rawls groups based on which whitelists the user is a member of
-    val linkResult = linkNihAccount(userInfo, nihLink).andThen { case _ =>
-      nihWhitelists.foreach(syncNihWhitelistForUser(userInfo.getUniqueId, nihLink.linkedNihUsername, _))
+    val linkResult = linkNihAccount(userInfo, nihLink)
+
+    val whitelistSyncResults = Future.traverse(nihWhitelists) { whitelist =>
+      syncNihWhitelistForUser(userInfo.getUniqueId, nihLink.linkedNihUsername, whitelist).map(NihDatasetPermission(whitelist.name, _))
     }
 
-    linkResult.map { response =>
-      if(response.isSuccess) RequestComplete(OK)
-      else RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link")
+    linkResult.flatMap { response =>
+      if(response.isSuccess) {
+        whitelistSyncResults.map { datasetPermissions =>
+          RequestComplete(OK, NihStatus(Option(nihLink.linkedNihUsername), datasetPermissions, Option(nihLink.linkExpireTime)))
+        }
+      }
+      else Future.successful(RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link"))
     }
   }
 

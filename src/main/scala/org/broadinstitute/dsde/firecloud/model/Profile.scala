@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.service.NihWhitelistStatus
+import org.broadinstitute.dsde.firecloud.service.NihDatasetPermission
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import spray.json.DefaultJsonProtocol._
 
