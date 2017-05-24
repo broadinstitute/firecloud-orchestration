@@ -31,16 +31,24 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
 
   override def postMethod(ns: String, name: String, synopsis: String, documentation: String, payload: String)(implicit userInfo: UserInfo): Future[Method] =
     authedRequestToObject[Method](
-      Post(s"${config.authUrl}/methods", MethodCreate(ns, name, synopsis, documentation, payload, "Workflow")))
+      Post(s"${config.authUrl}/methods", MethodCreate(ns, name, synopsis, documentation, payload, "Workflow"))) recover {
+        case e: Exception => throw new AgoraException("postMethod", e)
+      }
 
   override def redactMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[HttpResponse] =
-    userAuthedRequest(Delete(s"${config.authUrl}/methods/$ns/$name/$snapshotId"))
+    userAuthedRequest(Delete(s"${config.authUrl}/methods/$ns/$name/$snapshotId")) recover {
+      case e: Exception => throw new AgoraException("redactMethod", e)
+    }
 
   override def getMethodPermissions(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] =
-    authedRequestToObject[List[AgoraPermission]]( Get(getMethodPermissionsUrl(ns, name, snapshotId)) )
+    authedRequestToObject[List[AgoraPermission]](Get(getMethodPermissionsUrl(ns, name, snapshotId))) recover {
+      case e: Exception => throw new AgoraException("getMethodPermissions", e)
+    }
 
   override def postMethodPermissions(ns: String, name: String, snapshotId: Int, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] =
-    authedRequestToObject[List[AgoraPermission]]( Post(getMethodPermissionsUrl(ns, name, snapshotId), perms) )
+    authedRequestToObject[List[AgoraPermission]](Post(getMethodPermissionsUrl(ns, name, snapshotId), perms)) recover {
+      case e: Exception => throw new AgoraException("postMethodPermissions", e)
+    }
 
   override def status: Future[SubsystemStatus] = {
     val agoraStatus = unAuthedRequestToObject[AgoraStatus](Get(Uri(config.baseUrl).withPath(Uri.Path("/status"))))
