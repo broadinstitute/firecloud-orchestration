@@ -1,11 +1,14 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, Method}
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import spray.http.HttpResponse
 
 import scala.concurrent.Future
+
+class AgoraException(val method: String, val innerException: Exception = null) extends FireCloudException
 
 object AgoraDAO {
   lazy val serviceName = "Agora"

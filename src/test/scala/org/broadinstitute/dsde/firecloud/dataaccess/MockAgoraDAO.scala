@@ -29,7 +29,7 @@ class MockAgoraDAO extends AgoraDAO {
   override def postMethod(ns: String, name: String, synopsis: String, documentation: String, payload: String)(implicit userInfo: UserInfo): Future[Method] = {
     // based on what the unit test passed in, return success or failure
     (ns, name) match {
-      case ("exceptions", "postError") => throw new FireCloudExceptionWithErrorReport(ErrorReport("intentional error for unit tests"))
+      case ("exceptions", "postError") => throw new AgoraException("postMethod")
       case _ => Future(Method(
         namespace = Some(ns),
         name = Some(name),
@@ -45,21 +45,21 @@ class MockAgoraDAO extends AgoraDAO {
 
   override def redactMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[HttpResponse] = {
     (ns, name) match {
-      case ("exception", "redactError") => throw new FireCloudExceptionWithErrorReport(ErrorReport("intentional error for unit tests"))
+      case ("exceptions", "redactError") => throw new AgoraException("redactMethod")
       case _ => Future(HttpResponse())
     }
   }
 
   override def getMethodPermissions(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
     (ns, name) match {
-      case ("exceptions", "permGetError") => throw new FireCloudExceptionWithErrorReport(ErrorReport("intentional error for unit tests"))
+      case ("exceptions", "permGetError") => throw new AgoraException("getMethodPermissions")
       case _ => Future(List(MockAgoraDAO.agoraPermission))
     }
   }
 
   override def postMethodPermissions(ns: String, name: String, snapshotId: Int, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
     (ns, name) match {
-      case ("exceptions", "permPostError") => throw new FireCloudExceptionWithErrorReport(ErrorReport("intentional error for unit tests"))
+      case ("exceptions", "permPostError") => throw new AgoraException("postMethodPermissions")
       case _ => Future(perms)
     }
   }

@@ -4,8 +4,8 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
-import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{EditMethodRequest, EditMethodResponse, MethodId}
+import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, AgoraException}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, EditMethodRequest, EditMethodResponse, MethodId}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.AgoraEntityService.EditMethod
@@ -41,43 +41,37 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
     val source = req.source
     agoraDAO.postMethod(source.namespace, source.name, req.synopsis, req.documentation, req.payload) flatMap { newMethod =>
       val newId = MethodId(newMethod.namespace.get, newMethod.name.get, newMethod.snapshotId.get)
-      setMethodPermissions(source, newId) flatMap { _ =>
+      copyMethodPermissions(source, newId) flatMap { _ =>
         if (req.redactOldSnapshot) {
           agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { _ =>
             RequestComplete(OK, EditMethodResponse(newMethod))
-          } recover {
-            case _ =>
-              val msg = "The new snapshot was created, but there was an error while redacting the previous snapshot."
-              RequestComplete(OK, EditMethodResponse(newMethod, Some(msg)))
           }
         } else {
           Future(RequestComplete(OK, EditMethodResponse(newMethod)))
         }
-      } recover {
-        case _ =>
-          val msg = "The new snapshot was created, but there was an error while copying permissions." +
-            (if (req.redactOldSnapshot) " The previous snapshot was not redacted." else "")
-          RequestComplete(OK, EditMethodResponse(newMethod, Some(msg)))
       }
     } recover {
-      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Failed to create the new snapshot", e)
+      case ae: AgoraException => ae.method match {
+        case "postMethod" => RequestComplete(InternalServerError, "Failed to create the new snapshot")
+        case "getMethodPermissions" =>
+          val msg = "The new snapshot was created, but there was an error while copying permissions." +
+            (if (req.redactOldSnapshot) " The previous snapshot was not redacted." else "")
+          RequestComplete(OK, msg)
+        case "postMethodPermissions" =>
+          val msg = "The new snapshot was created, but there was an error while copying permissions." +
+            (if (req.redactOldSnapshot) " The previous snapshot was not redacted." else "")
+          RequestComplete(OK, msg)
+        case "redactMethod" => RequestComplete(OK, "The new snapshot was created, but there was an error while redacting the previous snapshot.")
+      }
+      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "An internal error occurred on method edit", e)
     }
   }
 
-  def setMethodPermissions(source: MethodId, target: MethodId): Future[PerRequestMessage] = {
-    val resultPerms = for {
+  private def copyMethodPermissions(source: MethodId, target: MethodId) = {
+    for {
       sourcePerms <- agoraDAO.getMethodPermissions(source.namespace, source.name, source.snapshotId)
       resultPerms <- agoraDAO.postMethodPermissions(target.namespace, target.name, target.snapshotId, sourcePerms)
     } yield resultPerms
-
-    resultPerms map {
-      perms => RequestComplete(OK, perms map AgoraPermissionHandler.toFireCloudPermission)
-    } recover {
-      case e: FireCloudExceptionWithErrorReport =>
-        RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport)
-      case e: Throwable =>
-        RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
-    }
   }
 
 }

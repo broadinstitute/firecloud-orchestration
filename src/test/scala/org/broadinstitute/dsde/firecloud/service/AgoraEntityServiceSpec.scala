@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.testkit.TestActorRef
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockAgoraDAO, StatefulMockAgoraDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraException, MockAgoraDAO, StatefulMockAgoraDAO}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{EditMethodRequest, EditMethodResponse, MethodId}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
@@ -61,7 +61,7 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     "when encountering an error during snapshot creation" - {
       "should throw an exception" in {
         val req: EditMethodRequest = EditMethodRequest(MethodId("exceptions","postError",1), "synopsis", "doc", "payload", redactOldSnapshot=true)
-        intercept[FireCloudExceptionWithErrorReport] {
+        intercept[AgoraException] {
           Await.result(aes.editMethod(req), dur)
         }
         assertResult(1) {dao.postMethodCalls.length}
@@ -78,7 +78,7 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
         val req = EditMethodRequest(MethodId("exceptions","permGetError",1), "synopsis", "doc", "payload", redactOldSnapshot=true)
         val result = Await.result(aes.editMethod(req), dur)
         result match {
-          case RequestComplete((status:StatusCode, editMethodResponse:EditMethodResponse)) =>
+          case RequestComplete((status:StatusCode, message:String)) =>
             assertResult(OK) {status}
             // creating the new method succeeded:
             assertResult(1) {dao.postMethodCalls.length}
@@ -89,8 +89,6 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
             // and neither post nor redact were attempted:
             assertResult(0) {dao.postMethodPermissionsCalls.length}
             assertResult(0) {dao.redactMethodCalls.length}
-            // also, we got some kind of error message:
-            assert(editMethodResponse.message.isDefined)
 
           case x => fail(s"expected RequestComplete; got $x")
         }
@@ -101,7 +99,7 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
         val req = EditMethodRequest(MethodId("exceptions","permPostError",1), "synopsis", "doc", "payload", redactOldSnapshot=true)
         val result = Await.result(aes.editMethod(req), dur)
         result match {
-          case RequestComplete((status:StatusCode, editMethodResponse:EditMethodResponse)) =>
+          case RequestComplete((status:StatusCode, message:String)) =>
             assertResult(OK) {status}
             // creating the new method succeeded:
             assertResult(1) {dao.postMethodCalls.length}
@@ -114,8 +112,6 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
             assertResult(("exceptions","permPostError",2,List(MockAgoraDAO.agoraPermission))) {dao.postMethodPermissionsCalls.head}
             // and redact was not attempted:
             assertResult(0) {dao.redactMethodCalls.length}
-            // also, we got some kind of error message:
-            assert(editMethodResponse.message.isDefined)
 
           case x => fail(s"expected RequestComplete; got $x")
         }
@@ -126,7 +122,7 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
         val req = EditMethodRequest(MethodId("exceptions","redactError",1), "synopsis", "doc", "payload", redactOldSnapshot=true)
         val result = Await.result(aes.editMethod(req), dur)
         result match {
-          case RequestComplete((status:StatusCode, editMethodResponse:EditMethodResponse)) =>
+          case RequestComplete((status:StatusCode, message:String)) =>
             assertResult(OK) {status}
             // creating the new method succeeded:
             assertResult(1) {dao.postMethodCalls.length}
@@ -140,8 +136,6 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
             // but redact errored:
             assertResult(1) {dao.redactMethodCalls.length}
             assertResult(("exceptions","redactError",1)) {dao.redactMethodCalls.head}
-            // also, we got some kind of error message:
-            assert(editMethodResponse.message.isDefined)
 
           case x => fail(s"expected RequestComplete; got $x")
         }
