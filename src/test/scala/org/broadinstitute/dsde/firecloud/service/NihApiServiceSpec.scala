@@ -130,15 +130,19 @@ class NihApiServiceSpec extends ApiServiceSpec {
   }
 
   /* Test scenario:
-     1 user that is linked but their TCGA access has expired. they should be removed
-     1 user that is linked but they have no expiration date stored in their profile. they should be removed
-     1 user that is linked and has active TCGA access. they should remain in the dbGapAuthorizedUsers group
+     1 user that is linked but their TCGA access has expired. they should be removed from the TCGA group
+     1 user that is linked but their TARGET access has expired. they should be removed from the TARGET group
+     1 user that is linked but they have no expiration date stored in their profile. they should be removed from the TCGA group
+     1 user that is linked but their TCGA and TARGET access has expired. they should be removed from the TARGET and TCGA groups
+     1 user that is linked and has active TCGA access. they should remain in the TCGA group
+     1 user that is linked and has active TARGET access. they should remain in the TARGET group
+     1 user that is linked and has active TARGET & TCGA access. they should remain in the TARGET and TCGA groups
    */
   it should "return NoContent and properly sync the whitelist for users of different link statuses across whitelists" in withDefaultApiServices { services =>
     Post("/sync_whitelist") ~> sealRoute(services.syncRoute) ~> check {
       status should equal(NoContent)
     }
-    assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).equals(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED)))
-    assert(services.rawlsDao.groups(targetDbGaPAuthorized).equals(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TARGET_LINKED)))
+    services.rawlsDao.groups(tcgaDbGaPAuthorized) should contain theSameElementsAs Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED)
+    services.rawlsDao.groups(targetDbGaPAuthorized) should contain theSameElementsAs Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TARGET_LINKED)
   }
 }
