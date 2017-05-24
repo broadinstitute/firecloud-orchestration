@@ -117,6 +117,10 @@ object MockTSVStrings {
     List("sset_01", "sample_01").tabbed,
     List("sset_01", "sample_02").tabbed).newlineSeparated
 
+  val entityHasNoRows = List(
+    List("entity:sample_set_id", "sample").tabbed
+  ).newlineSeparated
+
   val entityUpdateMissingRequiredAttrs = List( //missing participant
     List("entity:sample_id", "some_attribute").tabbed,
     List("sample_01", "de").tabbed,
@@ -264,6 +268,7 @@ object MockTSVFormData {
   val entityUnknownFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.entityUnknownFirstColumnHeader)
   val entityHasDupes = wrapInMultipart("entities", MockTSVStrings.entityHasDupes)
   val entityHasCollectionMembers = wrapInMultipart("entities", MockTSVStrings.entityHasCollectionMembers)
+  val entityHasNoRows = wrapInMultipart("entities", MockTSVStrings.entityHasNoRows)
   val entityUpdateMissingRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateMissingRequiredAttrs)
   val entityUpdateWithRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateWithRequiredAttrs)
   val entityUpdateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateWithRequiredAndOptionalAttrs)

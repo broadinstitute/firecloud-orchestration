@@ -94,7 +94,7 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
 
   def batchCallToRawls(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    workspaceNamespace: String, workspaceName: String, calls: Seq[EntityUpdateDefinition], endpoint: String ): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, entityType: String, calls: Seq[EntityUpdateDefinition], endpoint: String ): Future[PerRequestMessage] = {
     logger.debug("TSV upload request received")
 
     val responseFuture: Future[HttpResponse] = pipeline {
@@ -106,7 +106,7 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
       response.status match {
           case NoContent =>
             logger.debug("OK response")
-            RequestComplete(OK, calls.head.entityType)
+            RequestComplete(OK, entityType)
           case _ =>
             // Bubble up all other unmarshallable responses
             logger.warn("Unanticipated response: " + response.status.defaultMessage)
@@ -133,7 +133,7 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
             }
             EntityUpdateDefinition(entityName,entityType,ops)
           }
-          batchCallToRawls(pipeline, workspaceNamespace, workspaceName, rawlsCalls.toSeq, "batchUpsert")
+          batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls.toSeq, "batchUpsert")
         }
       }
     }
@@ -151,7 +151,7 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
             val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
-            batchCallToRawls(pipeline, workspaceNamespace, workspaceName, rawlsCalls, "batchUpsert")
+            batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpsert")
           }
         }
       }
@@ -174,7 +174,7 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
             case Success(requiredAttributes) =>
               val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
-              batchCallToRawls(pipeline, workspaceNamespace, workspaceName, rawlsCalls, "batchUpdate")
+              batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpdate")
           }
         }
       }
