@@ -260,9 +260,9 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
             }
           }
         case _ =>
-          // Google did not return a profile for this user; abort.
+          // Google did not return a profile for this user; abort. Reloading will resolve the issue if it's caused by an expired token.
           log.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.asString}")
-          requestContext.complete(userResponse)
+          requestContext.complete(Unauthorized, "There was a problem authorizing your download. Please reload FireCloud and try again.")
       }
     }
   }
