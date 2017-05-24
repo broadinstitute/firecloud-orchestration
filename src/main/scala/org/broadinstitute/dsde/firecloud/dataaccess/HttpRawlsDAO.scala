@@ -7,8 +7,9 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
+import org.broadinstitute.dsde.rawls.model.StatusJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
-import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
 import org.joda.time.DateTime
 import spray.client.pipelining._
 import spray.http.StatusCodes._
