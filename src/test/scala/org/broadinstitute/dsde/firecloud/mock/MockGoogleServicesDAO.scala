@@ -18,7 +18,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
     objectKey match {
       case "target-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntarget-user".getBytes("UTF-8"))
       case "tcga-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntcga-user".getBytes("UTF-8"))
-      case "test-ioexception" => throw new IOException
+      case "broken-whitelist.txt" => throw new IOException
       case _ => new ByteArrayInputStream(" ".getBytes("UTF-8"))
     }
   }
