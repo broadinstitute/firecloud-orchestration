@@ -64,7 +64,7 @@ class NihServiceActor(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO, val go
   override def receive = {
     case GetNihStatus(userInfo: UserInfo) => getNihStatus(userInfo) pipeTo sender
     case UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) => updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) pipeTo sender
-    case SyncWhitelist => syncNihWhitelistsFull pipeTo sender
+    case SyncWhitelist => syncAllNihWhitelistsAllUsers pipeTo sender
   }
 }
 
@@ -84,7 +84,7 @@ trait NihService extends LazyLogging {
             Future.traverse(nihWhitelists) { whitelistDef =>
               rawlsDao.isGroupMember(userInfo, whitelistDef.groupToSync).map(isMember => NihWhitelistStatus(whitelistDef.name, isMember))
             }.map { whitelistMembership =>
-              RequestComplete(NihStatus(profile.copy(linkExpireTime = Option(profile.linkExpireTime.getOrElse(0L))), whitelistMembership))
+              RequestComplete(NihStatus(profile, whitelistMembership))
             }
           case None => Future.successful(RequestComplete(NotFound))
         }
@@ -98,8 +98,8 @@ trait NihService extends LazyLogging {
     usersList.getLines().toSet
   }
 
-  // This syncs all of the whitelists in full
-  def syncNihWhitelistsFull: Future[PerRequestMessage] = {
+  // This syncs all of the whitelists for all of the users
+  def syncAllNihWhitelistsAllUsers: Future[PerRequestMessage] = {
     val whitelistSyncResults = Future.traverse(nihWhitelists)(syncNihWhitelistAllUsers)
 
     whitelistSyncResults map { response =>
