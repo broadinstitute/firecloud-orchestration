@@ -142,7 +142,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
     Post("/sync_whitelist") ~> sealRoute(services.syncRoute) ~> check {
       status should equal(NoContent)
     }
-    services.rawlsDao.groups(tcgaDbGaPAuthorized) should contain theSameElementsAs Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED)
-    services.rawlsDao.groups(targetDbGaPAuthorized) should contain theSameElementsAs Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TARGET_LINKED)
+    assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED), services.rawlsDao.groups(tcgaDbGaPAuthorized))
+    assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TARGET_LINKED), services.rawlsDao.groups(targetDbGaPAuthorized))
   }
 }
