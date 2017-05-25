@@ -9,4 +9,3 @@ case class SubsystemStatus(ok: Boolean, messages: Option[List[String]] = None)
 
 case class AgoraStatus(status: String, message: List[String])
 case class ThurloeStatus(status: String, error: Option[String])
-case class RawlsStatus(version: Option[String])
