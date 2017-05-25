@@ -1,11 +1,14 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
+import akka.io.IO
+import akka.pattern.ask
+import akka.util.Timeout
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
@@ -14,6 +17,7 @@ import org.broadinstitute.dsde.rawls.model.StatusJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
 import org.joda.time.DateTime
+import spray.can.Http
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http.{OAuth2BearerToken, Uri}
@@ -23,6 +27,7 @@ import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
@@ -31,6 +36,21 @@ import scala.util.control.NonFatal
   */
 class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
   extends RawlsDAO with RestJsonClient {
+
+  // TODO: Copied from HttpOntologyDAO. How to refactor to a common trait ???
+  private val rawlsUri = Uri(FireCloudConfig.Rawls.baseUrl)
+  private val (rawlsPort, sslEncryption) = (rawlsUri.authority.port, rawlsUri.scheme) match {
+    case (0, "https") => (443, true)
+    case (0, "http") => (80, false)
+    case (port:Int, "https") => (port, true)
+    case (port:Int, "http") => (port, false)
+    case _ => throw new FireCloudException(s"Could not parse rawlsUri: ${rawlsUri}")
+  }
+  private val rawlsHostSetup = Http.HostConnectorSetup(rawlsUri.authority.host.address, rawlsPort, sslEncryption)
+  private def getHostConnector: Future[ActorRef] = {
+    implicit val timeout:Timeout = 60.seconds // timeout to get the host connector reference
+    for (Http.HostConnectorInfo(connector, _) <- IO(Http) ? rawlsHostSetup) yield connector
+  }
 
   override def isRegistered(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest(Get(rawlsUserRegistrationUrl))(userInfo) map { response =>
@@ -129,7 +149,15 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   override def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
-    authedRequestToObject[EntityQueryResponse](Get(rawlsQueryEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType, query)), true)
+    queryEntitiesAsync(workspaceNamespace, workspaceName, entityType, query)
+  }
+
+  private def queryEntitiesAsync(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
+    getHostConnector flatMap { hostConnector =>
+      val targetUri = Uri(rawlsQueryEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType, query))
+      logger.info("Querying rawls entities: " + query.toString)
+      authedRequestToObject[EntityQueryResponse](Get(targetUri), compressed = true, connector = Some(hostConnector))
+    }
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
