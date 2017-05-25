@@ -8,7 +8,7 @@ import akka.pattern.pipe
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
-import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.StreamEntities
+import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.{ExportEntities, StreamEntities}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.broadinstitute.dsde.rawls.model.{Entity, EntityQuery, EntityQueryResponse, SortDirections}
@@ -23,6 +23,7 @@ import scala.util.Success
 
 object ExportEntitiesByTypeActor {
   sealed trait ExportEntitiesByTypeMessage
+  case class ExportEntities(workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]) extends ExportEntitiesByTypeMessage
   case class StreamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]) extends ExportEntitiesByTypeMessage
 
   def props(exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor, userInfo: UserInfo): Props = {
@@ -35,6 +36,7 @@ object ExportEntitiesByTypeActor {
 
 class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val userInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with ExportEntitiesByType {
   override def receive: Receive = {
+    case ExportEntities(workspaceNamespace, workspaceName, filename, entityType, attributeNames) => exportEntities(workspaceNamespace, workspaceName, filename, entityType, attributeNames) pipeTo sender
     case StreamEntities(ctx, workspaceNamespace, workspaceName, filename, entityType, attributeNames) => streamEntities(ctx, workspaceNamespace, workspaceName, filename, entityType, attributeNames) pipeTo sender
   }
 }
@@ -49,8 +51,8 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   /**
     * Overall approach:
     * Generate a list of all queries to extract all of the entities
-    * For each of those, generate individual streams
-    * Sum those streams up and pipe it back out to the sender.
+    * For each of those, generate individual lists
+    * Stream that list back out to the sender.
     * TODO: Add zip-streaming for set types
     * TODO: Add filename handling
     * TODO: Add attributeName handling
@@ -66,7 +68,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
       val pages = queryResponse.resultMetadata.filteredCount/pageSize match {
         case x if x > Math.floor(x) => (Math.floor(x) + 1).toInt
         case x => x.toInt
-        case _ => 1
       }
         val range = 1 to pages
         range map {
