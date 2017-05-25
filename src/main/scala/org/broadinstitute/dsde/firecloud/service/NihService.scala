@@ -1,7 +1,5 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import java.io.{ByteArrayInputStream, IOException, InputStream}
-
 import akka.actor.{Actor, ActorRefFactory, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
@@ -95,16 +93,7 @@ trait NihService extends LazyLogging {
   }
 
   private def downloadNihWhitelist(whitelist: NihWhitelist): Set[String] = {
-    val usersList = try {
-      Source.fromInputStream(googleDao.getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, whitelist.fileName))
-    } catch {
-      case ioe: IOException => {
-        logger.error(s"Unable to download ${whitelist.name} whitelist from Google Bucket (${FireCloudConfig.Nih.whitelistBucket}/${whitelist.fileName})")
-        //In the rare case where we cannot read the whitelist from the bucket, this will act as a fail-safe and
-        //act as if the whitelist is empty
-        Source.fromInputStream(new ByteArrayInputStream("".getBytes("UTF-8")))
-      }
-    }
+    val usersList = Source.fromInputStream(googleDao.getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, whitelist.fileName))
 
     usersList.getLines().toSet
   }

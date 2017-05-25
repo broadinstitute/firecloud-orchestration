@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.mock
 
-import java.io.{ByteArrayInputStream, IOException, InputStream}
+import java.io.{ByteArrayInputStream, InputStream}
 
 import akka.actor.ActorRefFactory
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse
@@ -18,7 +18,6 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
     objectKey match {
       case "target-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntarget-user".getBytes("UTF-8"))
       case "tcga-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntcga-user".getBytes("UTF-8"))
-      case "broken-whitelist.txt" => throw new IOException
       case _ => new ByteArrayInputStream(" ".getBytes("UTF-8"))
     }
   }
