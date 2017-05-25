@@ -1,17 +1,23 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.actor.Props
+import akka.pattern.ask
+import akka.util.Timeout
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service._
 import org.slf4j.LoggerFactory
-import spray.http.OAuth2BearerToken
+import spray.http.{ContentTypes, OAuth2BearerToken}
 import spray.routing._
+
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 /**
  * Created by dvoet on 11/16/16.
  */
 trait CookieAuthedApiService extends HttpService with PerRequestCreator with FireCloudDirectives
-  with FireCloudRequestBuilding {
+  with FireCloudRequestBuilding with StreamingActorCreator {
 
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor
 
@@ -27,8 +33,20 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
             val filename = entityType + ".tsv"
             val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
             val userInfo = UserInfo("dummy", OAuth2BearerToken(tokenValue), -1, "dummy")
-            perRequest(requestContext, ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo),
-              ExportEntitiesByTypeActor.ExportEntities(workspaceNamespace, workspaceName, filename, entityType, attributeNames))
+
+            val actorProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo)
+            val streamOperation = ExportEntitiesByTypeActor.StreamEntities(requestContext, workspaceNamespace, workspaceName, filename, entityType, attributeNames)
+            val actor = actorRefFactory.actorOf(actorProps)
+            implicit val timeout = Timeout(5 minute)
+            val streamFuture = (actor ? streamOperation).mapTo[Stream[String]]
+            streamFuture.map { stream =>
+              val streamProps: Props = propsFromString(
+                requestContext,
+                ContentTypes.`text/plain`,
+                stream
+              )
+              actorRefFactory.actorOf(streamProps)
+            }
           }
         }
     } ~
