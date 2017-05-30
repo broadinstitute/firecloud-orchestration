@@ -65,10 +65,11 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     lazy val pageQueriesFuture: Future[Seq[EntityQuery]] = getQueryResponse(workspaceNamespace, workspaceName, entityType, firstQuery) map {
       queryResponse =>
         val pageSize = 500 // TODO: Should this be a config?
-      val pages = queryResponse.resultMetadata.filteredCount/pageSize match {
-        case x if x > Math.floor(x) => (Math.floor(x) + 1).toInt
-        case x => x.toInt
-      }
+        val filteredCount = queryResponse.resultMetadata.filteredCount
+        val pages = filteredCount % pageSize match {
+          case x if x == 0 => filteredCount/pageSize
+          case x => filteredCount/pageSize + 1
+        }
         val range = 1 to pages
         range map {
           page =>
