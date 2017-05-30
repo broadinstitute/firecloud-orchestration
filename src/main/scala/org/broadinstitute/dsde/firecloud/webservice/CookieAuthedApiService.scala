@@ -4,14 +4,15 @@ import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
 import org.broadinstitute.dsde.firecloud.service._
 import org.slf4j.LoggerFactory
-import spray.http.{ContentTypes, OAuth2BearerToken}
+import spray.http.{ContentTypes, HttpHeader, HttpHeaders, OAuth2BearerToken}
 import spray.routing._
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.Success
 
 /**
  * Created by dvoet on 11/16/16.
@@ -30,7 +31,10 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
       (workspaceNamespace, workspaceName, entityType) =>
         formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) =>
           post { requestContext =>
-            val filename = entityType + ".tsv"
+            val (filename, contentType) = ModelSchema.getCollectionMemberType(entityType) match {
+              case Success(Some(collectionType)) => (entityType + ".zip", ContentTypes.`application/octet-stream`)
+              case _ => (entityType + ".tsv", ContentTypes.`text/plain`)
+            }
             val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
             val userInfo = UserInfo("dummy", OAuth2BearerToken(tokenValue), -1, "dummy")
 
@@ -38,13 +42,9 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
             val streamOperation = ExportEntitiesByTypeActor.StreamEntities(requestContext, workspaceNamespace, workspaceName, filename, entityType, attributeNames)
             val actor = actorRefFactory.actorOf(actorProps)
             implicit val timeout = Timeout(5 minute)
-            val streamFuture = (actor ? streamOperation).mapTo[Stream[String]]
+            val streamFuture = (actor ? streamOperation).mapTo[Stream[Array[Byte]]]
             streamFuture.map { stream =>
-              val streamProps: Props = propsFromString(
-                requestContext,
-                ContentTypes.`text/plain`,
-                stream
-              )
+              val streamProps: Props = propsFromArrayByte(requestContext, filename, contentType, stream)
               actorRefFactory.actorOf(streamProps)
             }
           }

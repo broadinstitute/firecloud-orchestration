@@ -15,7 +15,6 @@ import org.broadinstitute.dsde.rawls.model.{Entity, EntityQuery, EntityQueryResp
 import spray.http.MediaTypes._
 import spray.http.StatusCodes._
 import spray.http._
-import spray.json._
 import spray.routing.RequestContext
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,18 +45,13 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   implicit val userInfo: UserInfo
   implicit protected val executionContext: ExecutionContext
 
-  import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
-
   /**
     * Overall approach:
     * Generate a list of all queries to extract all of the entities
     * For each of those, generate individual lists
     * Stream that list back out to the sender.
-    * TODO: Add zip-streaming for set types
-    * TODO: Add filename handling
-    * TODO: Add attributeName handling
     */
-  def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[String]] = {
+  def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
     val sortField = entityType + "_id"
     val firstQuery: EntityQuery = EntityQuery(page = 1, pageSize = 1, sortField = sortField, sortDirection = SortDirections.Ascending, filterTerms = None)
 
@@ -90,14 +84,26 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
       map { s => s.flatten }
 
     // Turn the entities into a stream
-    seqEntityFuture map { entities: Seq[Entity] => entities.map { e: Entity => e.toJson.compactPrint }.toStream }
+    seqEntityFuture map { entities: Seq[Entity] =>
+      ModelSchema.getCollectionMemberType(entityType) match {
+        case Success(Some(collectionType)) =>
+          val collectionMemberType = ModelSchema.getPlural(collectionType)
+          val entityData = TSVFormatter.makeEntityTsvString(entities, entityType, attributeNames)
+          val membershipData = TSVFormatter.makeMembershipTsvString(entities, entityType, collectionType, collectionMemberType.get)
+          val zipBytes: Array[Byte] = getZipBytes(entityType, membershipData, entityData)
+          Stream(zipBytes)
+        case _ =>
+          val entityData = TSVFormatter.makeEntityTsvString(entities, entityType, attributeNames)
+          Stream(entityData.getBytes)
+      }
+    }
   }
 
-  def getQueryResponse(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[EntityQueryResponse] = {
+  private def getQueryResponse(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[EntityQueryResponse] = {
     rawlsDAO.queryEntitiesOfType(workspaceNamespace, workspaceName, entityType, query)
   }
 
-  def getEntities(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[Seq[Entity]] = {
+  private def getEntities(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[Seq[Entity]] = {
     rawlsDAO.queryEntitiesOfType(workspaceNamespace, workspaceName, entityType, query) map {
       response => response.results
     }

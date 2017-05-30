@@ -15,15 +15,15 @@ object StreamingActor {
   case object FirstChunk
   case object ChunkAck
 
-  case class FromHttpData(ctx: RequestContext, contentType: ContentType, stream: Stream[HttpData]) extends StreamingActor
+  case class FromHttpData(ctx: RequestContext, filename: String, contentType: ContentType, stream: Stream[HttpData]) extends StreamingActor
 
 }
 
 
 trait StreamingActorCreator {
 
-  def propsFromString(ctx: RequestContext, contentType: ContentType, stream: Stream[String]): Props =
-    Props(FromHttpData(ctx, contentType, stream.map(HttpData.apply)))
+  def propsFromArrayByte(ctx: RequestContext, filename: String, contentType: ContentType, stream: Stream[Array[Byte]]): Props =
+    Props(FromHttpData(ctx, filename, contentType, stream.map(HttpData.apply)))
 
 }
 
@@ -31,8 +31,10 @@ trait StreamingActorCreator {
 trait StreamingActor extends Actor with FireCloudRequestBuilding with ActorLogging {
 
   def ctx: RequestContext
+  def filename: String
   def contentType: ContentType
   def stream: Stream[HttpData]
+  val headers = List(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)))
 
   implicit val system: ActorSystem = context.system
 
@@ -43,12 +45,12 @@ trait StreamingActor extends Actor with FireCloudRequestBuilding with ActorLoggi
   def receive: Receive = {
 
     case FirstChunk if chunkIterator.hasNext =>
-      val responseStart = HttpResponse(entity = HttpEntity(contentType, chunkIterator.next()))
+      val responseStart = HttpResponse(entity = HttpEntity(contentType, chunkIterator.next()), headers = headers)
       ctx.responder ! ChunkedResponseStart(responseStart).withAck(ChunkAck)
 
     // data stream is empty. Respond with Content-Length: 0 and stop
     case FirstChunk =>
-      ctx.responder ! HttpResponse(entity = Empty)
+      ctx.responder ! HttpResponse(entity = Empty, headers = headers)
       context.stop(self)
 
     // send next chunk to client
