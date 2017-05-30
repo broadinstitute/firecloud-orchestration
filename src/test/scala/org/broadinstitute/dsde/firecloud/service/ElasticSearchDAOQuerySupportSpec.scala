@@ -168,7 +168,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
           val arr = getMustArray(jsonRequest)
           val matchAllClause = arr.elements.head.asJsObject
           assertResult(Set("match_all"), "first element of must clause should be a match") {matchAllClause.fields.keySet}
-          assertResult(JsObject(Map.empty[String, JsValue])) {matchAllClause.fields("match_all").asJsObject}
+          assertResult(JsObject(("boost",JsNumber(1.0)))) {matchAllClause.fields("match_all").asJsObject}
           // calling getMustBoolObject will validate it down to that level
           getMustBoolObject(jsonRequest)
         }
@@ -182,7 +182,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
   // TODO: does an expanded facet properly expand?
 
   def getSearchRequestAsJson(baseQuery:SearchRequestBuilder): JsObject = {
-    baseQuery.internalBuilder().buildAsBytes(XContentType.JSON).toUtf8.parseJson.asJsObject
+    baseQuery.toString.parseJson.asJsObject
   }
   def getFromValue(json:JsObject): Option[Int] = {
     json.fields.get("from") match {
@@ -242,12 +242,14 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
 
   def validateGroupTerm(json:JsObject, expectedGroup:Option[String]) = {
     val groupBoolClause = getMustBoolObject(json)
-    val groupbool = groupBoolClause.fields("bool")
+    val groupbool = groupBoolClause.fields("bool").asJsObject
     expectedGroup match {
       case Some(group) =>
-        assertResult(expectedDiscoverableGroup(group), "group criteria should include expected group name") {groupbool}
+        assertDiscoverableGroups(groupbool, Some(group))
+        // assertResult(expectedDiscoverableGroup(group), "group criteria should include expected group name") {groupbool}
       case None =>
-        assertResult(expectedNoDiscoverableGroups, "group criteria should be just the must-not-exists") {groupbool}
+        assertDiscoverableGroups(groupbool, None)
+        // assertResult(expectedNoDiscoverableGroups, "group criteria should be just the must-not-exists") {groupbool}
     }
   }
 
@@ -265,7 +267,8 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     val parentSearchNested = shouldArray.elements.tail.head.asJsObject
     assertResult(Set("nested"), s"search on parents should be a nested query") {parentSearchNested.fields.keySet}
     val parentSearchNestedQuery = parentSearchNested.fields("nested").asJsObject
-    assertResult(Set("query","path"), "nested parents query should be a query with path") {parentSearchNestedQuery.fields.keySet}
+    assert(parentSearchNestedQuery.fields.keySet.contains("query"), "nested parents query should contain a query")
+    assert(parentSearchNestedQuery.fields.keySet.contains("path"), "nested parents query should  contain a path")
     assertResult("parents", "nested parents query should have a path of 'parents'") {parentSearchNestedQuery.fields("path").asInstanceOf[JsString].value}
     val parentSearchMatch = parentSearchNestedQuery.fields("query").asJsObject
     validateSearchCriteria(parentSearchMatch, expectedTerm, "parents.label", "3<75%")
@@ -277,9 +280,9 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     val search = json.fields("match").asJsObject
     assertResult(Set(expectedField), s"search clause should execute against only $expectedField") {search.fields.keySet}
     val searchCriteria = search.fields(expectedField).asJsObject
-    assertResult(Set("query","type","minimum_should_match"), s"search criteria should have 'query','type','minimum_should_match'") {searchCriteria.fields.keySet}
+    assert(searchCriteria.fields.keySet.contains("query"), s"search criteria should contain 'query'")
+    assert(searchCriteria.fields.keySet.contains("minimum_should_match"), s"search criteria should contain 'minimum_should_match'")
     assertResult(expectedTerm) {searchCriteria.fields("query").asInstanceOf[JsString].value}
-    assertResult("boolean") {searchCriteria.fields("type").asInstanceOf[JsString].value}
     assertResult(expectedMinMatch) {searchCriteria.fields("minimum_should_match").asInstanceOf[JsString].value}
   }
 
@@ -288,7 +291,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
       case Some(a:JsObject) =>
         assertResult(Set("bool"), "query should be an outer bool clause") {a.fields.keySet}
         val outerbool = a.fields("bool").asJsObject
-        assertResult(Set("must"), "outer bool clause should be a must clause") {outerbool.fields.keySet}
+        assert(outerbool.fields.keySet.contains("must"), "outer bool clause should include a must clause")
         val must = outerbool.fields("must")
         must match {
           case arr:JsArray =>
@@ -305,7 +308,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     val searchClause = arr.elements.head.asJsObject
     assertResult(Set("bool"), "first element of text search clause should be a bool") {searchClause.fields.keySet}
     val boolClause = searchClause.fields("bool").asJsObject
-    assertResult(Set("should"), "first element of text search bool clause should be a should") {boolClause.fields.keySet}
+    assert(boolClause.fields.keySet.contains("should"), "first element of text search bool clause should inculde a should")
     val shouldArray = boolClause.fields("should") match {
       case arr:JsArray => arr
       case _ => fail("text search should clause should be an array")
@@ -320,39 +323,28 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     groupBoolClause
   }
 
-  private val expectedNoDiscoverableGroups = """{
-                                               |  "should":{
-                                               |		"bool":{
-                                               |		   "must_not":{
-                                               |			  "exists":{
-                                               |				 "field":"_discoverableByGroups"
-                                               |			  }
-                                               |		   }
-                                               |		}
-                                               |	 }
-                                               |}""".stripMargin.parseJson
-
-  private def expectedDiscoverableGroup(group:String):JsValue = {
-    s"""{
-      |  "should":[
-      |	 {
-      |		"bool":{
-      |		   "must_not":{
-      |			  "exists":{
-      |				 "field":"_discoverableByGroups"
-      |			  }
-      |		   }
-      |		}
-      |	 },
-      |	 {
-      |		"terms":{
-      |		   "_discoverableByGroups":[
-      |			  "$group"
-      |		   ]
-      |		}
-      |	 }
-      |  ]
-      |}""".stripMargin.parseJson
+  private def assertDiscoverableGroups(json:JsObject, expectedGroup: Option[String]) = {
+    val should = json.fields.get("should")
+    should match {
+      case Some(ja:JsArray) =>
+        val expectedLength = if (expectedGroup.isEmpty) 1 else 2
+        assertResult(expectedLength, s"should clause should have $expectedLength item(s)") {ja.elements.length}
+        // don't bother asserting the types and keys below; will throw exception and fail test if
+        // there's a problem.
+        val mustNotField = ja.elements(0).asJsObject
+          .fields("bool").asJsObject
+            .fields("must_not").asInstanceOf[JsArray].elements(0).asJsObject
+              .fields("exists").asJsObject
+                .fields("field")
+        assertResult(ElasticSearch.fieldDiscoverableByGroups) {mustNotField.asInstanceOf[JsString].value}
+        expectedGroup foreach { grp =>
+          val actualGroups = ja.elements(1).asJsObject
+            .fields("terms").asJsObject
+                .fields(ElasticSearch.fieldDiscoverableByGroups)
+          assertResult(Set(JsString(grp))) {actualGroups.asInstanceOf[JsArray].elements.toSet}
+        }
+      case _ => fail("should clause should exist and be a JsArray")
+    }
   }
 
 

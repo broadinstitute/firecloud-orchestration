@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.apache.lucene.search.join.ScoreMode
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -9,8 +10,10 @@ import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, Sea
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.elasticsearch.search.sort.SortOrder
-import org.elasticsearch.search.suggest.completion.{CompletionSuggestion, CompletionSuggestionFuzzyBuilder}
+import org.elasticsearch.search.suggest.{SuggestBuilder, SuggestBuilders}
+import org.elasticsearch.search.suggest.completion.CompletionSuggestion
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -25,6 +28,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   final val HL_START = "<strong class='es-highlight'>"
   final val HL_END = "</strong>"
   final val HL_REGEX:Regex = s"$HL_START(.+?)$HL_END".r.unanchored
+
+  final val AGG_MAX_SIZE = 100
+  final val AGG_DEFAULT_SIZE = 5
 
   /** ES queries - below is similar to what will be created by the query builders
     * {"query":{"match_all":{}}}"
@@ -68,13 +74,14 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       case Some(searchTerm) if searchTerm.trim == "" => matchAllQuery
       case Some(searchTerm) =>
         val fieldSearch = if (phrase) {
-          matchPhraseQuery(searchField, searchTerm).minimumShouldMatch("2<67%")
+          matchPhraseQuery(searchField, searchTerm)
+            //.minimumShouldMatch("2<67%")
         } else {
           matchQuery(searchField, searchTerm).minimumShouldMatch("2<67%")
         }
         boolQuery
           .should(fieldSearch)
-          .should(nestedQuery("parents", matchQuery("parents.label", searchTerm).minimumShouldMatch("3<75%")))
+          .should(nestedQuery("parents", matchQuery("parents.label", searchTerm).minimumShouldMatch("3<75%"), ScoreMode.Avg))
     })
     val groupsQuery = boolQuery
     // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/query-dsl-exists-query.html
@@ -92,10 +99,15 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def addAggregationsToQuery(searchReq: SearchRequestBuilder, aggFields: Map[String, Int]): SearchRequestBuilder = {
-    aggFields.keys foreach { property: String =>
+    // The UI sends 0 to indicate unbounded size for an aggregate. However, we don't actually
+    // want unbounded/infinite; we impose a server-side limit here, instead of asking the UI to
+    // know what the limit should be.
+    val aggregates = aggFields map { case (k:String,v:Int) => if (v == 0) (k,AGG_MAX_SIZE) else (k,v) }
+
+    aggregates.keys foreach { property: String =>
       // property here is specifying which attribute to collect aggregation info for
       // we use field.raw here because we want it to use the unanalyzed form of the data for the aggregations
-      searchReq.addAggregation(AggregationBuilders.terms(property).field(property + ".raw").size(aggFields.getOrElse(property, 5)))
+      searchReq.addAggregation(AggregationBuilders.terms(property).field(property + ".raw").size(aggregates.getOrElse(property, AGG_DEFAULT_SIZE)))
     }
     searchReq
   }
@@ -122,12 +134,12 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   }
 
   def createESAutocompleteRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int): SearchRequestBuilder = {
+    val hb = new HighlightBuilder()
+      .field(fieldSuggest).fragmentSize(50)
+      .preTags(HL_START).postTags(HL_END)
+
     createESSearchRequest(client, indexname, qmseq, from, size)
-      .setFetchSource(false)
-      .addHighlightedField(fieldSuggest)
-      .setHighlighterFragmentSize(50)
-      .setHighlighterPreTags(HL_START)
-      .setHighlighterPostTags(HL_END)
+      .setFetchSource(false).highlighter(hb)
   }
 
   def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String]): SearchRequestBuilder = {
@@ -196,7 +208,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       allResults <- allFutures
     ) yield LibrarySearchResponse(
       criteria,
-      allResults.last.getHits.totalHits().toInt,
+      allResults.last.getHits.getTotalHits().toInt,
       allResults.last.getHits.getHits.toList map { hit => hit.getSourceAsString.parseJson },
       allResults flatMap { aggResp => getAggregationsFromResults(aggResp.getAggregations) }
     )
@@ -205,10 +217,13 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
 
   def populateSuggestions(client: TransportClient, indexName: String, field: String, text: String) : Future[Seq[String]] = {
     val suggestionName = "populateSuggestion"
-    val suggestion = new CompletionSuggestionFuzzyBuilder(suggestionName)
-    suggestion.text(text)
-    suggestion.field(field + ".suggest")
-    val suggestQuery = client.prepareSearch(indexName).addSuggestion(suggestion)
+    val suggestion = new SuggestBuilder()
+        .addSuggestion(suggestionName,
+          SuggestBuilders.completionSuggestion(field + ".suggest")
+            .text(text))
+
+    val suggestQuery = client.prepareSearch(indexName).suggest(suggestion)
+
     logger.debug(s"populate suggestions query: $suggestQuery.toJson")
     val results = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](suggestQuery))
 

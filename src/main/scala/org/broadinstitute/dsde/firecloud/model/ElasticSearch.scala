@@ -48,7 +48,8 @@ trait ESPropertyFields {
   )
   def sortField(`type`:String) = ESInnerField(`type`,
     analyzer = Some("sort_analyzer"),
-    include_in_all = Some(false)
+    include_in_all = Some(false),
+    fielddata = Some(true)
   )
 }
 
@@ -87,7 +88,8 @@ case class ESInnerField(`type`: String,
                         index: Option[String] = None,
                         include_in_all: Option[Boolean] = None,
                         store: Option[Boolean] = None,
-                        copy_to: Option[String] = None) extends ESPropertyFields
+                        copy_to: Option[String] = None,
+                        fielddata: Option[Boolean] = None) extends ESPropertyFields
 
 // classes for sending documents to ES to be indexed
 trait Indexable {

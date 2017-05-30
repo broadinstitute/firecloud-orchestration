@@ -9,11 +9,12 @@ import org.elasticsearch.action.admin.indices.mapping.put.{PutMappingRequest, Pu
 import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkResponse}
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
+import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.common.xcontent.XContentType
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
-
 
 import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,8 +47,8 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
     val mapping = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
     executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
       client.admin.indices.prepareCreate(indexName)
-        .setSettings(analysisSettings)
-        .addMapping(datatype, mapping)
+        .setSettings(analysisSettings, XContentType.JSON)
+        .addMapping(datatype, mapping, XContentType.JSON)
       // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
     )
   }
@@ -61,12 +62,12 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
 
   override def bulkIndex(docs: Seq[Document], refresh: Boolean = false) = {
     val bulkRequest = client.prepareBulk
-    // only set refresh to true if caller specified true, instead of the cleaner code: bulkRequest.setRefresh(refresh)
-    // this way, the ES client library can change its default for setRefresh, and we'll inherit the default.
+    // only specify immediate refresh if caller specified true
+    // this way, the ES client library can change its default for setRefreshPolicy, and we'll inherit the default.
     if (refresh)
-      bulkRequest.setRefresh(true)
+      bulkRequest.setRefreshPolicy(RefreshPolicy.IMMEDIATE)
     docs map {
-      case (doc:Document) => bulkRequest.add(client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint))
+      case (doc:Document) => bulkRequest.add(client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint, XContentType.JSON))
     }
     val bulkResponse = executeESRequest[BulkRequest, BulkResponse, BulkRequestBuilder](bulkRequest)
 
@@ -80,7 +81,7 @@ class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends Searc
 
   override def indexDocument(doc: Document) = {
     executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder] (
-      client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint)
+      client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint, XContentType.JSON)
     )
   }
 
