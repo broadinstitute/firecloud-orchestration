@@ -1,12 +1,11 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
-import spray.http.StatusCodes
+import spray.http.{HttpResponse, OAuth2BearerToken, StatusCodes}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
