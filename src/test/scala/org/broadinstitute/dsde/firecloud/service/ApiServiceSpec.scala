@@ -38,4 +38,10 @@ trait ApiServiceSpec extends FlatSpec with Matchers with HttpService with Scalat
     )_
 
   }
+
+  // lifted from rawls. prefer this to using theSameElementsAs directly, because its functionality depends on whitespace
+  def assertSameElements[T](expected: TraversableOnce[T], actual: TraversableOnce[T]): Unit = {
+    expected.toTraversable should contain theSameElementsAs actual.toTraversable
+  }
+
 }

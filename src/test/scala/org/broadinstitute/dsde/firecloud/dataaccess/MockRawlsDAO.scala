@@ -18,7 +18,10 @@ import scala.concurrent.Future
   */
 class MockRawlsDAO  extends RawlsDAO {
 
-  var groups: Map[String, Set[String]] = Map(FireCloudConfig.Nih.rawlsGroupName -> Set("linked-user", "linked-user-expired-link", "linked-user-no-expire-date", "linked-user-invalid-expire-date"))
+  var groups: Map[String, Set[String]] = Map(
+    "TCGA-dbGaP-Authorized" -> Set("tcga-linked", "tcga-linked-no-expire-date", "tcga-linked-expired", "tcga-linked-user-invalid-expire-date", "tcga-and-target-linked", "tcga-and-target-linked-expired"),
+    "TARGET-dbGaP-Authorized" -> Set("target-linked", "target-linked-expired", "tcga-and-target-linked", "tcga-and-target-linked-expired")
+  )
 
   private val rawlsWorkspaceWithAttributes = Workspace(
     "attributes",
@@ -130,7 +133,7 @@ class MockRawlsDAO  extends RawlsDAO {
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future.successful(false)
 
-  override def isDbGapAuthorized(userInfo: UserInfo): Future[Boolean] = Future.successful(true)
+  override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = Future.successful(true)
 
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = {
     Future.successful(userInfo.id == "curator")

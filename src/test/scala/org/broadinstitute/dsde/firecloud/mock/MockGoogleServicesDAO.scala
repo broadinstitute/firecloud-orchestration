@@ -14,7 +14,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getAdminUserAccessToken: String = ""
-  override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = new ByteArrayInputStream("firecloud-dev".getBytes("UTF-8"))
+  override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = {
+    objectKey match {
+      case "target-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntarget-user".getBytes("UTF-8"))
+      case "tcga-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntcga-user".getBytes("UTF-8"))
+      case _ => new ByteArrayInputStream(" ".getBytes("UTF-8"))
+    }
+  }
   override def getObjectResourceUrl(bucketName: String, objectKey: String): String = ""
   override def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {

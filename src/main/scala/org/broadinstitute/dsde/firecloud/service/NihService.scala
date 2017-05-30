@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.NihService.{GetNihStatus, SyncWhitelist, UpdateNIHLinkAndSyncSelf}
+import org.broadinstitute.dsde.firecloud.service.NihService.{GetNihStatus, SyncWhitelist, UpdateNihLinkAndSyncSelf}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.rawls.model.ErrorReport
@@ -20,23 +20,25 @@ import scala.util.{Failure, Success, Try}
 
 
 case class NihStatus(
-  linkedNihUsername: Option[String] = None,
-  isDbgapAuthorized: Option[Boolean] = None,
-  linkExpireTime: Option[Long] = None,
-  descriptionUntilExpires: Option[String] = None
-)
+                      linkedNihUsername: Option[String] = None,
+                      datasetPermissions: Set[NihDatasetPermission],
+                      linkExpireTime: Option[Long] = None)
+
+case class NihWhitelist(
+                         name: String,
+                         groupToSync: String,
+                         fileName: String)
+
+case class NihDatasetPermission(name: String, authorized: Boolean)
 
 object NihStatus {
-  implicit val impNihStatus = jsonFormat4(NihStatus.apply)
+  implicit val impNihDatasetPermission = jsonFormat2(NihDatasetPermission)
+  implicit val impNihStatus = jsonFormat3(NihStatus.apply)
 
-  def apply(profile: Profile): NihStatus = {
-    apply(profile, profile.isDbgapAuthorized)
-  }
-
-  def apply(profile: Profile, isDbGapAuthorized: Option[Boolean]): NihStatus = {
+  def apply(profile: Profile, whitelistAccess: Set[NihDatasetPermission]): NihStatus = {
     new NihStatus(
       profile.linkedNihUsername,
-      isDbGapAuthorized,
+      whitelistAccess,
       profile.linkExpireTime
     )
   }
@@ -45,7 +47,7 @@ object NihStatus {
 object NihService {
   sealed trait ServiceMessage
   case class GetNihStatus(userInfo: UserInfo) extends ServiceMessage
-  case class UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) extends ServiceMessage
+  case class UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) extends ServiceMessage
   case object SyncWhitelist extends ServiceMessage
 
   def props(service: () => NihServiceActor): Props = {
@@ -61,8 +63,8 @@ class NihServiceActor(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO, val go
 
   override def receive = {
     case GetNihStatus(userInfo: UserInfo) => getNihStatus(userInfo) pipeTo sender
-    case UpdateNIHLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) => updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink) pipeTo sender
-    case SyncWhitelist => syncWhitelistFull() pipeTo sender
+    case UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) => updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) pipeTo sender
+    case SyncWhitelist => syncAllNihWhitelistsAllUsers pipeTo sender
   }
 }
 
@@ -72,13 +74,17 @@ trait NihService extends LazyLogging {
   val thurloeDao: ThurloeDAO
   val googleDao: GoogleServicesDAO
 
+  val nihWhitelists: Set[NihWhitelist] = FireCloudConfig.Nih.whitelists
+
   def getNihStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
     thurloeDao.getProfile(userInfo) flatMap {
       case Some(profile) =>
         profile.linkedNihUsername match {
           case Some(_) =>
-            rawlsDao.isDbGapAuthorized(userInfo) map { isDbGapAuthorized =>
-              RequestComplete(NihStatus(profile.copy(linkExpireTime = Option(profile.linkExpireTime.getOrElse(0L))), Some(isDbGapAuthorized)))
+            Future.traverse(nihWhitelists) { whitelistDef =>
+              rawlsDao.isGroupMember(userInfo, whitelistDef.groupToSync).map(isMember => NihDatasetPermission(whitelistDef.name, isMember))
+            }.map { whitelistMembership =>
+              RequestComplete(NihStatus(profile, whitelistMembership))
             }
           case None => Future.successful(RequestComplete(NotFound))
         }
@@ -86,64 +92,74 @@ trait NihService extends LazyLogging {
     }
   }
 
-  def updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NIHLink): Future[PerRequestMessage] = {
-    val syncWhiteListResult = syncWhitelistUser(userInfo.getUniqueId, nihLink.linkedNihUsername)
-    val profilePropertyMap = nihLink.propertyValueMap
-    val propertyUpdates = thurloeDao.saveKeyValues(userInfo, profilePropertyMap)
+  private def downloadNihWhitelist(whitelist: NihWhitelist): Set[String] = {
+    val usersList = Source.fromInputStream(googleDao.getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, whitelist.fileName))
 
-    val profileResponse = propertyUpdates.map { response =>
-      if(response.isSuccess) RequestComplete(OK)
-      else RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link.")
+    usersList.getLines().toSet
+  }
+
+  // This syncs all of the whitelists for all of the users
+  def syncAllNihWhitelistsAllUsers: Future[PerRequestMessage] = {
+    val whitelistSyncResults = Future.traverse(nihWhitelists)(syncNihWhitelistAllUsers)
+
+    whitelistSyncResults map { response =>
+      if(response.forall(isSuccess => isSuccess)) RequestComplete(NoContent)
+      else RequestCompleteWithErrorReport(InternalServerError, "Error synchronizing NIH whitelist")
     }
-
-    syncWhiteListResult flatMap { _ => profileResponse } recover { case t => RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link", t) }
   }
 
-  private def getWhitelist(): Set[String] = {
-    val (bucket, file) = (FireCloudConfig.Nih.whitelistBucket, FireCloudConfig.Nih.whitelistFile)
-    val whitelist = Source.fromInputStream(googleDao.getBucketObjectAsInputStream(bucket, file))
-
-    whitelist.getLines().toSet
-  }
-
-  // This syncs the entire whitelist
-  def syncWhitelistFull(): Future[PerRequestMessage] = {
-    val whitelist = getWhitelist()
+  // This syncs the specified whitelist in full
+  def syncNihWhitelistAllUsers(nihWhitelist: NihWhitelist): Future[Boolean] = {
+    val whitelistUsers = downloadNihWhitelist(nihWhitelist)
 
     // The list of users that, according to Thurloe, have active links and are
-    // on the dbGap whitelist
+    // on the specified whitelist
     val nihEnabledFireCloudUsers = getCurrentNihUsernameMap(thurloeDao) map { mapping =>
-      mapping.collect { case (fcUser, nihUser) if whitelist contains nihUser => fcUser }.toSeq
+      mapping.collect { case (fcUser, nihUser) if whitelistUsers contains nihUser => fcUser }.toSeq
     }
 
     val memberList = nihEnabledFireCloudUsers map { subjectIds => {
       RawlsGroupMemberList(userSubjectIds = Some(subjectIds))
     }}
 
-    // The request to rawls to completely overwrite the dbGapAuthorizedUsers group
+    // The request to rawls to completely overwrite the group
     // with the list of actively linked users on the whitelist
-    val rawlsRequest = memberList flatMap { members =>
-      rawlsDao.adminOverwriteGroupMembership(FireCloudConfig.Nih.rawlsGroupName, members)
-    }
-
-    rawlsRequest map { response =>
-      if(response) RequestComplete(NoContent)
-      else RequestCompleteWithErrorReport(InternalServerError, "Error synchronizing NIH whitelist.")
+    memberList flatMap { members =>
+      rawlsDao.adminOverwriteGroupMembership(nihWhitelist.groupToSync, members)
     }
   }
 
-  // This syncs an individual user with the whitelist, used when NIH linking (dbGap)
-  def syncWhitelistUser(subjectId: String, linkedNihUsername: String): Future[PerRequestMessage] = {
-    val whitelist = getWhitelist()
+  private def linkNihAccount(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] = {
+    val profilePropertyMap = nihLink.propertyValueMap
 
-    val memberList = if(whitelist contains linkedNihUsername) {
-      RawlsGroupMemberList(userSubjectIds = Some(Seq(subjectId)))
-    } else throw new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "Error updating NIH link."))
+    thurloeDao.saveKeyValues(userInfo, profilePropertyMap)
+  }
 
-    rawlsDao.adminAddMemberToGroup(FireCloudConfig.Nih.rawlsGroupName, memberList) map { response =>
-      if(response) RequestComplete(NoContent)
-      else RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link.")
+  def updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink): Future[PerRequestMessage] = {
+    val linkResult = linkNihAccount(userInfo, nihLink)
+
+    val whitelistSyncResults = Future.traverse(nihWhitelists) { whitelist =>
+      syncNihWhitelistForUser(userInfo.getUniqueId, nihLink.linkedNihUsername, whitelist).map(NihDatasetPermission(whitelist.name, _))
     }
+
+    linkResult.flatMap { response =>
+      if(response.isSuccess) {
+        whitelistSyncResults.map { datasetPermissions =>
+          RequestComplete(OK, NihStatus(Option(nihLink.linkedNihUsername), datasetPermissions, Option(nihLink.linkExpireTime)))
+        }
+      }
+      else Future.successful(RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link"))
+    }
+  }
+
+  private def syncNihWhitelistForUser(subjectId: String, linkedNihUserName: String, nihWhitelist: NihWhitelist): Future[Boolean] = {
+    val whitelistUsers = downloadNihWhitelist(nihWhitelist)
+
+    if(whitelistUsers contains linkedNihUserName) {
+      val memberList = RawlsGroupMemberList(userSubjectIds = Some(Seq(subjectId)))
+
+      rawlsDao.adminAddMemberToGroup(nihWhitelist.groupToSync, memberList)
+    } else Future.successful(false)
   }
 
   def filterForCurrentUsers(usernames: Map[String, String], expirations: Map[String, String]): Map[String, String] = {

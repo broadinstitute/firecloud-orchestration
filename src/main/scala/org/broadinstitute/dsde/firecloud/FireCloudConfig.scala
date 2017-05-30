@@ -1,6 +1,9 @@
 package org.broadinstitute.dsde.firecloud
 
-import com.typesafe.config.ConfigFactory
+import scala.collection.JavaConverters._
+
+import com.typesafe.config.{ConfigFactory, ConfigObject}
+import org.broadinstitute.dsde.firecloud.service.NihWhitelist
 import spray.http.Uri.{Authority, Host}
 
 object FireCloudConfig {
@@ -91,8 +94,17 @@ object FireCloudConfig {
   object Nih {
     private val nih = config.getConfig("nih")
     val whitelistBucket = nih.getString("whitelistBucket")
-    val whitelistFile = nih.getString("whitelistFile")
-    val rawlsGroupName = nih.getString("rawlsGroupName")
+    val whitelists: Set[NihWhitelist] = {
+      val whitelistConfigs = nih.getConfig("whitelists")
+
+      whitelistConfigs.root.asScala.map { case (name, configObject: ConfigObject) =>
+        val config = configObject.toConfig
+        val rawlsGroup = config.getString("rawlsGroup")
+        val fileName = config.getString("fileName")
+
+        NihWhitelist(name, rawlsGroup, fileName)
+      }
+    }.toSet
   }
 
   object ElasticSearch {
