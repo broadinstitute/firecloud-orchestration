@@ -99,7 +99,7 @@ trait RestJsonClient extends FireCloudRequestBuilding {
       case (0, "http") => (80, false)
       case (port:Int, "https") => (port, true)
       case (port:Int, "http") => (port, false)
-      case _ => throw new FireCloudException(s"Could not parse rawlsUri: ${address}")
+      case _ => throw new FireCloudException(s"Could not parse address: ${address}")
     }
     Http.HostConnectorSetup(uri.authority.host.address, port, sslEncryption)
   }
