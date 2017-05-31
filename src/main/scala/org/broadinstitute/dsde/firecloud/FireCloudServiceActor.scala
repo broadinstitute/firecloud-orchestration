@@ -61,7 +61,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
-  val apiRoutes = methodsService.routes ~ profileRoutes ~
+  val apiRoutes = profileRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
     apiStatusRoutes ~ nihRoutes ~ billingService.routes
 
@@ -112,7 +112,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         workspaceRoutes ~
         notificationsRoutes ~
         publicStatusRoutes ~
-        agoraEntityRoutes ~
+        agoraEntityRoutes ~     // Defines "/api/methods/edit" route
+        methodsService.routes ~ // Modified to match on "api/methods" (for simplicity in debugging)
         pathPrefix("api") {
           apiRoutes
         } ~
