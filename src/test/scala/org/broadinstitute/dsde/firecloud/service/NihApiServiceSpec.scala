@@ -52,9 +52,9 @@ class NihApiServiceSpec extends ApiServiceSpec {
 
     Post("/nih/callback", JWTWrapper("bad-token")) ~> dummyUserIdHeaders(toLink) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(BadRequest)
+      assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+      assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
     }
-    assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
-    assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
   }
 
   it should "link and sync when user is on TCGA whitelist but not TARGET" in withDefaultApiServices { services =>
@@ -64,9 +64,9 @@ class NihApiServiceSpec extends ApiServiceSpec {
     assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     Post("/nih/callback", tcgaUserJwt) ~> dummyUserIdHeaders(toLink) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
+      assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     }
-    assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
-    assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
   }
 
   it should "link and sync when user is on TARGET whitelist but not TCGA" in withDefaultApiServices { services =>
@@ -76,9 +76,9 @@ class NihApiServiceSpec extends ApiServiceSpec {
     assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     Post("/nih/callback", targetUserJwt) ~> dummyUserIdHeaders(toLink) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
+      assert(services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     }
-    assert(services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
-    assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
   }
 
   it should "link and sync when user is on both the TARGET and TCGA whitelists" in withDefaultApiServices { services =>
@@ -88,9 +88,9 @@ class NihApiServiceSpec extends ApiServiceSpec {
     assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     Post("/nih/callback", firecloudDevJwt) ~> dummyUserIdHeaders(toLink) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
+      assert(services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     }
-    assert(services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
-    assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
   }
 
   it should "link but not sync when user is on neither the TARGET nor the TCGA whitelist" in withDefaultApiServices { services =>
@@ -98,9 +98,9 @@ class NihApiServiceSpec extends ApiServiceSpec {
 
     Post("/nih/callback", validJwtNotOnWhitelist) ~> dummyUserIdHeaders(toLink) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
+      assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+      assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
     }
-    assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
-    assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
   }
 
   it should "return OK when an expired user re-links. their new link time should be 30 days in the future" in withDefaultApiServices { services =>
@@ -124,9 +124,9 @@ class NihApiServiceSpec extends ApiServiceSpec {
 
       assert(linkExpireTime >= DateUtils.nowMinus1Hour) //link expire time is fresh
       assert(linkExpireTime <= DateUtils.nowPlus30Days) //link expire time is approx 30 days in the future
+      assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+      assert(services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
     }
-    assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
-    assert(services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
   }
 
   /* Test scenario:
