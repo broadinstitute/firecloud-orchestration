@@ -71,6 +71,16 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
         }
     }
 
+//    // Group so we don't drop a ton of hot futures onto the queue
+//    val x: Future[Iterator[Seq[Future[Seq[Entity]]]]] = pageQueriesFuture map { pageQueries: Seq[EntityQuery] =>
+//      pageQueries.grouped(5).map { group =>
+//        group map { query =>
+//          getEntities(workspaceNamespace, workspaceName, entityType, query)
+//        }
+//      }
+//    }
+
+
     // Make those queries and generate a nested mess of streams
     lazy val nestedEntityFutures: Future[Seq[Future[Seq[Entity]]]] = pageQueriesFuture map { querySeq =>
       querySeq map { q =>
@@ -85,17 +95,21 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
 
     // Turn the entities into a stream
     seqEntityFuture map { entities: Seq[Entity] =>
-      ModelSchema.getCollectionMemberType(entityType) match {
-        case Success(Some(collectionType)) =>
-          val collectionMemberType = ModelSchema.getPlural(collectionType)
-          val entityData = TSVFormatter.makeEntityTsvString(entities, entityType, attributeNames)
-          val membershipData = TSVFormatter.makeMembershipTsvString(entities, entityType, collectionType, collectionMemberType.get)
-          val zipBytes: Array[Byte] = getZipBytes(entityType, membershipData, entityData)
-          Stream(zipBytes)
-        case _ =>
-          val entityData = TSVFormatter.makeEntityTsvString(entities, entityType, attributeNames)
-          Stream(entityData.getBytes)
-      }
+      getByteStreamFromEntities(entities, entityType, attributeNames)
+    }
+  }
+
+  private def getByteStreamFromEntities(entities: Seq[Entity], entityType: String, attributeNames: Option[IndexedSeq[String]]): Stream[Array[Byte]] = {
+    ModelSchema.getCollectionMemberType(entityType) match {
+      case Success(Some(collectionType)) =>
+        val collectionMemberType = ModelSchema.getPlural(collectionType)
+        val entityData = TSVFormatter.makeEntityTsvString(entities, entityType, attributeNames)
+        val membershipData = TSVFormatter.makeMembershipTsvString(entities, entityType, collectionType, collectionMemberType.get)
+        val zipBytes: Array[Byte] = getZipBytes(entityType, membershipData, entityData)
+        Stream(zipBytes)
+      case _ =>
+        val entityData = TSVFormatter.makeEntityTsvString(entities, entityType, attributeNames)
+        Stream(entityData.getBytes)
     }
   }
 
