@@ -144,7 +144,7 @@ class MockRawlsDAO  extends RawlsDAO {
   override def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
     val userEmailsToAdd = memberList.userSubjectIds.getOrElse(Seq[String]()).toSet
     val groupWithNewMembers = (groupName -> ((groups(groupName).filterNot(userEmailsToAdd.contains)) ++ userEmailsToAdd))
-    groups = groups.synchronized { groups + groupWithNewMembers }
+    this.synchronized { groups = groups + groupWithNewMembers }
 
     Future.successful(true)
   }
@@ -152,7 +152,7 @@ class MockRawlsDAO  extends RawlsDAO {
   override def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
     val userEmailsToAdd = memberList.userSubjectIds.getOrElse(Set[String]()).toSet
     val groupWithNewMembers = (groupName -> userEmailsToAdd)
-    groups = groups.synchronized { groups + groupWithNewMembers }
+    this.synchronized { groups = groups + groupWithNewMembers }
 
     Future.successful(true)
   }
