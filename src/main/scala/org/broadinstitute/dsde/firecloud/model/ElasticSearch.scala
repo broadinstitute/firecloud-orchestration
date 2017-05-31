@@ -43,9 +43,7 @@ trait ESPropertyFields {
     analyzer = Option("simple"),
     search_analyzer = Option("simple")
   )
-  def rawField(`type`:String) = ESInnerField(`type`,
-    index = Some("not_analyzed")
-  )
+  def rawField(`type`:String) = ESInnerField("keyword")
   def sortField(`type`:String) = ESInnerField(`type`,
     analyzer = Some("sort_analyzer"),
     include_in_all = Some(false),
@@ -85,7 +83,6 @@ case class ESInternalType(
 case class ESInnerField(`type`: String,
                         analyzer: Option[String] = None,
                         search_analyzer: Option[String] = None,
-                        index: Option[String] = None,
                         include_in_all: Option[Boolean] = None,
                         store: Option[Boolean] = None,
                         copy_to: Option[String] = None,
