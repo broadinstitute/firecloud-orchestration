@@ -5,6 +5,7 @@ import java.util.zip.{ZipEntry, ZipOutputStream}
 
 import akka.actor.{Actor, Props}
 import akka.pattern.pipe
+import com.typesafe.config.ConfigFactory
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
@@ -71,27 +72,17 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
         }
     }
 
-//    // Group so we don't drop a ton of hot futures onto the queue
-//    val x: Future[Iterator[Seq[Future[Seq[Entity]]]]] = pageQueriesFuture map { pageQueries: Seq[EntityQuery] =>
-//      pageQueries.grouped(5).map { group =>
-//        group map { query =>
-//          getEntities(workspaceNamespace, workspaceName, entityType, query)
-//        }
-//      }
-//    }
-
-
-    // Make those queries and generate a nested mess of streams
-    lazy val nestedEntityFutures: Future[Seq[Future[Seq[Entity]]]] = pageQueriesFuture map { querySeq =>
-      querySeq map { q =>
-        getEntities(workspaceNamespace, workspaceName, entityType, q)
+    // batch into groups so we don't drop a bunch of hot futures into the stack
+    val maxConnections = ConfigFactory.load().getInt("spray.can.host-connector.max-connections")
+    val groupedIterator: Future[Iterator[Seq[EntityQuery]]] = pageQueriesFuture map { pageQueries: Seq[EntityQuery] => pageQueries.grouped(maxConnections) }
+    val seqEntityFuture: Future[Seq[Entity]] = groupedIterator map { groups =>
+      groups.foldLeft(Future.successful(Seq[Entity]())) { (accumulator, group) =>
+        for {
+          acc <- accumulator
+          entityBatch <- Future.sequence(group.map(q => getEntities(workspaceNamespace, workspaceName, entityType, q))).map(_.flatten)
+        } yield entityBatch ++ acc
       }
-    }
-
-    // Clean up the nested mess of streams into a single stream and return.
-    lazy val seqEntityFuture: Future[Seq[Entity]] = nestedEntityFutures.
-      flatMap { f => Future.sequence(f) }.
-      map { s => s.flatten }
+    } flatMap identity
 
     // Turn the entities into a stream
     seqEntityFuture map { entities: Seq[Entity] =>
