@@ -24,6 +24,7 @@ trait IntegrationTestConfig {
         itTestConf.getConfig("elasticsearch").getString("urls"))
 
     val servers: Seq[Authority] = FireCloudConfig.parseESServers(systemESUrls)
+    val clusterName: String = itTestConf.getConfig("elasticsearch").getString("clusterName")
   }
 
 }

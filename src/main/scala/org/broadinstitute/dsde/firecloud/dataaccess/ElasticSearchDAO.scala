@@ -20,9 +20,9 @@ import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ElasticSearchDAO(servers: Seq[Authority], indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
+class ElasticSearchDAO(servers: Seq[Authority], clusterName: String, indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
-  private val client: TransportClient = buildClient(servers)
+  private val client: TransportClient = buildClient(servers, clusterName)
   private final val datatype = "dataset"
 
   initIndex
