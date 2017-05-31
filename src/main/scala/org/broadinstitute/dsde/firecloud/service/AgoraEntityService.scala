@@ -44,25 +44,17 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
         if (req.redactOldSnapshot) {
           agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { _ =>
             RequestComplete(OK, EditMethodResponse(newMethod))
+          } recover {
+            case e: Exception => RequestCompleteWithErrorReport(NonAuthoritativeInformation, "Error occurred while redacting previous snapshot", e)
           }
         } else {
           Future(RequestComplete(OK, EditMethodResponse(newMethod)))
         }
+      } recover {
+        case e: Exception => RequestCompleteWithErrorReport(NonAuthoritativeInformation, "Error occurred while copying permissions", e)
       }
     } recover {
-      case ae: AgoraException => ae.method match {
-        case "postMethod" => RequestComplete(InternalServerError, "Failed to create the new snapshot")
-        case "getMethodPermissions" =>
-          val msg = "The new snapshot was created, but there was an error while copying permissions." +
-            (if (req.redactOldSnapshot) " The previous snapshot was not redacted." else "")
-          RequestComplete(OK, msg)
-        case "postMethodPermissions" =>
-          val msg = "The new snapshot was created, but there was an error while copying permissions." +
-            (if (req.redactOldSnapshot) " The previous snapshot was not redacted." else "")
-          RequestComplete(OK, msg)
-        case "redactMethod" => RequestComplete(OK, "The new snapshot was created, but there was an error while redacting the previous snapshot.")
-      }
-      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "An internal error occurred on method edit", e)
+      case e: Exception => RequestCompleteWithErrorReport(InternalServerError, "An internal error occurred on method edit", e)
     }
   }
 
@@ -71,6 +63,7 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
       sourcePerms <- agoraDAO.getMethodPermissions(source.namespace, source.name, source.snapshotId)
       resultPerms <- agoraDAO.postMethodPermissions(target.namespace, target.name, target.snapshotId, sourcePerms)
     } yield resultPerms
+
   }
 
 }

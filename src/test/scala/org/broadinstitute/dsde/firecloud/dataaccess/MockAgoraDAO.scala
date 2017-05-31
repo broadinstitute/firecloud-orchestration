@@ -45,21 +45,21 @@ class MockAgoraDAO extends AgoraDAO {
 
   override def redactMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[HttpResponse] = {
     (ns, name) match {
-      case ("exceptions", "redactError") => throw new AgoraException("redactMethod")
+      case ("exceptions", "redactError") => Future.failed(new AgoraException("redactMethod"))
       case _ => Future(HttpResponse())
     }
   }
 
   override def getMethodPermissions(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
     (ns, name) match {
-      case ("exceptions", "permGetError") => throw new AgoraException("getMethodPermissions")
+      case ("exceptions", "permGetError") => Future.failed(new AgoraException("getMethodPermissions"))
       case _ => Future(List(MockAgoraDAO.agoraPermission))
     }
   }
 
   override def postMethodPermissions(ns: String, name: String, snapshotId: Int, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
     (ns, name) match {
-      case ("exceptions", "permPostError") => throw new AgoraException("postMethodPermissions")
+      case ("exceptions", "permPostError") => Future.failed(new AgoraException("postMethodPermissions"))
       case _ => Future(perms)
     }
   }

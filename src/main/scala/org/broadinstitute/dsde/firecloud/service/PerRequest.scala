@@ -43,10 +43,7 @@ trait PerRequest extends Actor with LazyLogging {
   target ! message
 
   def receive = {
-    case RequestComplete_(response, marshaller) => {
-      logger.info(response.toString)
-      complete(response)(marshaller)
-    }
+    case RequestComplete_(response, marshaller) => complete(response)(marshaller)
     case RequestCompleteWithHeaders_(response, headers, marshaller) => complete(response, headers: _*)(marshaller)
     case ReceiveTimeout => complete(HttpResponseWithErrorReport(GatewayTimeout, "Request Timed Out"))
     case Failure(t) =>

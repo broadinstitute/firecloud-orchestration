@@ -18,7 +18,7 @@ trait AgoraEntityApiService extends HttpService with FireCloudRequestBuilding wi
   val agoraEntityServiceConstructor: UserInfo => AgoraEntityService
 
   val agoraEntityRoutes: Route = {
-    pathPrefix("api" / "methods" / "edit") {
+    path("methods" / "edit") {
       requireUserInfo() { userInfo =>
         entity(as[EditMethodRequest]) { editMethodRequest =>
           post { requestContext =>

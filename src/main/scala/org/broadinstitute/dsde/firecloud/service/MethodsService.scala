@@ -71,7 +71,7 @@ trait MethodsService extends HttpService with PerRequestCreator with FireCloudDi
   // Agora routes that can be passthroughs. Because these routes conflict with the override routes, make sure
   // they are processed second!
   val passthroughRoutes: Route =
-    passthroughAllPaths("api/" + localMethodsPath, MethodsService.remoteMethodsUrl) ~ // Change "api" to anything else to stop matching
+    passthroughAllPaths(localMethodsPath, MethodsService.remoteMethodsUrl) ~
       passthroughAllPaths(localConfigsPath, MethodsService.remoteConfigurationsUrl)
 
   // combine all of the above route definitions, keeping overrides first.
