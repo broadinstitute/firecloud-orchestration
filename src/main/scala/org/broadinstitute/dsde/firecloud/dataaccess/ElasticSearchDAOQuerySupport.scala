@@ -75,7 +75,6 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       case Some(searchTerm) =>
         val fieldSearch = if (phrase) {
           matchPhraseQuery(searchField, searchTerm)
-            //.minimumShouldMatch("2<67%")
         } else {
           matchQuery(searchField, searchTerm).minimumShouldMatch("2<67%")
         }
