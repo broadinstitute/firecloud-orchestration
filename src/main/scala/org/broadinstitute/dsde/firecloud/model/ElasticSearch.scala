@@ -43,7 +43,7 @@ trait ESPropertyFields {
     analyzer = Option("simple"),
     search_analyzer = Option("simple")
   )
-  def rawField(`type`:String) = ESInnerField("keyword")
+  def keywordField(`type`:String) = ESInnerField("keyword")
   def sortField(`type`:String) = ESInnerField(`type`,
     analyzer = Some("sort_analyzer"),
     include_in_all = Some(false),
@@ -60,7 +60,7 @@ object ESType extends ESPropertyFields {
         Map("sort" -> sortField(`type`))
       else
         Map("sort" -> ESInnerField(`type`))) ++
-      (if (isAggregatable) Map("raw" -> rawField(`type`)) else Nil) ++
+      (if (isAggregatable) Map("keyword" -> keywordField(`type`)) else Nil) ++
       (if (hasPopulateSuggest) Map("suggest" -> completionField) else Nil)
     if (hasSearchSuggest)
       new ESType(`type`, Option(innerFields), Option(ElasticSearch.fieldSuggest))
