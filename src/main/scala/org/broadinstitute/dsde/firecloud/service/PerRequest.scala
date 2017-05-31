@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.HttpResponseWithErrorReport
@@ -27,7 +26,7 @@ import scala.concurrent.duration._
  * 1) with just a response object
  * 2) with a RequestComplete message which can specify http status code as well as the response
  */
-trait PerRequest extends Actor with LazyLogging {
+trait PerRequest extends Actor {
   import context._
 
   // JSON Serialization Support
