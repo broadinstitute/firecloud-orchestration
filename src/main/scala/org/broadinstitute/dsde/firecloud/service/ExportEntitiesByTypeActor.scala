@@ -46,12 +46,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   implicit val userInfo: UserInfo
   implicit protected val executionContext: ExecutionContext
 
-  /**
-    * Overall approach:
-    * Generate a list of all queries to extract all of the entities
-    * For each of those, generate individual lists
-    * Stream that list back out to the sender.
-    */
   def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
     val sortField = entityType + "_id"
     val firstQuery: EntityQuery = EntityQuery(page = 1, pageSize = 1, sortField = sortField, sortDirection = SortDirections.Ascending, filterTerms = None)
@@ -66,9 +60,8 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
           case x => filteredCount/pageSize + 1
         }
         val range = 1 to pages
-        range map {
-          page =>
-            EntityQuery(page = page, pageSize = pageSize, sortField = sortField, sortDirection = SortDirections.Ascending, filterTerms = None)
+        range map { page =>
+          EntityQuery(page = page, pageSize = pageSize, sortField = sortField, sortDirection = SortDirections.Ascending, filterTerms = None)
         }
     }
 
@@ -79,7 +72,9 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
       groups.foldLeft(Future.successful(Seq[Entity]())) { (accumulator, group) =>
         for {
           acc <- accumulator
-          entityBatch <- Future.sequence(group.map(q => getEntities(workspaceNamespace, workspaceName, entityType, q))).map(_.flatten)
+          entityBatch <- Future.sequence(group.map { query =>
+            getEntities(workspaceNamespace, workspaceName, entityType, query)
+          }).map(_.flatten)
         } yield entityBatch ++ acc
       }
     } flatMap identity
