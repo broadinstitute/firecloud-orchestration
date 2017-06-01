@@ -29,7 +29,7 @@ class MockAgoraDAO extends AgoraDAO {
   override def postMethod(ns: String, name: String, synopsis: String, documentation: String, payload: String)(implicit userInfo: UserInfo): Future[Method] = {
     // based on what the unit test passed in, return success or failure
     (ns, name) match {
-      case ("exceptions", "postError") => throw new AgoraException("postMethod")
+      case ("exceptions", "postError") => Future.failed(new AgoraException("postMethod"))
       case _ => Future(Method(
         namespace = Some(ns),
         name = Some(name),
