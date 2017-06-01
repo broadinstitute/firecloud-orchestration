@@ -34,7 +34,7 @@ object ESIntegrationSupport extends IntegrationTestConfig {
   lazy val searchDAO:SearchDAO = {
     // construct a dao, using IntegrationTestConfig's server names (which should be the runtime server names)
     // and the index name defined above
-    new ElasticSearchDAO(ITElasticSearch.servers, itTestIndexName)
+    new ElasticSearchDAO(ITElasticSearch.servers, ITElasticSearch.clusterName, itTestIndexName)
   }
 
   lazy val emptyCriteria = LibrarySearchParams(None,Map.empty[String,Seq[String]],Map.empty[String,Int],None,None,None,None)

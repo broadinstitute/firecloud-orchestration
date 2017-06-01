@@ -75,7 +75,6 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       case Some(searchTerm) =>
         val fieldSearch = if (phrase) {
           matchPhraseQuery(searchField, searchTerm)
-            //.minimumShouldMatch("2<67%")
         } else {
           matchQuery(searchField, searchTerm).minimumShouldMatch("2<67%")
         }
@@ -92,7 +91,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     query.must(groupsQuery)
     criteria.filters foreach { case (field:String, values:Seq[String]) =>
       val fieldQuery = boolQuery // query for possible values of aggregation, added via should
-      values foreach { value:String => fieldQuery.should(termQuery(field+".raw", value))}
+      values foreach { value:String => fieldQuery.should(termQuery(field+".keyword", value))}
       query.must(fieldQuery)
     }
     query
@@ -107,7 +106,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     aggregates.keys foreach { property: String =>
       // property here is specifying which attribute to collect aggregation info for
       // we use field.raw here because we want it to use the unanalyzed form of the data for the aggregations
-      searchReq.addAggregation(AggregationBuilders.terms(property).field(property + ".raw").size(aggregates.getOrElse(property, AGG_DEFAULT_SIZE)))
+      searchReq.addAggregation(AggregationBuilders.terms(property).field(property + ".keyword").size(aggregates.getOrElse(property, AGG_DEFAULT_SIZE)))
     }
     searchReq
   }

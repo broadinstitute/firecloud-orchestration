@@ -23,7 +23,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
 
   // create an ElasticSearch client. Client requires legal urls for its servers argument, but those
   // urls don't have to point to an actual ES instance.
-  val client: TransportClient = buildClient(FireCloudConfig.ElasticSearch.servers)
+  val client: TransportClient = buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
 
   "ElasticSearchDAOQuerySupport" - {
 
