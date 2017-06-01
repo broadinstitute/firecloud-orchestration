@@ -32,21 +32,7 @@ object Dependencies {
     "com.typesafe.akka"             %% "akka-testkit"        % akkaV     % "test",
     "com.typesafe.akka"             %% "akka-slf4j"          % akkaV,
 
-    "org.elasticsearch.client"       % "transport"           % "5.4.0",
-    // elasticsearch transport client 5.4.0 mystifyingly excludes some dependency
-    // classes that we really need. Manually include them here, and revisit this
-    // when/if upgrading the es client version. (5.3.2 does not do this, but 5.3.2
-    // has other issues)
-    "org.apache.lucene"              % "lucene-core"         % "6.5.0",
-    "org.apache.lucene"              % "lucene-highlighter"  % "6.5.0",
-    "org.apache.lucene"              % "lucene-join"         % "6.5.0",
-    "org.apache.lucene"              % "lucene-queryparser"  % "6.5.0",
-    "org.apache.lucene"              % "lucene-spatial"      % "6.5.0",
-    "io.netty"                       % "netty-resolver"      % "4.1.9.Final",
-    "io.netty"                       % "netty"               % "3.10.6.Final",
-    "com.carrotsearch"               % "hppc"                % "0.7.1",
-    "com.tdunning"                   % "t-digest"            % "3.0",
-    // end manual es dependency imports
+    "org.elasticsearch.client"       % "transport"           % "5.3.2",
 
     "com.google.api-client"          % "google-api-client"   % "1.22.0"
       exclude("com.google.guava", "guava-jdk5"),
