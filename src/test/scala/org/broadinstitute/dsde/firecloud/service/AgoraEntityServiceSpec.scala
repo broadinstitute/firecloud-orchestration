@@ -62,18 +62,21 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       }
     }
     "when encountering an error during snapshot creation" - {
-      "should throw an exception" in {
+      "should result in a server error" in {
         val req: EditMethodRequest = EditMethodRequest(MethodId("exceptions","postError",1), "synopsis", "doc", validPayload, redactOldSnapshot=true)
-        intercept[AgoraException] {
-          Await.result(aes.editMethod(req), dur)
-        }
-        assertResult(1) {dao.postMethodCalls.length}
-        assertResult(("exceptions","postError","synopsis","doc",validPayload)) {dao.postMethodCalls.head}
-        // ensure that if we failed to create the new snapshot, we abort and don't try to get/set permissions or redact
-        assertResult(0) {dao.getMethodPermissionsCalls.length}
-        assertResult(0) {dao.postMethodPermissionsCalls.length}
-        assertResult(0) {dao.redactMethodCalls.length}
+        val result = Await.result(aes.editMethod(req), dur)
+        result match {
+          case RequestComplete((status:StatusCode, err:ErrorReport)) =>
+            assertResult(InternalServerError) {status}
+            assertResult(1) {dao.postMethodCalls.length}
+            assertResult(("exceptions","postError","synopsis","doc",validPayload)) {dao.postMethodCalls.head}
+            // ensure that if we failed to create the new snapshot, we abort and don't try to get/set permissions or redact
+            assertResult(0) {dao.getMethodPermissionsCalls.length}
+            assertResult(0) {dao.postMethodPermissionsCalls.length}
+            assertResult(0) {dao.redactMethodCalls.length}
 
+          case x => fail(s"expected RequestComplete; got $x")
+        }
       }
     }
     "when encountering an error during permission retrieval" - {
