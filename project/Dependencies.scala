@@ -32,7 +32,13 @@ object Dependencies {
     "com.typesafe.akka"             %% "akka-testkit"        % akkaV     % "test",
     "com.typesafe.akka"             %% "akka-slf4j"          % akkaV,
 
-    "org.elasticsearch.client"       % "transport"           % "5.3.2",
+    "org.elasticsearch.client"       % "transport"           % "5.3.2"
+      exclude("io.netty", "netty-common"),
+    // elasticsearch 5.3.2 relies on netty 4.1.7.Final, which has a scary but benign warning
+    // that clutters our logs. Use netty 4.1.9.Final instead, and revisit this when
+    // upgrading the ES client. See https://github.com/netty/netty/pull/6308 and elsewhere.
+    "io.netty"                       % "netty-common"        % "4.1.9.Final",
+    // end manual netty imports
 
     "com.google.api-client"          % "google-api-client"   % "1.22.0"
       exclude("com.google.guava", "guava-jdk5"),
