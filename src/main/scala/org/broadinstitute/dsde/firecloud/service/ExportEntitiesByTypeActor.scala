@@ -12,7 +12,7 @@ import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.{ExportEntities, StreamEntities}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
-import org.broadinstitute.dsde.rawls.model.{Entity, EntityQuery, EntityQueryResponse, SortDirections}
+import org.broadinstitute.dsde.rawls.model._
 import spray.http.MediaTypes._
 import spray.http.StatusCodes._
 import spray.http._
@@ -47,22 +47,21 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   implicit protected val executionContext: ExecutionContext
 
   def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
-    val sortField = entityType + "_id"
-    val firstQuery: EntityQuery = EntityQuery(page = 1, pageSize = 1, sortField = sortField, sortDirection = SortDirections.Ascending, filterTerms = None)
-
     // Get all of the possible queries
-    lazy val pageQueriesFuture: Future[Seq[EntityQuery]] = getQueryResponse(workspaceNamespace, workspaceName, entityType, firstQuery) map {
-      queryResponse =>
+    lazy val pageQueriesFuture: Future[Seq[EntityQuery]] = getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) map {
+      case Some(metadata) =>
         val pageSize = FireCloudConfig.Rawls.defaultPageSize
-        val filteredCount = queryResponse.resultMetadata.filteredCount
+        val filteredCount = metadata.count
+        val sortField = entityType + "_id"
         val pages = filteredCount % pageSize match {
-          case x if x == 0 => filteredCount/pageSize
-          case x => filteredCount/pageSize + 1
+          case x if x == 0 => filteredCount / pageSize
+          case x => filteredCount / pageSize + 1
         }
         val range = 1 to pages
         range map { page =>
           EntityQuery(page = page, pageSize = pageSize, sortField = sortField, sortDirection = SortDirections.Ascending, filterTerms = None)
         }
+      case _ => Seq[EntityQuery]()
     }
 
     // batch into groups so we don't drop a bunch of hot futures into the stack
@@ -101,6 +100,12 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
 
   private def getQueryResponse(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[EntityQueryResponse] = {
     rawlsDAO.queryEntitiesOfType(workspaceNamespace, workspaceName, entityType, query)
+  }
+
+  private def getEntityTypeMetadata(workspaceNamespace: String, workspaceName: String, entityType: String): Future[Option[EntityTypeMetadata]] = {
+    rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName) map { metadata =>
+      metadata.get(entityType)
+    }
   }
 
   private def getEntities(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[Seq[Entity]] = {
