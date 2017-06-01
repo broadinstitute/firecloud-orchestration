@@ -6,7 +6,7 @@ import java.util.zip.{ZipEntry, ZipOutputStream}
 import akka.actor.{Actor, Props}
 import akka.pattern.pipe
 import com.typesafe.config.ConfigFactory
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.{ExportEntities, StreamEntities}
@@ -53,7 +53,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     // Get all of the possible queries
     lazy val pageQueriesFuture: Future[Seq[EntityQuery]] = getQueryResponse(workspaceNamespace, workspaceName, entityType, firstQuery) map {
       queryResponse =>
-        val pageSize = 500 // TODO: Should this be a config?
+        val pageSize = FireCloudConfig.Rawls.defaultPageSize
         val filteredCount = queryResponse.resultMetadata.filteredCount
         val pages = filteredCount % pageSize match {
           case x if x == 0 => filteredCount/pageSize
@@ -79,7 +79,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
       }
     } flatMap identity
 
-    // Turn the entities into a stream
+    // Turn the entities into a byte stream
     seqEntityFuture map { entities: Seq[Entity] =>
       getByteStreamFromEntities(entities, entityType, attributeNames)
     }
