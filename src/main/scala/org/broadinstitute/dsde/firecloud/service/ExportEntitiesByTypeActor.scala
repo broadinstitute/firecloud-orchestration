@@ -98,10 +98,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     }
   }
 
-  private def getQueryResponse(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[EntityQueryResponse] = {
-    rawlsDAO.queryEntitiesOfType(workspaceNamespace, workspaceName, entityType, query)
-  }
-
   private def getEntityTypeMetadata(workspaceNamespace: String, workspaceName: String, entityType: String): Future[Option[EntityTypeMetadata]] = {
     rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName) map { metadata =>
       metadata.get(entityType)
