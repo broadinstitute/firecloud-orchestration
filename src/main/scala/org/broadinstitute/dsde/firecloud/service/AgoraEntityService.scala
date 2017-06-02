@@ -41,7 +41,7 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
     agoraDAO.postMethod(source.namespace, source.name, req.synopsis, req.documentation, req.payload) flatMap { newMethod =>
       val newId = MethodId(newMethod.namespace.get, newMethod.name.get, newMethod.snapshotId.get)
       copyMethodPermissions(source, newId) flatMap { _ =>
-        if (req.redactOldSnapshot) {
+        if (req.redactOldSnapshot.getOrElse(false)) {
           agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { _ =>
             RequestComplete(OK, EditMethodResponse(newMethod))
           } recover {

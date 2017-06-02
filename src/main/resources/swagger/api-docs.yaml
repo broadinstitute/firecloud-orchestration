@@ -3446,7 +3446,6 @@ definitions:
       - synopsis
       - documentation
       - payload
-      - redactOldSnapshot
 
   EditMethodResponse:
     description: response of an edit method operation

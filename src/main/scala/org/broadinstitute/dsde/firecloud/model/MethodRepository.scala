@@ -52,7 +52,7 @@ object MethodRepository {
     synopsis: String,
     documentation: String,
     payload: String,
-    redactOldSnapshot: Boolean
+    redactOldSnapshot: Option[Boolean]
   )
 
   case class EditMethodResponse(
