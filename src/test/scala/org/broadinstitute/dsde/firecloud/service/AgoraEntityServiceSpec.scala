@@ -35,7 +35,7 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     // (at least) one test in which we verify details of every call and response
     "when copying a method" - {
       "should return the new copy" in {
-        val req: EditMethodRequest = EditMethodRequest(MethodId("expect","success",1), "synopsis1", "doc1", validPayload, redactOldSnapshot=true)
+        val req: EditMethodRequest = EditMethodRequest(MethodId("expect","success",1), Some("synopsis1"), Some("doc1"), Some(validPayload), redactOldSnapshot=Some(true))
         val result = Await.result(aes.editMethod(req), dur)
         result match {
           case RequestComplete((status:StatusCode, editMethodResponse:EditMethodResponse)) =>
@@ -63,7 +63,7 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     }
     "when encountering an error during snapshot creation" - {
       "should result in a server error" in {
-        val req: EditMethodRequest = EditMethodRequest(MethodId("exceptions","postError",1), "synopsis", "doc", validPayload, redactOldSnapshot=true)
+        val req: EditMethodRequest = EditMethodRequest(MethodId("exceptions","postError",1), Some("synopsis"), Some("doc"), Some(validPayload), redactOldSnapshot=Some(true))
         val result = Await.result(aes.editMethod(req), dur)
         result match {
           case RequestComplete((status:StatusCode, err:ErrorReport)) =>
@@ -81,7 +81,7 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     }
     "when encountering an error during permission retrieval" - {
       "should result in partial success" in {
-        val req = EditMethodRequest(MethodId("exceptions","permGetError",1), "synopsis", "doc", validPayload, redactOldSnapshot=true)
+        val req = EditMethodRequest(MethodId("exceptions","permGetError",1), Some("synopsis"), Some("doc"), Some(validPayload), redactOldSnapshot=Some(true))
         val result = Await.result(aes.editMethod(req), dur)
         result match {
           case RequestComplete((status:StatusCode, err:ErrorReport)) =>
@@ -102,7 +102,7 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     }
     "when encountering an error during permission setting" - {
       "should result in partial success" in {
-        val req = EditMethodRequest(MethodId("exceptions","permPostError",1), "synopsis", "doc", validPayload, redactOldSnapshot=true)
+        val req = EditMethodRequest(MethodId("exceptions","permPostError",1), Some("synopsis"), Some("doc"), Some(validPayload), redactOldSnapshot=Some(true))
         val result = Await.result(aes.editMethod(req), dur)
         result match {
           case RequestComplete((status:StatusCode, err:ErrorReport)) =>
@@ -125,7 +125,7 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     }
     "when encountering an error during redaction of copy source" - {
       "should result in partial success" in {
-        val req = EditMethodRequest(MethodId("exceptions","redactError",1), "synopsis", "doc", validPayload, redactOldSnapshot=true)
+        val req = EditMethodRequest(MethodId("exceptions","redactError",1), Some("synopsis"), Some("doc"), Some(validPayload), redactOldSnapshot=Some(true))
         val result = Await.result(aes.editMethod(req), dur)
         result match {
           case RequestComplete((status:StatusCode, err:ErrorReport)) =>
@@ -149,7 +149,7 @@ class AgoraEntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     }
     "when specifying redact=false" - {
       "should not redact" in {
-        val req = EditMethodRequest(MethodId("expect","success",1), "synopsis", "doc", validPayload, redactOldSnapshot=false)
+        val req = EditMethodRequest(MethodId("expect","success",1), Some("synopsis"), Some("doc"), Some(validPayload), redactOldSnapshot=Some(false))
         val result = Await.result(aes.editMethod(req), dur)
         result match {
           case RequestComplete((status:StatusCode, editMethodResponse:EditMethodResponse)) =>

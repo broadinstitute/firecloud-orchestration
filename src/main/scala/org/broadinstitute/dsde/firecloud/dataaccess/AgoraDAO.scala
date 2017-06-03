@@ -21,7 +21,8 @@ trait AgoraDAO extends ReportsSubsystemStatus {
   def getNamespacePermissions(ns: String, entity: String)(implicit userInfo: UserInfo): Future[List[AgoraPermission]]
   def postNamespacePermissions(ns: String, entity: String, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]]
 
-  def postMethod(ns: String, name: String, synopsis: String, documentation: String, payload: String)(implicit userInfo: UserInfo): Future[Method]
+  def getMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[Method]
+  def postMethod(ns: String, name: String, synopsis: Option[String], documentation: Option[String], payload: String)(implicit userInfo: UserInfo): Future[Method]
   def redactMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[HttpResponse]
 
   def getMethodPermissions(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[List[AgoraPermission]]

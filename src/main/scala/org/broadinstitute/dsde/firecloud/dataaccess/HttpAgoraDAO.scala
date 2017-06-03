@@ -29,7 +29,10 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
   override def postNamespacePermissions(ns: String, entity: String, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] =
     authedRequestToObject[List[AgoraPermission]]( Post(getNamespaceUrl(ns, entity), perms) )
 
-  override def postMethod(ns: String, name: String, synopsis: String, documentation: String, payload: String)(implicit userInfo: UserInfo): Future[Method] =
+  override def getMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[Method] =
+    authedRequestToObject[Method]( Get(s"${config.authUrl}/methods/$ns/$name/$snapshotId") )
+
+  override def postMethod(ns: String, name: String, synopsis: Option[String], documentation: Option[String], payload: String)(implicit userInfo: UserInfo): Future[Method] =
     authedRequestToObject[Method]( Post(s"${config.authUrl}/methods", MethodCreate(ns, name, synopsis, documentation, payload, "Workflow")) )
 
   override def redactMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[HttpResponse] =

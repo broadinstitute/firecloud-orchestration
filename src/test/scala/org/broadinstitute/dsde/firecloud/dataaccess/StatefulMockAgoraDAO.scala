@@ -18,8 +18,8 @@ class StatefulMockAgoraDAO extends MockAgoraDAO {
   var getMethodPermissionsCalls = mutable.MutableList.empty[(String,String,Int)]
   var postMethodPermissionsCalls = mutable.MutableList.empty[(String,String,Int,List[AgoraPermission])]
 
-  override def postMethod(ns: String, name: String, synopsis: String, documentation: String, payload: String)(implicit userInfo: UserInfo): Future[Method] = {
-    postMethodCalls += ((ns,name,synopsis,documentation,payload))
+  override def postMethod(ns: String, name: String, synopsis: Option[String], documentation: Option[String], payload: String)(implicit userInfo: UserInfo): Future[Method] = {
+    postMethodCalls += ((ns,name,synopsis.get,documentation.get,payload))
     super.postMethod(ns, name, synopsis, documentation, payload)
   }
 

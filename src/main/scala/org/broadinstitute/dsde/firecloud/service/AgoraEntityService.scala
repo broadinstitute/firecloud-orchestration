@@ -38,23 +38,36 @@ class AgoraEntityService(protected val argUserInfo: UserInfo, val agoraDAO: Agor
 
   def editMethod(req: EditMethodRequest): Future[PerRequestMessage] = {
     val source = req.source
-    agoraDAO.postMethod(source.namespace, source.name, req.synopsis, req.documentation, req.payload) flatMap { newMethod =>
-      val newId = MethodId(newMethod.namespace.get, newMethod.name.get, newMethod.snapshotId.get)
-      copyMethodPermissions(source, newId) flatMap { _ =>
-        if (req.redactOldSnapshot.getOrElse(false)) {
-          agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { _ =>
-            RequestComplete(OK, EditMethodResponse(newMethod))
-          } recover {
-            case e: Exception => RequestCompleteWithErrorReport(NonAuthoritativeInformation, "Error occurred while redacting previous snapshot", e)
+
+    agoraDAO.getMethod(source.namespace, source.name, source.snapshotId) flatMap { existingMethod =>
+      agoraDAO.postMethod(
+        source.namespace,
+        source.name,
+        // If the request specifies synopsis/documentation/payload, use it. Otherwise, try to copy from existing.
+        if (req.synopsis.isDefined) req.synopsis else existingMethod.synopsis,
+        if (req.documentation.isDefined) req.documentation else existingMethod.documentation,
+        req.payload.getOrElse(existingMethod.payload.getOrElse(""))
+      ) flatMap { newMethod =>
+        val newId = MethodId(newMethod.namespace.get, newMethod.name.get, newMethod.snapshotId.get)
+        copyMethodPermissions(source, newId) flatMap { _ =>
+          if (req.redactOldSnapshot.getOrElse(false)) {
+            agoraDAO.redactMethod(source.namespace, source.name, source.snapshotId) map { response =>
+              response.status match {
+                case OK => RequestComplete(OK, EditMethodResponse(newMethod))
+                case _ => RequestCompleteWithErrorReport(NonAuthoritativeInformation, "Error occurred while redacting previous snapshot")
+              }
+            }
+          } else {
+            Future(RequestComplete(OK, EditMethodResponse(newMethod)))
           }
-        } else {
-          Future(RequestComplete(OK, EditMethodResponse(newMethod)))
+        } recover {
+          case e: Exception => RequestCompleteWithErrorReport(NonAuthoritativeInformation, "Error occurred while copying permissions", e)
         }
       } recover {
-        case e: Exception => RequestCompleteWithErrorReport(NonAuthoritativeInformation, "Error occurred while copying permissions", e)
+        case e: Exception => RequestCompleteWithErrorReport(InternalServerError, "An internal error occurred on method edit", e)
       }
     } recover {
-      case e: Exception => RequestCompleteWithErrorReport(InternalServerError, "An internal error occurred on method edit", e)
+      case e: Exception => RequestCompleteWithErrorReport(NotFound, "Failed to find the source method", e)
     }
   }
 

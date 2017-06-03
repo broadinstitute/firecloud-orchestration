@@ -41,17 +41,17 @@ object MethodRepository {
   case class MethodCreate(
     namespace: String,
     name: String,
-    synopsis: String,
-    documentation: String,
+    synopsis: Option[String],
+    documentation: Option[String],
     payload: String,
     entityType: String
   )
 
   case class EditMethodRequest(
     source: MethodId,
-    synopsis: String,
-    documentation: String,
-    payload: String,
+    synopsis: Option[String],
+    documentation: Option[String],
+    payload: Option[String],
     redactOldSnapshot: Option[Boolean]
   )
 

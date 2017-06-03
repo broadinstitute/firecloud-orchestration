@@ -26,7 +26,11 @@ class MockAgoraDAO extends AgoraDAO {
     Future(List(MockAgoraDAO.agoraPermission))
   }
 
-  override def postMethod(ns: String, name: String, synopsis: String, documentation: String, payload: String)(implicit userInfo: UserInfo): Future[Method] = {
+  override def getMethod(ns: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[Method] = {
+    Future(null)
+  }
+
+  override def postMethod(ns: String, name: String, synopsis: Option[String], documentation: Option[String], payload: String)(implicit userInfo: UserInfo): Future[Method] = {
     // based on what the unit test passed in, return success or failure
     (ns, name) match {
       case ("exceptions", "postError") => Future.failed(new AgoraException("postMethod"))
@@ -34,8 +38,8 @@ class MockAgoraDAO extends AgoraDAO {
         namespace = Some(ns),
         name = Some(name),
         snapshotId = Some(2),
-        synopsis = Some(synopsis),
-        documentation = Some(documentation),
+        synopsis = synopsis,
+        documentation = documentation,
         payload = Some(payload),
         createDate = Some("01-01-1970"),
         entityType = Some("Workflow")
