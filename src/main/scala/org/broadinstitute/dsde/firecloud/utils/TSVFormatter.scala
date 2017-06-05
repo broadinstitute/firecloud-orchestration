@@ -83,7 +83,7 @@ object TSVFormatter {
     * @param entities Initial list of Entity
     * @return new list of Entity
     */
-  private def filterAttributeFromEntities(entities: Seq[Entity], attributeName: String): Seq[Entity] = {
+  def filterAttributeFromEntities(entities: Seq[Entity], attributeName: String): Seq[Entity] = {
     entities map {
       entity =>
         val attributes = entity.attributes filterNot {
@@ -100,7 +100,7 @@ object TSVFormatter {
     * @param headerValues List of ordered header values to determine order of values
     * @return IndexedSeq of ordered data fields
     */
-  private def makeRow(entity: Entity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
+  def makeRow(entity: Entity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
     val rowMap: Map[Int, String] =  entity.attributes map {
       case (attributeName, attribute) =>
         val columnPosition = headerValues.indexOf(attributeName.name)

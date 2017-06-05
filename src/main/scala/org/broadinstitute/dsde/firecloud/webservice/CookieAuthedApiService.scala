@@ -18,7 +18,7 @@ import scala.util.Success
  * Created by dvoet on 11/16/16.
  */
 trait CookieAuthedApiService extends HttpService with PerRequestCreator with FireCloudDirectives
-  with FireCloudRequestBuilding with StreamingActorCreator {
+  with FireCloudRequestBuilding {
 
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor
 
@@ -41,11 +41,10 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
             val actorProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo)
             val streamOperation = ExportEntitiesByTypeActor.StreamEntities(requestContext, workspaceNamespace, workspaceName, filename, entityType, attributeNames)
             val actor = actorRefFactory.actorOf(actorProps)
-            implicit val timeout = Timeout(5 minute)
+            implicit val timeout = Timeout(10 minute)
             val streamFuture = (actor ? streamOperation).mapTo[Stream[Array[Byte]]]
             streamFuture.map { stream =>
-              val streamProps: Props = propsFromArrayByte(requestContext, filename, contentType, stream)
-              actorRefFactory.actorOf(streamProps)
+              actorRefFactory.actorOf(StreamingActor.props(requestContext, filename, contentType, stream))
             }
           }
         }

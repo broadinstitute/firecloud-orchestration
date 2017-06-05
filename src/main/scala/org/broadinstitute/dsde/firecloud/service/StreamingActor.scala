@@ -9,7 +9,6 @@ import spray.http.StatusCodes.InternalServerError
 import spray.http._
 import spray.routing.RequestContext
 
-
 object StreamingActor {
 
   case object FirstChunk
@@ -17,16 +16,10 @@ object StreamingActor {
 
   case class FromHttpData(ctx: RequestContext, filename: String, contentType: ContentType, stream: Stream[HttpData]) extends StreamingActor
 
-}
-
-
-trait StreamingActorCreator {
-
-  def propsFromArrayByte(ctx: RequestContext, filename: String, contentType: ContentType, stream: Stream[Array[Byte]]): Props =
+  def props(ctx: RequestContext, filename: String, contentType: ContentType, stream: Stream[Array[Byte]]): Props =
     Props(FromHttpData(ctx, filename, contentType, stream.map(HttpData.apply)))
 
 }
-
 
 trait StreamingActor extends Actor with FireCloudRequestBuilding with ActorLogging {
 
