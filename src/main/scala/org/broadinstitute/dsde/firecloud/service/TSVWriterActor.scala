@@ -44,9 +44,8 @@ trait TSVWriterActor extends Actor {
   }
 
   def startFile(): File = {
-    val headerContent: String = finalHeaders.mkString("\t") + "\n"
-    log.info(s"StartFile. Appending headers [${finalHeaders.mkString(",")}] to: ${file.path.toString}")
-    file.createIfNotExists().overwrite(headerContent)
+    log.info("StartFile")
+    file.createIfNotExists().overwrite(finalHeaders.mkString("\t") + "\n")
     file
   }
 
@@ -71,7 +70,7 @@ trait TSVWriterActor extends Actor {
       }.toIndexedSeq
 
     // and finally, write that out to the file.
-    file.append(rows.map{ _.mkString("\t") }.mkString("\n"))
+    file.append(rows.map{ _.mkString("\t") }.mkString("\n")).append("\n")
     file
   }
 

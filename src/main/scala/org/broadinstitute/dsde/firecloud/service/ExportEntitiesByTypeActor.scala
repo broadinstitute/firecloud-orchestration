@@ -89,15 +89,13 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
         })
 
         // TODO: Only getting the headers back. Figure out why. Content is definitely being written, maybe a race condition.
+        // TODO: Handle Failures
+        tsvWriter ? Start()
         val file: Future[File] = groupedEntityCalls map { group =>
           val indexedGroup = group.toIndexedSeq
-          (tsvWriter ? Start()).mapTo[File] andThen {
-            case _ => indexedGroup.indices.map { i =>
-              (tsvWriter ? Write(i, indexedGroup.apply(i))).mapTo[File]
-            }
-          } andThen {
-            case _ => (tsvWriter ? End()).mapTo[File]
-          }
+          val writes: Seq[TSVWriterActor.Write] = indexedGroup.indices.map { i => Write(i, indexedGroup.apply(i)) }
+          // take the last file message returned and use that.
+          writes.map { w => (tsvWriter ? w).mapTo[File] }.last
         } flatMap identity
 
         // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
