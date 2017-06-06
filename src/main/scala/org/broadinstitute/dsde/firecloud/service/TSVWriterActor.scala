@@ -43,10 +43,10 @@ trait TSVWriterActor extends Actor {
     case End() => val receiver = sender; receiver ! getFile
   }
 
-  def startFile(): File = {
+  def startFile(): Boolean = {
     log.info("StartFile")
     file.createIfNotExists().overwrite(finalHeaders.mkString("\t") + "\n")
-    file
+    file.exists
   }
 
   def writeEntities(page: Int, entities: Seq[Entity]): File = {

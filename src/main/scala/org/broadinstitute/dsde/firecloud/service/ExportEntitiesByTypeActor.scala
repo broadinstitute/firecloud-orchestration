@@ -14,7 +14,7 @@ import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.{Expo
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.rawls.model._
 import org.slf4j.{Logger, LoggerFactory}
 import spray.http.MediaTypes._
@@ -22,9 +22,11 @@ import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.RequestContext
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
+import scala.tools.cmd.Spec.Accumulator
 import scala.util.Success
 
 object ExportEntitiesByTypeActor {
@@ -62,6 +64,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) map {
       case Some(metadata) =>
 
+        // TODO: Handle Failures
         // Generate all of the paginated queries to find all of the entities
         val pageSize = FireCloudConfig.Rawls.defaultPageSize
         val filteredCount = metadata.count
@@ -74,28 +77,26 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
           EntityQuery(page = page, pageSize = pageSize, sortField = sortField, sortDirection = SortDirections.Ascending, filterTerms = None)
         }
 
+        // batch queries into groups so we don't drop a bunch of hot futures into the stack
+        val maxConnections = ConfigFactory.load().getInt("spray.can.host-connector.max-connections")
+        val groupedQueries = pageQueries.grouped(maxConnections).toSeq
+
         // Set up the file-writing actor so we can send it entities as we get them from Rawls
         // We use a temp file so we're not trying to manipulate thousands of entities in memory
         implicit val timeout = Timeout(10 minute)
         val tsvWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, pages))
 
-        // batch queries into groups so we don't drop a bunch of hot futures into the stack
-        val maxConnections = ConfigFactory.load().getInt("spray.can.host-connector.max-connections")
-
-        val groupedEntityCalls: Future[Iterator[Seq[Entity]]] = Future.sequence(pageQueries.grouped(maxConnections) flatMap { group =>
-          group map { query =>
-            getEntities(workspaceNamespace, workspaceName, entityType, query)
-          }
-        })
-
-        // TODO: Handle Failures
-        tsvWriter ? Start()
-        val file: Future[File] = groupedEntityCalls map { group =>
-          val indexedGroup = group.toIndexedSeq
-          val writes: Seq[TSVWriterActor.Write] = indexedGroup.indices.map { i => Write(i, indexedGroup.apply(i)) }
-          // take the last file message returned and use that.
-          writes.map { w => (tsvWriter ? w).mapTo[File] }.last
-        } flatMap identity
+        tsvWriter ? Start
+        val foldOperation = groupedQueries.foldLeft(Future.successful(Seq[File]())) { (accumulator, queryGroup) =>
+          for {
+            acc <- accumulator
+            entityBatch <- Future.sequence(queryGroup.map { query =>
+              getEntities(workspaceNamespace, workspaceName, entityType, query)
+            }).map(_.flatten)
+            file <- (tsvWriter ? Write(0, entityBatch)).mapTo[File]
+          } yield acc :+ file
+        }
+        val file = foldOperation map { files => files.last }
 
         // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
         file.map(_.bytes.grouped(1024 * 1024).map(_.toArray).toStream)
