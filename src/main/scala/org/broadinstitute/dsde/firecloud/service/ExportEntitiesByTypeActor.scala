@@ -88,7 +88,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
           }
         })
 
-        // TODO: Only getting the headers back. Figure out why. Content is definitely being written, maybe a race condition.
         // TODO: Handle Failures
         tsvWriter ? Start()
         val file: Future[File] = groupedEntityCalls map { group =>
