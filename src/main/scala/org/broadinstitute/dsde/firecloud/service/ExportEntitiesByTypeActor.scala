@@ -22,11 +22,9 @@ import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.RequestContext
 
-import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
-import scala.tools.cmd.Spec.Accumulator
 import scala.util.Success
 
 object ExportEntitiesByTypeActor {
@@ -77,26 +75,13 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
           EntityQuery(page = page, pageSize = pageSize, sortField = sortField, sortDirection = SortDirections.Ascending, filterTerms = None)
         }
 
-        // batch queries into groups so we don't drop a bunch of hot futures into the stack
-        val maxConnections = ConfigFactory.load().getInt("spray.can.host-connector.max-connections")
-        val groupedQueries = pageQueries.grouped(maxConnections).toSeq
-
         // Set up the file-writing actor so we can send it entities as we get them from Rawls
         // We use a temp file so we're not trying to manipulate thousands of entities in memory
         implicit val timeout = Timeout(10 minute)
         val tsvWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, pages))
 
         tsvWriter ? Start
-        val foldOperation = groupedQueries.foldLeft(Future.successful(Seq[File]())) { (accumulator, queryGroup) =>
-          for {
-            acc <- accumulator
-            entityBatch <- Future.sequence(queryGroup.map { query =>
-              getEntities(workspaceNamespace, workspaceName, entityType, query)
-            }).map(_.flatten)
-            file <- (tsvWriter ? Write(0, entityBatch)).mapTo[File]
-          } yield acc :+ file
-        }
-        val file = foldOperation map { files => files.last }
+        val file = bufferEntitiesToFile(tsvWriter, pageQueries, workspaceNamespace, workspaceName, entityType)
 
         // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
         file.map(_.bytes.grouped(1024 * 1024).map(_.toArray).toStream)
@@ -105,6 +90,27 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
 
     } flatMap identity
 
+  }
+
+  // We batch entities to a temp file to minimize memory use
+  private def bufferEntitiesToFile(tsvWriter: ActorRef, pageQueries: Seq[EntityQuery], workspaceNamespace: String, workspaceName: String, entityType: String): Future[File] = {
+    implicit val timeout = Timeout(10 minute)
+    // batch queries into groups so we don't drop a bunch of hot futures into the stack
+    val maxConnections = ConfigFactory.load().getInt("spray.can.host-connector.max-connections")
+    val groupedQueries = pageQueries.grouped(maxConnections).toSeq
+    // Fold over the groups, collect entities for each group, then buffer to file.
+    val foldOperation = groupedQueries.foldLeft(Future.successful(Seq[File]())) { (accumulator, queryGroup) =>
+      for {
+        acc <- accumulator
+        entityBatch <- Future.sequence(
+          queryGroup.map { query =>
+            getEntities(workspaceNamespace, workspaceName, entityType, query)
+          }
+        ).map(_.flatten)
+        file <- (tsvWriter ? Write(acc.size, entityBatch)).mapTo[File]
+      } yield acc :+ file
+    }
+    foldOperation map { files => files.last }
   }
 
   private def getEntityTypeMetadata(workspaceNamespace: String, workspaceName: String, entityType: String): Future[Option[EntityTypeMetadata]] = {
