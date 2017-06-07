@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
 import org.broadinstitute.dsde.firecloud.service._
 import org.slf4j.LoggerFactory
-import spray.http.{ContentTypes, HttpHeader, HttpHeaders, OAuth2BearerToken}
+import spray.http.{ContentTypes, OAuth2BearerToken}
 import spray.routing._
 
 import scala.concurrent.duration._

@@ -15,7 +15,6 @@ import scala.util.Success
 object TSVWriterActor {
 
   sealed trait TSVWriterMessage
-  case class Start() extends TSVWriterMessage
   case class Write(page: Int, entities: Seq[Entity]) extends TSVWriterMessage
   case class End() extends TSVWriterMessage
 
@@ -38,18 +37,15 @@ trait TSVWriterActor extends Actor {
   lazy val file: File = File.newTemporaryFile(UUID.randomUUID().toString, ".tsv")
 
   def receive: Receive = {
-    case Start() => val receiver = sender; receiver ! startFile
     case Write(page: Int, entities: Seq[Entity]) => val receiver = sender; receiver ! writeEntities(page, entities)
     case End() => val receiver = sender; receiver ! getFile
   }
 
-  def startFile(): Boolean = {
-    log.info("StartFile")
-    file.createIfNotExists().overwrite(finalHeaders.mkString("\t") + "\n")
-    file.exists
-  }
-
   def writeEntities(page: Int, entities: Seq[Entity]): File = {
+    if (page == 0) {
+      log.info("WriteEntities: creating file with headers.")
+      file.createIfNotExists().overwrite(finalHeaders.mkString("\t") + "\n")
+    }
     log.info(s"WriteEntities. Appending # entities ${entities.size} to: ${file.path.toString}")
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.

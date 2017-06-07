@@ -119,7 +119,7 @@ object TSVFormatter {
     //  2. converts it to a seq of tuples
     //  3. pulls out the second element of the tuple (column value)
     //  4. resulting in a seq of the column values sorted by the column position
-    entity.name +: completedRowMap.toSeq.sortBy(_._1).map(_._2).toIndexedSeq
+    entity.name +: completedRowMap.sortBy(_._1).map(_._2).toIndexedSeq
   }
 
   /**
