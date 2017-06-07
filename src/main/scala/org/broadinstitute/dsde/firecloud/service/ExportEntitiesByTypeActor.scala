@@ -11,15 +11,10 @@ import com.typesafe.config.ConfigFactory
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.StreamEntities
-import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
-import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.rawls.model._
 import org.slf4j.{Logger, LoggerFactory}
-import spray.http.MediaTypes._
-import spray.http.StatusCodes._
-import spray.http._
 import spray.routing.RequestContext
 
 import scala.concurrent.duration._
@@ -59,30 +54,49 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   /**
     * TODO:
     * Handle failures
-    * Handle membership file
+    * Handle collection types
     * Determine whether to build one file or two.
-    *
+    * Stream combined file back out.
     */
   def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
     // Get entity metadata: count and full list of attributes
-    getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap {
+    getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
+      // Generate all of the paginated queries to find all of the entities
+      val entityQueries = getEntityQueries(metadata, entityType)
+      val entityTsvWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
 
-      // TODO: Need a collection type check in here so we can fire off requests for an entity file and a membership file if needed.
-      case Some(metadata) =>
-        // Generate all of the paginated queries to find all of the entities
-        val entityQueries = generateEntityQueries(metadata, entityType)
-        val entityTsvWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
-        val file = bufferEntitiesToFile(entityTsvWriter, entityQueries, workspaceNamespace, workspaceName, entityType)
-        // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
-        file.map(_.bytes.grouped(1024 * 1024).map(_.toArray).toStream)
-
-      case _ => Future(Stream[Array[Byte]]("".getBytes))
-
+      val file = ModelSchema.getCollectionMemberType(entityType) match {
+        case Success(Some(collectionType)) =>
+          throw new FireCloudException("Unimplemented")
+        case _ =>
+          bufferEntitiesToFile(entityTsvWriter, entityQueries, workspaceNamespace, workspaceName, entityType)
+      }
+      // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
+      file.map(_.bytes.grouped(1024 * 1024).map(_.toArray).toStream)
     }
-
   }
 
-  private def generateEntityQueries(metadata: EntityTypeMetadata, entityType: String): Seq[EntityQuery] = {
+  // We batch entities to a temp file to minimize memory use
+  private def bufferEntitiesToFile(tsvWriter: ActorRef, entityQueries: Seq[EntityQuery], workspaceNamespace: String, workspaceName: String, entityType: String): Future[File] = {
+    // batch queries into groups so we don't drop a bunch of hot futures into the stack
+    val maxConnections = ConfigFactory.load().getInt("spray.can.host-connector.max-connections")
+    val groupedQueries = entityQueries.grouped(maxConnections).toSeq
+    // Fold over the groups, collect entities for each group, write entities to file, collect file responses
+    val foldOperation = groupedQueries.foldLeft(Future.successful(Seq[File]())) { (accumulator, queryGroup) =>
+      for {
+        acc <- accumulator
+        entityBatch <- Future.sequence(
+          queryGroup map { query =>
+            getEntities(workspaceNamespace, workspaceName, entityType, query)
+          }
+        ) map(_.flatten)
+        file <- (tsvWriter ? Write(acc.size, entityBatch)).mapTo[File]
+      } yield acc :+ file
+    }
+    foldOperation map { files => files.last }
+  }
+
+  private def getEntityQueries(metadata: EntityTypeMetadata, entityType: String): Seq[EntityQuery] = {
     val pageSize = FireCloudConfig.Rawls.defaultPageSize
     val filteredCount = metadata.count
     val sortField = entityType + "_id"
@@ -95,30 +109,12 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     }
   }
 
-  // We batch entities to a temp file to minimize memory use
-  private def bufferEntitiesToFile(tsvWriter: ActorRef, entityQueries: Seq[EntityQuery], workspaceNamespace: String, workspaceName: String, entityType: String): Future[File] = {
-    implicit val timeout = Timeout(10 minute)
-    // batch queries into groups so we don't drop a bunch of hot futures into the stack
-    val maxConnections = ConfigFactory.load().getInt("spray.can.host-connector.max-connections")
-    val groupedQueries = entityQueries.grouped(maxConnections).toSeq
-    // Fold over the groups, collect entities for each group, write entities to file, collect file responses
-    val foldOperation = groupedQueries.foldLeft(Future.successful(Seq[File]())) { (accumulator, queryGroup) =>
-      for {
-        acc <- accumulator
-        entityBatch <- Future.sequence(
-          queryGroup.map { query =>
-            getEntities(workspaceNamespace, workspaceName, entityType, query)
-          }
-        ).map(_.flatten)
-        file <- (tsvWriter ? Write(acc.size, entityBatch)).mapTo[File]
-      } yield acc :+ file
-    }
-    foldOperation map { files => files.last }
-  }
-
-  private def getEntityTypeMetadata(workspaceNamespace: String, workspaceName: String, entityType: String): Future[Option[EntityTypeMetadata]] = {
+  private def getEntityTypeMetadata(workspaceNamespace: String, workspaceName: String, entityType: String): Future[EntityTypeMetadata] = {
     rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName) map { metadata =>
       metadata.get(entityType)
+    } map {
+      case Some(m) => m
+      case _ => throw new FireCloudException(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")
     }
   }
 
