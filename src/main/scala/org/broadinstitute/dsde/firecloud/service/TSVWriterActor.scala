@@ -16,7 +16,6 @@ object TSVWriterActor {
 
   sealed trait TSVWriterMessage
   case class Write(page: Int, entities: Seq[Entity]) extends TSVWriterMessage
-  case class End() extends TSVWriterMessage
 
   case class WriteTSVFile(entityType: String, originalHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]], pages: Int) extends TSVWriterActor
 
@@ -38,15 +37,14 @@ trait TSVWriterActor extends Actor {
 
   def receive: Receive = {
     case Write(page: Int, entities: Seq[Entity]) => val receiver = sender; receiver ! writeEntities(page, entities)
-    case End() => val receiver = sender; receiver ! getFile
   }
 
   def writeEntities(page: Int, entities: Seq[Entity]): File = {
     if (page == 0) {
-      log.info("WriteEntities: creating file with headers.")
+      log.debug("WriteEntities: creating file with headers.")
       file.createIfNotExists().overwrite(finalHeaders.mkString("\t") + "\n")
     }
-    log.info(s"WriteEntities. Appending # entities ${entities.size} to: ${file.path.toString}")
+    log.debug(s"WriteEntities. Appending ${entities.size} entities to: ${file.path.toString}")
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
     val memberType = ModelSchema.getCollectionMemberType(entityType)
@@ -67,11 +65,6 @@ trait TSVWriterActor extends Actor {
 
     // and finally, write that out to the file.
     file.append(rows.map{ _.mkString("\t") }.mkString("\n")).append("\n")
-    file
-  }
-
-  def getFile: File = {
-    log.info(s"GetFile: Returning file: ${file.path.toString}")
     file
   }
 
