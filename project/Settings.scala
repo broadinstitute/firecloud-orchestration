@@ -8,7 +8,7 @@ import sbtassembly.AssemblyPlugin.autoImport._
 
 object Settings {
 
-  val artifactory = "https://artifactory.broadinstitute.org/artifactory/"
+  val artifactory = "https://broadinstitute.jfrog.io/broadinstitute/"
 
   val commonResolvers = List(
     "artifactory-releases" at artifactory + "libs-release",
