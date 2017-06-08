@@ -69,50 +69,54 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     // batch queries into groups so we don't drop a bunch of hot futures into the stack
     val maxConnections = ConfigFactory.load().getInt("spray.can.host-connector.max-connections")
     val groupedQueries = entityQueries.grouped(maxConnections).toSeq
+    // Always need an entity writer, sometimes need a membership writer.
+    val entityWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
 
     // Collection Types require two files (entity and membership) zipped together.
     val fileWritingOperation = ModelSchema.isCollectionType(entityType) match {
       case Success(x) if x =>
         val membershipWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
-        val entityWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
         // Fold over the groups, collect entities for each group, write entities to file(s), collect file responses
-        val foldOperation = groupedQueries.foldLeft(Future.successful(Seq[(File, File)]())) { (accumulator, queryGroup) =>
+        val foldOperation = groupedQueries.foldLeft(Future.successful(0, Seq[(File, File)]())) { (accumulator, queryGroup) =>
           for {
             acc <- accumulator
-            entityBatch <- Future.sequence(
-              queryGroup map { query =>
-                getEntities(workspaceNamespace, workspaceName, entityType, query)
-              }
-            ) map(_.flatten)
-            file1 <- (membershipWriter ? WriteMembershipTSV(acc.size, entityBatch)).mapTo[File]
-            file2 <- (entityWriter ? WriteEntityTSV(acc.size, entityBatch)).mapTo[File]
-          } yield acc :+ (file1, file2)
+            entityBatch <- getEntityBatchFromQueries(queryGroup, workspaceNamespace, workspaceName, entityType)
+            membershipTSV <- (membershipWriter ? WriteMembershipTSV(acc._1, entityBatch)).mapTo[File]
+            entityTSV <- (entityWriter ? WriteEntityTSV(acc._1, entityBatch)).mapTo[File]
+          } yield (acc._1 + 1, Seq((membershipTSV, entityTSV)))
         }
-        val filePair = foldOperation map { files => files.last }
-        val zipFile = filePair map { pair: (File, File) =>
+        foldOperation map { operationResult =>
+          // TODO: Zipping isn't working yet, but both files are being written.
+          val count = operationResult._1
+          log.debug("Count: " + count)
+          val (membershipTSV, entityTSV) = operationResult._2.head
+          log.debug("Generating Zip File with membership: " + membershipTSV.path.toString)
+          log.debug("Generating Zip File with entity: " + entityTSV.path.toString)
           var zipDir = File.newTemporaryDirectory()
-          pair._1.renameTo(entityType + "_membership.tsv").zipTo(zipDir)
-          pair._2.renameTo(entityType + "_entity.tsv").zipTo(zipDir)
+          membershipTSV.renameTo(entityType + "_membership.tsv").zipTo(zipDir)
+          entityTSV.renameTo(entityType + "_entity.tsv").zipTo(zipDir)
           zipDir
         }
-        zipFile
       case _ =>
-        // Fold over the groups, collect entities for each group, write entities to file(s), collect file responses
-        val entityWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
-        val foldOperation = groupedQueries.foldLeft(Future.successful(Seq[File]())) { (accumulator, queryGroup) =>
+        // Fold over the groups, collect entities for each group, write entities to file, collect file results
+        val foldOperation = groupedQueries.foldLeft(Future.successful((0, Seq[File]()))) { (accumulator, queryGroup) =>
           for {
             acc <- accumulator
-            entityBatch <- Future.sequence(
-              queryGroup map { query =>
-                getEntities(workspaceNamespace, workspaceName, entityType, query)
-              }
-            ) map(_.flatten)
-            file1 <- (entityWriter ? WriteEntityTSV(acc.size, entityBatch)).mapTo[File]
-          } yield acc :+ file1
+            entityBatch <- getEntityBatchFromQueries(queryGroup, workspaceNamespace, workspaceName, entityType)
+            entityTSV <- (entityWriter ? WriteEntityTSV(acc._1, entityBatch)).mapTo[File]
+          } yield (acc._1 + 1, Seq(entityTSV))
         }
-        foldOperation map { files => files.last }
+        foldOperation map { files => files._2.head }
     }
     fileWritingOperation
+  }
+
+  private def getEntityBatchFromQueries(queryGroup: Seq[EntityQuery], workspaceNamespace: String, workspaceName: String, entityType: String): Future[Seq[Entity]] = {
+    Future.sequence(
+      queryGroup map { query =>
+        getEntities(workspaceNamespace, workspaceName, entityType, query)
+      }
+    ) map(_.flatten)
   }
 
   private def getEntityQueries(metadata: EntityTypeMetadata, entityType: String): Seq[EntityQuery] = {

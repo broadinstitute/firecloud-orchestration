@@ -42,10 +42,11 @@ trait TSVWriterActor extends Actor {
 
   def writeMembershipTSV(page: Int, entities: Seq[Entity]): File = {
     if (page == 0) {
-      log.debug("WriteEntities: creating file with headers.")
+      log.debug("WriteMembershipTSV: creating file with headers.")
       val headers = makeMembershipHeaders(entityType, originalHeaders, requestedHeaders)
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
     }
+    log.debug(s"WriteMembershipTSV. Appending ${entities.size} entities to: ${file.path.toString}")
     val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
       entity =>
         entity.attributes.filter {
@@ -70,10 +71,10 @@ trait TSVWriterActor extends Actor {
   def writeEntityTSV(page: Int, entities: Seq[Entity]): File = {
     val headers = makeEntityHeaders(entityType, originalHeaders, requestedHeaders)
     if (page == 0) {
-      log.debug("WriteEntities: creating file with headers.")
+      log.info("WriteEntityTSV: creating file with headers.")
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
     }
-    log.debug(s"WriteEntities. Appending ${entities.size} entities to: ${file.path.toString}")
+    log.info(s"WriteEntityTSV. Appending ${entities.size} entities to: ${file.path.toString}")
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
     val memberType = ModelSchema.getCollectionMemberType(entityType)
