@@ -1034,6 +1034,71 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+    post:
+      tags:
+        - Method Repository
+      summary: Create a new snapshot of an existing Method.
+      description: |
+        Inserts a new snapshot of the method into the method repository and
+        copies access permissions from previous snapshot, optionally redacting
+        the source snapshot. Documentation, synopsis, and payload are the only
+        arguments considered for the new snapshot; everything else is copied
+        from the source.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
+        - name: redact
+          in: query
+          description: Should the source method be redacted?
+          required: false
+          type: boolean
+          default: false
+        - name: body
+          in: body
+          description: Agora Entity
+          required: false
+          schema:
+            type: object
+            properties:
+              synopsis:
+                type: string
+                description: Synopsis which contains AgoraEntity.
+                default: Quickly aligns short nucleotide sequences.
+              documentation:
+                type: string
+                description: Documentation of the AgoraEntity.
+                default: |
+                  BWA is a software package for mapping low-divergent sequences
+                  against a large reference genome, such as the human genome.
+                  It consists of three algorithms: BWA-backtrack, BWA-SW and BWA-MEM.
+              payload:
+                type: string
+                description: Payload of method -- must be in WDL format
+                default: >
+                  task wc {File in_file command { cat ${in_file} | wc -l } output { Int
+                  count = read_int(stdout()) }}
+      responses:
+        '200':
+          description: Method successfully copied.
+          schema:
+            type: object
+            $ref: '#/definitions/MethodResponse'
+        '206':
+          description: Method successfully copied, but error while redacting.
+        '400':
+          description: Malformed input.
+        '403':
+          description: Forbidden to create copy.
+        '404':
+          description: Source snapshot not found.
+        '500':
+          description: Internal error.
+
   /api/methods/{namespace}/{name}/{snapshotId}/permissions:
     get:
       tags:
