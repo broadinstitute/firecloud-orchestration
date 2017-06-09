@@ -131,14 +131,12 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   private def queryEntitiesAsync(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
     getHostConnector(FireCloudConfig.Rawls.baseUrl) flatMap { hostConnector =>
       val targetUri = Uri(rawlsQueryEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType, query))
-      logger.debug("Querying entities: " + query.toString)
       authedRequestToObject[EntityQueryResponse](Get(targetUri), compressed = true, connector = Some(hostConnector))
     }
   }
 
   override def getEntityTypes(workspaceNamespace: String, workspaceName: String)(implicit userToken: UserInfo): Future[Map[String, EntityTypeMetadata]] = {
     val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
-    logger.debug(s"Querying entity types for: $workspaceNamespace:$workspaceName")
     authedRequestToObject[Map[String, EntityTypeMetadata]](Get(url), compressed = true)
   }
 
