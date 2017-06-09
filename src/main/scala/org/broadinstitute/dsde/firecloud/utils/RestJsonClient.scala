@@ -1,20 +1,15 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.io.IO
-import akka.pattern.ask
-import akka.util.Timeout
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
-import spray.can.Http
-import spray.can.Http.HostConnectorSetup
 import spray.client.pipelining._
 import spray.http.HttpEncodings._
 import spray.http.HttpHeaders.`Accept-Encoding`
-import spray.http.{HttpRequest, HttpResponse, Uri}
+import spray.http.{HttpRequest, HttpResponse}
 import spray.httpx.encoding.Gzip
 import spray.httpx.unmarshalling._
 
@@ -90,24 +85,6 @@ trait RestJsonClient extends FireCloudRequestBuilding {
         case f => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
-  }
-
-  private def getHostConnectorSetup(address: String): HostConnectorSetup = {
-    val uri = Uri(address)
-    val (port, sslEncryption) = (uri.authority.port, uri.scheme) match {
-      case (0, "https") => (443, true)
-      case (0, "http") => (80, false)
-      case (port:Int, "https") => (port, true)
-      case (port:Int, "http") => (port, false)
-      case _ => throw new FireCloudException(s"Could not parse address: ${address}")
-    }
-    Http.HostConnectorSetup(uri.authority.host.address, port, sslEncryption)
-  }
-
-  protected final def getHostConnector(address: String): Future[ActorRef] = {
-    implicit val timeout:Timeout = 60.seconds // timeout to get the host connector reference
-    val hostConnectorSetup = getHostConnectorSetup(address)
-    for (Http.HostConnectorInfo(connector, _) <- IO(Http) ? hostConnectorSetup) yield connector
   }
 
 }
