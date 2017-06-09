@@ -23,6 +23,7 @@ object TSVWriterActor {
 
 }
 
+// TODO: Move a lot of the utility functions to TSVFormatter so they can be separately tested
 trait TSVWriterActor extends Actor {
 
   def entityType: String
