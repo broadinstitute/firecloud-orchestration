@@ -77,26 +77,21 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
       case Success(x) if x =>
         val membershipWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
         // Fold over the groups, collect entities for each group, write entities to file(s), collect file responses
-        val foldOperation = groupedQueries.foldLeft(Future.successful(0, Seq[(File, File)]())) { (accumulator, queryGroup) =>
+        val foldOperation = groupedQueries.foldLeft(Future.successful(0, Seq[File]())) { (accumulator, queryGroup) =>
           for {
             acc <- accumulator
             entityBatch <- getEntityBatchFromQueries(queryGroup, workspaceNamespace, workspaceName, entityType)
             membershipTSV <- (membershipWriter ? WriteMembershipTSV(acc._1, entityBatch)).mapTo[File]
             entityTSV <- (entityWriter ? WriteEntityTSV(acc._1, entityBatch)).mapTo[File]
-          } yield (acc._1 + 1, Seq((membershipTSV, entityTSV)))
+            zip <- Future {
+              var zipDir = File.newTemporaryDirectory()
+              membershipTSV.renameTo(entityType + "_membership.tsv").zipTo(zipDir)
+              entityTSV.renameTo(entityType + "_entity.tsv").zipTo(zipDir)
+              zipDir
+            }
+          } yield (acc._1 + 1, Seq(zip))
         }
-        foldOperation map { operationResult =>
-          // TODO: Zipping isn't working yet, but both files are being written.
-          val count = operationResult._1
-          log.debug("Count: " + count)
-          val (membershipTSV, entityTSV) = operationResult._2.head
-          log.debug("Generating Zip File with membership: " + membershipTSV.path.toString)
-          log.debug("Generating Zip File with entity: " + entityTSV.path.toString)
-          var zipDir = File.newTemporaryDirectory()
-          membershipTSV.renameTo(entityType + "_membership.tsv").zipTo(zipDir)
-          entityTSV.renameTo(entityType + "_entity.tsv").zipTo(zipDir)
-          zipDir
-        }
+        foldOperation map { files => files._2.head }
       case _ =>
         // Fold over the groups, collect entities for each group, write entities to file, collect file results
         val foldOperation = groupedQueries.foldLeft(Future.successful((0, Seq[File]()))) { (accumulator, queryGroup) =>
