@@ -87,7 +87,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
               var zipDir = File.newTemporaryDirectory()
               membershipTSV.renameTo(entityType + "_membership.tsv").zipTo(zipDir)
               entityTSV.renameTo(entityType + "_entity.tsv").zipTo(zipDir)
-              zipDir
+              zipDir.zip()
             }
           } yield (acc._1 + 1, Seq(zip))
         }
