@@ -48,7 +48,7 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
       ("sortField", query.sortField),
       ("sortDirection", SortDirections.toString(query.sortDirection)))
     val filteredQMap = query.filterTerms match {
-      case Some(f) => qMap + ("filterTerms" -> query.filterTerms.get)
+      case Some(f) => qMap + ("filterTerms" -> f)
       case _ => qMap
     }
     val baseRawlsEntityQueryUrl = FireCloudConfig.Rawls.entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)
