@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
@@ -142,8 +142,12 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   }
 
   // Build error about missing implicit for Spray parameter unmarshaller? Add an entry here.
-  implicit val impMethod = jsonFormat8(MethodRepository.Method)
+  implicit val impMethod = jsonFormat9(MethodRepository.Method)
   implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
+  implicit val impMethodId = jsonFormat3(MethodId)
+  implicit val impMethodCreate = jsonFormat6(MethodCreate)
+  implicit val impEditMethodRequest = jsonFormat5(EditMethodRequest)
+  implicit val impEditMethodResponse = jsonFormat2(EditMethodResponse)
 
   implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate.apply)
 

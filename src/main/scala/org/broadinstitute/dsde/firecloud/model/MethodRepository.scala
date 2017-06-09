@@ -25,10 +25,39 @@ object MethodRepository {
     name: Option[String] = None,
     snapshotId: Option[Int] = None,
     synopsis: Option[String] = None,
-    owner: Option[String] = None,
+    documentation: Option[String] = None,
     createDate: Option[String] = None,
     url: Option[String] = None,
+    payload: Option[String] = None,
     entityType: Option[String] = None
+  )
+
+  case class MethodId(
+    namespace: String,
+    name: String,
+    snapshotId: Int
+  )
+
+  case class MethodCreate(
+    namespace: String,
+    name: String,
+    synopsis: Option[String],
+    documentation: Option[String],
+    payload: String,
+    entityType: String
+  )
+
+  case class EditMethodRequest(
+    source: MethodId,
+    synopsis: Option[String],
+    documentation: Option[String],
+    payload: Option[String],
+    redactOldSnapshot: Option[Boolean]
+  )
+
+  case class EditMethodResponse(
+    method: Method,
+    message: Option[String] = None
   )
 
   // represents a method/config permission as exposed to the user from the orchestration layer
