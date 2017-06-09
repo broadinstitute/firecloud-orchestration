@@ -10,8 +10,6 @@ import org.broadinstitute.dsde.firecloud.utils.TSVFormatter.{filterAttributeFrom
 import org.broadinstitute.dsde.rawls.model.{AttributeEntityReference, AttributeEntityReferenceList, AttributeName, Entity}
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.util.Success
-
 object TSVWriterActor {
 
   sealed trait TSVWriterMessage
@@ -32,6 +30,9 @@ trait TSVWriterActor extends Actor {
   def requestedHeaders: Option[IndexedSeq[String]]
   def pages: Int
 
+  lazy val memberType: String = ModelSchema.getCollectionMemberType(entityType).get.getOrElse(entityType.replace("_set", ""))
+  lazy val memberPlural: String = ModelSchema.getPlural(memberType).getOrElse(memberType + "s")
+  lazy val isCollectionType: Boolean = ModelSchema.isCollectionType(entityType).getOrElse(false)
   lazy val log: Logger = LoggerFactory.getLogger(getClass)
   lazy val file: File = File.newTemporaryFile(UUID.randomUUID().toString, ".tsv")
 
@@ -52,7 +53,7 @@ trait TSVWriterActor extends Actor {
         entity.attributes.filter {
           // To make the membership file, we need the array of elements that correspond to the set type.
           // All other top-level properties are not necessary and are only used for the data load file.
-          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(""))
+          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(memberPlural))
         }.flatMap {
           case (_, AttributeEntityReference(entityType, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
           case (_, AttributeEntityReferenceList(refs)) => refs.map( ref => IndexedSeq[String](entity.name, ref.entityName) )
@@ -64,7 +65,6 @@ trait TSVWriterActor extends Actor {
   }
 
   private def makeMembershipHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]]): IndexedSeq[String] = {
-    val memberType: String = ModelSchema.getCollectionMemberType(entityType).get.getOrElse(entityType.replace("_set", ""))
     IndexedSeq[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id", memberType)
   }
 
@@ -77,13 +77,8 @@ trait TSVWriterActor extends Actor {
     log.info(s"WriteEntityTSV. Appending ${entities.size} entities to: ${file.path.toString}")
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
-    val memberType = ModelSchema.getCollectionMemberType(entityType)
-    val filteredEntities = memberType match {
-      case Success(Some(collectionType)) =>
-        ModelSchema.getPlural(collectionType) match {
-          case Success(attributeName) => filterAttributeFromEntities(entities, attributeName)
-          case _ => entities
-        }
+    val filteredEntities = isCollectionType match {
+      case x if x => filterAttributeFromEntities(entities, memberPlural)
       case _ => entities
     }
 
