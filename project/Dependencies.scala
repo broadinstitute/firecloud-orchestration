@@ -45,7 +45,7 @@ object Dependencies {
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",
     "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",
     "org.everit.json"                % "org.everit.json.schema" % "1.4.1",
-    "com.github.pathikrit"           % "better-files_2.12"   % "3.0.0",
+    "com.github.pathikrit"           % "better-files_2.11"   % "2.17.1",
 
     "org.specs2"                    %% "specs2-core"         % "3.7"     % "test",
     "org.scalatest"                 %% "scalatest"           % "2.2.6"   % "test",
