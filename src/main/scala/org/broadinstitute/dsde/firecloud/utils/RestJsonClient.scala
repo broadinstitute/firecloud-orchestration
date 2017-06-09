@@ -86,5 +86,4 @@ trait RestJsonClient extends FireCloudRequestBuilding {
       }
     }
   }
-
 }
