@@ -39,7 +39,7 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
             val userInfo = UserInfo("dummy", OAuth2BearerToken(tokenValue), -1, "dummy")
 
             val actorProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo)
-            val streamOperation = ExportEntitiesByTypeActor.StreamEntities(requestContext, workspaceNamespace, workspaceName, filename, entityType, attributeNames)
+            val streamOperation = ExportEntitiesByTypeActor.ExportEntities(requestContext, workspaceNamespace, workspaceName, filename, entityType, attributeNames)
             val actor = actorRefFactory.actorOf(actorProps)
             implicit val timeout = Timeout(10 minute)
             val streamFuture = (actor ? streamOperation).mapTo[Stream[Array[Byte]]]

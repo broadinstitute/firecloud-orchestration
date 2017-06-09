@@ -7,7 +7,7 @@ import better.files.File
 import com.typesafe.config.ConfigFactory
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
-import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.StreamEntities
+import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.rawls.model._
@@ -21,7 +21,7 @@ import scala.util.Success
 
 object ExportEntitiesByTypeActor {
   sealed trait ExportEntitiesByTypeMessage
-  case class StreamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]) extends ExportEntitiesByTypeMessage
+  case class ExportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]) extends ExportEntitiesByTypeMessage
 
   def props(exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor, userInfo: UserInfo): Props = {
     Props(exportEntitiesByTypeConstructor(userInfo))
@@ -32,10 +32,10 @@ object ExportEntitiesByTypeActor {
 }
 
 class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val userInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with ExportEntitiesByType {
-  // StreamEntities requires its own actor context to work with TsvWriterActor
+  // ExportEntities requires its own actor context to work with TsvWriterActor
   def actorRefFactory: ActorContext = context
   override def receive: Receive = {
-    case StreamEntities(ctx, workspaceNamespace, workspaceName, filename, entityType, attributeNames) => streamEntities(ctx, workspaceNamespace, workspaceName, filename, entityType, attributeNames) pipeTo sender
+    case ExportEntities(ctx, workspaceNamespace, workspaceName, filename, entityType, attributeNames) => exportEntities(ctx, workspaceNamespace, workspaceName, filename, entityType, attributeNames) pipeTo sender
   }
 }
 
@@ -51,9 +51,8 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   /*
     * TODO:
     * Handle failures
-    * Streamline the fold operations ???
     */
-  def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
+  def exportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
     // Get entity metadata: count and full list of attributes
     getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
       // Generate all of the paginated queries to find all of the entities
