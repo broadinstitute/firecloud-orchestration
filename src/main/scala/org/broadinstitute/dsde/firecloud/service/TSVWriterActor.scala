@@ -42,11 +42,11 @@ trait TSVWriterActor extends Actor {
 
   def writeMembershipTSV(page: Int, entities: Seq[Entity]): File = {
     if (page == 0) {
-      log.debug("WriteMembershipTSV: creating file with headers.")
+      log.info("WriteMembershipTSV: creating file with headers.")
       val headers = makeMembershipHeaders(entityType, originalHeaders, requestedHeaders)
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
     }
-    log.debug(s"WriteMembershipTSV. Appending ${entities.size} entities to: ${file.path.toString}")
+    log.info(s"WriteMembershipTSV. Appending ${entities.size} entities to: ${file.path.toString}")
     val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
       entity =>
         entity.attributes.filter {
