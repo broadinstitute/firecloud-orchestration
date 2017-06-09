@@ -103,25 +103,12 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
 
   private def writeFilesToZip(entityType: String, membershipTSV: File, entityTSV: File): Future[File] = {
     Future {
-      log.info("WriteFilesToZip")
-      var zipDir = File.newTemporaryDirectory()
-      log.info("WriteFilesToZip: Created new zip directory")
-
-      log.info(s"WriteFilesToZip: zipDir exists: ${zipDir.exists}")
-      log.info(s"WriteFilesToZip: membershipTSV exists: ${membershipTSV.exists}")
-      log.info(s"WriteFilesToZip: entityTSV exists: ${entityTSV.exists}")
-
-      membershipTSV.copyTo(zipDir)
-      log.info("WriteFilesToZip: Copied membership to zip directory")
-      membershipTSV.renameTo(entityType + "_membership.tsv")
-      log.info("WriteFilesToZip: Renamed membership")
-
-      entityTSV.copyTo(zipDir)
-      log.info("WriteFilesToZip: Copied entity")
-      entityTSV.renameTo(entityType + "_entity.tsv")
-      log.info("WriteFilesToZip: Renamed entity")
-
-      zipDir.zip()
+      val zipFile = File.newTemporaryDirectory()
+      val membership = zipFile/s"${entityType}_membership.tsv"
+      val entity = zipFile/s"${entityType}_entity.tsv"
+      membershipTSV.copyTo(membership)
+      entityTSV.copyTo(entity)
+      zipFile.zip()
     }
   }
 
