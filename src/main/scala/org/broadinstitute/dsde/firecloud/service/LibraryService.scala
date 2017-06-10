@@ -32,6 +32,7 @@ object LibraryService {
 
   sealed trait LibraryServiceMessage
   case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
+  case class GetAttributes(ns: String, name: String) extends LibraryServiceMessage
   case class UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) extends LibraryServiceMessage
   case class GetDiscoverableByGroups(ns: String, name: String) extends LibraryServiceMessage
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
@@ -65,6 +66,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
 
   override def receive = {
     case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => updateAttributes(ns, name, attrsJsonString) pipeTo sender
+    case GetAttributes(ns: String, name: String) => getAttributes(ns, name) pipeTo sender
     case UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) => updateDiscoverableByGroups(ns, name, newGroups) pipeTo sender
     case GetDiscoverableByGroups(ns: String, name: String) => getDiscoverableByGroups(ns, name) pipeTo sender
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => setWorkspaceIsPublished(ns, name, value) pipeTo sender
@@ -144,6 +146,18 @@ class LibraryService (protected val argUserInfo: UserInfo,
             internalPatchWorkspaceAndRepublish(ns, name, allOperations, published) map (RequestComplete(_))
           }
         }
+    }
+  }
+
+  def getAttributes(ns: String, name: String): Future[PerRequestMessage] = {
+    rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
+      val allAttrs = workspaceResponse.workspace.attributes
+      val libAttrs = allAttrs.filter {
+        case ((LibraryService.publishedFlag,v)) => false
+        case ((k,v)) if k.namespace == AttributeName.libraryNamespace => true
+        case _ => false
+      }
+      Future(RequestComplete(OK, libAttrs))
     }
   }
 

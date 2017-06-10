@@ -74,7 +74,7 @@ class MockRawlsDAO  extends RawlsDAO {
     false
   )
 
-  private val unpublishedRawlsWorkspaceLibraryValid = Workspace(
+  val unpublishedRawlsWorkspaceLibraryValid = Workspace(
     "attributes",
     "att",
     None, //realm

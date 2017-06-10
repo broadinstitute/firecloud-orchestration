@@ -86,6 +86,13 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
                     LibraryService.props(libraryServiceConstructor, userInfo),
                     LibraryService.UpdateAttributes(namespace, name, rawAttrsString))
                 }
+              } ~ {
+                get {
+                  requestContext =>
+                    perRequest(requestContext,
+                      LibraryService.props(libraryServiceConstructor, userInfo),
+                      LibraryService.GetAttributes(namespace, name))
+                }
               }
             } ~
             path("discoverableGroups") {

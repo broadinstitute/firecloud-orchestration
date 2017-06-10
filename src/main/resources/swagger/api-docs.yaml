@@ -845,6 +845,28 @@ paths:
             $ref: '#/definitions/ErrorReport'
 
   /api/library/{workspaceNamespace}/{workspaceName}/metadata:
+    get:
+      tags:
+        - Library
+      operationId: getLibraryMetadata
+      summary: |
+        get the entire metadata for a library dataset
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/LibraryMetadataInput'
+        404:
+          description: Workspace not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
     put:
       tags:
         - Library
@@ -865,6 +887,10 @@ paths:
           description: Success
           schema:
             $ref: '#/definitions/Workspace'
+        404:
+          description: Workspace not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
         500:
           description: Rawls Internal Error
           schema:

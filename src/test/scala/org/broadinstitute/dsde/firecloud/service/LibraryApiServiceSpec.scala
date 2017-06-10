@@ -1,12 +1,15 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.{AttributeFormat, AttributeName, AttributeString, PlainArrayAttributeListSerializer}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -163,6 +166,36 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
         new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(BadRequest)
+        }
+      }
+    }
+
+    "when getting metadata" - {
+      // make sure we're using the right deserializer for this block of tests
+      implicit val attributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
+
+      "will return just library attrs if the workspace has multiple attribute namespaces" in {
+        Get(setMetadataPath("publishedowner")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          val meta = responseAs[AttributeMap]
+          // see MockRawlsDAO.publishedRawlsWorkspaceWithAttributes
+          val expected:AttributeMap = Map( AttributeName("library", "projectName") -> AttributeString("testing") )
+          assertResult(expected) {meta}
+        }
+      }
+      "complete data can be retrieved for a valid workspace" in {
+        Get(setMetadataPath("libraryValid")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          val meta = responseAs[AttributeMap]
+          val expected = new MockRawlsDAO().unpublishedRawlsWorkspaceLibraryValid.attributes
+          assertResult (expected) {meta}
+        }
+      }
+      "will return empty set if no metadata exists" in {
+        Get(setMetadataPath("attributes")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          val meta = responseAs[AttributeMap]
+          assert(meta.isEmpty)
         }
       }
     }
