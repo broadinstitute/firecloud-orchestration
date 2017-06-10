@@ -9,13 +9,13 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.HttpRequest
 import org.mockserver.model.HttpRequest._
 import org.scalatest.BeforeAndAfterEach
 import spray.http.StatusCodes._
 import spray.http._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+import spray.httpx.SprayJsonSupport._
 
 import scala.collection.JavaConverters._
 
@@ -30,6 +30,8 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
     "/api/library/%s/%s/published".format(ns, name)
   private def setMetadataPath(ns: String = "republish", name: String = "name") =
     "/api/library/%s/%s/metadata".format(ns, name)
+  private def setDiscoverableGroupsPath(ns: String = "discoverableGroups", name: String = "name") =
+    "/api/library/%s/%s/discoverableGroups".format(ns, name)
   private final val librarySearchPath = "/api/library/search"
   private final val librarySuggestPath = "/api/library/suggest"
   private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
@@ -286,6 +288,20 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           Get(duosConsentOrspIdPath("missing")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(NotFound)
           }
+        }
+      }
+    }
+    "when working with Library discoverable groups" - {
+      "should return the right groups on get" in {
+        Get(setDiscoverableGroupsPath("libraryValid","unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          assertResult(List("group1","group2")) {responseAs[List[String]]}
+        }
+      }
+      "should return an empty array if no groups are assigned" in {
+        Get(setDiscoverableGroupsPath("publishedwriter","unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          assertResult(List.empty[String]) {responseAs[List[String]]}
         }
       }
     }
