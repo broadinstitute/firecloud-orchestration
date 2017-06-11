@@ -15,7 +15,7 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AddUpdateAttribute
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute}
 import spray.http.MediaTypes._
 import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
@@ -185,7 +185,11 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   def patchTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
     // AddListMember
-    Future(RequestComplete(StatusCodes.NotImplemented))
+    val attrOps = tags map (tag => AddListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
+    rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { ws =>
+      val tags = getTagsFromWorkspace(ws)
+      Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
+    }
   }
 
   def deleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
