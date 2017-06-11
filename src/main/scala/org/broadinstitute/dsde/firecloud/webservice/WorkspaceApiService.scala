@@ -232,6 +232,36 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             requireUserInfo() { _ =>
               passthrough(s"$workspacePath/genomics/operations/$jobId", HttpMethods.GET)
             }
+          } ~
+          path("tags") {
+            requireUserInfo() { userInfo =>
+              get { requestContext =>
+                perRequest(requestContext,
+                  WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                  WorkspaceService.GetTags(workspaceNamespace, workspaceName))
+              } ~
+              put {
+                entity(as[List[String]]) { tags => requestContext =>
+                  perRequest(requestContext,
+                    WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                    WorkspaceService.PutTags(workspaceNamespace, workspaceName, tags))
+                }
+              } ~
+              patch {
+                entity(as[List[String]]) { tags => requestContext =>
+                  perRequest(requestContext,
+                    WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                    WorkspaceService.PatchTags(workspaceNamespace, workspaceName, tags))
+                }
+              } ~
+              delete {
+                entity(as[List[String]]) { tags => requestContext =>
+                  perRequest(requestContext,
+                    WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                    WorkspaceService.DeleteTags(workspaceNamespace, workspaceName, tags))
+                }
+              }
+            }
           }
         }
       } ~

@@ -38,6 +38,10 @@ object WorkspaceService {
   case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) extends WorkspaceServiceMessage
   case class ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
   case class ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) extends WorkspaceServiceMessage
+  case class GetTags(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
+  case class PutTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
+  case class PatchTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
+  case class DeleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
 
   def props(workspaceServiceConstructor: WithAccessToken => WorkspaceService, userToken: WithAccessToken): Props = {
     Props(workspaceServiceConstructor(userToken))
@@ -76,6 +80,14 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, filename) pipeTo sender
     case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString) pipeTo sender
+    case GetTags(workspaceNamespace: String, workspaceName: String) =>
+      getTags(workspaceNamespace, workspaceName) pipeTo sender
+    case PutTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) =>
+      putTags(workspaceNamespace, workspaceName, tags) pipeTo sender
+    case PatchTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) =>
+      patchTags(workspaceNamespace, workspaceName, tags) pipeTo sender
+    case DeleteTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) =>
+      deleteTags(workspaceNamespace, workspaceName, tags) pipeTo sender
 
   }
 
@@ -152,6 +164,31 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
         }
       }
     }
+  }
+
+  def getTags(workspaceNamespace: String, workspaceName: String): Future[PerRequestMessage] = {
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
+      val attrs = workspaceResponse.workspace.attributes
+      val tags:Seq[String] = attrs.get(AttributeName.withTagsNS) match {
+        case Some(vals:AttributeValueList) => vals.list collect {
+          case s:AttributeString => s.value
+        }
+        case _ => Seq.empty[String]
+      }
+      Future(RequestComplete(StatusCodes.OK, tags.toList.sortBy(_.toLowerCase)))
+    }
+  }
+
+  def putTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
+    Future(RequestComplete(StatusCodes.NotImplemented))
+  }
+
+  def patchTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
+    Future(RequestComplete(StatusCodes.NotImplemented))
+  }
+
+  def deleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
+    Future(RequestComplete(StatusCodes.NotImplemented))
   }
 
 }
