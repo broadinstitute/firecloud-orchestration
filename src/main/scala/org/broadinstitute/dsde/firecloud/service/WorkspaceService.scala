@@ -15,6 +15,7 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AddUpdateAttribute
 import spray.http.MediaTypes._
 import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
@@ -168,27 +169,40 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   def getTags(workspaceNamespace: String, workspaceName: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-      val attrs = workspaceResponse.workspace.attributes
-      val tags:Seq[String] = attrs.get(AttributeName.withTagsNS) match {
-        case Some(vals:AttributeValueList) => vals.list collect {
-          case s:AttributeString => s.value
-        }
-        case _ => Seq.empty[String]
-      }
-      Future(RequestComplete(StatusCodes.OK, tags.toList.sortBy(_.toLowerCase)))
+      val tags = getTagsFromWorkspace(workspaceResponse.workspace)
+      Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
     }
   }
 
   def putTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
-    Future(RequestComplete(StatusCodes.NotImplemented))
+    val attrList = AttributeValueList(tags map (tag => AttributeString(tag.trim)))
+    val op = AddUpdateAttribute(AttributeName.withTagsNS, attrList)
+    rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, Seq(op)) flatMap { ws =>
+      val tags = getTagsFromWorkspace(ws)
+      Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
+    }
   }
 
   def patchTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
+    // AddListMember
     Future(RequestComplete(StatusCodes.NotImplemented))
   }
 
   def deleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
+    // RemoveListMember
     Future(RequestComplete(StatusCodes.NotImplemented))
   }
+
+  private def getTagsFromWorkspace(ws:Workspace): Seq[String] = {
+    ws.attributes.get(AttributeName.withTagsNS) match {
+      case Some(vals:AttributeValueList) => vals.list collect {
+        case s:AttributeString => s.value
+      }
+      case _ => Seq.empty[String]
+    }
+  }
+
+  private def formatTags(tags: Seq[String]) = tags.toList.sortBy(_.toLowerCase)
+
 
 }
