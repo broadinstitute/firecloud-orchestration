@@ -38,7 +38,7 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
   private def randUUID = java.util.UUID.randomUUID.toString
 
   "Workspace tag APIs" - {
-    "when GETting tags" - {
+    "when GET-ting tags" - {
       "should return the pre-existing tags" in {
         Get(workspaceTagsPath("threetags")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should be(OK)
@@ -64,7 +64,7 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
         }
       }
     }
-    "when PUTting tags" - {
+    "when PUT-ting tags" - {
       "should reject a bad payload" in {
         val payload = List(true, false, true, false)
         Put(workspaceTagsPath("put"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
@@ -106,7 +106,7 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
         )
       }
     }
-    "when PATCHing tags" - {
+    "when PATCH-ing tags" - {
       "should reject a bad payload" in {
         val payload = List(true, false, true, false)
         Patch(workspaceTagsPath("put"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
@@ -172,52 +172,119 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
         )
       }
     }
+    "when DELETE-ing tags" - {
+      "should reject a bad payload" in {
+        val payload = List(true, false, true, false)
+        Patch(workspaceTagsPath("put"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          status should be(BadRequest)
+        }
+      }
+      "removing multiple tags from scratch should be the empty list" in {
+        testDelete(
+          List("two", "four", "six"),
+          List.empty[String]
+        )
+      }
+      "removing a single tag from scratch should be the empty list" in {
+        testDelete(
+          List("single"),
+          List.empty[String]
+        )
+      }
+      "removing the empty list from scratch should be the empty list" in {
+        testDelete(
+          List.empty[String],
+          List.empty[String]
+        )
+      }
+      "removing all pre-existing tags should be the empty list" in {
+        testDelete(
+          List("pre", "existing", "tags"),
+          List("existing", "pre", "tags"),
+          List("pre", "existing", "tags"),
+          List.empty[String]
+        )
+      }
+      "removing tags that don't already exist should change nothing" in {
+        testDelete(
+          List("I", "am", "here"),
+          List("am", "here", "I"),
+          List("you", "are", "not"),
+          List("am", "here", "I")
+        )
+      }
+      "removing the empty list should change nothing" in {
+        testDelete(
+          List("what", "is", "love"),
+          List("is", "love", "what"),
+          List.empty[String],
+          List("is", "love", "what")
+        )
+      }
+      "removing some of the tags that already exist should leave the rest untouched" in {
+        testDelete(
+          List("potatoes", "beans", "cauliflower"),
+          List("beans", "cauliflower", "potatoes"),
+          List("cauliflower"),
+          List("beans", "potatoes")
+        )
+      }
+      "removing a partially-overlapping set should do the right thing" in {
+        testDelete(
+          List("a", "b", "c", "d", "e"),
+          List("a", "b", "c", "d", "e"),
+          List("c", "d", "e", "f", "g"),
+          List("a", "b")
+        )
+      }
+    }
   }
 
   // ==========================================================================
   // helpers for tests
   // ==========================================================================
-  private def testPut(firstTags: List[String], firstExpected: List[String]) = {
+  private def testPut(tags: List[String], expected: List[String]) = {
+    singlepassTest(tags, expected, Put)
+  }
+  private def testPut(firstTags: List[String], firstExpected: List[String], secondTags: List[String], secondExpected: List[String]) = {
+    multipassTest(firstTags, firstExpected, Put, secondTags, secondExpected)
+  }
+
+  private def testPatch(tags: List[String], expected: List[String]) = {
+    singlepassTest(tags, expected, Patch)
+  }
+  private def testPatch(firstTags: List[String], firstExpected: List[String], secondTags: List[String], secondExpected: List[String]) = {
+    multipassTest(firstTags, firstExpected, Patch, secondTags, secondExpected)
+  }
+
+  private def testDelete(tags: List[String], expected: List[String]) = {
+    singlepassTest(tags, expected, Delete)
+  }
+  private def testDelete(firstTags: List[String], firstExpected: List[String], secondTags: List[String], secondExpected: List[String]) = {
+    multipassTest(firstTags, firstExpected, Delete, secondTags, secondExpected)
+  }
+
+  private def singlepassTest(tags: List[String], expected: List[String], method: RequestBuilder) = {
     val name = randUUID
-    Put(workspaceTagsPath("put", name), firstTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+    method(workspaceTagsPath(method.method.toString.toLowerCase, name), tags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
       status should be(OK)
-      responseAs[List[String]] should be(firstExpected)
+      responseAs[List[String]] should be(expected)
     }
   }
-  private def testPut(firstTags: List[String], firstExpected: List[String],
-                      secondTags: List[String], secondExpected: List[String]) = {
+
+  private def multipassTest(firstTags: List[String], firstExpected: List[String], secondMethod: RequestBuilder, secondTags: List[String], secondExpected: List[String]) = {
     val name = randUUID
     Put(workspaceTagsPath("put", name), firstTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
       status should be(OK)
       responseAs[List[String]] should be(firstExpected)
 
-      Put(workspaceTagsPath("put", name), secondTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+      secondMethod(workspaceTagsPath(secondMethod.method.toString.toLowerCase, name), secondTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should be(OK)
         responseAs[List[String]] should be(secondExpected)
       }
     }
   }
 
-  private def testPatch(firstTags: List[String], firstExpected: List[String]) = {
-    val name = randUUID
-    Patch(workspaceTagsPath("patch", name), firstTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-      status should be(OK)
-      responseAs[List[String]] should be(firstExpected)
-    }
-  }
-  private def testPatch(firstTags: List[String], firstExpected: List[String],
-                        secondTags: List[String], secondExpected: List[String]) = {
-    val name = randUUID
-    Put(workspaceTagsPath("put", name), firstTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-      status should be(OK)
-      responseAs[List[String]] should be(firstExpected)
-
-      Patch(workspaceTagsPath("patch", name), secondTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-        status should be(OK)
-        responseAs[List[String]] should be(secondExpected)
-      }
-    }
-  }
 }
 
 /** An extension to MockRawlsDAO that has stateful behavior
@@ -308,7 +375,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
       case "delete" =>
         assert( attributes.forall(_.isInstanceOf[RemoveListMember]),
           "Delete operation should consist of only AddListMember operations" )
-        val removeTags = attributes.map(_.asInstanceOf[AddListMember].newMember.asInstanceOf[AttributeString].value)
+        val removeTags = attributes.map(_.asInstanceOf[RemoveListMember].removeMember.asInstanceOf[AttributeString].value)
         val currentTags = statefulTagMap.getOrElse(name, MutableSet.empty[String])
         val finalTags = currentTags -- removeTags
         statefulTagMap.put(name, finalTags)
