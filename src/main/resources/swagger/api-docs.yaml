@@ -2560,6 +2560,104 @@ paths:
         500:
           description: Internal Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/tags:
+    get:
+      tags:
+      - Workspaces
+      operationId: getWorkspaceTags
+      summary: |
+        Get the tags for this workspace.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Workspace tags
+          schema:
+            $ref: '#/definitions/StringArray'
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+    put:
+      tags:
+      - Workspaces
+      operationId: putWorkspaceTags
+      summary: |
+        Replace all tags for this workspace with the user input.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: body
+          description: List of tags.
+          name: tags
+          required: true
+          schema:
+            $ref: '#/definitions/StringArray'
+      responses:
+        200:
+          description: Workspace tags
+          schema:
+            $ref: '#/definitions/StringArray'
+        400:
+          description: Invalid input
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+    patch:
+      tags:
+      - Workspaces
+      operationId: patchWorkspaceTags
+      summary: |
+        Add tags to the workspace without modifying pre-existing tags.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: body
+          description: List of tags.
+          name: tags
+          required: true
+          schema:
+            $ref: '#/definitions/StringArray'
+      responses:
+        200:
+          description: Workspace tags
+          schema:
+            $ref: '#/definitions/StringArray'
+        400:
+          description: Invalid input
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+    delete:
+      tags:
+      - Workspaces
+      operationId: deleteWorkspaceTags
+      summary: |
+        Remove the user-supplied tags from the workspace.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: body
+          description: List of tags.
+          name: tags
+          required: true
+          schema:
+            $ref: '#/definitions/StringArray'
+      responses:
+        200:
+          description: Workspace tags
+          schema:
+            $ref: '#/definitions/StringArray'
+        400:
+          description: Invalid input
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
     put:
       tags:
@@ -4145,6 +4243,14 @@ definitions:
       lineNumber:
         type: integer
         description: line number
+
+  StringArray:
+    type: array
+    items:
+      type: string
+    example:
+      - foo
+      - bar
 
   SubmissionIngest:
     type: object
