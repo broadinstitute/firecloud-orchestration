@@ -1,21 +1,24 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.{AttributeFormat, AttributeName, AttributeString, PlainArrayAttributeListSerializer}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.HttpRequest
 import org.mockserver.model.HttpRequest._
 import org.scalatest.BeforeAndAfterEach
 import spray.http.StatusCodes._
 import spray.http._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+import spray.httpx.SprayJsonSupport._
 
 import scala.collection.JavaConverters._
 
@@ -30,6 +33,8 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
     "/api/library/%s/%s/published".format(ns, name)
   private def setMetadataPath(ns: String = "republish", name: String = "name") =
     "/api/library/%s/%s/metadata".format(ns, name)
+  private def setDiscoverableGroupsPath(ns: String = "discoverableGroups", name: String = "name") =
+    "/api/library/%s/%s/discoverableGroups".format(ns, name)
   private final val librarySearchPath = "/api/library/search"
   private final val librarySuggestPath = "/api/library/suggest"
   private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
@@ -165,6 +170,36 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
       }
     }
 
+    "when getting metadata" - {
+      // make sure we're using the right deserializer for this block of tests
+      implicit val attributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
+
+      "will return just library attrs if the workspace has multiple attribute namespaces" in {
+        Get(setMetadataPath("publishedowner")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          val meta = responseAs[AttributeMap]
+          // see MockRawlsDAO.publishedRawlsWorkspaceWithAttributes
+          val expected:AttributeMap = Map( AttributeName("library", "projectName") -> AttributeString("testing") )
+          assertResult(expected) {meta}
+        }
+      }
+      "complete data can be retrieved for a valid workspace" in {
+        Get(setMetadataPath("libraryValid")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          val meta = responseAs[AttributeMap]
+          val expected = new MockRawlsDAO().unpublishedRawlsWorkspaceLibraryValid.attributes
+          assertResult (expected) {meta}
+        }
+      }
+      "will return empty set if no metadata exists" in {
+        Get(setMetadataPath("attributes")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          val meta = responseAs[AttributeMap]
+          assert(meta.isEmpty)
+        }
+      }
+    }
+
     "when calling publish" - {
       "POST on " + publishedPath() - {
         "should return No Content for already published workspace " in {
@@ -286,6 +321,20 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           Get(duosConsentOrspIdPath("missing")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(NotFound)
           }
+        }
+      }
+    }
+    "when working with Library discoverable groups" - {
+      "should return the right groups on get" in {
+        Get(setDiscoverableGroupsPath("libraryValid","unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          assertResult(List("group1","group2")) {responseAs[List[String]]}
+        }
+      }
+      "should return an empty array if no groups are assigned" in {
+        Get(setDiscoverableGroupsPath("publishedwriter","unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          assertResult(List.empty[String]) {responseAs[List[String]]}
         }
       }
     }

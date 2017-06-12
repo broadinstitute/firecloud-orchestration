@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
@@ -73,7 +74,7 @@ class MockRawlsDAO  extends RawlsDAO {
     false
   )
 
-  private val unpublishedRawlsWorkspaceLibraryValid = Workspace(
+  val unpublishedRawlsWorkspaceLibraryValid = Workspace(
     "attributes",
     "att",
     None, //realm
@@ -102,7 +103,8 @@ class MockRawlsDAO  extends RawlsDAO {
       AttributeName.withLibraryNS("requiresExternalApproval") -> AttributeBoolean(false),
       AttributeName.withLibraryNS("useLimitationOption") -> AttributeString("orsp"),
       AttributeName.withLibraryNS("technology") -> AttributeValueList(Seq( AttributeString("is an optional"),AttributeString("array attribute") )),
-      AttributeName.withLibraryNS("orsp") -> AttributeString("some orsp")
+      AttributeName.withLibraryNS("orsp") -> AttributeString("some orsp"),
+      LibraryService.discoverableWSAttribute -> AttributeValueList(Seq( AttributeString("group1"),AttributeString("group2") ))
     ),
     Map(), //acls
     Map(), //realm acls,

@@ -785,6 +785,32 @@ paths:
       operationId: isCurator
 
   /api/library/{workspaceNamespace}/{workspaceName}/discoverableGroups:
+    get:
+      tags:
+        - Library
+      operationId: getDiscoverableGroups
+      summary: |
+        get the groups that can discover this library dataset
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: The groups that can discover the dataset
+          schema:
+            $ref: '#/definitions/StringArray'
+        403:
+          description: Insufficient permissions
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        404:
+          description: Workspace not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
     put:
       tags:
         - Library
@@ -795,16 +821,20 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
         - name: discoverableGroups
-          description: List of group names, or empty list for no restrictions
+          description: Json array of group names, or empty array for no restrictions
           required: true
           in: body
+          schema:
+            $ref: '#/definitions/StringArray'
       responses:
         200:
-          description: The groups that have been assigned to be able to discover the dataset
+          description: The workspace, after assigning groups to be able to discover the dataset
           schema:
-            type: array
-            items:
-              type: string
+            $ref: '#/definitions/Workspace'
+        400:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/ErrorReport'
         403:
           description: Insufficient permissions to change catalog permissions (must be owner or have grant or catalog with access to the workspace)
           schema:
@@ -819,6 +849,28 @@ paths:
             $ref: '#/definitions/ErrorReport'
 
   /api/library/{workspaceNamespace}/{workspaceName}/metadata:
+    get:
+      tags:
+        - Library
+      operationId: getLibraryMetadata
+      summary: |
+        get the entire metadata for a library dataset
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/LibraryMetadataInput'
+        404:
+          description: Workspace not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
     put:
       tags:
         - Library
@@ -839,6 +891,10 @@ paths:
           description: Success
           schema:
             $ref: '#/definitions/Workspace'
+        404:
+          description: Workspace not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
         500:
           description: Rawls Internal Error
           schema:

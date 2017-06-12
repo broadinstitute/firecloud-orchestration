@@ -31,8 +31,10 @@ object LibraryService {
   final val schemaLocation = "library/attribute-definitions.json"
 
   sealed trait LibraryServiceMessage
-  case class UpdateAttributes(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
+  case class UpdateLibraryMetadata(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
+  case class GetLibraryMetadata(ns: String, name: String) extends LibraryServiceMessage
   case class UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) extends LibraryServiceMessage
+  case class GetDiscoverableByGroups(ns: String, name: String) extends LibraryServiceMessage
   case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
   case object IndexAll extends LibraryServiceMessage
   case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
@@ -63,8 +65,10 @@ class LibraryService (protected val argUserInfo: UserInfo,
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
   override def receive = {
-    case UpdateAttributes(ns: String, name: String, attrsJsonString: String) => updateAttributes(ns, name, attrsJsonString) pipeTo sender
+    case UpdateLibraryMetadata(ns: String, name: String, attrsJsonString: String) => updateLibraryMetadata(ns, name, attrsJsonString) pipeTo sender
+    case GetLibraryMetadata(ns: String, name: String) => getLibraryMetadata(ns, name) pipeTo sender
     case UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) => updateDiscoverableByGroups(ns, name, newGroups) pipeTo sender
+    case GetDiscoverableByGroups(ns: String, name: String) => getDiscoverableByGroups(ns, name) pipeTo sender
     case SetPublishAttribute(ns: String, name: String, value: Boolean) => setWorkspaceIsPublished(ns, name, value) pipeTo sender
     case IndexAll => asAdmin {indexAll} pipeTo sender
     case FindDocuments(criteria: LibrarySearchParams) => findDocuments(criteria) pipeTo sender
@@ -90,6 +94,18 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
+  def getDiscoverableByGroups(ns: String, name: String): Future[PerRequestMessage] = {
+    rawlsDAO.getWorkspace(ns, name) map { workspaceResponse =>
+      val groups = workspaceResponse.workspace.attributes.get(discoverableWSAttribute) match {
+        case Some(vals:AttributeValueList) => vals.list.collect{
+          case s:AttributeString => s.value
+        }
+        case _ => List.empty[String]
+      }
+      RequestComplete(OK, groups.sortBy(_.toLowerCase))
+    }
+  }
+
   private def isInvalid(attrsJsonString: String): (Boolean, Option[String]) = {
     val validationResult = Try(schemaValidate(attrsJsonString))
     validationResult match {
@@ -99,7 +115,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
-  def updateAttributes(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
+  def updateLibraryMetadata(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
     // we accept a string here, not a JsValue so we can most granularly handle json parsing
 
     Try(attrsJsonString.parseJson.asJsObject.convertTo[AttributeMap]) match {
@@ -130,6 +146,18 @@ class LibraryService (protected val argUserInfo: UserInfo,
             internalPatchWorkspaceAndRepublish(ns, name, allOperations, published) map (RequestComplete(_))
           }
         }
+    }
+  }
+
+  def getLibraryMetadata(ns: String, name: String): Future[PerRequestMessage] = {
+    rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
+      val allAttrs = workspaceResponse.workspace.attributes
+      val libAttrs = allAttrs.filter {
+        case ((LibraryService.publishedFlag,v)) => false
+        case ((k,v)) if k.namespace == AttributeName.libraryNamespace => true
+        case _ => false
+      }
+      Future(RequestComplete(OK, libAttrs))
     }
   }
 
