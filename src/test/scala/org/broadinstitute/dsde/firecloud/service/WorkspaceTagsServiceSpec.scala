@@ -14,7 +14,7 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
-import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 
 /** Unit tests for workspace tag apis.
@@ -296,7 +296,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
 
   import scala.collection.convert.decorateAsScala._
 
-  private var statefulTagMap = new ConcurrentHashMap[String, MutableSet[String]]().asScala
+  private var statefulTagMap = new ConcurrentHashMap[String, ListBuffer[String]]().asScala
 
   private val workspace = Workspace(
     "namespace",
@@ -324,8 +324,8 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
 
 
   private def workspaceFromState(ns: String, name: String) = {
-    val tags = statefulTagMap.getOrElse(name, Set.empty[String])
-    val tagAttrs = (tags map AttributeString).toSeq
+    val tags = statefulTagMap.getOrElse(name, ListBuffer.empty[String])
+    val tagAttrs = (tags map AttributeString)
     workspace.copy(attributes = Map(
       AttributeName.withTagsNS() -> AttributeValueList(tagAttrs)
     ))
@@ -362,21 +362,21 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
             val tags = op.addUpdateAttribute.asInstanceOf[AttributeValueList].list map {
               _.asInstanceOf[AttributeString].value
             }
-            statefulTagMap.put(name, MutableSet( tags:_* ))
+            statefulTagMap.put(name, ListBuffer( tags:_* ))
           case _ => fail("Put operation should consist of one AddUpdateAttribute operation")
         }
       case "patch" =>
         assert( attributes.forall(_.isInstanceOf[AddListMember]),
           "Patch operation should consist of only AddListMember operations" )
         val newTags = attributes.map(_.asInstanceOf[AddListMember].newMember.asInstanceOf[AttributeString].value)
-        val currentTags = statefulTagMap.getOrElse(name, MutableSet.empty[String])
+        val currentTags = statefulTagMap.getOrElse(name, ListBuffer.empty[String])
         val finalTags = currentTags ++ newTags
         statefulTagMap.put(name, finalTags)
       case "delete" =>
         assert( attributes.forall(_.isInstanceOf[RemoveListMember]),
           "Delete operation should consist of only AddListMember operations" )
         val removeTags = attributes.map(_.asInstanceOf[RemoveListMember].removeMember.asInstanceOf[AttributeString].value)
-        val currentTags = statefulTagMap.getOrElse(name, MutableSet.empty[String])
+        val currentTags = statefulTagMap.getOrElse(name, ListBuffer.empty[String])
         val finalTags = currentTags -- removeTags
         statefulTagMap.put(name, finalTags)
       case _ => fail("is the unit test correct?")
