@@ -184,10 +184,13 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   }
 
   def patchTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
-    val attrOps = tags map (tag => AddListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
-    rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { ws =>
-      val tags = getTagsFromWorkspace(ws)
-      Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { origWs =>
+      val origTags = getTagsFromWorkspace(origWs.workspace)
+      val attrOps = (tags diff origTags) map (tag => AddListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
+      rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { patchedWs =>
+        val tags = getTagsFromWorkspace(patchedWs)
+        Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
+      }
     }
   }
 
