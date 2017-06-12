@@ -100,12 +100,18 @@ trait TSVWriterActor extends Actor {
       // handle empty requested headers as no requested headers
       flatMap(rh => if (rh.isEmpty) None else Option(rh)).
       // entity id always needs to be first and is handled differently so remove it from requestedHeaders
-      map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
+      map(_.filterNot(_.equalsIgnoreCase(entityType + "_id"))).
+      // filter out member attribute if a set type
+      map { h => if (isCollectionType) h.filterNot(_.equals(memberPlural)) else h }
+    val filteredAllHeaders = isCollectionType match {
+      case x if x => allHeaders.filterNot(_.equals(memberPlural))
+      case _ => allHeaders
+    }
     val entityHeader: String = requestedHeadersSansId match {
       case Some(headers) if !ModelSchema.getRequiredAttributes(entityType).get.keySet.forall(headers.contains) => s"${TsvTypes.UPDATE}:${entityType}_id"
       case _ => s"${TsvTypes.ENTITY}:${entityType}_id"
     }
-    (entityHeader +: requestedHeadersSansId.getOrElse(allHeaders)).toIndexedSeq
+    (entityHeader +: requestedHeadersSansId.getOrElse(filteredAllHeaders)).toIndexedSeq
   }
 
 
