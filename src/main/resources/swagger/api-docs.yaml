@@ -831,6 +831,10 @@ paths:
           description: The workspace, after assigning groups to be able to discover the dataset
           schema:
             $ref: '#/definitions/Workspace'
+        400:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/ErrorReport'
         403:
           description: Insufficient permissions to change catalog permissions (must be owner or have grant or catalog with access to the workspace)
           schema:
