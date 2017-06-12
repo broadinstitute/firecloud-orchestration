@@ -4,14 +4,16 @@ import akka.actor.{Actor, ActorContext, ActorRef, ActorRefFactory, Props}
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import better.files.File
+import com.google.api.services.storage.model.StorageObject
 import com.typesafe.config.ConfigFactory
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.rawls.model._
 import org.slf4j.{Logger, LoggerFactory}
+import spray.http.ContentTypes
 import spray.routing.RequestContext
 
 import scala.concurrent.duration._
@@ -28,10 +30,10 @@ object ExportEntitiesByTypeActor {
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new ExportEntitiesByTypeActor(app.rawlsDAO, userInfo)
+    new ExportEntitiesByTypeActor(app.rawlsDAO, app.googleServicesDAO, userInfo)
 }
 
-class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val userInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with ExportEntitiesByType {
+class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val googleDAO: GoogleServicesDAO, val userInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with ExportEntitiesByType {
   // ExportEntities requires its own actor context to work with TsvWriterActor
   def actorRefFactory: ActorContext = context
   override def receive: Receive = {
@@ -41,26 +43,64 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val userInfo: UserInfo)(
 
 trait ExportEntitiesByType extends FireCloudRequestBuilding {
   val rawlsDAO: RawlsDAO
+  val googleDAO: GoogleServicesDAO
   implicit val userInfo: UserInfo
   implicit protected val executionContext: ExecutionContext
   implicit def actorRefFactory: ActorRefFactory
   implicit val timeout = Timeout(10 minute)
 
+  private val downloadSizeThreshold: Int = 20000
+  private val groupedByteSize: Int = 1024 * 1024
+
   lazy val log: Logger = LoggerFactory.getLogger(getClass)
 
   /*
-    * TODO:
-    * Handle failures
-    */
-  def exportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
+   * Approach:
+   *   1. Find the entity metadata
+   *   2. If the data is relatively small and can confidently be downloaded without hitting timeouts, then stream content directly
+   *   3. Otherwise, upload content to the workspace's GCS bucket and send the user a signed URL to the content.
+   *   4. In both cases, use the TSV Writing Actor to keep the # entities in-memory low and not trigger OOM errors.
+   *
+   *   TODO
+   *   Need to figure out exactly what the signed url actually looks like. Is it a string? A text file with an explanation?
+   *   Tune the download/GCS decision based on # entities times # attributes. Is ~20K a good number? From testing, I think 50K is also feasible.
+   *   ??? Move the streaming actor here so the calling APIs don't have to worry about it.
+   *   Name the uploaded file with a timestamp to avoid overwriting existing content
+   */
+  def exportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, fileName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
+
     // Get entity metadata: count and full list of attributes
     getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
       // Generate all of the paginated queries to find all of the entities
       val entityQueries = getEntityQueries(metadata, entityType)
       val file = bufferEntitiesToFile(metadata, attributeNames, entityQueries, workspaceNamespace, workspaceName, entityType)
-      // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
-      file.map(_.bytes.grouped(1024 * 1024).map(_.toArray).toStream)
+
+      metadata.count * metadata.attributeNames.size match {
+        case x if x > downloadSizeThreshold =>
+          log.info("Fire off async and send user a signed url message")
+          val workspaceResponse = rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)
+          workspaceResponse.map { workspaceResponse =>
+            val bucketName = workspaceResponse.workspace.bucketName
+            file map { f =>
+              sendFileToGCS(bucketName, f)
+            }
+            getSignedUrlContent(entityType, bucketName, fileName).getBytes.grouped(groupedByteSize).toStream
+          }
+        case _ =>
+          log.info("Stream the download out to the user.")
+          // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
+          file.map(_.bytes.grouped(groupedByteSize).map(_.toArray).toStream)
+      }
     }
+  }
+
+  private def getSignedUrlContent(entityType: String, bucketName: String, fileName: String): String = {
+    val url = googleDAO.getObjectResourceUrl(bucketName, fileName)
+    s"Please visit the following URL: $url to download your $entityType data"
+  }
+
+  private def sendFileToGCS(bucketName: String, file: File): StorageObject = {
+    googleDAO.writeBucketObjectFromFile(bucketName, file.contentType.getOrElse(ContentTypes.`text/plain`.toString), file.name, file.toJava)
   }
 
   // We batch entities to a temp file(s) to minimize memory use
