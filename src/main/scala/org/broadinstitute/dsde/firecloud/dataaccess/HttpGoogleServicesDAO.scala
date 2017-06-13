@@ -103,6 +103,16 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
       .setServiceAccountId(pemFileClientId)
+      .setServiceAccountScopes(storageReadOnly)
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
+      .build()
+  }
+
+  private def getBucketWriteServiceAccountCredential: Credential = {
+    new GoogleCredential.Builder()
+      .setTransport(httpTransport)
+      .setJsonFactory(jsonFactory)
+      .setServiceAccountId(pemFileClientId)
       .setServiceAccountScopes(storageReadWrite)
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
       .build()
@@ -129,7 +139,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   // Write file content to bucket location
   // See https://github.com/GoogleCloudPlatform/java-docs-samples/blob/master/storage/json-api/src/main/java/StorageSample.java#L99
   def writeBucketObjectFromFile(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketWriteServiceAccountCredential).setApplicationName("firecloud").build()
     val contentStream: InputStreamContent = new InputStreamContent(contentType, new FileInputStream(file))
     val acl: ObjectAccessControl = new ObjectAccessControl().setEntity(userInfo.userEmail).setRole("OWNER")
     val objectMetadata: StorageObject = new StorageObject().setName(fileName).setAcl(List(acl))

@@ -65,6 +65,8 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
    *
    *   TODO:
    *
+   *   * Error handling needs a lot of work.
+   *
    *   * Need to figure out exactly what the signed url actually looks like. Is it a string? A text file with an explanation?
    *
    *   * Tune the download/GCS decision based on # entities times # attributes. Is ~50K a good number?
@@ -99,6 +101,8 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
           // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
           file.map(_.bytes.grouped(groupedByteSize).map(_.toArray).toStream)
       }
+    } recoverWith {
+      case t: Throwable => throw new FireCloudException("Unable to generate download file content", t)
     }
   }
 
@@ -145,7 +149,9 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
         }
         foldOperation map { files => files._2.head }
     }
-    fileWritingOperation
+    fileWritingOperation.recoverWith {
+      case t: Throwable => throw new FireCloudException("Unable to generate download file content", t)
+    }
   }
 
   private def writeFilesToZip(entityType: String, membershipTSV: File, entityTSV: File): Future[File] = {
