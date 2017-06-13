@@ -6,7 +6,8 @@ import akka.actor.{Actor, Props, _}
 import better.files._
 import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
-import org.broadinstitute.dsde.firecloud.utils.TSVFormatter.{filterAttributeFromEntities, makeRow}
+import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
+import org.broadinstitute.dsde.firecloud.utils.TSVFormatter.{filterAttributeFromEntities, makeRow, makeEntityHeaders}
 import org.broadinstitute.dsde.rawls.model.{AttributeEntityReference, AttributeEntityReferenceList, AttributeName, Entity}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -70,7 +71,7 @@ trait TSVWriterActor extends Actor {
   }
 
   def writeEntityTSV(page: Int, entities: Seq[Entity]): File = {
-    val headers = makeEntityHeaders(entityType, originalHeaders, requestedHeaders)
+    val headers = makeEntityHeaders(entityType, originalHeaders, requestedHeaders, isCollectionType, memberPlural)
     if (page == 0) {
       log.info("WriteEntityTSV: creating file with headers.")
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
@@ -92,27 +93,5 @@ trait TSVWriterActor extends Actor {
     file.append(rows.map{ _.mkString("\t") }.mkString("\n")).append("\n")
     file
   }
-
-  private def makeEntityHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]]): IndexedSeq[String] = {
-    val requestedHeadersSansId = requestedHeaders.
-      // remove empty strings
-      map(_.filter(_.length > 0)).
-      // handle empty requested headers as no requested headers
-      flatMap(rh => if (rh.isEmpty) None else Option(rh)).
-      // entity id always needs to be first and is handled differently so remove it from requestedHeaders
-      map(_.filterNot(_.equalsIgnoreCase(entityType + "_id"))).
-      // filter out member attribute if a set type
-      map { h => if (isCollectionType) h.filterNot(_.equals(memberPlural)) else h }
-    val filteredAllHeaders = isCollectionType match {
-      case x if x => allHeaders.filterNot(_.equals(memberPlural))
-      case _ => allHeaders
-    }
-    val entityHeader: String = requestedHeadersSansId match {
-      case Some(headers) if !ModelSchema.getRequiredAttributes(entityType).get.keySet.forall(headers.contains) => s"${TsvTypes.UPDATE}:${entityType}_id"
-      case _ => s"${TsvTypes.ENTITY}:${entityType}_id"
-    }
-    (entityHeader +: requestedHeadersSansId.getOrElse(filteredAllHeaders)).toIndexedSeq
-  }
-
 
 }
