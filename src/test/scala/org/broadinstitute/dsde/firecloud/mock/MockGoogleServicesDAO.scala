@@ -3,12 +3,10 @@ package org.broadinstitute.dsde.firecloud.mock
 import java.io.{ByteArrayInputStream, File, InputStream}
 
 import akka.actor.ActorRefFactory
-import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse
 import com.google.api.services.storage.model.StorageObject
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{OAuthTokens, ObjectMetadata, WithAccessToken}
-import spray.http.{HttpRequest, HttpResponse}
-import spray.json.{JsNumber, JsObject}
+import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, UserInfo}
+import spray.http.HttpResponse
 import spray.routing.RequestContext
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,7 +20,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
       case _ => new ByteArrayInputStream(" ".getBytes("UTF-8"))
     }
   }
-  override def writeBucketObjectFromFile(bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
+  override def writeBucketObjectFromFile(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
     new StorageObject().setName(fileName).setBucket(bucketName).setContentType(contentType)
   }
 

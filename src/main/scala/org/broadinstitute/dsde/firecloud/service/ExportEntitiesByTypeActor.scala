@@ -91,7 +91,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
             val newFileName = new Date().getTime + "_" + fileName
             file map { f =>
               val renamedFile = f.renameTo(newFileName)
-              sendFileToGCS(bucketName, renamedFile)
+              sendFileToGCS(userInfo, bucketName, renamedFile)
             }
             getSignedUrlContent(entityType, bucketName, newFileName).getBytes.grouped(groupedByteSize).toStream
           }
@@ -107,8 +107,8 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     s"Please visit the following URL: $url to download your $entityType data"
   }
 
-  private def sendFileToGCS(bucketName: String, file: File): StorageObject = {
-    googleDAO.writeBucketObjectFromFile(bucketName, file.contentType.getOrElse(ContentTypes.`text/plain`.toString), file.name, file.toJava)
+  private def sendFileToGCS(userInfo: UserInfo, bucketName: String, file: File): StorageObject = {
+    googleDAO.writeBucketObjectFromFile(userInfo, bucketName, file.contentType.getOrElse(ContentTypes.`text/plain`.toString), file.name, file.toJava)
   }
 
   // We batch entities to a temp file(s) to minimize memory use
