@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.io.{File, FileInputStream}
 
 import akka.actor.ActorRefFactory
-import com.google.api.client.auth.oauth2.Credential
+import com.google.api.client.auth.oauth2.{Credential, TokenResponse}
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.InputStreamContent
@@ -108,16 +108,6 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .build()
   }
 
-  private def getBucketWriteServiceAccountCredential: Credential = {
-    new GoogleCredential.Builder()
-      .setTransport(httpTransport)
-      .setJsonFactory(jsonFactory)
-      .setServiceAccountId(pemFileClientId)
-      .setServiceAccountScopes(storageReadWrite)
-      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
-      .build()
-  }
-
   def getRawlsServiceAccountAccessToken = {
     val googleCredential = new GoogleCredential.Builder()
       .setTransport(httpTransport)
@@ -139,12 +129,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   // Write file content to bucket location
   // See https://github.com/GoogleCloudPlatform/java-docs-samples/blob/master/storage/json-api/src/main/java/StorageSample.java#L99
   def writeBucketObjectFromFile(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketWriteServiceAccountCredential).setApplicationName("firecloud").build()
-    val contentStream: InputStreamContent = new InputStreamContent(contentType, new FileInputStream(file))
-    val acl: ObjectAccessControl = new ObjectAccessControl().setEntity(userInfo.userEmail).setRole("OWNER")
-    val objectMetadata: StorageObject = new StorageObject().setName(fileName).setAcl(List(acl))
-    val insert = storage.objects().insert(bucketName, objectMetadata, contentStream)
     try {
+      val userCredential = new GoogleCredential().setFromTokenResponse(new TokenResponse().setAccessToken(userInfo.accessToken.token))
+      val storage = new Storage.Builder(httpTransport, jsonFactory, userCredential).setApplicationName("firecloud").build()
+      val contentStream: InputStreamContent = new InputStreamContent(contentType, new FileInputStream(file))
+      val acl: ObjectAccessControl = new ObjectAccessControl().setEntity(userInfo.userEmail).setRole("OWNER")
+      val objectMetadata: StorageObject = new StorageObject().setName(fileName).setAcl(List(acl))
+      val insert = storage.objects().insert(bucketName, objectMetadata, contentStream)
       insert.execute()
     } catch {
       case e: Throwable =>
