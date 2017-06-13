@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.util.Date
+
 import akka.actor.{Actor, ActorContext, ActorRef, ActorRefFactory, Props}
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
@@ -49,7 +51,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   implicit def actorRefFactory: ActorRefFactory
   implicit val timeout = Timeout(10 minute)
 
-  private val downloadSizeThreshold: Int = 20000
+  private val downloadSizeThreshold: Int = 5
   private val groupedByteSize: Int = 1024 * 1024
 
   lazy val log: Logger = LoggerFactory.getLogger(getClass)
@@ -61,11 +63,16 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
    *   3. Otherwise, upload content to the workspace's GCS bucket and send the user a signed URL to the content.
    *   4. In both cases, use the TSV Writing Actor to keep the # entities in-memory low and not trigger OOM errors.
    *
-   *   TODO
-   *   Need to figure out exactly what the signed url actually looks like. Is it a string? A text file with an explanation?
-   *   Tune the download/GCS decision based on # entities times # attributes. Is ~20K a good number? From testing, I think 50K is also feasible.
-   *   ??? Move the streaming actor here so the calling APIs don't have to worry about it.
-   *   Name the uploaded file with a timestamp to avoid overwriting existing content
+   *   TODO:
+   *
+   *   * Need to figure out exactly what the signed url actually looks like. Is it a string? A text file with an explanation?
+   *
+   *   * Tune the download/GCS decision based on # entities times # attributes. Is ~50K a good number?
+   *
+   *   * ??? Move the streaming actor here so the calling APIs don't have to worry about it.
+   *
+   *   * Need to somehow tell the caller about a different filename.
+   *      Setting that at the caller level doesn't make sense when the result of a set download could be either a text or zip.
    */
   def exportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, fileName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
 
@@ -77,17 +84,18 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
 
       metadata.count * metadata.attributeNames.size match {
         case x if x > downloadSizeThreshold =>
-          log.info("Fire off async and send user a signed url message")
           val workspaceResponse = rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)
           workspaceResponse.map { workspaceResponse =>
             val bucketName = workspaceResponse.workspace.bucketName
+            // Prefix with timestamp to prevent overwriting previous uploads
+            val newFileName = new Date().getTime + "_" + fileName
             file map { f =>
-              sendFileToGCS(bucketName, f)
+              val renamedFile = f.renameTo(newFileName)
+              sendFileToGCS(bucketName, renamedFile)
             }
-            getSignedUrlContent(entityType, bucketName, fileName).getBytes.grouped(groupedByteSize).toStream
+            getSignedUrlContent(entityType, bucketName, newFileName).getBytes.grouped(groupedByteSize).toStream
           }
         case _ =>
-          log.info("Stream the download out to the user.")
           // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
           file.map(_.bytes.grouped(groupedByteSize).map(_.toArray).toStream)
       }
@@ -100,7 +108,8 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   }
 
   private def sendFileToGCS(bucketName: String, file: File): StorageObject = {
-    googleDAO.writeBucketObjectFromFile(bucketName, file.contentType.getOrElse(ContentTypes.`text/plain`.toString), file.name, file.toJava)
+    val storageObject = googleDAO.writeBucketObjectFromFile(bucketName, file.contentType.getOrElse(ContentTypes.`text/plain`.toString), file.name, file.toJava)
+    storageObject
   }
 
   // We batch entities to a temp file(s) to minimize memory use
