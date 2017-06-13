@@ -4,9 +4,10 @@ import java.util.UUID
 
 import akka.actor.{Actor, Props, _}
 import better.files._
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
-import org.broadinstitute.dsde.firecloud.utils.TSVFormatter.{filterAttributeFromEntities, makeRow, makeEntityHeaders, makeMembershipHeaders}
+import org.broadinstitute.dsde.firecloud.utils.TSVFormatter._
 import org.broadinstitute.dsde.rawls.model.{AttributeEntityReference, AttributeEntityReferenceList, AttributeName, Entity}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -23,17 +24,15 @@ object TSVWriterActor {
 
 }
 
-trait TSVWriterActor extends Actor {
+trait TSVWriterActor extends Actor with LazyLogging {
 
   def entityType: String
   def originalHeaders: Seq[String]
   def requestedHeaders: Option[IndexedSeq[String]]
   def pages: Int
 
-  lazy val memberType: String = ModelSchema.getCollectionMemberType(entityType).get.getOrElse(entityType.replace("_set", ""))
-  lazy val memberPlural: String = ModelSchema.getPlural(memberType).getOrElse(memberType + "s")
-  lazy val isCollectionType: Boolean = ModelSchema.isCollectionType(entityType).getOrElse(false)
-  lazy val log: Logger = LoggerFactory.getLogger(getClass)
+  lazy val memberType: String = memberTypeFromEntityType(entityType)
+  lazy val memberPlural: String = pluralizeMemberType(memberType)
   lazy val file: File = File.newTemporaryFile(UUID.randomUUID().toString, ".tsv")
 
   def receive: Receive = {
@@ -43,11 +42,11 @@ trait TSVWriterActor extends Actor {
 
   def writeMembershipTSV(page: Int, entities: Seq[Entity]): File = {
     if (page == 0) {
-      log.info("WriteMembershipTSV: creating file with headers.")
+      logger.info("WriteMembershipTSV: creating file with headers.")
       val headers = makeMembershipHeaders(entityType, originalHeaders, requestedHeaders, memberType)
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
     }
-    log.info(s"WriteMembershipTSV. Appending ${entities.size} entities to: ${file.path.toString}")
+    logger.info(s"WriteMembershipTSV. Appending ${entities.size} entities to: ${file.path.toString}")
     val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
       entity =>
         entity.attributes.filter {
@@ -65,17 +64,18 @@ trait TSVWriterActor extends Actor {
   }
 
   def writeEntityTSV(page: Int, entities: Seq[Entity]): File = {
-    val headers = makeEntityHeaders(entityType, originalHeaders, requestedHeaders, isCollectionType, memberPlural)
+    val headers = makeEntityHeaders(entityType, originalHeaders, requestedHeaders)
     if (page == 0) {
-      log.info("WriteEntityTSV: creating file with headers.")
+      logger.info("WriteEntityTSV: creating file with headers.")
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
     }
-    log.info(s"WriteEntityTSV. Appending ${entities.size} entities to: ${file.path.toString}")
+    logger.info(s"WriteEntityTSV. Appending ${entities.size} entities to: ${file.path.toString}")
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
-    val filteredEntities = isCollectionType match {
-      case x if x => filterAttributeFromEntities(entities, memberPlural)
-      case _ => entities
+    val filteredEntities = if (isCollectionType(entityType)) {
+      filterAttributeFromEntities(entities, memberPlural)
+    } else {
+      entities
     }
 
     // Turn them into rows

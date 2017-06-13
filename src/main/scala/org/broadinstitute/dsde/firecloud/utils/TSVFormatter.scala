@@ -142,12 +142,12 @@ object TSVFormatter {
     *
     * @param entityType Display name for the type of entity (e.g. "participant")
     * @param allHeaders The universe of available column headers
-    * @param requestedHeaders Which, if any, columns were requested. If none, return allHeaders (subject to filtering)
-    * @param isCollectionType
-    * @param memberPlural
+    * @param requestedHeaders Which, if any, columns were requested. If none, return allHeaders (subject to sanitization)
     * @return Entity name as first column header, followed by matching entity attribute labels
     */
-  def makeEntityHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]], isCollectionType: Boolean, memberPlural: String): IndexedSeq[String] = {
+  def makeEntityHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]]): IndexedSeq[String] = {
+    val memberPlural = pluralizeMemberType(memberTypeFromEntityType(entityType))
+
     val requestedHeadersSansId = requestedHeaders.
       // remove empty strings
       map(_.filter(_.length > 0)).
@@ -156,9 +156,9 @@ object TSVFormatter {
       // entity id always needs to be first and is handled differently so remove it from requestedHeaders
       map(_.filterNot(_.equalsIgnoreCase(entityType + "_id"))).
       // filter out member attribute if a set type
-      map { h => if (isCollectionType) h.filterNot(_.equals(memberPlural)) else h }
+      map { h => if (isCollectionType(entityType)) h.filterNot(_.equals(memberPlural)) else h }
 
-    val filteredAllHeaders = if (isCollectionType) {
+    val filteredAllHeaders = if (isCollectionType(entityType)) {
       allHeaders.filterNot(_.equals(memberPlural))
     } else {
       allHeaders
@@ -170,5 +170,11 @@ object TSVFormatter {
     }
     (entityHeader +: requestedHeadersSansId.getOrElse(filteredAllHeaders)).toIndexedSeq
   }
+
+  def memberTypeFromEntityType(entityType: String): String = ModelSchema.getCollectionMemberType(entityType).get.getOrElse(entityType.replace("_set", ""))
+
+  def pluralizeMemberType(memberType: String): String = ModelSchema.getPlural(memberType).getOrElse(memberType + "s")
+
+  def isCollectionType(entityType: String): Boolean = ModelSchema.isCollectionType(entityType).getOrElse(false)
 
 }
