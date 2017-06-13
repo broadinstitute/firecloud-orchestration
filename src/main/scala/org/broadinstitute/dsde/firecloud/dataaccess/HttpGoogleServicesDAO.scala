@@ -138,7 +138,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       insert.execute()
     } catch {
       case e: Throwable =>
-        log.error(s"IOException ${e.getMessage}")
+        log.error(s"Error uploading content to GCS ${e.getMessage}")
         throw new FireCloudExceptionWithErrorReport(ErrorReport(e))
     }
   }
