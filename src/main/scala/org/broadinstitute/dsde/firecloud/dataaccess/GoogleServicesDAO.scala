@@ -4,10 +4,9 @@ import java.io.{File, InputStream}
 
 import akka.actor.ActorRefFactory
 import com.google.api.services.storage.model.StorageObject
-import org.broadinstitute.dsde.firecloud.model.{OAuthTokens, ObjectMetadata}
+import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, UserInfo}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
-import spray.http.{HttpRequest, HttpResponse}
-import spray.json.JsValue
+import spray.http.HttpResponse
 import spray.routing.RequestContext
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -18,7 +17,7 @@ trait GoogleServicesDAO {
 
   def getAdminUserAccessToken: String
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
-  def writeBucketObjectFromFile(bucketName: String, contentType: String, fileName: String, file: File): StorageObject
+  def writeBucketObjectFromFile(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
   def getUserProfile(requestContext: RequestContext)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse]

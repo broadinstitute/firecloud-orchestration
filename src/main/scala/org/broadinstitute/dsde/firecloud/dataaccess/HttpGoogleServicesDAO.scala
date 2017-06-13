@@ -1,22 +1,22 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.io.{File, FileInputStream, InputStream}
+import java.io.{File, FileInputStream}
 
-import akka.actor.{ActorRefFactory, ActorSystem}
+import akka.actor.ActorRefFactory
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.InputStreamContent
 import com.google.api.client.json.jackson2.JacksonFactory
-import com.google.api.services.storage.model.StorageObject
+import com.google.api.services.storage.model.{ObjectAccessControl, StorageObject}
 import com.google.api.services.storage.{Storage, StorageScopes}
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
-import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -29,7 +29,7 @@ import spray.routing.RequestContext
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -65,7 +65,7 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
-object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding {
+object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging {
 
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
@@ -103,6 +103,16 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
       .setServiceAccountId(pemFileClientId)
+      .setServiceAccountScopes(storageReadOnly)
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
+      .build()
+  }
+
+  private def getBucketWriteServiceAccountCredential: Credential = {
+    new GoogleCredential.Builder()
+      .setTransport(httpTransport)
+      .setJsonFactory(jsonFactory)
+      .setServiceAccountId(pemFileClientId)
       .setServiceAccountScopes(storageReadWrite)
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
       .build()
@@ -128,13 +138,19 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   // Write file content to bucket location
   // See https://github.com/GoogleCloudPlatform/java-docs-samples/blob/master/storage/json-api/src/main/java/StorageSample.java#L99
-  def writeBucketObjectFromFile(bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
+  def writeBucketObjectFromFile(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketWriteServiceAccountCredential).setApplicationName("firecloud").build()
     val contentStream: InputStreamContent = new InputStreamContent(contentType, new FileInputStream(file))
-    // TODO: What should the ACLs be?
-    val objectMetadata: StorageObject = new StorageObject().setName(fileName)
+    val acl: ObjectAccessControl = new ObjectAccessControl().setEntity(userInfo.userEmail).setRole("OWNER")
+    val objectMetadata: StorageObject = new StorageObject().setName(fileName).setAcl(List(acl))
     val insert = storage.objects().insert(bucketName, objectMetadata, contentStream)
-    insert.execute()
+    try {
+      insert.execute()
+    } catch {
+      case e: Throwable =>
+        log.error(s"Error uploading content to GCS ${e.getMessage}")
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(e))
+    }
   }
 
   // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program
