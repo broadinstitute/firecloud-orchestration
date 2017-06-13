@@ -108,8 +108,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   }
 
   private def sendFileToGCS(bucketName: String, file: File): StorageObject = {
-    val storageObject = googleDAO.writeBucketObjectFromFile(bucketName, file.contentType.getOrElse(ContentTypes.`text/plain`.toString), file.name, file.toJava)
-    storageObject
+    googleDAO.writeBucketObjectFromFile(bucketName, file.contentType.getOrElse(ContentTypes.`text/plain`.toString), file.name, file.toJava)
   }
 
   // We batch entities to a temp file(s) to minimize memory use

@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.io.{File, FileInputStream, InputStream}
+import java.io.{File, FileInputStream, IOException, InputStream}
+import java.util
 
 import akka.actor.{ActorRefFactory, ActorSystem}
 import com.google.api.client.auth.oauth2.Credential
@@ -133,19 +134,18 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
     val contentStream: InputStreamContent = new InputStreamContent(contentType, new FileInputStream(file))
     // TODO: What should the ACLs be?
+    val acl: ObjectAccessControl = new ObjectAccessControl().setEntity("allUsers").setRole("OWNER")
     val objectMetadata: StorageObject = new StorageObject().
       setName(fileName).
-      setAcl(List(new ObjectAccessControl().setEntity("allUsers").setRole("OWNER")))
+      setAcl(util.Arrays.asList(acl))
     val insert = storage.objects().insert(bucketName, objectMetadata, contentStream)
-    log.info("ObjectMetaData: " + objectMetadata.toPrettyString)
-    log.info("Insert: " + insert.toString)
-    val executionResult = insert.execute() match {
-      case storageObject: StorageObject =>
-        log.info(s"Response from sending file to GCS ${storageObject.toPrettyString}.")
-        storageObject
-      case _ => throw new FireCloudException("Unable to send file to GCS")
+    try {
+      insert.execute()
+    } catch {
+      case e: Throwable =>
+        log.error(s"IOException ${e.getMessage}")
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(e))
     }
-    executionResult
   }
 
   // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program
