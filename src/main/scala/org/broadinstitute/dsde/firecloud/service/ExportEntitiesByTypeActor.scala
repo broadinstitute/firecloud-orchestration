@@ -51,7 +51,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   implicit def actorRefFactory: ActorRefFactory
   implicit val timeout = Timeout(10 minute)
 
-  private val downloadSizeThreshold: Int = 5
+  private val downloadSizeThreshold: Int = 50000
   private val groupedByteSize: Int = 1024 * 1024
 
   lazy val log: Logger = LoggerFactory.getLogger(getClass)
