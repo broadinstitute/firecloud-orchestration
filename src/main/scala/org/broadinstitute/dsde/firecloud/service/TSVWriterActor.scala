@@ -6,8 +6,7 @@ import akka.actor.{Actor, Props, _}
 import better.files._
 import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
-import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
-import org.broadinstitute.dsde.firecloud.utils.TSVFormatter.{filterAttributeFromEntities, makeRow, makeEntityHeaders}
+import org.broadinstitute.dsde.firecloud.utils.TSVFormatter.{filterAttributeFromEntities, makeRow, makeEntityHeaders, makeMembershipHeaders}
 import org.broadinstitute.dsde.rawls.model.{AttributeEntityReference, AttributeEntityReferenceList, AttributeName, Entity}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -24,7 +23,6 @@ object TSVWriterActor {
 
 }
 
-// TODO: Move a lot of the utility functions to TSVFormatter so they can be separately tested
 trait TSVWriterActor extends Actor {
 
   def entityType: String
@@ -46,7 +44,7 @@ trait TSVWriterActor extends Actor {
   def writeMembershipTSV(page: Int, entities: Seq[Entity]): File = {
     if (page == 0) {
       log.info("WriteMembershipTSV: creating file with headers.")
-      val headers = makeMembershipHeaders(entityType, originalHeaders, requestedHeaders)
+      val headers = makeMembershipHeaders(entityType, originalHeaders, requestedHeaders, memberType)
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
     }
     log.info(s"WriteMembershipTSV. Appending ${entities.size} entities to: ${file.path.toString}")
@@ -64,10 +62,6 @@ trait TSVWriterActor extends Actor {
     }
     file.append(rows.map{ _.mkString("\t") }.mkString("\n")).append("\n")
     file
-  }
-
-  private def makeMembershipHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]]): IndexedSeq[String] = {
-    IndexedSeq[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id", memberType)
   }
 
   def writeEntityTSV(page: Int, entities: Seq[Entity]): File = {

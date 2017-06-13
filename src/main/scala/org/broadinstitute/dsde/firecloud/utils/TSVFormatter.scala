@@ -133,6 +133,10 @@ object TSVFormatter {
     regex.replaceAllIn(value.toString(), "")
   }
 
+  def makeMembershipHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]], memberType: String): IndexedSeq[String] = {
+    IndexedSeq[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id", memberType)
+  }
+
   /**
     * Prepare an ordered list of headers (column labels)
     *
