@@ -130,7 +130,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def writeFileToBucket(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
     try {
       val contentStream: InputStreamContent = new InputStreamContent(contentType, new FileInputStream(file)).setLength(file.length())
-      val acl: ObjectAccessControl = new ObjectAccessControl().setEntity(userInfo.userEmail).setRole("OWNER")
+      val acl: ObjectAccessControl = new ObjectAccessControl().setEntity(s"user-${userInfo.userEmail}").setRole("OWNER")
       val objectMetadata: StorageObject = new StorageObject().setName(fileName).setAcl(List(acl))
       val tokenResponse = new TokenResponse().setAccessToken(userInfo.accessToken.token)
       val userCredential = new GoogleCredential().setFromTokenResponse(tokenResponse)
