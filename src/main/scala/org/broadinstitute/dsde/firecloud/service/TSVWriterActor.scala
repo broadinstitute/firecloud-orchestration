@@ -5,11 +5,9 @@ import java.util.UUID
 import akka.actor.{Actor, Props, _}
 import better.files._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter._
 import org.broadinstitute.dsde.rawls.model.{AttributeEntityReference, AttributeEntityReferenceList, AttributeName, Entity}
-import org.slf4j.{Logger, LoggerFactory}
 
 object TSVWriterActor {
 
@@ -42,11 +40,9 @@ trait TSVWriterActor extends Actor with LazyLogging {
 
   def writeMembershipTSV(page: Int, entities: Seq[Entity]): File = {
     if (page == 0) {
-      logger.info("WriteMembershipTSV: creating file with headers.")
       val headers = makeMembershipHeaders(entityType, originalHeaders, requestedHeaders, memberType)
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
     }
-    logger.info(s"WriteMembershipTSV. Appending ${entities.size} entities to: ${file.path.toString}")
     val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
       entity =>
         entity.attributes.filter {
@@ -66,10 +62,8 @@ trait TSVWriterActor extends Actor with LazyLogging {
   def writeEntityTSV(page: Int, entities: Seq[Entity]): File = {
     val headers = makeEntityHeaders(entityType, originalHeaders, requestedHeaders)
     if (page == 0) {
-      logger.info("WriteEntityTSV: creating file with headers.")
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
     }
-    logger.info(s"WriteEntityTSV. Appending ${entities.size} entities to: ${file.path.toString}")
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
     val filteredEntities = if (isCollectionType(entityType)) {

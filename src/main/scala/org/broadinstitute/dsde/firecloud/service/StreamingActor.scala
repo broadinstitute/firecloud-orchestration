@@ -1,7 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.Status.Failure
-import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.actor.{Actor, ActorSystem, Props}
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
 import org.broadinstitute.dsde.firecloud.service.StreamingActor._
 import spray.http.HttpEntity.Empty
@@ -21,7 +22,7 @@ object StreamingActor {
 
 }
 
-trait StreamingActor extends Actor with FireCloudRequestBuilding with ActorLogging {
+trait StreamingActor extends Actor with FireCloudRequestBuilding with LazyLogging {
 
   def ctx: RequestContext
   def filename: String
@@ -58,12 +59,12 @@ trait StreamingActor extends Actor with FireCloudRequestBuilding with ActorLoggi
 
     // handle failures
     case Failure(e) =>
-      log.error(e.getMessage)
+      logger.error(e.getMessage)
       context.parent ! RequestCompleteWithErrorReport(InternalServerError, "Streaming request failed: " + e.getMessage, e)
 
     // anything else
     case x =>
-      log.error(x.toString)
+      logger.error(x.toString)
       unhandled(x)
   }
 

@@ -12,6 +12,7 @@ import spray.json.JsValue
 
 object TSVFormatter {
 
+  // TODO: This is only used in tests. Look at refactoring it away
   def makeMembershipTsvString(entities: Seq[Entity], entityType: String, collectionMemberType: String, collectionMembersAttribute: String): String = {
     val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq(s"${TsvTypes.MEMBERSHIP}:${entityType}_id", collectionMemberType)
     val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
@@ -29,6 +30,7 @@ object TSVFormatter {
     exportToString(headers, rows.toIndexedSeq)
   }
 
+  // TODO: This is only used in tests. Look at refactoring it away
   def makeEntityTsvString(entities: Seq [Entity], entityType: String, requestedHeaders: Option[IndexedSeq[String]]): String = {
     val requestedHeadersSansId = requestedHeaders.
       // remove empty strings
@@ -63,6 +65,7 @@ object TSVFormatter {
     exportToString(headers, rows)
   }
 
+  // TODO: This is only used in tests. Look at refactoring it away
   def defaultHeaders(entityType: String, filteredEntities: Seq[Entity]) = {
     val attributeNames = filteredEntities.collect {
       case Entity(_, `entityType`, attributes) => attributes.keySet
