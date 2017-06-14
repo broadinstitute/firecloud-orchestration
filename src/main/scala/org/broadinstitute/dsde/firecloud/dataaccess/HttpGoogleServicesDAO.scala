@@ -11,7 +11,6 @@ import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.storage.model.{ObjectAccessControl, StorageObject}
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.apache.http.client.CredentialsProvider
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata

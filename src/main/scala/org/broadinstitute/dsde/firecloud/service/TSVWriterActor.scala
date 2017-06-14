@@ -7,7 +7,7 @@ import better.files._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter._
-import org.broadinstitute.dsde.rawls.model.{AttributeEntityReference, AttributeEntityReferenceList, AttributeName, Entity}
+import org.broadinstitute.dsde.rawls.model.Entity
 
 object TSVWriterActor {
 
@@ -29,8 +29,6 @@ trait TSVWriterActor extends Actor with LazyLogging {
   def requestedHeaders: Option[IndexedSeq[String]]
   def pages: Int
 
-  lazy val memberType: String = memberTypeFromEntityType(entityType)
-  lazy val memberPlural: String = pluralizeMemberType(memberType)
   lazy val file: File = File.newTemporaryFile(UUID.randomUUID().toString, ".tsv")
 
   def receive: Receive = {
@@ -40,21 +38,10 @@ trait TSVWriterActor extends Actor with LazyLogging {
 
   def writeMembershipTSV(page: Int, entities: Seq[Entity]): File = {
     if (page == 0) {
-      val headers = makeMembershipHeaders(entityType, originalHeaders, requestedHeaders, memberType)
+      val headers = makeMembershipHeaders(entityType)
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
     }
-    val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
-      entity =>
-        entity.attributes.filter {
-          // To make the membership file, we need the array of elements that correspond to the set type.
-          // All other top-level properties are not necessary and are only used for the data load file.
-          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(memberPlural))
-        }.flatMap {
-          case (_, AttributeEntityReference(entityType, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
-          case (_, AttributeEntityReferenceList(refs)) => refs.map( ref => IndexedSeq[String](entity.name, ref.entityName) )
-          case _ => Seq.empty
-        }
-    }
+    val rows: Seq[IndexedSeq[String]] = makeMembershipRows(entityType, entities)
     file.append(rows.map{ _.mkString("\t") }.mkString("\n")).append("\n")
     file
   }
@@ -64,20 +51,7 @@ trait TSVWriterActor extends Actor with LazyLogging {
     if (page == 0) {
       file.createIfNotExists().overwrite(headers.mkString("\t") + "\n")
     }
-    // if we have a set entity, we need to filter out the attribute array of the members so that we only
-    // have top-level attributes to construct columns from.
-    val filteredEntities = if (isCollectionType(entityType)) {
-      filterAttributeFromEntities(entities, memberPlural)
-    } else {
-      entities
-    }
-
-    // Turn them into rows
-    val rows: IndexedSeq[IndexedSeq[String]] = filteredEntities
-      .filter { _.entityType == entityType }
-      .map { entity => makeRow(entity, headers) }
-      .toIndexedSeq
-    // and finally, write that out to the file.
+    val rows = makeEntityRows(entityType, entities, headers)
     file.append(rows.map{ _.mkString("\t") }.mkString("\n")).append("\n")
     file
   }

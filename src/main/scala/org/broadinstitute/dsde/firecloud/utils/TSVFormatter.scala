@@ -4,77 +4,19 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
 
-import scala.collection.immutable
-import scala.util.{Success, Try}
-
-import spray.json.DefaultJsonProtocol._
+//import spray.json.DefaultJsonProtocol._
 import spray.json.JsValue
 
 object TSVFormatter {
 
-  // TODO: This is only used in tests. Look at refactoring it away
-  def makeMembershipTsvString(entities: Seq[Entity], entityType: String, collectionMemberType: String, collectionMembersAttribute: String): String = {
-    val headers: immutable.IndexedSeq[String] = immutable.IndexedSeq(s"${TsvTypes.MEMBERSHIP}:${entityType}_id", collectionMemberType)
-    val rows: Seq[IndexedSeq[String]] = entities.filter { _.entityType == entityType }.flatMap {
-      entity =>
-        entity.attributes.filter {
-          // To make the membership file, we need the array of elements that correspond to the set type.
-          // All other top-level properties are not necessary and are only used for the data load file.
-          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(collectionMembersAttribute))
-        }.flatMap {
-          case (_, AttributeEntityReference(entityType, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
-          case (_, AttributeEntityReferenceList(refs)) => refs.map( ref => IndexedSeq[String](entity.name, ref.entityName) )
-          case _ => Seq.empty
-        }
-    }
-    exportToString(headers, rows.toIndexedSeq)
-  }
-
-  // TODO: This is only used in tests. Look at refactoring it away
-  def makeEntityTsvString(entities: Seq [Entity], entityType: String, requestedHeaders: Option[IndexedSeq[String]]): String = {
-    val requestedHeadersSansId = requestedHeaders.
-      // remove empty strings
-      map(_.filter(_.length > 0)).
-      // handle empty requested headers as no requested headers
-      flatMap(rh => if (rh.isEmpty) None else Option(rh)).
-      // entity id always needs to be first and is handled differently so remove it from requestedHeaders
-      map(_.filterNot(_.equalsIgnoreCase(entityType + "_id")))
-
-    val entityHeader = requestedHeadersSansId match {
-      case Some(headers) if !ModelSchema.getRequiredAttributes(entityType).get.keySet.forall(headers.contains) => s"${TsvTypes.UPDATE}:${entityType}_id"
-      case _ => s"${TsvTypes.ENTITY}:${entityType}_id"
-    }
-
-    // if we have a set entity, we need to filter out the attribute array of the members so that we only
-    // have top-level attributes to construct columns from.
-    val memberType = ModelSchema.getCollectionMemberType(entityType)
-    val filteredEntities = memberType match {
-      case Success(Some(collectionType)) =>
-        ModelSchema.getPlural(collectionType) match {
-          case Success(attributeName) => filterAttributeFromEntities(entities, attributeName)
-          case _ => entities
-        }
-      case _ => entities
-    }
-
-    val headers: IndexedSeq[String] = entityHeader +: requestedHeadersSansId.getOrElse(defaultHeaders(entityType, filteredEntities))
-    val rows: IndexedSeq[IndexedSeq[String]] = filteredEntities.filter { _.entityType == entityType }
-      .map { entity =>
-        makeRow(entity, headers)
-      }.toIndexedSeq
-    exportToString(headers, rows)
-  }
-
-  // TODO: This is only used in tests. Look at refactoring it away
-  def defaultHeaders(entityType: String, filteredEntities: Seq[Entity]) = {
-    val attributeNames = filteredEntities.collect {
-      case Entity(_, `entityType`, attributes) => attributes.keySet
-    }.flatten.distinct
-
-    attributeNames.map(_.name).toIndexedSeq
-  }
-
-  private def exportToString(headers: IndexedSeq[String], rows: IndexedSeq[IndexedSeq[String]]): String = {
+  /**
+    * Generate file content from headers and rows.
+    *
+    * @param headers
+    * @param rows
+    * @return
+    */
+  def exportToString(headers: IndexedSeq[String], rows: IndexedSeq[IndexedSeq[String]]): String = {
     val headerString:String = headers.mkString("\t") + "\n"
     val rowsString:String = rows.map{ _.mkString("\t") }.mkString("\n")
     headerString + rowsString + "\n"
@@ -86,7 +28,7 @@ object TSVFormatter {
     * @param entities Initial list of Entity
     * @return new list of Entity
     */
-  def filterAttributeFromEntities(entities: Seq[Entity], attributeName: String): Seq[Entity] = {
+  private def filterAttributeFromEntities(entities: Seq[Entity], attributeName: String): Seq[Entity] = {
     entities map {
       entity =>
         val attributes = entity.attributes filterNot {
@@ -103,7 +45,7 @@ object TSVFormatter {
     * @param headerValues List of ordered header values to determine order of values
     * @return IndexedSeq of ordered data fields
     */
-  def makeRow(entity: Entity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
+  private def makeRow(entity: Entity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
     val rowMap: Map[Int, String] =  entity.attributes map {
       case (attributeName, attribute) =>
         val columnPosition = headerValues.indexOf(attributeName.name)
@@ -136,8 +78,37 @@ object TSVFormatter {
     regex.replaceAllIn(value.toString(), "")
   }
 
-  def makeMembershipHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]], memberType: String): IndexedSeq[String] = {
-    IndexedSeq[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id", memberType)
+  /**
+    * Generate a header for a membership file.
+    *
+    * @param entityType The EntityType
+    * @return IndexedSeq of header Strings
+    */
+  def makeMembershipHeaders(entityType: String): IndexedSeq[String] = {
+    IndexedSeq[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id", memberTypeFromEntityType(entityType))
+  }
+
+  /**
+    * Prepare an ordered list of row data for a membership file
+    *
+    * @param entityType Display name for the type of entity (e.g. "participant")
+    * @param entities The Entity objects to convert to rows.
+    * @return Ordered list of rows
+    */
+  def makeMembershipRows(entityType: String, entities: Seq[Entity]): Seq[IndexedSeq[String]] = {
+    val memberPlural = pluralizeMemberType(memberTypeFromEntityType(entityType))
+    entities.filter { _.entityType == entityType }.flatMap {
+      entity =>
+        entity.attributes.filter {
+          // To make the membership file, we need the array of elements that correspond to the set type.
+          // All other top-level properties are not necessary and are only used for the data load file.
+          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(memberPlural))
+        }.flatMap {
+          case (_, AttributeEntityReference(entityType, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
+          case (_, AttributeEntityReferenceList(refs)) => refs.map( ref => IndexedSeq[String](entity.name, ref.entityName) )
+          case _ => Seq.empty
+        }
+    }
   }
 
   /**
@@ -172,6 +143,30 @@ object TSVFormatter {
       case _ => s"${TsvTypes.ENTITY}:${entityType}_id"
     }
     (entityHeader +: requestedHeadersSansId.getOrElse(filteredAllHeaders)).toIndexedSeq
+  }
+
+  /**
+    * Prepare an ordered list of row data
+    *
+    * @param entityType Display name for the type of entity (e.g. "participant")
+    * @param entities The Entity objects to convert to rows.
+    * @param headers The universe of available column headers
+    * @return Ordered list of rows, each row entry value ordered by its corresponding header position
+    */
+  def makeEntityRows(entityType: String, entities: Seq[Entity], headers: IndexedSeq[String]): IndexedSeq[IndexedSeq[String]] = {
+    val memberPlural = pluralizeMemberType(memberTypeFromEntityType(entityType))
+    // if we have a set entity, we need to filter out the attribute array of the members so that we only
+    // have top-level attributes to construct columns from.
+    val filteredEntities = if (isCollectionType(entityType)) {
+      filterAttributeFromEntities(entities, memberPlural)
+    } else {
+      entities
+    }
+    // Turn them into rows
+    filteredEntities
+      .filter { _.entityType == entityType }
+      .map { entity => makeRow(entity, headers) }
+      .toIndexedSeq
   }
 
   def memberTypeFromEntityType(entityType: String): String = ModelSchema.getCollectionMemberType(entityType).get.getOrElse(entityType.replace("_set", ""))

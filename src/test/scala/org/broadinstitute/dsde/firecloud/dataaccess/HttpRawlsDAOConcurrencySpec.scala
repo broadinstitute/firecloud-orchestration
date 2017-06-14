@@ -86,9 +86,9 @@ class HttpRawlsDAOConcurrencySpecCallback extends ExpectationCallback with Match
                         |    "sortDirection": "asc"
                         |  },
                         |  "resultMetadata": {
-                        |    "unfilteredCount": 500,
-                        |    "filteredCount": 500,
-                        |    "filteredPageCount": 500
+                        |    "unfilteredCount": 1,
+                        |    "filteredCount": 1,
+                        |    "filteredPageCount": 1
                         |  },
                         |  "results": [
                         |    {
