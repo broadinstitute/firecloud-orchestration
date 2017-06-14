@@ -20,7 +20,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
       case _ => new ByteArrayInputStream(" ".getBytes("UTF-8"))
     }
   }
-  override def writeBucketObjectFromFile(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
+  override def writeFileToBucket(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
     new StorageObject().setName(fileName).setBucket(bucketName).setContentType(contentType)
   }
 
