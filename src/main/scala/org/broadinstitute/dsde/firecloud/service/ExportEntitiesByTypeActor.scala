@@ -86,16 +86,20 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
 
       metadata.count * metadata.attributeNames.size match {
         case x if x > downloadSizeThreshold =>
+          // Prefix with timestamp to prevent overwriting previous uploads
+          val contentZipFileName = new Date().getTime + "_" + fileName.replaceFirst(".txt$", ".zip")
           val workspaceResponse = rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)
           workspaceResponse.map { workspaceResponse =>
             val bucketName = workspaceResponse.workspace.bucketName
-            // Prefix with timestamp to prevent overwriting previous uploads
-            val newFileName = new Date().getTime + "_" + fileName
             file map { f =>
-              val renamedFile = f.renameTo(newFileName)
-              sendFileToGCS(userInfo, bucketName, renamedFile)
+              log.info("making new zip file to send to GCS")
+              val zipDir = File.newTemporaryDirectory()
+              val newF = zipDir/s"$fileName"
+              f.copyTo(newF)
+              val contentZipFile = zipDir.zip().renameTo(contentZipFileName)
+              sendFileToGCS(userInfo, bucketName, contentZipFile)
             }
-            getSignedUrlContent(entityType, bucketName, newFileName).getBytes.grouped(groupedByteSize).toStream
+            getSignedUrlContent(entityType, bucketName, contentZipFileName).getBytes.grouped(groupedByteSize).toStream
           }
         case _ =>
           // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
@@ -105,6 +109,10 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
       case t: Throwable => throw new FireCloudException("Unable to generate download file content", t)
     }
   }
+
+  /*
+   * Supporting Methods
+   */
 
   private def getSignedUrlContent(entityType: String, bucketName: String, fileName: String): String = {
     val url = googleDAO.getObjectResourceUrl(bucketName, fileName)
