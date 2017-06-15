@@ -144,13 +144,12 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program
-  def getSignedUrl(bucketName: String, objectKey: String) = {
+  def getSignedUrl(bucketName: String, objectKey: String, expireSeconds: Long): String = {
 
     // generate the string-to-be-signed
     val verb = "GET"
     val md5 = ""
     val contentType = ""
-    val expireSeconds = (System.currentTimeMillis() / 1000) + 120 // expires 2 minutes (120 seconds) from now
     val objectPath = s"/$bucketName/$objectKey"
 
     val signableString = s"$verb\n$md5\n$contentType\n$expireSeconds\n$objectPath"
@@ -261,7 +260,8 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                       case OK =>
                         // the service account can read the object too. We are safe to sign a url.
                         log.info(s"$userStr download via signed URL allowed for [$objectStr]")
-                        requestContext.redirect(getSignedUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
+                        val expireSeconds = (System.currentTimeMillis() / 1000) + 120 // expires 2 minutes (120 seconds) from now
+                        requestContext.redirect(getSignedUrl(bucketName, objectKey, expireSeconds), StatusCodes.TemporaryRedirect)
                       case _ =>
                         // the service account cannot read the object, even though the user can. We cannot
                         // make a signed url, because the service account won't have permission to sign it.

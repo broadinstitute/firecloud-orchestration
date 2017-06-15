@@ -10,6 +10,7 @@ import spray.http.HttpResponse
 import spray.routing.RequestContext
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Random
 
 class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getAdminUserAccessToken: String = ""
@@ -22,6 +23,15 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   }
   override def writeFileToBucket(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
     new StorageObject().setName(fileName).setBucket(bucketName).setContentType(contentType)
+  }
+
+  override def getSignedUrl(bucketName: String, objectKey: String, expireSeconds: Long): String = {
+    val clientId = new Random().nextString(10)
+    val signedBytes = new Random().nextString(10).getBytes
+    s"https://storage.googleapis.com/$bucketName/$objectKey" +
+      s"?GoogleAccessId=$clientId" +
+      s"&Expires=$expireSeconds" +
+      "&Signature=" + java.net.URLEncoder.encode(java.util.Base64.getEncoder.encodeToString(signedBytes), "UTF-8")
   }
 
   override def getObjectResourceUrl(bucketName: String, objectKey: String): String = ""

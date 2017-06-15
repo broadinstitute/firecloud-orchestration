@@ -6,6 +6,8 @@ import akka.actor.{Actor, ActorContext, ActorRef, ActorRefFactory, Props}
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import better.files.File
+import com.google.api.client.auth.oauth2.TokenResponse
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.services.storage.model.StorageObject
 import com.typesafe.config.ConfigFactory
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
@@ -67,14 +69,10 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
    *
    *   * Error handling needs a lot of work.
    *
-   *   * Need to figure out exactly what the signed url actually looks like. Is it a string? A text file with an explanation?
-   *
    *   * Tune the download/GCS decision based on # entities times # attributes. Is ~50K a good number?
    *
    *   * ??? Move the streaming actor here so the calling APIs don't have to worry about it.
    *
-   *   * Need to somehow tell the caller about a different filename.
-   *      Setting that at the caller level doesn't make sense when the result of a set download could be either a text or zip.
    */
   def exportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, fileName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
 
@@ -115,8 +113,14 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
    */
 
   private def getSignedUrlContent(entityType: String, bucketName: String, fileName: String): String = {
-    val url = googleDAO.getObjectResourceUrl(bucketName, fileName)
-    s"Please visit the following URL: $url to download your $entityType data"
+    val expireSeconds = (System.currentTimeMillis() / 1000) + 600 // expires 10 minutes (600 seconds) from now
+    val url = googleDAO.getSignedUrl(bucketName, fileName, expireSeconds)
+    s"""
+       |Entity content is too large to download directly from FireCloud.
+       |Content is placed into its workspace bucket.
+       |Please visit the following URL: $url to download your $entityType data.
+       |Alternatively, visit your workspace bucket directly to see the file: $fileName
+     """.stripMargin
   }
 
   private def sendFileToGCS(userInfo: UserInfo, bucketName: String, file: File): StorageObject = {
