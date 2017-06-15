@@ -6,8 +6,6 @@ import akka.actor.{Actor, ActorContext, ActorRef, ActorRefFactory, Props}
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import better.files.File
-import com.google.api.client.auth.oauth2.TokenResponse
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.services.storage.model.StorageObject
 import com.typesafe.config.ConfigFactory
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
@@ -113,13 +111,12 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
    */
 
   private def getSignedUrlContent(entityType: String, bucketName: String, fileName: String): String = {
-    val expireSeconds = (System.currentTimeMillis() / 1000) + 600 // expires 10 minutes (600 seconds) from now
-    val url = googleDAO.getSignedUrl(bucketName, fileName, expireSeconds)
     s"""
-       |Entity content is too large to download directly from FireCloud.
-       |Content is placed into its workspace bucket.
-       |Please visit the following URL: $url to download your $entityType data.
-       |Alternatively, visit your workspace bucket directly to see the file: $fileName
+       |The requested content is too large to download directly from FireCloud.
+       |Content is being placed into its workspace bucket and may take several minutes to finish uploading.
+       |When complete, your file will be available at https://storage.cloud.google.com/$bucketName/$fileName
+       |Alternatively, visit your workspace bucket directly: https://console.cloud.google.com/storage/browser/$bucketName
+       |to find the exact file: $fileName
      """.stripMargin
   }
 
