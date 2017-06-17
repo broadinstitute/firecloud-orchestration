@@ -4361,6 +4361,12 @@ definitions:
       expression:
         type: string
         description: Expression that resolves to one or more entities matching the entity type in the method configuration.
+      useCallCache:
+        type: boolean
+        description: Whether or not to read from cache for this submission.
+      workflowFailureMode:
+        type: string
+        description: What happens after a task fails. Choose from ContinueWhilePossible and NoNewCalls. Defaults to NoNewCalls if not specified. See Cromwell docs for more information.
 
   SubmissionValidationEntityInputs:
     description: the results of parsing each of the inputs for one entity
