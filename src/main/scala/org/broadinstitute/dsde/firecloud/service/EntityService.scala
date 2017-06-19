@@ -83,13 +83,9 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                   parameters('attributeNames.?) { attributeNamesString =>
                     path("tsv") {
                       requireUserInfo() { userInfo => requestContext =>
-                        val filename = ModelSchema.getCollectionMemberType(entityType) match {
-                          case Success(Some(collectionType)) => entityType + ".zip"
-                          case _ => entityType + ".txt"
-                        }
                         lazy val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
                         val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo)
-                        val exportMessage = ExportEntitiesByTypeActor.ExportEntities(requestContext, workspaceNamespace, workspaceName, filename, entityType, attributeNames)
+                        val exportMessage = ExportEntitiesByTypeActor.ExportEntities(requestContext, workspaceNamespace, workspaceName, entityType, attributeNames)
                         val exportActor = actorRefFactory.actorOf(exportProps)
                         // Necessary for the actor ask pattern
                         implicit val timeout: Timeout = 1.minutes

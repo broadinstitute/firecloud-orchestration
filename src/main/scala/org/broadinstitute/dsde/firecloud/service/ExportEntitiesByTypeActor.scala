@@ -18,6 +18,7 @@ import org.broadinstitute.dsde.rawls.model._
 import spray.http._
 import spray.routing.RequestContext
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.slf4j.{Logger, LoggerFactory}
 import spray.http.ContentTypes
 
@@ -28,7 +29,7 @@ import scala.util.Success
 
 object ExportEntitiesByTypeActor {
   sealed trait ExportEntitiesByTypeMessage
-  case class ExportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, filename: String, entityType: String, attributeNames: Option[IndexedSeq[String]]) extends ExportEntitiesByTypeMessage
+  case class ExportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]) extends ExportEntitiesByTypeMessage
 
   def props(exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor, userInfo: UserInfo): Props = {
     Props(exportEntitiesByTypeConstructor(userInfo))
@@ -42,7 +43,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val googleDAO: GoogleSer
   // ExportEntities requires its own actor context to work with TsvWriterActor
   def actorRefFactory: ActorContext = context
   override def receive: Receive = {
-    case ExportEntities(ctx, workspaceNamespace, workspaceName, filename, entityType, attributeNames) => exportEntities(ctx, workspaceNamespace, workspaceName, filename, entityType, attributeNames) pipeTo sender
+    case ExportEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) => exportEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) pipeTo sender
   }
 }
 
@@ -52,10 +53,11 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
   implicit val userInfo: UserInfo
   implicit protected val executionContext: ExecutionContext
   implicit def actorRefFactory: ActorRefFactory
+
+  // Large timeout necessary for uploading large datasets to workspace buckets.
   implicit val timeout = Timeout(10 minute)
 
   private val downloadSizeThreshold: Int = 50000
-  private val groupedByteSize: Int = 1024 * 1024
 
   lazy val log: Logger = LoggerFactory.getLogger(getClass)
 
@@ -66,13 +68,17 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
    *   3. Otherwise, upload content to the workspace's GCS bucket and send the user instructions for getting to the content.
    *   4. In all cases, batch the entities to a Writing Actor to keep the concurrent number of in-memory entities low and avoid OOM errors.
    */
-  def exportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, fileName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[File] = {
+  def exportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[File] = {
 
     // Get entity metadata: count and full list of attributes
     getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
       // Generate all of the paginated queries to find all of the entities
       val entityQueries = getEntityQueries(metadata, entityType)
       val file = bufferEntitiesToFile(metadata, attributeNames, entityQueries, workspaceNamespace, workspaceName, entityType)
+      val fileName = TSVFormatter.isCollectionType(entityType) match {
+        case x if x => entityType + ".zip"
+        case _ => entityType + ".txt"
+      }
 
       val returnFile = metadata.count * metadata.attributeNames.size match {
         case x if x > downloadSizeThreshold =>
