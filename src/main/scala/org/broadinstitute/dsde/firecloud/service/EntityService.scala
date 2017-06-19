@@ -5,22 +5,20 @@ import akka.pattern.ask
 import akka.util.Timeout
 import better.files.File
 import com.typesafe.scalalogging.slf4j.LazyLogging
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
 import org.slf4j.LoggerFactory
-import spray.http.StatusCodes.InternalServerError
 import spray.http._
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 trait EntityService extends HttpService with PerRequestCreator with FireCloudDirectives
   with FireCloudRequestBuilding with StandardUserInfoDirectives with LazyLogging {
@@ -44,8 +42,9 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
         } ~
           pathPrefix("entities") {
             pathEnd {
-              requireUserInfo() { _ =>
-                passthrough(requestCompression = true, baseRawlsEntitiesUrl, HttpMethods.GET)
+              get { requestContext =>
+                val extReq = Get(Uri(baseRawlsEntitiesUrl))
+                externalHttpPerRequest(requestContext, extReq)
               }
             } ~
               path("copy") {
@@ -68,15 +67,17 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                 }
               } ~
               path("delete") {
-                post {
-                  passthrough(encodeUri(baseRawlsEntitiesUrl + "/delete"), HttpMethods.POST)
+                post { requestContext =>
+                  val extReq = Post(Uri(baseRawlsEntitiesUrl + "/delete"))
+                  externalHttpPerRequest(requestContext, extReq)
                 }
               } ~
               pathPrefix(Segment) { entityType =>
                 val entityTypeUrl = encodeUri(baseRawlsEntitiesUrl + "/" + entityType)
                 pathEnd {
-                  requireUserInfo() { _ =>
-                    passthrough(requestCompression = true, entityTypeUrl, HttpMethods.GET)
+                  get { requestContext =>
+                    val extReq = Get(Uri(entityTypeUrl))
+                    externalHttpPerRequest(requestContext, extReq)
                   }
                 } ~
                   parameters('attributeNames.?) { attributeNamesString =>
@@ -110,8 +111,15 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                     }
                   } ~
                   path(Segment) { entityName =>
-                    requireUserInfo() { _ =>
-                      passthrough(requestCompression = true, entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
+                    val uri = Uri(entityTypeUrl + "/" + entityName)
+                    get { requestContext =>
+                      externalHttpPerRequest(requestContext, Get(uri))
+                    }
+                    patch { requestContext =>
+                      externalHttpPerRequest(requestContext, Patch(uri))
+                    }
+                    delete { requestContext =>
+                      externalHttpPerRequest(requestContext, Delete(uri))
                     }
                   }
               }
