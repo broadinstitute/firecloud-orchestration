@@ -74,7 +74,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with EntityService
   }
 
   // TODO: Fix these tests
-  "EntityService-ExportEntitiesByType" in {
+  "EntityService-ExportEntitiesByType" - {
 
     "when calling GET on exporting a valid entity type" - {
       "OK response is returned" in {
