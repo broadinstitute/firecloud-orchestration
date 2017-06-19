@@ -3,27 +3,28 @@ package org.broadinstitute.dsde.firecloud.webservice
 import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
+import better.files.File
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
 import org.broadinstitute.dsde.firecloud.service._
-import org.slf4j.LoggerFactory
-import spray.http.{ContentTypes, OAuth2BearerToken}
+import spray.http._
 import spray.routing._
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 /**
  * Created by dvoet on 11/16/16.
  */
 trait CookieAuthedApiService extends HttpService with PerRequestCreator with FireCloudDirectives
-  with FireCloudRequestBuilding {
+  with FireCloudRequestBuilding with LazyLogging {
 
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor
 
   private implicit val executionContext = actorRefFactory.dispatcher
-  lazy val log = LoggerFactory.getLogger(getClass)
 
   def cookieAuthedRoutes: Route =
     // download "proxy" for TSV files
@@ -37,15 +38,25 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
             }
             val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
             val userInfo = UserInfo("dummy", OAuth2BearerToken(tokenValue), -1, "dummy")
-
-            val actorProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo)
-            val streamOperation = ExportEntitiesByTypeActor.ExportEntities(requestContext, workspaceNamespace, workspaceName, filename, entityType, attributeNames)
-            val actor = actorRefFactory.actorOf(actorProps)
-            implicit val timeout = Timeout(10 minute)
-            val streamFuture = (actor ? streamOperation).mapTo[Stream[Array[Byte]]]
-            streamFuture.map { stream =>
-              actorRefFactory.actorOf(StreamingActor.props(requestContext, filename, contentType, stream))
-            }
+            val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo)
+            val exportMessage = ExportEntitiesByTypeActor.ExportEntities(requestContext, workspaceNamespace, workspaceName, filename, entityType, attributeNames)
+            val exportActor = actorRefFactory.actorOf(exportProps)
+            // Necessary for the actor ask pattern
+            implicit val timeout: Timeout = 1.minutes
+            lazy val fileFuture = (exportActor ? exportMessage).mapTo[File]
+            onComplete(fileFuture) {
+              case Success(file) =>
+                val httpEntity = file.contentType match {
+                  case Some(cType) if cType.contains("text") => HttpEntity(ContentTypes.`text/plain`, file.contentAsString)
+                  case _ => HttpEntity(ContentTypes.`application/octet-stream`, file.loadBytes)
+                }
+                complete(HttpResponse(
+                  status = StatusCodes.OK,
+                  entity = httpEntity,
+                  headers = List(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> file.name)))))
+              case _ =>
+                complete(StatusCodes.InternalServerError, "Error generating entity download")
+            }.apply(requestContext)
           }
         }
     } ~

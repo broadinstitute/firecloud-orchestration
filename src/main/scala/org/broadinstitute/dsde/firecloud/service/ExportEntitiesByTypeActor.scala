@@ -8,15 +8,18 @@ import akka.util.Timeout
 import better.files.File
 import com.google.api.services.storage.model.StorageObject
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model._
+import spray.http._
+import spray.routing.RequestContext
+import org.broadinstitute.dsde.firecloud.model._
 import org.slf4j.{Logger, LoggerFactory}
 import spray.http.ContentTypes
-import spray.routing.RequestContext
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -43,7 +46,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val googleDAO: GoogleSer
   }
 }
 
-trait ExportEntitiesByType extends FireCloudRequestBuilding {
+trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
   val rawlsDAO: RawlsDAO
   val googleDAO: GoogleServicesDAO
   implicit val userInfo: UserInfo
@@ -57,22 +60,13 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   lazy val log: Logger = LoggerFactory.getLogger(getClass)
 
   /*
-   * Approach:
+   * General Approach:
    *   1. Find the entity metadata
    *   2. If the data is relatively small and can confidently be downloaded without hitting timeouts, then stream content directly
-   *   3. Otherwise, upload content to the workspace's GCS bucket and send the user a signed URL to the content.
-   *   4. In both cases, use the TSV Writing Actor to keep the # entities in-memory low and not trigger OOM errors.
-   *
-   *   TODO:
-   *
-   *   * Error handling needs a lot of work.
-   *
-   *   * Tune the download/GCS decision based on # entities times # attributes. Is ~50K a good number?
-   *
-   *   * ??? Move the streaming actor here so the calling APIs don't have to worry about it.
-   *
+   *   3. Otherwise, upload content to the workspace's GCS bucket and send the user instructions for getting to the content.
+   *   4. In all cases, batch the entities to a Writing Actor to keep the concurrent number of in-memory entities low and avoid OOM errors.
    */
-  def exportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, fileName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Stream[Array[Byte]]] = {
+  def exportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, fileName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[File] = {
 
     // Get entity metadata: count and full list of attributes
     getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
@@ -80,7 +74,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
       val entityQueries = getEntityQueries(metadata, entityType)
       val file = bufferEntitiesToFile(metadata, attributeNames, entityQueries, workspaceNamespace, workspaceName, entityType)
 
-      metadata.count * metadata.attributeNames.size match {
+      val returnFile = metadata.count * metadata.attributeNames.size match {
         case x if x > downloadSizeThreshold =>
           // Prefix with timestamp to prevent overwriting previous uploads
           val contentZipFileName = new Date().getTime + "_" + fileName.replaceFirst(".txt$", ".zip")
@@ -88,21 +82,21 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
           workspaceResponse.map { workspaceResponse =>
             val bucketName = workspaceResponse.workspace.bucketName
             file map { f =>
-              log.info("making new zip file to send to GCS")
               val zipDir = File.newTemporaryDirectory()
               val newF = zipDir/s"$fileName"
               f.copyTo(newF)
               val contentZipFile = zipDir.zip().renameTo(contentZipFileName)
               sendFileToGCS(userInfo, bucketName, contentZipFile)
             }
-            getSignedUrlContent(entityType, bucketName, contentZipFileName).getBytes.grouped(groupedByteSize).toStream
+            // Return the download instructions now that the zipped file content has been sent to GCS
+            File.newTemporaryFile().append(getDownloadInstructions(entityType, bucketName, contentZipFileName)).renameTo(fileName)
           }
         case _ =>
-          // File.bytes is an Iterator[Byte]. Convert to a 1M byte array stream to limit what's in memory
-          file.map(_.bytes.grouped(groupedByteSize).map(_.toArray).toStream)
+          file.map(_.renameTo(fileName))
       }
+      returnFile
     } recoverWith {
-      case t: Throwable => throw new FireCloudException("Unable to generate download file content", t)
+      case t: Throwable => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to generate file content", t))
     }
   }
 
@@ -110,7 +104,8 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
    * Supporting Methods
    */
 
-  private def getSignedUrlContent(entityType: String, bucketName: String, fileName: String): String = {
+  // Generate download instructions
+  private def getDownloadInstructions(entityType: String, bucketName: String, fileName: String): String = {
     s"""
        |The requested content is too large to download directly from FireCloud.
        |Content is being placed into its workspace bucket and may take several minutes to finish uploading.
@@ -159,7 +154,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
         foldOperation map { files => files._2.head }
     }
     fileWritingOperation.recoverWith {
-      case t: Throwable => throw new FireCloudException("Unable to generate download file content", t)
+      case t: Throwable => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to generate download file content", t))
     }
   }
 
@@ -200,7 +195,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
       metadata.get(entityType)
     } map {
       case Some(m) => m
-      case _ => throw new FireCloudException(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")
+      case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType"))
     }
   }
 
