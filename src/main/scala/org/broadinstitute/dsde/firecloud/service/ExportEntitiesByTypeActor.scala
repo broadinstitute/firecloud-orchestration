@@ -77,7 +77,8 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
       val returnFile = metadata.count * metadata.attributeNames.size match {
         case x if x > downloadSizeThreshold =>
           // Prefix with timestamp to prevent overwriting previous uploads
-          val contentZipFileName = new Date().getTime + "_" + fileName.replaceFirst(".txt$", ".zip")
+          val prefix = new Date().getTime + "_"
+          val contentZipFileName = prefix + fileName.replaceFirst(".txt$", ".zip")
           val workspaceResponse = rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)
           workspaceResponse.map { workspaceResponse =>
             val bucketName = workspaceResponse.workspace.bucketName
@@ -89,14 +90,16 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
               sendFileToGCS(userInfo, bucketName, contentZipFile)
             }
             // Return the download instructions now that the zipped file content has been sent to GCS
-            File.newTemporaryFile().append(getDownloadInstructions(entityType, bucketName, contentZipFileName)).renameTo(fileName)
+            File.newTemporaryFile().append(getDownloadInstructions(entityType, bucketName, contentZipFileName)).renameTo(prefix + fileName)
           }
         case _ =>
           file.map(_.renameTo(fileName))
       }
       returnFile
     } recoverWith {
-      case t: Throwable => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to generate file content", t))
+      case t: Throwable =>
+        logger.error(s"Export Exception: ${t.getMessage}")
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to generate file content", t))
     }
   }
 
@@ -154,7 +157,9 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
         foldOperation map { files => files._2.head }
     }
     fileWritingOperation.recoverWith {
-      case t: Throwable => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to generate download file content", t))
+      case t: Throwable =>
+        logger.error(s"Buffer Entities Exception: ${t.getMessage}")
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to generate download file content", t))
     }
   }
 
@@ -195,7 +200,9 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
       metadata.get(entityType)
     } map {
       case Some(m) => m
-      case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType"))
+      case _ =>
+        logger.error(s"Exception: Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType"))
     }
   }
 
