@@ -48,4 +48,8 @@ object MockUtils {
   def rawlsErrorReport(statusCode: StatusCode) =
     ErrorReport("Rawls", "dummy text", Option(statusCode), Seq(), Seq(), None)
 
+  def randomElement[A](list: List[A]): A = {
+    list(scala.util.Random.nextInt(list.length))
+  }
+
 }

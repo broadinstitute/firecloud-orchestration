@@ -79,7 +79,8 @@ case class SubmissionIngest(
   entityType: Option[String],
   entityName: Option[String],
   expression: Option[String],
-  useCallCache: Option[Boolean])
+  useCallCache: Option[Boolean],
+  workflowFailureMode: Option[String])
 
 case class RawlsGroupMemberList(
   userEmails: Option[Seq[String]] = None,
