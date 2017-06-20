@@ -223,6 +223,22 @@ class MockRawlsDAO  extends RawlsDAO {
     }
   }
 
+  override def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
+    if (workspaceName == "invalid") {
+      Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
+    } else {
+      Future.successful(null)
+    }
+  }
+
+  override def getEntityTypes(workspaceNamespace: String, workspaceName: String)(implicit userToken: UserInfo): Future[Map[String, EntityTypeMetadata]] = {
+    if (workspaceName == "invalid") {
+      Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
+    } else {
+      Future.successful(Map.empty)
+    }
+  }
+
   override def getCatalog(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken) = {
     Future.successful(Seq(WorkspaceCatalog("user@gmail.com", true)))
   }

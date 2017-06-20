@@ -1,9 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.webservice.ExportEntitiesApiService
 import org.broadinstitute.dsde.rawls.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
@@ -12,7 +13,7 @@ import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with EntityService {
+class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService {
 
   def actorRefFactory = system
 
@@ -77,7 +78,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with EntityService
 
     "when calling GET on exporting a valid entity type" - {
       "OK response is returned" in {
-        Get(validFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+        Get(validFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           status should be(OK)
           response.entity shouldNot be(empty)
         }
@@ -86,7 +87,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with EntityService
 
     "when calling GET on exporting an invalid entity type" - {
       "NotFound response is returned" in {
-        Get(invalidFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+        Get(invalidFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }

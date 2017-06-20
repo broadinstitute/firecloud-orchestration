@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
-import spray.http.OAuth2BearerToken
+import spray.http.{OAuth2BearerToken, Uri}
 
 import scala.concurrent.Future
 
@@ -43,6 +43,24 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType"
 
+  def rawlsQueryEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): String = {
+    val qMap: Map[String, String] = Map(
+      ("page", query.page.toString),
+      ("pageSize", query.pageSize.toString),
+      ("sortField", query.sortField),
+      ("sortDirection", SortDirections.toString(query.sortDirection)))
+    val filteredQMap = query.filterTerms match {
+      case Some(f) => qMap + ("filterTerms" -> f)
+      case _ => qMap
+    }
+    val baseRawlsEntityQueryUrl = FireCloudConfig.Rawls.entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)
+    val baseEntityQueryUri = Uri(baseRawlsEntityQueryUrl)
+    val entityQueryUri = baseEntityQueryUri.
+      withPath(baseEntityQueryUri.path ++ Uri.Path.SingleSlash ++ Uri.Path(entityType)).
+      withQuery(filteredQMap)
+    entityQueryUri.toString()
+  }
+
   def isRegistered(userInfo: UserInfo): Future[Boolean]
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
@@ -76,6 +94,10 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
 
   def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userToken: UserInfo): Future[Seq[Entity]]
+
+  def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse]
+
+  def getEntityTypes(workspaceNamespace: String, workspaceName: String)(implicit userToken: UserInfo): Future[Map[String, EntityTypeMetadata]]
 
   def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]]
 
