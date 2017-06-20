@@ -1,16 +1,16 @@
 package org.broadinstitute.dsde.firecloud.mock
 
-import java.io.{ByteArrayInputStream, InputStream}
+import java.io.{ByteArrayInputStream, File, InputStream}
 
 import akka.actor.ActorRefFactory
-import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse
+import com.google.api.services.storage.model.StorageObject
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{OAuthTokens, ObjectMetadata, WithAccessToken}
-import spray.http.{HttpRequest, HttpResponse}
-import spray.json.{JsNumber, JsObject}
+import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, UserInfo}
+import spray.http.HttpResponse
 import spray.routing.RequestContext
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Random
 
 class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getAdminUserAccessToken: String = ""
@@ -21,6 +21,19 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
       case _ => new ByteArrayInputStream(" ".getBytes("UTF-8"))
     }
   }
+  override def writeFileToBucket(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
+    new StorageObject().setName(fileName).setBucket(bucketName).setContentType(contentType)
+  }
+
+  override def getSignedUrl(bucketName: String, objectKey: String, expireSeconds: Long): String = {
+    val clientId = new Random().nextString(10)
+    val signedBytes = new Random().nextString(10).getBytes
+    s"https://storage.googleapis.com/$bucketName/$objectKey" +
+      s"?GoogleAccessId=$clientId" +
+      s"&Expires=$expireSeconds" +
+      "&Signature=" + java.net.URLEncoder.encode(java.util.Base64.getEncoder.encodeToString(signedBytes), "UTF-8")
+  }
+
   override def getObjectResourceUrl(bucketName: String, objectKey: String): String = ""
   override def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {

@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.utils.{HostConnector, RestJsonClient}
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
 import org.broadinstitute.dsde.rawls.model.StatusJsonSupport._
@@ -26,7 +26,7 @@ import scala.util.control.NonFatal
   * Created by davidan on 9/23/16.
   */
 class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
-  extends RawlsDAO with RestJsonClient {
+  extends RawlsDAO with RestJsonClient with HostConnector {
 
   override def isRegistered(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest(Get(rawlsUserRegistrationUrl))(userInfo) map { response =>
@@ -122,6 +122,22 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[Entity]] = {
     authedRequestToObject[Seq[Entity]](Get(rawlsEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType)), true)
+  }
+
+  override def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
+    queryEntitiesAsync(workspaceNamespace, workspaceName, entityType, query)
+  }
+
+  private def queryEntitiesAsync(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
+    getHostConnector(FireCloudConfig.Rawls.baseUrl) flatMap { hostConnector =>
+      val targetUri = Uri(rawlsQueryEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType, query))
+      authedRequestToObject[EntityQueryResponse](Get(targetUri), compressed = true, connector = Some(hostConnector))
+    }
+  }
+
+  override def getEntityTypes(workspaceNamespace: String, workspaceName: String)(implicit userToken: UserInfo): Future[Map[String, EntityTypeMetadata]] = {
+    val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+    authedRequestToObject[Map[String, EntityTypeMetadata]](Get(url), compressed = true)
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)

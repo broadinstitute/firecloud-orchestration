@@ -1,18 +1,22 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import akka.actor.{ActorRefFactory, ActorSystem}
-import com.google.api.client.auth.oauth2.Credential
+import java.io.{File, FileInputStream}
+
+import akka.actor.ActorRefFactory
+import com.google.api.client.auth.oauth2.{Credential, TokenResponse}
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.client.http.InputStreamContent
 import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.services.storage.model.{ObjectAccessControl, StorageObject}
 import com.google.api.services.storage.{Storage, StorageScopes}
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
-import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -25,7 +29,7 @@ import spray.routing.RequestContext
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -61,7 +65,7 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
-object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding {
+object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging {
 
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
@@ -120,14 +124,32 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
+  // Write file content to bucket location
+  // See https://github.com/GoogleCloudPlatform/java-docs-samples/blob/master/storage/json-api/src/main/java/StorageSample.java#L99
+  def writeFileToBucket(userInfo: UserInfo, bucketName: String, contentType: String, fileName: String, file: File): StorageObject = {
+    try {
+      val contentStream: InputStreamContent = new InputStreamContent(contentType, new FileInputStream(file)).setLength(file.length())
+      val acl: ObjectAccessControl = new ObjectAccessControl().setEntity(s"user-${userInfo.userEmail}").setRole("OWNER")
+      val objectMetadata: StorageObject = new StorageObject().setName(fileName).setAcl(List(acl))
+      val tokenResponse = new TokenResponse().setAccessToken(userInfo.accessToken.token)
+      val userCredential = new GoogleCredential().setFromTokenResponse(tokenResponse)
+      val storage = new Storage.Builder(httpTransport, jsonFactory, userCredential).setApplicationName("firecloud").build()
+      val insert = storage.objects().insert(bucketName, objectMetadata, contentStream)
+      insert.execute()
+    } catch {
+      case e: Throwable =>
+        log.error(s"Error uploading content to GCS ${e.getMessage}")
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(e))
+    }
+  }
+
   // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program
-  def getSignedUrl(bucketName: String, objectKey: String) = {
+  def getSignedUrl(bucketName: String, objectKey: String, expireSeconds: Long): String = {
 
     // generate the string-to-be-signed
     val verb = "GET"
     val md5 = ""
     val contentType = ""
-    val expireSeconds = (System.currentTimeMillis() / 1000) + 120 // expires 2 minutes (120 seconds) from now
     val objectPath = s"/$bucketName/$objectKey"
 
     val signableString = s"$verb\n$md5\n$contentType\n$expireSeconds\n$objectPath"
@@ -238,7 +260,8 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                       case OK =>
                         // the service account can read the object too. We are safe to sign a url.
                         log.info(s"$userStr download via signed URL allowed for [$objectStr]")
-                        requestContext.redirect(getSignedUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
+                        val expireSeconds = (System.currentTimeMillis() / 1000) + 120 // expires 2 minutes (120 seconds) from now
+                        requestContext.redirect(getSignedUrl(bucketName, objectKey, expireSeconds), StatusCodes.TemporaryRedirect)
                       case _ =>
                         // the service account cannot read the object, even though the user can. We cannot
                         // make a signed url, because the service account won't have permission to sign it.

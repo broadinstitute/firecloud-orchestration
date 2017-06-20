@@ -73,6 +73,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with EntityService
     workspaceServer.stop()
   }
 
+  // TODO: Fix these tests
   "EntityService-ExportEntitiesByType" - {
 
     "when calling GET on exporting a valid entity type" - {
