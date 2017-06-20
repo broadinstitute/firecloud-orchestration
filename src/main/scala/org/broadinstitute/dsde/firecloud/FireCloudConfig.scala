@@ -59,6 +59,7 @@ object FireCloudConfig {
     val executionEngineVersionUrl = authUrl + executionEngineVersionPath
     val notificationsPath = workspace.getString("notificationsPath")
     val notificationsUrl = authUrl + notificationsPath
+    val defaultPageSize = rawls.getInt("defaultPageSize")
 
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)

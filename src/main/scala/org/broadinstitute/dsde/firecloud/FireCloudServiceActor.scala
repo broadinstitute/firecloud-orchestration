@@ -17,6 +17,7 @@ import scala.language.postfixOps
 class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with CookieAuthedApiService
   with EntityService
+  with ExportEntitiesApiService
   with LibraryApiService
   with NamespaceApiService
   with NihApiService
@@ -95,6 +96,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   def receive = runRoute(
     appendTimestampOnFailure {
       logRequests {
+        exportEntitiesRoutes ~
         entityRoutes ~
         healthService.routes ~
         libraryRoutes ~
