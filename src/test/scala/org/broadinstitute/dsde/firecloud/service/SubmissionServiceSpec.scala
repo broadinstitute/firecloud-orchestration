@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
-import org.broadinstitute.dsde.firecloud.model.SubmissionIngest
+import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
 import spray.http.StatusCodes._
 
 import spray.httpx.SprayJsonSupport._
@@ -50,7 +50,7 @@ class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
         (Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission)
           ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
           status should equal(OK)
-          val submission = responseAs[SubmissionIngest]
+          val submission = responseAs[SubmissionRequest]
           submission shouldNot be (None)
         }
       }

@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.mock
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.SubmissionIngest
+import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
 import org.mockserver.mock.action.ExpectationCallback
 import org.mockserver.model.HttpResponse._
 import org.mockserver.model.{HttpRequest, HttpResponse}
@@ -14,7 +14,7 @@ class ValidSubmissionCallback extends ExpectationCallback {
   override def handle(httpRequest: HttpRequest): HttpResponse = {
 
     val jsonAst = httpRequest.getBodyAsString.parseJson
-    val submission = jsonAst.convertTo[SubmissionIngest]
+    val submission = jsonAst.convertTo[SubmissionRequest]
     submission match {
       case x if x.entityName.isDefined &&
         x.entityType.isDefined &&
