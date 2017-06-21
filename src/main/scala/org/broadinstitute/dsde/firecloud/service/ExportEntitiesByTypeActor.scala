@@ -1,31 +1,28 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import java.util.Date
-
-import akka.actor.{Actor, ActorContext, ActorRef, ActorRefFactory, Props}
+import akka.Done
+import akka.actor.{Actor, ActorContext, ActorRef, ActorRefFactory, ActorSystem, Props}
 import akka.pattern.{ask, pipe}
+import akka.stream._
+import akka.stream.scaladsl._
 import akka.util.Timeout
 import better.files.File
-import com.google.api.services.storage.model.StorageObject
-import com.typesafe.config.ConfigFactory
-import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
-import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
+import org.broadinstitute.dsde.firecloud.utils.StreamingActor.{ChunkEnd, FirstChunk, NextChunk}
+import org.broadinstitute.dsde.firecloud.utils.{StreamingActor, TSVFormatter}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model._
-import spray.http._
-import spray.routing.RequestContext
-import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.slf4j.{Logger, LoggerFactory}
-import spray.http.ContentTypes
+import spray.http.{ContentTypes, _}
+import spray.routing.RequestContext
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
-import scala.util.Success
+
 
 object ExportEntitiesByTypeActor {
   sealed trait ExportEntitiesByTypeMessage
@@ -40,133 +37,106 @@ object ExportEntitiesByTypeActor {
 }
 
 class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val googleDAO: GoogleServicesDAO, val userInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with ExportEntitiesByType {
-  // ExportEntities requires its own actor context to work with TsvWriterActor
+  // ExportEntities requires its own actor context to work with TsvWriterActor and Streaming Actor
   def actorRefFactory: ActorContext = context
   override def receive: Receive = {
-    case ExportEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) => exportEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) pipeTo sender
+    case ExportEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) => streamEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) pipeTo sender
   }
 }
 
-trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
+trait ExportEntitiesByType extends FireCloudRequestBuilding {
   val rawlsDAO: RawlsDAO
   val googleDAO: GoogleServicesDAO
   implicit val userInfo: UserInfo
   implicit protected val executionContext: ExecutionContext
   implicit def actorRefFactory: ActorRefFactory
 
-  // Large timeout necessary for uploading large datasets to workspace buckets.
-  implicit val timeout = Timeout(10 minute)
+  implicit val timeout = Timeout(1 minute)
 
   private val downloadSizeThreshold: Int = 50000
 
-  lazy val log: Logger = LoggerFactory.getLogger(getClass)
+  lazy val logger: Logger = LoggerFactory.getLogger(getClass)
+
+
+  /**
+    * General Approach
+    * 1. Define a `Source` of entity queries
+    * 2. Run the source events through a `Flow`.
+    * 3. Flow sends events (batch of entities) to a streaming output actor
+    * 4. Return a Done to the calling route when complete.
+    *
+    * TODO: Could this be per-requested???
+    */
+  def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
+
+    implicit val system = ActorSystem("Streaming-Entity-Exporter")
+    implicit val materializer = ActorMaterializer()
+
+    val flowFuture = getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
+      val entityQueries = getEntityQueries(metadata, entityType)
+      val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
+
+      // TODO: Could the collection type be modeled as a source, piped to two flows, and then merged into a zip?
+      if (TSVFormatter.isCollectionType(entityType)) {
+        logger.debug("This is a set ... need to query the content to a zip file.")
+        // The output file
+        val zipFile = writeSetDataFile(workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
+        // The output to the user
+        val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip")))
+        zipFile map { f =>
+          streamingActorRef ! FirstChunk(HttpData.apply(f.byteArray))
+          streamingActorRef ! ChunkEnd
+        } map(r => Done)
+      } else {
+        // The output to the user
+        val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`text/plain`, entityType + ".txt")))
+        // The Source
+        val entityQuerySource = Source(entityQueries.toStream)
+        // Map over the source with transformations
+        entityQuerySource.mapAsync(4) { query =>
+          logger.info(s"Iterating over query: ${query.toString}")
+          val entityOutput = getEntities(workspaceNamespace, workspaceName, entityType, query) map { entities =>
+            sendRowsAsChunks(streamingActorRef, query, entityQueries.size, entityType, headers, entities)
+          }
+          entityOutput map { o => Future.successful("Done") }
+        }.runWith(Sink.ignore)
+      }
+
+    }
+    flowFuture map identity
+  }
 
   /*
-   * General Approach:
-   *   1. Find the entity metadata
-   *   2. If the data is relatively small and can confidently be downloaded without hitting timeouts, then stream content directly
-   *   3. Otherwise, upload content to the workspace's GCS bucket and send the user instructions for getting to the content.
-   *   4. In all cases, batch the entities to a Writing Actor to keep the concurrent number of in-memory entities low and avoid OOM errors.
+   * Helper Methods
    */
-  def exportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[File] = {
 
-    // Get entity metadata: count and full list of attributes
-    getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
-      // Generate all of the paginated queries to find all of the entities
-      val entityQueries = getEntityQueries(metadata, entityType)
-      val file = bufferEntitiesToFile(metadata, attributeNames, entityQueries, workspaceNamespace, workspaceName, entityType)
-      val fileName = TSVFormatter.isCollectionType(entityType) match {
-        case x if x => entityType + ".zip"
-        case _ => entityType + ".txt"
-      }
-
-      val returnFile = metadata.count * metadata.attributeNames.size match {
-        case x if x > downloadSizeThreshold =>
-          // Prefix with timestamp to prevent overwriting previous uploads
-          val prefix = new Date().getTime + "_"
-          val contentZipFileName = prefix + fileName.replaceFirst(".txt$", ".zip")
-          val workspaceResponse = rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)
-          workspaceResponse.map { workspaceResponse =>
-            val bucketName = workspaceResponse.workspace.bucketName
-            file map { f =>
-              val zipDir = File.newTemporaryDirectory()
-              val newF = zipDir/s"$fileName"
-              f.copyTo(newF)
-              val contentZipFile = zipDir.zip().renameTo(contentZipFileName)
-              sendFileToGCS(userInfo, bucketName, contentZipFile)
-            }
-            // Return the download instructions now that the zipped file content has been sent to GCS
-            File.newTemporaryFile().append(getDownloadInstructions(entityType, bucketName, contentZipFileName)).renameTo(prefix + fileName)
-          }
-        case _ =>
-          file.map(_.renameTo(fileName))
-      }
-      returnFile
-    } recoverWith {
-      case t: Throwable =>
-        logger.error(s"Export Exception: ${t.getMessage}")
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to generate file content", t))
+  private def sendRowsAsChunks(actorRef: ActorRef, query: EntityQuery, querySize: Int, entityType: String, headers: IndexedSeq[String], entities: Seq[Entity]): Unit = {
+    val rows = TSVFormatter.makeEntityRows(entityType, entities, headers)
+    // Send headers if needed
+    if (query.page == 1) {
+      actorRef ! FirstChunk(HttpData(headers.mkString("\t") + "\n"))
+    }
+    // Send entities
+    actorRef ! NextChunk(HttpData(rows.map { _.mkString("\t") }.mkString("\n") + "\n"))
+    // Close the download if needed
+    if (query.page == querySize) {
+      actorRef ! ChunkEnd
     }
   }
 
-  /*
-   * Supporting Methods
-   */
-
-  // Generate download instructions
-  private def getDownloadInstructions(entityType: String, bucketName: String, fileName: String): String = {
-    s"""
-       |The requested content is too large to download directly from FireCloud.
-       |Content is being placed into its workspace bucket and may take several minutes to finish uploading.
-       |When complete, your file will be available at https://storage.cloud.google.com/$bucketName/$fileName
-       |Alternatively, visit your workspace bucket directly: https://console.cloud.google.com/storage/browser/$bucketName
-       |to find the exact file: $fileName
-     """.stripMargin
-  }
-
-  private def sendFileToGCS(userInfo: UserInfo, bucketName: String, file: File): StorageObject = {
-    googleDAO.writeFileToBucket(userInfo, bucketName, file.contentType.getOrElse(ContentTypes.`text/plain`.toString), file.name, file.toJava)
-  }
-
-  // We batch entities to a temp file(s) to minimize memory use
-  private def bufferEntitiesToFile(metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]], entityQueries: Seq[EntityQuery], workspaceNamespace: String, workspaceName: String, entityType: String): Future[File] = {
-    // batch queries into groups so we don't drop a bunch of hot futures into the stack
-    val maxConnections = ConfigFactory.load().getInt("spray.can.host-connector.max-connections")
-    val groupedQueries = entityQueries.grouped(maxConnections).toSeq
-    // Always need an entity writer, sometimes need a membership writer.
+  private def writeSetDataFile(workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[File] = {
     val entityWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
     val membershipWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
-
-    // Collection Types require two files (entity and membership) zipped together.
-    val fileWritingOperation = ModelSchema.isCollectionType(entityType) match {
-      case Success(x) if x =>
-        // Fold over the groups, collect entities for each group, write entities to file(s), collect file responses
-        val foldOperation = groupedQueries.foldLeft(Future.successful(0, Seq[File]())) { (accumulator, queryGroup) =>
-          for {
-            acc <- accumulator
-            entityBatch <- getEntityBatchFromQueries(queryGroup, workspaceNamespace, workspaceName, entityType)
-            membershipTSV <- (membershipWriter ? WriteMembershipTSV(acc._1, entityBatch)).mapTo[File]
-            entityTSV <- (entityWriter ? WriteEntityTSV(acc._1, entityBatch)).mapTo[File]
-            zip <- writeFilesToZip(entityType, membershipTSV, entityTSV)
-          } yield (acc._1 + 1, Seq(zip))
-        }
-        foldOperation map { files => files._2.head }
-      case _ =>
-        // Fold over the groups, collect entities for each group, write entities to file, collect file results
-        val foldOperation = groupedQueries.foldLeft(Future.successful((0, Seq[File]()))) { (accumulator, queryGroup) =>
-          for {
-            acc <- accumulator
-            entityBatch <- getEntityBatchFromQueries(queryGroup, workspaceNamespace, workspaceName, entityType)
-            entityTSV <- (entityWriter ? WriteEntityTSV(acc._1, entityBatch)).mapTo[File]
-          } yield (acc._1 + 1, Seq(entityTSV))
-        }
-        foldOperation map { files => files._2.head }
+    val foldOperation = entityQueries.foldLeft(Future.successful(0, Seq[File]())) { (accumulator, queryGroup) =>
+      for {
+        acc <- accumulator
+        entityBatch <- getEntityBatchFromQueries(entityQueries, workspaceNamespace, workspaceName, entityType)
+        membershipTSV <- (membershipWriter ? WriteMembershipTSV(acc._1, entityBatch)).mapTo[File]
+        entityTSV <- (entityWriter ? WriteEntityTSV(acc._1, entityBatch)).mapTo[File]
+        zip <- writeFilesToZip(entityType, membershipTSV, entityTSV)
+      } yield (acc._1 + 1, Seq(zip))
     }
-    fileWritingOperation.recoverWith {
-      case t: Throwable =>
-        logger.error(s"Buffer Entities Exception: ${t.getMessage}")
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to generate download file content", t))
-    }
+    foldOperation map { files => files._2.head }
   }
 
   private def writeFilesToZip(entityType: String, membershipTSV: File, entityTSV: File): Future[File] = {
