@@ -1,11 +1,9 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.Done
 import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
-import better.files.File
-import akka.util.Timeout
-import better.files.File
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.{ExportEntitiesByTypeActor, FireCloudDirectives, FireCloudRequestBuilding, PerRequestCreator}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -34,26 +32,16 @@ trait ExportEntitiesApiService extends HttpService with PerRequestCreator with F
       parameters('attributeNames.?) { attributeNamesString =>
         requireUserInfo() { userInfo =>
           requestContext =>
-            val filename = entityType + ".tsv"
             val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
             val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo)
             val exportMessage = ExportEntitiesByTypeActor.ExportEntities(requestContext, workspaceNamespace, workspaceName, entityType, attributeNames)
             val exportActor = actorRefFactory.actorOf(exportProps)
             // Necessary for the actor ask pattern
             implicit val timeout: Timeout = 1.minutes
-            lazy val fileFuture = (exportActor ? exportMessage).mapTo[File]
-            onComplete(fileFuture) {
-              case Success(file) =>
-                val httpEntity = file.contentType match {
-                  case Some(cType) if cType.contains("text") => HttpEntity(ContentTypes.`text/plain`, file.contentAsString)
-                  case _ => HttpEntity(ContentTypes.`application/octet-stream`, file.loadBytes)
-                }
-                complete(HttpResponse(
-                  status = StatusCodes.OK,
-                  entity = httpEntity,
-                  headers = List(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> file.name)))))
-              case _ =>
-                complete(StatusCodes.InternalServerError, "Error generating entity download")
+            lazy val exportFuture = (exportActor ? exportMessage).mapTo[Done]
+            onComplete(exportFuture) {
+              case Success(result) => complete(StatusCodes.OK)
+              case _ => complete(StatusCodes.InternalServerError, "Error generating entity download")
             }.apply(requestContext)
         }
       }

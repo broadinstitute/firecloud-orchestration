@@ -1,9 +1,9 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.Done
 import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
-import better.files.File
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service._
@@ -39,19 +39,10 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
             val exportActor = actorRefFactory.actorOf(exportProps)
             // Necessary for the actor ask pattern
             implicit val timeout: Timeout = 1.minutes
-            lazy val fileFuture = (exportActor ? exportMessage).mapTo[File]
-            onComplete(fileFuture) {
-              case Success(file) =>
-                val httpEntity = file.contentType match {
-                  case Some(cType) if cType.contains("text") => HttpEntity(ContentTypes.`text/plain`, file.contentAsString)
-                  case _ => HttpEntity(ContentTypes.`application/octet-stream`, file.loadBytes)
-                }
-                complete(HttpResponse(
-                  status = StatusCodes.OK,
-                  entity = httpEntity,
-                  headers = List(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> file.name)))))
-              case _ =>
-                complete(StatusCodes.InternalServerError, "Error generating entity download")
+            lazy val exportFuture = (exportActor ? exportMessage).mapTo[Done]
+            onComplete(exportFuture) {
+              case Success(result) => complete(StatusCodes.OK)
+              case _ => complete(StatusCodes.InternalServerError, "Error generating entity download")
             }.apply(requestContext)
           }
         }
