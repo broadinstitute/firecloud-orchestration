@@ -73,7 +73,7 @@ case class PublishConfigurationIngest(
   sourceNamespace: Option[String],
   sourceName: Option[String])
 
-case class SubmissionIngest(
+case class SubmissionRequest(
   methodConfigurationNamespace: Option[String],
   methodConfigurationName: Option[String],
   entityType: Option[String],

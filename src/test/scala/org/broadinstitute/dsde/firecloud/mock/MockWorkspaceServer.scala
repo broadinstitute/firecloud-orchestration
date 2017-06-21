@@ -38,7 +38,7 @@ object MockWorkspaceServer {
   val mockValidId = randomPositiveInt()
   val mockInvalidId = randomPositiveInt()
 
-  val mockValidSubmission = SubmissionIngest(
+  val mockValidSubmission = SubmissionRequest(
     methodConfigurationNamespace = Option(randomAlpha()),
     methodConfigurationName = Option(randomAlpha()),
     entityType = Option(randomAlpha()),
@@ -48,7 +48,7 @@ object MockWorkspaceServer {
     workflowFailureMode = Option(randomElement(List("ContinueWhilePossible", "NoNewCalls")))
   ) 
   
-  val mockInvalidSubmission = SubmissionIngest(
+  val mockInvalidSubmission = SubmissionRequest(
     methodConfigurationNamespace = Option.empty,
     methodConfigurationName = Option.empty,
     entityType = Option.empty,

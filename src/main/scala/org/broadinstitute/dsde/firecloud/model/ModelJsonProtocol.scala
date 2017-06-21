@@ -165,7 +165,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)
-  implicit val impSubmissionIngest = jsonFormat7(SubmissionIngest)
+  implicit val impSubmissionRequest = jsonFormat7(SubmissionRequest)
 
   implicit val impEntityUpdateDefinition = jsonFormat3(EntityUpdateDefinition)
 
