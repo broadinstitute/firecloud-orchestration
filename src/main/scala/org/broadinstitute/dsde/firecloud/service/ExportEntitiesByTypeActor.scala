@@ -23,6 +23,10 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
+// JSON Serialization Support
+import spray.json._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+
 
 object ExportEntitiesByTypeActor {
   sealed trait ExportEntitiesByTypeMessage
@@ -37,7 +41,7 @@ object ExportEntitiesByTypeActor {
 }
 
 class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val googleDAO: GoogleServicesDAO, val userInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with ExportEntitiesByType {
-  // ExportEntities requires its own actor context to work with TsvWriterActor and Streaming Actor
+  // Requires its own actor context to work with downstream actors: TSVWriterActor and StreamingActor
   def actorRefFactory: ActorContext = context
   override def receive: Receive = {
     case ExportEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) => streamEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) pipeTo sender
@@ -53,10 +57,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
 
   implicit val timeout = Timeout(1 minute)
 
-  private val downloadSizeThreshold: Int = 50000
-
   lazy val logger: Logger = LoggerFactory.getLogger(getClass)
-
 
   /**
     * General Approach
@@ -67,12 +68,13 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     *
     * TODO: Could this be per-requested???
     */
-  def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
+  def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Any] = {
 
+    // Akka Streams Support
     implicit val system = ActorSystem("Streaming-Entity-Exporter")
     implicit val materializer = ActorMaterializer()
 
-    val flowFuture = getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
+    getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
       val entityQueries = getEntityQueries(metadata, entityType)
       val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
 
@@ -80,7 +82,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
       if (TSVFormatter.isCollectionType(entityType)) {
         logger.debug("This is a set ... need to query the content to a zip file.")
         // The output file
-        val zipFile = writeSetDataFile(workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
+        val zipFile = writeCollectionTypeZipFile(workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
         // The output to the user
         val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip")))
         zipFile map { f =>
@@ -101,9 +103,17 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
           entityOutput map { o => Future.successful("Done") }
         }.runWith(Sink.ignore)
       }
-
     }
-    flowFuture map identity
+  }.recoverWith {
+    case fe: FireCloudExceptionWithErrorReport =>
+      Future(ctx.complete(HttpResponse(
+        status = fe.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError),
+        entity = HttpEntity(ContentTypes.`application/json`, fe.errorReport.toJson.compactPrint))))
+    case t: Throwable =>
+      val errorReport = ErrorReport(StatusCodes.InternalServerError, "Error generating entity download: " + t.getMessage)
+      Future(ctx.complete(HttpResponse(
+        status = StatusCodes.InternalServerError,
+        entity = HttpEntity(ContentTypes.`application/json`, errorReport.toJson.compactPrint))))
   }
 
   /*
@@ -113,18 +123,14 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   private def sendRowsAsChunks(actorRef: ActorRef, query: EntityQuery, querySize: Int, entityType: String, headers: IndexedSeq[String], entities: Seq[Entity]): Unit = {
     val rows = TSVFormatter.makeEntityRows(entityType, entities, headers)
     // Send headers if needed
-    if (query.page == 1) {
-      actorRef ! FirstChunk(HttpData(headers.mkString("\t") + "\n"))
-    }
+    if (query.page == 1) { actorRef ! FirstChunk(HttpData(headers.mkString("\t") + "\n"))}
     // Send entities
     actorRef ! NextChunk(HttpData(rows.map { _.mkString("\t") }.mkString("\n") + "\n"))
     // Close the download if needed
-    if (query.page == querySize) {
-      actorRef ! ChunkEnd
-    }
+    if (query.page == querySize) { actorRef ! ChunkEnd}
   }
 
-  private def writeSetDataFile(workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[File] = {
+  private def writeCollectionTypeZipFile(workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[File] = {
     val entityWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
     val membershipWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
     val foldOperation = entityQueries.foldLeft(Future.successful(0, Seq[File]())) { (accumulator, queryGroup) =>
@@ -172,14 +178,14 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   }
 
   private def getEntityTypeMetadata(workspaceNamespace: String, workspaceName: String, entityType: String): Future[EntityTypeMetadata] = {
-    rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName) map { metadata =>
-      metadata.get(entityType)
-    } map {
-      case Some(m) => m
-      case _ =>
-        logger.error(s"Exception: Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType"))
-    }
+    rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName).
+      map { metadata => metadata.get(entityType) }.
+      map {
+        case Some(m) => m
+        case _ =>
+          logger.error(s"Exception: Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType"))
+      }
   }
 
   private def getEntities(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[Seq[Entity]] = {
