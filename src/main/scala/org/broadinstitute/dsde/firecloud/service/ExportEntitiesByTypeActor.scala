@@ -65,43 +65,17 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     * 2. Run the source events through a `Flow`.
     * 3. Flow sends events (batch of entities) to a streaming output actor
     * 4. Return a Done to the calling route when complete.
-    *
-    * TODO: Could this be per-requested???
+    * 5. Handle exceptions directly by completing the request.
     */
   def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Any] = {
 
-    // Akka Streams Support
-    implicit val system = ActorSystem("Streaming-Entity-Exporter")
-    implicit val materializer = ActorMaterializer()
-
     getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
       val entityQueries = getEntityQueries(metadata, entityType)
-      val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-
-      // TODO: Could the collection type be modeled as a source, piped to two flows, and then merged into a zip?
       if (TSVFormatter.isCollectionType(entityType)) {
-        logger.debug("This is a set ... need to query the content to a zip file.")
-        // The output file
-        val zipFile = writeCollectionTypeZipFile(workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
-        // The output to the user
-        val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip")))
-        zipFile map { f =>
-          streamingActorRef ! FirstChunk(HttpData.apply(f.byteArray), 0)
-          streamingActorRef ! ChunkEnd
-        } map(r => Done)
+        streamCollectionType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
       } else {
-        // The output to the user
-        val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`text/plain`, entityType + ".txt")))
-        // The Source
-        val entityQuerySource = Source(entityQueries.toStream)
-        // Map over the source with transformations
-        entityQuerySource.mapAsync(1) { query =>
-          logger.info(s"Iterating over query: ${query.toString}")
-          val entityOutput = getEntities(workspaceNamespace, workspaceName, entityType, query) map { entities =>
-            sendRowsAsChunks(streamingActorRef, query, entityQueries.size, entityType, headers, entities)
-          }
-          entityOutput map { o => Future.successful("Done") }
-        }.runWith(Sink.ignore)
+        val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
+        streamSingularType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, headers, attributeNames)
       }
     }
   }.recoverWith {
@@ -119,6 +93,50 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   /*
    * Helper Methods
    */
+
+  private def streamSingularType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, headers: IndexedSeq[String], attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
+    // Akka Streams Support
+    implicit val system: ActorSystem = ActorSystem("Streaming-Entity-Exporter")
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
+
+    // The output to the user
+    val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`text/plain`, entityType + ".txt")))
+
+    // The Source
+    val entityQuerySource = Source(entityQueries.toStream)
+
+    // MapAsync should preserve order.
+    val flow = Flow[EntityQuery].mapAsync(1) { query =>
+      logger.info(s"Working on query: ${query.toString}")
+      getEntities(workspaceNamespace, workspaceName, entityType, query) map { entities =>
+        logger.info(s"Sending content for page: ${query.page}")
+        sendRowsAsChunks(streamingActorRef, query, entityQueries.size, entityType, headers, entities)
+      }
+    }
+
+    // Ignore the result - we don't need to remember anything about this operation.
+    val sink = Sink.ignore
+
+    // finally, run it:
+    entityQuerySource.via(flow).runWith(sink)
+
+  }
+
+  private def streamCollectionType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[_root_.akka.Done.type] = {
+    logger.debug("This is a set ... need to query the content to a zip file.")
+
+    // The output file
+    lazy val zipFile = writeCollectionTypeZipFile(workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
+
+    // The output to the user
+    lazy val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip")))
+    zipFile map { f =>
+      streamingActorRef ! FirstChunk(HttpData.apply(f.byteArray), 0)
+      streamingActorRef ! ChunkEnd
+    }
+
+    Future(Done)
+  }
 
   private def sendRowsAsChunks(actorRef: ActorRef, query: EntityQuery, querySize: Int, entityType: String, headers: IndexedSeq[String], entities: Seq[Entity]): Unit = {
     val rows = TSVFormatter.makeEntityRows(entityType, entities, headers)
