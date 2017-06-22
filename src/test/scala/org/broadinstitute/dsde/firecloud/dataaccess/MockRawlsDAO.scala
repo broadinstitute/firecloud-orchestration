@@ -1,13 +1,13 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
-import spray.http.{HttpResponse, OAuth2BearerToken, StatusCodes}
+import spray.http.StatusCodes
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -131,6 +131,29 @@ class MockRawlsDAO  extends RawlsDAO {
     )
   }
 
+  private val sampleAtts = {
+    Map(
+      AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
+      AttributeName.withDefaultNS("header_1") -> AttributeString(MockUtils.randomAlpha()),
+      AttributeName.withDefaultNS("header_2") -> AttributeString(MockUtils.randomAlpha()),
+      AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "participant_name")
+    )
+  }
+
+  private val validSampleEntities = List(
+    Entity("sample_01", "sample", sampleAtts),
+    Entity("sample_02", "sample", sampleAtts),
+    Entity("sample_03", "sample", sampleAtts),
+    Entity("sample_04", "sample", sampleAtts)
+  )
+
+  private val validEntitiesMetadata = Map(
+    "participant" -> EntityTypeMetadata(count = 1, idName = "participant_id", attributeNames = List("age", "gender", "cohort")),
+    "sample" -> EntityTypeMetadata(count = validSampleEntities.size, idName = "sample_id", attributeNames = sampleAtts.map(_._1.name).toList),
+    "sample_set" -> EntityTypeMetadata(count = 1, idName = "sample_set_id", attributeNames = List("samples"))
+  )
+
+
   override def isRegistered(userInfo: UserInfo): Future[Boolean] = Future.successful(true)
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future.successful(false)
@@ -224,7 +247,12 @@ class MockRawlsDAO  extends RawlsDAO {
     if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
     } else {
-      Future.successful(null)
+      val queryResponse: EntityQueryResponse = EntityQueryResponse(
+        parameters = query,
+        resultMetadata = EntityQueryResultMetadata(unfilteredCount = validSampleEntities.size, filteredCount = validSampleEntities.size, filteredPageCount = 1),
+        results = validSampleEntities
+      )
+      Future.successful(queryResponse)
     }
   }
 
@@ -232,7 +260,7 @@ class MockRawlsDAO  extends RawlsDAO {
     if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
     } else {
-      Future.successful(Map.empty)
+      Future.successful(validEntitiesMetadata)
     }
   }
 
