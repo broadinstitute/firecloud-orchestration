@@ -5,12 +5,10 @@ import org.slf4j.{Logger, LoggerFactory}
 import spray.http._
 import spray.routing.{HttpService, RequestContext}
 
-// TODO: Add .withAck as seen here:
-// https://github.com/spray/spray/blob/b473d9e8ce503bafc72825914f46ae6be1588ce7/examples/spray-servlet/simple-spray-servlet-server/src/main/scala/spray/examples/DemoService.scala#L70
-// Basically, we need to pause the sending of new chunks until the client acknowledges the current one.
 object StreamingActor {
-  case class FirstChunk(httpData: HttpData)
-  case class NextChunk(httpData: HttpData)
+  case class FirstChunk(httpData: HttpData, remaining: Int)
+  case class NextChunk(httpData: HttpData, remaining: Int)
+  case class Ok(remaining: Int)
   case object ChunkEnd
 }
 
@@ -27,20 +25,20 @@ class StreamingActor(ctx: RequestContext, contentType: ContentType, contentDispo
   def receive: Receive = {
 
     // send first chunk to client
-    case FirstChunk(httpData: HttpData) =>
-      logger.debug(s"Writing first chunk: ${httpData.length}")
+    case FirstChunk(httpData: HttpData, remaining: Int) =>
+      logger.info(s"Writing first chunk: ${httpData.length}, remaining: $remaining")
       val responseStart = HttpResponse(entity = HttpEntity(contentType, httpData), headers = List(keepAlive, disposition))
-      ctx.responder ! ChunkedResponseStart(responseStart)
+      ctx.responder ! ChunkedResponseStart(responseStart).withAck(Ok(remaining))
 
     // send next chunk to client
-    case NextChunk(httpData: HttpData) =>
-      logger.debug(s"Writing next chunk: ${httpData.length}")
+    case NextChunk(httpData: HttpData, remaining: Int) =>
+      logger.info(s"Writing next chunk: ${httpData.length}, remaining: $remaining")
       val nextChunk = MessageChunk(httpData)
-      ctx.responder ! nextChunk
+      ctx.responder ! nextChunk.withAck(Ok(remaining))
 
     // all chunks were sent. stop.
     case ChunkEnd =>
-      logger.debug("Ending message.")
+      logger.info("Ending message.")
       ctx.responder ! ChunkedMessageEnd
       context.stop(self)
 
