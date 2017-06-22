@@ -80,11 +80,13 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     }
   }.recoverWith {
     case f: FireCloudExceptionWithErrorReport =>
+      logger.error(s"FireCloudExceptionWithErrorReport: Error generating entity download for $workspaceNamespace:$workspaceName:$entityType")
       Future(ctx.complete(HttpResponse(
         status = f.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError),
         entity = HttpEntity(ContentTypes.`application/json`, f.errorReport.toJson.compactPrint))))
     case t: Throwable =>
-      val errorReport = ErrorReport(StatusCodes.InternalServerError, "Error generating entity download: " + t.getMessage)
+      logger.error(s"Throwable: Error generating entity download for $workspaceNamespace:$workspaceName:$entityType")
+      val errorReport = ErrorReport(StatusCodes.InternalServerError, s"Error generating entity download for $workspaceNamespace:$workspaceName:$entityType " + t.getMessage)
       Future(ctx.complete(HttpResponse(
         status = StatusCodes.InternalServerError,
         entity = HttpEntity(ContentTypes.`application/json`, errorReport.toJson.compactPrint))))
@@ -107,9 +109,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
 
     // MapAsync should preserve order.
     val flow = Flow[EntityQuery].mapAsync(1) { query =>
-      logger.info(s"Working on query: ${query.toString}")
       getEntities(workspaceNamespace, workspaceName, entityType, query) map { entities =>
-        logger.info(s"Sending content for page: ${query.page}")
         sendRowsAsChunks(streamingActorRef, query, entityQueries.size, entityType, headers, entities)
       }
     }
@@ -123,8 +123,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   }
 
   private def streamCollectionType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[_root_.akka.Done.type] = {
-    logger.debug("This is a set ... need to query the content to a zip file.")
-
     // The output file
     lazy val zipFile = writeCollectionTypeZipFile(workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
 
@@ -141,7 +139,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   private def sendRowsAsChunks(actorRef: ActorRef, query: EntityQuery, querySize: Int, entityType: String, headers: IndexedSeq[String], entities: Seq[Entity]): Unit = {
     val rows = TSVFormatter.makeEntityRows(entityType, entities, headers)
     val remaining = querySize - query.page + 1
-    logger.info(s"Sending rows as chunks. Remaining: $remaining Current query: ${query.toString}")
     // Send headers as the first chunk of data
     if (query.page == 1) { actorRef ! FirstChunk(HttpData(headers.mkString("\t") + "\n"), remaining)}
     // Send entities

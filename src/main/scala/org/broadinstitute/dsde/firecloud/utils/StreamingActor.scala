@@ -26,19 +26,19 @@ class StreamingActor(ctx: RequestContext, contentType: ContentType, contentDispo
 
     // send first chunk to client
     case FirstChunk(httpData: HttpData, remaining: Int) =>
-      logger.info(s"Writing first chunk: ${httpData.length}, remaining: $remaining")
+      logger.debug(s"Writing first chunk: ${httpData.length}, remaining: $remaining")
       val responseStart = HttpResponse(entity = HttpEntity(contentType, httpData), headers = List(keepAlive, disposition))
       ctx.responder ! ChunkedResponseStart(responseStart).withAck(Ok(remaining))
 
     // send next chunk to client
     case NextChunk(httpData: HttpData, remaining: Int) =>
-      logger.info(s"Writing next chunk: ${httpData.length}, remaining: $remaining")
+      logger.debug(s"Writing next chunk: ${httpData.length}, remaining: $remaining")
       val nextChunk = MessageChunk(httpData)
       ctx.responder ! nextChunk.withAck(Ok(remaining))
 
     // all chunks were sent. stop.
     case ChunkEnd =>
-      logger.info("Ending message.")
+      logger.debug("Ending message.")
       ctx.responder ! ChunkedMessageEnd
       context.stop(self)
 

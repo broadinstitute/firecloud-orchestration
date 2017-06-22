@@ -12,12 +12,25 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
 
+  val largeFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/large/entities/sample/tsv"
   val validFireCloudEntitiesSampleSetTSVPath = "/api/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv"
   val validFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/valid/entities/sample/tsv"
   val invalidFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/invalid/entities/sample/tsv"
   val invalidFireCloudEntitiesParticipantSetTSVPath = "/api/workspaces/broad-dsde-dev/invalid/entities/participant_set/tsv"
 
-  "EntityService-ExportEntitiesByType" - {
+  "ExportEntitiesApiService-ExportEntitiesByType" - {
+
+    "when calling GET on exporting LARGE (20K) sample set" - {
+      "OK response is returned" in {
+        Get(largeFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          response.entity shouldNot be(empty)
+          response.headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          response.headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+        }
+      }
+    }
 
     "when calling GET on exporting a valid collection type" - {
       "OK response is returned" in {
