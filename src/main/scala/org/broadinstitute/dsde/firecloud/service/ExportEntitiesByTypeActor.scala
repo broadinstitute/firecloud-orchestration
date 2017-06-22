@@ -86,7 +86,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
         // The output to the user
         val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip")))
         zipFile map { f =>
-          streamingActorRef ! FirstChunk(HttpData.apply(f.byteArray))
+          streamingActorRef ! FirstChunk(HttpData.apply(f.byteArray), 0)
           streamingActorRef ! ChunkEnd
         } map(r => Done)
       } else {
@@ -95,7 +95,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
         // The Source
         val entityQuerySource = Source(entityQueries.toStream)
         // Map over the source with transformations
-        entityQuerySource.mapAsync(4) { query =>
+        entityQuerySource.mapAsync(1) { query =>
           logger.info(s"Iterating over query: ${query.toString}")
           val entityOutput = getEntities(workspaceNamespace, workspaceName, entityType, query) map { entities =>
             sendRowsAsChunks(streamingActorRef, query, entityQueries.size, entityType, headers, entities)
@@ -105,10 +105,10 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
       }
     }
   }.recoverWith {
-    case fe: FireCloudExceptionWithErrorReport =>
+    case f: FireCloudExceptionWithErrorReport =>
       Future(ctx.complete(HttpResponse(
-        status = fe.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError),
-        entity = HttpEntity(ContentTypes.`application/json`, fe.errorReport.toJson.compactPrint))))
+        status = f.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError),
+        entity = HttpEntity(ContentTypes.`application/json`, f.errorReport.toJson.compactPrint))))
     case t: Throwable =>
       val errorReport = ErrorReport(StatusCodes.InternalServerError, "Error generating entity download: " + t.getMessage)
       Future(ctx.complete(HttpResponse(
@@ -122,10 +122,12 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
 
   private def sendRowsAsChunks(actorRef: ActorRef, query: EntityQuery, querySize: Int, entityType: String, headers: IndexedSeq[String], entities: Seq[Entity]): Unit = {
     val rows = TSVFormatter.makeEntityRows(entityType, entities, headers)
-    // Send headers if needed
-    if (query.page == 1) { actorRef ! FirstChunk(HttpData(headers.mkString("\t") + "\n"))}
+    val remaining = querySize - query.page + 1
+    logger.info(s"Sending rows as chunks. Remaining: $remaining Current query: ${query.toString}")
+    // Send headers as the first chunk of data
+    if (query.page == 1) { actorRef ! FirstChunk(HttpData(headers.mkString("\t") + "\n"), remaining)}
     // Send entities
-    actorRef ! NextChunk(HttpData(rows.map { _.mkString("\t") }.mkString("\n") + "\n"))
+    actorRef ! NextChunk(HttpData(rows.map { _.mkString("\t") }.mkString("\n") + "\n"), remaining - 1)
     // Close the download if needed
     if (query.page == querySize) { actorRef ! ChunkEnd}
   }
