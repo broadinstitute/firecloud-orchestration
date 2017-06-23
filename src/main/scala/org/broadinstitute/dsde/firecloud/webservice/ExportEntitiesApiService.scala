@@ -20,7 +20,7 @@ trait ExportEntitiesApiService extends HttpService with PerRequestCreator with F
   private implicit val executionContext = actorRefFactory.dispatcher
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  def exportEntitiesRoutes: Route =
+  val exportEntitiesRoutes: Route =
 
     path( "api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" ) { (workspaceNamespace, workspaceName, entityType) =>
       parameters('attributeNames.?) { attributeNamesString =>
