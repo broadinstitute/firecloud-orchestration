@@ -1,10 +1,11 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.ActorSystem
+import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.CookieAuthedApiService
 import spray.http.StatusCodes._
-import spray.http.{FormData, HttpHeaders, HttpMethods}
+import spray.http._
 
 class CookieAuthedExportEntitiesByTypeServiceSpec extends BaseServiceSpec with CookieAuthedApiService {
 
@@ -20,14 +21,36 @@ class CookieAuthedExportEntitiesByTypeServiceSpec extends BaseServiceSpec with C
 
   "CookieAuthedApiService-ExportEntitiesByType" - {
 
+    "when calling GET on exporting a valid entity type with filtered attributes" - {
+      "OK response is returned and attributes are filtered" in {
+        // Pick the first few headers from the list of available sample headers:
+        val filterProps = MockRawlsDAO.largeSampleHeaders.take(5).map(_.name)
+        // Grab the rest so we can double check the returned content to make sure they aren't returned.
+        val missingProps = MockRawlsDAO.largeSampleHeaders.drop(5).map(_.name)
+
+        Post(validFireCloudEntitiesLargeSampleTSVPath, FormData(Seq("FCtoken"->"token", "attributeNames"->filterProps.mkString(",")))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
+          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
+          val entityHeaderString = entity.asString
+          filterProps.map { h => entityHeaderString.contains(h) should be(true) }
+          missingProps.map { h => entityHeaderString.contains(h) should be(false) }
+        }
+      }
+    }
+    
     "when calling POST on exporting LARGE (20K) sample set" - {
       "OK response is returned" in {
         Post(validFireCloudEntitiesLargeSampleTSVPath, FormData(Seq("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity shouldNot be(empty)
-          response.headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          response.headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          entity shouldNot be(empty)
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
         }
       }
     }
@@ -37,9 +60,9 @@ class CookieAuthedExportEntitiesByTypeServiceSpec extends BaseServiceSpec with C
         Post(validFireCloudEntitiesSampleSetTSVPath, FormData(Seq("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity shouldNot be(empty)
-          response.headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          response.headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample_set.zip"))) should be(true)
+          entity shouldNot be(empty)
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample_set.zip"))) should be(true)
         }
       }
     }
@@ -49,9 +72,9 @@ class CookieAuthedExportEntitiesByTypeServiceSpec extends BaseServiceSpec with C
         Post(validFireCloudEntitiesSampleTSVPath, FormData(Seq("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity shouldNot be(empty)
-          response.headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          response.headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          entity shouldNot be(empty)
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
         }
       }
     }
@@ -86,6 +109,11 @@ class CookieAuthedExportEntitiesByTypeServiceSpec extends BaseServiceSpec with C
       }
     }
 
+  }
+
+  private def validateLineCount(chunks: List[MessageChunk], count: Int): Unit = {
+    val lineCount = chunks.map(c => scala.io.Source.fromString(c.data.asString).getLines().size).sum
+    lineCount should equal(count)
   }
 
 }
