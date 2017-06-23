@@ -1,9 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.ActorSystem
+import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.ExportEntitiesApiService
-import spray.http.{HttpHeaders, HttpMethods}
+import spray.http.{HttpHeaders, HttpMethods, MessageChunk, Uri}
 import spray.http.StatusCodes._
 
 class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService {
@@ -20,14 +21,40 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
   "ExportEntitiesApiService-ExportEntitiesByType" - {
 
+    "when calling GET on exporting a valid entity type with filtered attributes" - {
+      "OK response is returned and attributes are filtered" in {
+        // Pick the first few headers from the list of available sample headers:
+        val filterProps = MockRawlsDAO.largeSampleHeaders.take(5).map(_.name)
+        // Grab the rest so we can double check the returned content to make sure they aren't returned.
+        val missingProps = MockRawlsDAO.largeSampleHeaders.drop(5).map(_.name)
+        val uri = Uri(largeFireCloudEntitiesSampleTSVPath).withQuery(("attributeNames", filterProps.mkString(",")))
+
+        Get(uri) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
+          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
+          val entityHeaderString = entity.asString
+          filterProps.map { h => entityHeaderString.contains(h) should be(true) }
+          missingProps.map { h => entityHeaderString.contains(h) should be(false) }
+        }
+      }
+    }
+
+
     "when calling GET on exporting LARGE (20K) sample set" - {
       "OK response is returned" in {
         Get(largeFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity shouldNot be(empty)
-          response.headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          response.headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
+          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
         }
       }
     }
@@ -37,9 +64,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(validFireCloudEntitiesSampleSetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity shouldNot be(empty)
-          response.headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          response.headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample_set.zip"))) should be(true)
+          entity shouldNot be(empty)
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample_set.zip"))) should be(true)
         }
       }
     }
@@ -49,9 +76,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(validFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity shouldNot be(empty)
-          response.headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          response.headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          entity shouldNot be(empty)
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
         }
       }
     }
@@ -86,6 +113,11 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
+  }
+
+  private def validateLineCount(chunks: List[MessageChunk], count: Int): Unit = {
+    val lineCount = chunks.map(c => scala.io.Source.fromString(c.data.asString).getLines().size).sum
+    lineCount should equal(count)
   }
 
 }
