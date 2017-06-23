@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
-import org.broadinstitute.dsde.firecloud.utils.StreamingActor.{ChunkEnd, FirstChunk, NextChunk}
+import org.broadinstitute.dsde.firecloud.utils.StreamingActor.{FirstChunk, NextChunk}
 import org.broadinstitute.dsde.firecloud.utils.{StreamingActor, TSVFormatter}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model._
@@ -60,12 +60,16 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
   /**
-    * General Approach
-    * 1. Define a `Source` of entity queries
-    * 2. Run the source events through a `Flow`.
-    * 3. Flow sends events (batch of entities) to a streaming output actor
-    * 4. Return a Done to the calling route when complete.
-    * 5. Handle exceptions directly by completing the request.
+    * Two basic code paths
+    *
+    * For Collection types, write the content to temp files, zip and return.
+    *
+    * For Singular types, pipe the content from `Source` -> `Flow` -> `Sink`
+    *   Source generates the entity queries
+    *   Flow executes the queries and sends formatted content to chunked response handler
+    *   Sink finishes the execution pipeline
+    *
+    * Handle exceptions directly by completing the request.
     */
   def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Any] = {
 
@@ -92,10 +96,19 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
         entity = HttpEntity(ContentTypes.`application/json`, errorReport.toJson.compactPrint))))
   }
 
+
   /*
    * Helper Methods
    */
 
+
+  /**
+    * General Approach
+    * 1. Define a `Source` of entity queries
+    * 2. Run the source events through a `Flow`.
+    * 3. Flow sends events (batch of entities) to a streaming output actor
+    * 4. Return a Done to the calling route when complete.
+    */
   private def streamSingularType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, headers: IndexedSeq[String], attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
     // Akka Streams Support
     implicit val system: ActorSystem = ActorSystem("Streaming-Entity-Exporter")
@@ -130,7 +143,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     lazy val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip")))
     zipFile map { f =>
       streamingActorRef ! FirstChunk(HttpData.apply(f.byteArray), 0)
-      streamingActorRef ! ChunkEnd
     }
 
     Future(Done)
@@ -143,8 +155,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
     if (query.page == 1) { actorRef ! FirstChunk(HttpData(headers.mkString("\t") + "\n"), remaining)}
     // Send entities
     actorRef ! NextChunk(HttpData(rows.map { _.mkString("\t") }.mkString("\n") + "\n"), remaining - 1)
-    // Close the download if needed
-    if (query.page == querySize) { actorRef ! ChunkEnd}
   }
 
   private def writeCollectionTypeZipFile(workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[File] = {

@@ -9,7 +9,6 @@ object StreamingActor {
   case class FirstChunk(httpData: HttpData, remaining: Int)
   case class NextChunk(httpData: HttpData, remaining: Int)
   case class Ok(remaining: Int)
-  case object ChunkEnd
 }
 
 class StreamingActor(ctx: RequestContext, contentType: ContentType, contentDisposition: String) extends Actor with HttpService {
@@ -36,11 +35,13 @@ class StreamingActor(ctx: RequestContext, contentType: ContentType, contentDispo
       val nextChunk = MessageChunk(httpData)
       ctx.responder ! nextChunk.withAck(Ok(remaining))
 
+    // This case comes back from the client
     // all chunks were sent. stop.
-    case ChunkEnd =>
-      logger.debug("Ending message.")
-      ctx.responder ! ChunkedMessageEnd
-      context.stop(self)
+    case Ok(remaining: Int) =>
+      if (remaining == 0) {
+        ctx.responder ! ChunkedMessageEnd
+        context.stop(self)
+      }
 
     //
     case x => unhandled(x)
