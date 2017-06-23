@@ -13,17 +13,16 @@ import scala.language.postfixOps
 /**
  * Created by dvoet on 11/16/16.
  */
-trait CookieAuthedApiService extends HttpService with PerRequestCreator with FireCloudDirectives
-  with FireCloudRequestBuilding {
+trait CookieAuthedApiService extends HttpService with FireCloudDirectives with FireCloudRequestBuilding {
 
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor
 
   private implicit val executionContext = actorRefFactory.dispatcher
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  def cookieAuthedRoutes: Route =
+  val cookieAuthedRoutes: Route =
     // download "proxy" for TSV files
-    path("workspaces" / Segment / Segment/ "entities" / Segment/ "tsv") {
+    path( "cookie-authed" / "workspaces" / Segment / Segment/ "entities" / Segment / "tsv" ) {
       (workspaceNamespace, workspaceName, entityType) =>
         formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) =>
           post { requestContext =>
