@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.ExportEntitiesApiService
-import spray.http.HttpHeaders
+import spray.http.{HttpHeaders, HttpMethods}
 import spray.http.StatusCodes._
 
 class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService {
@@ -71,6 +71,17 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           handled should be(true)
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
+        }
+      }
+    }
+
+    "when calling POST, PUT, PATCH, DELETE on export path" - {
+      "MethodNotAllowed response is returned" in {
+        List(HttpMethods.POST, HttpMethods.PUT, HttpMethods.DELETE, HttpMethods.PATCH) map { method =>
+          new RequestBuilder(method)(invalidFireCloudEntitiesParticipantSetTSVPath) ~> sealRoute(exportEntitiesRoutes) ~> check {
+            handled should be(true)
+            status shouldNot equal(MethodNotAllowed)
+          }
         }
       }
     }
