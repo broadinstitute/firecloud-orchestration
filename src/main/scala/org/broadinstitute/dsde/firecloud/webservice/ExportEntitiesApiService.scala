@@ -25,12 +25,14 @@ trait ExportEntitiesApiService extends HttpService with PerRequestCreator with F
     path( "api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" ) { (workspaceNamespace, workspaceName, entityType) =>
       parameters('attributeNames.?) { attributeNamesString =>
         requireUserInfo() { userInfo =>
-          requestContext =>
-            val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
-            val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo)
-            val exportMessage = ExportEntitiesByTypeActor.ExportEntities(requestContext, workspaceNamespace, workspaceName, entityType, attributeNames)
-            val exportActor = actorRefFactory.actorOf(exportProps)
-            exportActor ! exportMessage
+          get {
+            requestContext =>
+              val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+              val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo)
+              val exportMessage = ExportEntitiesByTypeActor.ExportEntities(requestContext, workspaceNamespace, workspaceName, entityType, attributeNames)
+              val exportActor = actorRefFactory.actorOf(exportProps)
+              exportActor ! exportMessage
+          }
         }
       }
     }
