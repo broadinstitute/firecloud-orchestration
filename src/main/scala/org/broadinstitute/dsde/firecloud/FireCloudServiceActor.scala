@@ -115,10 +115,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         pathPrefix("api") {
           apiRoutes
         } ~
-        pathPrefix("cookie-authed") {
-          // insecure cookie-authed routes
-          cookieAuthedRoutes
-        }
+        // insecure cookie-authed routes
+        cookieAuthedRoutes
       }
     }
   )
