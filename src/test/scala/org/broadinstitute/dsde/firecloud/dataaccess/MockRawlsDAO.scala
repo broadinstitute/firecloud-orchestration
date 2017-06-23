@@ -8,10 +8,54 @@ import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, 
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
 import spray.http.StatusCodes
+import MockRawlsDAO._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+// Common things that can be accessed from tests
+object MockRawlsDAO {
+
+  val sampleAtts: Map[AttributeName, AttributeListElementable with Product with Serializable] = {
+    Map(
+      AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
+      AttributeName.withDefaultNS("header_1") -> AttributeString(MockUtils.randomAlpha()),
+      AttributeName.withDefaultNS("header_2") -> AttributeString(MockUtils.randomAlpha()),
+      AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "participant_name")
+    )
+  }
+
+  val validSampleEntities = List(
+    Entity("sample_01", "sample", sampleAtts),
+    Entity("sample_02", "sample", sampleAtts),
+    Entity("sample_03", "sample", sampleAtts),
+    Entity("sample_04", "sample", sampleAtts)
+  )
+
+  val validEntitiesMetadata = Map(
+    "participant" -> EntityTypeMetadata(count = 1, idName = "participant_id", attributeNames = List("age", "gender", "cohort")),
+    "sample" -> EntityTypeMetadata(count = validSampleEntities.size, idName = "sample_id", attributeNames = sampleAtts.map(_._1.name).toList),
+    "sample_set" -> EntityTypeMetadata(count = 1, idName = "sample_set_id", attributeNames = List("samples"))
+  )
+
+  val largeSampleSize = 20000
+
+  val largeSampleHeaders: Seq[AttributeName] = (1 to 150).map { h => AttributeName.withDefaultNS(s"prop_$h") }
+
+  val largeSampleAttributes: Map[AttributeName, AttributeString] = {
+    largeSampleHeaders.map { h => Map(h -> AttributeString(MockUtils.randomAlpha()))}.reduce(_ ++ _)
+  }
+
+  def generateSamplesInRange(from: Int): List[Entity] = (from to from + 499).map { pos => Entity(s"sample_0$pos", "sample", largeSampleAttributes) }.toList
+
+  val largeSampleMetadata = Map(
+    "sample" -> EntityTypeMetadata(
+      count = largeSampleSize,
+      idName = "sample_id",
+      attributeNames = largeSampleHeaders.map(_.name))
+  )
+
+}
 
 /**
   * Created by davidan on 9/28/16.
@@ -131,41 +175,6 @@ class MockRawlsDAO  extends RawlsDAO {
     )
   }
 
-  private val sampleAtts: Map[AttributeName, AttributeListElementable with Product with Serializable] = {
-    Map(
-      AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
-      AttributeName.withDefaultNS("header_1") -> AttributeString(MockUtils.randomAlpha()),
-      AttributeName.withDefaultNS("header_2") -> AttributeString(MockUtils.randomAlpha()),
-      AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "participant_name")
-    )
-  }
-
-  private val validSampleEntities = List(
-    Entity("sample_01", "sample", sampleAtts),
-    Entity("sample_02", "sample", sampleAtts),
-    Entity("sample_03", "sample", sampleAtts),
-    Entity("sample_04", "sample", sampleAtts)
-  )
-
-  private val validEntitiesMetadata = Map(
-    "participant" -> EntityTypeMetadata(count = 1, idName = "participant_id", attributeNames = List("age", "gender", "cohort")),
-    "sample" -> EntityTypeMetadata(count = validSampleEntities.size, idName = "sample_id", attributeNames = sampleAtts.map(_._1.name).toList),
-    "sample_set" -> EntityTypeMetadata(count = 1, idName = "sample_set_id", attributeNames = List("samples"))
-  )
-
-  private val largeSampleSize = 20000
-
-  private val largeSampleHeaders = {
-    Map(AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood")) ++ (2 to 150).map {
-      h => Map(AttributeName.withDefaultNS(s"prop_$h") -> AttributeString(MockUtils.randomAlpha()))}.reduce(_ ++ _)
-  }
-
-  private def makeLargeSampleList(start: Int) = (start to start+500).map { s => Entity(s"sample_0$s", "sample", largeSampleHeaders) }.toList
-
-  private val largeSampleMetadata = Map(
-    "sample" -> EntityTypeMetadata(count = largeSampleSize, idName = "sample_id", attributeNames = largeSampleHeaders.map(_._1.name).toList)
-  )
-
   override def isRegistered(userInfo: UserInfo): Future[Boolean] = Future.successful(true)
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future.successful(false)
@@ -262,11 +271,11 @@ class MockRawlsDAO  extends RawlsDAO {
     if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
     } else if (workspaceName == "large") {
-      val largeSampleList = makeLargeSampleList(query.page * query.pageSize)
+      val sampleRange = generateSamplesInRange(query.page * query.pageSize)
       val queryResponse: EntityQueryResponse = EntityQueryResponse(
         parameters = query,
-        resultMetadata = EntityQueryResultMetadata(unfilteredCount = largeSampleList.size, filteredCount = largeSampleSize, filteredPageCount = largeSampleSize/query.pageSize),
-        results = largeSampleList
+        resultMetadata = EntityQueryResultMetadata(unfilteredCount = largeSampleSize, filteredCount = largeSampleSize, filteredPageCount = largeSampleSize/query.pageSize),
+        results = sampleRange
       )
       Future.successful(queryResponse)
     } else {
