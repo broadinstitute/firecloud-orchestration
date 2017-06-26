@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService {
 
   // On travis, slow processing causes the route to timeout and complete too quickly for the large content checks.
-  override implicit val routeTestTimeout = RouteTestTimeout(15.seconds)
+  override implicit val routeTestTimeout = RouteTestTimeout(30.seconds)
 
   def actorRefFactory: ActorSystem = system
 
