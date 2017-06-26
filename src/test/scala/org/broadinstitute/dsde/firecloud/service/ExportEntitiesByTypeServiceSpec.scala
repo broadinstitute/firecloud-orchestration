@@ -6,8 +6,13 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.ExportEntitiesApiService
 import spray.http.{HttpHeaders, HttpMethods, MessageChunk, Uri}
 import spray.http.StatusCodes._
+import scala.concurrent.duration._
+
 
 class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService {
+
+  // On travis, slow processing causes the route to timeout and complete too quickly for the large content checks.
+  override implicit val routeTestTimeout = RouteTestTimeout(15.seconds)
 
   def actorRefFactory: ActorSystem = system
 
