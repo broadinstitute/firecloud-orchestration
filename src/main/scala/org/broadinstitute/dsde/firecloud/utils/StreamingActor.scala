@@ -43,7 +43,9 @@ class StreamingActor(ctx: RequestContext, contentType: ContentType, fileName: St
       }
 
     //
-    case x => unhandled(x)
+    case x =>
+      logger.error(s"Unhandled case: $x")
+      unhandled(x)
 
   }
 

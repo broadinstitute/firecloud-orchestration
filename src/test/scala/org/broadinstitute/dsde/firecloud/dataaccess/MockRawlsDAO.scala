@@ -268,7 +268,9 @@ class MockRawlsDAO  extends RawlsDAO {
   }
 
   override def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
-    if (workspaceName == "invalid") {
+    if (workspaceName == "exception") {
+      Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Exception getting workspace")))
+    } else if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
     } else if (workspaceName == "large") {
       val sampleRange = generateSamplesInRange(query.page * query.pageSize)
