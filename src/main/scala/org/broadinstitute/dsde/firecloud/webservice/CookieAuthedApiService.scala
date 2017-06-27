@@ -34,7 +34,7 @@ trait CookieAuthedApiService extends HttpService with FireCloudDirectives with F
           }
         }
     } ~
-    path("download" / "b" / Segment / "o" / RestPath) { (bucket, obj) =>
+    path( "cookie-authed" / "download" / "b" / Segment / "o" / RestPath ) { (bucket, obj) =>
       cookie("FCtoken") { tokenCookie =>
         mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
           HttpGoogleServicesDAO.getDownload(requestContext, bucket, obj.toString, tokenCookie.content)
