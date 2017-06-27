@@ -7,7 +7,12 @@ import org.broadinstitute.dsde.firecloud.webservice.CookieAuthedApiService
 import spray.http.StatusCodes._
 import spray.http._
 
+import scala.concurrent.duration._
+
 class CookieAuthedExportEntitiesByTypeServiceSpec extends BaseServiceSpec with CookieAuthedApiService {
+
+  // On travis, slow processing causes the route to timeout and complete too quickly for the large content checks.
+  override implicit val routeTestTimeout = RouteTestTimeout(30.seconds)
 
   def actorRefFactory: ActorSystem = system
 
