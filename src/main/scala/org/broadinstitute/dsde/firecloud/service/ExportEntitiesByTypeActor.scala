@@ -8,7 +8,7 @@ import akka.stream.scaladsl._
 import akka.util.Timeout
 import better.files.File
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
@@ -132,7 +132,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
 
   }
 
-  private def streamCollectionType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[_root_.akka.Done.type] = {
+  private def streamCollectionType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
     // The output file
     lazy val zipFile = writeCollectionTypeZipFile(workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
 
@@ -181,11 +181,9 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
   }
 
   private def getEntityBatchFromQueries(queryGroup: Seq[EntityQuery], workspaceNamespace: String, workspaceName: String, entityType: String): Future[Seq[Entity]] = {
-    Future.sequence(
-      queryGroup map { query =>
-        getEntities(workspaceNamespace, workspaceName, entityType, query)
-      }
-    ) map(_.flatten)
+    Future.traverse(queryGroup) { query =>
+      getEntities(workspaceNamespace, workspaceName, entityType, query)
+    } map(_.flatten)
   }
 
   private def getEntityQueries(metadata: EntityTypeMetadata, entityType: String): Seq[EntityQuery] = {
