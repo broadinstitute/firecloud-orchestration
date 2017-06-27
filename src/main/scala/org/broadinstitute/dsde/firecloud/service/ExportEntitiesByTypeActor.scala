@@ -36,17 +36,18 @@ object ExportEntitiesByTypeActor {
     Props(exportEntitiesByTypeConstructor(userInfo))
   }
 
-  def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new ExportEntitiesByTypeActor(app.rawlsDAO, userInfo)
+  def constructor(app: Application, materializer: ActorMaterializer)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
+    new ExportEntitiesByTypeActor(app.rawlsDAO, userInfo, materializer)
 }
 
-class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
+class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInfo, argMaterializer: ActorMaterializer)(implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
 
   // Requires its own actor context to work with downstream actors: TSVWriterActor and StreamingActor
   def actorRefFactory: ActorContext = context
 
   implicit val timeout: Timeout = Timeout(1 minute)
   implicit val userInfo: UserInfo = argUserInfo
+  implicit val materializer: ActorMaterializer = argMaterializer
 
   override def receive: Receive = {
     case ExportEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) => streamEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) pipeTo sender
@@ -102,9 +103,6 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     * 4. Return a Done to the calling route when complete.
     */
   private def streamSingularType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, headers: IndexedSeq[String], attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
-    // Akka Streams Support
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
-
     // The output to the user
     val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`text/plain`, entityType + ".txt")))
 
@@ -123,7 +121,6 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
 
     // finally, run it:
     entityQuerySource.via(flow).runWith(sink)
-
   }
 
   private def streamCollectionType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[Done] = {

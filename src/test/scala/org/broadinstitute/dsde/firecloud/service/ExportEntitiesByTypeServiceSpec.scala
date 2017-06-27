@@ -1,11 +1,13 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.ExportEntitiesApiService
 import spray.http.{HttpHeaders, HttpMethods, MessageChunk, Uri}
 import spray.http.StatusCodes._
+
 import scala.concurrent.duration._
 
 
@@ -16,7 +18,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
   def actorRefFactory: ActorSystem = system
 
-  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
+  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, ActorMaterializer())
 
   val largeFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/large/entities/sample/tsv"
   val validFireCloudEntitiesSampleSetTSVPath = "/api/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv"
