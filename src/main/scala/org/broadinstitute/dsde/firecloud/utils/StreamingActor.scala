@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import akka.actor.{Actor, ActorContext}
-import org.slf4j.{Logger, LoggerFactory}
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import spray.http._
 import spray.routing.{HttpService, RequestContext}
 
@@ -11,9 +11,8 @@ object StreamingActor {
   case class Ok(remaining: Int)
 }
 
-class StreamingActor(ctx: RequestContext, contentType: ContentType, contentDisposition: String) extends Actor with HttpService {
+class StreamingActor(ctx: RequestContext, contentType: ContentType, contentDisposition: String) extends Actor with HttpService with LazyLogging {
 
-  private lazy val logger: Logger = LoggerFactory.getLogger(getClass)
   private val keepAlive = HttpHeaders.Connection("Keep-Alive")
   private val disposition = HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> contentDisposition))
 

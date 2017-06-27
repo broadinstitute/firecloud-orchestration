@@ -7,6 +7,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.Timeout
 import better.files.File
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
@@ -15,7 +16,6 @@ import org.broadinstitute.dsde.firecloud.utils.StreamingActor.{FirstChunk, NextC
 import org.broadinstitute.dsde.firecloud.utils.{StreamingActor, TSVFormatter}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model._
-import org.slf4j.{Logger, LoggerFactory}
 import spray.http.{ContentTypes, _}
 import spray.routing.RequestContext
 
@@ -48,7 +48,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val googleDAO: GoogleSer
   }
 }
 
-trait ExportEntitiesByType extends FireCloudRequestBuilding {
+trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
   val rawlsDAO: RawlsDAO
   val googleDAO: GoogleServicesDAO
   implicit val userInfo: UserInfo
@@ -56,8 +56,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding {
   implicit def actorRefFactory: ActorRefFactory
 
   implicit val timeout = Timeout(1 minute)
-
-  lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
   /**
     * Two basic code paths

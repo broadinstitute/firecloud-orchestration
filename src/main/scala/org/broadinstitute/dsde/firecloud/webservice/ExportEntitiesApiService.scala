@@ -1,10 +1,10 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.Props
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.{ExportEntitiesByTypeActor, FireCloudDirectives, FireCloudRequestBuilding, PerRequestCreator}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import org.slf4j.LoggerFactory
 import spray.routing.{HttpService, Route}
 
 import scala.language.postfixOps
@@ -13,12 +13,11 @@ import scala.language.postfixOps
 /**
   * Created by grushton on 6/20/17.
   */
-trait ExportEntitiesApiService extends HttpService with PerRequestCreator with FireCloudDirectives with FireCloudRequestBuilding with StandardUserInfoDirectives {
+trait ExportEntitiesApiService extends HttpService with PerRequestCreator with FireCloudDirectives with FireCloudRequestBuilding with StandardUserInfoDirectives with LazyLogging {
 
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor
 
   private implicit val executionContext = actorRefFactory.dispatcher
-  lazy val log = LoggerFactory.getLogger(getClass)
 
   val exportEntitiesRoutes: Route =
 
