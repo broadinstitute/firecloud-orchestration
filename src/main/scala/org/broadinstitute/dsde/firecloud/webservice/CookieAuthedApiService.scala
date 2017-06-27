@@ -1,10 +1,10 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.Props
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service._
-import org.slf4j.LoggerFactory
 import spray.http._
 import spray.routing._
 
@@ -13,12 +13,11 @@ import scala.language.postfixOps
 /**
  * Created by dvoet on 11/16/16.
  */
-trait CookieAuthedApiService extends HttpService with FireCloudDirectives with FireCloudRequestBuilding {
+trait CookieAuthedApiService extends HttpService with FireCloudDirectives with FireCloudRequestBuilding with LazyLogging {
 
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor
 
   private implicit val executionContext = actorRefFactory.dispatcher
-  lazy val log = LoggerFactory.getLogger(getClass)
 
   val cookieAuthedRoutes: Route =
     // download "proxy" for TSV files
