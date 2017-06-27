@@ -32,8 +32,8 @@ trait TSVWriterActor extends Actor with LazyLogging {
   lazy val file: File = File.newTemporaryFile(UUID.randomUUID().toString, ".tsv")
 
   def receive: Receive = {
-    case WriteEntityTSV(page: Int, entities: Seq[Entity]) => val receiver = sender; receiver ! writeEntityTSV(page, entities)
-    case WriteMembershipTSV(page: Int, entities: Seq[Entity]) => val receiver = sender; receiver ! writeMembershipTSV(page, entities)
+    case WriteEntityTSV(page: Int, entities: Seq[Entity]) => sender ! writeEntityTSV(page, entities)
+    case WriteMembershipTSV(page: Int, entities: Seq[Entity]) => sender ! writeMembershipTSV(page, entities)
   }
 
   def writeMembershipTSV(page: Int, entities: Seq[Entity]): File = {
