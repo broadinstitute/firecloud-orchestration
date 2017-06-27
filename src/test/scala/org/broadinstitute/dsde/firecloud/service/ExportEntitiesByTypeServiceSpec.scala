@@ -25,8 +25,20 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val validFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/valid/entities/sample/tsv"
   val invalidFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/invalid/entities/sample/tsv"
   val invalidFireCloudEntitiesParticipantSetTSVPath = "/api/workspaces/broad-dsde-dev/invalid/entities/participant_set/tsv"
+  val exceptionFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/exception/entities/sample/tsv"
 
   "ExportEntitiesApiService-ExportEntitiesByType" - {
+
+    "when an exception occurs, the response should be handled appropriately" - {
+      "InternalServerError is returned" in {
+        // Exception case is generated from the entity query call which is inside of the akka stream code.
+        Get(exceptionFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(InternalServerError)
+          errorReportCheck("Rawls", InternalServerError)
+        }
+      }
+    }
 
     "when calling GET on exporting a valid entity type with filtered attributes" - {
       "OK response is returned and attributes are filtered" in {
