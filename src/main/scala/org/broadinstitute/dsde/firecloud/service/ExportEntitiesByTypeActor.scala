@@ -65,16 +65,17 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     *
     * Handle exceptions directly by completing the request.
     */
-  def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Any] = {
-
+  def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Unit] = {
     getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
       val entityQueries = getEntityQueries(metadata, entityType)
-      if (TSVFormatter.isCollectionType(entityType)) {
+      val done = if (TSVFormatter.isCollectionType(entityType)) {
         streamCollectionType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
       } else {
         val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
         streamSingularType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, headers, attributeNames)
       }
+      // Map stream completion to the same thing that `complete` does.
+      done.map { d => () }
     }
   }.recoverWith {
     case f: FireCloudExceptionWithErrorReport =>
