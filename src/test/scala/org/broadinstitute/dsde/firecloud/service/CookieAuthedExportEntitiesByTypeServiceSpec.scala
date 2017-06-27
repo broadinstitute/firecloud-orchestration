@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.CookieAuthedApiService
@@ -16,7 +17,7 @@ class CookieAuthedExportEntitiesByTypeServiceSpec extends BaseServiceSpec with C
 
   def actorRefFactory: ActorSystem = system
 
-  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
+  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, ActorMaterializer())
 
   val validFireCloudEntitiesLargeSampleTSVPath = "/cookie-authed/workspaces/broad-dsde-dev/large/entities/sample/tsv"
   val validFireCloudEntitiesSampleSetTSVPath = "/cookie-authed/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv"
