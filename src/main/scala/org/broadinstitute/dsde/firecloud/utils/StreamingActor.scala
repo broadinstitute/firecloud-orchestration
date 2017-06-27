@@ -11,10 +11,10 @@ object StreamingActor {
   case class Ok(remaining: Int)
 }
 
-class StreamingActor(ctx: RequestContext, contentType: ContentType, contentDisposition: String) extends Actor with HttpService with LazyLogging {
+class StreamingActor(ctx: RequestContext, contentType: ContentType, fileName: String) extends Actor with HttpService with LazyLogging {
 
   private val keepAlive = HttpHeaders.Connection("Keep-Alive")
-  private val disposition = HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> contentDisposition))
+  private val disposition = HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> fileName))
 
   import StreamingActor._
 

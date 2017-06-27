@@ -37,10 +37,10 @@ object ExportEntitiesByTypeActor {
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new ExportEntitiesByTypeActor(app.rawlsDAO, app.googleServicesDAO, userInfo)
+    new ExportEntitiesByTypeActor(app.rawlsDAO, userInfo)
 }
 
-class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val googleDAO: GoogleServicesDAO, val userInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with ExportEntitiesByType {
+class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val userInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with ExportEntitiesByType {
   // Requires its own actor context to work with downstream actors: TSVWriterActor and StreamingActor
   def actorRefFactory: ActorContext = context
   override def receive: Receive = {
@@ -50,7 +50,6 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val googleDAO: GoogleSer
 
 trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
   val rawlsDAO: RawlsDAO
-  val googleDAO: GoogleServicesDAO
   implicit val userInfo: UserInfo
   implicit protected val executionContext: ExecutionContext
   implicit def actorRefFactory: ActorRefFactory
@@ -193,10 +192,7 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
     val pageSize = FireCloudConfig.Rawls.defaultPageSize
     val filteredCount = metadata.count
     val sortField = entityType + "_id"
-    val pages = filteredCount % pageSize match {
-      case x if x == 0 => filteredCount / pageSize
-      case x => filteredCount / pageSize + 1
-    }
+    val pages = Math.ceil(filteredCount.toDouble / pageSize.toDouble).toInt
     (1 to pages) map { page =>
       EntityQuery(page = page, pageSize = pageSize, sortField = sortField, sortDirection = SortDirections.Ascending, filterTerms = None)
     }
