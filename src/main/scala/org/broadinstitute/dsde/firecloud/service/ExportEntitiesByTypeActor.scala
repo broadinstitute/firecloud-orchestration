@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.Done
-import akka.actor.{Actor, ActorContext, ActorRef, ActorRefFactory, ActorSystem, Props}
+import akka.actor.{Actor, ActorContext, ActorRef, Props}
 import akka.pattern.{ask, pipe}
 import akka.stream._
 import akka.stream.scaladsl._
@@ -40,21 +40,17 @@ object ExportEntitiesByTypeActor {
     new ExportEntitiesByTypeActor(app.rawlsDAO, userInfo)
 }
 
-class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val userInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with ExportEntitiesByType {
+class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInfo)(implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
+
   // Requires its own actor context to work with downstream actors: TSVWriterActor and StreamingActor
   def actorRefFactory: ActorContext = context
+
+  implicit val timeout: Timeout = Timeout(1 minute)
+  implicit val userInfo: UserInfo = argUserInfo
+
   override def receive: Receive = {
     case ExportEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) => streamEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) pipeTo sender
   }
-}
-
-trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
-  val rawlsDAO: RawlsDAO
-  implicit val userInfo: UserInfo
-  implicit protected val executionContext: ExecutionContext
-  implicit def actorRefFactory: ActorRefFactory
-
-  implicit val timeout = Timeout(1 minute)
 
   /**
     * Two basic code paths
@@ -98,7 +94,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
    * Helper Methods
    */
 
-
   /**
     * General Approach
     * 1. Define a `Source` of entity queries
@@ -108,7 +103,6 @@ trait ExportEntitiesByType extends FireCloudRequestBuilding with LazyLogging {
     */
   private def streamSingularType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, headers: IndexedSeq[String], attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
     // Akka Streams Support
-    implicit val system: ActorSystem = ActorSystem("Streaming-Entity-Exporter")
     implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     // The output to the user
