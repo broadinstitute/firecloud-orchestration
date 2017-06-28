@@ -66,9 +66,10 @@ object FireCloudConfig {
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
     def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
     def overwriteGroupMembershipUrlFromGroupName(groupName: String) = authUrl + overwriteGroupMembershipPath.format(groupName)
-    def entityQueryUrlFromWorkspaceAndQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: Option[EntityQuery] = None): String = {
-      val baseEntityQueryUri = Uri(entityQueryPathFromWorkspace(workspaceNamespace, workspaceName))
-      val entityQueryUri = query match {
+    def entityQueryUriFromWorkspaceAndQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: Option[EntityQuery] = None): Uri = {
+      val baseEntityQueryUri = Uri(entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)).
+        withPath(Uri(entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)).path ++ Uri.Path.SingleSlash ++ Uri.Path(entityType))
+      query match {
         case Some(q) =>
           val qMap: Map[String, String] = Map(
             ("page", q.page.toString),
@@ -79,13 +80,9 @@ object FireCloudConfig {
             case Some(f) => qMap + ("filterTerms" -> f)
             case _ => qMap
           }
-          baseEntityQueryUri.
-            withPath(baseEntityQueryUri.path ++ Uri.Path.SingleSlash ++ Uri.Path(entityType)).
-            withQuery(filteredQMap)
-        case _ =>
-          baseEntityQueryUri.withPath(baseEntityQueryUri.path ++ Uri.Path.SingleSlash ++ Uri.Path(entityType))
+          baseEntityQueryUri.withQuery(filteredQMap)
+        case _ => baseEntityQueryUri
       }
-      entityQueryUri.toString()
     }
   }
 
