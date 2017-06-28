@@ -13,7 +13,7 @@ import scala.language.postfixOps
 /**
   * Created by grushton on 6/20/17.
   */
-trait ExportEntitiesApiService extends HttpService with PerRequestCreator with FireCloudDirectives with FireCloudRequestBuilding with StandardUserInfoDirectives with LazyLogging {
+trait ExportEntitiesApiService extends HttpService with FireCloudDirectives with FireCloudRequestBuilding with StandardUserInfoDirectives with LazyLogging {
 
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor
 
@@ -21,6 +21,7 @@ trait ExportEntitiesApiService extends HttpService with PerRequestCreator with F
 
   val exportEntitiesRoutes: Route =
 
+    // Note that this endpoint works in the same way as CookieAuthedApiService tsv download.
     path( "api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" ) { (workspaceNamespace, workspaceName, entityType) =>
       parameters('attributeNames.?) { attributeNamesString =>
         requireUserInfo() { userInfo =>

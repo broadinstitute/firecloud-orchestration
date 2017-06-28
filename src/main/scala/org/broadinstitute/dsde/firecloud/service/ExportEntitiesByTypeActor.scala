@@ -9,6 +9,7 @@ import akka.util.Timeout
 import better.files.File
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
 import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
@@ -17,15 +18,12 @@ import org.broadinstitute.dsde.firecloud.utils.{StreamingActor, TSVFormatter}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.{ContentTypes, _}
+import spray.json._
 import spray.routing.RequestContext
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
-
-// JSON Serialization Support
-import spray.json._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
 
 object ExportEntitiesByTypeActor {
@@ -110,9 +108,9 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     // The Source
     val entityQuerySource = Source(entityQueries.toStream)
 
-    // MapAsync should preserve order.
+    // The Flow. Using mapAsync(1) ensures that we run 1 batch at a time through this side-affecting process.
     val flow = Flow[EntityQuery].mapAsync(1) { query =>
-      getEntities(workspaceNamespace, workspaceName, entityType, query) map { entities =>
+      getEntitiesFromQuery(workspaceNamespace, workspaceName, entityType, query) map { entities =>
         sendRowsAsChunks(streamingActorRef, query, entityQueries.size, entityType, headers, entities)
       }
     }
@@ -149,14 +147,14 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
   private def writeCollectionTypeZipFile(workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[File] = {
     val entityWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
     val membershipWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
-    val foldOperation = entityQueries.foldLeft(Future.successful(0, Seq[File]())) { (accumulator, queryGroup) =>
+    val foldOperation = entityQueries.foldLeft(Future.successful(0, Seq.empty[File])) { (accumulator, query) =>
       for {
-        acc <- accumulator
-        entityBatch <- getEntityBatchFromQueries(entityQueries, workspaceNamespace, workspaceName, entityType)
-        membershipTSV <- (membershipWriter ? WriteMembershipTSV(acc._1, entityBatch)).mapTo[File]
-        entityTSV <- (entityWriter ? WriteEntityTSV(acc._1, entityBatch)).mapTo[File]
+        (count, _) <- accumulator
+        entityBatch <- getEntitiesFromQuery(workspaceNamespace, workspaceName, entityType, query)
+        membershipTSV <- (membershipWriter ? WriteMembershipTSV(count, entityBatch)).mapTo[File]
+        entityTSV <- (entityWriter ? WriteEntityTSV(count, entityBatch)).mapTo[File]
         zip <- writeFilesToZip(entityType, membershipTSV, entityTSV)
-      } yield (acc._1 + 1, Seq(zip))
+      } yield (count + 1, Seq(zip))
     }
     foldOperation map { files => files._2.head }
   }
@@ -170,12 +168,6 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
       entityTSV.copyTo(entity)
       zipFile.zip()
     }
-  }
-
-  private def getEntityBatchFromQueries(queryGroup: Seq[EntityQuery], workspaceNamespace: String, workspaceName: String, entityType: String): Future[Seq[Entity]] = {
-    Future.traverse(queryGroup) { query =>
-      getEntities(workspaceNamespace, workspaceName, entityType, query)
-    } map(_.flatten)
   }
 
   private def getEntityQueries(metadata: EntityTypeMetadata, entityType: String): Seq[EntityQuery] = {
@@ -199,7 +191,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
       }
   }
 
-  private def getEntities(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[Seq[Entity]] = {
+  private def getEntitiesFromQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[Seq[Entity]] = {
     rawlsDAO.queryEntitiesOfType(workspaceNamespace, workspaceName, entityType, query) map {
       response => response.results
     }
