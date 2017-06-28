@@ -1,9 +1,10 @@
 package org.broadinstitute.dsde.firecloud
 
 import scala.collection.JavaConverters._
-
 import com.typesafe.config.{ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.service.NihWhitelist
+import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
+import spray.http.Uri
 import spray.http.Uri.{Authority, Host}
 
 object FireCloudConfig {
@@ -65,6 +66,27 @@ object FireCloudConfig {
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
     def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
     def overwriteGroupMembershipUrlFromGroupName(groupName: String) = authUrl + overwriteGroupMembershipPath.format(groupName)
+    def entityQueryUrlFromWorkspaceAndQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: Option[EntityQuery] = None): String = {
+      val baseEntityQueryUri = Uri(entityQueryPathFromWorkspace(workspaceNamespace, workspaceName))
+      val entityQueryUri = query match {
+        case Some(q) =>
+          val qMap: Map[String, String] = Map(
+            ("page", q.page.toString),
+            ("pageSize", q.pageSize.toString),
+            ("sortField", q.sortField),
+            ("sortDirection", SortDirections.toString(q.sortDirection)))
+          val filteredQMap = q.filterTerms match {
+            case Some(f) => qMap + ("filterTerms" -> f)
+            case _ => qMap
+          }
+          baseEntityQueryUri.
+            withPath(baseEntityQueryUri.path ++ Uri.Path.SingleSlash ++ Uri.Path(entityType)).
+            withQuery(filteredQMap)
+        case _ =>
+          baseEntityQueryUri.withPath(baseEntityQueryUri.path ++ Uri.Path.SingleSlash ++ Uri.Path(entityType))
+      }
+      entityQueryUri.toString()
+    }
   }
 
   object Thurloe {
