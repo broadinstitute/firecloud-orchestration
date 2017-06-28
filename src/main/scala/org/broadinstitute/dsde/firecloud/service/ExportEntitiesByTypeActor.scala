@@ -162,10 +162,8 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
   private def writeFilesToZip(entityType: String, membershipTSV: File, entityTSV: File): Future[File] = {
     Future {
       val zipFile = File.newTemporaryDirectory()
-      val membership = zipFile/s"${entityType}_membership.tsv"
-      val entity = zipFile/s"${entityType}_entity.tsv"
-      membershipTSV.copyTo(membership)
-      entityTSV.copyTo(entity)
+      membershipTSV.moveTo(zipFile/s"${entityType}_membership.tsv")
+      entityTSV.moveTo(zipFile/s"${entityType}_entity.tsv")
       zipFile.zip()
     }
   }
