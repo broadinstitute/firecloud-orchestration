@@ -81,8 +81,9 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
               get {
                 requireUserInfo() { _ => requestContext =>
                   val requestUri = requestContext.request.uri
-                  val entityQueryUrl = FireCloudConfig.Rawls.entityQueryUrlFromWorkspaceAndQuery(workspaceNamespace, workspaceName, entityType)
-                  val entityQueryUri = Uri(entityQueryUrl).withQuery(requestUri.query)
+                  val entityQueryUri = FireCloudConfig.Rawls.
+                    entityQueryUriFromWorkspaceAndQuery(workspaceNamespace, workspaceName, entityType).
+                    withQuery(requestUri.query)
                   val extReq = Get(entityQueryUri)
                   externalHttpPerRequest(requestCompression = true, requestContext, extReq)
                 }
