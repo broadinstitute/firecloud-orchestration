@@ -77,19 +77,12 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
               }
           } ~
           pathPrefix("entityQuery" / Segment) { entityType =>
-            val baseRawlsEntityQueryUrl = FireCloudConfig.Rawls.entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)
-            val baseEntityQueryUri = Uri(baseRawlsEntityQueryUrl)
-
             pathEnd {
               get {
                 requireUserInfo() { _ => requestContext =>
                   val requestUri = requestContext.request.uri
-
-                  val entityQueryUri = baseEntityQueryUri
-                    .withPath(baseEntityQueryUri.path ++ Uri.Path.SingleSlash ++ Uri.Path(entityType))
-                    .withQuery(requestUri.query)
-
-                  // we use externalHttpPerRequest instead of passthrough; passthrough does not handle query params well.
+                  val entityQueryUrl = FireCloudConfig.Rawls.entityQueryUrlFromWorkspaceAndQuery(workspaceNamespace, workspaceName, entityType)
+                  val entityQueryUri = Uri(entityQueryUrl).withQuery(requestUri.query)
                   val extReq = Get(entityQueryUri)
                   externalHttpPerRequest(requestCompression = true, requestContext, extReq)
                 }
