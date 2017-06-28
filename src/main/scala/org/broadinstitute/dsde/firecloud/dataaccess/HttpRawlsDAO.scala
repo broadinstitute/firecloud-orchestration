@@ -125,7 +125,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   override def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
-    val targetUri = Uri(rawlsQueryEntitiesOfTypeUrl(workspaceNamespace, workspaceName, entityType, query))
+    val targetUri = Uri(FireCloudConfig.Rawls.entityQueryUrlFromWorkspaceAndQuery(workspaceNamespace, workspaceName, entityType, Some(query)))
     authedRequestToObject[EntityQueryResponse](Get(targetUri), compressed = true)
   }
 

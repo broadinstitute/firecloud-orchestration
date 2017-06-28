@@ -41,24 +41,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType"
 
-  def rawlsQueryEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): String = {
-    val qMap: Map[String, String] = Map(
-      ("page", query.page.toString),
-      ("pageSize", query.pageSize.toString),
-      ("sortField", query.sortField),
-      ("sortDirection", SortDirections.toString(query.sortDirection)))
-    val filteredQMap = query.filterTerms match {
-      case Some(f) => qMap + ("filterTerms" -> f)
-      case _ => qMap
-    }
-    val baseRawlsEntityQueryUrl = FireCloudConfig.Rawls.entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)
-    val baseEntityQueryUri = Uri(baseRawlsEntityQueryUrl)
-    val entityQueryUri = baseEntityQueryUri.
-      withPath(baseEntityQueryUri.path ++ Uri.Path.SingleSlash ++ Uri.Path(entityType)).
-      withQuery(filteredQMap)
-    entityQueryUri.toString()
-  }
-
   def isRegistered(userInfo: UserInfo): Future[Boolean]
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
