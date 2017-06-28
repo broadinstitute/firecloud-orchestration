@@ -180,13 +180,9 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
 
   private def getEntityTypeMetadata(workspaceNamespace: String, workspaceName: String, entityType: String): Future[EntityTypeMetadata] = {
     rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName).
-      map { metadata => metadata.get(entityType) }.
-      map {
-        case Some(m) => m
-        case _ =>
-          logger.error(s"Exception: Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType"))
-      }
+      map (_.getOrElse(entityType,
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")))
+      )
   }
 
   private def getEntitiesFromQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[Seq[Entity]] = {
