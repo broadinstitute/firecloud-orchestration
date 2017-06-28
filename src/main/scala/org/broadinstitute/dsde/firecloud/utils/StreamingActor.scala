@@ -24,13 +24,11 @@ class StreamingActor(ctx: RequestContext, contentType: ContentType, fileName: St
 
     // send first chunk to client
     case FirstChunk(httpData: HttpData, remaining: Int) =>
-      logger.debug(s"Writing first chunk: ${httpData.length}, remaining: $remaining")
       val responseStart = HttpResponse(entity = HttpEntity(contentType, httpData), headers = List(keepAlive, disposition))
       ctx.responder ! ChunkedResponseStart(responseStart).withAck(Ok(remaining))
 
     // send next chunk to client
     case NextChunk(httpData: HttpData, remaining: Int) =>
-      logger.debug(s"Writing next chunk: ${httpData.length}, remaining: $remaining")
       val nextChunk = MessageChunk(httpData)
       ctx.responder ! nextChunk.withAck(Ok(remaining))
 
