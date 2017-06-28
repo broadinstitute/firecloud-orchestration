@@ -20,7 +20,9 @@ trait CookieAuthedApiService extends HttpService with FireCloudDirectives with F
   private implicit val executionContext = actorRefFactory.dispatcher
 
   val cookieAuthedRoutes: Route =
+
     // download "proxy" for TSV files
+    // Note that this endpoint works in the same way as ExportEntitiesApiService tsv download.
     path( "cookie-authed" / "workspaces" / Segment / Segment/ "entities" / Segment / "tsv" ) {
       (workspaceNamespace, workspaceName, entityType) =>
         formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) =>
