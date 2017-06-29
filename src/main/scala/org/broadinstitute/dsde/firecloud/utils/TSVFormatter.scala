@@ -11,9 +11,9 @@ object TSVFormatter {
   /**
     * Generate file content from headers and rows.
     *
-    * @param headers
-    * @param rows
-    * @return
+    * @param headers IndexedSeq of header string values
+    * @param rows IndexedSeq of rows, each row an IndexedSeq of string values
+    * @return Headers and rows combined.
     */
   def exportToString(headers: IndexedSeq[String], rows: IndexedSeq[IndexedSeq[String]]): String = {
     val headerString:String = headers.mkString("\t") + "\n"
@@ -103,7 +103,7 @@ object TSVFormatter {
           // All other top-level properties are not necessary and are only used for the data load file.
           case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(memberPlural))
         }.flatMap {
-          case (_, AttributeEntityReference(entityType, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
+          case (_, AttributeEntityReference(`entityType`, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
           case (_, AttributeEntityReferenceList(refs)) => refs.map( ref => IndexedSeq[String](entity.name, ref.entityName) )
           case _ => Seq.empty
         }

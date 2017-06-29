@@ -20,6 +20,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, ActorMaterializer())
 
   val largeFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/large/entities/sample/tsv"
+  val largeFireCloudEntitiesSampleSetTSVPath = "/api/workspaces/broad-dsde-dev/largeSampleSet/entities/sample_set/tsv"
   val validFireCloudEntitiesSampleSetTSVPath = "/api/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv"
   val validFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/valid/entities/sample/tsv"
   val invalidFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/invalid/entities/sample/tsv"
@@ -72,7 +73,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
     }
 
 
-    "when calling GET on exporting LARGE (20K) sample set" - {
+    "when calling GET on exporting LARGE (20K) sample TSV" - {
       "OK response is returned" in {
         Get(largeFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
@@ -85,6 +86,19 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         }
       }
     }
+
+    "when calling GET on exporting LARGE (1K) sample set file" - {
+      "OK response is returned" in {
+        Get(largeFireCloudEntitiesSampleSetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample_set.zip"))) should be(true)
+        }
+      }
+    }
+
 
     "when calling GET on exporting a valid collection type" - {
       "OK response is returned" in {
@@ -188,7 +202,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
-    "when calling POST on exporting LARGE (20K) sample set" - {
+    "when calling POST on exporting LARGE (20K) sample TSV" - {
       "OK response is returned" in {
         Post(validCookieFireCloudEntitiesLargeSampleTSVPath, FormData(Seq("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)

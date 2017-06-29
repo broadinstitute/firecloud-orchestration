@@ -2,17 +2,16 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.Done
 import akka.actor.{Actor, ActorContext, ActorRef, Props}
-import akka.pattern.{ask, pipe}
+import akka.pattern.pipe
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.util.Timeout
+import akka.util.{ByteString, Timeout}
 import better.files.File
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
-import org.broadinstitute.dsde.firecloud.service.TSVWriterActor._
 import org.broadinstitute.dsde.firecloud.utils.StreamingActor.{FirstChunk, NextChunk}
 import org.broadinstitute.dsde.firecloud.utils.{StreamingActor, TSVFormatter}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
@@ -140,14 +139,68 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     entityQuerySource.via(flow).runWith(sink)
   }
 
+  // TODO: Sort out how to run this in stages, i.e. headers, then rows.
+  // TODO: Sort out how to use a single source and split to outputs, i.e. one source out to both flows
+  // TODO: Need error handling at the runWith level for each stream-flow
   private def streamCollectionType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
-    // The output file
-    lazy val zipFile = writeCollectionTypeZipFile(workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
 
-    // The output to the user
-    lazy val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip")))
-    zipFile map { f =>
-      streamingActorRef ! FirstChunk(HttpData.apply(f.byteArray), 0)
+    // Future of all entities
+    val entityBatches = Future.traverse(entityQueries) { query =>
+      getEntitiesFromQuery(workspaceNamespace, workspaceName, entityType, query)
+    } map(_.flatten)
+
+    // Source from that future
+    val entityBatchSource = Source.fromFuture(entityBatches)
+
+    // Two File sinks, one for each kind of entity set file needed.
+    // The temp files will end up zipped and streamed when complete.
+    val tempEntityFile = File.newTemporaryFile()
+    val entitySink: Sink[ByteString, Future[IOResult]] = FileIO.toPath(tempEntityFile.path)
+    val tempMembershipFile = File.newTemporaryFile()
+    val membershipSink: Sink[ByteString, Future[IOResult]]  = FileIO.toPath(tempMembershipFile.path)
+
+
+
+    // Run the Entity flow
+    val entityHeaders = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
+    Source.single(ByteString(entityHeaders.mkString("\t") + "\n")).runWith(entitySink)
+    // Entity TSV Flow
+    val entityWriterFlow = Flow[Seq[Entity]].map { entities =>
+      val rows = TSVFormatter.makeEntityRows(entityType, entities, entityHeaders)
+      ByteString(rows.map{ _.mkString("\t") }.mkString("\n") + "\n")
+    }
+    def entityFileStreamResult: Future[IOResult] = entityBatchSource.via(entityWriterFlow).runWith(entitySink)
+
+
+
+    // Run the Membership flow
+    val membershipHeaders = TSVFormatter.makeMembershipHeaders(entityType)
+    Source.single(ByteString(membershipHeaders.mkString("\t") + "\n")).runWith(membershipSink)
+    // Membership TSV Flow
+    val membershipWriterFlow = Flow[Seq[Entity]].map { entities =>
+      val rows = TSVFormatter.makeMembershipRows(entityType, entities)
+      ByteString(rows.map{ _.mkString("\t") }.mkString("\n") + "\n")
+    }
+    def membershipFileStreamResult: Future[IOResult] = entityBatchSource.via(membershipWriterFlow).runWith(membershipSink)
+
+
+    val fileStreamResultSuccess = for {
+      eFileResult <- entityFileStreamResult
+      mFileResult <- membershipFileStreamResult
+    } yield eFileResult.wasSuccessful && mFileResult.wasSuccessful
+
+
+    fileStreamResultSuccess map { s =>
+      if (s) {
+        val zipFile = writeFilesToZip(entityType, tempEntityFile, tempMembershipFile)
+        // The output to the user
+        lazy val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip")))
+        zipFile map { f =>
+          streamingActorRef ! FirstChunk(HttpData.apply(f.byteArray), 0)
+        }
+      } else {
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType"))
+      }
     }
 
     Future(Done)
@@ -162,22 +215,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     actorRef ! NextChunk(HttpData(rows.map { _.mkString("\t") }.mkString("\n") + "\n"), remaining - 1)
   }
 
-  private def writeCollectionTypeZipFile(workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[File] = {
-    val entityWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
-    val membershipWriter: ActorRef = actorRefFactory.actorOf(TSVWriterActor.props(entityType, metadata.attributeNames, attributeNames, entityQueries.size))
-    val foldOperation = entityQueries.foldLeft(Future.successful(0, Seq.empty[File])) { (accumulator, query) =>
-      for {
-        (count, _) <- accumulator
-        entityBatch <- getEntitiesFromQuery(workspaceNamespace, workspaceName, entityType, query)
-        membershipTSV <- (membershipWriter ? WriteMembershipTSV(count, entityBatch)).mapTo[File]
-        entityTSV <- (entityWriter ? WriteEntityTSV(count, entityBatch)).mapTo[File]
-        zip <- writeFilesToZip(entityType, membershipTSV, entityTSV)
-      } yield (count + 1, Seq(zip))
-    }
-    foldOperation map { files => files._2.head }
-  }
-
-  private def writeFilesToZip(entityType: String, membershipTSV: File, entityTSV: File): Future[File] = {
+  private def writeFilesToZip(entityType: String, entityTSV: File, membershipTSV: File): Future[File] = {
     Future {
       val zipFile = File.newTemporaryDirectory()
       membershipTSV.moveTo(zipFile/s"${entityType}_membership.tsv")
