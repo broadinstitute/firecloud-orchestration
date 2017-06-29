@@ -270,9 +270,11 @@ class MockRawlsDAO  extends RawlsDAO {
   override def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse] = {
     if (workspaceName == "exception") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Exception getting workspace")))
+    } else if (workspaceName == "page3exception" && query.page == 3) {
+      Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, s"Exception querying for entities on page ${query.page}")))
     } else if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
-    } else if (workspaceName == "large") {
+    } else if (workspaceName == "large" || workspaceName == "page3exception") {
       val sampleRange = generateSamplesInRange(query.page * query.pageSize)
       val queryResponse: EntityQueryResponse = EntityQueryResponse(
         parameters = query,
@@ -291,9 +293,11 @@ class MockRawlsDAO  extends RawlsDAO {
   }
 
   override def getEntityTypes(workspaceNamespace: String, workspaceName: String)(implicit userToken: UserInfo): Future[Map[String, EntityTypeMetadata]] = {
-    if (workspaceName == "invalid") {
+    if (workspaceName == "exception") {
+      Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Exception getting workspace")))
+    } else if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
-    } else if (workspaceName == "large") {
+    } else if (workspaceName == "large" || workspaceName == "page3exception") {
       Future.successful(largeSampleMetadata)
     } else {
       Future.successful(validEntitiesMetadata)

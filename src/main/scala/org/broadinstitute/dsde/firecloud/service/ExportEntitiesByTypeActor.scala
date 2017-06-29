@@ -20,6 +20,7 @@ import org.broadinstitute.dsde.rawls.model._
 import spray.http.{ContentTypes, _}
 import spray.json._
 import spray.routing.RequestContext
+import DefaultJsonProtocol._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -66,33 +67,51 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
   def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Unit] = {
     getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
       val entityQueries = getEntityQueries(metadata, entityType)
-      val done = if (TSVFormatter.isCollectionType(entityType)) {
-        streamCollectionType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
+
+      // Stream exceptions have to be handled by directly closing out the RequestContext responder
+      if (TSVFormatter.isCollectionType(entityType)) {
+        streamCollectionType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames).onFailure {
+          case t: Throwable => handleStreamException(ctx, t)
+        }
       } else {
         val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-        streamSingularType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, headers, attributeNames)
+        streamSingularType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, headers, attributeNames).onFailure {
+          case t: Throwable => handleStreamException(ctx, t)
+        }
       }
-      // Map stream completion to the same thing that `complete` does.
-      done.map { d => () }
+      Future(())
     }
   }.recoverWith {
-    case f: FireCloudExceptionWithErrorReport =>
-      logger.error(s"FireCloudExceptionWithErrorReport: Error generating entity download for $workspaceNamespace:$workspaceName:$entityType")
-      Future(ctx.complete(HttpResponse(
-        status = f.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError),
-        entity = HttpEntity(ContentTypes.`application/json`, f.errorReport.toJson.compactPrint))))
-    case t: Throwable =>
-      logger.error(s"Throwable: Error generating entity download for $workspaceNamespace:$workspaceName:$entityType")
-      val errorReport = ErrorReport(StatusCodes.InternalServerError, s"Error generating entity download for $workspaceNamespace:$workspaceName:$entityType " + t.getMessage)
-      Future(ctx.complete(HttpResponse(
-        status = StatusCodes.InternalServerError,
-        entity = HttpEntity(ContentTypes.`application/json`, errorReport.toJson.compactPrint))))
+    // Standard exceptions have to be handled as a completed request
+    case t: Throwable => handleStandardException(ctx, t)
   }
 
 
   /*
    * Helper Methods
    */
+
+  // Standard exceptions have to be handled as a completed request
+  private def handleStandardException(ctx: RequestContext, t: Throwable): Future[Unit] = {
+    val errorReport = t match {
+      case f: FireCloudExceptionWithErrorReport => f.errorReport
+      case _ => ErrorReport(StatusCodes.InternalServerError, s"FireCloudException: Error generating entity download: ${t.getMessage}")
+    }
+    Future(ctx.complete(HttpResponse(
+      status = errorReport.statusCode.getOrElse(StatusCodes.InternalServerError),
+      entity = HttpEntity(ContentTypes.`application/json`, errorReport.toJson.compactPrint))))
+  }
+
+  // Stream exceptions have to be handled by directly closing out the RequestContext responder stream
+  private def handleStreamException(ctx: RequestContext, t: Throwable): Unit = {
+    val message = t match {
+      case f: FireCloudExceptionWithErrorReport => s"FireCloudException: Error generating entity download: ${f.errorReport.message}"
+      case _ => s"FireCloudException: Error generating entity download: ${t.getMessage}"
+    }
+    logger.info(message)
+    ctx.responder ! MessageChunk(message)
+    ctx.responder ! ChunkedMessageEnd
+  }
 
   /**
     * General Approach
