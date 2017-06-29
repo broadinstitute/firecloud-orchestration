@@ -38,6 +38,8 @@ object MockRawlsDAO {
     "sample_set" -> EntityTypeMetadata(count = 1, idName = "sample_set_id", attributeNames = List("samples"))
   )
 
+  // Large Sample Data
+
   val largeSampleSize = 20000
 
   val largeSampleHeaders: Seq[AttributeName] = (1 to 150).map { h => AttributeName.withDefaultNS(s"prop_$h") }
@@ -54,6 +56,29 @@ object MockRawlsDAO {
       idName = "sample_id",
       attributeNames = largeSampleHeaders.map(_.name))
   )
+
+  // Large Sample Set Data
+
+  val largeSampleSetSize = 1000
+
+  // Same as the large sample headers, except we can drop the last one because we're adding the samples membership attribute.
+  val largeSampleSetHeaders: Seq[AttributeName] = largeSampleHeaders.reverse.tail
+
+  val largeSampleSetSamples = AttributeEntityReferenceList(
+    (1 to largeSampleSetSize).map { i => AttributeEntityReference(entityType = "sample", entityName = s"sample_0$i") }
+  )
+  val largeSampleSetAttributes: Map[AttributeName, Attribute] = {
+    Map(AttributeName.withDefaultNS("samples") -> largeSampleSetSamples) ++
+    largeSampleSetHeaders.map { h => Map(h -> AttributeString(MockUtils.randomAlpha()))}.reduce(_ ++ _)
+  }
+
+  def generateSampleSetsInRange(from: Int): List[Entity] = (from to from + 499).map { pos => Entity(s"sample_set_0$pos", "sample_set", largeSampleSetAttributes) }.toList
+
+  val largeSampleSetMetadata = Map(
+    "sample_set" -> EntityTypeMetadata(
+      count = largeSampleSetSize,
+      idName = "sample_set_id",
+      attributeNames = largeSampleSetAttributes.map(_._1.name).toSeq))
 
 }
 
@@ -274,6 +299,14 @@ class MockRawlsDAO  extends RawlsDAO {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, s"Exception querying for entities on page ${query.page}")))
     } else if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
+    } else if (workspaceName == "largeSampleSet") {
+      val sampleSetRange = generateSampleSetsInRange(query.page * query.pageSize)
+      val queryResponse: EntityQueryResponse = EntityQueryResponse(
+        parameters = query,
+        resultMetadata = EntityQueryResultMetadata(unfilteredCount = largeSampleSetSize, filteredCount = largeSampleSetSize, filteredPageCount = largeSampleSetSize/query.pageSize),
+        results = sampleSetRange
+      )
+      Future.successful(queryResponse)
     } else if (workspaceName == "large" || workspaceName == "page3exception") {
       val sampleRange = generateSamplesInRange(query.page * query.pageSize)
       val queryResponse: EntityQueryResponse = EntityQueryResponse(
@@ -297,6 +330,8 @@ class MockRawlsDAO  extends RawlsDAO {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Exception getting workspace")))
     } else if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
+    } else if (workspaceName == "largeSampleSet") {
+      Future.successful(largeSampleSetMetadata)
     } else if (workspaceName == "large" || workspaceName == "page3exception") {
       Future.successful(largeSampleMetadata)
     } else {
