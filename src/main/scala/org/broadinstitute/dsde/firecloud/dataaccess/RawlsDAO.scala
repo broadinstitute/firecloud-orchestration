@@ -6,7 +6,6 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
-import spray.http.{OAuth2BearerToken, Uri}
 
 import scala.concurrent.Future
 
