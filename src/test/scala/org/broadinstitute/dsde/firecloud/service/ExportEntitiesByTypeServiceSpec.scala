@@ -25,6 +25,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val invalidFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/invalid/entities/sample/tsv"
   val invalidFireCloudEntitiesParticipantSetTSVPath = "/api/workspaces/broad-dsde-dev/invalid/entities/participant_set/tsv"
   val exceptionFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/exception/entities/sample/tsv"
+  val page3ExceptionFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/page3exception/entities/sample/tsv"
 
   // Pick the first few headers from the list of available sample headers:
   val filterProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.take(5).map(_.name)
@@ -32,6 +33,16 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val missingProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.drop(5).map(_.name)
 
   "ExportEntitiesApiService-ExportEntitiesByType" - {
+
+    "when an exception occurs in a paged query response, the response should be handled appropriately" - {
+      "FireCloudException is contained in response chunks" in {
+        // Exception case is generated from the entity query call which is inside of the akka stream code.
+        Get(page3ExceptionFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          validateErrorInLastChunk(chunks, "FireCloudException")
+        }
+      }
+    }
 
     "when an exception occurs, the response should be handled appropriately" - {
       "InternalServerError is returned" in {
@@ -137,8 +148,19 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val invalidCookieFireCloudEntitiesSampleTSVPath = "/cookie-authed/workspaces/broad-dsde-dev/invalid/entities/sample/tsv"
   val invalidCookieFireCloudEntitiesParticipantSetTSVPath = "/cookie-authed/workspaces/broad-dsde-dev/invalid/entities/participant_set/tsv"
   val exceptionCookieFireCloudEntitiesSampleTSVPath = "/cookie-authed/workspaces/broad-dsde-dev/exception/entities/sample/tsv"
+  val page3ExceptionCookieFireCloudEntitiesSampleTSVPath = "/cookie-authed/workspaces/broad-dsde-dev/page3exception/entities/sample/tsv"
 
   "CookieAuthedApiService-ExportEntitiesByType" - {
+
+    "when an exception occurs in a paged query response, the response should be handled appropriately" - {
+      "FireCloudException is contained in response chunks" in {
+        // Exception case is generated from the entity query call which is inside of the akka stream code.
+        Post(page3ExceptionCookieFireCloudEntitiesSampleTSVPath, FormData(Seq("FCtoken"->"token"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
+          handled should be(true)
+          validateErrorInLastChunk(chunks, "FireCloudException")
+        }
+      }
+    }
 
     "when an exception occurs, the response should be handled appropriately" - {
       "InternalServerError is returned" in {
@@ -243,6 +265,10 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
     val entityHeaderString = entity.asString
     filterProps.map { h => entityHeaderString.contains(h) should be(true) }
     missingProps.map { h => entityHeaderString.contains(h) should be(false) }
+  }
+
+  private def validateErrorInLastChunk(chunks: List[MessageChunk], message: String): Unit = {
+    chunks.reverse.head.data.asString should include (message)
   }
 
 }
