@@ -108,7 +108,6 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
       case f: FireCloudExceptionWithErrorReport => s"FireCloudException: Error generating entity download: ${f.errorReport.message}"
       case _ => s"FireCloudException: Error generating entity download: ${t.getMessage}"
     }
-    logger.info(message)
     ctx.responder ! MessageChunk(message)
     ctx.responder ! ChunkedMessageEnd
   }
