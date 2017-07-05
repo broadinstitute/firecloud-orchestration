@@ -89,6 +89,9 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def updateLibraryAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] =
     authedRequestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name)+"/library", attributeOperations) )
 
+  override def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL] =
+    authedRequestToObject[WorkspaceACL]( Get(getWorkspaceAclUrl(ns, name)) )
+
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate],inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] =
     authedRequestToObject[WorkspaceACLUpdateResponseList]( Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates) )
 
@@ -125,7 +128,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name)
-  private def patchWorkspaceAclUrl(ns: String, name: String, inviteUsersNotFound: Boolean) = rawlsWorkspaceACLUrl.format(ns, name, inviteUsersNotFound)
+  private def getWorkspaceAclUrl(ns: String, name: String) = rawlsWorkspaceACLUrl.format(ns, name)
+  private def patchWorkspaceAclUrl(ns: String, name: String, inviteUsersNotFound: Boolean) = rawlsWorkspaceACLUrl.format(ns, name) + rawlsWorkspaceACLQuerystring.format(inviteUsersNotFound)
   private def workspaceCatalogUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s/catalog".format(ns, name)
 
   override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
@@ -149,6 +153,10 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   override def patchCatalog(ns: String, name: String, catalogUpdates: Seq[WorkspaceCatalog])(implicit userToken: WithAccessToken): Future[WorkspaceCatalogUpdateResponseList] =
     authedRequestToObject[WorkspaceCatalogUpdateResponseList](Patch(workspaceCatalogUrl(ns, name), catalogUpdates), true)
+
+  override def getMethodConfigs(ns: String, name: String)(implicit userToken: WithAccessToken): Future[Seq[MethodConfigurationShort]] = {
+    authedRequestToObject[Seq[MethodConfigurationShort]](Get(rawlsWorkspaceMethodConfigsUrl.format(ns, name)), true)
+  }
 
   override def status: Future[SubsystemStatus] = {
     val rawlsStatus = unAuthedRequestToObject[RawlsStatus](Get(Uri(FireCloudConfig.Rawls.baseUrl).withPath(Uri.Path("/status"))))

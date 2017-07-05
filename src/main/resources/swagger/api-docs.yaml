@@ -2408,6 +2408,26 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/permissionReport:
+    post:
+      tags:
+        - Method Configurations
+        - Workspaces
+      operationId: workspacePermissionReport
+      summary: Retrieve user permissions for the workspace and the workspace's method references
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Permission Report
+          schema:
+            $ref: '#/definitions/PermissionReport'
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/sendChangeNotification:
     post:
       responses:
@@ -3634,6 +3654,27 @@ definitions:
         type: object
         description: Map[String,Attribute]
 
+  EntityAccessControl:
+    type: object
+    required:
+      - referencedBy
+      - acls
+    properties:
+      method:
+        $ref: '#/definitions/MethodRepoMethod'
+        description: method repo method
+      referencedBy:
+        $ref: '#/definitions/MethodConfigurationId'
+        description: workspace configuration that references the method
+      acls:
+        type: array
+        items:
+          $ref: '#/definitions/FireCloudPermission'
+        description: method repo ACLs for the referenced method
+      message:
+        type: string
+        description: error message generated when retrieving acls for this method
+
   EntityCopyResponse:
     type: object
     description: ''
@@ -3829,6 +3870,17 @@ definitions:
         type: boolean
         description: User is a member of the "All Users" group?
 
+  FireCloudPermission:
+    type: object
+    required:
+      - user
+      - role
+    properties:
+      user:
+        type: string
+      role:
+        type: string
+
   JWTWrapper:
     type: object
     properties:
@@ -3996,6 +4048,19 @@ definitions:
       methodRepoMethod:
         $ref: '#/definitions/MethodRepoMethod'
         description: The properties of the method from the method store that this config is associated with
+
+  MethodConfigurationId:
+    required:
+      - namespace
+      - name
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: 'This method configuration''s namespace'
+      name:
+        type: string
+        description: The name of the method configuration
 
   MethodID:
     type: object
@@ -4186,6 +4251,24 @@ definitions:
         type: string
       description:
         type: string
+
+  PermissionReport:
+    description: ACLs for users of a workspace and methods referenced by that workspace
+    required:
+      - workspaceACL
+      - methods
+    properties:
+      workspaceACL:
+        description: a map of (user email -> WorkspaceAccessEntry). `exampleEmail` is an example key.
+        properties:
+          exampleEmail:
+            $ref: '#/definitions/WorkspaceAccessEntry'
+        additionalProperties:
+          $ref: '#/definitions/WorkspaceAccessEntry'
+      referencedMethods:
+        type: array
+        items:
+          $ref: '#/definitions/EntityAccessControl'
 
   Profile:
     type: object

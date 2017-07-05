@@ -3,10 +3,23 @@ package org.broadinstitute.dsde.firecloud.model
 import javax.mail.internet.InternetAddress
 
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
+import org.broadinstitute.dsde.rawls.model.{MethodConfigurationShort, MethodRepoMethod}
 
 import scala.util.Try
 
 object MethodRepository {
+
+  object AgoraEntityType extends Enumeration {
+    type EntityType = Value
+    val Task = Value("Task")
+    val Workflow = Value("Workflow")
+    val Configuration = Value("Configuration")
+
+    def toPath(entityType: EntityType): String = entityType match {
+      case Workflow | Task => "methods"
+      case Configuration => "configurations"
+    }
+  }
 
   case class Configuration(
     namespace: Option[String] = None,
@@ -31,6 +44,11 @@ object MethodRepository {
     entityType: Option[String] = None
   )
 
+  object Method {
+    def apply(mrm:MethodRepoMethod) =
+      new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion))
+  }
+
   // represents a method/config permission as exposed to the user from the orchestration layer
   case class FireCloudPermission(
     user: String,
@@ -52,6 +70,10 @@ object MethodRepository {
   ) {
     def toFireCloudPermission = AgoraPermissionHandler.toFireCloudPermission(this)
   }
+
+  case class EntityAccessControlAgora(entity: Method, acls: Seq[AgoraPermission], message: Option[String] = None)
+
+  case class EntityAccessControl(method:Option[MethodRepoMethod], referencedBy: MethodConfigurationId, acls: Seq[FireCloudPermission], message: Option[String] = None)
 
   object ACLNames {
     val NoAccess = "NO ACCESS"

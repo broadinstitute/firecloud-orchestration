@@ -1,13 +1,11 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraPermission
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraEntityType, AgoraPermission, EntityAccessControlAgora, Method}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, SubsystemStatus, UserInfo}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import spray.client.pipelining._
 import spray.http.Uri
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
@@ -21,11 +19,19 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
     s"${config.authUrl}/$entity/$ns/permissions"
   }
 
+  private def getMultiEntityPermissionUrl(entityType: AgoraEntityType.Value) = {
+    s"${config.authUrl}/${AgoraEntityType.toPath(entityType)}/permissions"
+  }
+
   override def getNamespacePermissions(ns: String, entity: String)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] =
     authedRequestToObject[List[AgoraPermission]]( Get(getNamespaceUrl(ns, entity)) )
 
   override def postNamespacePermissions(ns: String, entity: String, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] =
     authedRequestToObject[List[AgoraPermission]]( Post(getNamespaceUrl(ns, entity), perms) )
+
+  override def getMultiEntityPermissions(entityType: AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]] = {
+    authedRequestToObject[List[EntityAccessControlAgora]]( Post(getMultiEntityPermissionUrl(entityType), entities) )
+  }
 
   override def status: Future[SubsystemStatus] = {
     val agoraStatus = unAuthedRequestToObject[AgoraStatus](Get(Uri(config.baseUrl).withPath(Uri.Path("/status"))))

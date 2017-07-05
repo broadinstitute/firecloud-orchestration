@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, EntityAccessControl, EntityAccessControlAgora, FireCloudPermission}
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
@@ -142,7 +142,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   }
 
   // Build error about missing implicit for Spray parameter unmarshaller? Add an entry here.
-  implicit val impMethod = jsonFormat8(MethodRepository.Method)
+  implicit val impMethod = jsonFormat8(MethodRepository.Method.apply)
   implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
 
   implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate.apply)
@@ -154,7 +154,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impEntityCopyWithoutDestinationDefinition = jsonFormat3(EntityCopyWithoutDestinationDefinition)
   implicit val impEntityId = jsonFormat2(EntityId)
 
-  implicit val impDestination = jsonFormat3(MethodConfigurationId)
+  implicit val impDestination = jsonFormat3(MethodConfigurationId.apply)
   implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)
   implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)
   implicit val impMethodConfigurationPublish = jsonFormat3(MethodConfigurationPublish)
@@ -162,6 +162,11 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impFireCloudPermission = jsonFormat2(FireCloudPermission)
   implicit val impAgoraPermission = jsonFormat2(AgoraPermission)
+
+  implicit val impEntityAccessControl = jsonFormat4(EntityAccessControl)
+  implicit val impEntityAccessControlAgora = jsonFormat3(EntityAccessControlAgora)
+  implicit val impAccessEntry = jsonFormat3(AccessEntry)
+  implicit val impPermissionReport = jsonFormat2(PermissionReport)
 
   implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)

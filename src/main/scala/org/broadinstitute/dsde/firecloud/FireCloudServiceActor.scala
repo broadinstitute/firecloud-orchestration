@@ -52,6 +52,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(app)
+  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
 
   // routes under /api
 
