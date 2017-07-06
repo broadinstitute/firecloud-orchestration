@@ -139,9 +139,6 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     entityQuerySource.via(flow).runWith(sink)
   }
 
-  // TODO: Sort out how to run this in stages, i.e. headers, then rows.
-  // TODO: Sort out how to use a single source and split to outputs, i.e. one source out to both flows
-  // TODO: Need error handling at the runWith level for each stream-flow
   private def streamCollectionType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
 
     // Future of all entities
@@ -159,38 +156,63 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     val tempMembershipFile = File.newTemporaryFile()
     val membershipSink: Sink[ByteString, Future[IOResult]]  = FileIO.toPath(tempMembershipFile.path)
 
-
-
-    // Run the Entity flow
+    // Headers
     val entityHeaders = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-    Source.single(ByteString(entityHeaders.mkString("\t") + "\n")).runWith(entitySink)
-    // Entity TSV Flow
-    val entityWriterFlow = Flow[Seq[Entity]].map { entities =>
-      val rows = TSVFormatter.makeEntityRows(entityType, entities, entityHeaders)
-      ByteString(rows.map{ _.mkString("\t") }.mkString("\n") + "\n")
-    }
-    def entityFileStreamResult: Future[IOResult] = entityBatchSource.via(entityWriterFlow).runWith(entitySink)
-
-
-
-    // Run the Membership flow
+    val eHeaderResult = Source.single(ByteString(entityHeaders.mkString("\t") + "\n")).runWith(entitySink)
     val membershipHeaders = TSVFormatter.makeMembershipHeaders(entityType)
-    Source.single(ByteString(membershipHeaders.mkString("\t") + "\n")).runWith(membershipSink)
-    // Membership TSV Flow
-    val membershipWriterFlow = Flow[Seq[Entity]].map { entities =>
-      val rows = TSVFormatter.makeMembershipRows(entityType, entities)
-      ByteString(rows.map{ _.mkString("\t") }.mkString("\n") + "\n")
+    val mHeaderResult = Source.single(ByteString(membershipHeaders.mkString("\t") + "\n")).runWith(membershipSink)
+
+    // Check the header generation to the files.
+    val headerResult = for {
+      eHeader <- eHeaderResult
+      mHeader <- mHeaderResult
+    } yield eHeader.wasSuccessful && mHeader.wasSuccessful
+
+    // If that worked, then continue writing entity content to the same files
+    val fileStreamIOResults: Future[(Future[IOResult], Future[IOResult])] = headerResult.map { s =>
+      if (!s) {
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to write entity header data for $workspaceNamespace:$workspaceName:$entityType"))
+      } else {
+        // Run the Split Entity Flow that pipes entities through the two flows to the two file sinks
+        // Result of this will be a Future[(Future[IOResult], Future[IOResult])] that represents the
+        // success or failure of streaming content to the file sinks.
+        RunnableGraph.fromGraph(GraphDSL.create(entitySink, membershipSink)((_, _)) { implicit builder =>
+          (eSink, mSink) =>
+          import GraphDSL.Implicits._
+
+          // Source
+          val entitySource: Outlet[Seq[Entity]] = builder.add(entityBatchSource).out
+
+          // Flows
+          val splitter: UniformFanOutShape[Seq[Entity], Seq[Entity]] = builder.add(Broadcast[Seq[Entity]](2))
+          val entityFlow: FlowShape[Seq[Entity], ByteString] = builder.add(Flow[Seq[Entity]].map { entities =>
+            val rows = TSVFormatter.makeEntityRows(entityType, entities, entityHeaders)
+            ByteString(rows.map{ _.mkString("\t") }.mkString("\n") + "\n")
+          })
+          val membershipFlow: FlowShape[Seq[Entity], ByteString] = builder.add(Flow[Seq[Entity]].map { entities =>
+            val rows = TSVFormatter.makeMembershipRows(entityType, entities)
+            ByteString(rows.map{ _.mkString("\t") }.mkString("\n") + "\n")
+          })
+
+          // Graph
+                     entitySource ~> splitter
+          eSink <~     entityFlow <~ splitter
+          mSink <~ membershipFlow <~ splitter
+          ClosedShape
+        }).run()
+      }
     }
-    def membershipFileStreamResult: Future[IOResult] = entityBatchSource.via(membershipWriterFlow).runWith(membershipSink)
 
+    // Check that each file is completed
+    val fileStreamResult = fileStreamIOResults flatMap { fTuple =>
+      for {
+        eResult <- fTuple._1
+        mResult <- fTuple._2
+      } yield eResult.wasSuccessful && mResult.wasSuccessful
+    }
 
-    val fileStreamResultSuccess = for {
-      eFileResult <- entityFileStreamResult
-      mFileResult <- membershipFileStreamResult
-    } yield eFileResult.wasSuccessful && mFileResult.wasSuccessful
-
-
-    fileStreamResultSuccess map { s =>
+    // And then map those files to a ZIP.
+    fileStreamResult map { s =>
       if (s) {
         val zipFile = writeFilesToZip(entityType, tempEntityFile, tempMembershipFile)
         // The output to the user
