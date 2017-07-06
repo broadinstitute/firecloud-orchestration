@@ -73,7 +73,7 @@ object MethodRepository {
 
   case class EntityAccessControlAgora(entity: Method, acls: Seq[AgoraPermission], message: Option[String] = None)
 
-  case class EntityAccessControl(method:Option[MethodRepoMethod], referencedBy: MethodConfigurationId, acls: Seq[FireCloudPermission], message: Option[String] = None)
+  case class EntityAccessControl(method:Option[MethodRepoMethod], referencedBy: MethodConfigurationName, acls: Seq[FireCloudPermission], message: Option[String] = None)
 
   object ACLNames {
     val NoAccess = "NO ACCESS"

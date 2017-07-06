@@ -2418,6 +2418,12 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
+        - name: reportInput
+          description: Users and/or configs on which to report
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/PermissionReportRequest'
       responses:
         200:
           description: Permission Report
@@ -2825,6 +2831,7 @@ paths:
             type: string
         responses:
           200:
+            description: list of all tags used in FireCloud
             schema:
               type: array
               items:
@@ -3664,7 +3671,7 @@ definitions:
         $ref: '#/definitions/MethodRepoMethod'
         description: method repo method
       referencedBy:
-        $ref: '#/definitions/MethodConfigurationId'
+        $ref: '#/definitions/MethodConfigurationName'
         description: workspace configuration that references the method
       acls:
         type: array
@@ -4049,7 +4056,7 @@ definitions:
         $ref: '#/definitions/MethodRepoMethod'
         description: The properties of the method from the method store that this config is associated with
 
-  MethodConfigurationId:
+  MethodConfigurationName:
     required:
       - namespace
       - name
@@ -4269,6 +4276,20 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/EntityAccessControl'
+
+  PermissionReportRequest:
+    description: users and/or configs on which to report.
+    properties:
+      users:
+        description: list of email addresses; optional; defaults to all users in the workspace
+        type: array
+        items:
+          type: string
+      configs:
+        description: list of configs; optional; defaults to all configs in the workspace
+        type: array
+        items:
+          $ref: '#/definitions/MethodConfigurationName'
 
   Profile:
     type: object

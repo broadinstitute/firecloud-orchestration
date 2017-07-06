@@ -266,10 +266,13 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
           } ~
           path("permissionReport") {
             requireUserInfo() { userInfo =>
-              post { requestContext =>
-                perRequest(requestContext,
-                  PermissionReportService.props(permissionReportServiceConstructor, userInfo),
-                  PermissionReportService.GetPermissionReport(workspaceNamespace, workspaceName))
+              post {
+                entity(as[PermissionReportRequest]) { reportInput =>
+                  requestContext =>
+                    perRequest(requestContext,
+                      PermissionReportService.props(permissionReportServiceConstructor, userInfo),
+                      PermissionReportService.GetPermissionReport(workspaceNamespace, workspaceName, reportInput))
+                }
               }
             }
           }

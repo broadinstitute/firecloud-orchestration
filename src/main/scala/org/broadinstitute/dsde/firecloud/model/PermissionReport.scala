@@ -10,3 +10,8 @@ case class PermissionReport (
   workspaceACL: Map[String, AccessEntry],
   referencedMethods: Seq[EntityAccessControl]
 )
+
+case class PermissionReportRequest (
+  users: Option[Seq[String]],
+  configs: Option[Seq[MethodConfigurationName]]
+)

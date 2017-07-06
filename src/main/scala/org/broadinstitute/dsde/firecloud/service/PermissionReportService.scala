@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{MethodConfigurationId, PermissionReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{MethodConfigurationName, PermissionReport, PermissionReportRequest, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import spray.http.StatusCodes.OK
 import spray.httpx.SprayJsonSupport._
@@ -17,7 +17,7 @@ import scala.concurrent.ExecutionContext
 
 
 object PermissionReportService {
-  case class GetPermissionReport(workspaceNamespace: String, workspaceName: String)
+  case class GetPermissionReport(workspaceNamespace: String, workspaceName: String, reportInput: PermissionReportRequest)
 
   def props(permissionReportServiceConstructor: UserInfo => PermissionReportService, userInfo: UserInfo): Props = {
     Props(permissionReportServiceConstructor(userInfo))
@@ -36,14 +36,18 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
   implicit val userInfo = argUserInfo
 
   override def receive: Receive = {
-    case GetPermissionReport(workspaceNamespace: String, workspaceName: String) =>
-      getPermissionReport(workspaceNamespace, workspaceName) pipeTo sender
+    case GetPermissionReport(workspaceNamespace: String, workspaceName: String, reportInput: PermissionReportRequest) =>
+      getPermissionReport(workspaceNamespace, workspaceName, reportInput) pipeTo sender
   }
 
-  def getPermissionReport(workspaceNamespace: String, workspaceName: String) = {
-    // start these in parallel
+  def getPermissionReport(workspaceNamespace: String, workspaceName: String, reportInput: PermissionReportRequest) = {
+    // start the requests to get workspace users and workspace configs in parallel
     val futureWorkspaceACL = rawlsDAO.getWorkspaceACL(workspaceNamespace, workspaceName)
-    val futureWorkspaceConfigs = rawlsDAO.getMethodConfigs(workspaceNamespace, workspaceName)
+    val futureWorkspaceConfigs = rawlsDAO.getMethodConfigs(workspaceNamespace, workspaceName) map { configs =>
+      // filter to just those the user requested
+      if (reportInput.configs.isEmpty || reportInput.configs.get.isEmpty) configs
+      else configs.filter( x => reportInput.configs.get.contains(MethodConfigurationName(x.name, x.namespace)))
+    }
 
     for {
       workspaceACL <- futureWorkspaceACL
@@ -51,15 +55,18 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
       methodACLs <- agoraDAO.getMultiEntityPermissions(AgoraEntityType.Workflow,
                       (workspaceConfigs map {config => Method(config.methodRepoMethod)}).distinct.toList)
     } yield {
-      val wsAcl = workspaceACL.acl
+      // filter the workspace users to what the user requested
+      val wsAcl = if (reportInput.users.isEmpty || reportInput.users.get.isEmpty) workspaceACL.acl
+        else workspaceACL.acl.filter( x => reportInput.users.get.contains(x._1) )
       val translatedMethodAcl = workspaceConfigs map { config =>
         val methodLookup = Method(config.methodRepoMethod)
         val agoraMethodReference = methodACLs.find(_.entity == methodLookup)
         agoraMethodReference match {
-          case Some(agora) => EntityAccessControl(Some(config.methodRepoMethod), MethodConfigurationId(config), agora.acls map AgoraPermissionHandler.toFireCloudPermission, agora.message)
-          case None => EntityAccessControl(None, MethodConfigurationId(config), Seq.empty[FireCloudPermission], Some("referenced method not found."))
+          case Some(agora) => EntityAccessControl(Some(config.methodRepoMethod), MethodConfigurationName(config), agora.acls map AgoraPermissionHandler.toFireCloudPermission, agora.message)
+          case None => EntityAccessControl(None, MethodConfigurationName(config), Seq.empty[FireCloudPermission], Some("referenced method not found."))
         }
       }
+
       RequestComplete(OK, PermissionReport(wsAcl, translatedMethodAcl))
     }
   }
