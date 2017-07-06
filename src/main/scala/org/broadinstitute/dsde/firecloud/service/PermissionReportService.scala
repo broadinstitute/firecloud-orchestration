@@ -46,7 +46,7 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
     val futureWorkspaceConfigs = rawlsDAO.getMethodConfigs(workspaceNamespace, workspaceName) map { configs =>
       // filter to just those the user requested
       if (reportInput.configs.isEmpty || reportInput.configs.get.isEmpty) configs
-      else configs.filter( x => reportInput.configs.get.contains(MethodConfigurationName(x.name, x.namespace)))
+      else configs.filter( x => reportInput.configs.get.contains(MethodConfigurationName(x)))
     }
 
     for {
