@@ -27,7 +27,9 @@ import scala.language.postfixOps
 
 
 object ExportEntitiesByTypeActor {
+
   sealed trait ExportEntitiesByTypeMessage
+
   case class ExportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]) extends ExportEntitiesByTypeMessage
 
   def props(exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor, userInfo: UserInfo): Props = {
@@ -57,9 +59,9 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     * For Collection types, write the content to temp files, zip and return.
     *
     * For Singular types, pipe the content from `Source` -> `Flow` -> `Sink`
-    *   Source generates the entity queries
-    *   Flow executes the queries and sends formatted content to chunked response handler
-    *   Sink finishes the execution pipeline
+    * Source generates the entity queries
+    * Flow executes the queries and sends formatted content to chunked response handler
+    * Sink finishes the execution pipeline
     *
     * Handle exceptions directly by completing the request.
     */
@@ -144,7 +146,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     // Future of all entities
     val entityBatches = Future.traverse(entityQueries) { query =>
       getEntitiesFromQuery(workspaceNamespace, workspaceName, entityType, query)
-    } map(_.flatten)
+    } map (_.flatten)
 
     // Source from that future
     val entityBatchSource = Source.fromFuture(entityBatches)
@@ -154,62 +156,52 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     val tempEntityFile = File.newTemporaryFile()
     val entitySink: Sink[ByteString, Future[IOResult]] = FileIO.toPath(tempEntityFile.path)
     val tempMembershipFile = File.newTemporaryFile()
-    val membershipSink: Sink[ByteString, Future[IOResult]]  = FileIO.toPath(tempMembershipFile.path)
+    val membershipSink: Sink[ByteString, Future[IOResult]] = FileIO.toPath(tempMembershipFile.path)
 
     // Headers
     val entityHeaders = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-    val eHeaderResult = Source.single(ByteString(entityHeaders.mkString("\t") + "\n")).runWith(entitySink)
     val membershipHeaders = TSVFormatter.makeMembershipHeaders(entityType)
-    val mHeaderResult = Source.single(ByteString(membershipHeaders.mkString("\t") + "\n")).runWith(membershipSink)
 
-    // Check the header generation to the files.
-    val headerResult = for {
-      eHeader <- eHeaderResult
-      mHeader <- mHeaderResult
-    } yield eHeader.wasSuccessful && mHeader.wasSuccessful
-
-    // If that worked, then continue writing entity content to the same files
-    val fileStreamIOResults: Future[(Future[IOResult], Future[IOResult])] = headerResult.map { s =>
-      if (!s) {
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to write entity header data for $workspaceNamespace:$workspaceName:$entityType"))
-      } else {
-        // Run the Split Entity Flow that pipes entities through the two flows to the two file sinks
-        // Result of this will be a Future[(Future[IOResult], Future[IOResult])] that represents the
-        // success or failure of streaming content to the file sinks.
-        RunnableGraph.fromGraph(GraphDSL.create(entitySink, membershipSink)((_, _)) { implicit builder =>
-          (eSink, mSink) =>
+    // Run the Split Entity Flow that pipes entities through the two flows to the two file sinks
+    // Result of this will be a Future[(Future[IOResult], Future[IOResult])] that represents the
+    // success or failure of streaming content to the file sinks.
+    val fileStreamIOResults: (Future[IOResult], Future[IOResult]) = {
+      RunnableGraph.fromGraph(GraphDSL.create(entitySink, membershipSink)((_, _)) { implicit builder =>
+        (eSink, mSink) =>
           import GraphDSL.Implicits._
 
-          // Source
+          // Sources
           val entitySource: Outlet[Seq[Entity]] = builder.add(entityBatchSource).out
+          val entityHeaderSource = builder.add(Source.single(ByteString(entityHeaders.mkString("\t") + "\n"))).out
+          val membershipHeaderSource = builder.add(Source.single(ByteString(membershipHeaders.mkString("\t") + "\n"))).out
 
           // Flows
           val splitter: UniformFanOutShape[Seq[Entity], Seq[Entity]] = builder.add(Broadcast[Seq[Entity]](2))
           val entityFlow: FlowShape[Seq[Entity], ByteString] = builder.add(Flow[Seq[Entity]].map { entities =>
             val rows = TSVFormatter.makeEntityRows(entityType, entities, entityHeaders)
-            ByteString(rows.map{ _.mkString("\t") }.mkString("\n") + "\n")
+            ByteString(rows.map { _.mkString("\t")}.mkString("\n") + "\n")
           })
           val membershipFlow: FlowShape[Seq[Entity], ByteString] = builder.add(Flow[Seq[Entity]].map { entities =>
             val rows = TSVFormatter.makeMembershipRows(entityType, entities)
-            ByteString(rows.map{ _.mkString("\t") }.mkString("\n") + "\n")
+            ByteString(rows.map { _.mkString("\t")}.mkString("\n") + "\n")
           })
+          val eConcat = builder.add(Concat[ByteString]())
+          val mConcat = builder.add(Concat[ByteString]())
 
           // Graph
-                     entitySource ~> splitter
-          eSink <~     entityFlow <~ splitter
-          mSink <~ membershipFlow <~ splitter
+          entityHeaderSource                         ~> eConcat
+          entitySource ~> splitter ~> entityFlow     ~> eConcat ~> eSink
+          membershipHeaderSource                     ~> mConcat
+                          splitter ~> membershipFlow ~> mConcat ~> mSink
           ClosedShape
-        }).run()
-      }
+      }).run()
     }
 
     // Check that each file is completed
-    val fileStreamResult = fileStreamIOResults flatMap { fTuple =>
-      for {
-        eResult <- fTuple._1
-        mResult <- fTuple._2
-      } yield eResult.wasSuccessful && mResult.wasSuccessful
-    }
+    val fileStreamResult = for {
+      eResult <- fileStreamIOResults._1
+      mResult <- fileStreamIOResults._2
+    } yield eResult.wasSuccessful && mResult.wasSuccessful
 
     // And then map those files to a ZIP.
     fileStreamResult map { s =>
@@ -258,7 +250,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
 
   private def getEntityTypeMetadata(workspaceNamespace: String, workspaceName: String, entityType: String): Future[EntityTypeMetadata] = {
     rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName).
-      map (_.getOrElse(entityType,
+      map(_.getOrElse(entityType,
         throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")))
       )
   }
