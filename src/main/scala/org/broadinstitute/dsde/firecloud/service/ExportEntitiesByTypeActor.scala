@@ -19,7 +19,6 @@ import org.broadinstitute.dsde.rawls.model._
 import spray.http.{ContentTypes, _}
 import spray.json._
 import spray.routing.RequestContext
-import DefaultJsonProtocol._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -148,32 +147,29 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
       getEntitiesFromQuery(workspaceNamespace, workspaceName, entityType, query)
     } map (_.flatten)
 
-    // Source from that future
-    val entityBatchSource = Source.fromFuture(entityBatches)
-
     // Two File sinks, one for each kind of entity set file needed.
     // The temp files will end up zipped and streamed when complete.
-    val tempEntityFile = File.newTemporaryFile()
+    val tempEntityFile: File = File.newTemporaryFile()
     val entitySink: Sink[ByteString, Future[IOResult]] = FileIO.toPath(tempEntityFile.path)
-    val tempMembershipFile = File.newTemporaryFile()
+    val tempMembershipFile: File = File.newTemporaryFile()
     val membershipSink: Sink[ByteString, Future[IOResult]] = FileIO.toPath(tempMembershipFile.path)
 
     // Headers
-    val entityHeaders = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-    val membershipHeaders = TSVFormatter.makeMembershipHeaders(entityType)
+    val entityHeaders: IndexedSeq[String] = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
+    val membershipHeaders: IndexedSeq[String] = TSVFormatter.makeMembershipHeaders(entityType)
 
     // Run the Split Entity Flow that pipes entities through the two flows to the two file sinks
-    // Result of this will be a Future[(Future[IOResult], Future[IOResult])] that represents the
-    // success or failure of streaming content to the file sinks.
+    // Result of this will be a tuple of Future[IOResult] that represents the success or failure of
+    // streaming content to the file sinks.
     val fileStreamIOResults: (Future[IOResult], Future[IOResult]) = {
       RunnableGraph.fromGraph(GraphDSL.create(entitySink, membershipSink)((_, _)) { implicit builder =>
         (eSink, mSink) =>
           import GraphDSL.Implicits._
 
           // Sources
-          val entitySource: Outlet[Seq[Entity]] = builder.add(entityBatchSource).out
-          val entityHeaderSource = builder.add(Source.single(ByteString(entityHeaders.mkString("\t") + "\n"))).out
-          val membershipHeaderSource = builder.add(Source.single(ByteString(membershipHeaders.mkString("\t") + "\n"))).out
+          val entitySource: Outlet[Seq[Entity]] = builder.add(Source.fromFuture(entityBatches)).out
+          val entityHeaderSource: Outlet[ByteString] = builder.add(Source.single(ByteString(entityHeaders.mkString("\t") + "\n"))).out
+          val membershipHeaderSource: Outlet[ByteString] = builder.add(Source.single(ByteString(membershipHeaders.mkString("\t") + "\n"))).out
 
           // Flows
           val splitter: UniformFanOutShape[Seq[Entity], Seq[Entity]] = builder.add(Broadcast[Seq[Entity]](2))
@@ -185,8 +181,8 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
             val rows = TSVFormatter.makeMembershipRows(entityType, entities)
             ByteString(rows.map { _.mkString("\t")}.mkString("\n") + "\n")
           })
-          val eConcat = builder.add(Concat[ByteString]())
-          val mConcat = builder.add(Concat[ByteString]())
+          val eConcat: UniformFanInShape[ByteString, ByteString] = builder.add(Concat[ByteString]())
+          val mConcat: UniformFanInShape[ByteString, ByteString] = builder.add(Concat[ByteString]())
 
           // Graph
           entityHeaderSource                         ~> eConcat
