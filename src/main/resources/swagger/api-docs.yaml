@@ -1398,34 +1398,6 @@ paths:
               requiresRefresh:
                 type: boolean
 
-  /api/status:
-    get:
-      tags:
-      - Status
-      operationId: status
-      summary: |
-        Returns the workspace service url, methods repository url, and the current timestamp.
-      responses:
-        200:
-          description: Success
-        500:
-          description: Internal Error
-
-  /api/status/ping:
-    get:
-      tags:
-      - Status
-      operationId: ping
-      summary: |
-        Returns the current timestamp.
-      produces:
-        - text/plain
-      responses:
-        200:
-          description: Success
-        500:
-          description: Internal Error
-
   /api/storage/{bucket}/{object}:
     get:
       tags:

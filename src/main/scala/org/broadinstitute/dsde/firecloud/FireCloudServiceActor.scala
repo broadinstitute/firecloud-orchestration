@@ -61,7 +61,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val billingService = new BillingService with ActorRefFactoryContext
   val apiRoutes = methodsService.routes ~ profileRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    apiStatusRoutes ~ nihRoutes ~ billingService.routes
+    nihRoutes ~ billingService.routes
 
   val userService = new UserService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
