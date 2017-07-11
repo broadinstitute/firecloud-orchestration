@@ -1,9 +1,10 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import akka.actor.{Actor, ActorContext, Props}
+import akka.actor.{Actor, Props}
 import com.typesafe.scalalogging.slf4j.LazyLogging
+import org.broadinstitute.dsde.firecloud.utils.StreamingActor._
 import spray.http.{ContentType, _}
-import spray.routing.{HttpService, RequestContext}
+import spray.routing.RequestContext
 
 object StreamingActor {
   case class FirstChunk(httpData: HttpData, remaining: Int)
@@ -13,14 +14,10 @@ object StreamingActor {
     Props(new StreamingActor(ctx, contentType, fileName))
 }
 
-class StreamingActor(ctx: RequestContext, contentType: ContentType, fileName: String) extends Actor with HttpService with LazyLogging {
+class StreamingActor(ctx: RequestContext, contentType: ContentType, fileName: String) extends Actor with LazyLogging {
 
   private val keepAlive = HttpHeaders.Connection("Keep-Alive")
   private val disposition = HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> fileName))
-
-  import StreamingActor._
-
-  def actorRefFactory: ActorContext = context
 
   def receive: Receive = {
 
