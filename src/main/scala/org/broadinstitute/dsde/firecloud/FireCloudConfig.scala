@@ -67,7 +67,7 @@ object FireCloudConfig {
     def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
     def overwriteGroupMembershipUrlFromGroupName(groupName: String) = authUrl + overwriteGroupMembershipPath.format(groupName)
     def entityQueryUriFromWorkspaceAndQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: Option[EntityQuery] = None): Uri = {
-      val baseEntityQueryUri = Uri(entityQueryPathFromWorkspace(workspaceNamespace, workspaceName) + s"/$entityType")
+      val baseEntityQueryUri = Uri(s"${entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType")
       query match {
         case Some(q) =>
           val qMap: Map[String, String] = Map(
