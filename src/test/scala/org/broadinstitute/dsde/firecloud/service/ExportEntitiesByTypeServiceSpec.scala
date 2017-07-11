@@ -30,7 +30,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
   // Pick the first few headers from the list of available sample headers:
   val filterProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.take(5).map(_.name)
-  // Grab the rest so we can double check the returned content to make sure they aren't returned.
+  // Grab the rest so we can double check the returned content to make sure the ignored ones aren't in the response.
   val missingProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.drop(5).map(_.name)
 
   "ExportEntitiesApiService-ExportEntitiesByType" - {

@@ -199,14 +199,14 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     // And then map those files to a ZIP.
     val zipResult = fileStreamResult flatMap { s =>
       if (s) {
-        val zipFile = writeFilesToZip(entityType, tempEntityFile, tempMembershipFile)
+        val zipFile: Future[File] = writeFilesToZip(entityType, tempEntityFile, tempMembershipFile)
         // The output to the user
         lazy val streamingActorRef = context.actorOf(StreamingActor.props(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip"))
         zipFile map { f =>
           streamingActorRef ! FirstChunk(HttpData.apply(f.byteArray), 0)
         }
       } else {
-        Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")))
+        Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to stream zip file to user for $workspaceNamespace:$workspaceName:$entityType")))
       }
     }
     zipResult.mapTo[Done]
@@ -222,11 +222,14 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
   }
 
   private def writeFilesToZip(entityType: String, entityTSV: File, membershipTSV: File): Future[File] = {
-    Future {
+    try {
       val zipFile = File.newTemporaryDirectory()
       membershipTSV.moveTo(zipFile/s"${entityType}_membership.tsv")
       entityTSV.moveTo(zipFile/s"${entityType}_entity.tsv")
       zipFile.zip()
+      Future { zipFile.zip() }
+    } catch {
+      case t: Throwable => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to create zip file.")))
     }
   }
 
