@@ -1,14 +1,16 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import akka.actor.{Actor, ActorContext}
+import akka.actor.{Actor, ActorContext, Props}
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import spray.http._
+import spray.http.{ContentType, _}
 import spray.routing.{HttpService, RequestContext}
 
 object StreamingActor {
   case class FirstChunk(httpData: HttpData, remaining: Int)
   case class NextChunk(httpData: HttpData, remaining: Int)
   case class Ok(remaining: Int)
+  def props(ctx: RequestContext, contentType: ContentType, fileName: String) =
+    Props(new StreamingActor(ctx, contentType, fileName))
 }
 
 class StreamingActor(ctx: RequestContext, contentType: ContentType, fileName: String) extends Actor with HttpService with LazyLogging {
@@ -40,12 +42,6 @@ class StreamingActor(ctx: RequestContext, contentType: ContentType, fileName: St
         context.stop(self)
       }
 
-    //
-    case x =>
-      logger.error(s"Unhandled case: $x")
-      unhandled(x)
-
   }
-
 
 }
