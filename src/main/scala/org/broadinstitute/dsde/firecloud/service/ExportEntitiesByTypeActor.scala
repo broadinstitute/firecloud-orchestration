@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.Done
-import akka.actor.{Actor, ActorContext, ActorRef, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern.pipe
 import akka.stream._
 import akka.stream.scaladsl._
@@ -42,7 +42,7 @@ object ExportEntitiesByTypeActor {
 class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInfo, argMaterializer: ActorMaterializer)(implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
 
   // Requires its own actor context to work with downstream actors: TSVWriterActor and StreamingActor
-  def actorRefFactory: ActorContext = context
+//  def actorRefFactory: ActorContext = context
 
   implicit val timeout: Timeout = Timeout(1 minute)
   implicit val userInfo: UserInfo = argUserInfo
@@ -67,17 +67,14 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
   def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Unit] = {
     getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
       val entityQueries = getEntityQueries(metadata, entityType)
-
-      // Stream exceptions have to be handled by directly closing out the RequestContext responder
-      if (TSVFormatter.isCollectionType(entityType)) {
-        streamCollectionType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames).onFailure {
-          case t: Throwable => handleStreamException(ctx, t)
-        }
+      val streamFuture = if (TSVFormatter.isCollectionType(entityType)) {
+        streamCollectionType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
       } else {
         val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-        streamSingularType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, headers, attributeNames).onFailure {
-          case t: Throwable => handleStreamException(ctx, t)
-        }
+        streamSingularType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, headers, attributeNames)
+      }.recover { case t: Throwable =>
+        // Stream exceptions have to be handled by directly closing out the RequestContext responder
+        handleStreamException(ctx, t)
       }
       Future(())
     }
@@ -121,7 +118,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     */
   private def streamSingularType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, headers: IndexedSeq[String], attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
     // The output to the user
-    val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`text/plain`, entityType + ".txt")))
+    val streamingActorRef = context.actorOf(StreamingActor.props(ctx, ContentTypes.`text/plain`, entityType + ".txt"))
 
     // The Source
     val entityQuerySource = Source(entityQueries.toStream)
@@ -149,9 +146,9 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
 
     // Two File sinks, one for each kind of entity set file needed.
     // The temp files will end up zipped and streamed when complete.
-    val tempEntityFile: File = File.newTemporaryFile()
+    val tempEntityFile: File = File.newTemporaryFile(prefix = "entity_")
     val entitySink: Sink[ByteString, Future[IOResult]] = FileIO.toPath(tempEntityFile.path)
-    val tempMembershipFile: File = File.newTemporaryFile()
+    val tempMembershipFile: File = File.newTemporaryFile(prefix = "membership_")
     val membershipSink: Sink[ByteString, Future[IOResult]] = FileIO.toPath(tempMembershipFile.path)
 
     // Headers
@@ -200,20 +197,19 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     } yield eResult.wasSuccessful && mResult.wasSuccessful
 
     // And then map those files to a ZIP.
-    fileStreamResult map { s =>
+    val zipResult = fileStreamResult flatMap { s =>
       if (s) {
         val zipFile = writeFilesToZip(entityType, tempEntityFile, tempMembershipFile)
         // The output to the user
-        lazy val streamingActorRef = actorRefFactory.actorOf(Props(new StreamingActor(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip")))
+        lazy val streamingActorRef = context.actorOf(StreamingActor.props(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip"))
         zipFile map { f =>
           streamingActorRef ! FirstChunk(HttpData.apply(f.byteArray), 0)
         }
       } else {
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType"))
+        Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")))
       }
     }
-
-    Future(Done)
+    zipResult.mapTo[Done]
   }
 
   private def sendRowsAsChunks(actorRef: ActorRef, query: EntityQuery, querySize: Int, entityType: String, headers: IndexedSeq[String], entities: Seq[Entity]): Unit = {
