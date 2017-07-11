@@ -2419,7 +2419,7 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
         - name: reportInput
-          description: Users and/or configs on which to report
+          description: Users and/or configs on which to report, both optional
           required: true
           in: body
           schema:
