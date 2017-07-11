@@ -109,7 +109,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         userService.routes ~
         workspaceRoutes ~
         notificationsRoutes ~
-        publicStatusRoutes ~
+        statusRoutes ~
         pathPrefix("api") {
           apiRoutes
         } ~
