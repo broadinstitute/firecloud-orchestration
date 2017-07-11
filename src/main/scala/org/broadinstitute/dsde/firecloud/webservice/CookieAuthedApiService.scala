@@ -15,7 +15,7 @@ import scala.language.postfixOps
  */
 trait CookieAuthedApiService extends HttpService with FireCloudDirectives with FireCloudRequestBuilding with LazyLogging {
 
-  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor
+  val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
 
   private implicit val executionContext = actorRefFactory.dispatcher
 
@@ -29,8 +29,8 @@ trait CookieAuthedApiService extends HttpService with FireCloudDirectives with F
           post { requestContext =>
             val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
             val userInfo = UserInfo("dummy", OAuth2BearerToken(tokenValue), -1, "dummy")
-            val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo)
-            val exportMessage = ExportEntitiesByTypeActor.ExportEntities(requestContext, workspaceNamespace, workspaceName, entityType, attributeNames)
+            val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames))
+            val exportMessage = ExportEntitiesByTypeActor.ExportEntities(requestContext)
             val exportActor = actorRefFactory.actorOf(exportProps)
             exportActor ! exportMessage
           }

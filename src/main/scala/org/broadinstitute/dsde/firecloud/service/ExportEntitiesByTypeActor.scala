@@ -24,29 +24,37 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
+case class ExportEntitiesByTypeArguments(
+  userInfo: UserInfo,
+  workspaceNamespace: String,
+  workspaceName: String,
+  entityType: String,
+  attributeNames: Option[IndexedSeq[String]]
+)
 
 object ExportEntitiesByTypeActor {
 
   sealed trait ExportEntitiesByTypeMessage
 
-  case class ExportEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]) extends ExportEntitiesByTypeMessage
+  case class ExportEntities(ctx: RequestContext) extends ExportEntitiesByTypeMessage
 
-  def props(exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor, userInfo: UserInfo): Props = {
-    Props(exportEntitiesByTypeConstructor(userInfo))
+  def props(exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor, args: ExportEntitiesByTypeArguments): Props = {
+    Props(exportEntitiesByTypeConstructor(args))
   }
 
-  def constructor(app: Application, materializer: ActorMaterializer)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new ExportEntitiesByTypeActor(app.rawlsDAO, userInfo, materializer)
+  def constructor(app: Application, materializer: ActorMaterializer)(args: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) =
+    new ExportEntitiesByTypeActor(app.rawlsDAO, args.userInfo, materializer, args.workspaceNamespace, args.workspaceName, args.entityType, args.attributeNames)
 }
 
-class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInfo, argMaterializer: ActorMaterializer)(implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
+class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInfo, argMaterializer: ActorMaterializer,
+                                workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]])(implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
 
   implicit val timeout: Timeout = Timeout(1 minute)
   implicit val userInfo: UserInfo = argUserInfo
   implicit val materializer: ActorMaterializer = argMaterializer
 
   override def receive: Receive = {
-    case ExportEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) => streamEntities(ctx, workspaceNamespace, workspaceName, entityType, attributeNames) pipeTo sender
+    case ExportEntities(ctx) => streamEntities(ctx) pipeTo sender
   }
 
   /**
@@ -61,14 +69,14 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     *
     * Handle exceptions directly by completing the request.
     */
-  def streamEntities(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, attributeNames: Option[IndexedSeq[String]]): Future[Unit] = {
-    getEntityTypeMetadata(workspaceNamespace, workspaceName, entityType) flatMap { metadata =>
-      val entityQueries = getEntityQueries(metadata, entityType)
+  def streamEntities(ctx: RequestContext): Future[Unit] = {
+    getEntityTypeMetadata flatMap { metadata =>
+      val entityQueries = getEntityQueries(metadata)
       val streamFuture = if (TSVFormatter.isCollectionType(entityType)) {
-        streamCollectionType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, attributeNames)
+        streamCollectionType(ctx, entityQueries, metadata)
       } else {
         val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-        streamSingularType(ctx, workspaceNamespace, workspaceName, entityType, entityQueries, metadata, headers, attributeNames)
+        streamSingularType(ctx, entityQueries, metadata, headers)
       }.recover { case t: Throwable =>
         // Stream exceptions have to be handled by directly closing out the RequestContext responder
         handleStreamException(ctx, t)
@@ -113,7 +121,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     * 3. Flow sends events (batch of entities) to a streaming output actor
     * 4. Return a Done to the calling route when complete.
     */
-  private def streamSingularType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, headers: IndexedSeq[String], attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
+  private def streamSingularType(ctx: RequestContext, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, headers: IndexedSeq[String]): Future[Done] = {
     // The output to the user
     val streamingActorRef = context.actorOf(StreamingActor.props(ctx, ContentTypes.`text/plain`, entityType + ".txt"))
 
@@ -122,8 +130,8 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
 
     // The Flow. Using mapAsync(1) ensures that we run 1 batch at a time through this side-affecting process.
     val flow = Flow[EntityQuery].mapAsync(1) { query =>
-      getEntitiesFromQuery(workspaceNamespace, workspaceName, entityType, query) map { entities =>
-        sendRowsAsChunks(streamingActorRef, query, entityQueries.size, entityType, headers, entities)
+      getEntitiesFromQuery(query) map { entities =>
+        sendRowsAsChunks(streamingActorRef, query, entityQueries.size, headers, entities)
       }
     }
 
@@ -134,11 +142,11 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     entityQuerySource.via(flow).runWith(sink)
   }
 
-  private def streamCollectionType(ctx: RequestContext, workspaceNamespace: String, workspaceName: String, entityType: String, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, attributeNames: Option[IndexedSeq[String]]): Future[Done] = {
+  private def streamCollectionType(ctx: RequestContext, entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata): Future[Done] = {
 
     // Future of all entities
     val entityBatches = Future.traverse(entityQueries) { query =>
-      getEntitiesFromQuery(workspaceNamespace, workspaceName, entityType, query)
+      getEntitiesFromQuery(query)
     } map (_.flatten)
 
     // Two File sinks, one for each kind of entity set file needed.
@@ -196,7 +204,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     // And then map those files to a ZIP.
     val zipResult = fileStreamResult flatMap { s =>
       if (s) {
-        val zipFile: Future[File] = writeFilesToZip(entityType, tempEntityFile, tempMembershipFile)
+        val zipFile: Future[File] = writeFilesToZip(tempEntityFile, tempMembershipFile)
         // The output to the user
         lazy val streamingActorRef = context.actorOf(StreamingActor.props(ctx, ContentTypes.`application/octet-stream`, entityType + ".zip"))
         zipFile map { f =>
@@ -209,7 +217,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     zipResult.mapTo[Done]
   }
 
-  private def sendRowsAsChunks(actorRef: ActorRef, query: EntityQuery, querySize: Int, entityType: String, headers: IndexedSeq[String], entities: Seq[Entity]): Unit = {
+  private def sendRowsAsChunks(actorRef: ActorRef, query: EntityQuery, querySize: Int, headers: IndexedSeq[String], entities: Seq[Entity]): Unit = {
     val rows = TSVFormatter.makeEntityRows(entityType, entities, headers)
     val remaining = querySize - query.page + 1
     // Send headers as the first chunk of data
@@ -218,7 +226,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     actorRef ! NextChunk(HttpData(rows.map { _.mkString("\t") }.mkString("\n") + "\n"), remaining - 1)
   }
 
-  private def writeFilesToZip(entityType: String, entityTSV: File, membershipTSV: File): Future[File] = {
+  private def writeFilesToZip(entityTSV: File, membershipTSV: File): Future[File] = {
     try {
       val zipFile = File.newTemporaryDirectory()
       membershipTSV.moveTo(zipFile/s"${entityType}_membership.tsv")
@@ -230,7 +238,7 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     }
   }
 
-  private def getEntityQueries(metadata: EntityTypeMetadata, entityType: String): Seq[EntityQuery] = {
+  private def getEntityQueries(metadata: EntityTypeMetadata): Seq[EntityQuery] = {
     val pageSize = FireCloudConfig.Rawls.defaultPageSize
     val filteredCount = metadata.count
     val sortField = entityType + "_id"
@@ -240,14 +248,14 @@ class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInf
     }
   }
 
-  private def getEntityTypeMetadata(workspaceNamespace: String, workspaceName: String, entityType: String): Future[EntityTypeMetadata] = {
+  private def getEntityTypeMetadata: Future[EntityTypeMetadata] = {
     rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName).
       map(_.getOrElse(entityType,
         throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")))
       )
   }
 
-  private def getEntitiesFromQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery): Future[Seq[Entity]] = {
+  private def getEntitiesFromQuery(query: EntityQuery): Future[Seq[Entity]] = {
     rawlsDAO.queryEntitiesOfType(workspaceNamespace, workspaceName, entityType, query) map {
       response => response.results
     }
