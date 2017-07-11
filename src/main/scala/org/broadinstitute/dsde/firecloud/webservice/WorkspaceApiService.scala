@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, WorkspaceService}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PermissionReportService, WorkspaceService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.slf4j.LoggerFactory
@@ -32,6 +32,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
 
   val workspaceServiceConstructor: WithAccessToken => WorkspaceService
+  val permissionReportServiceConstructor: UserInfo => PermissionReportService
 
   private val filename = "-workspace-attributes.tsv"
 
@@ -259,6 +260,18 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   perRequest(requestContext,
                     WorkspaceService.props(workspaceServiceConstructor, userInfo),
                     WorkspaceService.DeleteTags(workspaceNamespace, workspaceName, tags))
+                }
+              }
+            }
+          } ~
+          path("permissionReport") {
+            requireUserInfo() { userInfo =>
+              post {
+                entity(as[PermissionReportRequest]) { reportInput =>
+                  requestContext =>
+                    perRequest(requestContext,
+                      PermissionReportService.props(permissionReportServiceConstructor, userInfo),
+                      PermissionReportService.GetPermissionReport(workspaceNamespace, workspaceName, reportInput))
                 }
               }
             }

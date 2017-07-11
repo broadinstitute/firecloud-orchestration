@@ -200,6 +200,9 @@ class MockRawlsDAO  extends RawlsDAO {
 
   override def getAllLibraryPublishedWorkspaces: Future[Seq[Workspace]] = Future.successful(Seq.empty[Workspace])
 
+  override def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken) =
+    Future.successful(WorkspaceACL(Map.empty[String, AccessEntry]))
+
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] = {
     Future.successful(WorkspaceACLUpdateResponseList(aclUpdates.map(update => WorkspaceACLUpdateResponse(update.email, update.accessLevel)), aclUpdates, aclUpdates, aclUpdates))
   }
@@ -228,6 +231,10 @@ class MockRawlsDAO  extends RawlsDAO {
     val responses = updates.map(cat => WorkspaceCatalogResponse(cat.email.substring(0, cat.email.indexOf("@"))+"id", cat.catalog))
     Future.successful(WorkspaceCatalogUpdateResponseList(responses, Seq.empty))
   }
+
+
+  override def getMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken) =
+    Future.successful(Seq.empty[MethodConfigurationShort])
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
 }

@@ -32,8 +32,9 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
   def workspaceTagsPath(ns: String = "namespace", name: String = "name") = workspacesRoot + "/%s/%s/tags".format(ns, name)
 
   // use the MockTagsRawlsDao for these tests.
-  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(
-    app.copy(rawlsDAO = new MockTagsRawlsDao))
+  val testApp = app.copy(rawlsDAO = new MockTagsRawlsDao)
+  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(testApp)
+  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(testApp)
 
   private def randUUID = java.util.UUID.randomUUID.toString
 
