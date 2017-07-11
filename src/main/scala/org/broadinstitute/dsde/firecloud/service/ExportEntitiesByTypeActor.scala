@@ -41,9 +41,6 @@ object ExportEntitiesByTypeActor {
 
 class ExportEntitiesByTypeActor(val rawlsDAO: RawlsDAO, val argUserInfo: UserInfo, argMaterializer: ActorMaterializer)(implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
 
-  // Requires its own actor context to work with downstream actors: TSVWriterActor and StreamingActor
-//  def actorRefFactory: ActorContext = context
-
   implicit val timeout: Timeout = Timeout(1 minute)
   implicit val userInfo: UserInfo = argUserInfo
   implicit val materializer: ActorMaterializer = argMaterializer
