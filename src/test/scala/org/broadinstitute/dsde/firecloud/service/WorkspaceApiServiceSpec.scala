@@ -201,7 +201,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     rawlsServer.stop
   }
 
-  "WorkspaceService Passthrough Negative Tests" - {
+  "WorkspaceService Passthrough Negative Tests" ignore {
 
     "Passthrough tests on the /workspaces path" - {
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, DELETE methods" in {
@@ -363,7 +363,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
   }
 
-  "WorkspaceService Passthrough Tests" - {
+  "WorkspaceService Passthrough Tests" ignore {
 
     "Passthrough tests on the /workspaces path" - {
       List(HttpMethods.GET) foreach { method =>
@@ -530,7 +530,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
   }
 
-  "Workspace Non-passthrough Tests" - {
+  "Workspace Non-passthrough Tests" ignore {
     "POST on /workspaces with 'not protected' workspace request sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
       val (rawlsRequest, rawlsResponse) = stubRawlsCreateWorkspace("namespace", "name")
 
