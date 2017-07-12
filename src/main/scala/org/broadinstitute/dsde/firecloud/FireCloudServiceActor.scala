@@ -45,7 +45,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, searchDAO, thurloeDAO)
   val materializer: ActorMaterializer = ActorMaterializer()
 
-  val exportEntitiesByTypeConstructor: (UserInfo) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
+  val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val nihServiceConstructor: () => NihServiceActor = NihService.constructor(app)
