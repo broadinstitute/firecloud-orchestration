@@ -47,16 +47,15 @@ object ExportEntitiesByTypeActor {
       exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, materializer)
 }
 
-class ExportEntitiesByTypeActor(
-  val rawlsDAO: RawlsDAO,
-  val ctx: RequestContext,
-  val argUserInfo: UserInfo,
-  val workspaceNamespace: String,
-  val workspaceName: String,
-  val entityType: String,
-  val attributeNames: Option[IndexedSeq[String]],
-  argMaterializer: ActorMaterializer)
-  (implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
+class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
+                                ctx: RequestContext,
+                                argUserInfo: UserInfo,
+                                workspaceNamespace: String,
+                                workspaceName: String,
+                                entityType: String,
+                                attributeNames: Option[IndexedSeq[String]],
+                                argMaterializer: ActorMaterializer)
+                               (implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
 
   implicit val timeout: Timeout = Timeout(1 minute)
   implicit val userInfo: UserInfo = argUserInfo
