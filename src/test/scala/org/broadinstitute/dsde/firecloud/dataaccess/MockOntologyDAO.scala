@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
+import org.broadinstitute.dsde.firecloud.model.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -211,4 +212,6 @@ class MockOntologyDAO extends OntologyDAO {
   )
 
   override def search(term: String): Future[Option[List[TermResource]]] = Future(data.get(term))
+
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
 }

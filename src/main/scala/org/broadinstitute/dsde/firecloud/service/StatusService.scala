@@ -4,11 +4,12 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.pattern._
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO, SearchDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impSystemStatus
 import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, SystemStatus}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.StatusService.CollectStatusInfo
+import org.broadinstitute.dsde.firecloud.dataaccess.OntologyDAO
 import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
@@ -49,8 +50,19 @@ class StatusService (val app: Application)
       thurloeStatus <- app.thurloeDAO.status recover subsystemExceptionHandler
       agoraStatus <- app.agoraDAO.status recover subsystemExceptionHandler
       searchStatus <- app.searchDAO.status recover subsystemExceptionHandler
+      consentStatus <- app.consentDAO.status recover subsystemExceptionHandler
+      ontologyStatus <- app.ontologyDAO.status recover subsystemExceptionHandler
+      // googleStatus
     } yield {
-      val statusMap = Map(RawlsDAO.serviceName -> rawlsStatus, ThurloeDAO.serviceName -> thurloeStatus, AgoraDAO.serviceName -> agoraStatus, SearchDAO.serviceName -> searchStatus)
+      // TODO: create BaseServiceDAO to enforce existence of serviceName, then map this stuff
+      val statusMap = Map(
+        RawlsDAO.serviceName -> rawlsStatus,
+        ThurloeDAO.serviceName -> thurloeStatus,
+        AgoraDAO.serviceName -> agoraStatus,
+        SearchDAO.serviceName -> searchStatus,
+        OntologyDAO.serviceName -> ontologyStatus,
+        ConsentDAO.serviceName -> consentStatus
+      )
 
       if (statusMap.values.forall(_.ok))
         RequestComplete(SystemStatus(true, statusMap))

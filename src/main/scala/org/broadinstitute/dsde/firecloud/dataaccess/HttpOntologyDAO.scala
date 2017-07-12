@@ -8,6 +8,7 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.{OntologyStatus, SubsystemStatus, UserInfo}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import spray.can.Http
 import spray.client.pipelining._
@@ -15,6 +16,7 @@ import spray.http.Uri
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOntologyStatus
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -58,5 +60,14 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
   private def getHostConnector: Future[ActorRef] = {
     implicit val timeout:Timeout = 60.seconds // timeout to get the host connector reference
     for (Http.HostConnectorInfo(connector, _) <- IO(Http) ? ontologyHostSetup) yield connector
+  }
+
+  override def status: Future[SubsystemStatus] = {
+    val ontologyStatus = unAuthedRequestToObject[OntologyStatus](Get(ontologyUri.withPath(Uri.Path("/status"))))
+
+    ontologyStatus map { ontologyStatus =>
+      println(ontologyStatus)
+      SubsystemStatus(true, Some(List(ontologyStatus.toString)))
+    }
   }
 }

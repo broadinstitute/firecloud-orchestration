@@ -26,7 +26,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
   // Typically, the BaseServiceSpec provides an `app: Application` member that has all Mock DAOs.
   // Here, we want to send requests through the Agora DAO to the Mock Server, so create a new Application
   // with the HTTP DAO instead of Mock.
-  val customApp = new Application(new HttpAgoraDAO(FireCloudConfig.Agora), googleServicesDao, ontologyDao, rawlsDao, searchDao, thurloeDao)
+  val customApp = new Application(new HttpAgoraDAO(FireCloudConfig.Agora), googleServicesDao, ontologyDao, consentDao, rawlsDao, searchDao, thurloeDao)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(customApp)
 
   var agoraServer: ClientAndServer   = startClientAndServer(MockUtils.methodsServerPort) // Agora = methods
