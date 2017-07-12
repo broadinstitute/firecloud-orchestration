@@ -58,7 +58,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
       statusResponse.systems(RawlsDAO.serviceName).ok should be(true)
       statusResponse.systems(SearchDAO.serviceName).ok should be(true)
       statusResponse.systems(AgoraDAO.serviceName).messages should be(Some(List("Agora is down")))
-      statusResponse.systems.size should be(4)
+      statusResponse.systems.size should be(6)
     }
   }
 
@@ -78,7 +78,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
       statusResponse.ok should be(true)
       statusResponse.systems(AgoraDAO.serviceName).ok should be(true)
       statusResponse.systems(AgoraDAO.serviceName).messages should be(None)
-      statusResponse.systems.size should be(4)
+      statusResponse.systems.size should be(6)
     }
   }
 
@@ -98,7 +98,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
       statusResponse.ok should be(false)
       statusResponse.systems(AgoraDAO.serviceName).ok should be(false)
       statusResponse.systems(AgoraDAO.serviceName).messages should be(Some(List("bogus non-JSON response")))
-      statusResponse.systems.size should be(4)
+      statusResponse.systems.size should be(6)
     }
   }
 
@@ -118,7 +118,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
       statusResponse.ok should be(false)
       statusResponse.systems(AgoraDAO.serviceName).ok should be(false)
       statusResponse.systems(AgoraDAO.serviceName).messages should be(Some(List("")))
-      statusResponse.systems.size should be(4)
+      statusResponse.systems.size should be(6)
     }
   }
 
@@ -134,7 +134,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
       statusResponse.ok should be(false)
       statusResponse.systems(AgoraDAO.serviceName).ok should be(false)
       statusResponse.systems(AgoraDAO.serviceName).messages.get.nonEmpty should be(true)
-      statusResponse.systems.size should be(4)
+      statusResponse.systems.size should be(6)
     }
   }
 }
@@ -155,7 +155,7 @@ class StatusApiServiceSpecMockDAOs extends BaseServiceSpec with HttpService with
       statusResponse.systems(RawlsDAO.serviceName).ok should be(true)
       statusResponse.systems(SearchDAO.serviceName).ok should be(true)
       statusResponse.systems(AgoraDAO.serviceName).messages should be(Some(List("Agora Mock DAO exception")))
-      statusResponse.systems.size should be(4)
+      statusResponse.systems.size should be(6)
     }
 
   }
