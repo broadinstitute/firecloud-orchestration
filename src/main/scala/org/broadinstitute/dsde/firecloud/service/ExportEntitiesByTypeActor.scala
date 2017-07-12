@@ -47,6 +47,15 @@ object ExportEntitiesByTypeActor {
       exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, materializer)
 }
 
+/**
+  * This class takes an akka.stream approach to generating download content. To facilitate sending
+  * large amounts of paginated data to the client, we need to process the paginated content with a
+  * limited memory footprint. In the case of singular entity downloads, we can also immediately begin
+  * a content stream to the user to avoid browser timeouts. In the case of set entity downloads, we
+  * can use efficient akka.stream techniques to generate files. Using a paginated approach resolves
+  * timeouts between Orchestration and other services. Using akka.streams resolves both memory issues
+  * and backpressure considerations between upstream producers and downstream consumers.
+  */
 class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
                                 ctx: RequestContext,
                                 argUserInfo: UserInfo,
@@ -78,7 +87,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     * Handle exceptions directly by completing the request.
     */
   def streamEntities(): Future[Unit] = {
-    getEntityTypeMetadata(entityType) flatMap { metadata =>
+    entityTypeMetadata flatMap { metadata =>
       val entityQueries = getEntityQueries(metadata, entityType)
       if (TSVFormatter.isCollectionType(entityType)) {
         streamCollectionType(entityQueries, metadata)
@@ -256,7 +265,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     }
   }
 
-  private def getEntityTypeMetadata(entityType: String): Future[EntityTypeMetadata] = {
+  private def entityTypeMetadata: Future[EntityTypeMetadata] = {
     rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName).
       map(_.getOrElse(entityType,
         throw new FireCloudExceptionWithErrorReport(ErrorReport(s"Unable to collect entity metadata for $workspaceNamespace:$workspaceName:$entityType")))
