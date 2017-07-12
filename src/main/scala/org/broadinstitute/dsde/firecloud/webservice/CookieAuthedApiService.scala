@@ -31,9 +31,7 @@ trait CookieAuthedApiService extends HttpService with FireCloudDirectives with F
             val userInfo = UserInfo("dummy", OAuth2BearerToken(tokenValue), -1, "dummy")
             val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
             val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
-            val exportMessage = ExportEntitiesByTypeActor.ExportEntities
-            val exportActor = actorRefFactory.actorOf(exportProps)
-            exportActor ! exportMessage
+            actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
           }
         }
     } ~

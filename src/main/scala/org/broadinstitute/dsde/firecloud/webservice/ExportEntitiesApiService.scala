@@ -8,10 +8,6 @@ import spray.routing.{HttpService, Route}
 
 import scala.language.postfixOps
 
-
-/**
-  * Created by grushton on 6/20/17.
-  */
 trait ExportEntitiesApiService extends HttpService with FireCloudDirectives with FireCloudRequestBuilding with StandardUserInfoDirectives with LazyLogging {
 
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
@@ -29,9 +25,7 @@ trait ExportEntitiesApiService extends HttpService with FireCloudDirectives with
               val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
               val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
               val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
-              val exportMessage = ExportEntitiesByTypeActor.ExportEntities
-              val exportActor = actorRefFactory.actorOf(exportProps)
-              exportActor ! exportMessage
+              actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
           }
         }
       }
