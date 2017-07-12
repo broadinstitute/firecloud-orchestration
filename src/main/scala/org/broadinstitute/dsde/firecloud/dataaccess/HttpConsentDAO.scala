@@ -18,7 +18,6 @@ class HttpConsentDAO(implicit val system: ActorSystem, implicit val executionCon
 
     val consentStatus = unAuthedRequestToObject[ConsentStatus](Get(consentUri.withPath(Uri.Path("/status"))))
     consentStatus map { consentStatus =>
-      println(consentStatus)
       SubsystemStatus(true, Some(List(consentStatus.toString)))
     }
   }

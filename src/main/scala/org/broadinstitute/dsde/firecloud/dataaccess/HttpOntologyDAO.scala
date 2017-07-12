@@ -64,9 +64,9 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
 
   override def status: Future[SubsystemStatus] = {
     val ontologyStatus = unAuthedRequestToObject[OntologyStatus](Get(ontologyUri.withPath(Uri.Path("/status"))))
+    logger.error(ontologyUri.toString())
 
     ontologyStatus map { ontologyStatus =>
-      println(ontologyStatus)
       SubsystemStatus(true, Some(List(ontologyStatus.toString)))
     }
   }
