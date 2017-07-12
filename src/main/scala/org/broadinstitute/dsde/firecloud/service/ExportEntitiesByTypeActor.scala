@@ -81,7 +81,7 @@ class ExportEntitiesByTypeActor(
   def streamEntities(): Future[Unit] = {
     getEntityTypeMetadata(entityType) flatMap { metadata =>
       val entityQueries = getEntityQueries(metadata, entityType)
-      val streamFuture = if (TSVFormatter.isCollectionType(entityType)) {
+      if (TSVFormatter.isCollectionType(entityType)) {
         streamCollectionType(entityQueries, metadata)
       } else {
         val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
@@ -243,7 +243,7 @@ class ExportEntitiesByTypeActor(
       zipFile.zip()
       Future { zipFile.zip() }
     } catch {
-      case t: Throwable => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to create zip file.")))
+      case t: Throwable => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, s"FireCloudException: Unable to create zip file.", t)))
     }
   }
 
