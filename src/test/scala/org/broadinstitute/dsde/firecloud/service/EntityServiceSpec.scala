@@ -19,6 +19,8 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
 
   def actorRefFactory = system
 
+  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
+
   var workspaceServer: ClientAndServer = _
   val apiPrefix = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   val validFireCloudEntitiesPath = apiPrefix + "/broad-dsde-dev/valid/entities"

@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
+import spray.http.OAuth2BearerToken
 
 import scala.concurrent.Future
 
@@ -75,10 +76,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
 
   def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userToken: UserInfo): Future[Seq[Entity]]
-
-  def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse]
-
-  def getEntityTypes(workspaceNamespace: String, workspaceName: String)(implicit userToken: UserInfo): Future[Map[String, EntityTypeMetadata]]
 
   def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]]
 
