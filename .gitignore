@@ -70,6 +70,3 @@ crashlytics.properties
 crashlytics-build.properties
 
 *.pid
-.DS_Store
-
-project/build.properties
