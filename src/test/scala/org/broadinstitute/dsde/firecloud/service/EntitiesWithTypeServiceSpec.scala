@@ -18,6 +18,8 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityService {
 
   def actorRefFactory = system
 
+  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
+
   // Due to the large volume of service specific test cases, generate them here to prevent the
   // extra clutter
   var workspaceServer: ClientAndServer = _

@@ -1,14 +1,14 @@
 package org.broadinstitute.dsde.firecloud
 
-import akka.stream.ActorMaterializer
+import akka.actor.ActorContext
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
-import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.webservice._
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
+import org.broadinstitute.dsde.firecloud.service._
+import org.broadinstitute.dsde.firecloud.webservice._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
@@ -17,7 +17,6 @@ import scala.language.postfixOps
 class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with CookieAuthedApiService
   with EntityService
-  with ExportEntitiesApiService
   with LibraryApiService
   with NamespaceApiService
   with NihApiService
@@ -43,9 +42,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val ontologyDAO:OntologyDAO = new HttpOntologyDAO
 
   val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, searchDAO, thurloeDAO)
-  val materializer: ActorMaterializer = ActorMaterializer()
 
-  val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
+  val exportEntitiesByTypeConstructor: (UserInfo) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val nihServiceConstructor: () => NihServiceActor = NihService.constructor(app)
@@ -79,8 +77,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val appendTimestampOnFailure = mapHttpResponse { response =>
     if (response.status.isFailure) {
       try {
-        import spray.json.DefaultJsonProtocol._
         import spray.json._
+        import spray.json.DefaultJsonProtocol._
         val dataMap = response.entity.asString.parseJson.convertTo[Map[String, JsValue]]
         val withTimestamp = dataMap + ("timestamp" -> JsNumber(System.currentTimeMillis()))
         val contentType = response.header[HttpHeaders.`Content-Type`].map{_.contentType}.getOrElse(ContentTypes.`application/json`)
@@ -98,7 +96,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   def receive = runRoute(
     appendTimestampOnFailure {
       logRequests {
-        exportEntitiesRoutes ~
         entityRoutes ~
         healthService.routes ~
         libraryRoutes ~
@@ -117,8 +114,10 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         pathPrefix("api") {
           apiRoutes
         } ~
-        // insecure cookie-authed routes
-        cookieAuthedRoutes
+        pathPrefix("cookie-authed") {
+          // insecure cookie-authed routes
+          cookieAuthedRoutes
+        }
       }
     }
   )
