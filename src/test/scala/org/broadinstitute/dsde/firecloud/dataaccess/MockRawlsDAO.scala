@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
@@ -48,7 +48,8 @@ object MockRawlsDAO {
     largeSampleHeaders.map { h => Map(h -> AttributeString(MockUtils.randomAlpha()))}.reduce(_ ++ _)
   }
 
-  def generateSamplesInRange(from: Int): List[Entity] = (from to from + 499).map { pos => Entity(s"sample_0$pos", "sample", largeSampleAttributes) }.toList
+  val paginatedEntityRangeLimit = FireCloudConfig.Rawls.defaultPageSize - 1
+  def generateSamplesInRange(from: Int): List[Entity] = (from to from + paginatedEntityRangeLimit).map { pos => Entity(s"sample_0$pos", "sample", largeSampleAttributes) }.toList
 
   val largeSampleMetadata = Map(
     "sample" -> EntityTypeMetadata(
@@ -72,7 +73,7 @@ object MockRawlsDAO {
     largeSampleSetHeaders.map { h => Map(h -> AttributeString(MockUtils.randomAlpha()))}.reduce(_ ++ _)
   }
 
-  def generateSampleSetsInRange(from: Int): List[Entity] = (from to from + 499).map { pos => Entity(s"sample_set_0$pos", "sample_set", largeSampleSetAttributes) }.toList
+  def generateSampleSetsInRange(from: Int): List[Entity] = (from to from + paginatedEntityRangeLimit).map { pos => Entity(s"sample_set_0$pos", "sample_set", largeSampleSetAttributes) }.toList
 
   val largeSampleSetMetadata = Map(
     "sample_set" -> EntityTypeMetadata(
