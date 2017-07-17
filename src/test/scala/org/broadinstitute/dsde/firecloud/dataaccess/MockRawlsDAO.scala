@@ -60,13 +60,14 @@ object MockRawlsDAO {
 
   // Large Sample Set Data
 
-  val largeSampleSetSize = 1000
+  val largeSampleSetSize = 5000
 
   // Same as the large sample headers, except we can drop the last one because we're adding the samples membership attribute.
   val largeSampleSetHeaders: Seq[AttributeName] = largeSampleHeaders.reverse.tail
 
+  // Give each sample set a set of 100 samples. That gives us 500K entities to process.
   val largeSampleSetSamples = AttributeEntityReferenceList(
-    (1 to largeSampleSetSize).map { i => AttributeEntityReference(entityType = "sample", entityName = s"sample_0$i") }
+    (1 to 100).map { i => AttributeEntityReference(entityType = "sample", entityName = s"sample_0$i") }
   )
   val largeSampleSetAttributes: Map[AttributeName, Attribute] = {
     Map(AttributeName.withDefaultNS("samples") -> largeSampleSetSamples) ++

@@ -161,8 +161,8 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
 
   private def streamCollectionType(entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata): Future[Done] = {
 
-    // Future of all entities
-    val entityBatches = Future.traverse(entityQueries) { query =>
+    // Future of all entities.
+    lazy val entityBatches = Future.traverse(entityQueries) { query =>
       getEntitiesFromQuery(query)
     } map (_.flatten)
 

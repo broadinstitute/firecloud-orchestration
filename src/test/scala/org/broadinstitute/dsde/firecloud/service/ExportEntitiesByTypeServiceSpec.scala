@@ -35,8 +35,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
   "ExportEntitiesApiService-ExportEntitiesByType" - {
 
-    // TODO: Failing in Jenkins now, but passes locally and in travis.
-    "when an exception occurs in a paged query response, the response should be handled appropriately" ignore {
+    "when an exception occurs in a paged query response, the response should be handled appropriately" - {
       "FireCloudException is contained in response chunks" in {
         // Exception case is generated from the entity query call which is inside of the akka stream code.
         Get(page3ExceptionFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
@@ -73,7 +72,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
-
     "when calling GET on exporting LARGE (20K) sample TSV" - {
       "OK response is returned" in {
         Get(largeFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
@@ -88,7 +86,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
-    "when calling GET on exporting LARGE (1K) sample set file" - {
+    "when calling GET on exporting LARGE (5K) sample set file" - {
       "OK response is returned" in {
         Get(largeFireCloudEntitiesSampleSetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
@@ -99,7 +97,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         }
       }
     }
-
 
     "when calling GET on exporting a valid collection type" - {
       "OK response is returned" in {
