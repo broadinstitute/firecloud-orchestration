@@ -58,7 +58,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
 
   // routes under /api
 
-  val methodsService = new MethodsService with ActorRefFactoryContext
+  val methodsService = new MethodsApiService with ActorRefFactoryContext
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext

@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.mock
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.service.MethodsService
+import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
@@ -17,8 +17,8 @@ object MockAgoraACLServer {
 
   val methodsServerPort = 8989
 
-  val methodsUrl = MethodsService.remoteMethodsPath
-  val configsUrl = MethodsService.remoteConfigurationsPath
+  val methodsUrl = MethodsApiService.remoteMethodsPath
+  val configsUrl = MethodsApiService.remoteConfigurationsPath
 
 
   val standardPermsPath = "/ns/standard/1/permissions"

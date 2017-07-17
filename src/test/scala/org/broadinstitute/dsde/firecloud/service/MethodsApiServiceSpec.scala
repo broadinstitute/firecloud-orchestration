@@ -1,13 +1,14 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import spray.http.HttpMethods
 import spray.http.StatusCodes._
 
-class MethodsServiceSpec extends ServiceSpec with MethodsService {
+class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
 
   val methodsPermPath="/methods/namespace/name/1/permissions"
   val configsPermPath="/configurations/namespace/name/1/permissions"
@@ -22,13 +23,13 @@ class MethodsServiceSpec extends ServiceSpec with MethodsService {
     httpMethods map {
       method =>
         methodsServer
-          .when(request().withMethod(method.name).withPath(MethodsService.remoteMethodsPath))
+          .when(request().withMethod(method.name).withPath(MethodsApiService.remoteMethodsPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
         methodsServer
-          .when(request().withMethod(method.name).withPath(MethodsService.remoteConfigurationsPath))
+          .when(request().withMethod(method.name).withPath(MethodsApiService.remoteConfigurationsPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
