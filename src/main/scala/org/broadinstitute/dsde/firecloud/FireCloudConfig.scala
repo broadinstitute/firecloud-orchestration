@@ -1,10 +1,9 @@
 package org.broadinstitute.dsde.firecloud
 
 import scala.collection.JavaConverters._
+
 import com.typesafe.config.{ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.service.NihWhitelist
-import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
-import spray.http.Uri
 import spray.http.Uri.{Authority, Host}
 
 object FireCloudConfig {
@@ -60,29 +59,11 @@ object FireCloudConfig {
     val executionEngineVersionUrl = authUrl + executionEngineVersionPath
     val notificationsPath = workspace.getString("notificationsPath")
     val notificationsUrl = authUrl + notificationsPath
-    val defaultPageSize = rawls.getInt("defaultPageSize")
 
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
     def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
     def overwriteGroupMembershipUrlFromGroupName(groupName: String) = authUrl + overwriteGroupMembershipPath.format(groupName)
-    def entityQueryUriFromWorkspaceAndQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: Option[EntityQuery] = None): Uri = {
-      val baseEntityQueryUri = Uri(s"${entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType")
-      query match {
-        case Some(q) =>
-          val qMap: Map[String, String] = Map(
-            ("page", q.page.toString),
-            ("pageSize", q.pageSize.toString),
-            ("sortField", q.sortField),
-            ("sortDirection", SortDirections.toString(q.sortDirection)))
-          val filteredQMap = q.filterTerms match {
-            case Some(f) => qMap + ("filterTerms" -> f)
-            case _ => qMap
-          }
-          baseEntityQueryUri.withQuery(filteredQMap)
-        case _ => baseEntityQueryUri
-      }
-    }
   }
 
   object Thurloe {
