@@ -1,41 +1,38 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.Props
-import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service._
-import spray.http._
+import org.slf4j.LoggerFactory
+import spray.http.OAuth2BearerToken
 import spray.routing._
-
-import scala.language.postfixOps
 
 /**
  * Created by dvoet on 11/16/16.
  */
-trait CookieAuthedApiService extends HttpService with FireCloudDirectives with FireCloudRequestBuilding with LazyLogging {
+trait CookieAuthedApiService extends HttpService with PerRequestCreator with FireCloudDirectives
+  with FireCloudRequestBuilding {
 
-  val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
+  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor
 
   private implicit val executionContext = actorRefFactory.dispatcher
+  lazy val log = LoggerFactory.getLogger(getClass)
 
-  val cookieAuthedRoutes: Route =
-
+  def cookieAuthedRoutes: Route =
     // download "proxy" for TSV files
-    // Note that this endpoint works in the same way as ExportEntitiesApiService tsv download.
-    path( "cookie-authed" / "workspaces" / Segment / Segment/ "entities" / Segment / "tsv" ) {
+    path("workspaces" / Segment / Segment/ "entities" / Segment/ "tsv") {
       (workspaceNamespace, workspaceName, entityType) =>
         formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) =>
           post { requestContext =>
+            val filename = entityType + ".tsv"
             val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
             val userInfo = UserInfo("dummy", OAuth2BearerToken(tokenValue), -1, "dummy")
-            val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
-            val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
-            actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
+            perRequest(requestContext, ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo),
+              ExportEntitiesByTypeActor.ExportEntities(workspaceNamespace, workspaceName, filename, entityType, attributeNames))
           }
         }
     } ~
-    path( "cookie-authed" / "download" / "b" / Segment / "o" / RestPath ) { (bucket, obj) =>
+    path("download" / "b" / Segment / "o" / RestPath) { (bucket, obj) =>
       cookie("FCtoken") { tokenCookie =>
         mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
           HttpGoogleServicesDAO.getDownload(requestContext, bucket, obj.toString, tokenCookie.content)

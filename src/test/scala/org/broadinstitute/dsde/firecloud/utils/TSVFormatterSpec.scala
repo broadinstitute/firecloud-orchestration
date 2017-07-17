@@ -2,14 +2,17 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
 import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FreeSpec, Inspectors, Matchers}
+import spray.json.DefaultJsonProtocol._
+import spray.json._
 
+import scala.Array
 import scala.io.Source
-import scala.language.postfixOps
 
 class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Inspectors {
 
@@ -170,12 +173,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
   }
 
   private def testEntityDataSet(entityType: String, entities: List[Entity], requestedHeaders: Option[IndexedSeq[String]], tsvType: TsvType = TsvTypes.ENTITY) = {
-    val allHeaders = entities flatMap { e =>
-      e.attributes map { a => a._1.name }
-    } distinct
-    val tsvHeaders = TSVFormatter.makeEntityHeaders(entityType, allHeaders, requestedHeaders)
-    val tsvRows = TSVFormatter.makeEntityRows(entityType, entities, tsvHeaders)
-    val tsv = TSVFormatter.exportToString(tsvHeaders, tsvRows)
+    val tsv = TSVFormatter.makeEntityTsvString(entities, entityType, requestedHeaders)
 
     tsv shouldNot be(empty)
 
@@ -200,9 +198,8 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
     entities: List[Entity],
     expectedSize: Int
   ): Unit = {
-    val tsvHeaders = TSVFormatter.makeMembershipHeaders(entityType)
-    val tsvRows = TSVFormatter.makeMembershipRows(entityType, entities)
-    val tsv = TSVFormatter.exportToString(tsvHeaders, tsvRows.toIndexedSeq)
+    val collectionMemberType = ModelSchema.getPlural(ModelSchema.getCollectionMemberType(entityType).get.get)
+    val tsv = TSVFormatter.makeMembershipTsvString(entities, entityType, ModelSchema.getCollectionMemberType(entityType).get.get, collectionMemberType.getOrElse(entityType))
     tsv shouldNot be(empty)
 
     val lines: List[String] = Source.fromString(tsv).getLines().toList

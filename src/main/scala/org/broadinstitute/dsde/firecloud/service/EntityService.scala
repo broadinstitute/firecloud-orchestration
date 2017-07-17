@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.Props
+import akka.actor.{Actor, Props}
 import org.broadinstitute.dsde.firecloud.core._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
@@ -16,6 +16,8 @@ import scala.util.Try
 
 trait EntityService extends HttpService with PerRequestCreator with FireCloudDirectives
   with FireCloudRequestBuilding with StandardUserInfoDirectives {
+
+  val exportEntitiesByTypeConstructor: UserInfo => ExportEntitiesByTypeActor
 
   private implicit val executionContext = actorRefFactory.dispatcher
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -69,6 +71,16 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                     passthrough(requestCompression = true, entityTypeUrl, HttpMethods.GET)
                   }
                 } ~
+                  parameters('attributeNames.?) { attributeNamesString =>
+                    path("tsv") {
+                      requireUserInfo() { userInfo => requestContext =>
+                        val filename = entityType + ".txt"
+                        val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+                        perRequest(requestContext, ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, userInfo),
+                          ExportEntitiesByTypeActor.ExportEntities(workspaceNamespace, workspaceName, filename, entityType, attributeNames))
+                      }
+                    }
+                  } ~
                   path(Segment) { entityName =>
                     requireUserInfo() { _ =>
                       passthrough(requestCompression = true, entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
@@ -77,13 +89,19 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
               }
           } ~
           pathPrefix("entityQuery" / Segment) { entityType =>
+            val baseRawlsEntityQueryUrl = FireCloudConfig.Rawls.entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)
+            val baseEntityQueryUri = Uri(baseRawlsEntityQueryUrl)
+
             pathEnd {
               get {
                 requireUserInfo() { _ => requestContext =>
                   val requestUri = requestContext.request.uri
-                  val entityQueryUri = FireCloudConfig.Rawls.
-                    entityQueryUriFromWorkspaceAndQuery(workspaceNamespace, workspaceName, entityType).
-                    withQuery(requestUri.query)
+
+                  val entityQueryUri = baseEntityQueryUri
+                    .withPath(baseEntityQueryUri.path ++ Uri.Path.SingleSlash ++ Uri.Path(entityType))
+                    .withQuery(requestUri.query)
+
+                  // we use externalHttpPerRequest instead of passthrough; passthrough does not handle query params well.
                   val extReq = Get(entityQueryUri)
                   externalHttpPerRequest(requestCompression = true, requestContext, extReq)
                 }
