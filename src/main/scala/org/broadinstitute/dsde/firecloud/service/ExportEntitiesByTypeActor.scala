@@ -161,11 +161,6 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
 
   private def streamCollectionType(entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata): Future[Done] = {
 
-    // Future of all entities.
-    lazy val entityBatches = Future.traverse(entityQueries) { query =>
-      getEntitiesFromQuery(query)
-    } map (_.flatten)
-
     // Two File sinks, one for each kind of entity set file needed.
     // The temp files will end up zipped and streamed when complete.
     val tempEntityFile: File = File.newTemporaryFile(prefix = "entity_")
@@ -186,11 +181,12 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
           import GraphDSL.Implicits._
 
           // Sources
-          val entitySource: Outlet[Seq[Entity]] = builder.add(Source.fromFuture(entityBatches)).out
+          val querySource: Outlet[EntityQuery] = builder.add(Source(entityQueries.toStream)).out
           val entityHeaderSource: Outlet[ByteString] = builder.add(Source.single(ByteString(entityHeaders.mkString("\t") + "\n"))).out
           val membershipHeaderSource: Outlet[ByteString] = builder.add(Source.single(ByteString(membershipHeaders.mkString("\t") + "\n"))).out
 
           // Flows
+          val queryFlow: FlowShape[EntityQuery, Seq[Entity]] = builder.add(Flow[EntityQuery].mapAsync(1) { query => getEntitiesFromQuery(query) })
           val splitter: UniformFanOutShape[Seq[Entity], Seq[Entity]] = builder.add(Broadcast[Seq[Entity]](2))
           val entityFlow: FlowShape[Seq[Entity], ByteString] = builder.add(Flow[Seq[Entity]].map { entities =>
             val rows = TSVFormatter.makeEntityRows(entityType, entities, entityHeaders)
@@ -204,10 +200,10 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
           val mConcat: UniformFanInShape[ByteString, ByteString] = builder.add(Concat[ByteString]())
 
           // Graph
-          entityHeaderSource                         ~> eConcat
-          entitySource ~> splitter ~> entityFlow     ~> eConcat ~> eSink
-          membershipHeaderSource                     ~> mConcat
-                          splitter ~> membershipFlow ~> mConcat ~> mSink
+          entityHeaderSource                                                 ~> eConcat
+          querySource ~>  queryFlow ~> splitter ~> entityFlow     ~> eConcat ~> eSink
+          membershipHeaderSource                                             ~> mConcat
+                                       splitter ~> membershipFlow ~> mConcat ~> mSink
           ClosedShape
       }).run()
     }
