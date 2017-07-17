@@ -56,9 +56,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
-    // TODO: This is failing in
-    // Travis, but works locally
-    "when calling GET on exporting a valid entity type with filtered attributes" ignore {
+    "when calling GET on exporting a valid entity type with filtered attributes" - {
       "OK response is returned and attributes are filtered" in {
         val uri = Uri(largeFireCloudEntitiesSampleTSVPath).withQuery(("attributeNames", filterProps.mkString(",")))
         Get(uri) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
@@ -75,8 +73,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
     }
 
 
-    // TODO: This is failing in Travis, but works locally
-    "when calling GET on exporting LARGE (20K) sample TSV" ignore {
+    "when calling GET on exporting LARGE (20K) sample TSV" - {
       "OK response is returned" in {
         Get(largeFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
@@ -190,8 +187,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
-    // TODO: This is failing in Travis, but works locally
-    "when calling GET on exporting a valid entity type with filtered attributes" ignore {
+    "when calling GET on exporting a valid entity type with filtered attributes" - {
       "OK response is returned and attributes are filtered" in {
         Post(validCookieFireCloudEntitiesLargeSampleTSVPath, FormData(Seq("FCtoken"->"token", "attributeNames"->filterProps.mkString(",")))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
@@ -206,8 +202,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
-    // TODO: This is failing in Travis, but works locally
-    "when calling POST on exporting LARGE (20K) sample TSV" ignore {
+    "when calling POST on exporting LARGE (20K) sample TSV" - {
       "OK response is returned" in {
         Post(validCookieFireCloudEntitiesLargeSampleTSVPath, FormData(Seq("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
