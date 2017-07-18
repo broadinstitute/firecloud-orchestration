@@ -23,6 +23,7 @@ object MethodsApiService {
   val remoteConfigurationsPath = FireCloudConfig.Agora.authPrefix + "/configurations"
   val remoteConfigurationsUrl = FireCloudConfig.Agora.baseUrl + remoteConfigurationsPath
   val remotePermissionsTemplate = FireCloudConfig.Agora.baseUrl + FireCloudConfig.Agora.authPrefix + "/%s/%s/%s/%s/permissions"
+  val remoteMultiPermissionsUrl = remoteMethodsUrl + "/permissions"
 }
 
 trait MethodsApiService extends HttpService with PerRequestCreator with FireCloudDirectives {
@@ -34,6 +35,22 @@ trait MethodsApiService extends HttpService with PerRequestCreator with FireClou
 
   // Agora permissions that require special handling
   val methodsAndConfigsACLOverrideRoute: Route =
+    path( "methods" / "permissions") {
+      put {
+        handleRejections(entityExtractionRejectionHandler) {
+          entity(as[List[MethodAclPair]]) { fireCloudPermissions =>
+            requestContext =>
+              val agoraPermissions = fireCloudPermissions map { fc =>
+                EntityAccessControlAgora(Method(fc.method), fc.acls.map(_.toAgoraPermission))
+              }
+              perRequest(
+                requestContext,
+                Props(new AgoraPermissionActor(requestContext)),
+                AgoraPermissionHandler.MultiUpsert(agoraPermissions))
+          }
+        }
+      }
+    } ~
     path( "configurations|methods".r / Segment / Segment / IntNumber / "permissions") { ( agora_ent, namespace, name, snapshotId) =>
       val url = getUrlFromBasePath(agora_ent, namespace, name, snapshotId)
       get { requestContext =>

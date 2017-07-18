@@ -1229,6 +1229,36 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/methods/permissions:
+    put:
+      tags:
+        - Method Repository
+      operationId: multiUpsertMethodsACL
+      summary: set ACLs for multiple methods in one call
+      produces:
+        - application/json
+        - text/plain
+      parameters:
+        - name: methodacls
+          description: method acls to upsert
+          required: true
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodAclPair'
+      responses:
+        200:
+          description: the indicated method namespace ACL permissions once the posted changes have been applied
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodAclPair'
+        400:
+          description: Invalid content format
+        500:
+          description: Internal Server Error
+
   /api/nih/callback:
     post:
       tags:
@@ -3964,6 +3994,22 @@ definitions:
         $ref: '#/definitions/UserInfo'
       enabled:
         $ref: '#/definitions/Enabled'
+
+  MethodAclPair:
+    type: object
+    required:
+      - method
+      - acls
+    properties:
+      method:
+        $ref: '#/definitions/MethodRepoMethod'
+      acls:
+        type: array
+        items:
+          $ref: '#/definitions/FireCloudPermission'
+      message:
+        type: string
+        description: ignored during input; if present during output, contains error messages
 
   MethodConfigACL:
     type: array
