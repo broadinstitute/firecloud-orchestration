@@ -53,13 +53,6 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-    "should return 403 if caller is not owner of workspace" in {
-      val payload = PermissionReportRequest(None,None)
-      Post(permissionReportPath("notowner","notowner"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(Forbidden)
-      }
-    }
-
     "should accept correctly-formed input" in {
       val payload = PermissionReportRequest(Some(Seq("foo")),Some(Seq(MethodConfigurationName("ns","name"))))
       Post(permissionReportPath("foo","bar"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
@@ -199,6 +192,27 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         }).toMap}
       }
     }
+
+    "should return empty workspace ACLs but still get method info if caller is not owner of workspace" in {
+      val payload = PermissionReportRequest(None,None)
+      Post(permissionReportPath("notowner","notowner"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        status should equal(OK)
+        val report = responseAs[PermissionReport]
+
+        assert(report.workspaceACL.isEmpty)
+
+        val expectedConfigsNoAcls = Map(
+          MethodConfigurationName("configns1", "configname1") -> Some(MethodRepoMethod("methodns1","methodname1",1)),
+          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2)),
+          MethodConfigurationName("configns3", "configname3") -> Some(MethodRepoMethod("methodns3","methodname3",3))
+        )
+
+        assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
+          x => x.referencedBy -> x.method
+        }).toMap}
+      }
+    }
+
 
   }
 }

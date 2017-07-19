@@ -3,14 +3,15 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{MethodConfigurationName, PermissionReport, PermissionReportRequest, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
-import spray.http.StatusCodes.OK
+import org.broadinstitute.dsde.rawls.model.{AccessEntry, WorkspaceACL}
+import spray.http.StatusCodes.{OK, Forbidden}
 import spray.httpx.SprayJsonSupport._
 
 import scala.concurrent.ExecutionContext
@@ -42,7 +43,13 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
 
   def getPermissionReport(workspaceNamespace: String, workspaceName: String, reportInput: PermissionReportRequest) = {
     // start the requests to get workspace users and workspace configs in parallel
-    val futureWorkspaceACL = rawlsDAO.getWorkspaceACL(workspaceNamespace, workspaceName)
+    val futureWorkspaceACL = rawlsDAO.getWorkspaceACL(workspaceNamespace, workspaceName) recover {
+      // User is forbidden from listing ACLs for this workspace, but may still be able to read
+      // the configs/methods. Continue with empty workspace ACLs.
+      case fcex:FireCloudExceptionWithErrorReport if fcex.errorReport.statusCode.contains(Forbidden) =>
+        WorkspaceACL(Map.empty[String, AccessEntry])
+      // all other exceptions are considered fatal
+    }
     val futureWorkspaceConfigs = rawlsDAO.getMethodConfigs(workspaceNamespace, workspaceName) map { configs =>
       // filter to just those the user requested
       if (reportInput.configs.isEmpty || reportInput.configs.get.isEmpty) configs
