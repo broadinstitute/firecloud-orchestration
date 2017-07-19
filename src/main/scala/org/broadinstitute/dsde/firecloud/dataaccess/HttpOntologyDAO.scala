@@ -62,16 +62,7 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
 
   override def status: Future[SubsystemStatus] = {
     val ontologyStatus = unAuthedRequestToObject[Map[String, DropwizardHealth]](Get(ontologyUri.withPath(Uri.Path("/status"))))
-
-    ontologyStatus map { ontologyStatus =>
-      val ok = ontologyStatus.values.forall(_.healthy)
-      val errors = ontologyStatus.values.filter { dw =>
-        !dw.healthy && dw.message.isDefined
-      }.map(_.message.get).toList
-      errors match {
-        case x if x.isEmpty => SubsystemStatus(ok)
-        case _ => SubsystemStatus(ok, Some(errors))
-      }
-    }
+    getStatusFromDropwizardChecks(ontologyStatus)
   }
+
 }
