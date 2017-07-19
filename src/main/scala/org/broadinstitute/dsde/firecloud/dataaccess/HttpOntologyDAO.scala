@@ -5,21 +5,19 @@ import akka.io.IO
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
-import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{OntologyStatus, SubsystemStatus, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
+import org.broadinstitute.dsde.firecloud.model.{DropwizardHealth, SubsystemStatus}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import spray.can.Http
-import spray.client.pipelining._
 import spray.http.Uri
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOntologyStatus
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 
 class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
@@ -63,11 +61,17 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
   }
 
   override def status: Future[SubsystemStatus] = {
-    val ontologyStatus = unAuthedRequestToObject[OntologyStatus](Get(ontologyUri.withPath(Uri.Path("/status"))))
-    logger.error(ontologyUri.toString())
+    val ontologyStatus = unAuthedRequestToObject[Map[String, DropwizardHealth]](Get(ontologyUri.withPath(Uri.Path("/status"))))
 
     ontologyStatus map { ontologyStatus =>
-      SubsystemStatus(true, Some(List(ontologyStatus.toString)))
+      val ok = ontologyStatus.values.forall(_.healthy)
+      val errors = ontologyStatus.values.filter { dw =>
+        !dw.healthy && dw.message.isDefined
+      }.map(_.message.get).toList
+      errors match {
+        case x if x.isEmpty => SubsystemStatus(ok)
+        case _ => SubsystemStatus(ok, Some(errors))
+      }
     }
   }
 }
