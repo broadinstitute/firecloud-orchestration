@@ -41,12 +41,17 @@ object MethodRepository {
     owner: Option[String] = None,
     createDate: Option[String] = None,
     url: Option[String] = None,
-    entityType: Option[String] = None
-  )
+    entityType: Option[String] = None,
+    managers: Option[Seq[String]] = None
+  ) {
+    def toShortString: String = s"Method($namespace,$name,$snapshotId)"
+  }
 
   object Method {
     def apply(mrm:MethodRepoMethod) =
       new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion))
+    def apply(mrm:MethodRepoMethod, managers:Option[Seq[String]]) =
+      new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion), managers=managers)
   }
 
   // represents a method/config permission as exposed to the user from the orchestration layer
@@ -75,7 +80,7 @@ object MethodRepository {
 
   case class MethodAclPair(method:MethodRepoMethod, acls: Seq[FireCloudPermission], message: Option[String] = None)
 
-  case class EntityAccessControl(method:Option[MethodRepoMethod], referencedBy: MethodConfigurationName, acls: Seq[FireCloudPermission], message: Option[String] = None)
+  case class EntityAccessControl(method:Option[Method], referencedBy: MethodConfigurationName, acls: Seq[FireCloudPermission], message: Option[String] = None)
 
   object ACLNames {
     val NoAccess = "NO ACCESS"
