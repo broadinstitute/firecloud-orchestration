@@ -42,7 +42,7 @@ class StatusService (val app: Application)
       case x: Any => SubsystemStatus(ok = false, Some(List(x.toString)))
     }
 
-    val daoList = List[ReportsSubsystemStatus](app.rawlsDAO, app.thurloeDAO, app.agoraDAO, app.searchDAO, app.consentDAO, app.ontologyDAO)
+    val daoList = List[ReportsSubsystemStatus](app.rawlsDAO, app.thurloeDAO, app.agoraDAO, app.searchDAO, app.consentDAO, app.ontologyDAO, app.googleServicesDAO)
     val futureStatusList: List[Future[(String, SubsystemStatus)]] = daoList map { dao =>
       dao.status.map { status =>
         dao.serviceName -> status
