@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.mock
 
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.ACLNames._
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, EntityAccessControlAgora, FireCloudPermission, Method}
 
 /**
  * Created by davidan on 10/29/15.
@@ -35,5 +35,13 @@ object MockAgoraACLData {
   val translatedStandardAgora = List(ownerAgora, readerAgora, ownerAgora, noAccessAgora)
 
   val edgesAgora = standardAgora ++ List(partialsAgora, extrasAgora, emptyAgora, noneAgora, emptyUserAgora, noneUserAgora)
+
+  // multi-permissions endpoint response
+  val multiUpsertResponse: List[EntityAccessControlAgora] = List(
+    EntityAccessControlAgora(Method(Some("ns1"),Some("n1"),Some(1)), Seq(AgoraPermission(Some("user1@example.com"), Some(ListAll))), None),
+    EntityAccessControlAgora(Method(Some("ns2"),Some("n2"),Some(2)), Seq(AgoraPermission(Some("user2@example.com"), Some(ListReader))), None),
+    EntityAccessControlAgora(Method(Some("ns3"),Some("n3"),Some(3)), Seq.empty[AgoraPermission], Some("this is an error message"))
+  )
+
 
 }
