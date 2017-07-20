@@ -12,6 +12,8 @@ trait ReportsSubsystemStatus {
 
   def status: Future[SubsystemStatus]
 
+  def serviceName: String
+
   def getStatusFromDropwizardChecks(futureStatus: Future[Map[String, DropwizardHealth]])(implicit ec: ExecutionContext): Future[SubsystemStatus] = {
     futureStatus map { dwStatus =>
       val ok = dwStatus.values.forall(_.healthy)

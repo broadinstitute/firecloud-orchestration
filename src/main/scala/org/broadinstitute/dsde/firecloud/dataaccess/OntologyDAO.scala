@@ -17,4 +17,7 @@ trait OntologyDAO extends ReportsSubsystemStatus {
   implicit val errorReportSource = ErrorReportSource(OntologyDAO.serviceName)
 
   def search(term: String): Future[Option[List[TermResource]]]
+
+  override def serviceName:String = OntologyDAO.serviceName
+
 }

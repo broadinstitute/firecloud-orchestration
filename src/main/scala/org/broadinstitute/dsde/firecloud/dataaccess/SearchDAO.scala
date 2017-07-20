@@ -27,4 +27,5 @@ trait SearchDAO extends LazyLogging with ReportsSubsystemStatus {
   def findDocuments(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse]
   def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse]
   def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]]
+  override def serviceName:String = SearchDAO.serviceName
 }

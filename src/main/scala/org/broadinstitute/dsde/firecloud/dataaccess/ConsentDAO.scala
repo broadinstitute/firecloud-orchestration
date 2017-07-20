@@ -8,4 +8,7 @@ object ConsentDAO {
 
 trait ConsentDAO extends ReportsSubsystemStatus {
   implicit val errorReportSource = ErrorReportSource(ConsentDAO.serviceName)
+
+  override def serviceName:String = ConsentDAO.serviceName
+
 }
