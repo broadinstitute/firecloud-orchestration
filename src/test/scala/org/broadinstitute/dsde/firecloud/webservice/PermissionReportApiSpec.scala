@@ -202,9 +202,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assert(report.workspaceACL.isEmpty)
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(MethodRepoMethod("methodns1","methodname1",1)),
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2)),
-          MethodConfigurationName("configns3", "configname3") -> Some(MethodRepoMethod("methodns3","methodname3",3))
+          MethodConfigurationName("configns1", "configname1") -> Some(Method(MethodRepoMethod("methodns1","methodname1",1), None)),
+          MethodConfigurationName("configns2", "configname2") -> Some(Method(MethodRepoMethod("methodns2","methodname2",2), None)),
+          MethodConfigurationName("configns3", "configname3") -> Some(Method(MethodRepoMethod("methodns3","methodname3",3), None))
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
