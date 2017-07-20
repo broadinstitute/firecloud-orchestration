@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.rawls.model._
 case class WorkspaceCreate(
   namespace: String,
   name: String,
-  authorizationDomain: Option[ManagedGroupRef] = None,
+  authorizationDomain: Set[ManagedGroupRef],
   attributes: AttributeMap)
 
 object WorkspaceCreate {

@@ -73,7 +73,8 @@ trait LibraryServiceSupport extends LazyLogging {
     val idfields = Map(
       AttributeName.withDefaultNS("name") -> AttributeString(workspace.name),
       AttributeName.withDefaultNS("namespace") -> AttributeString(workspace.namespace),
-      AttributeName.withDefaultNS("workspaceId") -> AttributeString(workspace.workspaceId)
+      AttributeName.withDefaultNS("workspaceId") -> AttributeString(workspace.workspaceId),
+      AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(workspace.authorizationDomain.map(group => AttributeString(group.membersGroupName.value)).toSeq)
     )
     val fields = attrfields ++ idfields
 
