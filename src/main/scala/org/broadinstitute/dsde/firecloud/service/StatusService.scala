@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, Props}
 import akka.pattern._
+import org.broadinstitute.dsde.firecloud.dataaccess.ReportsSubsystemStatus
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impSystemStatus
 import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, SystemStatus}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -41,7 +42,7 @@ class StatusService (val app: Application)
       case x: Any => SubsystemStatus(ok = false, Some(List(x.toString)))
     }
 
-    val daoList = List(app.rawlsDAO, app.thurloeDAO, app.agoraDAO, app.searchDAO, app.consentDAO, app.ontologyDAO)
+    val daoList = List[ReportsSubsystemStatus](app.rawlsDAO, app.thurloeDAO, app.agoraDAO, app.searchDAO, app.consentDAO, app.ontologyDAO)
     val futureStatusList: List[Future[(String, SubsystemStatus)]] = daoList map { dao =>
       dao.status.map { status =>
         dao.serviceName -> status
