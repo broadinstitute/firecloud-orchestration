@@ -42,7 +42,8 @@ object MethodRepository {
     createDate: Option[String] = None,
     url: Option[String] = None,
     entityType: Option[String] = None,
-    managers: Option[Seq[String]] = None
+    managers: Option[Seq[String]] = None,
+    public: Option[Boolean] = None
   ) {
     def toShortString: String = s"Method($namespace,$name,$snapshotId)"
   }
@@ -50,8 +51,8 @@ object MethodRepository {
   object Method {
     def apply(mrm:MethodRepoMethod) =
       new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion))
-    def apply(mrm:MethodRepoMethod, managers:Option[Seq[String]]) =
-      new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion), managers=managers)
+    def apply(mrm:MethodRepoMethod, managers:Option[Seq[String]], public:Option[Boolean]) =
+      new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion), managers=managers, public=public)
   }
 
   // represents a method/config permission as exposed to the user from the orchestration layer
