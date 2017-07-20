@@ -3569,7 +3569,7 @@ definitions:
         type: string
         description: Method configuration name
       configurationSnapshotId:
-        type: string
+        type: number
         description: Method configuration snapshot id
       destinationNamespace:
         type: string
