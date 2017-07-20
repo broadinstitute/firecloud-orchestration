@@ -82,9 +82,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("alice@example.com","bob@example.com","carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(MethodRepoMethod("methodns1","methodname1",1)),
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2)),
-          MethodConfigurationName("configns3", "configname3") -> Some(MethodRepoMethod("methodns3","methodname3",3))
+          MethodConfigurationName("configns1", "configname1") -> Some(Method(MethodRepoMethod("methodns1","methodname1",1), None)),
+          MethodConfigurationName("configns2", "configname2") -> Some(Method(MethodRepoMethod("methodns2","methodname2",2), None)),
+          MethodConfigurationName("configns3", "configname3") -> Some(Method(MethodRepoMethod("methodns3","methodname3",3), None))
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -101,9 +101,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(MethodRepoMethod("methodns1","methodname1",1)),
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2)),
-          MethodConfigurationName("configns3", "configname3") -> Some(MethodRepoMethod("methodns3","methodname3",3))
+          MethodConfigurationName("configns1", "configname1") -> Some(Method(MethodRepoMethod("methodns1","methodname1",1), None)),
+          MethodConfigurationName("configns2", "configname2") -> Some(Method(MethodRepoMethod("methodns2","methodname2",2), None)),
+          MethodConfigurationName("configns3", "configname3") -> Some(Method(MethodRepoMethod("methodns3","methodname3",3), None))
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -120,7 +120,7 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("alice@example.com","bob@example.com","carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2))
+          MethodConfigurationName("configns2", "configname2") -> Some(Method(MethodRepoMethod("methodns2","methodname2",2), None))
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -137,7 +137,7 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2))
+          MethodConfigurationName("configns2", "configname2") -> Some(Method(MethodRepoMethod("methodns2","methodname2",2), None))
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -152,7 +152,7 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         status should equal(OK)
         val report = responseAs[PermissionReport]
 
-        val withError = report.referencedMethods.find(_.method.contains(MethodRepoMethod("methodns3","methodname3",3)))
+        val withError = report.referencedMethods.find(_.method.contains(Method(MethodRepoMethod("methodns3","methodname3",3), None)))
 
         assert(withError.isDefined, "test target method should exist")
         assert(withError.get.message.isDefined, "error message should exist")
@@ -167,9 +167,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(MethodRepoMethod("methodns1","methodname1",1)),
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2)),
-          MethodConfigurationName("configns3", "configname3") -> Some(MethodRepoMethod("methodns3","methodname3",3))
+          MethodConfigurationName("configns1", "configname1") -> Some(Method(MethodRepoMethod("methodns1","methodname1",1), None)),
+          MethodConfigurationName("configns2", "configname2") -> Some(Method(MethodRepoMethod("methodns2","methodname2",2), None)),
+          MethodConfigurationName("configns3", "configname3") -> Some(Method(MethodRepoMethod("methodns3","methodname3",3), None))
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -191,7 +191,7 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("alice@example.com","bob@example.com","carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2))
+          MethodConfigurationName("configns2", "configname2") -> Some(Method(MethodRepoMethod("methodns2","methodname2",2), None))
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {

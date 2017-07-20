@@ -3670,7 +3670,7 @@ definitions:
       - acls
     properties:
       method:
-        $ref: '#/definitions/MethodRepoMethod'
+        $ref: '#/definitions/MethodShort'
         description: method repo method
       referencedBy:
         $ref: '#/definitions/MethodConfigurationName'
@@ -4137,6 +4137,30 @@ definitions:
         type: string
         description: Type of the AgoraEntity -- Task or Workflow.
         default: Task
+
+  MethodShort:
+    required:
+      - managers
+      - namespace
+      - name
+      - snapshotId
+    type: object
+    properties:
+      managers:
+        type: array
+        items:
+          type: string
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      snapshotId:
+        type: integer
+        description: SnapshotId of AgoraEntity
 
   MethodRepoMethod:
     description: ''
