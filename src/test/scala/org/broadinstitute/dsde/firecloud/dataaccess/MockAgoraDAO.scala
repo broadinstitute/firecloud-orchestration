@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{ACLNames, AgoraPermission}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{ACLNames, AgoraPermission, EntityAccessControlAgora, Method}
 import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, UserInfo}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -22,6 +22,10 @@ class MockAgoraDAO extends AgoraDAO {
 
   override def postNamespacePermissions(ns: String, entity: String, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
     Future(List(MockAgoraDAO.agoraPermission))
+  }
+
+  override def getMultiEntityPermissions(entityType: _root_.org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo) = {
+    Future(List.empty[EntityAccessControlAgora])
   }
 
   def status: Future[SubsystemStatus] = {

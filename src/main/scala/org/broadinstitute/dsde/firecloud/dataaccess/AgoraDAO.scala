@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraPermission
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraEntityType, AgoraPermission, EntityAccessControlAgora, Method}
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
@@ -16,4 +16,6 @@ trait AgoraDAO extends ReportsSubsystemStatus {
 
   def getNamespacePermissions(ns: String, entity: String)(implicit userInfo: UserInfo): Future[List[AgoraPermission]]
   def postNamespacePermissions(ns: String, entity: String, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]]
+
+  def getMultiEntityPermissions(entityType: AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]]
 }

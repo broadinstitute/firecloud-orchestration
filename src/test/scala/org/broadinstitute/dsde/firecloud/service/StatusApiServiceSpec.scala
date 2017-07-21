@@ -49,7 +49,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
         .withBody("""{ "status": "down", "message": ["Agora is down"] }""")
     )
 
-    Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
+    Get("/status") ~> sealRoute(statusRoutes) ~> check {
       status.intValue should be(InternalServerError.intValue)
       val statusResponse = responseAs[SystemStatus]
       statusResponse.ok should be(false)
@@ -72,7 +72,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
         .withBody("""{ "status": "up", "message": ["No problems with Agora"] }""")
     )
 
-    Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
+    Get("/status") ~> sealRoute(statusRoutes) ~> check {
       status.intValue should be(OK.intValue)
       val statusResponse = responseAs[SystemStatus]
       statusResponse.ok should be(true)
@@ -92,7 +92,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
         .withBody("bogus non-JSON response")
     )
 
-    Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
+    Get("/status") ~> sealRoute(statusRoutes) ~> check {
       status.intValue should be(InternalServerError.intValue)
       val statusResponse = responseAs[SystemStatus]
       statusResponse.ok should be(false)
@@ -112,7 +112,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
         .withBody("")
     )
 
-    Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
+    Get("/status") ~> sealRoute(statusRoutes) ~> check {
       status.intValue should be(InternalServerError.intValue)
       val statusResponse = responseAs[SystemStatus]
       statusResponse.ok should be(false)
@@ -128,7 +128,7 @@ class StatusApiServiceSpecMockServer extends BaseServiceSpec with HttpService wi
       request().withMethod("GET").withPath("/status")
     ).error((new HttpError).withDropConnection(true))
 
-    Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
+    Get("/status") ~> sealRoute(statusRoutes) ~> check {
       status.intValue should be(InternalServerError.intValue)
       val statusResponse = responseAs[SystemStatus]
       statusResponse.ok should be(false)
@@ -146,7 +146,7 @@ class StatusApiServiceSpecMockDAOs extends BaseServiceSpec with HttpService with
   val statusServiceConstructor: () => StatusService = StatusService.constructor(app)
 
   "StatusService carries on despite exception in Agora Mock DAO" in {
-    Get("/status") ~> sealRoute(publicStatusRoutes) ~> check {
+    Get("/status") ~> sealRoute(statusRoutes) ~> check {
       status.intValue should be(500)
       val statusResponse = responseAs[SystemStatus]
       statusResponse.ok should be(false)

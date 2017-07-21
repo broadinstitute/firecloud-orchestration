@@ -1,14 +1,14 @@
 package org.broadinstitute.dsde.firecloud
 
-import akka.actor.ActorContext
+import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.service._
+import org.broadinstitute.dsde.firecloud.webservice._
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.{HttpServiceActor, Route}
-import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.webservice._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
@@ -17,6 +17,7 @@ import scala.language.postfixOps
 class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with CookieAuthedApiService
   with EntityService
+  with ExportEntitiesApiService
   with LibraryApiService
   with NamespaceApiService
   with NihApiService
@@ -42,8 +43,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val ontologyDAO:OntologyDAO = new HttpOntologyDAO
 
   val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, searchDAO, thurloeDAO)
+  val materializer: ActorMaterializer = ActorMaterializer()
 
-  val exportEntitiesByTypeConstructor: (UserInfo) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app)
+  val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val nihServiceConstructor: () => NihServiceActor = NihService.constructor(app)
@@ -52,16 +54,17 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(app)
+  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
 
   // routes under /api
 
-  val methodsService = new MethodsService with ActorRefFactoryContext
+  val methodsService = new MethodsApiService with ActorRefFactoryContext
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
   val apiRoutes = methodsService.routes ~ profileRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    apiStatusRoutes ~ nihRoutes ~ billingService.routes
+    nihRoutes ~ billingService.routes
 
   val userService = new UserService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
@@ -76,8 +79,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val appendTimestampOnFailure = mapHttpResponse { response =>
     if (response.status.isFailure) {
       try {
-        import spray.json._
         import spray.json.DefaultJsonProtocol._
+        import spray.json._
         val dataMap = response.entity.asString.parseJson.convertTo[Map[String, JsValue]]
         val withTimestamp = dataMap + ("timestamp" -> JsNumber(System.currentTimeMillis()))
         val contentType = response.header[HttpHeaders.`Content-Type`].map{_.contentType}.getOrElse(ContentTypes.`application/json`)
@@ -95,6 +98,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   def receive = runRoute(
     appendTimestampOnFailure {
       logRequests {
+        exportEntitiesRoutes ~
         entityRoutes ~
         healthService.routes ~
         libraryRoutes ~
@@ -109,14 +113,12 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         userService.routes ~
         workspaceRoutes ~
         notificationsRoutes ~
-        publicStatusRoutes ~
+        statusRoutes ~
         pathPrefix("api") {
           apiRoutes
         } ~
-        pathPrefix("cookie-authed") {
-          // insecure cookie-authed routes
-          cookieAuthedRoutes
-        }
+        // insecure cookie-authed routes
+        cookieAuthedRoutes
       }
     }
   )

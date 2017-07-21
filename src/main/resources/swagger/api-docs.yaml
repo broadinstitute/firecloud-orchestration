@@ -1229,6 +1229,36 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/methods/permissions:
+    put:
+      tags:
+        - Method Repository
+      operationId: multiUpsertMethodsACL
+      summary: set ACLs for multiple methods in one call
+      produces:
+        - application/json
+        - text/plain
+      parameters:
+        - name: methodacls
+          description: method acls to upsert
+          required: true
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodAclPair'
+      responses:
+        200:
+          description: the indicated method namespace ACL permissions once the posted changes have been applied
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodAclPair'
+        400:
+          description: Invalid content format
+        500:
+          description: Internal Server Error
+
   /api/nih/callback:
     post:
       tags:
@@ -1397,34 +1427,6 @@ paths:
             properties:
               requiresRefresh:
                 type: boolean
-
-  /api/status:
-    get:
-      tags:
-      - Status
-      operationId: status
-      summary: |
-        Returns the workspace service url, methods repository url, and the current timestamp.
-      responses:
-        200:
-          description: Success
-        500:
-          description: Internal Error
-
-  /api/status/ping:
-    get:
-      tags:
-      - Status
-      operationId: ping
-      summary: |
-        Returns the current timestamp.
-      produces:
-        - text/plain
-      responses:
-        200:
-          description: Success
-        500:
-          description: Internal Error
 
   /api/storage/{bucket}/{object}:
     get:
@@ -2408,6 +2410,32 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/permissionReport:
+    post:
+      tags:
+        - Method Configurations
+        - Workspaces
+      operationId: workspacePermissionReport
+      summary: Retrieve user permissions for the workspace and the workspace's method references
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: reportInput
+          description: Users and/or configs on which to report, both optional
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/PermissionReportRequest'
+      responses:
+        200:
+          description: Permission Report
+          schema:
+            $ref: '#/definitions/PermissionReport'
+        404:
+          description: Workspace does not exist
+        500:
+          description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/sendChangeNotification:
     post:
       responses:
@@ -2805,6 +2833,7 @@ paths:
             type: string
         responses:
           200:
+            description: list of all tags used in FireCloud
             schema:
               type: array
               items:
@@ -3540,7 +3569,7 @@ definitions:
         type: string
         description: Method configuration name
       configurationSnapshotId:
-        type: string
+        type: number
         description: Method configuration snapshot id
       destinationNamespace:
         type: string
@@ -3633,6 +3662,27 @@ definitions:
       attributes:
         type: object
         description: Map[String,Attribute]
+
+  EntityAccessControl:
+    type: object
+    required:
+      - referencedBy
+      - acls
+    properties:
+      method:
+        $ref: '#/definitions/MethodShort'
+        description: method repo method
+      referencedBy:
+        $ref: '#/definitions/MethodConfigurationName'
+        description: workspace configuration that references the method
+      acls:
+        type: array
+        items:
+          $ref: '#/definitions/FireCloudPermission'
+        description: method repo ACLs for the referenced method
+      message:
+        type: string
+        description: error message generated when retrieving acls for this method
 
   EntityCopyResponse:
     type: object
@@ -3829,6 +3879,17 @@ definitions:
         type: boolean
         description: User is a member of the "All Users" group?
 
+  FireCloudPermission:
+    type: object
+    required:
+      - user
+      - role
+    properties:
+      user:
+        type: string
+      role:
+        type: string
+
   JWTWrapper:
     type: object
     properties:
@@ -3934,6 +3995,22 @@ definitions:
       enabled:
         $ref: '#/definitions/Enabled'
 
+  MethodAclPair:
+    type: object
+    required:
+      - method
+      - acls
+    properties:
+      method:
+        $ref: '#/definitions/MethodRepoMethod'
+      acls:
+        type: array
+        items:
+          $ref: '#/definitions/FireCloudPermission'
+      message:
+        type: string
+        description: ignored during input; if present during output, contains error messages
+
   MethodConfigACL:
     type: array
     items:
@@ -3997,6 +4074,19 @@ definitions:
         $ref: '#/definitions/MethodRepoMethod'
         description: The properties of the method from the method store that this config is associated with
 
+  MethodConfigurationName:
+    required:
+      - namespace
+      - name
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: 'This method configuration''s namespace'
+      name:
+        type: string
+        description: The name of the method configuration
+
   MethodID:
     type: object
     properties:
@@ -4047,6 +4137,33 @@ definitions:
         type: string
         description: Type of the AgoraEntity -- Task or Workflow.
         default: Task
+
+  MethodShort:
+    required:
+      - managers
+      - namespace
+      - name
+      - snapshotId
+    type: object
+    properties:
+      managers:
+        type: array
+        items:
+          type: string
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      snapshotId:
+        type: integer
+        description: SnapshotId of AgoraEntity
+      public:
+        type: boolean
+        description: If this AgoraEntity is publicly readable.
 
   MethodRepoMethod:
     description: ''
@@ -4186,6 +4303,38 @@ definitions:
         type: string
       description:
         type: string
+
+  PermissionReport:
+    description: ACLs for users of a workspace and methods referenced by that workspace
+    required:
+      - workspaceACL
+      - methods
+    properties:
+      workspaceACL:
+        description: a map of (user email -> WorkspaceAccessEntry). `exampleEmail` is an example key.
+        properties:
+          exampleEmail:
+            $ref: '#/definitions/WorkspaceAccessEntry'
+        additionalProperties:
+          $ref: '#/definitions/WorkspaceAccessEntry'
+      referencedMethods:
+        type: array
+        items:
+          $ref: '#/definitions/EntityAccessControl'
+
+  PermissionReportRequest:
+    description: users and/or configs on which to report.
+    properties:
+      users:
+        description: list of email addresses; optional; defaults to all users in the workspace
+        type: array
+        items:
+          type: string
+      configs:
+        description: list of configs; optional; defaults to all configs in the workspace
+        type: array
+        items:
+          $ref: '#/definitions/MethodConfigurationName'
 
   Profile:
     type: object

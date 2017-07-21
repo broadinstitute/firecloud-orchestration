@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val akkaV = "2.4.1"
+  val akkaV = "2.4.19"
   val sprayV = "1.3.3"
   val jacksonV = "2.8.8"
      // note that jackson-databind overrides this below! 2.8.8.1 is not released for core or annotations.
@@ -31,6 +31,7 @@ object Dependencies {
     "com.typesafe.akka"             %% "akka-actor"          % akkaV,
     "com.typesafe.akka"             %% "akka-testkit"        % akkaV     % "test",
     "com.typesafe.akka"             %% "akka-slf4j"          % akkaV,
+    "com.typesafe.akka"             %% "akka-stream"         % akkaV,
 
     "org.elasticsearch.client"       % "transport"           % "5.3.2"
       exclude("io.netty", "netty-common"),
@@ -51,6 +52,7 @@ object Dependencies {
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",
     "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",
     "org.everit.json"                % "org.everit.json.schema" % "1.4.1",
+    "com.github.pathikrit"          %% "better-files"        % "2.17.1",
 
     "org.specs2"                    %% "specs2-core"         % "3.7"     % "test",
     "org.scalatest"                 %% "scalatest"           % "2.2.6"   % "test",

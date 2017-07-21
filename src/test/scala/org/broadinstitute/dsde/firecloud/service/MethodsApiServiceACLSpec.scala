@@ -5,14 +5,14 @@ import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLServer
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
 import spray.http.HttpMethods
 import spray.http.StatusCodes._
-
 import spray.json._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impFireCloudPermission
+import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 
 
-class MethodsServiceACLSpec extends ServiceSpec with MethodsService {
+class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
 
   def actorRefFactory = system
 

@@ -49,6 +49,15 @@ case class MethodConfigurationId(
   namespace: Option[String] = None,
   workspaceName: Option[WorkspaceName] = None)
 
+case class MethodConfigurationName(
+  namespace: String,
+  name: String)
+
+object MethodConfigurationName {
+  def apply(mcs:MethodConfigurationShort) =
+    new MethodConfigurationName(mcs.namespace, mcs.name)
+}
+
 case class MethodConfigurationCopy(
   methodRepoNamespace: Option[String] = None,
   methodRepoName: Option[String] = None,

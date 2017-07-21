@@ -6,7 +6,6 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
-import spray.http.OAuth2BearerToken
 
 import scala.concurrent.Future
 
@@ -36,7 +35,9 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   lazy val rawlsGroupsForUserUrl = FireCloudConfig.Rawls.authUrl + "/user/groups"
   lazy val rawlsWorkpacesUrl = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminWorkspaces = FireCloudConfig.Rawls.authUrl + "/admin/workspaces?attributeName=library:published&valueBoolean=true"
-  lazy val rawlsWorkspaceACLUrl = FireCloudConfig.Rawls.workspacesUrl + "/%s/%s/acl?inviteUsersNotFound=%s"
+  lazy val rawlsWorkspaceACLUrl = FireCloudConfig.Rawls.workspacesUrl + "/%s/%s/acl"
+  lazy val rawlsWorkspaceACLQuerystring = "?inviteUsersNotFound=%s"
+  lazy val rawlsWorkspaceMethodConfigsUrl = FireCloudConfig.Rawls.workspacesUrl + "/%s/%s/methodconfigs"
   def rawlsBucketUsageUrl(workspaceNamespace: String, workspaceName: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/bucketUsage"
 
   def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType"
@@ -65,6 +66,8 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def getAllLibraryPublishedWorkspaces: Future[Seq[Workspace]]
 
+  def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL]
+
   def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList]
 
   def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
@@ -73,6 +76,10 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userToken: UserInfo): Future[Seq[Entity]]
 
+  def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse]
+
+  def getEntityTypes(workspaceNamespace: String, workspaceName: String)(implicit userToken: UserInfo): Future[Map[String, EntityTypeMetadata]]
+
   def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]]
 
   def saveRefreshToken(userInfo: UserInfo, refreshToken: String): Future[Unit]
@@ -80,4 +87,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def getCatalog(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Seq[WorkspaceCatalog]]
 
   def patchCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog])(implicit userToken: WithAccessToken): Future[WorkspaceCatalogUpdateResponseList]
+
+  def getMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Seq[MethodConfigurationShort]]
 }

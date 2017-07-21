@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.mock
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.service.MethodsService
+import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
@@ -10,23 +10,25 @@ import org.mockserver.model.HttpResponse._
 import spray.http.StatusCodes._
 import spray.json._
 
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impAgoraPermission
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impAgoraPermission, impEntityAccessControlAgora}
 import DefaultJsonProtocol._
 
 object MockAgoraACLServer {
 
   val methodsServerPort = 8989
 
-  val methodsUrl = MethodsService.remoteMethodsPath
-  val configsUrl = MethodsService.remoteConfigurationsPath
+  val methodsUrl = MethodsApiService.remoteMethodsPath
+  val configsUrl = MethodsApiService.remoteConfigurationsPath
 
 
   val standardPermsPath = "/ns/standard/1/permissions"
   val withEdgeCasesPath = "/ns/edges/1/permissions"
 
+  val multiPermissionsPath = "/permissions"
+
   /****** Mock Data ******/
 
-  import MockAgoraACLData.{edgesAgora, standardAgora}
+  import MockAgoraACLData.{edgesAgora, standardAgora, multiUpsertResponse}
 
   /****** Server ******/
 
@@ -111,6 +113,19 @@ object MockAgoraACLServer {
       .callback(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.InvalidAgoraACLCallback")
+      )
+
+    // multi-permissions endpoint; currently hardcoded to return empty array because we don't really care
+    MockAgoraACLServer.methodsServer
+      .when(
+        request()
+          .withMethod("PUT")
+          .withPath(methodsUrl + multiPermissionsPath))
+      .respond(
+        response()
+          .withHeader(header)
+          .withBody(multiUpsertResponse.toJson.compactPrint)
+          .withStatusCode(OK.intValue)
       )
 
   }
