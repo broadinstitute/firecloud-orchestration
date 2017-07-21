@@ -1,19 +1,18 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{DropwizardHealth, SubsystemStatus}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
-
-import scala.concurrent.{ExecutionContext, Future}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import spray.http.HttpResponse
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
+import scala.concurrent.{ExecutionContext, Future}
+
 /**
   * Created by anichols on 4/21/17.
   */
-trait ReportsSubsystemStatus extends LazyLogging {
+trait ReportsSubsystemStatus {
 
   def status: Future[SubsystemStatus]
 
