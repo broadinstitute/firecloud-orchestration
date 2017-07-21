@@ -275,17 +275,11 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   def status: Future[SubsystemStatus] = {
-    try {
-      val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
-      val bucketResponse = storage.buckets().list(FireCloudConfig.FireCloud.serviceProject).executeUsingHead()
-      Future(
-        bucketResponse.getStatusCode match {
-          case x if x == 200 => SubsystemStatus(ok = true, messages = None)
-          case _ => SubsystemStatus(ok = false, messages = Some(List(bucketResponse.parseAsString())))
-        }
-      )
-    } catch {
-      case t: Throwable => Future(SubsystemStatus(ok = false, Some(List(t.getMessage))))
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
+    val bucketResponse = storage.buckets().list(FireCloudConfig.FireCloud.serviceProject).executeUsingHead()
+    bucketResponse.getStatusCode match {
+      case x if x == 200 => Future(SubsystemStatus(ok = true, messages = None))
+      case _ => Future(SubsystemStatus(ok = false, messages = Some(List(bucketResponse.parseAsString()))))
     }
   }
 
