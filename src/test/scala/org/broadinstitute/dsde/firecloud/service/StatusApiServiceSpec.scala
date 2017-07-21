@@ -88,7 +88,11 @@ class StatusApiServiceDownSpec extends BaseServiceSpec with HttpService with Sta
           statusResponse.systems(RawlsDAO.serviceName).ok should be(false)
           statusResponse.systems(SearchDAO.serviceName).ok should be(false)
           statusResponse.systems(OntologyDAO.serviceName).ok should be(false)
+          statusResponse.systems(OntologyDAO.serviceName).messages shouldNot be(None)
+          statusResponse.systems(OntologyDAO.serviceName).messages.get.size should be(3)
           statusResponse.systems(ConsentDAO.serviceName).ok should be(false)
+          statusResponse.systems(ConsentDAO.serviceName).messages shouldNot be(None)
+          statusResponse.systems(ConsentDAO.serviceName).messages.get.size should be(2)
           statusResponse.systems.size should be(StatusApiServiceSpec.numberOfStatusServices)
         }
       }
@@ -247,11 +251,11 @@ trait StatusApiServiceMockDAOsServers {
 
   val statusRequest: HttpRequest = request().withMethod("GET").withPath("/status")
 
-  val agoraDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "status": "down", "message": ["Agora is down"] }""")
-  val rawlsDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "ok": false, "systems": {"GooglePubSub": {"ok": false, "message": ["PubSub is broken"]}, "GoogleGenomics": {"ok": true}, "LDAP": {"ok": true}, "Database": {"ok": true}, "Agora": {"ok": true}, "GoogleGroups": {"ok": true}, "GoogleBilling": {"ok": true}, "Cromwell": {"ok": true}, "GoogleBuckets": {"ok": true}}}""")
-  val thurloeDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "status": "down", "error": "Thurloe is down" }""")
-  val ontologyDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{"deadlocks":{"healthy":false},"elastic-search":{"healthy":false,"message":"ClusterHealth is RED"},"google-cloud-storage":{"healthy":true}}""")
-  val consentDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{"deadlocks":{"healthy":false},"elastic-search":{"healthy":false,"message":"ClusterHealth is RED"},"google-cloud-storage":{"healthy":true},"mongodb":{"healthy":true},"mysql":{"healthy":true}}""")
+  val agoraDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "status": "down", "message": ["Agora is down"] }""")
+  val rawlsDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "ok": false, "systems": {"GooglePubSub": {"ok": false, "message": ["PubSub is broken"]}, "GoogleGenomics": {"ok": true}, "LDAP": {"ok": true}, "Database": {"ok": true}, "Agora": {"ok": true}, "GoogleGroups": {"ok": true}, "GoogleBilling": {"ok": true}, "Cromwell": {"ok": true}, "GoogleBuckets": {"ok": true}}}""")
+  val thurloeDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "status": "down", "error": "Thurloe is down" }""")
+  val ontologyDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{"deadlocks":{"healthy":false},"elastic-search":{"healthy":false,"message":"ClusterHealth is RED"},"google-cloud-storage":{"healthy":false,"message":"Storage Service is unavailable"}}""")
+  val consentDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{"deadlocks":{"healthy":false},"elastic-search":{"healthy":false,"message":"ClusterHealth is RED"},"google-cloud-storage":{"healthy":true},"mongodb":{"healthy":true},"mysql":{"healthy":true}}""")
 
   def mockAllDown(): Unit = {
     resetAll()
