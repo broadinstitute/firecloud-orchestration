@@ -213,5 +213,5 @@ class MockOntologyDAO extends OntologyDAO {
 
   override def search(term: String): Future[Option[List[TermResource]]] = Future(data.get(term))
 
-  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true))
 }

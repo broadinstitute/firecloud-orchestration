@@ -38,7 +38,7 @@ class StatusService (val app: Application)
     val subsystemExceptionHandler: PartialFunction[Any, SubsystemStatus] = {
       case fcExceptionWithError: FireCloudExceptionWithErrorReport => SubsystemStatus(ok = false, Some(List(fcExceptionWithError.errorReport.message)))
       case fcException: FireCloudException => SubsystemStatus(ok = false, Some(List(fcException.getMessage)))
-      case e: Exception => SubsystemStatus(ok = false, Some(List(e.getMessage)))
+      case t: Throwable => SubsystemStatus(ok = false, Some(List(t.getMessage)))
       case x: Any => SubsystemStatus(ok = false, Some(List(x.toString)))
     }
 
