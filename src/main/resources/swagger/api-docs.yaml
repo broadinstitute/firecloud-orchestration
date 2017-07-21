@@ -4506,6 +4506,8 @@ definitions:
         example:
           Agora:
             ok: true
+          Google:
+            ok: true
           Consent:
             ok: false
             messages:
