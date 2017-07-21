@@ -4161,6 +4161,9 @@ definitions:
       snapshotId:
         type: integer
         description: SnapshotId of AgoraEntity
+      public:
+        type: boolean
+        description: If this AgoraEntity is publicly readable.
 
   MethodRepoMethod:
     description: ''

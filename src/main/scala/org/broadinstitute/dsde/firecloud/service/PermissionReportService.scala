@@ -70,7 +70,8 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
         val agoraMethodReference = methodACLs.find(_.entity.toShortString == methodLookup.toShortString)
         agoraMethodReference match {
           case Some(agora) =>
-            EntityAccessControl(Some(Method(config.methodRepoMethod, agora.entity.managers)), MethodConfigurationName(config), agora.acls map AgoraPermissionHandler.toFireCloudPermission, agora.message)
+            EntityAccessControl(Some(Method(config.methodRepoMethod, agora.entity.managers, agora.entity.public)),
+              MethodConfigurationName(config), agora.acls map AgoraPermissionHandler.toFireCloudPermission, agora.message)
           case None => EntityAccessControl(None, MethodConfigurationName(config), Seq.empty[FireCloudPermission], Some("referenced method not found."))
         }
       }
