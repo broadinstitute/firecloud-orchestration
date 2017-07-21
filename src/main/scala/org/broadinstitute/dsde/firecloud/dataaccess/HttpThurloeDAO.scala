@@ -69,11 +69,10 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
 
   override def status: Future[SubsystemStatus] = {
     val thurloeStatus = unAuthedRequestToObject[ThurloeStatus](Get(Uri(FireCloudConfig.Thurloe.baseUrl).withPath(Uri.Path("/status"))), useFireCloudHeader = true)
-
     thurloeStatus map { thurloeStatus =>
       thurloeStatus.status match {
-        case "up" => SubsystemStatus(true)
-        case "down" => SubsystemStatus(false, thurloeStatus.error.map(List(_)))
+        case "up" => SubsystemStatus(ok = true)
+        case "down" => SubsystemStatus(ok = false, thurloeStatus.error.map(List(_)))
       }
     }
   }

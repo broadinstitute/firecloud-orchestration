@@ -7,11 +7,11 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
-import org.broadinstitute.dsde.firecloud.model.{DropwizardHealth, SubsystemStatus}
+import org.broadinstitute.dsde.firecloud.model.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import spray.can.Http
-import spray.http.Uri
+import spray.http.{HttpResponse, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
@@ -61,8 +61,7 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
   }
 
   override def status: Future[SubsystemStatus] = {
-    val ontologyStatus = unAuthedRequestToObject[Map[String, DropwizardHealth]](Get(ontologyUri.withPath(Uri.Path("/status"))))
-    getStatusFromDropwizardChecks(ontologyStatus)
+    getStatusFromDropwizardChecks(unAuthedRequest(Get(ontologyUri.withPath(Uri.Path("/status")))))
   }
 
 }

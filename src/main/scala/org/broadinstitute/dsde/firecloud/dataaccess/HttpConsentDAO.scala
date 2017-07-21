@@ -2,12 +2,9 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.{DropwizardHealth, SubsystemStatus}
-import spray.http.Uri
+import org.broadinstitute.dsde.firecloud.model.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import spray.httpx.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
+import spray.http.{HttpResponse, Uri}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -16,7 +13,6 @@ class HttpConsentDAO(implicit val system: ActorSystem, implicit val executionCon
   private val consentUri = Uri(FireCloudConfig.Duos.baseConsentUrl)
 
   override def status: Future[SubsystemStatus] = {
-    val consentStatus = unAuthedRequestToObject[Map[String, DropwizardHealth]](Get(consentUri.withPath(Uri.Path("/status"))))
-    getStatusFromDropwizardChecks(consentStatus)
+    getStatusFromDropwizardChecks(unAuthedRequest(Get(consentUri.withPath(Uri.Path("/status")))))
   }
 }
