@@ -1,12 +1,15 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.io.IOException
+
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.{MockGoogleServicesDAO, MockUtils}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impSystemStatus
 import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, SystemStatus}
 import org.broadinstitute.dsde.firecloud.webservice.StatusApiService
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
@@ -151,7 +154,7 @@ class MockSearchDownDAO(implicit val executionContext: ExecutionContext) extends
 
 // Mock daos that throw exceptions
 class MockGoogleServicesExceptionDAO(implicit val executionContext: ExecutionContext) extends MockGoogleServicesDAO {
-  override def status: Future[SubsystemStatus] = Future.failed(new FireCloudException("Exception: Google"))
+  override def status: Future[SubsystemStatus] = Future.failed(new Exception("Exception: Google"))
 }
 
 class MockSearchExceptionDAO(implicit val executionContext: ExecutionContext) extends MockSearchDAO {
@@ -159,7 +162,7 @@ class MockSearchExceptionDAO(implicit val executionContext: ExecutionContext) ex
 }
 
 class MockAgoraExceptionDAO(implicit val executionContext: ExecutionContext) extends MockAgoraDAO {
-  override def status: Future[SubsystemStatus] = Future.failed(new FireCloudException("Exception: Agora"))
+  override def status: Future[SubsystemStatus] = Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport("Exception: Agora")))
 }
 
 class MockRawlsExceptionDAO(implicit val executionContext: ExecutionContext) extends MockRawlsDAO {
@@ -171,7 +174,7 @@ class MockThurloeExceptionDAO(implicit val executionContext: ExecutionContext) e
 }
 
 class MockOntologyExceptionDAO(implicit val executionContext: ExecutionContext) extends MockOntologyDAO {
-  override def status: Future[SubsystemStatus] = Future.failed(new FireCloudException("Exception: Ontology"))
+  override def status: Future[SubsystemStatus] = Future.failed(new IOException("Exception: Ontology"))
 }
 
 class MockConsentExceptionDAO(implicit val executionContext: ExecutionContext) extends MockConsentDAO {
