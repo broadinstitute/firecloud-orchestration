@@ -319,7 +319,7 @@
       "type": "array",
       "items": { "type": "string" },
       "aggregate": {
-        "renderHint": "checkbox"
+        "renderHint": "tag-autocomplete"
       }
     }
   },
