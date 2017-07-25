@@ -302,7 +302,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
   private val workspace = Workspace(
     "namespace",
     "name",
-    None,
+    Set.empty,
     "workspace_id",
     "buckety_bucket",
     DateTime.now(),
