@@ -1986,6 +1986,31 @@ paths:
           required: false
           schema:
             $ref: '#/definitions/AttributeUpdateOperation'
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}/evaluate:
+      post:
+        tags:
+          - Entities
+        operationId: getEntity
+        summary: Get entity in a workspace
+        parameters:
+          - $ref: '#/parameters/workspaceNamespaceParam'
+          - $ref: '#/parameters/workspaceNameParam'
+          - $ref: '#/parameters/entityTypeParam'
+          - $ref: '#/parameters/entityNameParam'
+          - in: body
+            description: Expression
+            name: expression
+            required: true
+            type: string
+        responses:
+          200:
+            description: Success
+          404:
+            description: Workspace or Entity does not exist
+          500:
+            description: Internal Server Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
     get:
       tags:

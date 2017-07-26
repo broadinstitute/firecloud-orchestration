@@ -69,9 +69,16 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                     passthrough(requestCompression = true, entityTypeUrl, HttpMethods.GET)
                   }
                 } ~
-                  path(Segment) { entityName =>
-                    requireUserInfo() { _ =>
-                      passthrough(requestCompression = true, entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
+                  pathPrefix(Segment) { entityName =>
+                    pathEnd {
+                      requireUserInfo() { _ =>
+                        passthrough(requestCompression = true, entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
+                      }
+                    } ~
+                    path("evaluate") {
+                      requireUserInfo() { _ =>
+                        passthrough(requestCompression = true, entityTypeUrl + "/" + entityName + "/evaluate", HttpMethods.POST)
+                      }
                     }
                   }
               }
