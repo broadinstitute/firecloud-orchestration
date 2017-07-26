@@ -103,6 +103,7 @@ object FireCloudConfig {
     val baseUrl = firecloud.getString("baseUrl")
     val fireCloudId = firecloud.getString("fireCloudId")
     val fireCloudPortalUrl = firecloud.getString("portalUrl")
+    val serviceProject = firecloud.getString("serviceProject")
   }
 
   object Shibboleth {

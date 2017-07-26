@@ -38,8 +38,8 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
 
     agoraStatus map { agoraStatus =>
       agoraStatus.status match {
-        case "up" => SubsystemStatus(true)
-        case _ => SubsystemStatus(false, if (agoraStatus.message.nonEmpty) Some(agoraStatus.message) else None)
+        case "up" => SubsystemStatus(ok = true)
+        case _ => SubsystemStatus(ok = false, if (agoraStatus.message.nonEmpty) Some(agoraStatus.message) else None)
       }
     }
   }

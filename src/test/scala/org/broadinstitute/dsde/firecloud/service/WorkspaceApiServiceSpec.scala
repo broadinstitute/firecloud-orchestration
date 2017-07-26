@@ -21,7 +21,7 @@ import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 
-class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
+class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
 
   def actorRefFactory = system
 
@@ -131,6 +131,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param status status for the response
     */
   def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None): Unit = {
+    rawlsServer.reset()
     val request = org.mockserver.model.HttpRequest.request()
       .withMethod(method.name)
       .withPath(path)
@@ -155,6 +156,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
   def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Option[ManagedGroupRef] = None): (WorkspaceRequest, Workspace) = {
+    rawlsServer.reset()
     val rawlsRequest = WorkspaceRequest(namespace, name, authDomain, Map())
     val rawlsResponse = Workspace(namespace, name, authDomain, "foo", "bar", DateTime.now(), DateTime.now(), "bob", Map(), Map(), Map())
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
@@ -174,6 +176,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
   def stubRawlsCloneWorkspace(namespace: String, name: String, authDomain: Option[ManagedGroupRef] = None, attributes: Attributable.AttributeMap = Map()): (WorkspaceRequest, Workspace) = {
+    rawlsServer.reset()
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, authDomain, attributes + published + discoverable)
@@ -183,6 +186,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   def stubRawlsServiceWithError(method: HttpMethod, path: String, status: StatusCode) = {
+    rawlsServer.reset()
     rawlsServer
       .when(request().withMethod(method.name).withPath(path).withHeader(authHeader))
       .respond(
@@ -193,11 +197,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       )
   }
 
-  override def beforeEach(): Unit = {
+  override def beforeAll(): Unit = {
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
   }
 
-  override def afterEach(): Unit = {
+  override def afterAll(): Unit = {
     rawlsServer.stop
   }
 

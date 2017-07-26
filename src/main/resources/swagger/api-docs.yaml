@@ -4579,7 +4579,15 @@ definitions:
         example:
           Agora:
             ok: true
+          Google:
+            ok: true
+          Consent:
+            ok: false
+            messages:
+              - "ClusterHealth is RED"
           Rawls:
+            ok: true
+          Ontology:
             ok: true
           Search:
             ok: true
