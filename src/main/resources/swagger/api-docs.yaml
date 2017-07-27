@@ -1229,6 +1229,36 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/methods/permissions:
+    put:
+      tags:
+        - Method Repository
+      operationId: multiUpsertMethodsACL
+      summary: set ACLs for multiple methods in one call
+      produces:
+        - application/json
+        - text/plain
+      parameters:
+        - name: methodacls
+          description: method acls to upsert
+          required: true
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodAclPair'
+      responses:
+        200:
+          description: the indicated method namespace ACL permissions once the posted changes have been applied
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodAclPair'
+        400:
+          description: Invalid content format
+        500:
+          description: Internal Server Error
+
   /api/nih/callback:
     post:
       tags:
@@ -3539,7 +3569,7 @@ definitions:
         type: string
         description: Method configuration name
       configurationSnapshotId:
-        type: string
+        type: number
         description: Method configuration snapshot id
       destinationNamespace:
         type: string
@@ -3640,7 +3670,7 @@ definitions:
       - acls
     properties:
       method:
-        $ref: '#/definitions/MethodRepoMethod'
+        $ref: '#/definitions/MethodShort'
         description: method repo method
       referencedBy:
         $ref: '#/definitions/MethodConfigurationName'
@@ -3965,6 +3995,22 @@ definitions:
       enabled:
         $ref: '#/definitions/Enabled'
 
+  MethodAclPair:
+    type: object
+    required:
+      - method
+      - acls
+    properties:
+      method:
+        $ref: '#/definitions/MethodRepoMethod'
+      acls:
+        type: array
+        items:
+          $ref: '#/definitions/FireCloudPermission'
+      message:
+        type: string
+        description: ignored during input; if present during output, contains error messages
+
   MethodConfigACL:
     type: array
     items:
@@ -4091,6 +4137,33 @@ definitions:
         type: string
         description: Type of the AgoraEntity -- Task or Workflow.
         default: Task
+
+  MethodShort:
+    required:
+      - managers
+      - namespace
+      - name
+      - snapshotId
+    type: object
+    properties:
+      managers:
+        type: array
+        items:
+          type: string
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      snapshotId:
+        type: integer
+        description: SnapshotId of AgoraEntity
+      public:
+        type: boolean
+        description: If this AgoraEntity is publicly readable.
 
   MethodRepoMethod:
     description: ''
@@ -4506,7 +4579,15 @@ definitions:
         example:
           Agora:
             ok: true
+          Google:
+            ok: true
+          Consent:
+            ok: false
+            messages:
+              - "ClusterHealth is RED"
           Rawls:
+            ok: true
+          Ontology:
             ok: true
           Search:
             ok: true

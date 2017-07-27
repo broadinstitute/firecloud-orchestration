@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorRepo
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
-import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
+import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata, SubsystemStatus}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.slf4j.LoggerFactory
@@ -26,6 +26,7 @@ import spray.routing.RequestContext
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -272,4 +273,14 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val pipeline: HttpRequest => Future[GooglePriceList] = sendReceive ~> decode(Gzip) ~> unmarshal[GooglePriceList]
     pipeline(Get(FireCloudConfig.GoogleCloud.priceListUrl))
   }
+
+  def status: Future[SubsystemStatus] = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
+    val bucketResponse = storage.buckets().list(FireCloudConfig.FireCloud.serviceProject).executeUsingHead()
+    bucketResponse.getStatusCode match {
+      case x if x == 200 => Future(SubsystemStatus(ok = true, messages = None))
+      case _ => Future(SubsystemStatus(ok = false, messages = Some(List(bucketResponse.parseAsString()))))
+    }
+  }
+
 }

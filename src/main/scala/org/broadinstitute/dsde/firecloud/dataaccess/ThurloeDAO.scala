@@ -22,4 +22,5 @@ trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
   def getAllUserValuesForKey(key: String): Future[Map[String, String]]
   def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit]
   def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Try[Unit]]
+  override def serviceName:String = ThurloeDAO.serviceName
 }

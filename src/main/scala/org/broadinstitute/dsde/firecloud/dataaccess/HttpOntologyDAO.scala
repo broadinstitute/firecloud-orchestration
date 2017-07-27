@@ -5,19 +5,19 @@ import akka.io.IO
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
-import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
+import org.broadinstitute.dsde.firecloud.model.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import spray.can.Http
-import spray.client.pipelining._
-import spray.http.Uri
+import spray.http.{HttpResponse, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 
 class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
@@ -59,4 +59,9 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
     implicit val timeout:Timeout = 60.seconds // timeout to get the host connector reference
     for (Http.HostConnectorInfo(connector, _) <- IO(Http) ? ontologyHostSetup) yield connector
   }
+
+  override def status: Future[SubsystemStatus] = {
+    getStatusFromDropwizardChecks(unAuthedRequest(Get(ontologyUri.withPath(Uri.Path("/status")))))
+  }
+
 }

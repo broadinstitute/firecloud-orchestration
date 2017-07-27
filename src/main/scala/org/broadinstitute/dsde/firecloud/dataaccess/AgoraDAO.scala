@@ -18,4 +18,6 @@ trait AgoraDAO extends ReportsSubsystemStatus {
   def postNamespacePermissions(ns: String, entity: String, perms: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]]
 
   def getMultiEntityPermissions(entityType: AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]]
+
+  override def serviceName:String = AgoraDAO.serviceName
 }

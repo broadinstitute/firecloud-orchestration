@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, EntityAccessControl, EntityAccessControlAgora, FireCloudPermission}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
@@ -142,7 +142,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   }
 
   // Build error about missing implicit for Spray parameter unmarshaller? Add an entry here.
-  implicit val impMethod = jsonFormat8(MethodRepository.Method.apply)
+  implicit val impMethod = jsonFormat10(MethodRepository.Method.apply)
   implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
 
   implicit val impWorkspaceCreate = jsonFormat4(WorkspaceCreate.apply)
@@ -169,6 +169,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impAccessEntry = jsonFormat3(AccessEntry)
   implicit val impPermissionReport = jsonFormat2(PermissionReport)
   implicit val impPermissionReportRequest = jsonFormat2(PermissionReportRequest)
+  implicit val impMethodAclPair = jsonFormat3(MethodAclPair)
 
   implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)
@@ -227,6 +228,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impSystemStatus = jsonFormat2(SystemStatus)
   implicit val impAgoraStatus = jsonFormat2(AgoraStatus)
   implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
+  implicit val impDropwizardHealth = jsonFormat2(DropwizardHealth)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

@@ -18,6 +18,8 @@ import scala.concurrent.Future
 
 class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
 
+  import PermissionReportMockMethods._
+
   def actorRefFactory = system
 
   val testApp = app.copy(agoraDAO=new PermissionReportMockAgoraDAO(), rawlsDAO=new PermissionReportMockRawlsDAO())
@@ -53,13 +55,6 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-    "should return 403 if caller is not owner of workspace" in {
-      val payload = PermissionReportRequest(None,None)
-      Post(permissionReportPath("notowner","notowner"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(Forbidden)
-      }
-    }
-
     "should accept correctly-formed input" in {
       val payload = PermissionReportRequest(Some(Seq("foo")),Some(Seq(MethodConfigurationName("ns","name"))))
       Post(permissionReportPath("foo","bar"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
@@ -82,9 +77,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("alice@example.com","bob@example.com","carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(MethodRepoMethod("methodns1","methodname1",1)),
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2)),
-          MethodConfigurationName("configns3", "configname3") -> Some(MethodRepoMethod("methodns3","methodname3",3))
+          MethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
+          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
+          MethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -101,9 +96,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(MethodRepoMethod("methodns1","methodname1",1)),
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2)),
-          MethodConfigurationName("configns3", "configname3") -> Some(MethodRepoMethod("methodns3","methodname3",3))
+          MethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
+          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
+          MethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -120,7 +115,7 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("alice@example.com","bob@example.com","carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2))
+          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -137,7 +132,7 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2))
+          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -146,13 +141,13 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-    "should propogate method-specific error message from Agora" in {
+    "should propagate method-specific error message from Agora" in {
       val payload = PermissionReportRequest(None,None)
       Post(permissionReportPath("foo","bar"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
         val report = responseAs[PermissionReport]
 
-        val withError = report.referencedMethods.find(_.method.contains(MethodRepoMethod("methodns3","methodname3",3)))
+        val withError = report.referencedMethods.find(_.method.contains(mockMethod3))
 
         assert(withError.isDefined, "test target method should exist")
         assert(withError.get.message.isDefined, "error message should exist")
@@ -167,9 +162,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(MethodRepoMethod("methodns1","methodname1",1)),
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2)),
-          MethodConfigurationName("configns3", "configname3") -> Some(MethodRepoMethod("methodns3","methodname3",3))
+          MethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
+          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
+          MethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -191,7 +186,27 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("alice@example.com","bob@example.com","carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns2", "configname2") -> Some(MethodRepoMethod("methodns2","methodname2",2))
+          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2)
+        )
+
+        assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
+          x => x.referencedBy -> x.method
+        }).toMap}
+      }
+    }
+
+    "should return empty workspace ACLs but still get method info if caller is not owner of workspace" in {
+      val payload = PermissionReportRequest(None,None)
+      Post(permissionReportPath("notowner","notowner"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        status should equal(OK)
+        val report = responseAs[PermissionReport]
+
+        assert(report.workspaceACL.isEmpty)
+
+        val expectedConfigsNoAcls = Map(
+          MethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
+          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
+          MethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -231,26 +246,34 @@ class PermissionReportMockRawlsDAO extends MockRawlsDAO {
 
 }
 
+object PermissionReportMockMethods {
+  val mockMethod1 = Method(Some("methodns1"), Some("methodname1"), Some(1), managers=Some(Seq("alice@example.com")), public=Some(true))
+  val mockMethod2 = Method(Some("methodns2"), Some("methodname2"), Some(2), managers=Some(Seq("bob@example.com")), public=Some(false))
+  val mockMethod3 = Method(Some("methodns3"), Some("methodname3"), Some(3), public=Some(false))
+}
+
 class PermissionReportMockAgoraDAO extends MockAgoraDAO {
 
+  import PermissionReportMockMethods._
+
   val mockEntityAccessControlList = List(
-    EntityAccessControlAgora(Method(Some("methodns1"), Some("methodname1"), Some(1)),
+    EntityAccessControlAgora(mockMethod1,
       Seq(
         AgoraPermission(Some("alice@example.com"), Some(ACLNames.ListOwner)),
         AgoraPermission(Some("bob@example.com"), Some(ACLNames.ListReader)),
-        AgoraPermission(Some("public"), Some(List.empty[String]))
+        AgoraPermission(Some("public"), Some(ACLNames.ListReader))
       ),
       None),
-    EntityAccessControlAgora(Method(Some("methodns2"), Some("methodname2"), Some(2)),
+    EntityAccessControlAgora(mockMethod2,
       Seq(
         AgoraPermission(Some("bob@example.com"), Some(ACLNames.ListOwner)),
         AgoraPermission(Some("carol@example.com"), Some(ACLNames.ListReader)),
         AgoraPermission(Some("public"), Some(List.empty[String]))
       ),
       None),
-    EntityAccessControlAgora(Method(Some("methodns3"), Some("methodname3"), Some(3)),
+    EntityAccessControlAgora(mockMethod3,
       Seq.empty[AgoraPermission],
-      Some("this method's mock reponse has an error"))
+      Some("this method's mock response has an error"))
   )
 
   override def getMultiEntityPermissions(entityType: AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo) = {
