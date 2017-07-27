@@ -49,11 +49,11 @@ object WorkspaceService {
   }
 
   def constructor(app: Application)(userToken: WithAccessToken)(implicit executionContext: ExecutionContext) =
-    new WorkspaceService(userToken, app.rawlsDAO, app.thurloeDAO, app.googleServicesDAO)
+    new WorkspaceService(userToken, app.rawlsDAO, app.thurloeDAO, app.googleServicesDAO, app.ontologyDAO, app.searchDAO)
 }
 
-class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO) (implicit protected val executionContext: ExecutionContext) extends Actor
-  with AttributeSupport with TSVFileSupport with PermissionsSupport {
+class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO, val ontologyDAO: OntologyDAO, val searchDAO: SearchDAO)
+                      (implicit protected val executionContext: ExecutionContext) extends Actor with AttributeSupport with TSVFileSupport with PermissionsSupport with WorkspacePublishingSupport {
 
   implicit val system = context.system
 
@@ -106,7 +106,10 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       // this is technically vulnerable to a race condition in which the workspace attributes have changed
       // between the time we retrieved them and here, where we update them.
       val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, newAttributes, _.namespace != AttributeName.libraryNamespace)
-      rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
+      rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map {
+        republishIfPublished(workspaceResponse.workspace, ontologyDAO, searchDAO)
+        RequestComplete(_)
+      }
     }
   }
 
@@ -179,6 +182,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     val op = AddUpdateAttribute(AttributeName.withTagsNS, attrList)
     rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, Seq(op)) flatMap { ws =>
       val tags = getTagsFromWorkspace(ws)
+      republishIfPublished(ws, ontologyDAO, searchDAO)
       Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
     }
   }
@@ -189,6 +193,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       val attrOps = (tags diff origTags) map (tag => AddListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
       rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { patchedWs =>
         val tags = getTagsFromWorkspace(patchedWs)
+        republishIfPublished(patchedWs, ontologyDAO, searchDAO)
         Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
       }
     }
@@ -198,6 +203,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     val attrOps = tags map (tag => RemoveListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
     rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { ws =>
       val tags = getTagsFromWorkspace(ws)
+      republishIfPublished(ws, ontologyDAO, searchDAO)
       Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
     }
 

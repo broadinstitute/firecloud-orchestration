@@ -107,8 +107,10 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             }
           } ~
           path("updateAttributes") {
-            requireUserInfo() { _ =>
-              passthrough(workspacePath, HttpMethods.PATCH)
+            patch {
+              requireUserInfo() { _ =>
+                passthrough(workspacePath, HttpMethods.PATCH)
+              }
             }
           } ~
           path("setAttributes") {
