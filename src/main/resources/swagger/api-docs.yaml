@@ -2006,6 +2006,8 @@ paths:
         responses:
           200:
             description: Success
+          400:
+            description: Invalid entity expression
           404:
             description: Workspace or Entity does not exist
           500:
