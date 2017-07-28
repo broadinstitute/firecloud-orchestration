@@ -248,17 +248,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
       }
     }
 
-    "Passthrough tests on the /workspaces/segment/segment/updateAttributes path" - {
-      "MethodNotAllowed error is returned for HTTP PUT, POST, GET, DELETE methods" in {
-        List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/updateAttributes") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(MethodNotAllowed)
-          }
-        }
-      }
-    }
-
     "Passthrough tests on the /workspaces/segment/segment/acl path" - {
       "MethodNotAllowed error is returned for HTTP PUT, POST, DELETE methods" in {
         List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map {
@@ -424,18 +413,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
         }
       }
     }
-
-
-    "Passthrough tests on the /workspaces/%s/%s/updateAttributes path" - {
-      "OK status is returned for HTTP PATCH" in {
-        // Careful here... although this is a passthrouth, orchestration does not mirror the same URL as rawls in this case
-        stubRawlsService(HttpMethods.PATCH, workspacesPath, OK)
-        Patch(updateAttributesPath, "[]") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-          status should equal(OK)
-        }
-      }
-    }
-
 
     "Passthrough tests on the /workspaces/%s/%s/acl path" - {
       "OK status is returned for HTTP GET" in {
@@ -843,6 +820,44 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)
             }
+          }
+        }
+      }
+    }
+
+    "Workspace updateAttributes tests" - {
+      "when calling any method other than PATCH on workspaces/*/*/updateAttributes path" - {
+        "should receive a MethodNotAllowed error" in {
+          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
+            method =>
+              new RequestBuilder(method)(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{}")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+                status should equal(MethodNotAllowed)
+              }
+          }
+        }
+      }
+
+      "when calling PATCH on workspaces/*/*/updateAttributes path" - {
+        "should 400 Bad Request if the payload is malformed" in {
+          (Patch(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{{{"))
+            ~> dummyUserIdHeaders("1234")
+            ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 200 OK if the payload is ok" in {
+          (Patch(updateAttributesPath,
+            HttpEntity(MediaTypes.`application/json`, """[
+                                                        |  {
+                                                        |    "op": "AddUpdateAttribute",
+                                                        |    "attributeName": "library:dataCategory",
+                                                        |    "addUpdateAttribute": "test-attribute-value"
+                                                        |  }
+                                                        |]""".stripMargin))
+            ~> dummyUserIdHeaders("1234")
+            ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(OK)
           }
         }
       }
