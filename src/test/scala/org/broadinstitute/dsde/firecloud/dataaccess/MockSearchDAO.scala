@@ -56,5 +56,6 @@ class MockSearchDAO extends SearchDAO {
     populateSuggestInvoked = false
   }
 
-  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true))
+
 }

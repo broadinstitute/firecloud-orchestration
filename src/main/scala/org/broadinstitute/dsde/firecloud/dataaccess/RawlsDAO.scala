@@ -89,4 +89,7 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def patchCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog])(implicit userToken: WithAccessToken): Future[WorkspaceCatalogUpdateResponseList]
 
   def getMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Seq[MethodConfigurationShort]]
+
+  override def serviceName:String = RawlsDAO.serviceName
+
 }

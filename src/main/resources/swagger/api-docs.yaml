@@ -4579,7 +4579,15 @@ definitions:
         example:
           Agora:
             ok: true
+          Google:
+            ok: true
+          Consent:
+            ok: false
+            messages:
+              - "ClusterHealth is RED"
           Rawls:
+            ok: true
+          Ontology:
             ok: true
           Search:
             ok: true
@@ -4694,8 +4702,10 @@ definitions:
         type: string
         description: The name of the workspace
       authorizationDomain:
-        $ref: '#/definitions/ManagedGroupRef'
-        description: An optional authorization domain for the workspace
+        type: array
+        items:
+          $ref: '#/definitions/ManagedGroupRef'
+        description: The list of groups to form the Authorization Domain (empty if no Authorization Domain is set)
       workspaceId:
         type: string
         description: A UUID associated with the workspace
@@ -4881,8 +4891,10 @@ definitions:
           type: string
         description: Map of attributes
       authorizationDomain:
-        $ref: '#/definitions/ManagedGroupRef'
-        description: The Authorization Domain to restrict the data to.  Optional, default None.
+        type: array
+        items:
+          $ref: '#/definitions/ManagedGroupRef'
+        description: The list of groups to form the Authorization Domain (empty if no Authorization Domain is set)
 
   WorkspaceTag:
     required:

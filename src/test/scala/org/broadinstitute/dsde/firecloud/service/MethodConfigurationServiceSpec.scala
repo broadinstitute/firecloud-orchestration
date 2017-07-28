@@ -20,7 +20,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
   private final val mockWorkspace = Workspace(
     "namespace",
     "name",
-    None,
+    Set.empty,
     "workspace_id",
     "buckety_bucket",
     DateTime.now(),
