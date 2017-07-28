@@ -34,10 +34,13 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
 
   val testUUID = UUID.randomUUID()
 
+  val testGroup1Ref = ManagedGroupRef(RawlsGroupName("test-group1"))
+  val testGroup2Ref = ManagedGroupRef(RawlsGroupName("test-group2"))
+
   val testWorkspace = new Workspace(workspaceId=testUUID.toString,
     namespace="testWorkspaceNamespace",
     name="testWorkspaceName",
-    authorizationDomain=None,
+    authorizationDomain=Set(testGroup1Ref, testGroup2Ref),
     isLocked=false,
     createdBy="createdBy",
     createdDate=DateTime.now(),
@@ -229,7 +232,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName("library","bar")->AttributeString("bar"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
@@ -249,7 +253,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("_discoverableByGroups") -> AttributeValueList(Seq(AttributeString("Group1"))),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
@@ -265,7 +270,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         val expected = Document(testUUID.toString, Map(
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
@@ -290,7 +296,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         val expected = Document(testUUID.toString, Map(
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
@@ -311,7 +318,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         val expected = Document(testUUID.toString, Map(
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
@@ -331,7 +339,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName("library","bar")->AttributeString("bar"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
@@ -353,7 +362,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName("library","bar")->AttributeString("bar"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
@@ -371,7 +381,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parentData.toJson.compactPrint)
+          AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parentData.toJson.compactPrint),
+          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
@@ -385,7 +396,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_4"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
@@ -399,7 +411,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_99999"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId)
+          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
+          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
           Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
