@@ -75,7 +75,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     case GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) =>
       getStorageCostEstimate(workspaceNamespace, workspaceName) pipeTo sender
     case UpdateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) =>
-      updateWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson)
+      updateWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson) pipeTo sender
     case SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =>
       setWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes) pipeTo sender
     case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) =>
@@ -104,7 +104,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     }
   }
 
-  def updateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]): Unit = {
+  def updateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) = {
     rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson) map { ws =>
       republishIfPublished(ws, ontologyDAO, searchDAO)
       RequestComplete(ws)
