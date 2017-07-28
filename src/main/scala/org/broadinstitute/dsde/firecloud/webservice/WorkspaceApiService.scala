@@ -11,6 +11,7 @@ import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PermissionReportService, WorkspaceService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.slf4j.LoggerFactory
 import spray.json._
 import spray.json.DefaultJsonProtocol._
@@ -108,8 +109,14 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
           } ~
           path("updateAttributes") {
             patch {
-              requireUserInfo() { _ =>
-                passthrough(workspacePath, HttpMethods.PATCH)
+              requireUserInfo() { userInfo: UserInfo =>
+                entity(as[Seq[AttributeUpdateOperation]]) { replacementAttributes => requestContext =>
+                  perRequest(requestContext,
+                    WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                    WorkspaceService.UpdateWorkspaceAttributes(workspaceNamespace, workspaceName, replacementAttributes)
+                  )
+
+                }
               }
             }
           } ~
