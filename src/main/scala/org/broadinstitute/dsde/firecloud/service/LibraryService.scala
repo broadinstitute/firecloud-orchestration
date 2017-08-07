@@ -163,7 +163,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
    */
   private def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
       rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>
-      republishIfPublished(newws, ontologyDAO, searchDAO)
+      republishDocument(newws, ontologyDAO, searchDAO)
       newws
     }
   }

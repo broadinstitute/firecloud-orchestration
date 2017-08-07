@@ -20,8 +20,26 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
+object WorkspaceApiServiceSpec {
 
-class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
+  val publishedWorkspace = Workspace(
+    "namespace",
+    "name-published",
+    Set.empty,
+    "workspace_id",
+    "buckety_bucket",
+    DateTime.now(),
+    DateTime.now(),
+    "my_workspace_creator",
+    Map(AttributeName("library", "published") -> AttributeBoolean(true)), //attributes
+    Map(), //acls
+    Map(), //authdomain acls
+    false //locked
+  )
+
+}
+
+class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
 
   def actorRefFactory = system
 
@@ -203,6 +221,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
 
   override def afterAll(): Unit = {
     rawlsServer.stop
+  }
+
+  override def beforeEach(): Unit = {
+    this.searchDao.reset
+  }
+
+  override def afterEach(): Unit = {
+    this.searchDao.reset
   }
 
   "WorkspaceService Passthrough Negative Tests" - {
@@ -858,8 +884,27 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
             ~> dummyUserIdHeaders("1234")
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
+            assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
           }
         }
+
+        "should republish if the document is already published" in {
+
+          (Patch(workspacesRoot + "/%s/%s/updateAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace, WorkspaceApiServiceSpec.publishedWorkspace.name),
+            HttpEntity(MediaTypes.`application/json`, """[
+                                                        |  {
+                                                        |    "op": "AddUpdateAttribute",
+                                                        |    "attributeName": "library:dataCategory",
+                                                        |    "addUpdateAttribute": "test-attribute-value"
+                                                        |  }
+                                                        |]""".stripMargin))
+            ~> dummyUserIdHeaders("1234")
+            ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(OK)
+            assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
+          }
+        }
+
       }
     }
 
@@ -892,8 +937,23 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
             ~> dummyUserIdHeaders("1234")
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
+            assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
           }
         }
+
+        "should republish if the document is already published" in {
+
+          (Patch(workspacesRoot + "/%s/%s/setAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace, WorkspaceApiServiceSpec.publishedWorkspace.name),
+            HttpEntity(MediaTypes.`application/json`, """{"description": "something",
+                                                        | "array": [1, 2, 3]
+                                                        | }""".stripMargin))
+            ~> dummyUserIdHeaders("1234")
+            ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(OK)
+            assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
+          }
+        }
+
       }
 
       "when calling POST on the workspaces/*/*/importAttributesTSV path" - {

@@ -217,7 +217,6 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         "should return BadRequest and not invoke indexDocument for unpublished workspace with invalid dataset" in {
           new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(BadRequest)
-            System.out.println(response)
             assert(!this.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
             assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
           }

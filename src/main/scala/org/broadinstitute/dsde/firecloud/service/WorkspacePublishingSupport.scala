@@ -21,7 +21,7 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
     searchDAO.deleteDocument(ws.workspaceId)
   }
 
-  def republishIfPublished(ws: Workspace, ontologyDAO: OntologyDAO, searchDAO: SearchDAO): Unit = {
+  def republishDocument(ws: Workspace, ontologyDAO: OntologyDAO, searchDAO: SearchDAO): Unit = {
     if (isPublished(ws)) {
       // if already published, republish
       // we do not need to delete before republish

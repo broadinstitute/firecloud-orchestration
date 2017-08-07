@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.LibraryService
+import org.broadinstitute.dsde.firecloud.service.{LibraryService, WorkspaceApiServiceSpec}
 import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
@@ -262,7 +262,11 @@ class MockRawlsDAO  extends RawlsDAO {
   }
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
-    Future.successful(newWorkspace)
+    if (name == WorkspaceApiServiceSpec.publishedWorkspace.name) {
+      Future.successful(publishedRawlsWorkspaceWithAttributes)
+    } else {
+      Future.successful(newWorkspace)
+    }
   }
 
   override def updateLibraryAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
