@@ -651,7 +651,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "set workspaceAccess to workspace access level if workspace is returned from workspace list" in {
-        val workspaceList = Seq(WorkspaceListResponse(WorkspaceAccessLevels.Owner, testWorkspace, WorkspaceSubmissionStats(None, None, 0), Seq()))
+        val workspaceList = Seq(WorkspaceListResponse(WorkspaceAccessLevels.Owner, testWorkspace, WorkspaceSubmissionStats(None, None, 0), Seq(), Some(false)))
         val result = testLibraryMetadataJsObject.copy(testLibraryMetadataJsObject.fields.updated("workspaceId", JsString(testUUID.toString)))
         val expectedResult: JsValue = result.copy(result.fields.updated("workspaceAccess", JsString(WorkspaceAccessLevels.Owner.toString)))
         val doc = LibrarySearchResponse(params, 1, Seq(result: JsValue), Seq())
