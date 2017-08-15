@@ -55,7 +55,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
                       val searchDAO: SearchDAO,
                       val ontologyDAO: OntologyDAO)
                      (implicit protected val executionContext: ExecutionContext) extends Actor
-  with LibraryServiceSupport with AttributeSupport with PermissionsSupport with SprayJsonSupport with LazyLogging {
+  with LibraryServiceSupport with AttributeSupport with PermissionsSupport with SprayJsonSupport with LazyLogging with WorkspacePublishingSupport {
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -76,9 +76,6 @@ class LibraryService (protected val argUserInfo: UserInfo,
     case PopulateSuggest(field: String, text: String) => populateSuggest(field: String, text: String) pipeTo sender
   }
 
-  def isPublished(workspaceResponse: WorkspaceResponse): Boolean = {
-    workspaceResponse.workspace.attributes.get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
-  }
 
   def updateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]): Future[PerRequestMessage] = {
     if (newGroups.forall { g => FireCloudConfig.ElasticSearch.discoverGroupNames.contains(g) }) {
@@ -166,11 +163,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
    */
   private def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
       rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>
-      if (isPublished) {
-        // if already published, republish
-        // we do not need to delete before republish
-        publishDocument(newws)
-      }
+      republishDocument(newws, ontologyDAO, searchDAO)
       newws
     }
   }
@@ -195,24 +188,13 @@ class LibraryService (protected val argUserInfo: UserInfo,
         // user requested a change in published flag, and metadata is valid; make the change.
         rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(publishArg)) map { ws =>
           if (publishArg)
-            publishDocument(ws)
+            publishDocument(ws, ontologyDAO, searchDAO)
           else
-            removeDocument(ws)
+            removeDocument(ws, searchDAO)
           RequestComplete(ws)
         }
       }
     }
-  }
-
-  def publishDocument(ws: Workspace): Unit = {
-    indexableDocuments(Seq(ws), ontologyDAO) map { ws =>
-      assert(ws.size == 1)
-      searchDAO.indexDocument(ws.head)
-    }
-  }
-
-  def removeDocument(ws: Workspace): Unit = {
-    searchDAO.deleteDocument(ws.workspaceId)
   }
 
   def indexAll: Future[PerRequestMessage] = {

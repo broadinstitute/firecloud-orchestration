@@ -20,8 +20,26 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
+object WorkspaceApiServiceSpec {
 
-class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
+  val publishedWorkspace = Workspace(
+    "namespace",
+    "name-published",
+    Set.empty,
+    "workspace_id",
+    "buckety_bucket",
+    DateTime.now(),
+    DateTime.now(),
+    "my_workspace_creator",
+    Map(AttributeName("library", "published") -> AttributeBoolean(true)), //attributes
+    Map(), //acls
+    Map(), //authdomain acls
+    false //locked
+  )
+
+}
+
+class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
 
   def actorRefFactory = system
 
@@ -205,6 +223,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
     rawlsServer.stop
   }
 
+  override def beforeEach(): Unit = {
+    this.searchDao.reset
+  }
+
+  override def afterEach(): Unit = {
+    this.searchDao.reset
+  }
+
   "WorkspaceService Passthrough Negative Tests" - {
 
     "Passthrough tests on the /workspaces path" - {
@@ -243,17 +269,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
           val methodConfigs = MethodConfiguration("namespace", "name", "root", Map.empty, Map.empty, Map("value" -> AttributeString(s"$prefix.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
           Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(Forbidden)
-          }
-        }
-      }
-    }
-
-    "Passthrough tests on the /workspaces/segment/segment/updateAttributes path" - {
-      "MethodNotAllowed error is returned for HTTP PUT, POST, GET, DELETE methods" in {
-        List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/updateAttributes") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(MethodNotAllowed)
           }
         }
       }
@@ -424,18 +439,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
         }
       }
     }
-
-
-    "Passthrough tests on the /workspaces/%s/%s/updateAttributes path" - {
-      "OK status is returned for HTTP PATCH" in {
-        // Careful here... although this is a passthrouth, orchestration does not mirror the same URL as rawls in this case
-        stubRawlsService(HttpMethods.PATCH, workspacesPath, OK)
-        Patch(updateAttributesPath, "[]") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
-          status should equal(OK)
-        }
-      }
-    }
-
 
     "Passthrough tests on the /workspaces/%s/%s/acl path" - {
       "OK status is returned for HTTP GET" in {
@@ -848,6 +851,63 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
       }
     }
 
+    "Workspace updateAttributes tests" - {
+      "when calling any method other than PATCH on workspaces/*/*/updateAttributes path" - {
+        "should receive a MethodNotAllowed error" in {
+          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
+            method =>
+              new RequestBuilder(method)(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{}")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+                status should equal(MethodNotAllowed)
+              }
+          }
+        }
+      }
+
+      "when calling PATCH on workspaces/*/*/updateAttributes path" - {
+        "should 400 Bad Request if the payload is malformed" in {
+          (Patch(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{{{"))
+            ~> dummyUserIdHeaders("1234")
+            ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(BadRequest)
+          }
+        }
+
+        "should 200 OK if the payload is ok" in {
+          (Patch(updateAttributesPath,
+            HttpEntity(MediaTypes.`application/json`, """[
+                                                        |  {
+                                                        |    "op": "AddUpdateAttribute",
+                                                        |    "attributeName": "library:dataCategory",
+                                                        |    "addUpdateAttribute": "test-attribute-value"
+                                                        |  }
+                                                        |]""".stripMargin))
+            ~> dummyUserIdHeaders("1234")
+            ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(OK)
+            assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
+          }
+        }
+
+        "should republish if the document is already published" in {
+
+          (Patch(workspacesRoot + "/%s/%s/updateAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace, WorkspaceApiServiceSpec.publishedWorkspace.name),
+            HttpEntity(MediaTypes.`application/json`, """[
+                                                        |  {
+                                                        |    "op": "AddUpdateAttribute",
+                                                        |    "attributeName": "library:dataCategory",
+                                                        |    "addUpdateAttribute": "test-attribute-value"
+                                                        |  }
+                                                        |]""".stripMargin))
+            ~> dummyUserIdHeaders("1234")
+            ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(OK)
+            assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
+          }
+        }
+
+      }
+    }
+
     "Workspace setAttributes tests" - {
       "when calling any method other than PATCH on workspaces/*/*/setAttributes path" - {
         "should receive a MethodNotAllowed error" in {
@@ -877,8 +937,23 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService {
             ~> dummyUserIdHeaders("1234")
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
+            assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
           }
         }
+
+        "should republish if the document is already published" in {
+
+          (Patch(workspacesRoot + "/%s/%s/setAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace, WorkspaceApiServiceSpec.publishedWorkspace.name),
+            HttpEntity(MediaTypes.`application/json`, """{"description": "something",
+                                                        | "array": [1, 2, 3]
+                                                        | }""".stripMargin))
+            ~> dummyUserIdHeaders("1234")
+            ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(OK)
+            assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
+          }
+        }
+
       }
 
       "when calling POST on the workspaces/*/*/importAttributesTSV path" - {

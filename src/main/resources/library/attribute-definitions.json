@@ -313,6 +313,14 @@
       "default": 1,
       "indexable": false,
       "type": "integer"
+    },
+    "tag:tags": {
+      "title": "Tags",
+      "type": "array",
+      "items": { "type": "string" },
+      "aggregate": {
+        "renderHint": "typeahead-multiselect"
+      }
     }
   },
   "consentCodes": {

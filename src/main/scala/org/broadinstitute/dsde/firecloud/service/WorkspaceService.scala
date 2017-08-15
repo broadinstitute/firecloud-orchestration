@@ -15,7 +15,7 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, RemoveListMember}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
 import spray.http.MediaTypes._
 import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
@@ -35,6 +35,7 @@ object WorkspaceService {
   case class GetCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo) extends WorkspaceServiceMessage
   case class UpdateCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog], userInfo: UserInfo) extends WorkspaceServiceMessage
   case class GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
+  case class UpdateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) extends WorkspaceServiceMessage
   case class SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) extends WorkspaceServiceMessage
   case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) extends WorkspaceServiceMessage
   case class ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
@@ -49,11 +50,11 @@ object WorkspaceService {
   }
 
   def constructor(app: Application)(userToken: WithAccessToken)(implicit executionContext: ExecutionContext) =
-    new WorkspaceService(userToken, app.rawlsDAO, app.thurloeDAO, app.googleServicesDAO)
+    new WorkspaceService(userToken, app.rawlsDAO, app.thurloeDAO, app.googleServicesDAO, app.ontologyDAO, app.searchDAO)
 }
 
-class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO) (implicit protected val executionContext: ExecutionContext) extends Actor
-  with AttributeSupport with TSVFileSupport with PermissionsSupport {
+class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO, val ontologyDAO: OntologyDAO, val searchDAO: SearchDAO)
+                      (implicit protected val executionContext: ExecutionContext) extends Actor with AttributeSupport with TSVFileSupport with PermissionsSupport with WorkspacePublishingSupport {
 
   implicit val system = context.system
 
@@ -73,6 +74,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       updateCatalog(workspaceNamespace, workspaceName, updates, userInfo) pipeTo sender
     case GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) =>
       getStorageCostEstimate(workspaceNamespace, workspaceName) pipeTo sender
+    case UpdateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) =>
+      updateWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson) pipeTo sender
     case SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =>
       setWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes) pipeTo sender
     case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) =>
@@ -101,12 +104,22 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     }
   }
 
+  def updateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) = {
+    rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson) map { ws =>
+      republishDocument(ws, ontologyDAO, searchDAO)
+      RequestComplete(ws)
+    }
+  }
+
   def setWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
       // this is technically vulnerable to a race condition in which the workspace attributes have changed
       // between the time we retrieved them and here, where we update them.
       val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, newAttributes, _.namespace != AttributeName.libraryNamespace)
-      rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map (RequestComplete(_))
+      rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map { ws =>
+        republishDocument(ws, ontologyDAO, searchDAO)
+        RequestComplete(ws)
+      }
     }
   }
 
@@ -178,6 +191,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     val attrList = AttributeValueList(tags map (tag => AttributeString(tag.trim)))
     val op = AddUpdateAttribute(AttributeName.withTagsNS, attrList)
     rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, Seq(op)) flatMap { ws =>
+      republishDocument(ws, ontologyDAO, searchDAO)
+
       val tags = getTagsFromWorkspace(ws)
       Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
     }
@@ -188,6 +203,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       val origTags = getTagsFromWorkspace(origWs.workspace)
       val attrOps = (tags diff origTags) map (tag => AddListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
       rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { patchedWs =>
+        republishDocument(patchedWs, ontologyDAO, searchDAO)
+
         val tags = getTagsFromWorkspace(patchedWs)
         Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
       }
@@ -197,6 +214,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def deleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
     val attrOps = tags map (tag => RemoveListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
     rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { ws =>
+      republishDocument(ws, ontologyDAO, searchDAO)
+
       val tags = getTagsFromWorkspace(ws)
       Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
     }

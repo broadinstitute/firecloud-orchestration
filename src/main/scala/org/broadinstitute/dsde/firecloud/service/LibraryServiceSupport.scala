@@ -76,7 +76,13 @@ trait LibraryServiceSupport extends LazyLogging {
       AttributeName.withDefaultNS("workspaceId") -> AttributeString(workspace.workspaceId),
       AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(workspace.authorizationDomain.map(group => AttributeString(group.membersGroupName.value)).toSeq)
     )
-    val fields = attrfields ++ idfields
+
+    val tagfields = workspace.attributes.get(AttributeName.withTagsNS()) match {
+      case Some(t) => Map(AttributeName.withTagsNS() -> t)
+      case None => Map()
+    }
+
+    val fields = attrfields ++ idfields ++ tagfields
 
     workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
