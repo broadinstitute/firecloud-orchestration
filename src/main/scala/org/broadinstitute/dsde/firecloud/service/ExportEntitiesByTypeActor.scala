@@ -254,7 +254,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   private def getEntityQueries(metadata: EntityTypeMetadata, entityType: String): Seq[EntityQuery] = {
     val pageSize = FireCloudConfig.Rawls.defaultPageSize
     val filteredCount = metadata.count
-    val sortField = entityType + "_id"
+    val sortField = "name" // Anything else and the Rawls execution time blows up with a join
     val pages = Math.ceil(filteredCount.toDouble / pageSize.toDouble).toInt
     (1 to pages) map { page =>
       EntityQuery(page = page, pageSize = pageSize, sortField = sortField, sortDirection = SortDirections.Ascending, filterTerms = None)
