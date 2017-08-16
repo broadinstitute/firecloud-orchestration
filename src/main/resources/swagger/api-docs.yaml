@@ -2221,7 +2221,49 @@ paths:
     put:
       tags:
         - Method Configurations
+      operationId: overwriteWorkspaceMethodConfig
+      description: |
+        Add or overwrite a method configuration in a workspace.
+        The method configuration name and namespace in the URI must match the values in the JSON.
+      summary: Add or overwrite a method configuration in a workspace
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - name: configNamespace
+          description: Configuration Namespace
+          required: true
+          type: string
+          in: path
+        - name: configName
+          description: Configuration Name
+          required: true
+          type: string
+          in: path
+        - name: body
+          description: Method Config to Update
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/ConfigurationIngest'
+      responses:
+        200:
+          description: Successful
+        400:
+          description: Method configuration name and namespace in URI do not match those in JSON body
+        404:
+          description: Workspace or Method Configuration not found
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Method Configurations
       operationId: updateWorkspaceMethodConfig
+      description: |
+        Update method configuration.
+        Updates and moves the method configuration at the URI to the location in the request body.
+        The location in the URI may be the same as the location in the request body.
+        If the location in the request body matches the location in the URI, it is overwritten.
+        If the location in the request body is different to the location in the URI, and there is a method config already at that location, 409 is returned.
       summary: Update a method configuration in a workspace
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
@@ -2245,8 +2287,12 @@ paths:
       responses:
         200:
           description: Successful
+        403:
+          description: Invalid attribute namespace(s) in outputs
         404:
           description: Workspace or Method Configuration not found
+        409:
+          description: Method configuration with the new name already exists in the workspace
         500:
           description: Internal Server Error
     delete:
