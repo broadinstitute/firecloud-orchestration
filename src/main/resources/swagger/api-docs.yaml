@@ -1991,7 +1991,7 @@ paths:
       post:
         tags:
           - Entities
-        operationId: EvaluateEntityExpression
+        operationId: evaluateEntityExpression
         summary: Evaluate entity expression
         parameters:
           - $ref: '#/parameters/workspaceNamespaceParam'
