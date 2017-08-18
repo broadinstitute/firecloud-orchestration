@@ -2349,6 +2349,8 @@ paths:
       responses:
         204:
           description: Successful request
+        400:
+          description: Workspace details in payload don't match the URI
         404:
           description: Workspace or Method Configuration not found
         409:
