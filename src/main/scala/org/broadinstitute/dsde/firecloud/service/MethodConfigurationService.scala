@@ -96,7 +96,7 @@ trait MethodConfigurationService extends HttpService with PerRequestCreator with
           pathEnd {
             passthrough(
               MethodConfigurationService.remoteMethodConfigUrl(workspaceNamespace, workspaceName, configNamespace, configName),
-              HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE)
+              HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE)
           } ~
           path("rename") {
             passthrough(MethodConfigurationService.remoteMethodConfigRenameUrl(workspaceNamespace, workspaceName, configNamespace, configName),

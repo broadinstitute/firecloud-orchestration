@@ -133,9 +133,9 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
         mockWorkspace.namespace,
         mockWorkspace.name)
 
-      s"GET, PUT, and DELETE on $localMethodConfigPath " - {
+      s"GET, PUT, POST, and DELETE on $localMethodConfigPath " - {
         "should not receive a MethodNotAllowed" in {
-          List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) map {
+          List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map {
             method =>
               new RequestBuilder(method)(localMethodConfigPath) ~> sealRoute(routes) ~> check {
                 status shouldNot equal(MethodNotAllowed)
@@ -144,13 +144,10 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
         }
       }
 
-      s"POST, PATCH on $localMethodConfigPath " - {
+      s"PATCH on $localMethodConfigPath " - {
         "should receive a MethodNotAllowed" in {
-          List(HttpMethods.POST, HttpMethods.PATCH) map {
-            method =>
-              new RequestBuilder(method)(localMethodConfigPath) ~> sealRoute(routes) ~> check {
-                status should equal(MethodNotAllowed)
-              }
+          Patch(localMethodConfigPath) ~> sealRoute(routes) ~> check {
+            status should equal(MethodNotAllowed)
           }
         }
       }
