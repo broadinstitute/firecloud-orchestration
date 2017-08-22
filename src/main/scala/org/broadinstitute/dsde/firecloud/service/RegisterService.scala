@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.RegisterService.{CreateUpdateProfile, UpdateProfilePreferences}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -27,10 +27,10 @@ object RegisterService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new RegisterService(app.rawlsDAO, app.thurloeDAO)
+    new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO)
 }
 
-class RegisterService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
+class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO)
   (implicit protected val executionContext: ExecutionContext) extends Actor
   with LazyLogging {
 
@@ -50,7 +50,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
         )
       isRegistered <- rawlsDao.isRegistered(userInfo)
       _ <- if (!isRegistered) {
-        rawlsDao.registerUser(userInfo)
+        samDao.registerUser(userInfo)
       } else Future.successful(())
     } yield {
       RequestComplete(StatusCodes.OK)
