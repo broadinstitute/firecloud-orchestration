@@ -5,17 +5,20 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{AgoraPermissionActor, AgoraPermissionHandler}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, PerRequestCreator}
+import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, LibraryService, MethodsService, PerRequestCreator}
+import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.routing.{HttpService, Route}
 
-class MethodsApiServiceActor extends Actor with MethodsApiService {
-  def actorRefFactory = context
-  def receive = runRoute(routes)
-}
+//class MethodsApiServiceActor extends Actor with MethodsApiService {
+//
+//  def actorRefFactory = context
+//  def receive = runRoute(routes)
+//}
 
 object MethodsApiService {
   val remoteMethodsPath = FireCloudConfig.Agora.authPrefix + "/methods"
@@ -26,7 +29,11 @@ object MethodsApiService {
   val remoteMultiPermissionsUrl = remoteMethodsUrl + "/permissions"
 }
 
-trait MethodsApiService extends HttpService with PerRequestCreator with FireCloudDirectives {
+trait MethodsApiService extends HttpService with PerRequestCreator with FireCloudDirectives with StandardUserInfoDirectives {
+
+  private implicit val executionContext = actorRefFactory.dispatcher
+
+  val methodsServiceConstructor: UserInfo => MethodsService
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -51,7 +58,7 @@ trait MethodsApiService extends HttpService with PerRequestCreator with FireClou
         }
       }
     } ~
-    path( "configurations|methods".r / Segment / Segment / IntNumber / "permissions") { ( agora_ent, namespace, name, snapshotId) =>
+    path( "configurations|methods".r / Segment / Segment / IntNumber / "permissions") { (agora_ent, namespace, name, snapshotId) =>
       val url = getUrlFromBasePath(agora_ent, namespace, name, snapshotId)
       get { requestContext =>
         // pass to AgoraPermissionHandler
@@ -83,6 +90,16 @@ trait MethodsApiService extends HttpService with PerRequestCreator with FireClou
       } ~
       put {
         complete(StatusCodes.MethodNotAllowed)
+      }
+    } ~
+    path( "configurations" / Segment / Segment / IntNumber ) { ( namespace, name, snapshotId ) =>
+      requireUserInfo() { userInfo =>
+        get { requestContext =>
+          perRequest(requestContext,
+            MethodsService.props(methodsServiceConstructor, userInfo),
+            MethodsService.GetConfiguration(namespace, name, snapshotId)
+          )
+        }
       }
     }
 

@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraEntityType, AgoraPermission, EntityAccessControlAgora, Method}
+import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, SubsystemStatus, UserInfo}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
@@ -31,6 +31,10 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
 
   override def getMultiEntityPermissions(entityType: AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]] = {
     authedRequestToObject[List[EntityAccessControlAgora]]( Post(getMultiEntityPermissionUrl(entityType), entities) )
+  }
+
+  override def getConfiguration(namespace: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[Configuration] = {
+    authedRequestToObject[Configuration]( Get( s"${FireCloudConfig.Agora.authUrl}/configurations/$namespace/$name/$snapshotId") )
   }
 
   override def status: Future[SubsystemStatus] = {

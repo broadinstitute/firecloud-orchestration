@@ -32,4 +32,5 @@ class MockAgoraDAO extends AgoraDAO {
     Future(throw new Exception("Agora Mock DAO exception"))
   }
 
+  override def getConfiguration(namespace: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo) = ???
 }
