@@ -41,16 +41,18 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       updateProfilePreferences(userInfo, preferences) pipeTo sender
   }
 
-  private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile):
-      Future[PerRequestMessage] = {
+  private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
       _ <- thurloeDao.saveProfile(userInfo, basicProfile)
       _ <- thurloeDao.saveKeyValues(
           userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString)
         )
-      isRegistered <- rawlsDao.isRegistered(userInfo)
-      _ <- if (!isRegistered) {
-        samDao.registerUser(userInfo)
+      isRegistered <- samDao.getRegistrationStatus(userInfo)
+      _ <- if (!isRegistered.enabled.google) { //todo: check the right thing (TBD)
+        for {
+          _ <- samDao.registerUser(userInfo)
+          x <- rawlsDao.registerUser(userInfo) //this call handles the residual steps of registration that haven't/won't make it into sam. (send notification and convert pending workspace access
+        } yield x
       } else Future.successful(())
     } yield {
       RequestComplete(StatusCodes.OK)

@@ -45,8 +45,8 @@ object UserService {
   val billingAccountsPath = FireCloudConfig.Rawls.authPrefix + "/user/billingAccounts"
   val billingAccountsUrl = FireCloudConfig.Rawls.baseUrl + billingAccountsPath
 
-  val rawlsRegisterUserPath = "/register/user"
-  val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
+  val samRegisterUserPath = "/register/user"
+  val samRegisterUserURL = FireCloudConfig.Sam.baseUrl + samRegisterUserPath
 
   val rawlsGroupBasePath = FireCloudConfig.Rawls.authPrefix + "/groups"
   val rawlsGroupBaseUrl = FireCloudConfig.Rawls.baseUrl + rawlsGroupBasePath
@@ -86,9 +86,10 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
           // browser sent Authorization header; try to query rawls for user status
           case Some(c) =>
             val pipeline = authHeaders(requestContext) ~> sendReceive
-            val extReq = Get(UserService.rawlsRegisterUserURL)
+            val extReq = Get(UserService.samRegisterUserURL)
             pipeline(extReq) onComplete {
               case Success(response) =>
+                println(response)
                 response.status match {
                   // rawls rejected our request. User is either invalid or their token timed out; this is truly unauthorized
                   case Unauthorized => respondWithErrorReport(Unauthorized, Unauthorized.defaultMessage, requestContext)
@@ -99,9 +100,10 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
                   // rawls found the user; we'll try to parse the response and inspect it
                   case OK =>
                     val respJson = response.entity.as[RegistrationInfo]
+                    println(respJson)
                     respJson match {
                       case Right(regInfo) =>
-                        if (regInfo.enabled.google && regInfo.enabled.ldap) {
+                        if (regInfo.enabled.google) { //TODO, re-implement ldap check?
                           // rawls says the user is fully registered and activated!
                           requestContext.complete(OK, regInfo)
                         } else {
@@ -169,7 +171,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
     pathPrefix("register") {
       pathEnd {
         get {
-          passthrough(UserService.rawlsRegisterUserURL, HttpMethods.GET)
+          passthrough(UserService.samRegisterUserURL, HttpMethods.GET)
         }
       } ~
       path("userinfo") { requestContext =>

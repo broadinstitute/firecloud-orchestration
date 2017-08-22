@@ -35,8 +35,8 @@ case class OAuthUser(sub: String, email: String)
 
 case class RegistrationInfo(userInfo: RawlsUserInfo, enabled: RawlsEnabled)
 
-case class RawlsUserInfo(userSubjectId: String, userEmail: String)
-case class RawlsEnabled(google: Boolean, ldap: Boolean)
+case class RawlsUserInfo(id: String, email: String)
+case class RawlsEnabled(google: Boolean) //todo: revert ldap after opendj becomes main source for proxy?
 
 // TODO: roll into RawlsEnabled? combine with an isAdmin role?
 case class Curator(curator: Boolean)
