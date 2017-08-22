@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLServer
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impFireCloudPermission, impMethodAclPair}
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 import org.broadinstitute.dsde.rawls.model.MethodRepoMethod
 import spray.http.HttpMethods
@@ -12,10 +13,10 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 
-class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService {
+class MethodsApiServiceMultiACLSpec extends BaseServiceSpec with MethodsApiService {
 
   def actorRefFactory = system
-
+  val methodsServiceConstructor: (UserInfo) => MethodsService = MethodsService.constructor(app)
 
   override def beforeAll(): Unit = {
     MockAgoraACLServer.startACLServer()
@@ -38,7 +39,7 @@ class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService {
       "NotFound is returned" in {
         List(HttpMethods.DELETE, HttpMethods.GET, HttpMethods.POST) map {
           method =>
-            new RequestBuilder(method)(localMethodPermissionsPath) ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)(localMethodPermissionsPath) ~> sealRoute(methodsServiceApiRoutes) ~> check {
               status should equal(NotFound)
             }
         }
@@ -51,7 +52,7 @@ class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService {
           MethodAclPair(MethodRepoMethod("ns1","n1",1), Seq(FireCloudPermission("user1@example.com","OWNER"))),
           MethodAclPair(MethodRepoMethod("ns2","n2",2), Seq(FireCloudPermission("user2@example.com","READER")))
         )
-        Put(localMethodPermissionsPath, payload) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Put(localMethodPermissionsPath, payload) ~> dummyAuthHeaders ~> sealRoute(methodsServiceApiRoutes) ~> check {
           status should equal(OK)
           val resp = responseAs[Seq[MethodAclPair]]
           assert(resp.nonEmpty)
@@ -64,7 +65,7 @@ class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService {
     "when posting malformed data" - {
       "BadRequest is returned" in {
         // endpoint expects a JsArray; send it a JsObject and expect BadRequest.
-        Put(localMethodPermissionsPath, JsObject(Map("foo"->JsString("bar")))) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Put(localMethodPermissionsPath, JsObject(Map("foo"->JsString("bar")))) ~> dummyAuthHeaders ~> sealRoute(methodsServiceApiRoutes) ~> check {
           status should equal(BadRequest)
         }
       }

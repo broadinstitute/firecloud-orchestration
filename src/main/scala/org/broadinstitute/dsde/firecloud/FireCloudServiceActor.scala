@@ -28,6 +28,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with WorkspaceApiService
   with NotificationsApiService
   with StatusApiService
+  with MethodsApiService
   {
 
   implicit val system = context.system
@@ -61,11 +62,10 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
 
   // routes under /api
 
-  val methodsService = new MethodsApiService with ActorRefFactoryContext
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
-  val apiRoutes = methodsService.routes ~ profileRoutes ~
+  val apiRoutes = methodsServiceApiRoutes ~ profileRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
     nihRoutes ~ billingService.routes
 

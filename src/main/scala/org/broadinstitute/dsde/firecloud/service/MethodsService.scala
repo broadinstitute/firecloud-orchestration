@@ -26,10 +26,12 @@ object MethodsService {
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
     new MethodsService(userInfo, app.agoraDAO)
 
+
 }
 
-class MethodsService(protected val argUserToken: WithAccessToken, val agoraDAO: AgoraDAO)
-                    (implicit protected val executionContext: ExecutionContext, implicit val userInfo: UserInfo) extends Actor {
+class MethodsService (protected val argUserInfo: UserInfo, val agoraDAO: AgoraDAO) (implicit protected val executionContext: ExecutionContext) extends Actor {
+
+  implicit val userInfo = argUserInfo
 
   override def receive: Receive = {
     case GetConfiguration(namespace: String, name: String, snapshot: Int) =>

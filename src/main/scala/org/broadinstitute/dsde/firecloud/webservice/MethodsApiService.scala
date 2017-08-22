@@ -16,13 +16,6 @@ import spray.routing.{HttpService, Route}
 
 import scala.concurrent.ExecutionContext
 
-class MethodsApiServiceActor(app: Application)(implicit ec: ExecutionContext) extends Actor with MethodsApiService {
-  def actorRefFactory = context
-  def receive = runRoute(routes)
-
-  val methodsServiceConstructor: UserInfo => MethodsService = MethodsService.constructor(app)
-}
-
 object MethodsApiService {
   val remoteMethodsPath = FireCloudConfig.Agora.authPrefix + "/methods"
   val remoteMethodsUrl = FireCloudConfig.Agora.baseUrl + remoteMethodsPath
@@ -113,8 +106,7 @@ trait MethodsApiService extends HttpService with PerRequestCreator with FireClou
       passthroughAllPaths(localConfigsPath, MethodsApiService.remoteConfigurationsUrl)
 
   // combine all of the above route definitions, keeping overrides first.
-  val routes =  methodsAndConfigsACLOverrideRoute ~ passthroughRoutes
-
+  val methodsServiceApiRoutes =  methodsAndConfigsACLOverrideRoute ~ passthroughRoutes
 
   private def getUrlFromBasePath(agoraEntity: String, namespace: String, name: String, snapshotId: Int): String = {
     MethodsApiService.remotePermissionsTemplate.format(agoraEntity, namespace, name, snapshotId)
