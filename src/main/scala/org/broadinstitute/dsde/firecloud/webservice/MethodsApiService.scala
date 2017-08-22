@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.{Actor, Props}
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.core.{AgoraPermissionActor, AgoraPermissionHandler}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -14,11 +14,14 @@ import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.routing.{HttpService, Route}
 
-//class MethodsApiServiceActor extends Actor with MethodsApiService {
-//
-//  def actorRefFactory = context
-//  def receive = runRoute(routes)
-//}
+import scala.concurrent.ExecutionContext
+
+class MethodsApiServiceActor(app: Application)(implicit ec: ExecutionContext) extends Actor with MethodsApiService {
+  def actorRefFactory = context
+  def receive = runRoute(routes)
+
+  val methodsServiceConstructor: UserInfo => MethodsService = MethodsService.constructor(app)
+}
 
 object MethodsApiService {
   val remoteMethodsPath = FireCloudConfig.Agora.authPrefix + "/methods"

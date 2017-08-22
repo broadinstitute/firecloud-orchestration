@@ -7,10 +7,12 @@ import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.MethodsService.{GetConfiguration, MethodsServiceMessage}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import spray.http.StatusCodes
+import spray.httpx.SprayJsonSupport
 
-import akka.pattern.PipeToSupport
+import akka.pattern._
 
 import scala.concurrent.{ExecutionContext, Future}
+
 
 object MethodsService {
 
@@ -36,7 +38,7 @@ class MethodsService(protected val argUserToken: WithAccessToken, val agoraDAO: 
 
   def getConfigurationWithUnmarshalledPayload(namespace: String, name: String, snapshotId: Int)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     agoraDAO.getConfiguration(namespace, name, snapshotId) map { configResponse =>
-      RequestComplete(StatusCodes.OK, "asdf")
+      RequestComplete(StatusCodes.OK, "Hello world")
     }
   }
 }
