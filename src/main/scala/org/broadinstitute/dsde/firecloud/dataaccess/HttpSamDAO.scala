@@ -1,11 +1,10 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
-import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import spray.http.StatusCodes.{NotFound, OK}
+import spray.httpx.SprayJsonSupport._
 
 import scala.concurrent.{ExecutionContext, Future}
 
