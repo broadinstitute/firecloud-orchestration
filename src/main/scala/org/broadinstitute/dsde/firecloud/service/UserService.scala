@@ -89,7 +89,6 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
             val extReq = Get(UserService.samRegisterUserURL)
             pipeline(extReq) onComplete {
               case Success(response) =>
-                println(response)
                 response.status match {
                   // rawls rejected our request. User is either invalid or their token timed out; this is truly unauthorized
                   case Unauthorized => respondWithErrorReport(Unauthorized, Unauthorized.defaultMessage, requestContext)
@@ -100,10 +99,9 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
                   // rawls found the user; we'll try to parse the response and inspect it
                   case OK =>
                     val respJson = response.entity.as[RegistrationInfo]
-                    println(respJson)
                     respJson match {
                       case Right(regInfo) =>
-                        if (regInfo.enabled.google) { //TODO, re-implement ldap check?
+                        if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allusersGroup) {
                           // rawls says the user is fully registered and activated!
                           requestContext.complete(OK, regInfo)
                         } else {

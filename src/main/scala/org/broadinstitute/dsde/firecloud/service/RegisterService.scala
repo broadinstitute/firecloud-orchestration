@@ -48,11 +48,11 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
           userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString)
         )
       isRegistered <- samDao.getRegistrationStatus(userInfo)
-      _ <- if (!isRegistered.enabled.google) { //todo: check the right thing (TBD)
+      _ <- if (!isRegistered.enabled.google) {
         for {
           _ <- samDao.registerUser(userInfo)
-          x <- rawlsDao.registerUser(userInfo) //this call handles the residual steps of registration that haven't/won't make it into sam. (send notification and convert pending workspace access
-        } yield x
+          _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
+        } yield ()
       } else Future.successful(())
     } yield {
       RequestComplete(StatusCodes.OK)
