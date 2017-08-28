@@ -101,7 +101,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
                     val respJson = response.entity.as[RegistrationInfo]
                     respJson match {
                       case Right(regInfo) =>
-                        if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allusersGroup) {
+                        if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allUsersGroup) {
                           // rawls says the user is fully registered and activated!
                           requestContext.complete(OK, regInfo)
                         } else {
