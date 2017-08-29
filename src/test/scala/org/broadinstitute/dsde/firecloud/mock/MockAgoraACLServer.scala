@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.mock
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.webservice.{MethodsApiService, MethodsApiServiceUrls}
+import org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceUrls
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._

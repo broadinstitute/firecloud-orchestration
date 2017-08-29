@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud
 
-import akka.actor.ActorContext
 import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}

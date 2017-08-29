@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.webservice.{MethodsApiService, MethodsApiServiceUrls}
+import org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceUrls
 import org.broadinstitute.dsde.rawls.model.MethodRepoMethod
 import spray.client.pipelining._
 import spray.http.StatusCodes._

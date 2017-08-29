@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.{Actor, Props}
+import akka.actor.Props
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.core.{AgoraPermissionActor, AgoraPermissionHandler}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
@@ -25,7 +25,6 @@ trait MethodsApiServiceUrls {
 
 trait MethodsApiService extends HttpService
   with PerRequestCreator with FireCloudDirectives with MethodsApiServiceUrls {
-
 
   val methodsApiServiceRoutes: Route =
   // routes that are valid for both configurations and methods
@@ -76,10 +75,6 @@ trait MethodsApiService extends HttpService
           }
         }
       }
-
-
-
-
     } ~
     // routes that are only valid for methods
     pathPrefix( "methods" ) {
