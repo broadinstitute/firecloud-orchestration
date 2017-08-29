@@ -20,16 +20,16 @@ class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
 
   override def beforeAll(): Unit = {
     methodsServer = startClientAndServer(MockUtils.methodsServerPort)
-    httpMethods map {
+    httpMethods foreach {
       method =>
         methodsServer
-          .when(request().withMethod(method.name).withPath(MethodsApiService.remoteMethodsPath))
+          .when(request().withMethod(method.name).withPath(remoteMethodsPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
         methodsServer
-          .when(request().withMethod(method.name).withPath(MethodsApiService.remoteConfigurationsPath))
+          .when(request().withMethod(method.name).withPath(remoteConfigurationsPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -42,18 +42,36 @@ class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
   }
 
   "MethodsService" - {
-    "when testing all HTTP methods on the methods path" - {
-      "MethodNotAllowed error is not returned" in {
-        httpMethods map {
+    "when testing all HTTP methods on the methods and configuratins paths" - {
+
+      val allowedMethods = List(HttpMethods.GET, HttpMethods.POST)
+      val disallowedMethods = httpMethods diff allowedMethods
+
+      "MethodNotAllowed error is not returned for allowed methods" in {
+        allowedMethods foreach {
           method =>
-            new RequestBuilder(method)("/" + localMethodsPath) ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/" + localMethodsPath) ~> sealRoute(methodsApiServiceRoutes) ~> check {
               status shouldNot equal(MethodNotAllowed)
             }
-            new RequestBuilder(method)("/" + localConfigsPath) ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/" + localConfigsPath) ~> sealRoute(methodsApiServiceRoutes) ~> check {
               status shouldNot equal(MethodNotAllowed)
             }
         }
       }
+
+      "MethodNotAllowed error is returned for disallowed methods" in {
+        disallowedMethods foreach {
+          method =>
+            new RequestBuilder(method)("/" + localMethodsPath) ~> sealRoute(methodsApiServiceRoutes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
+            new RequestBuilder(method)("/" + localConfigsPath) ~> sealRoute(methodsApiServiceRoutes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
+        }
+      }
+
+
     }
   }
 

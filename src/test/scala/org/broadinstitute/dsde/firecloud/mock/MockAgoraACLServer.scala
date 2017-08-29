@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.mock
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
+import org.broadinstitute.dsde.firecloud.webservice.{MethodsApiService, MethodsApiServiceUrls}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
@@ -9,16 +9,15 @@ import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
 import spray.http.StatusCodes._
 import spray.json._
-
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impAgoraPermission, impEntityAccessControlAgora}
 import DefaultJsonProtocol._
 
-object MockAgoraACLServer {
+object MockAgoraACLServer extends MethodsApiServiceUrls {
 
   val methodsServerPort = 8989
 
-  val methodsUrl = MethodsApiService.remoteMethodsPath
-  val configsUrl = MethodsApiService.remoteConfigurationsPath
+  val methodsUrl = remoteMethodsPath
+  val configsUrl = remoteConfigurationsPath
 
 
   val standardPermsPath = "/ns/standard/1/permissions"

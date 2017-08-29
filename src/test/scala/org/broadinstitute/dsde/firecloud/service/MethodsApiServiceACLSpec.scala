@@ -47,10 +47,10 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
       "MethodNotAllowed is returned" in {
         List(HttpMethods.DELETE, HttpMethods.PUT) map {
           method =>
-            new RequestBuilder(method)("/" + localMethodPermissionsPath) ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/" + localMethodPermissionsPath) ~> sealRoute(methodsApiServiceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
-            new RequestBuilder(method)("/" + localConfigPermissionsPath) ~> sealRoute(routes) ~> check {
+            new RequestBuilder(method)("/" + localConfigPermissionsPath) ~> sealRoute(methodsApiServiceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -60,28 +60,28 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // BAD INPUTS
     "when posting bad roles to methods" - {
       "BadRequest is returned" in {
-        Post("/" + localMethodPermissionsPath, jsonBadRole) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post("/" + localMethodPermissionsPath, jsonBadRole) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(BadRequest)
         }
       }
     }
     "when posting bad roles to configs" - {
       "BadRequest is returned" in {
-        Post("/" + localConfigPermissionsPath, jsonBadRole) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post("/" + localConfigPermissionsPath, jsonBadRole) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(BadRequest)
         }
       }
     }
     "when posting bad users to methods" - {
       "BadRequest is returned" in {
-        Post("/" + localMethodPermissionsPath, jsonBadUser) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post("/" + localMethodPermissionsPath, jsonBadUser) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(BadRequest)
         }
       }
     }
     "when posting bad users to configs" - {
       "BadRequest is returned" in {
-        Post("/" + localConfigPermissionsPath, jsonBadUser) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post("/" + localConfigPermissionsPath, jsonBadUser) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(BadRequest)
         }
       }
@@ -91,7 +91,7 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // configuration endpoints return the mock data in the proper order
     "when retrieving ACLs from configs" - {
       "the entire list is successfully translated" in {
-        Get("/" + localConfigsPath + MockAgoraACLServer.standardPermsPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get("/" + localConfigsPath + MockAgoraACLServer.standardPermsPath) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(OK)
           var perms = responseAs[List[FireCloudPermission]]
           perms shouldBe standardFC
@@ -101,7 +101,7 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // methods endpoints return the mock data in reverse order - this way we can differentiate methods vs. configs
     "when retrieving ACLs from methods" - {
       "the entire (reversed) list is successfully translated" in {
-        Get("/" + localMethodsPath + MockAgoraACLServer.standardPermsPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get("/" + localMethodsPath + MockAgoraACLServer.standardPermsPath) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(OK)
           var perms = responseAs[List[FireCloudPermission]]
           perms shouldBe standardFC.reverse
@@ -112,14 +112,14 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // AGORA RETURNS FAULTY DATA
     "when retrieving bad Agora data from configs" - {
       "InternalServerError is returned" in {
-        Get("/" + localConfigsPath + MockAgoraACLServer.withEdgeCasesPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get("/" + localConfigsPath + MockAgoraACLServer.withEdgeCasesPath) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(InternalServerError)
         }
       }
     }
     "when retrieving bad Agora data from methods" - {
       "InternalServerError is returned" in {
-        Get("/" + localMethodsPath + MockAgoraACLServer.withEdgeCasesPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get("/" + localMethodsPath + MockAgoraACLServer.withEdgeCasesPath) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(InternalServerError)
         }
       }
@@ -129,7 +129,7 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // configs endpoint returns good data from Agora on post
     "when posting good data to configs, expecting a good response" - {
       "a good response is returned" in {
-        Post("/" + localConfigsPath + MockAgoraACLServer.standardPermsPath, standardFC) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post("/" + localConfigsPath + MockAgoraACLServer.standardPermsPath, standardFC) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(OK)
           var perms = responseAs[List[FireCloudPermission]]
           perms shouldBe standardFC
@@ -139,7 +139,7 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // methods endpoint returns faulty data from Agora on post
     "when posting good data to methods, expecting an invalid response" - {
       "an invalid response is returned and we throw an error" in {
-        Post("/" + localMethodsPath + MockAgoraACLServer.standardPermsPath, standardFC) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Post("/" + localMethodsPath + MockAgoraACLServer.standardPermsPath, standardFC) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(InternalServerError)
         }
       }

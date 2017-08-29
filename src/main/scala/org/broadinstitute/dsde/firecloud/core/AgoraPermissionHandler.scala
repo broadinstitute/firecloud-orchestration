@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
+import org.broadinstitute.dsde.firecloud.webservice.{MethodsApiService, MethodsApiServiceUrls}
 import org.broadinstitute.dsde.rawls.model.MethodRepoMethod
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -66,7 +66,8 @@ object AgoraPermissionHandler {
   }
 }
 
-class AgoraPermissionActor (requestContext: RequestContext) extends Actor with FireCloudRequestBuilding {
+class AgoraPermissionActor (requestContext: RequestContext) extends Actor
+  with FireCloudRequestBuilding with MethodsApiServiceUrls {
 
   implicit val system = context.system
   import system.dispatcher
@@ -110,7 +111,7 @@ class AgoraPermissionActor (requestContext: RequestContext) extends Actor with F
 
   def multiUpsert(inputs: List[EntityAccessControlAgora]): Future[PerRequestMessage] = {
 
-    val respFuture:Future[HttpResponse] = pipeline( Put(MethodsApiService.remoteMultiPermissionsUrl, inputs) )
+    val respFuture:Future[HttpResponse] = pipeline( Put(remoteMultiPermissionsUrl, inputs) )
 
     respFuture.map { response =>
       response.status match {
