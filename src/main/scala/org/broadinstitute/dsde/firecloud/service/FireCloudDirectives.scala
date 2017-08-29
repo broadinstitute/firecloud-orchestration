@@ -38,6 +38,7 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
   } reduce (_ ~ _)
 
 
+  @deprecated("Makes routing confusing!","2017-08-29")
   def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = true) = pathPrefix( separateOnSlashes(ourEndpointPath) ) {
     extract(_.request.method) { httpMethod =>
       unmatchedPath { remaining =>
