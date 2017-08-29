@@ -1043,6 +1043,26 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /api/methods/definitions:
+    get:
+      summary: List method definitions
+      description: |
+        List method definitions - i.e. unique namespace/name pairs - with counts
+        of snapshots and associated configurations
+      tags:
+        - Method Repository
+      responses:
+        200:
+          description: An array of method definitions.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodDefinition'
+        500:
+          description: Internal error.
+          schema:
+            $ref: '#/definitions/Error'
+
   /api/methods/{namespace}/{name}/{snapshotId}:
     get:
       tags:
@@ -4161,6 +4181,37 @@ definitions:
       name:
         type: string
         description: The name of the method configuration
+
+  MethodDefinition:
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: Namespace which contains the method.
+      name:
+        type: string
+        description: Name of the method.
+      synopsis:
+        type: string
+        description: Synopsis of the method
+      managers:
+        type: array
+        items:
+          type: string
+        description: managers of this method
+      public:
+        type: boolean
+        description: true if the method is publicly readable
+      numConfigurations:
+        type: number
+        description: count of configurations associated with this method
+      numSnapshots:
+        type: number
+        description: count of snapshots of this method
+      entityType:
+        type: string
+        description: always "Workflow".
+        default: Workflow
 
   MethodID:
     type: object
