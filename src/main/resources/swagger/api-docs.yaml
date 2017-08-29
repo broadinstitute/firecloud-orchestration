@@ -1086,6 +1086,8 @@ paths:
           description: Boolean to return only the payload of the method.
           required: false
           type: string
+          type: boolean
+          default: false
       responses:
         200:
           description: A single method.
