@@ -307,6 +307,12 @@ paths:
         - $ref: '#/parameters/configNamespaceParam'
         - $ref: '#/parameters/configNameParam'
         - $ref: '#/parameters/configSnapshotId'
+        - name: payloadAsObject
+          in: query
+          description: Instead of returning a string under key payload, return a JSON object under key payloadObject
+          required: false
+          type: boolean
+          default: false
       responses:
         200:
           description: Method Repository configuration detail
