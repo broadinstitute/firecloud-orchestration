@@ -1085,7 +1085,6 @@ paths:
           in: query
           description: Boolean to return only the payload of the method.
           required: false
-          type: string
           type: boolean
           default: false
       responses:
