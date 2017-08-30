@@ -16,7 +16,6 @@ trait MethodsApiServiceUrls {
   val remoteMethodsUrl = FireCloudConfig.Agora.baseUrl + remoteMethodsPath
   val remoteConfigurationsPath = FireCloudConfig.Agora.authPrefix + "/configurations"
   val remoteConfigurationsUrl = FireCloudConfig.Agora.baseUrl + remoteConfigurationsPath
-  val remotePermissionsTemplate = FireCloudConfig.Agora.baseUrl + FireCloudConfig.Agora.authPrefix + "/%s/%s/%s/%s/permissions"
   val remoteMultiPermissionsUrl = remoteMethodsUrl + "/permissions"
 
   val localMethodsPath = "methods"
@@ -48,12 +47,12 @@ trait MethodsApiService extends HttpService
         pathEnd {
           (get | delete) {
             extract(_.request.method) { method =>
-              passthrough(s"$passthroughBase/$namespace/$name/$snapshotId", method)
+              passthrough(s"$passthroughBase/${urlify(namespace,name)}/$snapshotId", method)
             }
           }
         } ~
         path( "permissions") {
-          val url = getUrlFromBasePath(agoraEntityType, namespace, name, snapshotId)
+          val url = s"$passthroughBase/${urlify(namespace,name)}/$snapshotId/permissions"
           get { requestContext =>
             // pass to AgoraPermissionHandler
             perRequest(requestContext,
@@ -103,18 +102,24 @@ trait MethodsApiService extends HttpService
       pathPrefix( Segment / Segment ) { (namespace, name) =>
         path( "configurations" ) {
           get {
-            passthrough(s"$passthroughBase/$namespace/$name/configurations", HttpMethods.GET)
+            passthrough(s"$passthroughBase/${urlify(namespace,name)}/configurations", HttpMethods.GET)
           }
         } ~
         path( IntNumber ) { snapshotId =>
           post {
-            passthrough(s"$passthroughBase/$namespace/$name/$snapshotId", HttpMethods.POST)
+            passthrough(s"$passthroughBase/${urlify(namespace,name)}/$snapshotId", HttpMethods.POST)
           }
         }
       }
     }
 
-  private def getUrlFromBasePath(agoraEntity: String, namespace: String, name: String, snapshotId: Int): String = {
-    remotePermissionsTemplate.format(agoraEntity, namespace, name, snapshotId)
-  }
+  /* special handling of url encoding for agora entity namespace/name here.
+      some entities were created with spaces or other special characters in their name
+      before we added syntax validation. This special handling covers those entities -
+      though it's largely untested and there may still be problems. Any entities created
+      after syntax validation should be just fine and the encoding won't touch them.
+   */
+  private def urlify(namespace:String, name:String) = enc(namespace) + "/" + enc(name)
+  private def enc(in:String) = java.net.URLEncoder.encode(in,"utf-8").replace("+", "%20")
+
 }
