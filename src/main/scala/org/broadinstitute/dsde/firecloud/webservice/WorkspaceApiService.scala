@@ -74,8 +74,18 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
         pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
           val workspacePath = rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName)
           pathEnd {
-            requireUserInfo() { _ =>
-              passthrough(workspacePath, HttpMethods.GET, HttpMethods.DELETE)
+            get {
+              requireUserInfo() { _ =>
+                passthrough(workspacePath, HttpMethods.GET)
+              }
+            } ~
+            delete {
+              requireUserInfo() { userInfo => requestContext =>
+                perRequest(requestContext,
+                  WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                  WorkspaceService.DeleteWorkspace(workspaceNamespace, workspaceName)
+                )
+              }
             }
           } ~
           path("methodconfigs") {

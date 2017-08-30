@@ -44,6 +44,7 @@ object WorkspaceService {
   case class PutTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
   case class PatchTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
   case class DeleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
+  case class DeleteWorkspace(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
 
   def props(workspaceServiceConstructor: WithAccessToken => WorkspaceService, userToken: WithAccessToken): Props = {
     Props(workspaceServiceConstructor(userToken))
@@ -92,6 +93,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       patchTags(workspaceNamespace, workspaceName, tags) pipeTo sender
     case DeleteTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) =>
       deleteTags(workspaceNamespace, workspaceName, tags) pipeTo sender
+    case DeleteWorkspace(workspaceNamespace: String, workspaceName: String) =>
+      deleteWorkspace(workspaceNamespace, workspaceName) pipeTo sender
 
   }
 
@@ -220,6 +223,10 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
     }
 
+  }
+
+  def deleteWorkspace(workspaceNamespace: String, workspaceName: String): Future[PerRequestMessage] = {
+    ???
   }
 
   private def getTagsFromWorkspace(ws:Workspace): Seq[String] = {
