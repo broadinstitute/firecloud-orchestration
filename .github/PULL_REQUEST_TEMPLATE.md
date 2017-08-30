@@ -6,7 +6,7 @@ I, the developer opening this PR, do solemnly pinky swear that:
 
 - [ ] I've followed [the instructions](../CONTRIBUTING.md#api-changes) if I've made any changes to the API, _especially_ if they're breaking changes
 - [ ] I've updated the RC_XXX release ticket with any manual steps required to release this change
-- [ ] I've updated the [FISMA documentation](../CONTRIBUTING.md#FISMA-documentation-changes) if I've made any security-related changes, including auth, encryption, or auditing
+- [ ] I've updated the [FISMA documentation](../CONTRIBUTING.md#fisma-documentation-changes) if I've made any security-related changes, including auth, encryption, or auditing
 
 In all cases:
 
