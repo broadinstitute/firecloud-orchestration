@@ -1063,6 +1063,40 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /api/methods/{namespace}/{name}/configurations:
+    get:
+      summary: List configurations associated with a method
+      description: |
+        Given the namespace/name of a method, returns all configurations
+        in the repository that reference that method
+      parameters:
+        - name: namespace
+          in: path
+          description: Namespace of method.
+          required: true
+          type: string
+        - name: name
+          in: path
+          description: Name of method.
+          required: true
+          type: string
+      tags:
+        - Method Repository
+      responses:
+        200:
+          description: An array of configurations.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodResponse'
+        404:
+          description: Method not found.
+        default:
+          description: Unexpected error
+          schema:
+            type: object
+            $ref: '#/definitions/Error'
+
   /api/methods/{namespace}/{name}/{snapshotId}:
     get:
       tags:
