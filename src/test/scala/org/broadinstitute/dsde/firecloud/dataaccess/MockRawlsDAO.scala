@@ -359,4 +359,8 @@ class MockRawlsDAO  extends RawlsDAO {
     Future.successful(Seq.empty[MethodConfigurationShort])
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
+
+  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Any] = {
+    ???
+  }
 }

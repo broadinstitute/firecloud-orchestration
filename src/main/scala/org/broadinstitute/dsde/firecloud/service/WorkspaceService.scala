@@ -226,7 +226,17 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   }
 
   def deleteWorkspace(workspaceNamespace: String, workspaceName: String): Future[PerRequestMessage] = {
-    ???
+    // Is there any reason to wait for unpublish to complete before deleting?
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { ws =>
+      if (isPublished(ws)) {
+        removeDocument(ws.workspace, searchDAO)
+      }
+      Future(())
+    }
+
+    rawlsDAO.deleteWorkspace(workspaceNamespace, workspaceName) flatMap { response =>
+      Future(RequestComplete(response))
+    }
   }
 
   private def getTagsFromWorkspace(ws:Workspace): Seq[String] = {

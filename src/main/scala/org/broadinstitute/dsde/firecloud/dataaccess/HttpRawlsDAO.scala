@@ -194,4 +194,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
+  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[String] = {
+    authedRequestToObject[String]( Delete(s"${FireCloudConfig.Rawls.authUrl}/workspaces/$workspaceNamespace/$workspaceName") )
+  }
+
 }
