@@ -13,3 +13,4 @@ In all cases:
 [ ] Get two thumbsworth of review and PO signoff if necessary
 [ ] Verify all tests go green
 [ ] Squash and merge; you can delete your branch after this **unless it's for a hotfix**. In that case, don't delete it!
+[ ] Test this change deployed correctly and works on dev environment after deployment
