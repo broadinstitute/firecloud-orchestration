@@ -33,13 +33,11 @@ class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService {
 
   "Methods Repository multi-ACL upsert endpoint" - {
     "when testing DELETE, GET, POST methods on the multi-permissions path" - {
-      // TODO: these methods return NotFound instead of MethodNotAllowed because of passthroughAllPaths on /methods.
-      // TODO: when GAWB-1303 is addressed, update this unit test.
       "NotFound is returned" in {
-        List(HttpMethods.DELETE, HttpMethods.GET, HttpMethods.POST) map {
+        List(HttpMethods.DELETE, HttpMethods.GET, HttpMethods.POST) foreach {
           method =>
-            new RequestBuilder(method)(localMethodPermissionsPath) ~> sealRoute(routes) ~> check {
-              status should equal(NotFound)
+            new RequestBuilder(method)(localMethodPermissionsPath) ~> sealRoute(methodsApiServiceRoutes) ~> check {
+              status should equal(MethodNotAllowed)
             }
         }
       }
@@ -51,7 +49,7 @@ class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService {
           MethodAclPair(MethodRepoMethod("ns1","n1",1), Seq(FireCloudPermission("user1@example.com","OWNER"))),
           MethodAclPair(MethodRepoMethod("ns2","n2",2), Seq(FireCloudPermission("user2@example.com","READER")))
         )
-        Put(localMethodPermissionsPath, payload) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Put(localMethodPermissionsPath, payload) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(OK)
           val resp = responseAs[Seq[MethodAclPair]]
           assert(resp.nonEmpty)
@@ -64,7 +62,7 @@ class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService {
     "when posting malformed data" - {
       "BadRequest is returned" in {
         // endpoint expects a JsArray; send it a JsObject and expect BadRequest.
-        Put(localMethodPermissionsPath, JsObject(Map("foo"->JsString("bar")))) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Put(localMethodPermissionsPath, JsObject(Map("foo"->JsString("bar")))) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(BadRequest)
         }
       }
