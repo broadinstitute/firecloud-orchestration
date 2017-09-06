@@ -47,7 +47,9 @@ trait MethodsApiService extends HttpService
         pathEnd {
           (get | delete) {
             extract(_.request.method) { method =>
-              passthrough(s"$passthroughBase/${urlify(namespace,name)}/$snapshotId", method)
+              extract(_.request.uri.query) { query =>
+                passthrough(Uri(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId").withQuery(query), method)
+              }
             }
           }
         } ~
