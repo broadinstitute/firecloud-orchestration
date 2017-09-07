@@ -307,6 +307,12 @@ paths:
         - $ref: '#/parameters/configNamespaceParam'
         - $ref: '#/parameters/configNameParam'
         - $ref: '#/parameters/configSnapshotId'
+        - name: payloadAsObject
+          in: query
+          description: Instead of returning a string under key payload, return a JSON object under key payloadObject
+          required: false
+          type: boolean
+          default: false
       responses:
         200:
           description: Method Repository configuration detail
@@ -1063,6 +1069,40 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /api/methods/{namespace}/{name}/configurations:
+    get:
+      summary: List configurations associated with a method
+      description: |
+        Given the namespace/name of a method, returns all configurations
+        in the repository that reference that method
+      parameters:
+        - name: namespace
+          in: path
+          description: Namespace of method.
+          required: true
+          type: string
+        - name: name
+          in: path
+          description: Name of method.
+          required: true
+          type: string
+      tags:
+        - Method Repository
+      responses:
+        200:
+          description: An array of configurations.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MethodResponse'
+        404:
+          description: Method not found.
+        default:
+          description: Unexpected error
+          schema:
+            type: object
+            $ref: '#/definitions/Error'
+
   /api/methods/{namespace}/{name}/{snapshotId}:
     get:
       tags:
@@ -1079,7 +1119,8 @@ paths:
           in: query
           description: Boolean to return only the payload of the method.
           required: false
-          type: string
+          type: boolean
+          default: false
       responses:
         200:
           description: A single method.
