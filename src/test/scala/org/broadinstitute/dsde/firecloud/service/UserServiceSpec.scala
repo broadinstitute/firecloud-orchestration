@@ -20,6 +20,7 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
+  var samServer: ClientAndServer = _
   val httpMethods = List(HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT,
     HttpMethods.DELETE, HttpMethods.PATCH, HttpMethods.OPTIONS, HttpMethods.HEAD)
 
@@ -56,13 +57,6 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
 
     workspaceServer = startClientAndServer(workspaceServerPort)
     workspaceServer
-      .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody(userStatus).withStatusCode(OK.intValue)
-      )
-
-    workspaceServer
       .when(request.withMethod("GET").withPath(UserService.billingPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
@@ -74,20 +68,6 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-      )
-
-    workspaceServer
-      .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-      )
-
-    workspaceServer
-      .when(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
       )
 
     workspaceServer
@@ -139,6 +119,28 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
           .withHeaders(MockUtils.header).withStatusCode(NoContent.intValue)
       )
 
+    samServer = startClientAndServer(samServerPort)
+    samServer
+      .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+      )
+
+    samServer
+      .when(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
+      )
+
+    samServer
+      .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withBody(userStatus).withStatusCode(OK.intValue)
+      )
+
     profileServer = startClientAndServer(thurloeServerPort)
     // Generate a mock response for all combinations of profile properties
     // to ensure that all posts to any combination will yield a successful response.
@@ -180,6 +182,7 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
   override def afterAll(): Unit = {
     workspaceServer.stop()
     profileServer.stop()
+    samServer.stop()
   }
 
   val ApiPrefix = "register/profile"
@@ -309,10 +312,10 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
 
   "UserService Edge Cases" - {
 
-    "When testing profile update for a brand new user in Rawls" - {
+    "When testing profile update for a brand new user in sam" - {
       "OK response is returned" in {
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        workspaceServer
+        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -326,17 +329,17 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       }
     }
 
-    "When testing profile update for a pre-existing but non-enabled user in Rawls" - {
+    "When testing profile update for a pre-existing but non-enabled user in sam" - {
       "OK response is returned" in {
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        workspaceServer.clear(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
-        workspaceServer
+        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
+        samServer
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
           )
-        workspaceServer
+        samServer
           .when(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -364,11 +367,11 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       }
     }
 
-    "when calling /me and rawls returns 401" - {
+    "when calling /me and sam returns 401" - {
       "Unauthorized response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        workspaceServer
+        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -380,11 +383,11 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       }
     }
 
-    "when calling /me and rawls returns 404" - {
+    "when calling /me and sam returns 404" - {
       "NotFound response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        workspaceServer
+        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -396,11 +399,11 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       }
     }
 
-    "when calling /me and rawls returns 500" - {
+    "when calling /me and sam returns 500" - {
       "InternalServerError response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        workspaceServer
+        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -412,11 +415,11 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       }
     }
 
-    "when calling /me and rawls says not-google-enabled" - {
+    "when calling /me and sam says not-google-enabled" - {
       "Forbidden response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        workspaceServer
+        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -429,15 +432,15 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       }
     }
 
-    "when calling /me and rawls says not-ldap-enabled" - {
+    "when calling /me and sam says not-ldap-enabled" - {
       "Forbidden response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        workspaceServer
+        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
-              .withBody("""{"enabled": {"google": true, "ldap": false}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
+              .withBody("""{"enabled": {"google": true, "ldap": false, "allUsersGroup"}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
@@ -446,11 +449,13 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       }
     }
 
-    "when calling /me and rawls says fully enabled" - {
+    "when calling /me and sam says fully enabled" - {
       "OK response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        workspaceServer
+        println(UserService.samRegisterUserPath)
+
+        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -463,11 +468,11 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       }
     }
 
-    "when calling /me and rawls returns ugly json" - {
+    "when calling /me and sam returns ugly json" - {
       "InternalServerError response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        workspaceServer
+        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
@@ -480,11 +485,11 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       }
     }
 
-    "when calling /me and rawls returns an unexpected HTTP response code" - {
-      "echo the error code from rawls" in {
+    "when calling /me and sam returns an unexpected HTTP response code" - {
+      "echo the error code from sam" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        workspaceServer
+        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
