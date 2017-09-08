@@ -225,17 +225,30 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   }
 
-  def deleteWorkspace(workspaceNamespace: String, workspaceName: String): Future[PerRequestMessage] = {
-    // Is there any reason to wait for unpublish to complete before deleting?
-    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { ws =>
-      if (isPublished(ws)) {
-        removeDocument(ws.workspace, searchDAO)
-      }
-      Future(())
-    }
+  def unPublishErrorMessage(workspaceNamespace: String, workspaceName: String): String = s" There was an error un-publishing workspace $workspaceNamespace:$workspaceName."
 
-    rawlsDAO.deleteWorkspace(workspaceNamespace, workspaceName) flatMap { response =>
-      Future(RequestComplete(response))
+  def unPublishSuccessMessage(workspaceNamespace: String, workspaceName: String): String = s" The workspace $workspaceNamespace:$workspaceName has been un-published."
+
+  def deleteWorkspace(workspaceNamespace: String, workspaceName: String): Future[PerRequestMessage] = {
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { ws =>
+      val wsPublished: Boolean = isPublished(ws)
+      val wsRemoved: Boolean = if (wsPublished) {
+        Try(removeDocument(ws.workspace, searchDAO)).isSuccess
+      } else {
+        true
+      }
+      rawlsDAO.deleteWorkspace(ws.workspace.namespace, ws.workspace.name) map { response =>
+        (wsPublished, wsRemoved) match {
+          case (false, _) =>
+            RequestComplete(response)
+          case (true, false) =>
+            val message = unPublishErrorMessage(workspaceNamespace, workspaceName)
+            RequestComplete(response.copy(message = Some(response.message.getOrElse("") + message)))
+          case (true, true) =>
+            val message = unPublishSuccessMessage(workspaceNamespace, workspaceName)
+            RequestComplete(response.copy(message = Some(response.message.getOrElse("") + message)))
+        }
+      }
     }
   }
 

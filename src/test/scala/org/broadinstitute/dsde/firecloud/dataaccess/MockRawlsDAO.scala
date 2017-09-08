@@ -145,6 +145,9 @@ class MockRawlsDAO  extends RawlsDAO {
     false
   )
 
+  private val publishedRawlsWorkspaceWithAttributesThatFailsIndexDeletion =
+    publishedRawlsWorkspaceWithAttributes.copy(workspaceId = "unpublishfailure")
+
   val unpublishedRawlsWorkspaceLibraryValid = Workspace(
     "attributes",
     "att",
@@ -248,6 +251,7 @@ class MockRawlsDAO  extends RawlsDAO {
       case "publishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "unpublishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, catalog=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "publishedowner" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "publishedownerfailindexdelete" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, publishedRawlsWorkspaceWithAttributesThatFailsIndexDeletion, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "libraryValid" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, unpublishedRawlsWorkspaceLibraryValid, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case _ => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
     }
@@ -360,7 +364,7 @@ class MockRawlsDAO  extends RawlsDAO {
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
 
-  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Any] = {
-    ???
+  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
+    Future.successful(WorkspaceDeleteResponse(Some("Your Google bucket 'bucketId' will be deleted within 24h.")))
   }
 }

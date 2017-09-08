@@ -5,6 +5,8 @@ import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
 
+case class WorkspaceDeleteResponse(message: Option[String] = None)
+
 case class WorkspaceCreate(
   namespace: String,
   name: String,

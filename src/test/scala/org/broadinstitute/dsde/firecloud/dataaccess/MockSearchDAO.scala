@@ -30,6 +30,12 @@ class MockSearchDAO extends SearchDAO {
   }
 
   override def deleteDocument(id: String) = {
+    id match {
+      case x if x == "unpublishfailure" =>
+        deleteDocumentInvoked = false
+        throw new Exception("Exception deleting document")
+      case _ => deleteDocumentInvoked = true
+    }
     deleteDocumentInvoked = true
   }
 
