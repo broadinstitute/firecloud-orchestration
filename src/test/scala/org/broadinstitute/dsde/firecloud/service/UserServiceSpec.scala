@@ -56,7 +56,7 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
 
     workspaceServer = startClientAndServer(workspaceServerPort)
     workspaceServer
-      .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+      .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(userStatus).withStatusCode(OK.intValue)
@@ -77,14 +77,14 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       )
 
     workspaceServer
-      .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+      .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
 
     workspaceServer
-      .when(request.withMethod("POST").withPath(UserService.rawlsRegisterUserPath))
+      .when(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
@@ -311,9 +311,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
 
     "When testing profile update for a brand new user in Rawls" - {
       "OK response is returned" in {
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
@@ -328,16 +328,16 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
 
     "When testing profile update for a pre-existing but non-enabled user in Rawls" - {
       "OK response is returned" in {
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
-        workspaceServer.clear(request.withMethod("POST").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        workspaceServer.clear(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
           )
         workspaceServer
-          .when(request.withMethod("POST").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header)
@@ -367,9 +367,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and rawls returns 401" - {
       "Unauthorized response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(Unauthorized.intValue)
@@ -383,9 +383,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and rawls returns 404" - {
       "NotFound response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
@@ -399,9 +399,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and rawls returns 500" - {
       "InternalServerError response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(InternalServerError.intValue)
@@ -415,9 +415,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and rawls says not-google-enabled" - {
       "Forbidden response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withBody("""{"enabled": {"google": false, "ldap": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
@@ -432,9 +432,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and rawls says not-ldap-enabled" - {
       "Forbidden response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withBody("""{"enabled": {"google": true, "ldap": false}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
@@ -449,9 +449,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and rawls says fully enabled" - {
       "OK response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withBody("""{"enabled": {"google": true, "ldap": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
@@ -466,9 +466,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and rawls returns ugly json" - {
       "InternalServerError response is returned" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withBody("""{"userInfo": "whaaaaaaat??"}""")
@@ -483,9 +483,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and rawls returns an unexpected HTTP response code" - {
       "echo the error code from rawls" in {
 
-        workspaceServer.clear(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+        workspaceServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
         workspaceServer
-          .when(request.withMethod("GET").withPath(UserService.rawlsRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(EnhanceYourCalm.intValue)
