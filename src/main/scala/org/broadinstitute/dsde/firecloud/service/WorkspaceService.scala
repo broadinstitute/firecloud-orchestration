@@ -239,14 +239,13 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       }
       rawlsDAO.deleteWorkspace(ws.workspace.namespace, ws.workspace.name) map { response =>
         (wsPublished, wsRemoved) match {
-          case (false, _) =>
-            RequestComplete(response)
-          case (true, false) =>
-            val message = unPublishErrorMessage(workspaceNamespace, workspaceName)
-            RequestComplete(response.copy(message = Some(response.message.getOrElse("") + message)))
           case (true, true) =>
             val message = unPublishSuccessMessage(workspaceNamespace, workspaceName)
             RequestComplete(response.copy(message = Some(response.message.getOrElse("") + message)))
+          case (true, false) =>
+            val message = unPublishErrorMessage(workspaceNamespace, workspaceName)
+            RequestComplete(response.copy(message = Some(response.message.getOrElse("") + message)))
+          case _ => RequestComplete(response)
         }
       }
     }
