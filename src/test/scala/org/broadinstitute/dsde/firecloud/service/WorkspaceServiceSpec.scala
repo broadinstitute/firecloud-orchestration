@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 import akka.testkit.TestActorRef
+import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken, WorkspaceDeleteResponse}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeName, AttributeString, Workspace, _}
@@ -68,14 +69,13 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       workspaceDeleteResponse.message.get should include (ws.unPublishSuccessMessage(workspaceNamespace, workspaceName))
     }
 
-    "should delete a published workspace successfully even if un-publish fails" in {
+    "should not delete a published workspace if un-publish fails" in {
       val workspaceNamespace = "publishedownerfailindexdelete"
       val rqComplete = Await.
         result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf).
-        asInstanceOf[RequestComplete[WorkspaceDeleteResponse]]
-      val workspaceDeleteResponse = rqComplete.response
-      workspaceDeleteResponse.message.isDefined should be (true)
-      status shouldNot be (200)
+        asInstanceOf[RequestComplete[(StatusCode, ErrorReport)]]
+      val (status, error) = rqComplete.response
+      status should be (StatusCodes.InternalServerError)
     }
 
   }
