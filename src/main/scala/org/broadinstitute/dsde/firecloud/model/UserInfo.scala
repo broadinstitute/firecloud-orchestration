@@ -35,7 +35,7 @@ case class OAuthUser(sub: String, email: String)
 
 case class RegistrationInfo(userInfo: WorkbenchUserInfo, enabled: WorkbenchEnabled)
 
-case class WorkbenchUserInfo(userSubjectId: String, userEmail: String)
+case class WorkbenchUserInfo(id: String, email: String)
 case class WorkbenchEnabled(google: Boolean, ldap: Boolean, allUsersGroup: Boolean)
 
 // TODO: roll into RawlsEnabled? combine with an isAdmin role?
