@@ -316,6 +316,8 @@ paths:
       responses:
         200:
           description: Method Repository configuration detail
+          schema:
+            $ref: '#/definitions/ConfigurationResponse'
         500:
           description: Internal Server Error
           schema:
@@ -1094,7 +1096,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: '#/definitions/MethodResponse'
+              $ref: '#/definitions/ConfigurationResponseWithPayloadObject'
         404:
           description: Method not found.
         default:
@@ -3652,10 +3654,48 @@ definitions:
         description: URL where resource can be accessed.
       payload:
         type: string
-        description: Payload of method -- must be in WDL format. MUST BE REQUESTED EXPLICITLY.
+        description: Payload of config - JSON format in a string
         default: >
           { "methodRepoMethod": { "methodNamespace": "YOUR_NAMESPACE",
           "methodName": "BWA", "methodVersion": 1}}
+      entityType:
+        type: string
+        description: Type of the AgoraEntity -- Task or Workflow.
+        default: Task
+
+  ConfigurationResponseWithPayloadObject:
+    type: object
+    properties:
+      namespace:
+        type: string
+        description: Namespace which contains AgoraEntity.
+        default: YOUR_NAMESPACE
+      name:
+        type: string
+        description: Name of the AgoraEntity.
+        default: BWA
+      snapshotId:
+        type: integer
+        description: SnapshotId of AgoraEntity
+      synopsis:
+        type: string
+        description: Synopsis which contains AgoraEntity.
+        default: Quickly aligns short nucleotide sequences.
+      documentation:
+        type: string
+        description: Documentation of the AgoraEntity. MUST BE REQUESTED EXPLICITLY.
+        default: |
+          BWA is a software package for mapping low-divergent sequences
+          against a large reference genome, such as the human genome.
+          It consists of three algorithms: BWA-backtrack, BWA-SW and BWA-MEM.
+      createDate:
+        type: string
+        description: Timestamp of creation
+      url:
+        type: string
+        description: URL where resource can be accessed.
+      payloadObject:
+        $ref: '#/definitions/ConfigurationPayload'
       entityType:
         type: string
         description: Type of the AgoraEntity -- Task or Workflow.
@@ -5077,3 +5117,51 @@ definitions:
         type: number
         description: number of usages of the tag across Firecloud
         example: 5
+
+  ConfigurationPayload:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Name of this config
+        default: cancer_exome_pipeline_v2
+      namespace:
+        type: string
+        description: Namespace of this config
+        default: broad-dsde-dev
+      methodRepoMethod:
+        type: object
+        properties:
+          methodName:
+            type: string
+            description: Name of referenced method
+            default: cancer_exome_pipeline_v2
+          methodNamespace:
+            type: string
+            description: Namespace of referenced method
+            default: broad-dsde-dev,
+          methodVersion:
+            type: integer
+            description: Snapshot ID of referenced method
+            default: 1
+      outputs:
+        type: object
+        description: Map[String, AttributeString] from method's WDL outputs to fields in the workspace data model
+      inputs:
+        type: object
+        description: Map[String, AttributeString] from method's WDL inputs to fields in the workspace data model
+      rootEntityType:
+        type: string
+        default: pair
+      prerequisites:
+        type: object
+        description: Map[String, AttributeString]
+        default: {}
+      methodConfigVersion:
+        type: integer
+        description: Snapshot ID of this config
+        default: 1
+      deleted:
+        type: boolean
+        description: Has this config been deleted?
+        default: false
