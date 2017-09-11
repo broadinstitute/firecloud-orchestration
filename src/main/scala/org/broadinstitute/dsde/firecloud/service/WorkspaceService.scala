@@ -234,6 +234,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
             }
           }
         } recover {
+          case e: FireCloudExceptionWithErrorReport => RequestCompleteWithErrorReport(e.errorReport.statusCode.getOrElse(InternalServerError), e.getMessage)
           case e => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
         }
       } else {

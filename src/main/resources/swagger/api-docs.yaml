@@ -1645,6 +1645,8 @@ paths:
       responses:
         202:
           description: Request Accepted
+        403:
+          description: User does not have correct permissions to delete a published workspace
         404:
           description: Workspace does not exist
         500:
