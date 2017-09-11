@@ -1,31 +1,26 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor._
-import akka.pattern._
+import akka.pattern.pipe
 import akka.event.Logging
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
+import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.rawls.model._
 import spray.http.MediaTypes._
+import spray.http.StatusCodes._
 import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
-import spray.json._
 import spray.json.DefaultJsonProtocol._
-import spray.http.StatusCodes.Forbidden
 
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by mbemis on 10/19/16.
@@ -58,8 +53,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
                       (implicit protected val executionContext: ExecutionContext) extends Actor with AttributeSupport with TSVFileSupport with PermissionsSupport with WorkspacePublishingSupport {
 
   implicit val system = context.system
-
-  import system.dispatcher
 
   val log = Logging(system, getClass)
 
@@ -225,27 +218,27 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   }
 
-  def unPublishErrorMessage(workspaceNamespace: String, workspaceName: String): String = s" There was an error un-publishing workspace $workspaceNamespace:$workspaceName."
-
   def unPublishSuccessMessage(workspaceNamespace: String, workspaceName: String): String = s" The workspace $workspaceNamespace:$workspaceName has been un-published."
 
-  def deleteWorkspace(workspaceNamespace: String, workspaceName: String): Future[PerRequestMessage] = {
-    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { ws =>
+  def deleteWorkspace(ns: String, name: String): Future[PerRequestMessage] = {
+    rawlsDAO.getWorkspace(ns, name) flatMap { ws =>
       val wsPublished: Boolean = isPublished(ws)
-      val wsRemoved: Boolean = if (wsPublished) {
-        Try(removeDocument(ws.workspace, searchDAO)).isSuccess
+      if (wsPublished) {
+        rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(false)) flatMap { f1 =>
+          Future(removeDocument(ws.workspace, searchDAO)).flatMap { f2 =>
+            rawlsDAO.deleteWorkspace(ns, name) map { f3 =>
+              RequestComplete(f3.copy(message = Some(f3.message.getOrElse("") + unPublishSuccessMessage(ns, name))))
+            } recover {
+              case e: FireCloudExceptionWithErrorReport => RequestCompleteWithErrorReport(e.errorReport.statusCode.getOrElse(InternalServerError), e.getMessage)
+              case e => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
+            }
+          }
+        } recover {
+          case e => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
+        }
       } else {
-        true
-      }
-      rawlsDAO.deleteWorkspace(ws.workspace.namespace, ws.workspace.name) map { response =>
-        (wsPublished, wsRemoved) match {
-          case (true, true) =>
-            val message = unPublishSuccessMessage(workspaceNamespace, workspaceName)
-            RequestComplete(response.copy(message = Some(response.message.getOrElse("") + message)))
-          case (true, false) =>
-            val message = unPublishErrorMessage(workspaceNamespace, workspaceName)
-            RequestComplete(response.copy(message = Some(response.message.getOrElse("") + message)))
-          case _ => RequestComplete(response)
+        rawlsDAO.deleteWorkspace(ws.workspace.namespace, ws.workspace.name) map { response =>
+          RequestComplete(response)
         }
       }
     }

@@ -75,7 +75,7 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
         asInstanceOf[RequestComplete[WorkspaceDeleteResponse]]
       val workspaceDeleteResponse = rqComplete.response
       workspaceDeleteResponse.message.isDefined should be (true)
-      workspaceDeleteResponse.message.get should include (ws.unPublishErrorMessage(workspaceNamespace, workspaceName))
+      status shouldNot be (200)
     }
 
   }
