@@ -4867,10 +4867,10 @@ definitions:
   UserInfo:
     type: object
     properties:
-      userSubjectId:
+      id:
         type: string
-        description: Subject ID (from Google)
-      userEmail:
+        description: User's ID (subject id from Google)
+      email:
         type: string
         description: User's email
 
