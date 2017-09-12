@@ -232,7 +232,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
           }
         } recover {
           case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport)
-          case e => RequestComplete(InternalServerError, e.getMessage)
+          case e => RequestComplete(InternalServerError, ErrorReport(message = e.getMessage))
         }
       } else {
         rawlsDAO.deleteWorkspace(ws.workspace.namespace, ws.workspace.name) map { response =>
