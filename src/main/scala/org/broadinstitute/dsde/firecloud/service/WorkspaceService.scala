@@ -228,14 +228,11 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
           Future(removeDocument(ws.workspace, searchDAO)).flatMap { f2 =>
             rawlsDAO.deleteWorkspace(ns, name) map { f3 =>
               RequestComplete(f3.copy(message = Some(f3.message.getOrElse("") + unPublishSuccessMessage(ns, name))))
-            } recover {
-              case e: FireCloudExceptionWithErrorReport => RequestCompleteWithErrorReport(e.errorReport.statusCode.getOrElse(InternalServerError), e.getMessage)
-              case e => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
             }
           }
         } recover {
-          case e: FireCloudExceptionWithErrorReport => RequestCompleteWithErrorReport(e.errorReport.statusCode.getOrElse(InternalServerError), e.getMessage)
-          case e => RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
+          case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport)
+          case e => RequestComplete(InternalServerError, e.getMessage)
         }
       } else {
         rawlsDAO.deleteWorkspace(ws.workspace.namespace, ws.workspace.name) map { response =>
