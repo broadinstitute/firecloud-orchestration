@@ -4517,7 +4517,7 @@ definitions:
         description: User's title
       contactEmail:
         type: string
-        description: User's title
+        description: User's contact email (if different from account email)
       institute:
         type: string
         description: User's home institution
@@ -4535,7 +4535,7 @@ definitions:
         description: User's program location country
       pi:
         type: string
-        description: Principle Investigator
+        description: Principal Investigator
       nonProfitStatus:
         type: string
         description: User's program non-profit status
