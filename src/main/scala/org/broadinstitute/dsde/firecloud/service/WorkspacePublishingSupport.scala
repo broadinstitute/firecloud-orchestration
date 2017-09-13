@@ -53,7 +53,7 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
       else {
         val message = s"Unable to update this workspace, ${ws.namespace}:${ws.name}, to $publishArg in elastic search."
         logger.error(message)
-        throw new FireCloudException(s"Unable to update this workspace, ${ws.namespace}:${ws.name}, to $publishArg in elastic search.")
+        throw new FireCloudException(message)
       }
     }
   }
