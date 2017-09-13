@@ -186,11 +186,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
         Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
       else {
         // user requested a change in published flag, and metadata is valid; make the change.
-        rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(publishArg)) map { ws =>
-          if (publishArg)
-            publishDocument(ws, ontologyDAO, searchDAO)
-          else
-            removeDocument(ws, searchDAO)
+        setWorkspacePublishedStatus(workspaceResponse.workspace, publishArg, rawlsDAO, ontologyDAO, searchDAO) map { ws =>
           RequestComplete(ws)
         }
       }

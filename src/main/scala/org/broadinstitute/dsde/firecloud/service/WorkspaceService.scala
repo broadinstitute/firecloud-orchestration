@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor._
 import akka.pattern.pipe
 import akka.event.Logging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
@@ -224,15 +224,13 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     rawlsDAO.getWorkspace(ns, name) flatMap { ws =>
       val wsPublished: Boolean = isPublished(ws)
       if (wsPublished) {
-        rawlsDAO.updateLibraryAttributes(ns, name, updatePublishAttribute(false)) flatMap { f1 =>
-          Future(removeDocument(ws.workspace, searchDAO)).flatMap { f2 =>
-            rawlsDAO.deleteWorkspace(ns, name) map { f3 =>
-              RequestComplete(f3.copy(message = Some(f3.message.getOrElse("") + unPublishSuccessMessage(ns, name))))
-            }
+        setWorkspacePublishedStatus(ws.workspace, publishArg = false, rawlsDAO, ontologyDAO, searchDAO) flatMap { updatedWs =>
+          rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
+            RequestComplete(wsResponse.copy(message = Some(wsResponse.message.getOrElse("") + unPublishSuccessMessage(ns, name))))
           }
         } recover {
-          case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}")
-          case e => RequestComplete(InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
+          case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
+          case e: Throwable => RequestComplete(InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
         }
       } else {
         rawlsDAO.deleteWorkspace(ws.workspace.namespace, ws.workspace.name) map { response =>

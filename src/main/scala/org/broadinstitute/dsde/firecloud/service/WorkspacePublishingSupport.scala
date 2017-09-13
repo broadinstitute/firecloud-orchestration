@@ -1,10 +1,13 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.service.LibraryService.publishedFlag
-import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, Workspace, WorkspaceResponse}
+import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, ErrorReport, Workspace, WorkspaceResponse}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 trait WorkspacePublishingSupport extends LibraryServiceSupport {
 
@@ -35,6 +38,19 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
 
   def isPublished(workspace: Workspace): Boolean = {
     workspace.attributes.get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
+  }
+
+  def setWorkspacePublishedStatus(ws: Workspace, publishArg: Boolean, rawlsDAO: RawlsDAO, ontologyDAO: OntologyDAO, searchDAO: SearchDAO)(implicit userToken: WithAccessToken): Future[Workspace] = {
+    rawlsDAO.updateLibraryAttributes(ws.namespace, ws.name, updatePublishAttribute(publishArg)) map { workspace =>
+      val docPublishResult = if (publishArg)
+        Try(publishDocument(workspace, ontologyDAO, searchDAO)).isSuccess
+      else
+        Try(removeDocument(workspace, searchDAO)).isSuccess
+      if (docPublishResult)
+        workspace
+      else
+        throw new FireCloudException(s"Unable to update this workspace, ${ws.namespace}:${ws.name}, to $publishArg in elastic search.")
+    }
   }
 
 }

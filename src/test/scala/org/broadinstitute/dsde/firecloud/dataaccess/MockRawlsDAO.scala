@@ -119,7 +119,7 @@ class MockRawlsDAO  extends RawlsDAO {
     false
   )
 
-  private val publishedRawlsWorkspaceWithAttributes = Workspace(
+  val publishedRawlsWorkspaceWithAttributes = Workspace(
     "attributes",
     "att",
     Set.empty, //authdomain
@@ -144,9 +144,6 @@ class MockRawlsDAO  extends RawlsDAO {
     Map(), //authdomain acls,
     false
   )
-
-  private val publishedRawlsWorkspaceWithAttributesThatFailsIndexDeletion =
-    publishedRawlsWorkspaceWithAttributes.copy(workspaceId = "unpublishfailure")
 
   val unpublishedRawlsWorkspaceLibraryValid = Workspace(
     "attributes",
@@ -188,7 +185,7 @@ class MockRawlsDAO  extends RawlsDAO {
   val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
   val publishedRawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
 
-  private def newWorkspace: Workspace = {
+  def newWorkspace: Workspace = {
     Workspace(
       namespace = "namespace",
       name = "name",
@@ -251,7 +248,6 @@ class MockRawlsDAO  extends RawlsDAO {
       case "publishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "unpublishedwriter" => Future(WorkspaceResponse(WorkspaceAccessLevels.Write, canShare = false, catalog=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "publishedowner" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
-      case "publishedownerfailindexdelete" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, publishedRawlsWorkspaceWithAttributesThatFailsIndexDeletion, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case "libraryValid" => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, unpublishedRawlsWorkspaceLibraryValid, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
       case _ => Future.successful(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
     }
