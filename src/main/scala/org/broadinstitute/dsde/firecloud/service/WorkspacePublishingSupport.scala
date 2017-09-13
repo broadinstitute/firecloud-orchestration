@@ -42,14 +42,19 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
 
   def setWorkspacePublishedStatus(ws: Workspace, publishArg: Boolean, rawlsDAO: RawlsDAO, ontologyDAO: OntologyDAO, searchDAO: SearchDAO)(implicit userToken: WithAccessToken): Future[Workspace] = {
     rawlsDAO.updateLibraryAttributes(ws.namespace, ws.name, updatePublishAttribute(publishArg)) map { workspace =>
-      val docPublishResult = if (publishArg)
-        Try(publishDocument(workspace, ontologyDAO, searchDAO)).isSuccess
-      else
-        Try(removeDocument(workspace, searchDAO)).isSuccess
+      val docPublishResult = Try {
+        if (publishArg)
+          publishDocument(workspace, ontologyDAO, searchDAO)
+        else
+          removeDocument(workspace, searchDAO)
+      }.isSuccess
       if (docPublishResult)
         workspace
-      else
+      else {
+        val message = s"Unable to update this workspace, ${ws.namespace}:${ws.name}, to $publishArg in elastic search."
+        logger.error(message)
         throw new FireCloudException(s"Unable to update this workspace, ${ws.namespace}:${ws.name}, to $publishArg in elastic search.")
+      }
     }
   }
 

@@ -221,21 +221,18 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def unPublishSuccessMessage(workspaceNamespace: String, workspaceName: String): String = s" The workspace $workspaceNamespace:$workspaceName has been un-published."
 
   def deleteWorkspace(ns: String, name: String): Future[PerRequestMessage] = {
-    rawlsDAO.getWorkspace(ns, name) flatMap { ws =>
-      val wsPublished: Boolean = isPublished(ws)
-      if (wsPublished) {
-        setWorkspacePublishedStatus(ws.workspace, publishArg = false, rawlsDAO, ontologyDAO, searchDAO) flatMap { updatedWs =>
-          rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
-            RequestComplete(wsResponse.copy(message = Some(wsResponse.message.getOrElse("") + unPublishSuccessMessage(ns, name))))
-          }
-        } recover {
-          case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
-          case e: Throwable => RequestComplete(InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
+    rawlsDAO.getWorkspace(ns, name) flatMap { wsResponse =>
+      val unpublishFuture: Future[Workspace] = if (isPublished(wsResponse))
+        setWorkspacePublishedStatus(wsResponse.workspace, publishArg = false, rawlsDAO, ontologyDAO, searchDAO)
+      else
+        Future.successful(wsResponse.workspace)
+      unpublishFuture flatMap { ws =>
+        rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
+          RequestComplete(wsResponse.copy(message = Some(wsResponse.message.getOrElse("") + unPublishSuccessMessage(ns, name))))
         }
-      } else {
-        rawlsDAO.deleteWorkspace(ws.workspace.namespace, ws.workspace.name) map { response =>
-          RequestComplete(response)
-        }
+      } recover {
+        case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
+        case e: Throwable => RequestComplete(InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
       }
     }
   }
