@@ -1,31 +1,26 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor._
-import akka.pattern._
+import akka.pattern.pipe
 import akka.event.Logging
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
+import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.rawls.model._
 import spray.http.MediaTypes._
+import spray.http.StatusCodes._
 import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
-import spray.json._
 import spray.json.DefaultJsonProtocol._
-import spray.http.StatusCodes.Forbidden
 
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by mbemis on 10/19/16.
@@ -44,6 +39,7 @@ object WorkspaceService {
   case class PutTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
   case class PatchTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
   case class DeleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
+  case class DeleteWorkspace(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
 
   def props(workspaceServiceConstructor: WithAccessToken => WorkspaceService, userToken: WithAccessToken): Props = {
     Props(workspaceServiceConstructor(userToken))
@@ -57,8 +53,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
                       (implicit protected val executionContext: ExecutionContext) extends Actor with AttributeSupport with TSVFileSupport with PermissionsSupport with WorkspacePublishingSupport {
 
   implicit val system = context.system
-
-  import system.dispatcher
 
   val log = Logging(system, getClass)
 
@@ -92,6 +86,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       patchTags(workspaceNamespace, workspaceName, tags) pipeTo sender
     case DeleteTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) =>
       deleteTags(workspaceNamespace, workspaceName, tags) pipeTo sender
+    case DeleteWorkspace(workspaceNamespace: String, workspaceName: String) =>
+      deleteWorkspace(workspaceNamespace, workspaceName) pipeTo sender
 
   }
 
@@ -220,6 +216,25 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
     }
 
+  }
+
+  def unPublishSuccessMessage(workspaceNamespace: String, workspaceName: String): String = s" The workspace $workspaceNamespace:$workspaceName has been un-published."
+
+  def deleteWorkspace(ns: String, name: String): Future[PerRequestMessage] = {
+    rawlsDAO.getWorkspace(ns, name) flatMap { wsResponse =>
+      val unpublishFuture: Future[Workspace] = if (isPublished(wsResponse))
+        setWorkspacePublishedStatus(wsResponse.workspace, publishArg = false, rawlsDAO, ontologyDAO, searchDAO)
+      else
+        Future.successful(wsResponse.workspace)
+      unpublishFuture flatMap { ws =>
+        rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
+          RequestComplete(wsResponse.copy(message = Some(wsResponse.message.getOrElse("") + unPublishSuccessMessage(ns, name))))
+        }
+      } recover {
+        case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
+        case e: Throwable => RequestComplete(InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
+      }
+    }
   }
 
   private def getTagsFromWorkspace(ws:Workspace): Seq[String] = {

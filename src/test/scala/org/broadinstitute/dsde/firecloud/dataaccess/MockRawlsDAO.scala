@@ -119,7 +119,7 @@ class MockRawlsDAO  extends RawlsDAO {
     false
   )
 
-  private val publishedRawlsWorkspaceWithAttributes = Workspace(
+  val publishedRawlsWorkspaceWithAttributes = Workspace(
     "attributes",
     "att",
     Set.empty, //authdomain
@@ -185,7 +185,7 @@ class MockRawlsDAO  extends RawlsDAO {
   val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
   val publishedRawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
 
-  private def newWorkspace: Workspace = {
+  def newWorkspace: Workspace = {
     Workspace(
       namespace = "namespace",
       name = "name",
@@ -359,4 +359,8 @@ class MockRawlsDAO  extends RawlsDAO {
     Future.successful(Seq.empty[MethodConfigurationShort])
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
+
+  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
+    Future.successful(WorkspaceDeleteResponse(Some("Your Google bucket 'bucketId' will be deleted within 24h.")))
+  }
 }
