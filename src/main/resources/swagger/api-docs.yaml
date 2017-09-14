@@ -4548,18 +4548,50 @@ definitions:
   Profile:
     type: object
     properties:
-      name:
+      firstName:
         type: string
-        description: User's full name
-      email:
+        description: User's first name
+      lastName:
         type: string
-        description: User's email address
-      institution:
+        description: User's last name
+      title:
+        type: string
+        description: User's title
+      contactEmail:
+        type: string
+        description: User's contact email (if different from account email)
+      institute:
         type: string
         description: User's home institution
+      institutionalProgram:
+        type: string
+        description: User's institutional program
+      programLocationCity:
+        type: string
+        description: User's program location city
+      programLocationState:
+        type: string
+        description: User's program location state
+      programLocationCountry:
+        type: string
+        description: User's program location country
       pi:
         type: string
-        description: Primary Investigator
+        description: Principal Investigator
+      nonProfitStatus:
+        type: string
+        description: User's program non-profit status
+    required:
+      - firstName
+      - lastName
+      - title
+      - institute
+      - institutionalProgram
+      - programLocationCity
+      - programLocationState
+      - programLocationCountry
+      - pi
+      - nonProfitStatus
 
   PublishConfigurationIngest:
     type: object
