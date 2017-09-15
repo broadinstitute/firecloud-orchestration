@@ -8,13 +8,12 @@ import scala.concurrent.Future
   */
 class MockSamDAO extends SamDAO {
 
-  override def registerUser(userInfo: UserInfo): Future[Unit] = {
-    Future.successful()
+  override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
+    Future.successful(RegistrationInfo(WorkbenchUserInfo("foo", "bar"), WorkbenchEnabled(true, true, true)))
   }
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
-    val x = RegistrationInfo(WorkbenchUserInfo("foo", "bar"), WorkbenchEnabled(true, true, true))
-    Future.successful(x)
+    Future.successful(RegistrationInfo(WorkbenchUserInfo("foo", "bar"), WorkbenchEnabled(true, true, true)))
   }
 
 }

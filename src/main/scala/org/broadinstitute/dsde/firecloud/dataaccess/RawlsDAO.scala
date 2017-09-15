@@ -42,8 +42,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType"
 
-  def isRegistered(userInfo: UserInfo): Future[Boolean]
-
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
   def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean]

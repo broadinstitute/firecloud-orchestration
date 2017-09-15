@@ -49,6 +49,7 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
                      |  },
                      |  "enabled": {
                      |    "google": true,
+                     |    "allUsersGroup": true,
                      |    "ldap": true
                      |  }
                      |}""".stripMargin
@@ -423,7 +424,7 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
-              .withBody("""{"enabled": {"google": false, "ldap": true, "allUsersGroup": true}, "userInfo": {"id": "1111111111", "email": "no@nope.org"}}""")
+              .withBody("""{"enabled": {"google": false, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
@@ -440,7 +441,7 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
-              .withBody("""{"enabled": {"google": true, "ldap": false, "allUsersGroup": true}, "userInfo": {"id": "1111111111", "email": "no@nope.org"}}""")
+              .withBody("""{"enabled": {"google": true, "ldap": false, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
@@ -459,7 +460,7 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
           .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
-              .withBody("""{"enabled": {"google": true, "ldap": true, "allUsersGroup": true}, "userInfo": {"id": "1111111111", "email": "no@nope.org"}}""")
+              .withBody("""{"enabled": {"google": true, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {

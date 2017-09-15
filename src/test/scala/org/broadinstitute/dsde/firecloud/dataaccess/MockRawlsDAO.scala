@@ -201,9 +201,7 @@ class MockRawlsDAO  extends RawlsDAO {
       isLocked = true
     )
   }
-
-  override def isRegistered(userInfo: UserInfo): Future[Boolean] = Future.successful(true)
-
+  
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future.successful(false)
 
   override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = Future.successful(true)

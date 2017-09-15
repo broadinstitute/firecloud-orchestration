@@ -22,7 +22,7 @@ trait SamDAO extends LazyLogging {
 
   val samUserRegistrationUrl = FireCloudConfig.Sam.baseUrl + "/register/user"
 
-  def registerUser(userInfo: UserInfo): Future[Unit]
+  def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
   def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
 
 }

@@ -14,8 +14,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
   extends SamDAO with RestJsonClient {
 
-  override def registerUser(userInfo: UserInfo): Future[Unit] = {
-    userAuthedRequest(Post(samUserRegistrationUrl))(userInfo) map { _ => () }
+  override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
+    authedRequestToObject[RegistrationInfo](Post(samUserRegistrationUrl))
   }
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
