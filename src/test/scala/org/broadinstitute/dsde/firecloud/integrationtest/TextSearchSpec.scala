@@ -2,8 +2,9 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FreeSpec, Ignore, Matchers}
 
+@Ignore
 class TextSearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with SearchResultValidation {
 
   override def beforeAll = {
