@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -48,7 +48,10 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       _ <- thurloeDao.saveKeyValues(
           userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString)
         )
-      isRegistered <- samDao.getRegistrationStatus(userInfo)
+      isRegistered <- samDao.getRegistrationStatus(userInfo) recover {
+        case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
+          RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail), WorkbenchEnabled(false, false, false))
+      }
       userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
         for {
           registrationInfo <- samDao.registerUser(userInfo)
