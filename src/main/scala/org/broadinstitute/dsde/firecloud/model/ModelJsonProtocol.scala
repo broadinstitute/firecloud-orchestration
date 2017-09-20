@@ -167,7 +167,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impEntityAccessControl = jsonFormat4(EntityAccessControl)
   implicit val impEntityAccessControlAgora = jsonFormat3(EntityAccessControlAgora)
-  implicit val impAccessEntry = jsonFormat3(AccessEntry)
+  implicit val impAccessEntry = jsonFormat4(AccessEntry)
   implicit val impPermissionReport = jsonFormat2(PermissionReport)
   implicit val impPermissionReportRequest = jsonFormat2(PermissionReportRequest)
   implicit val impMethodAclPair = jsonFormat3(MethodAclPair)
