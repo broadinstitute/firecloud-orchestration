@@ -9,7 +9,6 @@ import spray.json.{JsObject, JsString}
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, MINUTES}
 
-@Ignore
 class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with ElasticSearchDAOQuerySupport {
 
   override def beforeAll = {

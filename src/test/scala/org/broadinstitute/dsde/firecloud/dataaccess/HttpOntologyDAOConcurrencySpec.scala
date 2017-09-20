@@ -20,7 +20,6 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.Random
 
-@Ignore
 class HttpOntologyDAOConcurrencySpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
 
   import Counters._

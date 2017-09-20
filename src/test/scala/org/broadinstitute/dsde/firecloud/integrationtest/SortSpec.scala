@@ -10,7 +10,6 @@ import spray.json.{JsNumber, JsObject, JsString, JsValue}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-@Ignore
 class SortSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
 
   val dur = Duration(2, MINUTES)
