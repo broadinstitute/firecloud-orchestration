@@ -1218,6 +1218,35 @@ paths:
         '500':
           description: Internal error.
 
+  /api/methods/{namespace}/{name}/{snapshotId}/configurations:
+    get:
+      summary: List compatible configurations for this method snapshot
+      description: |
+        Returns all configurations that 1. have the exact same input and output
+        arguments as the supplied method snapshot, and 2. reference any snapshot
+        of this method.
+      parameters:
+        - $ref: '#/parameters/methodNamespaceParam'
+        - $ref: '#/parameters/methodNameParam'
+        - $ref: '#/parameters/methodSnapshotId'
+      tags:
+        - Method Repository
+      responses:
+        200:
+          description: An array of configurations.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ConfigurationResponseWithPayloadObject'
+        404:
+          description: Method not found.
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
   /api/methods/{namespace}/{name}/{snapshotId}/permissions:
     get:
       tags:
