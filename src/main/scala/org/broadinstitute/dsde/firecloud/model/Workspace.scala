@@ -7,27 +7,6 @@ import org.broadinstitute.dsde.rawls.model._
 
 case class WorkspaceDeleteResponse(message: Option[String] = None)
 
-case class WorkspaceCreate(
-  namespace: String,
-  name: String,
-  authorizationDomain: Set[ManagedGroupRef],
-  attributes: AttributeMap)
-
-object WorkspaceCreate {
-  import scala.language.implicitConversions
-  implicit def toWorkspaceRequest(wc: WorkspaceCreate): WorkspaceRequest = {
-    WorkspaceRequest(wc.namespace, wc.name, wc.authorizationDomain, wc.attributes)
-  }
-
-  def toWorkspaceClone(wc: WorkspaceCreate): WorkspaceCreate = {
-    new WorkspaceCreate(
-      namespace = wc.namespace,
-      name = wc.name,
-      authorizationDomain = wc.authorizationDomain,
-      attributes = wc.attributes + (AttributeName("library","published") -> AttributeBoolean(false)) + (AttributeName("library","discoverableByGroups") -> AttributeValueEmptyList))
-  }
-}
-
 case class UIWorkspaceResponse(
   accessLevel: Option[String] = None,
   canShare: Option[Boolean] = None,

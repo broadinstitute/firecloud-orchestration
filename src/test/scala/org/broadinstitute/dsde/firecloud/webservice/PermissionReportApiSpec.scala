@@ -221,9 +221,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
 class PermissionReportMockRawlsDAO extends MockRawlsDAO {
 
   val mockACL = WorkspaceACL(Map(
-    "alice@example.com" -> AccessEntry(WorkspaceAccessLevels.Owner, false, false),
-    "bob@example.com" -> AccessEntry(WorkspaceAccessLevels.Write, false, false),
-    "carol@example.com" -> AccessEntry(WorkspaceAccessLevels.Read, false, true)
+    "alice@example.com" -> AccessEntry(WorkspaceAccessLevels.Owner, false, false, true),
+    "bob@example.com" -> AccessEntry(WorkspaceAccessLevels.Write, false, false, true),
+    "carol@example.com" -> AccessEntry(WorkspaceAccessLevels.Read, false, true, false)
   ))
 
   val mockConfigs = Seq(
