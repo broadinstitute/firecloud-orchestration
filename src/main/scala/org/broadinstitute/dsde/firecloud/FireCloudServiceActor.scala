@@ -28,6 +28,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with NotificationsApiService
   with StatusApiService
   with MethodsApiService
+  with Ga4ghApiService
   {
 
   implicit val system = context.system
@@ -115,6 +116,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         workspaceRoutes ~
         notificationsRoutes ~
         statusRoutes ~
+        ga4ghRoutes ~
         pathPrefix("api") {
           apiRoutes
         } ~
