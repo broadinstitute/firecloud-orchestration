@@ -85,6 +85,11 @@ object FireCloudConfig {
     }
   }
 
+  object Sam {
+    private val sam = config.getConfig("sam")
+    val baseUrl = sam.getString("baseUrl")
+  }
+
   object Thurloe {
     private val profile = config.getConfig("userprofile")
     private val thurloe = config.getConfig("thurloe")

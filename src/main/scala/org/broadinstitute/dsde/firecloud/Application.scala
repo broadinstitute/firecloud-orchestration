@@ -11,6 +11,7 @@ case class Application (agoraDAO: AgoraDAO,
                    ontologyDAO: OntologyDAO,
                    consentDAO: ConsentDAO,
                    rawlsDAO: RawlsDAO,
+                   samDAO: SamDAO,
                    searchDAO: SearchDAO,
                    thurloeDAO: ThurloeDAO) {
 

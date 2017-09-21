@@ -3,9 +3,10 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.RegisterService.{CreateUpdateProfile, UpdateProfilePreferences}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
@@ -27,10 +28,10 @@ object RegisterService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new RegisterService(app.rawlsDAO, app.thurloeDAO)
+    new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO)
 }
 
-class RegisterService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
+class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO)
   (implicit protected val executionContext: ExecutionContext) extends Actor
   with LazyLogging {
 
@@ -41,19 +42,24 @@ class RegisterService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
       updateProfilePreferences(userInfo, preferences) pipeTo sender
   }
 
-  private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile):
-      Future[PerRequestMessage] = {
+  private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
       _ <- thurloeDao.saveProfile(userInfo, basicProfile)
       _ <- thurloeDao.saveKeyValues(
           userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString)
         )
-      isRegistered <- rawlsDao.isRegistered(userInfo)
-      _ <- if (!isRegistered) {
-        rawlsDao.registerUser(userInfo)
-      } else Future.successful(())
+      isRegistered <- samDao.getRegistrationStatus(userInfo) recover {
+        case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
+          RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail), WorkbenchEnabled(false, false, false))
+      }
+      userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
+        for {
+          registrationInfo <- samDao.registerUser(userInfo)
+          _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
+        } yield registrationInfo
+      } else Future.successful(isRegistered)
     } yield {
-      RequestComplete(StatusCodes.OK)
+      RequestComplete(StatusCodes.OK, userStatus)
     }
   }
 

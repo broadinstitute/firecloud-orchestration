@@ -45,8 +45,8 @@ object UserService {
   val billingAccountsPath = FireCloudConfig.Rawls.authPrefix + "/user/billingAccounts"
   val billingAccountsUrl = FireCloudConfig.Rawls.baseUrl + billingAccountsPath
 
-  val rawlsRegisterUserPath = "/register/user"
-  val rawlsRegisterUserURL = FireCloudConfig.Rawls.baseUrl + rawlsRegisterUserPath
+  val samRegisterUserPath = "/register/user"
+  val samRegisterUserURL = FireCloudConfig.Sam.baseUrl + samRegisterUserPath
 
   val rawlsGroupBasePath = FireCloudConfig.Rawls.authPrefix + "/groups"
   val rawlsGroupBaseUrl = FireCloudConfig.Rawls.baseUrl + rawlsGroupBasePath
@@ -86,7 +86,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
           // browser sent Authorization header; try to query rawls for user status
           case Some(c) =>
             val pipeline = authHeaders(requestContext) ~> sendReceive
-            val extReq = Get(UserService.rawlsRegisterUserURL)
+            val extReq = Get(UserService.samRegisterUserURL)
             pipeline(extReq) onComplete {
               case Success(response) =>
                 response.status match {
@@ -101,7 +101,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
                     val respJson = response.entity.as[RegistrationInfo]
                     respJson match {
                       case Right(regInfo) =>
-                        if (regInfo.enabled.google && regInfo.enabled.ldap) {
+                        if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allUsersGroup) {
                           // rawls says the user is fully registered and activated!
                           requestContext.complete(OK, regInfo)
                         } else {
@@ -169,7 +169,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
     pathPrefix("register") {
       pathEnd {
         get {
-          passthrough(UserService.rawlsRegisterUserURL, HttpMethods.GET)
+          passthrough(UserService.samRegisterUserURL, HttpMethods.GET)
         }
       } ~
       path("userinfo") { requestContext =>

@@ -12,7 +12,7 @@ import org.mockserver.model.HttpCallback.callback
 import org.mockserver.model.{HttpRequest, HttpResponse}
 import org.mockserver.model.HttpRequest.request
 import org.mockserver.model.HttpResponse.response
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FreeSpec, Ignore, Matchers}
 import spray.http.StatusCodes.OK
 import spray.json._
 

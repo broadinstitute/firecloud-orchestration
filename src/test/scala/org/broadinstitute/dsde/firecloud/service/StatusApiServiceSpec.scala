@@ -33,7 +33,7 @@ class StatusApiServiceUpSpec extends BaseServiceSpec with HttpService with Statu
 
   def actorRefFactory: ActorSystem = system
 
-  val customApp = Application(agoraDAO, googleServicesUpDAO, ontologyDAO, consentDAO, rawlsDAO, searchUpDAO, thurloeDAO)
+  val customApp = Application(agoraDAO, googleServicesUpDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchUpDAO, thurloeDAO)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(customApp)
 
   override def beforeAll(): Unit = startAll()
@@ -66,7 +66,7 @@ class StatusApiServiceDownSpec extends BaseServiceSpec with HttpService with Sta
 
   def actorRefFactory: ActorSystem = system
 
-  val customApp = Application(agoraDAO, googleServicesDownDAO, ontologyDAO, consentDAO, rawlsDAO, searchDownDAO, thurloeDAO)
+  val customApp = Application(agoraDAO, googleServicesDownDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDownDAO, thurloeDAO)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(customApp)
 
   override def beforeAll(): Unit = startAll()
@@ -123,7 +123,7 @@ class StatusApiServiceDownSpec extends BaseServiceSpec with HttpService with Sta
 class StatusApiServiceExceptionSpec extends BaseServiceSpec with HttpService with StatusApiService with StatusApiServiceMockDAOsServers {
 
   def actorRefFactory: ActorSystem = system
-  val customApp = Application(agoraExceptionDAO, googleServicesExceptionDAO, ontologyExceptionDAO, consentExceptionDAO, rawlsExceptionDAO, searchExceptionDAO, thurloeExceptionDAO)
+  val customApp = Application(agoraExceptionDAO, googleServicesExceptionDAO, ontologyExceptionDAO, consentExceptionDAO, rawlsExceptionDAO, null, searchExceptionDAO, thurloeExceptionDAO)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(customApp)
 
   "StatusApiServiceExceptionSpec" - {
@@ -201,6 +201,7 @@ trait StatusApiServiceMockDAOsServers {
   val searchUpDAO:SearchDAO = new MockSearchDAO()
   val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora)
   val rawlsDAO:RawlsDAO = new HttpRawlsDAO
+  val samDAO:SamDAO = new HttpSamDAO
   val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
   val ontologyDAO:OntologyDAO = new HttpOntologyDAO
   val consentDAO:ConsentDAO = new HttpConsentDAO

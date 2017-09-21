@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
-  val customApp = Application(agoraDao, googleServicesDao, ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), new MockSearchDeleteWSDAO(), thurloeDao)
+  val customApp = Application(agoraDao, googleServicesDao, ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), thurloeDao)
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(customApp)
 

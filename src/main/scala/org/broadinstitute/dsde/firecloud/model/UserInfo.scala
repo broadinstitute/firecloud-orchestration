@@ -33,10 +33,10 @@ case class AccessToken(accessToken: OAuth2BearerToken) extends WithAccessToken
 // response from Google has other fields, but these are the ones we care about
 case class OAuthUser(sub: String, email: String)
 
-case class RegistrationInfo(userInfo: RawlsUserInfo, enabled: RawlsEnabled)
+case class RegistrationInfo(userInfo: WorkbenchUserInfo, enabled: WorkbenchEnabled)
 
-case class RawlsUserInfo(userSubjectId: String, userEmail: String)
-case class RawlsEnabled(google: Boolean, ldap: Boolean)
+case class WorkbenchUserInfo(userSubjectId: String, userEmail: String)
+case class WorkbenchEnabled(google: Boolean, ldap: Boolean, allUsersGroup: Boolean)
 
 // TODO: roll into RawlsEnabled? combine with an isAdmin role?
 case class Curator(curator: Boolean)

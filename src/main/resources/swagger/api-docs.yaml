@@ -4869,7 +4869,7 @@ definitions:
     properties:
       userSubjectId:
         type: string
-        description: Subject ID (from Google)
+        description: User's ID (subject id from Google)
       userEmail:
         type: string
         description: User's email
