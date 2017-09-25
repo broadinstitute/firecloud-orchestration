@@ -142,8 +142,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   }
 
   // Build error about missing implicit for Spray parameter unmarshaller? Add an entry here.
-  implicit val impMethod = jsonFormat10(MethodRepository.Method.apply)
-  implicit val impConfiguration = jsonFormat9(MethodRepository.Configuration)
+  implicit val impMethod = jsonFormat11(MethodRepository.Method.apply)
+  implicit val impConfiguration = jsonFormat10(MethodRepository.Configuration)
 
   implicit val impWorkspaceDeleteResponse = jsonFormat1(WorkspaceDeleteResponse)
 
