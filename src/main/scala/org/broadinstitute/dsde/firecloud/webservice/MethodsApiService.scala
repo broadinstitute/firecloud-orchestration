@@ -110,7 +110,9 @@ trait MethodsApiService extends HttpService
         pathPrefix( IntNumber ) { snapshotId =>
           pathEnd {
             post {
-              passthrough(s"$passthroughBase/${urlify(namespace,name)}/$snapshotId", HttpMethods.POST)
+              extract(_.request.uri.query) { query =>
+                passthrough(Uri(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId").withQuery(query), HttpMethods.POST)
+              }
             }
           } ~
           path( "configurations" ) {
