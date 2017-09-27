@@ -38,7 +38,12 @@ trait MethodsApiService extends HttpService
         (get | post) {
           extract(_.request.method) { method =>
             extract(_.request.uri.query) { query =>
-              passthrough(Uri(passthroughBase).withQuery(query), method)
+              // only pass query params for GETs
+              val targetUri = if (method == HttpMethods.GET)
+                Uri(passthroughBase).withQuery(query)
+              else
+                Uri(passthroughBase)
+              passthrough(targetUri, method)
             }
           }
         }
@@ -48,7 +53,13 @@ trait MethodsApiService extends HttpService
           (get | delete) {
             extract(_.request.method) { method =>
               extract(_.request.uri.query) { query =>
-                passthrough(Uri(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId").withQuery(query), method)
+                // only pass query params for GETs
+                val baseUri = Uri(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId")
+                val targetUri = if (method == HttpMethods.GET)
+                  baseUri.withQuery(query)
+                else
+                  baseUri
+                passthrough(targetUri, method)
               }
             }
           }
@@ -110,7 +121,9 @@ trait MethodsApiService extends HttpService
         pathPrefix( IntNumber ) { snapshotId =>
           pathEnd {
             post {
-              passthrough(s"$passthroughBase/${urlify(namespace,name)}/$snapshotId", HttpMethods.POST)
+              extract(_.request.uri.query) { query =>
+                passthrough(Uri(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId").withQuery(query), HttpMethods.POST)
+              }
             }
           } ~
           path( "configurations" ) {
