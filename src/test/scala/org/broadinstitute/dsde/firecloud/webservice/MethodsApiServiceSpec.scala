@@ -1,16 +1,16 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.ActorSystem
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
+import org.broadinstitute.dsde.firecloud.service.ServiceSpec
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.mock.action.ExpectationCallback
 import org.mockserver.model.HttpCallback.callback
-import org.mockserver.model.{HttpRequest, HttpResponse}
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse.response
+import org.mockserver.model.{HttpRequest, HttpResponse}
 import org.scalatest.Matchers
 import spray.http.HttpMethod
 import spray.http.HttpMethods._
@@ -78,7 +78,7 @@ class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
     testCases foreach { api =>
       methodsServer
         .when(request().withMethod(api.verb.name).withPath(api.remotePath))
-          .callback(callback().withCallbackClass("org.broadinstitute.dsde.firecloud.service.MethodsApiServiceSpecCallback"))
+          .callback(callback().withCallbackClass("org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceSpecCallback"))
     }
   }
 
