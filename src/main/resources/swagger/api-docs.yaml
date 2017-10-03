@@ -223,8 +223,9 @@ paths:
           type: number
         - name: snapshotComment
           in: query
-          type: string
           description: Snapshot comment of AgoraEntity
+          required: false
+          type: string
         - name: synopsis
           in: query
           description: Synopsis of configuration.
@@ -981,8 +982,9 @@ paths:
           type: number
         - name: snapshotComment
           in: query
-          type: string
           description: Snapshot comment of AgoraEntity
+          required: false
+          type: string
         - name: synopsis
           in: query
           description: Synopsis of method.
