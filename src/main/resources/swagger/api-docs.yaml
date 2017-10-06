@@ -221,6 +221,11 @@ paths:
           description: Snapshot ID of configuration.
           required: false
           type: number
+        - name: snapshotComment
+          in: query
+          description: Snapshot comment of AgoraEntity
+          required: false
+          type: string
         - name: synopsis
           in: query
           description: Synopsis of configuration.
@@ -975,6 +980,11 @@ paths:
           description: Snapshot ID of method.
           required: false
           type: number
+        - name: snapshotComment
+          in: query
+          description: Snapshot comment of AgoraEntity
+          required: false
+          type: string
         - name: synopsis
           in: query
           description: Synopsis of method.
@@ -1201,6 +1211,10 @@ paths:
                 default: >
                   task wc {File in_file command { cat ${in_file} | wc -l } output { Int
                   count = read_int(stdout()) }}
+              snapshotComment:
+                type: string
+                description: Snapshot comment of the AgoraEntity
+                default: Improve spline reticulation
       responses:
         '200':
           description: Method successfully copied.
@@ -3685,6 +3699,10 @@ definitions:
         type: string
         description: Synopsis which contains Configuration.
         default: Quick synopsis of configuration.
+      snapshotComment:
+        type: string
+        description: Snapshot comment of AgoraEntity
+        default: Improved spline reticulation
       documentation:
         type: string
         description: Documentation of the Configuration.
@@ -3717,6 +3735,10 @@ definitions:
       snapshotId:
         type: integer
         description: SnapshotId of AgoraEntity
+      snapshotComment:
+        type: string
+        description: Snapshot comment of AgoraEntity
+        default: Improved spline reticulation
       synopsis:
         type: string
         description: Synopsis which contains AgoraEntity.
@@ -3759,6 +3781,10 @@ definitions:
       snapshotId:
         type: integer
         description: SnapshotId of AgoraEntity
+      snapshotComment:
+        type: string
+        description: Snapshot comment of AgoraEntity
+        default: Improved spline reticulation
       synopsis:
         type: string
         description: Synopsis which contains AgoraEntity.
@@ -4409,6 +4435,10 @@ definitions:
         type: string
         description: Synopsis which contains AgoraEntity.
         default: Quickly aligns short nucleotide sequences.
+      snapshotComment:
+        type: string
+        description: Snapshot comment of AgoraEntity
+        default: Improved spline reticulation
       documentation:
         type: string
         description: Documentation of the AgoraEntity.
@@ -4495,6 +4525,10 @@ definitions:
       snapshotId:
         type: integer
         description: SnapshotId of AgoraEntity
+      snapshotComment:
+        type: string
+        description: Snapshot comment of AgoraEntity
+        default: Improved spline reticulation
       synopsis:
         type: string
         description: Synopsis which contains AgoraEntity.
