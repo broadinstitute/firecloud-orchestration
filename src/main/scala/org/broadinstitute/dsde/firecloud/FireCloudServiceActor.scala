@@ -111,7 +111,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         storageRoutes ~
         swaggerUiService ~
         syncRoute ~
-        testNihService ~
         userService.routes ~
         workspaceRoutes ~
         notificationsRoutes ~
@@ -154,21 +153,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         | pathPrefixTest("lang" /) | pathPrefixTest("lib" /)) {
       get {
         getFromResourceDirectory(swaggerUiPath)
-      }
-    }
-  }
-
-  // Placeholder endpoint for testing an authenticated request from NIH. The user will hit this
-  // only after successful authentication. Right now, it just echos the request so we can see what
-  // we get. TODO(dmohs): Remove or turn into an echo endpoint after testing.
-  val testNihService = {
-    path("link-nih-account") {
-      extract(_.request) { request =>
-        complete(
-          "Received:\n" + request.method + " " + request.uri + "\n\n"
-            + request.headers.mkString("\n") + "\n\n"
-            + request.entity + "\n"
-        )
       }
     }
   }
