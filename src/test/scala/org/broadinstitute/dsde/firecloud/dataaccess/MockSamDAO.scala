@@ -1,5 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, SubsystemStatus, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 
 import scala.concurrent.Future
 
@@ -16,4 +16,5 @@ class MockSamDAO extends SamDAO {
     Future.successful(RegistrationInfo(WorkbenchUserInfo("foo", "bar"), WorkbenchEnabled(true, true, true)))
   }
 
+  override def status: Future[SubsystemStatus] = Future.successful(SubsystemStatus(true, None))
 }

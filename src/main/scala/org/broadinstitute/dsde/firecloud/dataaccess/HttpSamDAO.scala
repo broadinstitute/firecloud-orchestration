@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import spray.client.pipelining.{Get, sendReceive}
 import spray.httpx.SprayJsonSupport._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,6 +21,14 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
     authedRequestToObject[RegistrationInfo](Get(samUserRegistrationUrl))
+  }
+
+  override def status: Future[SubsystemStatus] = {
+    val pipeline = sendReceive
+    pipeline(Get(samStatusUrl)) map { response =>
+      val ok = response.status.isSuccess
+      SubsystemStatus(ok, if (ok) Option(List(response.entity.asString)) else None)
+    }
   }
 
 }
