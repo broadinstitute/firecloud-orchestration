@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, SubsystemStatus, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
 import scala.concurrent.Future
@@ -16,13 +16,15 @@ object SamDAO {
 
 }
 
-trait SamDAO extends LazyLogging {
+trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
 
   implicit val errorReportSource = ErrorReportSource(SamDAO.serviceName)
 
   val samUserRegistrationUrl = FireCloudConfig.Sam.baseUrl + "/register/user"
+  val samStatusUrl = FireCloudConfig.Sam.baseUrl + "/status"
 
   def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
   def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
 
+  val serviceName = SamDAO.serviceName
 }

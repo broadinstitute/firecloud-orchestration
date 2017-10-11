@@ -23,7 +23,7 @@ import spray.routing.HttpService
 import scala.concurrent.{ExecutionContext, Future}
 
 object StatusApiServiceSpec {
-  val numberOfStatusServices = 7
+  val numberOfStatusServices = 8
 }
 
 // Typically, the BaseServiceSpec provides an `app: Application` member that has all Mock DAOs.
@@ -55,6 +55,7 @@ class StatusApiServiceUpSpec extends BaseServiceSpec with HttpService with Statu
           statusResponse.systems(SearchDAO.serviceName).ok should be(true)
           statusResponse.systems(OntologyDAO.serviceName).ok should be(true)
           statusResponse.systems(ConsentDAO.serviceName).ok should be(true)
+          statusResponse.systems(SamDAO.serviceName).ok should be(true)
           statusResponse.systems.size should be(StatusApiServiceSpec.numberOfStatusServices)
         }
       }
@@ -93,6 +94,7 @@ class StatusApiServiceDownSpec extends BaseServiceSpec with HttpService with Sta
           statusResponse.systems(ConsentDAO.serviceName).ok should be(false)
           statusResponse.systems(ConsentDAO.serviceName).messages shouldNot be(None)
           statusResponse.systems(ConsentDAO.serviceName).messages.get.size should be(2)
+          statusResponse.systems(SamDAO.serviceName).ok should be(false)
           statusResponse.systems.size should be(StatusApiServiceSpec.numberOfStatusServices)
         }
       }
@@ -112,6 +114,7 @@ class StatusApiServiceDownSpec extends BaseServiceSpec with HttpService with Sta
           statusResponse.systems(SearchDAO.serviceName).ok should be(false)
           statusResponse.systems(OntologyDAO.serviceName).ok should be(false)
           statusResponse.systems(ConsentDAO.serviceName).ok should be(true)
+          statusResponse.systems(SamDAO.serviceName).ok should be(true)
           statusResponse.systems.size should be(StatusApiServiceSpec.numberOfStatusServices)
         }
       }
@@ -123,7 +126,7 @@ class StatusApiServiceDownSpec extends BaseServiceSpec with HttpService with Sta
 class StatusApiServiceExceptionSpec extends BaseServiceSpec with HttpService with StatusApiService with StatusApiServiceMockDAOsServers {
 
   def actorRefFactory: ActorSystem = system
-  val customApp = Application(agoraExceptionDAO, googleServicesExceptionDAO, ontologyExceptionDAO, consentExceptionDAO, rawlsExceptionDAO, null, searchExceptionDAO, thurloeExceptionDAO)
+  val customApp = Application(agoraExceptionDAO, googleServicesExceptionDAO, ontologyExceptionDAO, consentExceptionDAO, rawlsExceptionDAO, samExceptionDAO, searchExceptionDAO, thurloeExceptionDAO)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(customApp)
 
   "StatusApiServiceExceptionSpec" - {
@@ -140,6 +143,7 @@ class StatusApiServiceExceptionSpec extends BaseServiceSpec with HttpService wit
           statusResponse.systems(SearchDAO.serviceName).ok should be(false)
           statusResponse.systems(OntologyDAO.serviceName).ok should be(false)
           statusResponse.systems(ConsentDAO.serviceName).ok should be(false)
+          statusResponse.systems(SamDAO.serviceName).ok should be(false)
           statusResponse.systems.size should be(StatusApiServiceSpec.numberOfStatusServices)
         }
       }
@@ -171,6 +175,10 @@ class MockAgoraExceptionDAO(implicit val executionContext: ExecutionContext) ext
 
 class MockRawlsExceptionDAO(implicit val executionContext: ExecutionContext) extends MockRawlsDAO {
   override def status: Future[SubsystemStatus] = Future.failed(new FireCloudException("Exception: Rawls"))
+}
+
+class MockSamExceptionDAO(implicit val executionContext: ExecutionContext) extends MockSamDAO {
+  override def status: Future[SubsystemStatus] = Future.failed(new FireCloudException("Exception: Sam"))
 }
 
 class MockThurloeExceptionDAO(implicit val executionContext: ExecutionContext) extends MockThurloeDAO {
@@ -218,6 +226,7 @@ trait StatusApiServiceMockDAOsServers {
   val thurloeExceptionDAO:ThurloeDAO = new MockThurloeExceptionDAO()
   val ontologyExceptionDAO:OntologyDAO = new MockOntologyExceptionDAO()
   val consentExceptionDAO:ConsentDAO = new MockConsentExceptionDAO()
+  val samExceptionDAO:SamDAO = new MockSamExceptionDAO()
 
   // No need for a mocked google or search servers/responses
   var agoraServer: ClientAndServer = _
@@ -225,6 +234,7 @@ trait StatusApiServiceMockDAOsServers {
   var thurloeServer: ClientAndServer = _
   var ontologyServer: ClientAndServer = _
   var consentServer: ClientAndServer = _
+  var samServer: ClientAndServer = _
 
   def startAll(): Unit = {
     agoraServer = startClientAndServer(MockUtils.methodsServerPort)
@@ -232,6 +242,7 @@ trait StatusApiServiceMockDAOsServers {
     thurloeServer = startClientAndServer(MockUtils.thurloeServerPort)
     ontologyServer = startClientAndServer(MockUtils.ontologyServerPort)
     consentServer = startClientAndServer(MockUtils.consentServerPort)
+    samServer = startClientAndServer(MockUtils.samServerPort)
   }
 
   def resetAll(): Unit = {
@@ -240,6 +251,7 @@ trait StatusApiServiceMockDAOsServers {
     thurloeServer.reset()
     ontologyServer.reset()
     consentServer.reset()
+    samServer.reset()
   }
 
   def stopAll(): Unit = {
@@ -248,12 +260,14 @@ trait StatusApiServiceMockDAOsServers {
     thurloeServer.stop()
     ontologyServer.stop()
     consentServer.stop()
+    samServer.stop()
   }
 
   val statusRequest: HttpRequest = request().withMethod("GET").withPath("/status")
 
   val agoraDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "status": "down", "message": ["Agora is down"] }""")
   val rawlsDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "ok": false, "systems": {"GooglePubSub": {"ok": false, "message": ["PubSub is broken"]}, "GoogleGenomics": {"ok": true}, "LDAP": {"ok": true}, "Database": {"ok": true}, "Agora": {"ok": true}, "GoogleGroups": {"ok": true}, "GoogleBilling": {"ok": true}, "Cromwell": {"ok": true}, "GoogleBuckets": {"ok": true}}}""")
+  val samDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "ok": false, "systems": {"OpenDJ": {"ok": false, "message": ["OpenDJ is broken"]}, "GoogleGroups": {"ok": true}}}""")
   val thurloeDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "status": "down", "error": "Thurloe is down" }""")
   val ontologyDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{"deadlocks":{"healthy":false},"elastic-search":{"healthy":false,"message":"ClusterHealth is RED"},"google-cloud-storage":{"healthy":false,"message":"Storage Service is unavailable"}}""")
   val consentDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{"deadlocks":{"healthy":false},"elastic-search":{"healthy":false,"message":"ClusterHealth is RED"},"google-cloud-storage":{"healthy":true},"mongodb":{"healthy":true},"mysql":{"healthy":true}}""")
@@ -265,10 +279,12 @@ trait StatusApiServiceMockDAOsServers {
     thurloeServer.when(statusRequest).respond(thurloeDown)
     ontologyServer.when(statusRequest).respond(ontologyDown)
     consentServer.when(statusRequest).respond(consentDown)
+    samServer.when(statusRequest).respond(samDown)
   }
 
   val agoraUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "status": "up", "message": [] }""")
   val rawlsUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "ok": true, "systems": {"GooglePubSub": {"ok": true}, "GoogleGenomics": {"ok": true}, "LDAP": {"ok": true}, "Database": {"ok": true}, "Agora": {"ok": true}, "GoogleGroups": {"ok": true}, "GoogleBilling": {"ok": true}, "Cromwell": {"ok": true}, "GoogleBuckets": {"ok": true}}}""")
+  val samUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "ok": true, "systems": {"OpenDJ": {"ok": true}, "GoogleGroups": {"ok": true}}}""")
   val thurloeUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "status": "up" }""")
   val ontologyUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{"deadlocks":{"healthy":true},"elastic-search":{"healthy":true,"message":"ClusterHealth is GREEN"},"google-cloud-storage":{"healthy":true}}""")
   val consentUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{"deadlocks":{"healthy":true},"elastic-search":{"healthy":true,"message":"ClusterHealth is GREEN"},"google-cloud-storage":{"healthy":true},"mongodb":{"healthy":true},"mysql":{"healthy":true}}""")
@@ -280,6 +296,7 @@ trait StatusApiServiceMockDAOsServers {
     thurloeServer.when(statusRequest).respond(thurloeUp)
     ontologyServer.when(statusRequest).respond(ontologyUp)
     consentServer.when(statusRequest).respond(consentUp)
+    samServer.when(statusRequest).respond(samUp)
   }
 
   def mockSomeUp(): Unit = {
@@ -289,6 +306,7 @@ trait StatusApiServiceMockDAOsServers {
     thurloeServer.when(statusRequest).respond(thurloeUp)
     ontologyServer.when(statusRequest).respond(ontologyDown)
     consentServer.when(statusRequest).respond(consentUp)
+    samServer.when(statusRequest).respond(samUp)
   }
 
 }
