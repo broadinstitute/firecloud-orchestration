@@ -266,7 +266,7 @@ trait StatusApiServiceMockDAOsServers {
   val statusRequest: HttpRequest = request().withMethod("GET").withPath("/status")
 
   val agoraDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "status": "down", "message": ["Agora is down"] }""")
-  val rawlsDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "ok": false, "systems": {"GooglePubSub": {"ok": false, "message": ["PubSub is broken"]}, "GoogleGenomics": {"ok": true}, "LDAP": {"ok": true}, "Database": {"ok": true}, "Agora": {"ok": true}, "GoogleGroups": {"ok": true}, "GoogleBilling": {"ok": true}, "Cromwell": {"ok": true}, "GoogleBuckets": {"ok": true}}}""")
+  val rawlsDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "ok": false, "systems": {"GooglePubSub": {"ok": false, "message": ["PubSub is broken"]}, "GoogleGenomics": {"ok": true}, "Database": {"ok": true}, "Agora": {"ok": true}, "Sam": {"ok": true}, "GoogleGroups": {"ok": true}, "GoogleBilling": {"ok": true}, "Cromwell": {"ok": true}, "GoogleBuckets": {"ok": true}}}""")
   val samDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "ok": false, "systems": {"OpenDJ": {"ok": false, "message": ["OpenDJ is broken"]}, "GoogleGroups": {"ok": true}}}""")
   val thurloeDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{ "status": "down", "error": "Thurloe is down" }""")
   val ontologyDown: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(500).withBody("""{"deadlocks":{"healthy":false},"elastic-search":{"healthy":false,"message":"ClusterHealth is RED"},"google-cloud-storage":{"healthy":false,"message":"Storage Service is unavailable"}}""")
@@ -283,7 +283,7 @@ trait StatusApiServiceMockDAOsServers {
   }
 
   val agoraUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "status": "up", "message": [] }""")
-  val rawlsUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "ok": true, "systems": {"GooglePubSub": {"ok": true}, "GoogleGenomics": {"ok": true}, "LDAP": {"ok": true}, "Database": {"ok": true}, "Agora": {"ok": true}, "GoogleGroups": {"ok": true}, "GoogleBilling": {"ok": true}, "Cromwell": {"ok": true}, "GoogleBuckets": {"ok": true}}}""")
+  val rawlsUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "ok": true, "systems": {"GooglePubSub": {"ok": true}, "GoogleGenomics": {"ok": true}, "Database": {"ok": true}, "Agora": {"ok": true}, "Sam": {"ok": true}, "GoogleGroups": {"ok": true}, "GoogleBilling": {"ok": true}, "Cromwell": {"ok": true}, "GoogleBuckets": {"ok": true}}}""")
   val samUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "ok": true, "systems": {"OpenDJ": {"ok": true}, "GoogleGroups": {"ok": true}}}""")
   val thurloeUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{ "status": "up" }""")
   val ontologyUp: HttpResponse = response().withHeaders(MockUtils.header).withStatusCode(200).withBody("""{"deadlocks":{"healthy":true},"elastic-search":{"healthy":true,"message":"ClusterHealth is GREEN"},"google-cloud-storage":{"healthy":true}}""")

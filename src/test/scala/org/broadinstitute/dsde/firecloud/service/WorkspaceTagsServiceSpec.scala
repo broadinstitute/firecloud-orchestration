@@ -317,6 +317,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
   private def workspaceResponse(ws:Workspace=workspace) = WorkspaceResponse(
     WorkspaceAccessLevels.ProjectOwner,
     canShare = false,
+    canCompute=true,
     catalog=false,
     ws,
     WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0),
