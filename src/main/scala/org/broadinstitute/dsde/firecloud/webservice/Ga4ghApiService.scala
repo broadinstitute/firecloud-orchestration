@@ -15,11 +15,13 @@ trait Ga4ghApiService extends HttpService with FireCloudDirectives {
 
   val ga4ghRoutes: Route =
     pathPrefix("ga4gh") {
-      pathPrefix("tools") {
-        path (Segment / "versions" / Segment / Segment / "descriptor") { (id, versionId, descriptorType) =>
-          get {
-            val targetUri = Uri(s"$agora/ga4gh/v1/tools/$id/versions/$versionId/$descriptorType/descriptor")
-            passthrough(targetUri, HttpMethods.GET)
+      pathPrefix("v1") {
+        pathPrefix("tools") {
+          path(Segment / "versions" / Segment / Segment / "descriptor") { (id, versionId, descriptorType) =>
+            get {
+              val targetUri = Uri(s"$agora/ga4gh/v1/tools/$id/versions/$versionId/$descriptorType/descriptor")
+              passthrough(targetUri, HttpMethods.GET)
+            }
           }
         }
       }
