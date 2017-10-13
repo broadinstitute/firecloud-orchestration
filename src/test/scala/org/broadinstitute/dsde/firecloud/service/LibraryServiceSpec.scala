@@ -278,12 +278,12 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "should be the different for attribute operations" in {
-        val empty = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq.empty))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+        val empty = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq.empty))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
         assert(isDiscoverableDifferent(empty, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))))
-        val one = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+        val one = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))))
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq.empty))))
-        val two = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+        val two = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
         assert(isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"))))))
         assert(!isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"),AttributeString("group1"))))))
       }

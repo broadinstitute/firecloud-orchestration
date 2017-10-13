@@ -111,10 +111,10 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] = {
     ns match {
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
-      case "projectowner" => Future(WorkspaceResponse(WorkspaceAccessLevels.ProjectOwner, canShare = true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
-      case "unpublishsuccess" => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, unpublishsuccess, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
-      case "unpublishfailure" => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, unpublishfailure, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
-      case _ => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "projectowner" => Future(WorkspaceResponse(WorkspaceAccessLevels.ProjectOwner, canShare = true, canCompute=true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "unpublishsuccess" => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, unpublishsuccess, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "unpublishfailure" => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, unpublishfailure, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case _ => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
     }
   }
 
