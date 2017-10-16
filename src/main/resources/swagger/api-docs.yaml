@@ -3358,7 +3358,7 @@ paths:
         200:
           description: OK
 
-  /ga4gh/tools/{id}/versions/{version-id}/{type}/descriptor:
+  /ga4gh/v1/tools/{id}/versions/{version-id}/{type}/descriptor:
     get:
       summary: Get the tool descriptor (CWL/WDL) for the specified tool.
       description: Returns the CWL or WDL descriptor for the specified tool.

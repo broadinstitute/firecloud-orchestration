@@ -14,7 +14,7 @@ class Ga4ghApiServiceSpec extends BaseServiceSpec with Ga4ghApiService with Befo
   def actorRefFactory = system
 
   var toolRegistryServer: ClientAndServer = _
-  val toolRegistryDummyUrlPath = "/ga4gh/tools/namespace:name/versions/1/WDL/descriptor"
+  val toolRegistryDummyUrlPath = "/ga4gh/v1/tools/namespace:name/versions/1/WDL/descriptor"
 
   override def beforeAll(): Unit = {
     toolRegistryServer = startClientAndServer(MockUtils.methodsServerPort)
