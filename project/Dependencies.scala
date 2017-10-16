@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   val akkaV = "2.4.19"
-  val sprayV = "1.3.3"
+  val sprayV = "1.3.4"
   val jacksonV = "2.8.8"
      // note that jackson-databind overrides this below! 2.8.8.1 is not released for core or annotations.
 
@@ -25,7 +25,7 @@ object Dependencies {
 
     "io.spray"                      %% "spray-can"           % sprayV,
     "io.spray"                      %% "spray-routing"       % sprayV,
-    "io.spray"                      %% "spray-json"          % "1.3.2",
+    "io.spray"                      %% "spray-json"          % "1.3.3",
     "io.spray"                      %% "spray-client"        % sprayV,
     "io.spray"                      %% "spray-testkit"       % sprayV    % "test",
     "com.typesafe.akka"             %% "akka-actor"          % akkaV,
@@ -33,13 +33,7 @@ object Dependencies {
     "com.typesafe.akka"             %% "akka-slf4j"          % akkaV,
     "com.typesafe.akka"             %% "akka-stream"         % akkaV,
 
-    "org.elasticsearch.client"       % "transport"           % "5.3.2"
-      exclude("io.netty", "netty-common"),
-    // elasticsearch 5.3.2 relies on netty 4.1.7.Final, which has a scary but benign warning
-    // that clutters our logs. Use netty 4.1.9.Final instead, and revisit this when
-    // upgrading the ES client. See https://github.com/netty/netty/pull/6308 and elsewhere.
-    "io.netty"                       % "netty-common"        % "4.1.9.Final",
-    // end manual netty imports
+    "org.elasticsearch.client"       % "transport"           % "5.4.3",
 
     "com.google.api-client"          % "google-api-client"   % "1.22.0"
       exclude("com.google.guava", "guava-jdk5"),
@@ -53,6 +47,7 @@ object Dependencies {
     "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",
     "org.everit.json"                % "org.everit.json.schema" % "1.4.1",
     "com.github.pathikrit"          %% "better-files"        % "2.17.1",
+    "org.apache.httpcomponents"      % "httpclient"          % "4.5.3",
 
     "org.specs2"                    %% "specs2-core"         % "3.7"     % "test",
     "org.scalatest"                 %% "scalatest"           % "2.2.6"   % "test",
