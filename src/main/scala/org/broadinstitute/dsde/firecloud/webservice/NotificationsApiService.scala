@@ -13,4 +13,10 @@ trait NotificationsApiService extends HttpService with PerRequestCreator with Fi
     pathPrefix("api") {
       passthroughAllPaths(ApiPrefix, FireCloudConfig.Rawls.notificationsUrl)
     }
+/*
+  val notificationsRoutes2: Route =
+    pathPrefix(separateOnSlashes("api/notifications")) {
+
+    }
+*/
 }
