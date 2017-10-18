@@ -30,8 +30,6 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
     passthrough(Uri(unencodedPath), methods:_*)
 
   def passthrough(uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
-    println(s"uri = $uri")
-    println(s"inMethod = $inMethod")
     generateExternalHttpPerRequestForMethod(requestCompression = true, uri, inMethod)
   } reduce (_ ~ _)
 
