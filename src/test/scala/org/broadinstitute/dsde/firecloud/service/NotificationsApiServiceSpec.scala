@@ -25,7 +25,7 @@ final class NotificationsApiServiceSpec extends FlatSpec with BeforeAndAfterAll 
   private def trace(): Unit = {
     val get = Get(s"/api/notifications/workspace/${MockWorkspaceServer.mockValidWorkspace.namespace}/${MockWorkspaceServer.mockValidWorkspace.name}")
     val getWithHeader = get ~> dummyAuthHeaders
-    val getWithHeaderSealed = getWithHeader ~> sealRoute(notificationsRoutes)
+    val getWithHeaderSealed = getWithHeader ~> sealRoute(notificationsRoutes2)
     val getWithHeaderSealedCheck = getWithHeaderSealed ~>
       check {
         val resp = response
@@ -40,7 +40,7 @@ final class NotificationsApiServiceSpec extends FlatSpec with BeforeAndAfterAll 
   "NotificationsApiService" should "get workspace notifications" in {
     trace()
     Get(s"/api/notifications/workspace/${MockWorkspaceServer.mockValidWorkspace.namespace}/${MockWorkspaceServer.mockValidWorkspace.name}") ~> dummyAuthHeaders ~>
-      sealRoute(notificationsRoutes) ~>
+      sealRoute(notificationsRoutes2) ~>
       check {
         assertResult(StatusCodes.OK, response.entity.asString) {
           status
@@ -50,7 +50,7 @@ final class NotificationsApiServiceSpec extends FlatSpec with BeforeAndAfterAll 
 
   it should "get general notifications" in {
     Get(s"/api/notifications/general") ~> dummyAuthHeaders ~>
-      sealRoute(notificationsRoutes) ~>
+      sealRoute(notificationsRoutes2) ~>
       check {
         assertResult(StatusCodes.OK, response.entity.asString) {
           status

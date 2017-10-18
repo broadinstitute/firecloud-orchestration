@@ -113,7 +113,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         syncRoute ~
         userService.routes ~
         workspaceRoutes ~
-        notificationsRoutes ~
+        notificationsRoutes2 ~
         statusRoutes ~
         ga4ghRoutes ~
         pathPrefix("api") {

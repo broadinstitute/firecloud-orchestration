@@ -30,13 +30,15 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
     passthrough(Uri(unencodedPath), methods:_*)
 
   def passthrough(uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
+    println(s"uri = $uri")
+    println(s"inMethod = $inMethod")
     generateExternalHttpPerRequestForMethod(requestCompression = true, uri, inMethod)
   } reduce (_ ~ _)
 
 
   @deprecated("Makes routing confusing!","2017-08-29")
-  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = true) =
-    pathPrefix( separateOnSlashes(ourEndpointPath) ) {
+  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = true): Route = {
+    pathPrefix(separateOnSlashes(ourEndpointPath) ) {
       extract(_.request.method) { httpMethod =>
         unmatchedPath { remaining =>
           parameterMap { params =>
@@ -44,6 +46,7 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
           }
         }
       }
+    }
   }
 
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
