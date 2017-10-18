@@ -7,25 +7,21 @@ import spray.http.{HttpMethods, Uri}
 import spray.routing._
 
 trait NotificationsApiService extends HttpService with PerRequestCreator with FireCloudDirectives with StandardUserInfoDirectives {
-
-  private final val ApiPrefix = "notifications"
-  private final val ApiPrefix2 = "api/notifications"
+  private final val ApiPrefix = "api/notifications"
   private final val General = "general"
-  private final val RequestCompression = true
+  private final val Workspace = "workspace"
 
-//  val notificationsRoutes: Route =
-//    pathPrefix("api") {
-//      passthroughAllPaths(ApiPrefix, FireCloudConfig.Rawls.notificationsUrl)
-//    }
-
-  final val notificationsRoutes2: Route = {
+  final val notificationsRoutes: Route = {
     get {
-      pathPrefix(separateOnSlashes(ApiPrefix2)) {
+      pathPrefix(separateOnSlashes(ApiPrefix)) {
         unmatchedPath { remaining =>
-          //println(FireCloudConfig.Rawls.notificationsUrl)
           path(General) {
-            val targetPath = FireCloudConfig.Rawls.notificationsUrl + remaining
-            passthrough(RequestCompression, Uri(encodeUri(targetPath)).toString, HttpMethods.GET)
+            val encodedTargetUri = Uri(encodeUri(FireCloudConfig.Rawls.notificationsUrl + remaining))
+            passthrough(encodedTargetUri, HttpMethods.GET)
+          } ~
+          path(Workspace / Segment / Segment) { (_, _) =>
+            val encodedTargetUri = Uri(encodeUri(FireCloudConfig.Rawls.notificationsUrl + remaining))
+            passthrough(encodedTargetUri, HttpMethods.GET)
           }
         }
       }
