@@ -2,20 +2,13 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.webservice.NotificationsApiService
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import spray.http.StatusCodes
-import spray.routing.HttpService
-import spray.testkit.ScalatestRouteTest
+import spray.http.{HttpMethod, StatusCode}
+import spray.http.HttpMethods.GET
+import spray.http.StatusCodes.{MethodNotAllowed, OK}
 
-import scala.concurrent.duration._
-
-final class NotificationsApiServiceSpec extends FlatSpec
-  with BeforeAndAfterAll with HttpService with ScalatestRouteTest
-  with NotificationsApiService with Matchers with FireCloudRequestBuilding {
+final class NotificationsApiServiceSpec extends ServiceSpec with NotificationsApiService {
 
   def actorRefFactory = system
-
-  implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
 
   override def beforeAll(): Unit = {
     MockWorkspaceServer.startWorkspaceServer()
@@ -25,19 +18,29 @@ final class NotificationsApiServiceSpec extends FlatSpec
     MockWorkspaceServer.stopWorkspaceServer()
   }
 
-  "NotificationsApiService" should "get workspace notifications" in {
-    val namespace = MockWorkspaceServer.mockValidWorkspace.namespace
-    val name = MockWorkspaceServer.mockValidWorkspace.name
-    val workspaceNotificationUri = s"/api/notifications/workspace/$namespace/$name"
+  "NotificationsApiService" - {
+    "get workspace notifications" in {
+      val namespace = MockWorkspaceServer.mockValidWorkspace.namespace
+      val name = MockWorkspaceServer.mockValidWorkspace.name
+      val workspaceNotificationUri = s"/api/notifications/workspace/$namespace/$name"
 
-    Get(workspaceNotificationUri) ~> dummyAuthHeaders ~> sealRoute(notificationsRoutes) ~> check {
-      assertResult(StatusCodes.OK, response.entity.asString)(status)
+      doAssert(GET, workspaceNotificationUri, OK)
+    }
+
+    "get general notifications" in {
+      doAssert(GET, "/api/notifications/general", OK)
+    }
+
+    "non-GET methods should be rejected" in {
+      allHttpMethodsExcept(GET) foreach { method =>
+        doAssert(method, "/api/notifications/general", MethodNotAllowed)
+      }
     }
   }
 
-  it should "get general notifications" in {
-    Get(s"/api/notifications/general") ~> dummyAuthHeaders ~> sealRoute(notificationsRoutes) ~> check {
-      assertResult(StatusCodes.OK, response.entity.asString)(status)
+  private def doAssert(method: HttpMethod, uri: String, response: StatusCode): Unit = {
+    new RequestBuilder(method)(uri) ~> dummyAuthHeaders ~> sealRoute(notificationsRoutes) ~> check {
+      status should be(response)
     }
   }
 }
