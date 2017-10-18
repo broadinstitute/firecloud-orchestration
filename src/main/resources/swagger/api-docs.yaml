@@ -3358,6 +3358,131 @@ paths:
         200:
           description: OK
 
+  /ga4gh/v1/tools/{id}:
+    get:
+      summary: List one specific tool, acts as an anchor for self references
+      description: This endpoint returns one specific tool (which has ToolVersions nested inside it)
+      tags:
+        - GA4GH Tool Registry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          description: A unique identifier of the tool, scoped to this registry, for example `123456`
+      responses:
+        '200':
+          description: A tool.
+          schema:
+              $ref: '#/definitions/Tool'
+      security: []
+
+  /ga4gh/v1/tools/{id}/versions:
+    get:
+      summary: List versions of a tool
+      description: Returns all versions of the specified tool
+      tags:
+        - GA4GH Tool Registry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          description: A unique identifier of the tool, scoped to this registry, for example `123456`
+      responses:
+        '200':
+          description: An array of tool versions
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ToolVersion'
+      security: []
+
+  /ga4gh/v1/tools/{id}/versions/{version-id}:
+    get:
+      summary: List one specific tool version, acts as an anchor for self references
+      description: This endpoint returns one specific tool version
+      tags:
+        - GA4GH Tool Registry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          description: A unique identifier of the tool, scoped to this registry, for example `123456`
+        - name: version-id
+          in: path
+          required: true
+          type: string
+          description: An identifier of the tool version, scoped to this registry, for example `v1`
+      responses:
+        '200':
+          description: A tool version.
+          schema:
+              $ref: '#/definitions/ToolVersion'
+      security: []
+
+  /ga4gh/v1/tools:
+    get:
+      summary: List all tools
+      description: >
+        This endpoint returns all tools available or a filtered subset using
+        metadata query parameters.
+      tags:
+        - GA4GH Tool Registry
+      parameters:
+        - name: id
+          type: string
+          in: query
+          description: A unique identifier of the tool, scoped to this registry, for example `123456`
+        - name: registry
+          in: query
+          type: string
+          description: The image registry that contains the image.
+        - name: organization
+          in: query
+          type: string
+          description: The organization in the registry that published the image.
+        - name: name
+          in: query
+          type: string
+          description: The name of the image.
+        - name: toolname
+          in: query
+          type: string
+          description: The name of the tool.
+        - name: description
+          in: query
+          type: string
+          description: The description of the tool.
+        - name: author
+          in: query
+          type: string
+          description: 'The author of the tool (TODO a thought occurs, are we assuming that the author of the CWL and the image are the same?).'
+        - $ref: '#/parameters/offset'
+        - $ref: '#/parameters/limit'
+      responses:
+        '200':
+          description: An array of Tools that match the filter.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Tool'
+          headers:
+            next-page:
+              description: A URL that can be used to reach the next page based on the current offset and page record limit
+              type: string
+            last-page:
+              description: A URL that can be used to reach the last page based on the current page record limit
+              type: string
+            current-offset:
+              description: The current start index of the paging used for this result
+              type: string
+            current-limit:
+              description: The current page record limit used for this result
+              type: integer
+      security: []
+
   /ga4gh/v1/tools/{id}/versions/{version-id}/{type}/descriptor:
     get:
       summary: Get the tool descriptor (CWL/WDL) for the specified tool.
@@ -3408,6 +3533,36 @@ paths:
           schema:
             $ref: '#/definitions/Error'
       security: []
+
+  /ga4gh/v1/metadata:
+    get:
+      summary: Return some metadata that is useful for describing this registry
+      description: Return some metadata that is useful for describing this registry
+      tags:
+        - GA4GH Tool Registry
+      responses:
+        '200':
+          description: A Metadata object describing this service.
+          schema:
+              $ref: '#/definitions/Metadata'
+      security: []
+
+  /ga4gh/v1/tool-classes:
+    get:
+      summary: List all tool types
+      description: >
+        This endpoint returns all tool-classes available
+      tags:
+        - GA4GH Tool Registry
+      responses:
+        '200':
+          description: An array of methods that match the filter.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ToolClass'
+      security: []
+
 
 ##########################################################################################
 ## PARAMETERS
@@ -3498,6 +3653,17 @@ parameters:
     required: true
     type: string
     in: path
+  limit:
+    name: limit
+    in: query
+    description: Amount of records to return in a given page.  By default it is 1000.
+    type: integer
+    format: int32
+  offset:
+    name: offset
+    in: query
+    description: Start index of paging. Pagination results can be based on numbers or other values chosen by the registry implementor (for example, SHA values). If this exceeds the current result set return an empty set.  If not specified in the request this will start at the beginning of the results.
+    type: string
 
 ##########################################################################################
 ## DEFINITIONS
@@ -4978,6 +5144,110 @@ definitions:
         type: string
         description: name of input
 
+  ToolClass:
+    description: Describes a class (type) of tool allowing us to categorize workflows, tools, and maybe even other entities (such as services) separately
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the class
+      name:
+        type: string
+        description: A short friendly name for the class
+      description:
+        type: string
+        description: A longer explanation of what this class is and what it can accomplish
+  Tool:
+    description: A tool (or described tool) describes one pairing of a tool as described in a descriptor file (which potentially describes multiple tools) and a Docker image.
+    required:
+      - url
+      - id
+      - organization
+      - author
+      - meta-version
+      - toolclass
+      - versions
+    properties:
+      url:
+        type: string
+        description: The URL for this tool in this registry, for example `http://agora.broadinstitute.org/tools/123456`
+      id:
+        type: string
+        description: A unique identifier of the tool, scoped to this registry, for example `123456` or `123456_v1`
+      organization:
+        type: string
+        description: The organization that published the image.
+      toolname:
+        type: string
+        description: The name of the tool.
+      toolclass:
+        $ref: '#/definitions/ToolClass'
+      description:
+        type: string
+        description: The description of the tool.
+      author:
+        type: string
+        description: Contact information for the author of this tool entry in the registry. (More complex authorship information is handled by the descriptor)
+      meta-version:
+        type: string
+        description: 'The version of this tool in the registry. Iterates when fields like the description, author, etc. are updated.'
+      contains:
+        description: An array of IDs for the applications that are stored inside this tool (for example `https://bio.tools/tool/mytum.de/SNAP2/1`)
+        type: array
+        items:
+           type: string
+      verified:
+        type: boolean
+        description: Reports whether this tool has been verified by a specific organization or individual
+      verified-source:
+        type: string
+        description: Source of metadata that can support a verified tool, such as an email or URL
+      signed:
+        type: boolean
+        description: Reports whether this tool has been signed.
+      versions:
+        description: A list of versions for this tool
+        type: array
+        items:
+          $ref: '#/definitions/ToolVersion'
+  ToolVersion:
+    description: A tool version describes a particular iteration of a tool as described by a reference to a specific image and dockerfile.
+    required:
+      - url
+      - id
+      - meta-version
+    properties:
+      name:
+        type: string
+        description: The name of the version.
+      url:
+        type: string
+        description: The URL for this tool in this registry, for example `http://agora.broadinstitute.org/tools/123456/1`
+      id:
+        type: string
+        description: An identifier of the version of this tool for this particular tool registry, for example `v1`
+      image:
+        type: string
+        description: The docker path to the image (and version) for this tool. (e.g. quay.io/seqware/seqware_full/1.1)
+      descriptor-type:
+        type: array
+        description: The type (or types) of descriptors available.
+        items:
+          type: string
+          enum:
+            - CWL
+            - WDL
+      dockerfile:
+        type: boolean
+        description: Reports if this tool has a dockerfile available.
+      meta-version:
+        type: string
+        description: 'The version of this tool version in the registry. Iterates when fields like the description, author, etc. are updated.'
+      verified:
+        type: boolean
+        description: Reports whether this tool has been verified by a specific organization or individual
+      verified-source:
+        type: string
+        description: Source of metadata that can support a verified tool, such as an email or URL
   ToolDescriptor:
     description: A tool descriptor is a metadata document that describes one or more tools.
     required:
@@ -4995,7 +5265,24 @@ definitions:
       url:
         type: string
         description: 'Optional url to the tool descriptor used to build this image, should include version information, and can include a git hash (e.g. https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/ea2a5db69bd20a42976838790bc29294df3af02b/delly_docker/Delly.cwl )'
-
+  Metadata:
+    description: Describes this registry to better allow for mirroring and indexing.
+    required:
+      - version
+      - api-version
+    properties:
+      version:
+        type: string
+        description: The version of this registry
+      api-version:
+        type: string
+        description: The version of the GA4GH tool-registry API supported by this registry
+      country:
+        type: string
+        description: A country code for the registry (ISO 3166-1 alpha-3)
+      friendly-name:
+        type: string
+        description: A friendly name that can be used in addition to the hostname to describe a registry
   UserInfo:
     type: object
     properties:
