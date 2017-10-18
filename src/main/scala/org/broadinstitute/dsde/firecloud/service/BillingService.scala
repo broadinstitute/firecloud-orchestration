@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.Actor
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.slf4j.LoggerFactory
 import spray.http.HttpMethods
