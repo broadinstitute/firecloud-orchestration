@@ -27,8 +27,7 @@ class Ga4ghApiServiceSpec extends BaseServiceSpec with Ga4ghApiService with Befo
   val unImplementedPaths = List(
     "/ga4gh/v1/tools/namespace:name/versions/1/dockerfile",
     "/ga4gh/v1/tools/namespace:name/versions/1/WDL/descriptor/1",
-    "/ga4gh/v1/tools/namespace:name/versions/1/WDL/tests"
-  )
+    "/ga4gh/v1/tools/namespace:name/versions/1/WDL/tests")
 
   override def beforeAll(): Unit = {
     toolRegistryServer = startClientAndServer(MockUtils.methodsServerPort)
