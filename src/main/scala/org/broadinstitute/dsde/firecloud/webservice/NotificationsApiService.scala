@@ -10,18 +10,16 @@ trait NotificationsApiService extends HttpService with PerRequestCreator with Fi
   private final val ApiPrefix = "api/notifications"
   private final val General = "general"
   private final val Workspace = "workspace"
+  private final val RawlsNotifications = FireCloudConfig.Rawls.notificationsUrl
 
   final val notificationsRoutes: Route = {
     get {
       pathPrefix(separateOnSlashes(ApiPrefix)) {
-        unmatchedPath { remaining =>
-          val encodedTargetUri = Uri(encodeUri(FireCloudConfig.Rawls.notificationsUrl + remaining))
-          path(General) {
-            passthrough(encodedTargetUri, HttpMethods.GET)
-          } ~
-          path(Workspace / Segment / Segment) { (_, _) =>
-            passthrough(encodedTargetUri, HttpMethods.GET)
-          }
+        path(General) {
+          passthrough(s"$RawlsNotifications/$General", HttpMethods.GET)
+        } ~
+        path(Workspace / Segment / Segment) { (namespace, name) =>
+          passthrough(s"$RawlsNotifications/$Workspace/$namespace/$name", HttpMethods.GET)
         }
       }
     }
