@@ -38,9 +38,9 @@ final class NotificationsApiServiceSpec extends ServiceSpec with NotificationsAp
     }
   }
 
-  private def doAssert(method: HttpMethod, uri: String, response: StatusCode): Unit = {
+  private def doAssert(method: HttpMethod, uri: String, expectedStatus: StatusCode): Unit = {
     new RequestBuilder(method)(uri) ~> dummyAuthHeaders ~> sealRoute(notificationsRoutes) ~> check {
-      status should be(response)
+      status should be(expectedStatus)
     }
   }
 }
