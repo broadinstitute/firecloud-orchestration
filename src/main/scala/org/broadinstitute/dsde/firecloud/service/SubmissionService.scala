@@ -1,8 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.Actor
-import org.slf4j.LoggerFactory
-import spray.http.HttpMethods
+import spray.http.HttpMethods.GET
 import spray.routing.{HttpService, Route}
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
@@ -18,12 +17,11 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
   val routes: Route = {
     path("submissions" / "queueStatus") {
       get {
-        passthrough(FireCloudConfig.Rawls.submissionQueueStatusUrl, HttpMethods.GET)
+        passthrough(requestCompression = true, FireCloudConfig.Rawls.submissionQueueStatusUrl, GET)
       }
     } ~
     pathPrefix("workspaces" / Segment / Segment) { (namespace, name) =>
       pathPrefixTest("submissions") {
-        println(s"submissionUrl = ${FireCloudConfig.Rawls.submissionsUrl}")
         val path = urlFormattedWith(namespace, name)
         passthroughAllPaths("submissions", path)
       }

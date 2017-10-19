@@ -57,7 +57,7 @@ final class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
     non-passthrough routes for different http verbs. As of this writing, each path is either all passthrough
     or all non-passthrough.
    */
-  val negativeCases: Map[String,Seq[HttpMethod]] = testCases
+  val negativeCases: Map[String, Seq[HttpMethod]] = testCases
     .groupBy(_.localPath)
     .map(api => api._1 -> api._2.map(_.verb))
     .map(neg => neg._1 -> allHttpMethodsExcept(neg._2))
@@ -119,12 +119,9 @@ final class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
       }
     }
   }
-
 }
 
-class MethodsApiServiceSpecCallback extends ExpectationCallback with Matchers with LazyLogging {
-
-
+final class MethodsApiServiceSpecCallback extends ExpectationCallback {
   override def handle(httpRequest: HttpRequest): HttpResponse = {
     val method:String = httpRequest.getMethod.getValue
     val path:String = httpRequest.getPath.getValue

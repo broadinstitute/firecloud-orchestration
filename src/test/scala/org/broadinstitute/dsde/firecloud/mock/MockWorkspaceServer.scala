@@ -11,7 +11,6 @@ import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
-import org.mockserver.model.Parameter._
 import spray.http.StatusCodes._
 import spray.json._
 
@@ -71,6 +70,18 @@ object MockWorkspaceServer {
     workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
 
     // Submissions responses
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath("/api/submissions/queueStatus")
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+      )
 
     MockWorkspaceServer.workspaceServer
       .when(

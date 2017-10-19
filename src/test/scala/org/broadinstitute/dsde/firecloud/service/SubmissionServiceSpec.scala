@@ -1,12 +1,12 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
+import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
 import spray.http.StatusCodes._
-
 import spray.httpx.SprayJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import spray.http.HttpMethods.GET
 
 final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
@@ -35,6 +35,26 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     MockWorkspaceServer.mockInvalidId)
 
   "SubmissionService" - {
+
+    "when hitting the /submissions/queueStatus path" - {
+      "with GET" - {
+        "OK status is returned" in {
+          Get("/submissions/queueStatus") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+            status should equal(OK)
+          }
+        }
+      }
+
+//      "without GET" - {
+//        " status is returned" in {
+//          allHttpMethodsExcept(GET) foreach { method =>
+//            new RequestBuilder(GET)("/submissions/queueStatus") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+//              status should equal(OK)
+//            }
+//          }
+//        }
+//      }
+    }
 
     "when calling GET on the /workspaces/*/*/submissions path" - {
       "a list of submissions is returned" in {
@@ -93,7 +113,6 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
     "when calling DELETE on the /workspaces/*/*/submissions/* with a valid id" - {
       "OK response is returned" in {
-        println(s"localSubmissionIdPath = $localSubmissionIdPath")
         Delete(localSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NoContent)
         }
