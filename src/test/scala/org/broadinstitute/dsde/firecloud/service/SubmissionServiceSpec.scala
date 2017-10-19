@@ -8,7 +8,7 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 
-class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
+final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
   def actorRefFactory = system
 
@@ -93,6 +93,7 @@ class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
     "when calling DELETE on the /workspaces/*/*/submissions/* with a valid id" - {
       "OK response is returned" in {
+        println(s"localSubmissionIdPath = $localSubmissionIdPath")
         Delete(localSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NoContent)
         }
