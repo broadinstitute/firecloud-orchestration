@@ -38,7 +38,8 @@ trait Ga4ghApiService extends HttpService with FireCloudDirectives {
             passthrough(targetUri, HttpMethods.GET)
           } ~
           path("tools" / Segment / "versions" / Segment / "dockerfile") { (id, versionId) =>
-            complete(spray.http.StatusCodes.NotImplemented)
+            val targetUri = Uri(s"$agoraGA4GH/tools/$id/versions/$versionId/dockerfile")
+            passthrough(targetUri, HttpMethods.GET)
           } ~
           path("tools" / Segment / "versions" / Segment) { (id, versionId) =>
             val targetUri = Uri(s"$agoraGA4GH/tools/$id/versions/$versionId")
@@ -49,10 +50,12 @@ trait Ga4ghApiService extends HttpService with FireCloudDirectives {
             passthrough(targetUri, HttpMethods.GET)
           } ~
           path("tools" / Segment / "versions" / Segment / Segment / "descriptor" / Segment) { (id, versionId, descriptorType, relativePath) =>
-            complete(spray.http.StatusCodes.NotImplemented)
+            val targetUri = Uri(s"$agoraGA4GH/tools/$id/versions/$versionId/$descriptorType/descriptor/$relativePath")
+            passthrough(targetUri, HttpMethods.GET)
           } ~
           path("tools" / Segment / "versions" / Segment / Segment / "tests") { (id, versionId, descriptorType) =>
-            complete(spray.http.StatusCodes.NotImplemented)
+            val targetUri = Uri(s"$agoraGA4GH/tools/$id/versions/$versionId/$descriptorType/tests")
+            passthrough(targetUri, HttpMethods.GET)
           }
         }
       }

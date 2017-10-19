@@ -38,6 +38,14 @@ class Ga4ghApiServiceSpec extends BaseServiceSpec with Ga4ghApiService with Befo
             .withStatusCode(OK.intValue)
         )
     }
+    // Currently, Agora returns NotImplemented for these paths.
+    unImplementedPaths.map { path =>
+      toolRegistryServer.when(request().withMethod(HttpMethods.GET.name).withPath(path))
+        .respond(
+          org.mockserver.model.HttpResponse.response()
+            .withStatusCode(NotImplemented.intValue)
+        )
+    }
   }
 
   override def afterAll(): Unit = {
