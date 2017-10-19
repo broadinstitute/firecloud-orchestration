@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.webservice.NotificationsApiService
 import spray.http.{HttpMethod, StatusCode}
 import spray.http.HttpMethods.GET
-import spray.http.StatusCodes.{MethodNotAllowed, OK}
+import spray.http.StatusCodes.{MethodNotAllowed, NotFound, OK}
 
 final class NotificationsApiServiceSpec extends ServiceSpec with NotificationsApiService {
 
@@ -34,6 +34,19 @@ final class NotificationsApiServiceSpec extends ServiceSpec with NotificationsAp
     "non-GET methods should be rejected" in {
       allHttpMethodsExcept(GET) foreach { method =>
         doAssert(method, "/api/notifications/general", MethodNotAllowed)
+      }
+    }
+
+    "edge-case URIs should be rejected" in {
+      val edgeCaseURIs = Seq(
+        "/api/notifications",
+        "/api/notifications/somethingNotValid",
+        "/api/notifications/workspace/workspaceNamespace",
+        "/api/notifications/workspace/workspaceNamespace/workspaceName/something"
+      )
+
+      edgeCaseURIs foreach { uri =>
+        doAssert(GET, uri, NotFound)
       }
     }
   }
