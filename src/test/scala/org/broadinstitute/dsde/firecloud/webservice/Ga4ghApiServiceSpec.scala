@@ -22,9 +22,8 @@ class Ga4ghApiServiceSpec extends BaseServiceSpec with Ga4ghApiService with Befo
     "/ga4gh/v1/tools/namespace:name",
     "/ga4gh/v1/tools/namespace:name/versions",
     "/ga4gh/v1/tools/namespace:name/versions/1",
-    "/ga4gh/v1/tools/namespace:name/versions/1/WDL/descriptor")
-
-  val unImplementedPaths = List(
+    "/ga4gh/v1/tools/namespace:name/versions/1/WDL/descriptor",
+    // The following paths are currently unimplemented in Agora, but handled.
     "/ga4gh/v1/tools/namespace:name/versions/1/dockerfile",
     "/ga4gh/v1/tools/namespace:name/versions/1/WDL/descriptor/1",
     "/ga4gh/v1/tools/namespace:name/versions/1/WDL/tests")
@@ -38,14 +37,6 @@ class Ga4ghApiServiceSpec extends BaseServiceSpec with Ga4ghApiService with Befo
             .withStatusCode(OK.intValue)
         )
     }
-    // Currently, Agora returns NotImplemented for these paths.
-    unImplementedPaths.map { path =>
-      toolRegistryServer.when(request().withMethod(HttpMethods.GET.name).withPath(path))
-        .respond(
-          org.mockserver.model.HttpResponse.response()
-            .withStatusCode(NotImplemented.intValue)
-        )
-    }
   }
 
   override def afterAll(): Unit = {
@@ -55,17 +46,10 @@ class Ga4ghApiServiceSpec extends BaseServiceSpec with Ga4ghApiService with Befo
   "GA4GH API service" - {
     "Tool Registry" - {
       "passthrough APIs" - {
-        "should handle un-implemented paths" in {
-          unImplementedPaths.map { path =>
-            Get(path) ~> ga4ghRoutes ~> check {
-              status should equal(NotImplemented)
-            }
-          }
-        }
         "should reject all but GET" in {
           List(HttpMethods.POST, HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE, HttpMethods.HEAD) foreach {
             method =>
-              (toolPaths ++ unImplementedPaths).map { path =>
+              toolPaths.map { path =>
                 new RequestBuilder(method)(path) ~> ga4ghRoutes ~> check {
                   assert(!handled)
                 }
