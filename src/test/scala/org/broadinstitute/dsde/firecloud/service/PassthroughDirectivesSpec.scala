@@ -12,14 +12,12 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.routing.HttpServiceBase
 
-
-
 object PassthroughDirectivesSpec {
   val echoPort = 9123
   val echoUrl = s"http://localhost:$echoPort"
 }
 
-class PassthroughDirectivesSpec extends BaseServiceSpec with HttpServiceBase
+final class PassthroughDirectivesSpec extends BaseServiceSpec with HttpServiceBase
   with FireCloudDirectives with SprayJsonSupport {
 
   def actorRefFactory = system
@@ -37,7 +35,6 @@ class PassthroughDirectivesSpec extends BaseServiceSpec with HttpServiceBase
   override def afterAll = {
     echoServer.stop
   }
-
 
   "Passthrough Directives" - {
     "passthrough() directive" - {
@@ -79,7 +76,7 @@ class PassthroughDirectivesSpec extends BaseServiceSpec with HttpServiceBase
         }
       }
       "all http methods" - {
-        Seq(CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE) foreach { meth =>
+        allHttpMethods foreach { meth =>
           s"$meth should pass through correctly" in {
             val specRoute = passthrough(echoUrl + "/", meth)
             val reqMethod = new RequestBuilder(meth)

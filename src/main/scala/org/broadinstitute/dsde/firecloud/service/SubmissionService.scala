@@ -4,7 +4,7 @@ import akka.actor.Actor
 import spray.http.HttpMethods.GET
 import spray.routing.{HttpService, Route}
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls._
 
 
 abstract class SubmissionServiceActor extends Actor with SubmissionService {
@@ -13,22 +13,52 @@ abstract class SubmissionServiceActor extends Actor with SubmissionService {
 }
 
 trait SubmissionService extends HttpService with PerRequestCreator with FireCloudDirectives {
-
   val routes: Route = {
     path("submissions" / "queueStatus") {
       get {
-        passthrough(requestCompression = true, FireCloudConfig.Rawls.submissionQueueStatusUrl, GET)
+        passthrough(submissionQueueStatusUrl, GET)
       }
     } ~
-    pathPrefix("workspaces" / Segment / Segment) { (namespace, name) =>
-      pathPrefixTest("submissions") {
-        val path = urlFormattedWith(namespace, name)
-        passthroughAllPaths("submissions", path)
+    pathPrefix("workspaces" / Segment / Segment / "submissions") { (namespace, name) =>
+      pathEnd {
+        (get | post) {
+          extract(_.request.method) { method =>
+            passthrough(s"$workspacesUrl/$namespace/$name/submissions", method)
+          }
+        }
+      } ~
+      path("validate") {
+        post {
+          extract(_.request.method) { method =>
+            passthrough(s"$workspacesUrl/$namespace/$name/submissions/validate", method)
+          }
+        }
+      } ~
+      pathPrefix(Segment) { submissionId =>
+        pathEnd {
+          (delete | get) {
+            extract(_.request.method) { method =>
+              passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId", method)
+            }
+          }
+        } ~
+        pathPrefix("workflows" / Segment) { workflowId =>
+          pathEnd {
+            get {
+              extract(_.request.method) { method =>
+                passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId", method)
+              }
+            }
+          } ~
+          pathPrefix("outputs") {
+            get {
+              extract(_.request.method) { method =>
+                passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId/outputs", method)
+              }
+            }
+          }
+        }
       }
     }
-  }
-
-  private def urlFormattedWith(workspaceNamespace: String, workspaceName: String) = {
-    FireCloudConfig.Rawls.submissionsUrl.format(workspaceNamespace, workspaceName)
   }
 }
