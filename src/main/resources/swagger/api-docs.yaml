@@ -5130,13 +5130,27 @@ definitions:
       meta-version:
         type: string
         description: 'The version of this tool in the registry. Iterates when fields like the description, author, etc. are updated.'
+      contains:
+        description: An array of IDs for the applications that are stored inside this tool (for example `https://bio.tools/tool/mytum.de/SNAP2/1`). This always returns an empty array.
+        type: array
+        items:
+           type: string
+      verified:
+        type: boolean
+        description: Reports whether this tool has been verified by a specific organization or individual.  This always returns false.
+      verified-source:
+        type: string
+        description: Source of metadata that can support a verified tool, such as an email or URL
+      signed:
+        type: boolean
+        description: Reports whether this tool has been signed.  This always returns false.
       versions:
         description: A list of versions for this tool
         type: array
         items:
           $ref: '#/definitions/ToolVersion'
   ToolVersion:
-    description: A tool version describes a particular iteration of a tool.
+    description: A tool version describes a particular iteration of a tool as described by a reference to a specific image and dockerfile.
     required:
       - url
       - id
@@ -5151,6 +5165,9 @@ definitions:
       id:
         type: string
         description: An identifier of the version of this tool for this particular tool registry, for example `v1`
+      image:
+        type: string
+        description: The docker path to the image (and version) for this tool. (e.g. quay.io/seqware/seqware_full/1.1). This always returns an empty string.
       descriptor-type:
         type: array
         description: The type (or types) of descriptors available.
@@ -5158,6 +5175,9 @@ definitions:
           type: string
           enum:
             - WDL
+      dockerfile:
+        type: boolean
+        description: Reports if this tool has a dockerfile available. This always returns false.
       meta-version:
         type: string
         description: 'The version of this tool version in the registry. Iterates when fields like the description, author, etc. are updated.'
