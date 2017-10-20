@@ -3430,37 +3430,6 @@ paths:
         metadata query parameters.
       tags:
         - GA4GH Tool Registry
-      parameters:
-        - name: id
-          type: string
-          in: query
-          description: A unique identifier of the tool, scoped to this registry, for example `123456`
-        - name: registry
-          in: query
-          type: string
-          description: The image registry that contains the image.
-        - name: organization
-          in: query
-          type: string
-          description: The organization in the registry that published the image.
-        - name: name
-          in: query
-          type: string
-          description: The name of the image.
-        - name: toolname
-          in: query
-          type: string
-          description: The name of the tool.
-        - name: description
-          in: query
-          type: string
-          description: The description of the tool.
-        - name: author
-          in: query
-          type: string
-          description: 'The author of the tool (TODO a thought occurs, are we assuming that the author of the CWL and the image are the same?).'
-        - $ref: '#/parameters/offset'
-        - $ref: '#/parameters/limit'
       responses:
         '200':
           description: An array of Tools that match the filter.
@@ -3468,25 +3437,12 @@ paths:
             type: array
             items:
               $ref: '#/definitions/Tool'
-          headers:
-            next-page:
-              description: A URL that can be used to reach the next page based on the current offset and page record limit
-              type: string
-            last-page:
-              description: A URL that can be used to reach the last page based on the current page record limit
-              type: string
-            current-offset:
-              description: The current start index of the paging used for this result
-              type: string
-            current-limit:
-              description: The current page record limit used for this result
-              type: integer
       security: []
 
   /ga4gh/v1/tools/{id}/versions/{version-id}/{type}/descriptor:
     get:
-      summary: Get the tool descriptor (CWL/WDL) for the specified tool.
-      description: Returns the CWL or WDL descriptor for the specified tool.
+      summary: Get the tool descriptor (WDL) for the specified tool.
+      description: Returns the WDL descriptor for the specified tool.
       tags:
         - GA4GH Tool Registry
       parameters:
@@ -3498,13 +3454,9 @@ paths:
             implementation to determine which output type to return. Plain types return the
             bare descriptor while the "non-plain" types return a descriptor wrapped
             with metadata.
-
-              *In FireCloud, only WDL and plain-WDL are supported.*
           type: string
           enum:
-            - CWL
             - WDL
-            - plain-CWL
             - plain-WDL
         - name: id
           in: path
@@ -3653,17 +3605,6 @@ parameters:
     required: true
     type: string
     in: path
-  limit:
-    name: limit
-    in: query
-    description: Amount of records to return in a given page.  By default it is 1000.
-    type: integer
-    format: int32
-  offset:
-    name: offset
-    in: query
-    description: Start index of paging. Pagination results can be based on numbers or other values chosen by the registry implementor (for example, SHA values). If this exceeds the current result set return an empty set.  If not specified in the request this will start at the beginning of the results.
-    type: string
 
 ##########################################################################################
 ## DEFINITIONS
@@ -5190,35 +5131,13 @@ definitions:
       meta-version:
         type: string
         description: 'The version of this tool in the registry. Iterates when fields like the description, author, etc. are updated.'
-      contains:
-        description: >
-          An array of IDs for the applications that are stored inside this tool (for example `https://bio.tools/tool/mytum.de/SNAP2/1`).
-          The Broad Institute does not support this feature and returns an empty array.
-        type: array
-        items:
-           type: string
-      verified:
-        type: boolean
-        description: >
-          Reports whether this tool has been verified by a specific organization or individual
-          The Broad Institute does not support this feature and returns false.
-      verified-source:
-        type: string
-        description: >
-          Source of metadata that can support a verified tool, such as an email or URL
-          The Broad Institute does not support this feature and returns an empty string.
-      signed:
-        type: boolean
-        description: >
-          Reports whether this tool has been signed.
-          The Broad Institute does not support this feature and returns false.
       versions:
         description: A list of versions for this tool
         type: array
         items:
           $ref: '#/definitions/ToolVersion'
   ToolVersion:
-    description: A tool version describes a particular iteration of a tool as described by a reference to a specific image and dockerfile.
+    description: A tool version describes a particular iteration of a tool.
     required:
       - url
       - id
@@ -5233,33 +5152,16 @@ definitions:
       id:
         type: string
         description: An identifier of the version of this tool for this particular tool registry, for example `v1`
-      image:
-        type: string
-        description: The docker path to the image (and version) for this tool. (e.g. quay.io/seqware/seqware_full/1.1)
       descriptor-type:
         type: array
         description: The type (or types) of descriptors available.
         items:
           type: string
           enum:
-            - CWL
             - WDL
-      dockerfile:
-        type: boolean
-        description: Reports if this tool has a dockerfile available.
       meta-version:
         type: string
         description: 'The version of this tool version in the registry. Iterates when fields like the description, author, etc. are updated.'
-      verified:
-        type: boolean
-        description: >
-          Reports whether this tool has been verified by a specific organization or individual
-          The Broad Institute does not support this feature and returns false.
-      verified-source:
-        type: string
-        description: >
-          Source of metadata that can support a verified tool, such as an email or URL
-          The Broad Institute does not support this feature and returns an empty string.
   ToolDescriptor:
     description: A tool descriptor is a metadata document that describes one or more tools.
     required:
@@ -5269,11 +5171,10 @@ definitions:
       type:
         type: string
         enum:
-          - CWL
           - WDL
       descriptor:
         type: string
-        description: The descriptor that represents this version of the tool. (CWL or WDL)
+        description: The descriptor that represents this version of the tool. (WDL)
       url:
         type: string
         description: 'Optional url to the tool descriptor used to build this image, should include version information, and can include a git hash (e.g. https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/ea2a5db69bd20a42976838790bc29294df3af02b/delly_docker/Delly.cwl )'
