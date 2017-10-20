@@ -26,8 +26,15 @@ trait Ga4ghApiService extends HttpService with FireCloudDirectives {
             passthrough(targetUri, HttpMethods.GET)
           } ~
           path("tools") {
-            val targetUri = Uri(s"$agoraGA4GH/tools")
-            passthrough(targetUri, HttpMethods.GET)
+            parameterSeq { params =>
+              val targetUri = Uri(s"$agoraGA4GH/tools")
+              val uri = if (params.isEmpty) {
+                targetUri
+              } else {
+                targetUri.withQuery(params.toMap)
+              }
+              passthrough(uri, HttpMethods.GET)
+            }
           } ~
           path("tools" / Segment) { (id) =>
             val targetUri = Uri(s"$agoraGA4GH/tools/$id")
