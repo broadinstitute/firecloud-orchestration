@@ -5191,19 +5191,27 @@ definitions:
         type: string
         description: 'The version of this tool in the registry. Iterates when fields like the description, author, etc. are updated.'
       contains:
-        description: An array of IDs for the applications that are stored inside this tool (for example `https://bio.tools/tool/mytum.de/SNAP2/1`)
+        description: >
+          An array of IDs for the applications that are stored inside this tool (for example `https://bio.tools/tool/mytum.de/SNAP2/1`).
+          The Broad Institute does not support this feature and returns an empty array.
         type: array
         items:
            type: string
       verified:
         type: boolean
-        description: Reports whether this tool has been verified by a specific organization or individual
+        description: >
+          Reports whether this tool has been verified by a specific organization or individual
+          The Broad Institute does not support this feature and returns false.
       verified-source:
         type: string
-        description: Source of metadata that can support a verified tool, such as an email or URL
+        description: >
+          Source of metadata that can support a verified tool, such as an email or URL
+          The Broad Institute does not support this feature and returns an empty string.
       signed:
         type: boolean
-        description: Reports whether this tool has been signed.
+        description: >
+          Reports whether this tool has been signed.
+          The Broad Institute does not support this feature and returns false.
       versions:
         description: A list of versions for this tool
         type: array
@@ -5244,10 +5252,14 @@ definitions:
         description: 'The version of this tool version in the registry. Iterates when fields like the description, author, etc. are updated.'
       verified:
         type: boolean
-        description: Reports whether this tool has been verified by a specific organization or individual
+        description: >
+          Reports whether this tool has been verified by a specific organization or individual
+          The Broad Institute does not support this feature and returns false.
       verified-source:
         type: string
-        description: Source of metadata that can support a verified tool, such as an email or URL
+        description: >
+          Source of metadata that can support a verified tool, such as an email or URL
+          The Broad Institute does not support this feature and returns an empty string.
   ToolDescriptor:
     description: A tool descriptor is a metadata document that describes one or more tools.
     required:
