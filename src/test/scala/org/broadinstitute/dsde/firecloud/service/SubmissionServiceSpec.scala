@@ -35,7 +35,6 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     MockWorkspaceServer.mockInvalidId)
 
   "SubmissionService" - {
-
     "when hitting the /submissions/queueStatus path" - {
       "with GET" - {
         "OK status is returned" in {
@@ -127,7 +126,5 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
         }
       }
     }
-
   }
-
 }

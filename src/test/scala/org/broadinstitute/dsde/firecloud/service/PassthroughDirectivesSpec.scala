@@ -37,7 +37,6 @@ final class PassthroughDirectivesSpec extends BaseServiceSpec with HttpServiceBa
   }
 
   "Passthrough Directives" - {
-
     "passthrough() directive" - {
       "root path '/'" - {
         "should hit the root path '/'" in {
