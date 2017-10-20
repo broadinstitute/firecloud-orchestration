@@ -33,20 +33,6 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
     generateExternalHttpPerRequestForMethod(requestCompression = true, uri, inMethod)
   } reduce (_ ~ _)
 
-
-  @deprecated("Makes routing confusing!","2017-08-29")
-  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = true): Route = {
-    pathPrefix(separateOnSlashes(ourEndpointPath) ) {
-      extract(_.request.method) { httpMethod =>
-        unmatchedPath { remaining =>
-          parameterMap { params =>
-            passthrough(requestCompression, Uri(encodeUri(targetEndpointUrl + remaining)).withQuery(params).toString, httpMethod)
-          }
-        }
-      }
-    }
-  }
-
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
 
   private def generateExternalHttpPerRequestForMethod(requestCompression: Boolean, uri: Uri, inMethod: HttpMethod) = {

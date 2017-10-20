@@ -65,7 +65,7 @@ trait MethodsApiService extends HttpService
           }
         } ~
         path( "permissions") {
-          val url = s"$passthroughBase/${urlify(namespace,name)}/$snapshotId/permissions"
+          val url = s"$passthroughBase/${urlify(namespace, name)}/$snapshotId/permissions"
           get { requestContext =>
             // pass to AgoraPermissionHandler
             perRequest(requestContext,
