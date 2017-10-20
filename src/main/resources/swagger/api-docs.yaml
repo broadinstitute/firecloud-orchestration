@@ -3426,8 +3426,7 @@ paths:
     get:
       summary: List all tools
       description: >
-        This endpoint returns all tools available or a filtered subset using
-        metadata query parameters.
+        This endpoint returns all tools available.
       tags:
         - GA4GH Tool Registry
       responses:
