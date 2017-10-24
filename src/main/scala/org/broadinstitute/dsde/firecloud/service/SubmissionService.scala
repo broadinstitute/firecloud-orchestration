@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.Actor
-import spray.http.HttpMethods.GET
+import spray.http.HttpMethods.{GET, POST}
 import spray.routing.{HttpService, Route}
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls._
@@ -13,6 +13,7 @@ abstract class SubmissionServiceActor extends Actor with SubmissionService {
 }
 
 trait SubmissionService extends HttpService with PerRequestCreator with FireCloudDirectives {
+
   val routes: Route = {
     path("submissions" / "queueStatus") {
       get {
@@ -29,9 +30,7 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
       } ~
       path("validate") {
         post {
-          extract(_.request.method) { method =>
-            passthrough(s"$workspacesUrl/$namespace/$name/submissions/validate", method)
-          }
+          passthrough(s"$workspacesUrl/$namespace/$name/submissions/validate", POST)
         }
       } ~
       pathPrefix(Segment) { submissionId =>
@@ -45,20 +44,17 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
         pathPrefix("workflows" / Segment) { workflowId =>
           pathEnd {
             get {
-              extract(_.request.method) { method =>
-                passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId", method)
-              }
+              passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId", GET)
             }
           } ~
           pathPrefix("outputs") {
             get {
-              extract(_.request.method) { method =>
-                passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId/outputs", method)
-              }
+              passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId/outputs", GET)
             }
           }
         }
       }
     }
   }
+
 }

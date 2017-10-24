@@ -23,11 +23,13 @@ object FireCloudDirectiveUtils {
 trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreator with spray.httpx.RequestBuilding {
   def respondWithJSON = respondWithMediaType(`application/json`)
 
-  def passthrough(unencodedPath: String, methods: HttpMethod*): Route =
-    passthrough(Uri(unencodedPath), methods:_*)
+  def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
+    passthrough(Uri(unencodedPath), methods: _*)
+  }
 
-  def passthrough(requestCompression: Boolean, unencodedPath: String, methods: HttpMethod*): Route =
-    passthrough(Uri(unencodedPath), methods:_*)
+  def passthrough(requestCompression: Boolean, unencodedPath: String, methods: HttpMethod*): Route = {
+    passthrough(Uri(unencodedPath), methods: _*)
+  }
 
   def passthrough(uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
     generateExternalHttpPerRequestForMethod(requestCompression = true, uri, inMethod)
