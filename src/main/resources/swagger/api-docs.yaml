@@ -1504,7 +1504,7 @@ paths:
     post:
       tags:
         - Profile
-      operationId: billing
+      operationId: updateBilling
       summary: Update the preferences for the user
       parameters:
         - name: preferences
@@ -1612,13 +1612,7 @@ paths:
         200:
           description: OK
           schema:
-            {
-              "properties": {
-                "cromwell": {
-                  type: "string"
-                }
-              }
-            }
+            $ref: '#/definitions/ExecutionEngineVersion'
       security:
         - googleoauth:
             - openid
@@ -3301,30 +3295,7 @@ paths:
         200:
           description: OK
           schema:
-            {
-              "properties": {
-                "userId": {
-                  type: "string"
-                },
-                "keyValuePairs": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": [ "key", "value" ],
-                    "properties": {
-                      "key": {
-                        "type": "string"
-                      },
-                      "value": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              },
-              "type": "object",
-              "required": [ "userId", "keyValuePairs" ]
-            }
+            $ref: '#/definitions/RegisterProfile'
         500:
           description: Internal server error
     post:
@@ -4241,6 +4212,12 @@ definitions:
         items:
           $ref: '#/definitions/StackTraceElement'
 
+  ExecutionEngineVersion:
+    type: object
+    properties:
+      cromwell:
+        type: string
+
   ExecutionEvent:
     description: ''
     required:
@@ -4286,6 +4263,14 @@ definitions:
       jwt:
         type: string
         description: the encoded/signed JWT
+
+  KeyValuePair:
+    type: object
+    properties:
+      key:
+        type: string
+      value:
+        type: string
 
   LibraryBulkIndexResponse:
     type: object
@@ -4860,6 +4845,17 @@ definitions:
         $ref: '#/definitions/UserInfo'
       enabled:
         $ref: '#/definitions/ExtendedEnabled'
+
+  RegisterProfile:
+    type: object
+    properties:
+      userId:
+        type: string
+        description: The user's subject id
+      keyValuePairs:
+        type: array
+        items:
+          $ref: '#/definitions/KeyValuePair'
 
   SearchTermRef:
     type: object
