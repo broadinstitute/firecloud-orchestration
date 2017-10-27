@@ -3307,11 +3307,11 @@ paths:
       operationId: setProfile
       summary: Sets a profile object in the user profile service for the currently logged-in user.
       parameters:
-      - name: profile
-        description: A complete profile
-        in: body
-        schema:
-          $ref: '#/definitions/Profile'
+        - name: profile
+          description: A complete profile
+          in: body
+          schema:
+            $ref: '#/definitions/Profile'
       responses:
         200:
           description: OK
@@ -3326,7 +3326,8 @@ paths:
         - Profile
       operationId: userInfo
       summary: Passes through to Google's userinfo API and returns its response
-      description: See https://developers.google.com/+/web/api/rest/openidconnect/getOpenIdConnect for response info.
+      description: >
+        See https://developers.google.com/+/web/api/rest/openidconnect/getOpenIdConnect for response info.
         Userinfo endpoint lives at https://www.googleapis.com/oauth2/v3/userinfo.
       responses:
         200:
