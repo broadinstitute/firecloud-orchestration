@@ -23,7 +23,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.matching.Regex
 
 
-trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
+trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport with ElasticSearchDAOResearchPurposeSupport {
 
   final val HL_START = "<strong class='es-highlight'>"
   final val HL_END = "</strong>"
@@ -94,6 +94,10 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       values foreach { value:String => fieldQuery.should(termQuery(field+".keyword", value))}
       query.must(fieldQuery)
     }
+    criteria.researchPurpose map { rp =>
+      query.must(researchPurposeFilters(rp))
+    }
+
     query
   }
 
