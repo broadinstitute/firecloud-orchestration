@@ -34,11 +34,13 @@ final class SubmissionServiceNegativeSpec extends ServiceSpec with SubmissionSer
       }
     }
 
-//    "non-POST requests hitting the /workspaces/*/*/submissions/validate path are not passed through path are not passed through" in {
-//      allHttpMethodsExcept(POST) foreach { method =>
-//        checkIfPassedThrough(routes, method, s"$localSubmissionsPath/validate", toBeHandled = false)
-//      }
-//    }
+    "non-POST requests hitting the /workspaces/*/*/submissions/validate path are not passed through" in {
+      // Also excluding DELETE and GET since the path matches
+      // /workspaces/*/*/submissions/{submissionId} APIs as well
+      allHttpMethodsExcept(DELETE, GET, POST) foreach { method =>
+        checkIfPassedThrough(routes, method, s"$localSubmissionsPath/validate", toBeHandled = false)
+      }
+    }
 
     "non-DELETE/GET requests hitting the /workspaces/*/*/submissions/* path are not passed through" in {
       allHttpMethodsExcept(DELETE, GET) foreach { method =>
