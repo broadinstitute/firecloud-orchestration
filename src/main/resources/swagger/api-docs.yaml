@@ -1511,7 +1511,8 @@ paths:
           in: body
           description: The preferences to set as a Map[String, String]
           required: true
-          type: Map[String, String]
+          schema:
+            type: object
       responses:
         204:
           description: Success (No Content)
@@ -2104,7 +2105,8 @@ paths:
             description: Expression
             name: expression
             required: true
-            type: string
+            schema:
+              type: string
         responses:
           200:
             description: Success
@@ -3104,6 +3106,8 @@ paths:
       description: |
         swagger-ui seems to not handle file downloads, so this endpoint won't function through the ui.
         It is here for documentation purposes only.
+      consumes:
+        - multipart/form-data
       produces:
         - text/plain
         - application/octet-stream
@@ -4722,7 +4726,7 @@ definitions:
     description: ACLs for users of a workspace and methods referenced by that workspace
     required:
       - workspaceACL
-      - methods
+      - referencedMethods
     properties:
       workspaceACL:
         description: a map of (user email -> WorkspaceAccessEntry). `exampleEmail` is an example key.
