@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
+import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
@@ -50,9 +51,21 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
     }
   }
 
+
+  implicit object impDiseaseOntologyNodeId extends RootJsonFormat[DiseaseOntologyNodeId]  {
+    override def write(obj: DiseaseOntologyNodeId): JsValue = JsString(obj.uri.toString)
+
+    override def read(json: JsValue): DiseaseOntologyNodeId = json match {
+      case JsString(uristring) => DiseaseOntologyNodeId(uristring)
+      case _ => throw DeserializationException(s"cannot deserialize DiseaseOntologyNodeId from [$json]")
+    }
+  }
+  implicit val impResearchPurpose = jsonFormat6(ResearchPurpose.apply)
+
   implicit object impLibrarySearchParams extends RootJsonFormat[LibrarySearchParams] {
     val SEARCH_STRING = "searchString"
     val FILTERS = "filters"
+    val RESEARCH_PURPOSE = "researchPurpose"
     val FIELD_AGGREGATIONS = "fieldAggregations"
     val MAX_AGGREGATIONS = "maxAggregations"
     val FROM = "from"
@@ -63,6 +76,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
     override def write(params: LibrarySearchParams): JsValue = {
       val fields:Seq[Option[(String, JsValue)]] = Seq(
         Some(FILTERS -> params.filters.toJson),
+        params.researchPurpose map {RESEARCH_PURPOSE -> _.toJson},
         Some(FIELD_AGGREGATIONS -> params.fieldAggregations.toJson),
         Some(FROM -> params.from.toJson),
         Some(SIZE -> params.size.toJson),
@@ -88,6 +102,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
       val from = optionalEntryIntReader(FROM, data)
       val size = optionalEntryIntReader(SIZE, data)
 
+      val researchPurposeOption = data.get(RESEARCH_PURPOSE) map (_.convertTo[ResearchPurpose])
+
       val sortField = data.get(SORT_FIELD) match {
         case Some(x:JsString) => Some(x.value)
         case _ => None
@@ -98,7 +114,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
         case _ => None
       }
 
-      LibrarySearchParams(term, filters, aggs, from, size, sortField, sortDirection)
+      LibrarySearchParams(term, filters, researchPurposeOption, aggs, from, size, sortField, sortDirection)
     }
   }
 

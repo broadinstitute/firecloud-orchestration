@@ -18,6 +18,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
 
   val criteria = LibrarySearchParams(Some("searchString"),
     Map.empty[String, Seq[String]],
+    None,
     Map.empty[String, Int],
     from = 0, size=10)
 

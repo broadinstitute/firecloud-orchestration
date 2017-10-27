@@ -6,6 +6,7 @@ import java.util.Calendar
 import com.typesafe.config.ConfigFactory
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurpose
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchParams
 
 import scala.util.{Failure, Success, Try}
@@ -37,6 +38,6 @@ object ESIntegrationSupport extends IntegrationTestConfig {
     new ElasticSearchDAO(ITElasticSearch.servers, ITElasticSearch.clusterName, itTestIndexName)
   }
 
-  lazy val emptyCriteria = LibrarySearchParams(None,Map.empty[String,Seq[String]],Map.empty[String,Int],None,None,None,None)
+  lazy val emptyCriteria = LibrarySearchParams(None,Map.empty[String,Seq[String]],None,Map.empty[String,Int],None,None,None,None)
 
 }
