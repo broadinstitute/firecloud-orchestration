@@ -1504,7 +1504,7 @@ paths:
     post:
       tags:
         - Profile
-      operationId: updateBilling
+      operationId: updateProfile
       summary: Update the preferences for the user
       parameters:
         - name: preferences
