@@ -82,17 +82,24 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
       }
     }
 
-//    "when calling POST on the /workspaces/*/*/submissions/validate path with a valid submission" - {
-//      "OK response is returned" in {
-//        println(s"$localSubmissionsPath/validate")
-//        (Post(s"$localSubmissionsPath/validate", MockWorkspaceServer.mockValidSubmission)
-//          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
-//            status should equal(OK)
-//            val submission = responseAs[SubmissionRequest]
-//            submission shouldNot be (None)
-//        }
-//      }
-//    }
+    "when calling POST on the /workspaces/*/*/submissions/validate path" - {
+      "with a valid submission, OK response is returned" in {
+        (Post(s"$localSubmissionsPath/validate", MockWorkspaceServer.mockValidSubmission)
+          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
+            status should equal(OK)
+            val submission = responseAs[SubmissionRequest]
+            submission shouldNot be (None)
+        }
+      }
+
+      "with an invalid submission, BadRequest response is returned" in {
+        (Post(s"$localSubmissionsPath/validate", MockWorkspaceServer.mockInvalidSubmission)
+          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
+            status should equal(BadRequest)
+            errorReportCheck("Rawls", BadRequest)
+        }
+      }
+    }
 
     "when calling GET on the /workspaces/*/*/submissions/* path with a valid id" - {
       "OK response is returned" in {

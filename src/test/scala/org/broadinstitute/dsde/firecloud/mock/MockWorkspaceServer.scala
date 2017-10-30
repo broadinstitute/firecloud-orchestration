@@ -99,6 +99,18 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/validate"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name))
+          .withHeader(authHeader))
+      .callback(
+        callback().
+          withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidSubmissionCallback")
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions"
           .format(mockValidWorkspace.namespace, mockValidWorkspace.name)))
       .respond(
