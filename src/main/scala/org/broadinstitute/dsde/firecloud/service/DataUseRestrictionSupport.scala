@@ -1,8 +1,9 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
 import org.broadinstitute.dsde.rawls.model._
-import spray.json._
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 trait DataUseRestrictionSupport {
 
@@ -12,7 +13,7 @@ trait DataUseRestrictionSupport {
 
   /**
     * This method looks at all of the library attributes that are associated to Consent Codes and
-    * builds a Data Use Restriction object from the values. Most are boolean values, some are lists
+    * builds a set of Data Use Restriction attributes from the values. Most are boolean values, some are lists
     * of strings, and in the case of gender, we need to transform a string value to a trio of booleans.
     *
     * @param workspace The Workspace
@@ -20,12 +21,16 @@ trait DataUseRestrictionSupport {
     */
   def generateDataUseRestriction(workspace: Workspace): Map[AttributeName, Attribute] = {
 
-    val libraryAttrs = workspace.attributes.filter{case (attr, value) => durNames.contains(attr.name)}
+    implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer =
+      new AttributeFormat with PlainArrayAttributeListSerializer
+
+    val libraryAttrs = workspace.attributes.filter { case (attr, value) => durNames.contains(attr.name) }
 
     if (libraryAttrs.isEmpty) {
       Map(AttributeName.withLibraryNS("dataUseRestriction") -> AttributeNull)
     } else {
       val existingAttrs: Map[AttributeName, AttributeValue] = libraryAttrs.flatMap {
+        // Handle the String->Boolean case first
         case (attr: AttributeName, value: AttributeString) if attr.name.equals("RS-G") =>
           value.value match {
             case x if x.equalsIgnoreCase("female") =>
@@ -41,24 +46,25 @@ trait DataUseRestrictionSupport {
                 AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(false),
                 AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(false))
           }
+        // Everything else can be added as is.
         case (attr: AttributeName, value: AttributeValue) => Map(AttributeName.withDefaultNS(attr.name) -> value)
       }
 
+      val existingKeyNames = existingAttrs.keys.map(_.name).toSeq
+
       // Missing boolean codes with default false
-      val booleanAttrs: Map[AttributeName, AttributeBoolean] = (booleanCodes ++ List("RS-G", "RS-FM", "RS-M")).flatMap { code =>
-        val attr = AttributeName.withDefaultNS(code)
-        code match {
-          case x if !existingAttrs.isDefinedAt(attr) => Map(attr -> AttributeBoolean(false))
-        }
-      }.toMap
+      val booleanAttrs: Map[AttributeName, AttributeBoolean] = (booleanCodes ++ List("RS-G", "RS-FM", "RS-M")).
+        filter(!existingKeyNames.contains(_)).
+        flatMap { code =>
+          Map(AttributeName.withDefaultNS(code) -> AttributeBoolean(false))
+        }.toMap
 
       // Missing list codes with default empty lists
-      val listAttrs: Map[AttributeName, AttributeValueList] = listCodes.flatMap { code =>
-        val attr = AttributeName.withDefaultNS(code)
-        code match {
-          case x if !existingAttrs.isDefinedAt(attr) => Map(attr -> AttributeValueList(Seq.empty))
-        }
-      }.toMap
+      val listAttrs = listCodes.
+        filter(!existingKeyNames.contains(_)).
+        flatMap { code =>
+          Map(AttributeName.withDefaultNS(code) -> AttributeValueList(Seq.empty))
+        }.toMap
 
       val allAttrs = existingAttrs ++ booleanAttrs ++ listAttrs
 
