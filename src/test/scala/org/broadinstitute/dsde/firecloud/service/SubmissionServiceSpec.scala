@@ -48,7 +48,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
       "a list of submissions is returned" in {
         (Get(localSubmissionsPath)
           ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
-          status should equal(OK)
+            status should equal(OK)
         }
       }
     }
@@ -57,9 +57,9 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
       "OK response is returned" in {
         (Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission)
           ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
-          status should equal(OK)
-          val submission = responseAs[SubmissionRequest]
-          submission shouldNot be (None)
+            status should equal(OK)
+            val submission = responseAs[SubmissionRequest]
+            submission shouldNot be (None)
         }
       }
     }
@@ -68,8 +68,8 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
       "BadRequest response is returned" in {
         (Post(localSubmissionsPath, MockWorkspaceServer.mockInvalidSubmission)
           ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
-          status should equal(BadRequest)
-          errorReportCheck("Rawls", BadRequest)
+            status should equal(BadRequest)
+            errorReportCheck("Rawls", BadRequest)
         }
       }
     }
@@ -81,6 +81,18 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
         }
       }
     }
+
+//    "when calling POST on the /workspaces/*/*/submissions/validate path with a valid submission" - {
+//      "OK response is returned" in {
+//        println(s"$localSubmissionsPath/validate")
+//        (Post(s"$localSubmissionsPath/validate", MockWorkspaceServer.mockValidSubmission)
+//          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
+//            status should equal(OK)
+//            val submission = responseAs[SubmissionRequest]
+//            submission shouldNot be (None)
+//        }
+//      }
+//    }
 
     "when calling GET on the /workspaces/*/*/submissions/* path with a valid id" - {
       "OK response is returned" in {

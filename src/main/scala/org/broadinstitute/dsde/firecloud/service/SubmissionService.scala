@@ -3,8 +3,8 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.Actor
 import spray.http.HttpMethods.{GET, POST}
 import spray.routing.{HttpService, Route}
-
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls._
+import spray.http.Uri
 
 
 abstract class SubmissionServiceActor extends Actor with SubmissionService {
@@ -30,7 +30,9 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
       } ~
       path("validate") {
         post {
-          passthrough(s"$workspacesUrl/$namespace/$name/submissions/validate", POST)
+          extract(_.request.uri.query) { query =>
+            passthrough(Uri(s"$workspacesUrl/$namespace/$name/submissions/validate").withQuery(query), POST)
+          }
         }
       } ~
       pathPrefix(Segment) { submissionId =>
