@@ -47,6 +47,18 @@ final class SubmissionServiceNegativeSpec extends ServiceSpec with SubmissionSer
         checkIfPassedThrough(routes, method, localSubmissionIdPath, toBeHandled = false)
       }
     }
+
+    "non-GET requests hitting the /workspaces/*/*/submissions/*/workflows/workflowId path are not passed through" in {
+      allHttpMethodsExcept(GET) foreach { method =>
+        checkIfPassedThrough(routes, method, s"$localSubmissionIdPath/workflows/workflowId", toBeHandled = false)
+      }
+    }
+
+    "non-GET requests hitting the /workspaces/*/*/submissions/*/workflows/workflowId/outputs path are not passed through" in {
+      allHttpMethodsExcept(GET) foreach { method =>
+        checkIfPassedThrough(routes, method, s"$localSubmissionIdPath/workflows/workflowId/outputs", toBeHandled = false)
+      }
+    }
   }
 
 }
