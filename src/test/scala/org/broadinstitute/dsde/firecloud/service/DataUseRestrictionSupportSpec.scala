@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.util.UUID
 
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
 import org.broadinstitute.dsde.firecloud.integrationtest.SearchResultValidation
 import org.broadinstitute.dsde.rawls.model.{ManagedGroupRef, Workspace, _}
 import org.joda.time.DateTime
@@ -11,46 +12,23 @@ import spray.json._
 
 object DataUseRestrictionTestFixture {
 
-  case class DataUseRestriction(
-    GRU: Boolean = false,
-    HMB: Boolean = false,
-    DS: Seq[String] = Seq.empty[String],
-    NCU: Boolean = false,
-    NPU: Boolean = false,
-    NDMS: Boolean = false,
-    NAGR: Boolean = false,
-    NCTRL: Boolean = false,
-    `RS-PD`: Boolean = false,
-    `RS-G`: String = "",
-    `RS-POP`: Seq[String] = Seq.empty[String])
+  val datasets: Seq[Workspace] = List("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL","RS-PD").map { code =>
+    val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeBoolean(true))
+    mkWorkspace(attributes, code)
+  } ++ List("DS", "RS-POP").map { code =>
+    val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeValueList(Seq(AttributeString("TERM-1"), AttributeString("TERM-2"))))
+    mkWorkspace(attributes, code)
+  } ++ List("Female", "Male", "N/A").map { gender =>
+    val attributes = Map(AttributeName.withLibraryNS("RS-G") -> AttributeString(gender))
+    mkWorkspace(attributes, "RS-G")
+  }
 
-  implicit val impDataUseRestriction: RootJsonFormat[DataUseRestriction] = jsonFormat11(DataUseRestriction)
-
-  val testCases: Map[String, DataUseRestriction] =
-    Map(
-      "GRU" -> DataUseRestriction(GRU = true),
-      "HMB" -> DataUseRestriction(HMB = true),
-      "DS" -> DataUseRestriction(DS = Seq("DS-1", "DS-2")),
-      "NCU" -> DataUseRestriction(NCU = true),
-      "NPU" -> DataUseRestriction(NPU = true),
-      "NDMS" -> DataUseRestriction(NDMS = true),
-      "NAGR" -> DataUseRestriction(NAGR = true),
-      "NCTRL" -> DataUseRestriction(NCTRL = true),
-      "RS-PD" -> DataUseRestriction(`RS-PD` = true)
-// TODO: How to test for the three gender cases
-//      "rs-fm" -> DataUseRestriction(`RS-G` = "Female"),
-//      "rs-m" -> DataUseRestriction(`RS-G` = "Male"),
-//      "rs-n/a" -> DataUseRestriction(`RS-G` = "NA"),
-//      "RS-POP" -> DataUseRestriction(`RS-POP` = Seq("POP-1", "POP-2"))
-    )
-
-  val datasets: Seq[Workspace] = testCases.map { tc =>
+  private def mkWorkspace(attributes: Map[AttributeName, Attribute], code: String): Workspace = {
     val testUUID: UUID = UUID.randomUUID()
-    val attributes = Map(AttributeName.withLibraryNS(tc._1) -> AttributeValueRawJson(tc._2.toJson.compactPrint))
     Workspace(
       workspaceId=testUUID.toString,
       namespace="testWorkspaceNamespace",
-      name=tc._1,
+      name=code,
       authorizationDomain=Set.empty[ManagedGroupRef],
       isLocked=false,
       createdBy="createdBy",
@@ -60,12 +38,14 @@ object DataUseRestrictionTestFixture {
       bucketName="bucketName",
       accessLevels=Map.empty,
       authDomainACLs=Map())
-  }.toSeq
+  }
 
 }
 
 class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with DataUseRestrictionSupport {
 
+  implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer =
+    new AttributeFormat with PlainArrayAttributeListSerializer
 
   "DataUseRestrictionSupport" - {
 
@@ -74,7 +54,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
       "workspace should have a fully populated data use restriction attribute" in {
         DataUseRestrictionTestFixture.datasets.map { ds =>
           val attrs = generateDataUseRestriction(ds)
-          attrs.map(println)
+          attrs.map { attrs => println(attrs.toJson.prettyPrint) }
           // TODO ... flesh out asserts
         }
 

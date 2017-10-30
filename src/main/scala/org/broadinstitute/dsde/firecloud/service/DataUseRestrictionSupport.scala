@@ -9,7 +9,7 @@ trait DataUseRestrictionSupport {
 
   private val booleanCodes = List("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL","RS-PD")
   private val listCodes = List("DS", "RS-POP")
-  private val durNames = booleanCodes ++ listCodes ++ "RS-G"
+  private val durNames = booleanCodes ++ listCodes ++ List("RS-G")
 
   /**
     * This method looks at all of the library attributes that are associated to Consent Codes and
@@ -29,7 +29,7 @@ trait DataUseRestrictionSupport {
     if (libraryAttrs.isEmpty) {
       Map(AttributeName.withLibraryNS("dataUseRestriction") -> AttributeNull)
     } else {
-      val existingAttrs: Map[AttributeName, AttributeValue] = libraryAttrs.flatMap {
+      val existingAttrs: Map[AttributeName, Attribute] = libraryAttrs.flatMap {
         // Handle the String->Boolean case first
         case (attr: AttributeName, value: AttributeString) if attr.name.equals("RS-G") =>
           value.value match {
@@ -47,7 +47,7 @@ trait DataUseRestrictionSupport {
                 AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(false))
           }
         // Everything else can be added as is.
-        case (attr: AttributeName, value: AttributeValue) => Map(AttributeName.withDefaultNS(attr.name) -> value)
+        case (attr: AttributeName, value: Attribute) => Map(AttributeName.withDefaultNS(attr.name) -> value)
       }
 
       val existingKeyNames = existingAttrs.keys.map(_.name).toSeq
