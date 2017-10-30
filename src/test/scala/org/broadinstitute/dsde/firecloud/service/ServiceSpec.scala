@@ -17,8 +17,7 @@ trait ServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest wit
 
   implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
 
-  // OPTIONS is not included because we accept all OPTIONS requests to all endpoints for CORS.
-  val allHttpMethods = Seq(CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE)
+  val allHttpMethods = Seq(CONNECT, DELETE, GET, HEAD, PATCH, POST, PUT, TRACE)
 
   def allHttpMethodsExcept(method: HttpMethod, methods: HttpMethod*): Seq[HttpMethod] = allHttpMethodsExcept(method +: methods)
   def allHttpMethodsExcept(methods: Seq[HttpMethod]): Seq[HttpMethod] = allHttpMethods.diff(methods)
