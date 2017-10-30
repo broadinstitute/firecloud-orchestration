@@ -21,49 +21,134 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
     searchDAO.deleteIndex()
   }
 
+  // we don't have to test any use cases of the user omitting a research purpose - all the
+  // other tests do that.
   "Library research-purpose-aware search" - {
+
     "Elastic Search" - {
       "Index exists" in {
         assert(searchDAO.indexExists())
       }
     }
+
     "Research purpose for aggregate analysis (NAGR)" - {
       "should return any dataset where NAGR is false and is (GRU or HMB)" in {
         val researchPurpose = ResearchPurpose.default.copy(NAGR = true)
         val searchResponse = searchWithPurpose(researchPurpose)
-        assertResult(2) {searchResponse.total}
         validateResultNames(
-          Set("CSA_9220", "L_1240"),
+          Set("one", "two", "six", "seven", "eleven", "twelve"),
+          searchResponse
+        )
+      }
+      "should intersect with a standard facet filter" in {
+        val researchPurpose = ResearchPurpose.default.copy(NAGR = true)
+        val filter = Map("library:projectName" -> Seq("helium"))
+        val searchResponse = searchWithPurpose(researchPurpose, filter)
+        validateResultNames(
+          Set("six", "seven"),
+          searchResponse
+        )
+      }
+      "should intersect with a text search" in {
+        val researchPurpose = ResearchPurpose.default.copy(NAGR = true)
+        val searchResponse = searchWithPurpose(researchPurpose, "lazy")
+        validateResultNames(
+          Set("eleven", "twelve"),
+          searchResponse
+        )
+      }
+      "should affect search suggestions" in {
+        val researchPurpose = ResearchPurpose.default.copy(NAGR = true)
+        val searchResponse = suggestWithPurpose(researchPurpose, "anti")
+        validateSuggestions(
+          Set("antiaging", "antialias", "antibody", "antic", "anticoagulant", "anticorruption"),
           searchResponse
         )
       }
     }
+
     "Research purpose for population origins/ancestry (POA)" - {
       "should return any dataset where GRU is true" in {
         val researchPurpose = ResearchPurpose.default.copy(POA = true)
         val searchResponse = searchWithPurpose(researchPurpose)
-        assertResult(1) {searchResponse.total}
         validateResultNames(
-          Set("CSA_9220"),
+          Set("one", "six", "eleven"),
+          searchResponse
+        )
+      }
+      "should intersect with a standard facet filter" in {
+        val researchPurpose = ResearchPurpose.default.copy(POA = true)
+        val filter = Map("library:projectName" -> Seq("helium"))
+        val searchResponse = searchWithPurpose(researchPurpose, filter)
+        validateResultNames(
+          Set("six"),
+          searchResponse
+        )
+      }
+      "should intersect with a text search" in {
+        val researchPurpose = ResearchPurpose.default.copy(POA = true)
+        val searchResponse = searchWithPurpose(researchPurpose, "lazy")
+        validateResultNames(
+          Set("eleven"),
+          searchResponse
+        )
+      }
+      "should affect search suggestions" in {
+        val researchPurpose = ResearchPurpose.default.copy(POA = true)
+        val searchResponse = suggestWithPurpose(researchPurpose, "anti")
+        validateSuggestions(
+          Set("antiaging", "antibody", "anticoagulant"),
           searchResponse
         )
       }
     }
+
     "Research purpose for commercial use (NCU)" - {
       "should return any dataset where NPU and NCU are both false" in {
         val researchPurpose = ResearchPurpose.default.copy(NCU = true)
         val searchResponse = searchWithPurpose(researchPurpose)
-        assertResult(3) {searchResponse.total}
         validateResultNames(
-          Set("CSA_9220", "L_1240", "FASD_0050696"),
+          Set("two", "four", "seven", "nine", "twelve", "fourteen"),
+          searchResponse
+        )
+      }
+      "should intersect with a standard facet filter" in {
+        val researchPurpose = ResearchPurpose.default.copy(NCU = true)
+        val filter = Map("library:projectName" -> Seq("helium"))
+        val searchResponse = searchWithPurpose(researchPurpose, filter)
+        validateResultNames(
+          Set("seven", "nine"),
+          searchResponse
+        )
+      }
+      "should intersect with a text search" in {
+        val researchPurpose = ResearchPurpose.default.copy(NCU = true)
+        val searchResponse = searchWithPurpose(researchPurpose, "lazy")
+        validateResultNames(
+          Set("twelve", "fourteen"),
+          searchResponse
+        )
+      }
+      "should affect search suggestions" in {
+        val researchPurpose = ResearchPurpose.default.copy(NCU = true)
+        val searchResponse = suggestWithPurpose(researchPurpose, "anti")
+        validateSuggestions(
+          Set("antialias", "antibacterial", "antic", "anticipate", "anticorruption", "antidisestablishmentarianism"),
           searchResponse
         )
       }
     }
-    // TODO: autosuggest tests
-    // TODO: RP + filter tests
-    // TODO: RP + search tests
-    // TODO: RPs that specify multiple selections
-  }
 
+    "Research purpose with multiple restrictions enabled" - {
+      "should intersect each restriction" in {
+        val researchPurpose = ResearchPurpose.default.copy(NAGR = true, NCU = true)
+        val searchResponse = searchWithPurpose(researchPurpose)
+        validateResultNames(
+          Set("two", "seven", "twelve"),
+          searchResponse
+        )
+      }
+    }
+
+  }
 }

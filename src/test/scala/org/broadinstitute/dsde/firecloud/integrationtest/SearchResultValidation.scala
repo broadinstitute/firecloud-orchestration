@@ -31,6 +31,19 @@ trait SearchResultValidation {
   def searchWithPurpose(researchPurpose: ResearchPurpose): LibrarySearchResponse =
     searchWithPurpose(Some(researchPurpose), None, None)
 
+  def searchWithPurpose(researchPurpose: ResearchPurpose, term: String): LibrarySearchResponse =
+    searchWithPurpose(Some(researchPurpose), Some(term), None)
+
+  def searchWithPurpose(researchPurpose: ResearchPurpose, filters: Map[String, Seq[String]]): LibrarySearchResponse =
+    searchWithPurpose(Some(researchPurpose), None, Some(filters))
+
+  def suggestWithPurpose(researchPurpose: ResearchPurpose, term: String) = {
+    val criteria = emptyCriteria.copy(
+      searchString = Some(term),
+      researchPurpose = Some(researchPurpose))
+    Await.result(searchDAO.suggestionsFromAll(criteria, Seq.empty[String]), dur)
+  }
+
   def validateResultNames(expectedNames:Set[String], response:LibrarySearchResponse) = {
     validateResultField("library:datasetName", expectedNames, response)
   }
@@ -38,6 +51,11 @@ trait SearchResultValidation {
   def validateResultIndications(expectedIndications:Set[String], response:LibrarySearchResponse) = {
     validateResultField("library:indication", expectedIndications, response)
   }
+
+  def validateSuggestions(expectedSuggestions:Set[String], response:LibrarySearchResponse) = {
+    validateResultField("suggestion", expectedSuggestions, response)
+  }
+
   def validateResultField(attrName:String, expectedValues:Set[String], response:LibrarySearchResponse) = {
     val actualValues:Set[String] = getResultField(attrName, response)
     assertResult(expectedValues) {actualValues}
