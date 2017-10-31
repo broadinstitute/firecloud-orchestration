@@ -83,14 +83,9 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     }
 
     val dur: Map[AttributeName, Attribute] = generateStructuredUseRestriction(workspace)
+    val durAttributeNames = durFieldNames.map(AttributeName.withLibraryNS)
 
-    val fields = dur match {
-      case x if x.isEmpty => attrfields ++ idfields ++ tagfields
-      case _ =>
-        // remove the data use attributes so we don't index them twice
-        val durAttributeNames = durFieldNames.map(AttributeName.withLibraryNS)
-        attrfields.filterKeys { key => !durAttributeNames.contains(key) } ++ idfields ++ tagfields ++ dur
-    }
+    val fields = (attrfields -- durAttributeNames) ++ idfields ++ tagfields ++ dur
 
     workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
