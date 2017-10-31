@@ -24,7 +24,7 @@ import scala.language.postfixOps
 /**
   * Created by davidan on 10/2/16.
   */
-trait LibraryServiceSupport extends LazyLogging {
+trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
     if (value) Seq(AddUpdateAttribute(LibraryService.publishedFlag, AttributeBoolean(true)))
@@ -82,7 +82,10 @@ trait LibraryServiceSupport extends LazyLogging {
       case None => Map()
     }
 
-    val fields = attrfields ++ idfields ++ tagfields
+    val dur: Map[AttributeName, Attribute] = generateStructuredUseRestriction(workspace)
+    val durAttributeNames = durFieldNames.map(AttributeName.withLibraryNS)
+
+    val fields = (attrfields -- durAttributeNames) ++ idfields ++ tagfields ++ dur
 
     workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
