@@ -23,7 +23,7 @@ trait DataUseRestrictionSupport {
     * populate using values specified in attribute-definitions.json
     *
     * @param workspace The Workspace
-    * @return 'dataUseRestriction' Attribute Map
+    * @return A structured data use restriction Attribute Map
     */
   def generateStructuredUseRestriction(workspace: Workspace): Map[AttributeName, Attribute] = {
 
