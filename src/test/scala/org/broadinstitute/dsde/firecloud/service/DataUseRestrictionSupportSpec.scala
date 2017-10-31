@@ -3,12 +3,14 @@ package org.broadinstitute.dsde.firecloud.service
 import java.util.UUID
 
 import org.broadinstitute.dsde.firecloud.integrationtest.SearchResultValidation
-import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixture.DataUseRestriction
+import DataUseRestrictionTestFixture._
 import org.broadinstitute.dsde.rawls.model.{ManagedGroupRef, Workspace, _}
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+
+import scala.language.postfixOps
 
 object DataUseRestrictionTestFixture {
 
@@ -29,20 +31,21 @@ object DataUseRestrictionTestFixture {
 
 
   // Datasets are named by the code for easier identification in tests
-  val booleanCodes = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL","RS-PD")
+  val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL","RS-PD")
   val booleanDatasets: Seq[Workspace] = booleanCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeBoolean(true))
     mkWorkspace(attributes, code)
   }
 
-  val listCodes = Seq("DS", "RS-POP")
+  val listCodes: Seq[String] = Seq("DS", "RS-POP")
+  val listValues: Seq[String] = Seq("TERM-1", "TERM-2")
   val listDatasets: Seq[Workspace] = listCodes.map { code =>
-    val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeValueList(Seq(AttributeString("TERM-1"), AttributeString("TERM-2"))))
+    val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeValueList(listValues.map(AttributeString)))
     mkWorkspace(attributes, code)
   }
 
   // Gender datasets are named by the gender value for easier identification in tests
-  val genderVals = Seq("Female", "Male", "N/A")
+  val genderVals: Seq[String] = Seq("Female", "Male", "N/A")
   val genderDatasets: Seq[Workspace] = genderVals.map { gender =>
     val attributes = Map(AttributeName.withLibraryNS("RS-G") -> AttributeString(gender))
     mkWorkspace(attributes, gender)
@@ -71,6 +74,7 @@ object DataUseRestrictionTestFixture {
 
 class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with DataUseRestrictionSupport {
 
+
   implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer = new AttributeFormat with PlainArrayAttributeListSerializer
   implicit val impDataUseRestriction: RootJsonFormat[DataUseRestriction] = jsonFormat13(DataUseRestriction)
 
@@ -79,7 +83,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
     "when there are library data use restriction fields" - {
 
       "dataset should have a fully populated data use restriction attribute" in {
-        DataUseRestrictionTestFixture.allDatasets.map { ds =>
+        allDatasets.map { ds =>
           val attrs = generateDataUseRestriction(ds)
           val durAtt: Attribute = attrs.getOrElse(dataUseRestrictionAttributeName, AttributeNull)
           durAtt shouldNot be(AttributeNull)
@@ -89,7 +93,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
       }
 
       "dur should have appropriate gender codes populated" in {
-        DataUseRestrictionTestFixture.genderDatasets.map { ds =>
+        genderDatasets.map { ds =>
           val attrs = generateDataUseRestriction(ds)
           val dur: DataUseRestriction = makeDURFromWorkspace(ds)
           if (ds.name.equalsIgnoreCase("Female")) {
@@ -109,13 +113,24 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
       }
 
       "dataset should have a true value for the consent code for which it was specified" in {
-        val durs: Map[String, DataUseRestriction] = DataUseRestrictionTestFixture.allDatasets.flatMap { ds =>
+        val durs: Map[String, DataUseRestriction] = booleanDatasets.flatMap { ds =>
           Map(ds.name -> makeDURFromWorkspace(ds))
         }.toMap
 
-        DataUseRestrictionTestFixture.booleanCodes.map { code =>
+        booleanCodes.map { code =>
           val dur: DataUseRestriction = durs(code)
-          // todo: test that the right field name is populated
+          checkBooleanTrue(dur, code) should be(true)
+        }
+      }
+
+      "dataset should have the correct list values for the consent code for which it was specified" in {
+        val durs: Map[String, DataUseRestriction] = listDatasets.flatMap { ds =>
+          Map(ds.name -> makeDURFromWorkspace(ds))
+        }.toMap
+
+        listCodes.map { code =>
+          val dur: DataUseRestriction = durs(code)
+          checkListValues(dur, code) should be(true)
         }
       }
 
@@ -124,9 +139,9 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
     "when there are no library data use restriction fields" - {
 
       "dataset should not have any data use restriction for empty attributes" in {
-        val workspace = DataUseRestrictionTestFixture.mkWorkspace(Map.empty[AttributeName, Attribute], "empty")
+        val workspace = mkWorkspace(Map.empty[AttributeName, Attribute], "empty")
         val attrs = generateDataUseRestriction(workspace)
-        assert(attrs.isEmpty)
+        attrs should be(empty)
       }
 
       "dataset should not have any data use restriction for non-library attributes" in {
@@ -136,9 +151,9 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
           AttributeName.withDefaultNS("workspaceId") -> AttributeString("three"),
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
         )
-        val workspace = DataUseRestrictionTestFixture.mkWorkspace(nonLibraryAttributes, "non-library")
+        val workspace = mkWorkspace(nonLibraryAttributes, "non-library")
         val attrs = generateDataUseRestriction(workspace)
-        assert(attrs.isEmpty)
+        attrs should be(empty)
       }
 
     }
@@ -149,6 +164,34 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
     val attrs = generateDataUseRestriction(ds)
     val durAtt: Attribute = attrs.getOrElse(dataUseRestrictionAttributeName, AttributeNull)
     durAtt.toJson.convertTo[DataUseRestriction]
+  }
+
+  private def checkBooleanTrue(dur: DataUseRestriction, fieldName: String): Boolean = {
+    val fieldMap: Map[String, Boolean] = dur.getClass.getDeclaredFields map { f =>
+      f.setAccessible(true)
+      // TODO: Get rid of warning ... can't match on boolean type
+      if (f.get(dur).isInstanceOf[Boolean]) {
+        f.getName.replace("$minus", "-") -> f.get(dur).asInstanceOf[Boolean]
+      } else {
+        f.getName.replace("$minus", "-") -> false
+      }
+    } toMap
+
+    fieldMap(fieldName)
+  }
+
+  private def checkListValues(dur: DataUseRestriction, fieldName: String): Boolean = {
+    val fieldMap: Map[String, Seq[String]] = dur.getClass.getDeclaredFields map { f =>
+      f.setAccessible(true)
+      f.get(dur) match {
+          // TODO: Type erasure warning
+        case x: Seq[String] => f.getName.replace("$minus", "-") -> x
+        case _ => f.getName.replace("$minus", "-") -> Seq.empty[String]
+      }
+    } toMap
+
+    listValues.forall { lv => fieldMap(fieldName).contains(lv)}
+
   }
 
 }
