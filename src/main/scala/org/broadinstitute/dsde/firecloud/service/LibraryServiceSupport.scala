@@ -82,7 +82,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       case None => Map()
     }
 
-    val dur: Map[AttributeName, Attribute] = generateDataUseRestriction(workspace)
+    val dur: Map[AttributeName, Attribute] = generateStructuredUseRestriction(workspace)
 
     val fields = attrfields ++ idfields ++ tagfields ++ dur
 

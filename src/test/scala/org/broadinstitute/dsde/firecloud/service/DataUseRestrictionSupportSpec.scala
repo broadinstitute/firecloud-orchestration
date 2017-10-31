@@ -90,8 +90,8 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
 
       "dataset should have a fully populated data use restriction attribute" in {
         allDatasets.map { ds =>
-          val attrs = generateDataUseRestriction(ds)
-          val durAtt: Attribute = attrs.getOrElse(dataUseRestrictionAttributeName, AttributeNull)
+          val attrs = generateStructuredUseRestriction(ds)
+          val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
           durAtt shouldNot be(AttributeNull)
           val dur: DataUseRestriction = makeDurFromWorkspace(ds)
           dur shouldNot be(null)
@@ -156,7 +156,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
 
       "dataset should not have any data use restriction for empty attributes" in {
         val workspace = mkWorkspace(Map.empty[AttributeName, Attribute], "empty")
-        val attrs = generateDataUseRestriction(workspace)
+        val attrs = generateStructuredUseRestriction(workspace)
         attrs should be(empty)
       }
 
@@ -168,7 +168,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
         )
         val workspace = mkWorkspace(nonLibraryAttributes, "non-library")
-        val attrs = generateDataUseRestriction(workspace)
+        val attrs = generateStructuredUseRestriction(workspace)
         attrs should be(empty)
       }
 
@@ -183,8 +183,8 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
 
 
   private def makeDurFromWorkspace(ds: Workspace): DataUseRestriction = {
-    val attrs = generateDataUseRestriction(ds)
-    val durAtt: Attribute = attrs.getOrElse(dataUseRestrictionAttributeName, AttributeNull)
+    val attrs = generateStructuredUseRestriction(ds)
+    val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
     durAtt.toJson.convertTo[DataUseRestriction]
   }
 
@@ -204,7 +204,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
     } toMap
   }
 
-  // Since we have dashes in field names, the value that comes back from Field.getName
+  // Since we have dashes in DUR field names, the value that comes back from Field.getName
   // looks like "RS$minusPOP" instead of "RS-POP"
   private def getFieldName(f: Field): String = { f.getName.replace("$minus", "-") }
 

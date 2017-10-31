@@ -11,17 +11,21 @@ trait DataUseRestrictionSupport {
   private val listCodes = List("DS", "RS-POP")
   private val durNames = booleanCodes ++ listCodes ++ List("RS-G")
 
-  val dataUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("dataUseRestriction")
+  val structuredUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("structuredUseRestriction")
 
   /**
     * This method looks at all of the library attributes that are associated to Consent Codes and
-    * builds a set of Data Use Restriction attributes from the values. Most are boolean values, some are lists
-    * of strings, and in the case of gender, we need to transform a string value to a trio of booleans.
+    * builds a set of structured Data Use Restriction attributes from the values. Most are boolean
+    * values, some are lists of strings, and in the case of gender, we need to transform a string
+    * value to a trio of booleans.
+    *
+    * In the case of incorrectly tagged data use attributes (i.e. GRU = "Yes"), we ignore them and only
+    * populate using values specified in attribute-definitions.json
     *
     * @param workspace The Workspace
     * @return 'dataUseRestriction' Attribute Map
     */
-  def generateDataUseRestriction(workspace: Workspace): Map[AttributeName, Attribute] = {
+  def generateStructuredUseRestriction(workspace: Workspace): Map[AttributeName, Attribute] = {
 
     implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer =
       new AttributeFormat with PlainArrayAttributeListSerializer
@@ -32,29 +36,35 @@ trait DataUseRestrictionSupport {
       Map.empty
     } else {
       val existingAttrs: Map[AttributeName, Attribute] = libraryAttrs.flatMap {
-        // Handle the String->Boolean conversion cases first
-        case (attr: AttributeName, value: AttributeString) if attr.name.equals("NAGR") =>
-          value.value match {
-            case x if x.equalsIgnoreCase("yes") => Map(AttributeName.withDefaultNS("NAGR") -> AttributeBoolean(true))
-            case _ => Map(AttributeName.withDefaultNS("NAGR") -> AttributeBoolean(false))
+        // Handle the known String->Boolean conversion cases first
+        case (attr: AttributeName, value: AttributeString) =>
+          attr.name match {
+            case name if name.equalsIgnoreCase("NAGR") =>
+              value.value match {
+                case v if v.equalsIgnoreCase("yes") => Map(AttributeName.withDefaultNS("NAGR") -> AttributeBoolean(true))
+                case _ => Map(AttributeName.withDefaultNS("NAGR") -> AttributeBoolean(false))
+              }
+            case name if name.equalsIgnoreCase("RS-G") =>
+              value.value match {
+                case v if v.equalsIgnoreCase("female") =>
+                  Map(AttributeName.withDefaultNS("RS-G") -> AttributeBoolean(true),
+                    AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(true),
+                    AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(false))
+                case v if v.equalsIgnoreCase("male") =>
+                  Map(AttributeName.withDefaultNS("RS-G") -> AttributeBoolean(true),
+                    AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(false),
+                    AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(true))
+                case _ =>
+                  Map(AttributeName.withDefaultNS("RS-G") -> AttributeBoolean(false),
+                    AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(false),
+                    AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(false))
+              }
+            case _ => Map.empty[AttributeName, Attribute]
           }
-        case (attr: AttributeName, value: AttributeString) if attr.name.equals("RS-G") =>
-          value.value match {
-            case x if x.equalsIgnoreCase("female") =>
-              Map(AttributeName.withDefaultNS("RS-G") -> AttributeBoolean(true),
-                AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(true),
-                AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(false))
-            case x if x.equalsIgnoreCase("male") =>
-              Map(AttributeName.withDefaultNS("RS-G") -> AttributeBoolean(true),
-                AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(false),
-                AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(true))
-            case _ =>
-              Map(AttributeName.withDefaultNS("RS-G") -> AttributeBoolean(false),
-                AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(false),
-                AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(false))
-          }
-        // Everything else can be added as is.
-        case (attr: AttributeName, value: Attribute) => Map(AttributeName.withDefaultNS(attr.name) -> value)
+        // Handle only what is correctly tagged and ignore anything improperly tagged
+        case (attr: AttributeName, value: AttributeBoolean) => Map(AttributeName.withDefaultNS(attr.name) -> value)
+        case (attr: AttributeName, value: AttributeValueList) => Map(AttributeName.withDefaultNS(attr.name) -> value)
+        case _ => Map.empty[AttributeName, Attribute]
       }
 
       val existingKeyNames = existingAttrs.keys.map(_.name).toSeq
@@ -75,7 +85,7 @@ trait DataUseRestrictionSupport {
 
       val allAttrs = existingAttrs ++ booleanAttrs ++ listAttrs
 
-      Map(dataUseRestrictionAttributeName -> AttributeValueRawJson.apply(allAttrs.toJson.compactPrint))
+      Map(structuredUseRestrictionAttributeName -> AttributeValueRawJson.apply(allAttrs.toJson.compactPrint))
     }
 
   }
