@@ -1,15 +1,16 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
 import org.broadinstitute.dsde.rawls.model._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-trait DataUseRestrictionSupport {
+trait DataUseRestrictionSupport extends LazyLogging {
 
-  private val booleanCodes = List("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-PD")
-  private val listCodes = List("DS", "RS-POP")
-  private val durNames = booleanCodes ++ listCodes ++ List("RS-G")
+  private val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-PD")
+  private val listCodes: Seq[String] = Seq("DS", "RS-POP")
+  val durFieldNames: Seq[String] = booleanCodes ++ listCodes ++ Seq("RS-G")
 
   val structuredUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("structuredUseRestriction")
 
@@ -30,10 +31,10 @@ trait DataUseRestrictionSupport {
     implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer =
       new AttributeFormat with PlainArrayAttributeListSerializer
 
-    val libraryAttrs = workspace.attributes.filter { case (attr, value) => durNames.contains(attr.name) }
+    val libraryAttrs = workspace.attributes.filter { case (attr, value) => durFieldNames.contains(attr.name) }
 
     if (libraryAttrs.isEmpty) {
-      Map.empty
+      Map.empty[AttributeName, Attribute]
     } else {
       val existingAttrs: Map[AttributeName, Attribute] = libraryAttrs.flatMap {
         // Handle the known String->Boolean conversion cases first
@@ -59,29 +60,29 @@ trait DataUseRestrictionSupport {
                     AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(false),
                     AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(false))
               }
-            case _ => Map.empty[AttributeName, Attribute]
+            case _ =>
+              logger.warn(s"Invalid data use attribute formatted as a string (workspace-id: ${workspace.workspaceId}, attribute name: ${attr.name}, attribute value: ${value.value})")
+              Map.empty[AttributeName, Attribute]
           }
         // Handle only what is correctly tagged and ignore anything improperly tagged
         case (attr: AttributeName, value: AttributeBoolean) => Map(AttributeName.withDefaultNS(attr.name) -> value)
         case (attr: AttributeName, value: AttributeValueList) => Map(AttributeName.withDefaultNS(attr.name) -> value)
-        case _ => Map.empty[AttributeName, Attribute]
+        case unmatched =>
+          logger.warn(s"Unexpected data use attribute type: (workspace-id: ${workspace.workspaceId}, attribute name: ${unmatched._1.name}, attribute value: ${unmatched._2.toString})")
+          Map.empty[AttributeName, Attribute]
       }
 
       val existingKeyNames = existingAttrs.keys.map(_.name).toSeq
 
       // Missing boolean codes default to false
-      val booleanAttrs: Map[AttributeName, AttributeBoolean] = (booleanCodes ++ List("RS-G", "RS-FM", "RS-M")).
-        filter(!existingKeyNames.contains(_)).
-        flatMap { code =>
-          Map(AttributeName.withDefaultNS(code) -> AttributeBoolean(false))
-        }.toMap
+      val booleanAttrs: Map[AttributeName, Attribute] = ((booleanCodes ++ List("RS-G", "RS-FM", "RS-M")) diff existingKeyNames).map { code =>
+        AttributeName.withDefaultNS(code) -> AttributeBoolean(false)
+      }.toMap
 
       // Missing list codes default to empty lists
-      val listAttrs = listCodes.
-        filter(!existingKeyNames.contains(_)).
-        flatMap { code =>
-          Map(AttributeName.withDefaultNS(code) -> AttributeValueList(Seq.empty))
-        }.toMap
+      val listAttrs: Map[AttributeName, Attribute] = (listCodes diff existingKeyNames).map { code =>
+        AttributeName.withDefaultNS(code) -> AttributeValueList(Seq.empty)
+      }.toMap
 
       val allAttrs = existingAttrs ++ booleanAttrs ++ listAttrs
 
