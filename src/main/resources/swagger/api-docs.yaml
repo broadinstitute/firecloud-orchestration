@@ -17,10 +17,10 @@ produces:
 
 security:
   - googleoauth:
-      - openid
-      - email
-      - profile
-      - https://www.googleapis.com/auth/devstorage.full_control
+    - openid
+    - email
+    - profile
+    - https://www.googleapis.com/auth/devstorage.full_control
 
 securityDefinitions:
   googleoauth:
@@ -71,10 +71,10 @@ paths:
       operationId: createBillingProjectFull
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/cloud-billing
+          - openid
+          - email
+          - profile
+          - https://www.googleapis.com/auth/cloud-billing
 
   /api/billing/{projectId}/members:
     get:
@@ -105,9 +105,9 @@ paths:
       operationId: listBillingProjectMembers
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
 
   /api/billing/{projectId}/{role}/{email}:
     put:
@@ -149,9 +149,9 @@ paths:
       operationId: addUserToBillingProject
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
     delete:
       responses:
         200:
@@ -191,9 +191,9 @@ paths:
       operationId: removeUserFromBillingProject
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
 
   /api/configurations:
     get:
@@ -444,9 +444,9 @@ paths:
       operationId: getGroups
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
 
   /api/groups/{groupName}:
     get:
@@ -479,9 +479,9 @@ paths:
       operationId: getGroup
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
     post:
       responses:
         201:
@@ -508,9 +508,9 @@ paths:
       operationId: createGroup
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
     delete:
       responses:
         204:
@@ -543,38 +543,38 @@ paths:
       operationId: deleteGroup
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
 
   /api/groups/{groupName}/requestAccess:
-      post:
-        responses:
-          204:
-            description: Successfully requested access
-          404:
-            description: Group not found
-            schema:
-              $ref: '#/definitions/ErrorReport'
-          500:
-            description: FireCloud Internal Error
-            schema:
-              $ref: '#/definitions/ErrorReport'
-        parameters:
-          - in: path
-            description: Group name
-            name: groupName
-            required: true
-            type: string
-        tags:
-          - Groups
-        summary: request access to a group
-        operationId: requestAccessToGroup
-        security:
-          - googleoauth:
-              - openid
-              - email
-              - profile
+    post:
+      responses:
+        204:
+          description: Successfully requested access
+        404:
+          description: Group not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
+        500:
+          description: FireCloud Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+      parameters:
+        - in: path
+          description: Group name
+          name: groupName
+          required: true
+          type: string
+      tags:
+        - Groups
+      summary: request access to a group
+      operationId: requestAccessToGroup
+      security:
+        - googleoauth:
+          - openid
+          - email
+          - profile
 
   /api/groups/{groupName}/{role}/{email}:
     put:
@@ -616,9 +616,9 @@ paths:
       operationId: addUserToGroup
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
     delete:
       responses:
         204:
@@ -658,9 +658,9 @@ paths:
       operationId: removeUserFromGroup
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
 
   /api/inputsOutputs:
     post:
@@ -1421,9 +1421,9 @@ paths:
       operationId: generalNotifications
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
 
   '/api/notifications/workspace/{workspaceNamespace}/{workspaceName}':
     get:
@@ -1451,9 +1451,9 @@ paths:
       operationId: workspaceNotifications
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
 
   /api/profile/billing:
     get:
@@ -1494,24 +1494,25 @@ paths:
           description: Internal Server Error
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/devstorage.full_control
-            - https://www.googleapis.com/auth/cloud-billing
+          - openid
+          - email
+          - profile
+          - https://www.googleapis.com/auth/devstorage.full_control
+          - https://www.googleapis.com/auth/cloud-billing
 
   /api/profile/preferences:
     post:
       tags:
         - Profile
-      operationId: billing
+      operationId: updateProfile
       summary: Update the preferences for the user
       parameters:
         - name: preferences
           in: body
           description: The preferences to set as a Map[String, String]
           required: true
-          type: Map[String, String]
+          schema:
+            type: object
       responses:
         204:
           description: Success (No Content)
@@ -1612,18 +1613,12 @@ paths:
         200:
           description: OK
           schema:
-            {
-              "properties": {
-                "cromwell": {
-                  type: "string"
-                }
-              }
-            }
+            $ref: '#/definitions/ExecutionEngineVersion'
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
+          - openid
+          - email
+          - profile
 
   /api/workspaces:
     get:
@@ -2096,30 +2091,31 @@ paths:
             $ref: '#/definitions/AttributeUpdateOperation'
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}/evaluate:
-      post:
-        tags:
-          - Entities
-        operationId: evaluateEntityExpression
-        summary: Evaluate entity expression
-        parameters:
-          - $ref: '#/parameters/workspaceNamespaceParam'
-          - $ref: '#/parameters/workspaceNameParam'
-          - $ref: '#/parameters/entityTypeParam'
-          - $ref: '#/parameters/entityNameParam'
-          - in: body
-            description: Expression
-            name: expression
-            required: true
+    post:
+      tags:
+        - Entities
+      operationId: evaluateEntityExpression
+      summary: Evaluate entity expression
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/entityTypeParam'
+        - $ref: '#/parameters/entityNameParam'
+        - in: body
+          description: Expression
+          name: expression
+          required: true
+          schema:
             type: string
-        responses:
-          200:
-            description: Success
-          400:
-            description: Invalid entity expression
-          404:
-            description: Workspace or Entity does not exist
-          500:
-            description: Internal Server Error
+      responses:
+        200:
+          description: Success
+        400:
+          description: Invalid entity expression
+        404:
+          description: Workspace or Entity does not exist
+        500:
+          description: Internal Server Error
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
     get:
@@ -2643,10 +2639,9 @@ paths:
       operationId: changedWorkspaceNotification
       security:
         - googleoauth:
-            - openid
-            - email
-            - profile
-
+          - openid
+          - email
+          - profile
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
     get:
@@ -3001,28 +2996,28 @@ paths:
           description: Internal Error
 
   /api/workspaces/tags:
-      get:
-        tags:
-         - Workspaces
-        operationId: getTags
-        summary: |
-          Get all tags used in FireCloud (for autocomplete)
-        description: list of all tags used in FireCloud and their associated frequencies
-        parameters:
-          - in: query
-            description: Query string
-            name: q
-            required: false
-            type: string
-        responses:
-          200:
-            description: list of all tags used in FireCloud
-            schema:
-              type: array
-              items:
-                $ref: '#/definitions/WorkspaceTag'
-          500:
-            description: Rawls Internal Error
+    get:
+      tags:
+       - Workspaces
+      operationId: getTags
+      summary: |
+        Get all tags used in FireCloud (for autocomplete)
+      description: list of all tags used in FireCloud and their associated frequencies
+      parameters:
+        - in: query
+          description: Query string
+          name: q
+          required: false
+          type: string
+      responses:
+        200:
+          description: list of all tags used in FireCloud
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceTag'
+        500:
+          description: Rawls Internal Error
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/genomics/operations/{jobId}:
     get:
@@ -3110,6 +3105,8 @@ paths:
       description: |
         swagger-ui seems to not handle file downloads, so this endpoint won't function through the ui.
         It is here for documentation purposes only.
+      consumes:
+        - multipart/form-data
       produces:
         - text/plain
         - application/octet-stream
@@ -3301,30 +3298,7 @@ paths:
         200:
           description: OK
           schema:
-            {
-              "properties": {
-                "userId": {
-                  type: "string"
-                },
-                "keyValuePairs": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": [ "key", "value" ],
-                    "properties": {
-                      "key": {
-                        "type": "string"
-                      },
-                      "value": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              },
-              "type": "object",
-              "required": [ "userId", "keyValuePairs" ]
-            }
+            $ref: '#/definitions/RegisterProfile'
         500:
           description: Internal server error
     post:
@@ -3333,11 +3307,11 @@ paths:
       operationId: setProfile
       summary: Sets a profile object in the user profile service for the currently logged-in user.
       parameters:
-      - name: profile
-        description: A complete profile
-        in: body
-        schema:
-          $ref: '#/definitions/Profile'
+        - name: profile
+          description: A complete profile
+          in: body
+          schema:
+            $ref: '#/definitions/Profile'
       responses:
         200:
           description: OK
@@ -3352,16 +3326,97 @@ paths:
         - Profile
       operationId: userInfo
       summary: Passes through to Google's userinfo API and returns its response
-      description: See https://developers.google.com/+/web/api/rest/openidconnect/getOpenIdConnect for response info.
+      description: >
+        See https://developers.google.com/+/web/api/rest/openidconnect/getOpenIdConnect for response info.
         Userinfo endpoint lives at https://www.googleapis.com/oauth2/v3/userinfo.
       responses:
         200:
           description: OK
 
-  /ga4gh/tools/{id}/versions/{version-id}/{type}/descriptor:
+  /ga4gh/v1/tools/{id}:
     get:
-      summary: Get the tool descriptor (CWL/WDL) for the specified tool.
-      description: Returns the CWL or WDL descriptor for the specified tool.
+      summary: List one specific tool, acts as an anchor for self references
+      description: This endpoint returns one specific tool (which has ToolVersions nested inside it)
+      tags:
+        - GA4GH Tool Registry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          description: A unique identifier of the tool, scoped to this registry, for example `123456`
+      responses:
+        '200':
+          description: A tool.
+          schema:
+              $ref: '#/definitions/Tool'
+      security: []
+
+  /ga4gh/v1/tools/{id}/versions:
+    get:
+      summary: List versions of a tool
+      description: Returns all versions of the specified tool
+      tags:
+        - GA4GH Tool Registry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          description: A unique identifier of the tool, scoped to this registry, for example `123456`
+      responses:
+        '200':
+          description: An array of tool versions
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ToolVersion'
+      security: []
+
+  /ga4gh/v1/tools/{id}/versions/{version-id}:
+    get:
+      summary: List one specific tool version, acts as an anchor for self references
+      description: This endpoint returns one specific tool version
+      tags:
+        - GA4GH Tool Registry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          description: A unique identifier of the tool, scoped to this registry, for example `123456`
+        - name: version-id
+          in: path
+          required: true
+          type: string
+          description: An identifier of the tool version, scoped to this registry, for example `v1`
+      responses:
+        '200':
+          description: A tool version.
+          schema:
+              $ref: '#/definitions/ToolVersion'
+      security: []
+
+  /ga4gh/v1/tools:
+    get:
+      summary: List all tools
+      description: >
+        This endpoint returns all tools available.
+      tags:
+        - GA4GH Tool Registry
+      responses:
+        '200':
+          description: An array of Tools that match the filter.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Tool'
+      security: []
+
+  /ga4gh/v1/tools/{id}/versions/{version-id}/{type}/descriptor:
+    get:
+      summary: Get the tool descriptor (WDL) for the specified tool.
+      description: Returns the WDL descriptor for the specified tool.
       tags:
         - GA4GH Tool Registry
       parameters:
@@ -3373,13 +3428,9 @@ paths:
             implementation to determine which output type to return. Plain types return the
             bare descriptor while the "non-plain" types return a descriptor wrapped
             with metadata.
-
-              *In FireCloud, only WDL and plain-WDL are supported.*
           type: string
           enum:
-            - CWL
             - WDL
-            - plain-CWL
             - plain-WDL
         - name: id
           in: path
@@ -3408,6 +3459,36 @@ paths:
           schema:
             $ref: '#/definitions/Error'
       security: []
+
+  /ga4gh/v1/metadata:
+    get:
+      summary: Return some metadata that is useful for describing this registry
+      description: Return some metadata that is useful for describing this registry
+      tags:
+        - GA4GH Tool Registry
+      responses:
+        '200':
+          description: A Metadata object describing this service.
+          schema:
+              $ref: '#/definitions/Metadata'
+      security: []
+
+  /ga4gh/v1/tool-classes:
+    get:
+      summary: List all tool types
+      description: >
+        This endpoint returns all tool-classes available
+      tags:
+        - GA4GH Tool Registry
+      responses:
+        '200':
+          description: An array of methods that match the filter.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ToolClass'
+      security: []
+
 
 ##########################################################################################
 ## PARAMETERS
@@ -4135,6 +4216,12 @@ definitions:
         items:
           $ref: '#/definitions/StackTraceElement'
 
+  ExecutionEngineVersion:
+    type: object
+    properties:
+      cromwell:
+        type: string
+
   ExecutionEvent:
     description: ''
     required:
@@ -4180,6 +4267,14 @@ definitions:
       jwt:
         type: string
         description: the encoded/signed JWT
+
+  KeyValuePair:
+    type: object
+    properties:
+      key:
+        type: string
+      value:
+        type: string
 
   LibraryBulkIndexResponse:
     type: object
@@ -4631,7 +4726,7 @@ definitions:
     description: ACLs for users of a workspace and methods referenced by that workspace
     required:
       - workspaceACL
-      - methods
+      - referencedMethods
     properties:
       workspaceACL:
         description: a map of (user email -> WorkspaceAccessEntry). `exampleEmail` is an example key.
@@ -4754,6 +4849,17 @@ definitions:
         $ref: '#/definitions/UserInfo'
       enabled:
         $ref: '#/definitions/ExtendedEnabled'
+
+  RegisterProfile:
+    type: object
+    properties:
+      userId:
+        type: string
+        description: The user's subject id
+      keyValuePairs:
+        type: array
+        items:
+          $ref: '#/definitions/KeyValuePair'
 
   SearchTermRef:
     type: object
@@ -4978,6 +5084,103 @@ definitions:
         type: string
         description: name of input
 
+  ToolClass:
+    description: Describes a class (type) of tool allowing us to categorize workflows, tools, and maybe even other entities (such as services) separately
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the class
+      name:
+        type: string
+        description: A short friendly name for the class
+      description:
+        type: string
+        description: A longer explanation of what this class is and what it can accomplish
+  Tool:
+    description: A tool (or described tool) describes one pairing of a tool as described in a descriptor file (which potentially describes multiple tools) and a Docker image.
+    required:
+      - url
+      - id
+      - organization
+      - author
+      - meta-version
+      - toolclass
+      - versions
+    properties:
+      url:
+        type: string
+        description: The URL for this tool in this registry, for example `http://agora.broadinstitute.org/tools/123456`
+      id:
+        type: string
+        description: A unique identifier of the tool, scoped to this registry, for example `123456` or `123456_v1`
+      organization:
+        type: string
+        description: The organization that published the image.
+      toolname:
+        type: string
+        description: The name of the tool.
+      toolclass:
+        $ref: '#/definitions/ToolClass'
+      description:
+        type: string
+        description: The description of the tool.
+      author:
+        type: string
+        description: Contact information for the author of this tool entry in the registry. (More complex authorship information is handled by the descriptor)
+      meta-version:
+        type: string
+        description: 'The version of this tool in the registry. Iterates when fields like the description, author, etc. are updated.'
+      contains:
+        description: An array of IDs for the applications that are stored inside this tool (for example `https://bio.tools/tool/mytum.de/SNAP2/1`). This always returns an empty array.
+        type: array
+        items:
+           type: string
+      verified:
+        type: boolean
+        description: Reports whether this tool has been verified by a specific organization or individual.  This always returns false.
+      verified-source:
+        type: string
+        description: Source of metadata that can support a verified tool, such as an email or URL
+      signed:
+        type: boolean
+        description: Reports whether this tool has been signed.  This always returns false.
+      versions:
+        description: A list of versions for this tool
+        type: array
+        items:
+          $ref: '#/definitions/ToolVersion'
+  ToolVersion:
+    description: A tool version describes a particular iteration of a tool as described by a reference to a specific image and dockerfile.
+    required:
+      - url
+      - id
+      - meta-version
+    properties:
+      name:
+        type: string
+        description: The name of the version.
+      url:
+        type: string
+        description: The URL for this tool in this registry, for example `http://agora.broadinstitute.org/tools/123456/1`
+      id:
+        type: string
+        description: An identifier of the version of this tool for this particular tool registry, for example `v1`
+      image:
+        type: string
+        description: The docker path to the image (and version) for this tool. (e.g. quay.io/seqware/seqware_full/1.1). This always returns an empty string.
+      descriptor-type:
+        type: array
+        description: The type (or types) of descriptors available.
+        items:
+          type: string
+          enum:
+            - WDL
+      dockerfile:
+        type: boolean
+        description: Reports if this tool has a dockerfile available. This always returns false.
+      meta-version:
+        type: string
+        description: 'The version of this tool version in the registry. Iterates when fields like the description, author, etc. are updated.'
   ToolDescriptor:
     description: A tool descriptor is a metadata document that describes one or more tools.
     required:
@@ -4987,15 +5190,31 @@ definitions:
       type:
         type: string
         enum:
-          - CWL
           - WDL
       descriptor:
         type: string
-        description: The descriptor that represents this version of the tool. (CWL or WDL)
+        description: The descriptor that represents this version of the tool. (WDL)
       url:
         type: string
         description: 'Optional url to the tool descriptor used to build this image, should include version information, and can include a git hash (e.g. https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/ea2a5db69bd20a42976838790bc29294df3af02b/delly_docker/Delly.cwl )'
-
+  Metadata:
+    description: Describes this registry to better allow for mirroring and indexing.
+    required:
+      - version
+      - api-version
+    properties:
+      version:
+        type: string
+        description: The version of this registry
+      api-version:
+        type: string
+        description: The version of the GA4GH tool-registry API supported by this registry
+      country:
+        type: string
+        description: A country code for the registry (ISO 3166-1 alpha-3)
+      friendly-name:
+        type: string
+        description: A friendly name that can be used in addition to the hostname to describe a registry
   UserInfo:
     type: object
     properties:
