@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import spray.http.HttpMethods._
+import spray.http.Uri
 import spray.routing._
 
 trait BillingService extends HttpService with PerRequestCreator with FireCloudDirectives {
@@ -11,7 +12,9 @@ trait BillingService extends HttpService with PerRequestCreator with FireCloudDi
     pathPrefix("billing") {
       pathEnd {
         post {
-          passthrough(s"$billingUrl", POST)
+          extract(_.request.uri.query) { query =>
+            passthrough(Uri(s"$billingUrl").withQuery(query), POST)
+          }
         }
       } ~
       pathPrefix(Segment) { projectId =>
