@@ -1,11 +1,12 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
 import org.broadinstitute.dsde.firecloud.model.Document
+import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionSupport
 import org.broadinstitute.dsde.rawls.model._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-object ResearchPurposeSearchTestFixtures {
+object ResearchPurposeSearchTestFixtures extends DataUseRestrictionSupport {
 
   case class Restriction(
     GRU: Boolean = false,
@@ -50,7 +51,7 @@ object ResearchPurposeSearchTestFixtures {
       AttributeName("library","projectName") -> AttributeString(x._2),
       AttributeName("library","indication") -> AttributeString(x._3),
       AttributeName("library","datasetCustodian") -> AttributeString(x._4),
-      AttributeName.withDefaultNS("dataUseRestriction") -> AttributeValueRawJson(x._5.toJson)
+      structuredUseRestrictionAttributeName -> AttributeValueRawJson(x._5.toJson)
     ))
   }
 
