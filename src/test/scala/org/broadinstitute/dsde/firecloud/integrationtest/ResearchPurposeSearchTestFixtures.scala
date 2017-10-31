@@ -2,21 +2,11 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import org.broadinstitute.dsde.firecloud.model.Document
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionSupport
+import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixture.{DataUseRestriction, impDataUseRestriction}
 import org.broadinstitute.dsde.rawls.model._
-import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 object ResearchPurposeSearchTestFixtures extends DataUseRestrictionSupport {
-
-  case class Restriction(
-    GRU: Boolean = false,
-    HMB: Boolean = false,
-    NCU: Boolean = false,
-    NAGR: Boolean = false,
-    NPU: Boolean = false
-    )
-
-  implicit val impRestrictionFormat = jsonFormat5(Restriction)
 
   // tuples in this order:
   //   dataset name: used to validate results
@@ -24,28 +14,28 @@ object ResearchPurposeSearchTestFixtures extends DataUseRestrictionSupport {
   //   indication: used to test suggestions
   //   datasetCustodian: used to test text search
   //   restriction: used to test research purpose matching
-  val datasetTuples:Seq[(String,String,String,String,Restriction)] = Seq(
-    ("one",      "hydrogen", "antiaging",     "the quick brown fox", Restriction(GRU=true, NCU=true)),
-    ("two",      "hydrogen", "antialias",     "the quick brown fox", Restriction(HMB=true)),
-    ("three",    "hydrogen", "antianxiety",   "the quick brown fox", Restriction(NCU=true)),
-    ("four",     "hydrogen", "antibacterial", "the quick brown fox", Restriction(NAGR=true)),
-    ("five",     "hydrogen", "antibiotic",    "the quick brown fox", Restriction(NPU=true)),
+  val datasetTuples:Seq[(String,String,String,String,DataUseRestriction)] = Seq(
+    ("one",      "hydrogen", "antiaging",     "the quick brown fox", DataUseRestriction(GRU=true, NCU=true)),
+    ("two",      "hydrogen", "antialias",     "the quick brown fox", DataUseRestriction(HMB=true)),
+    ("three",    "hydrogen", "antianxiety",   "the quick brown fox", DataUseRestriction(NCU=true)),
+    ("four",     "hydrogen", "antibacterial", "the quick brown fox", DataUseRestriction(NAGR=true)),
+    ("five",     "hydrogen", "antibiotic",    "the quick brown fox", DataUseRestriction(NPU=true)),
 
-    ("six",      "helium",   "antibody",      "jumped over the",     Restriction(GRU=true, NCU=true)),
-    ("seven",    "helium",   "antic",         "jumped over the",     Restriction(HMB=true)),
-    ("eight",    "helium",   "anticavity",    "jumped over the",     Restriction(NCU=true)),
-    ("nine",     "helium",   "anticipate",    "jumped over the",     Restriction(NAGR=true)),
-    ("ten",      "helium",   "anticlimactic", "jumped over the",     Restriction(NPU=true)),
+    ("six",      "helium",   "antibody",      "jumped over the",     DataUseRestriction(GRU=true, NCU=true)),
+    ("seven",    "helium",   "antic",         "jumped over the",     DataUseRestriction(HMB=true)),
+    ("eight",    "helium",   "anticavity",    "jumped over the",     DataUseRestriction(NCU=true)),
+    ("nine",     "helium",   "anticipate",    "jumped over the",     DataUseRestriction(NAGR=true)),
+    ("ten",      "helium",   "anticlimactic", "jumped over the",     DataUseRestriction(NPU=true)),
 
-    ("eleven",   "lithium",  "anticoagulant",                "lazy dog", Restriction(GRU=true, NCU=true)),
-    ("twelve",   "lithium",  "anticorruption",               "lazy dog", Restriction(HMB=true)),
-    ("thirteen", "lithium",  "antidepressant",               "lazy dog", Restriction(NCU=true)),
-    ("fourteen", "lithium",  "antidisestablishmentarianism", "lazy dog", Restriction(NAGR=true)),
-    ("fifteen",  "lithium",  "antidote",                     "lazy dog", Restriction(NPU=true))
+    ("eleven",   "lithium",  "anticoagulant",                "lazy dog", DataUseRestriction(GRU=true, NCU=true)),
+    ("twelve",   "lithium",  "anticorruption",               "lazy dog", DataUseRestriction(HMB=true)),
+    ("thirteen", "lithium",  "antidepressant",               "lazy dog", DataUseRestriction(NCU=true)),
+    ("fourteen", "lithium",  "antidisestablishmentarianism", "lazy dog", DataUseRestriction(NAGR=true)),
+    ("fifteen",  "lithium",  "antidote",                     "lazy dog", DataUseRestriction(NPU=true))
 
   )
 
-  val fixtureDocs:Seq[Document] = datasetTuples map {x:(String,String,String,String,Restriction) =>
+  val fixtureDocs:Seq[Document] = datasetTuples map {x:(String,String,String,String,DataUseRestriction) =>
     Document(x._1, Map(
       AttributeName("library","datasetName") -> AttributeString(x._1),
       AttributeName("library","projectName") -> AttributeString(x._2),
