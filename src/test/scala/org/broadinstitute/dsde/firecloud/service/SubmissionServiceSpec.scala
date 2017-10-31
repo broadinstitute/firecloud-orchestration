@@ -33,6 +33,18 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     MockWorkspaceServer.mockValidWorkspace.name,
     MockWorkspaceServer.mockInvalidId)
 
+  val localSubmissionWorkflowIdPath = FireCloudConfig.Rawls.submissionsWorkflowIdPath.format(
+    MockWorkspaceServer.mockValidWorkspace.namespace,
+    MockWorkspaceServer.mockValidWorkspace.name,
+    MockWorkspaceServer.mockValidId,
+    MockWorkspaceServer.mockValidId)
+
+  val localInvalidSubmissionWorkflowIdPath = FireCloudConfig.Rawls.submissionsWorkflowIdPath.format(
+    MockWorkspaceServer.mockValidWorkspace.namespace,
+    MockWorkspaceServer.mockValidWorkspace.name,
+    MockWorkspaceServer.mockInvalidId,
+    MockWorkspaceServer.mockInvalidId)
+
   "SubmissionService" - {
     "when hitting the /submissions/queueStatus path" - {
       "with GET" - {
@@ -129,6 +141,21 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     "when calling DELETE on the /workspaces/*/*/submissions/* with an invalid id" - {
       "NotFound response is returned" in {
         Delete(localInvalidSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
+        }
+      }
+    }
+
+    "when calling GET on the /workspaces/*/*/submissions/*/workflows/* path" - {
+      "with a valid id, OK response is returned" in {
+        Get(localSubmissionWorkflowIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "with an invalid id, NotFound response is returned" in {
+        Get(localInvalidSubmissionWorkflowIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(NotFound)
           errorReportCheck("Rawls", NotFound)
         }

@@ -191,6 +191,34 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("GET")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s/workflows/%s"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockValidId, mockValidId))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+          .withBody(mockValidSubmission.toJson.prettyPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s/workflows/%s"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId, mockInvalidId))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
           .withPath(s"$notificationsBasePath/workspace/${mockValidWorkspace.namespace}/${mockValidWorkspace.name}")
           .withHeader(authHeader))
       .respond(
