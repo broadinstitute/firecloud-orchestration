@@ -11,6 +11,8 @@ trait DataUseRestrictionSupport {
   private val listCodes = List("DS", "RS-POP")
   private val durNames = booleanCodes ++ listCodes ++ List("RS-G")
 
+  val dataUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("dataUseRestriction")
+
   /**
     * This method looks at all of the library attributes that are associated to Consent Codes and
     * builds a set of Data Use Restriction attributes from the values. Most are boolean values, some are lists
@@ -27,7 +29,7 @@ trait DataUseRestrictionSupport {
     val libraryAttrs = workspace.attributes.filter { case (attr, value) => durNames.contains(attr.name) }
 
     if (libraryAttrs.isEmpty) {
-      Map(AttributeName.withLibraryNS("dataUseRestriction") -> AttributeNull)
+      Map.empty
     } else {
       val existingAttrs: Map[AttributeName, Attribute] = libraryAttrs.flatMap {
         // Handle the String->Boolean case first
@@ -52,14 +54,14 @@ trait DataUseRestrictionSupport {
 
       val existingKeyNames = existingAttrs.keys.map(_.name).toSeq
 
-      // Missing boolean codes with default false
+      // Missing boolean codes default to false
       val booleanAttrs: Map[AttributeName, AttributeBoolean] = (booleanCodes ++ List("RS-G", "RS-FM", "RS-M")).
         filter(!existingKeyNames.contains(_)).
         flatMap { code =>
           Map(AttributeName.withDefaultNS(code) -> AttributeBoolean(false))
         }.toMap
 
-      // Missing list codes with default empty lists
+      // Missing list codes default to empty lists
       val listAttrs = listCodes.
         filter(!existingKeyNames.contains(_)).
         flatMap { code =>
@@ -68,8 +70,7 @@ trait DataUseRestrictionSupport {
 
       val allAttrs = existingAttrs ++ booleanAttrs ++ listAttrs
 
-      Map(AttributeName.withLibraryNS("dataUseRestriction") ->
-        AttributeValueRawJson.apply(allAttrs.toJson.compactPrint))
+      Map(dataUseRestrictionAttributeName -> AttributeValueRawJson.apply(allAttrs.toJson.compactPrint))
     }
 
   }
