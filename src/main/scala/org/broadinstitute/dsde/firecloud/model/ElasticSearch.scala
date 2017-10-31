@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurpose
 import org.broadinstitute.dsde.rawls.model.{AttributeFormat, PlainArrayAttributeListSerializer}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
@@ -120,6 +121,7 @@ object Document {
 case class LibrarySearchParams(
   searchString: Option[String],
   filters: Map[String, Seq[String]],
+  researchPurpose: Option[ResearchPurpose],
   fieldAggregations: Map[String, Int],
   from: Int = 0,
   size: Int = 10,
@@ -127,8 +129,8 @@ case class LibrarySearchParams(
   sortDirection: Option[String] = None)
 
 object LibrarySearchParams {
-  def apply(searchString: Option[String], filters: Map[String, Seq[String]], fieldAggregations: Map[String, Int], from: Option[Int], size: Option[Int], sortField: Option[String], sortDirection: Option[String]) = {
-    new LibrarySearchParams(searchString, filters, fieldAggregations, from.getOrElse(0), size.getOrElse(10), sortField, sortDirection)
+  def apply(searchString: Option[String], filters: Map[String, Seq[String]], researchPurpose: Option[ResearchPurpose], fieldAggregations: Map[String, Int], from: Option[Int], size: Option[Int], sortField: Option[String], sortDirection: Option[String]) = {
+    new LibrarySearchParams(searchString, filters, researchPurpose, fieldAggregations, from.getOrElse(0), size.getOrElse(10), sortField, sortDirection)
   }
 }
 

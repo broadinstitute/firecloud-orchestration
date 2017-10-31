@@ -635,7 +635,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
     }
     "when finding documents" - {
-      val params = LibrarySearchParams(Some("test"), Map(), Map())
+      val params = LibrarySearchParams(Some("test"), Map(), None, Map())
       "don't add workspaceAccess to document if can't find workspace id for a document" in {
         val doc = LibrarySearchResponse(params, 1, Seq(testLibraryMetadataJsObject: JsValue), Seq())
         assertResult(doc) {
