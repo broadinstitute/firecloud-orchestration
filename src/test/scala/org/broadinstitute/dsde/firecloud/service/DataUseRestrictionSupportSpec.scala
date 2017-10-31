@@ -93,14 +93,14 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
           val attrs = generateDataUseRestriction(ds)
           val durAtt: Attribute = attrs.getOrElse(dataUseRestrictionAttributeName, AttributeNull)
           durAtt shouldNot be(AttributeNull)
-          val dur: DataUseRestriction = makeDURFromWorkspace(ds)
+          val dur: DataUseRestriction = makeDurFromWorkspace(ds)
           dur shouldNot be(null)
         }
       }
 
       "dur should have appropriate gender codes populated" in {
         genderDatasets.map { ds =>
-          val dur: DataUseRestriction = makeDURFromWorkspace(ds)
+          val dur: DataUseRestriction = makeDurFromWorkspace(ds)
           if (ds.name.equalsIgnoreCase("Female")) {
             dur.`RS-G` should be(true)
             dur.`RS-FM` should be(true)
@@ -119,7 +119,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
 
       "dur should have appropriate NAGR code populated" in {
         nagrDatasets.map { ds =>
-          val dur: DataUseRestriction = makeDURFromWorkspace(ds)
+          val dur: DataUseRestriction = makeDurFromWorkspace(ds)
           if (ds.name.equalsIgnoreCase("Yes")) {
             dur.NAGR should be (true)
           } else {
@@ -130,7 +130,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
 
       "dataset should have a true value for the consent code for which it was specified" in {
         val durs: Map[String, DataUseRestriction] = booleanDatasets.flatMap { ds =>
-          Map(ds.name -> makeDURFromWorkspace(ds))
+          Map(ds.name -> makeDurFromWorkspace(ds))
         }.toMap
 
         booleanCodes.map { code =>
@@ -141,7 +141,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
 
       "dataset should have the correct list values for the consent code for which it was specified" in {
         val durs: Map[String, DataUseRestriction] = listDatasets.flatMap { ds =>
-          Map(ds.name -> makeDURFromWorkspace(ds))
+          Map(ds.name -> makeDurFromWorkspace(ds))
         }.toMap
 
         listCodes.map { code =>
@@ -177,12 +177,12 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
   }
 
 
-  //////////////////////////////////
+  //////////////////
   // Utility methods
-  //////////////////////////////////
+  //////////////////
 
 
-  private def makeDURFromWorkspace(ds: Workspace): DataUseRestriction = {
+  private def makeDurFromWorkspace(ds: Workspace): DataUseRestriction = {
     val attrs = generateDataUseRestriction(ds)
     val durAtt: Attribute = attrs.getOrElse(dataUseRestrictionAttributeName, AttributeNull)
     durAtt.toJson.convertTo[DataUseRestriction]
