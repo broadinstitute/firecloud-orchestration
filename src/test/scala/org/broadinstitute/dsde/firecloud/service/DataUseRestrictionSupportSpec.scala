@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.lang.reflect.Field
 import java.util.UUID
 
 import org.broadinstitute.dsde.firecloud.integrationtest.SearchResultValidation
@@ -73,7 +74,6 @@ object DataUseRestrictionTestFixture {
 }
 
 class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with DataUseRestrictionSupport {
-
 
   implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer = new AttributeFormat with PlainArrayAttributeListSerializer
   implicit val impDataUseRestriction: RootJsonFormat[DataUseRestriction] = jsonFormat13(DataUseRestriction)
@@ -160,6 +160,12 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
 
   }
 
+
+  //////////////////////////////////
+  // Utility methods
+  //////////////////////////////////
+
+
   private def makeDURFromWorkspace(ds: Workspace): DataUseRestriction = {
     val attrs = generateDataUseRestriction(ds)
     val durAtt: Attribute = attrs.getOrElse(dataUseRestrictionAttributeName, AttributeNull)
@@ -167,31 +173,23 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
   }
 
   private def checkBooleanTrue(dur: DataUseRestriction, fieldName: String): Boolean = {
-    val fieldMap: Map[String, Boolean] = dur.getClass.getDeclaredFields map { f =>
-      f.setAccessible(true)
-      // TODO: Get rid of warning ... can't match on boolean type
-      if (f.get(dur).isInstanceOf[Boolean]) {
-        f.getName.replace("$minus", "-") -> f.get(dur).asInstanceOf[Boolean]
-      } else {
-        f.getName.replace("$minus", "-") -> false
-      }
-    } toMap
-
-    fieldMap(fieldName)
+    getFieldMap(dur).getOrElse(fieldName, false).asInstanceOf[Boolean]
   }
 
   private def checkListValues(dur: DataUseRestriction, fieldName: String): Boolean = {
-    val fieldMap: Map[String, Seq[String]] = dur.getClass.getDeclaredFields map { f =>
-      f.setAccessible(true)
-      f.get(dur) match {
-          // TODO: Type erasure warning
-        case x: Seq[String] => f.getName.replace("$minus", "-") -> x
-        case _ => f.getName.replace("$minus", "-") -> Seq.empty[String]
-      }
-    } toMap
-
-    listValues.forall { lv => fieldMap(fieldName).contains(lv)}
-
+    val fieldValue: Seq[String] = getFieldMap(dur).getOrElse(fieldName, Seq.empty[String]).asInstanceOf[Seq[String]]
+    listValues.forall { lv => fieldValue.contains(lv)}
   }
+
+  private def getFieldMap(dur: DataUseRestriction): Map[String, Object] = {
+    dur.getClass.getDeclaredFields map { f =>
+      f.setAccessible(true)
+      getFieldName(f) -> f.get(dur)
+    } toMap
+  }
+
+  // Since we have dashes in field names, the value that comes back from Field.getName
+  // looks like "RS$minusPOP" instead of "RS-POP"
+  private def getFieldName(f: Field): String = { f.getName.replace("$minus", "-") }
 
 }
