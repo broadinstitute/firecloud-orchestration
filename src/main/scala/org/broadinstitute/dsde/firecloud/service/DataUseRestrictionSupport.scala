@@ -7,7 +7,7 @@ import spray.json._
 
 trait DataUseRestrictionSupport {
 
-  private val booleanCodes = List("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL","RS-PD")
+  private val booleanCodes = List("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-PD")
   private val listCodes = List("DS", "RS-POP")
   private val durNames = booleanCodes ++ listCodes ++ List("RS-G")
 
@@ -32,7 +32,12 @@ trait DataUseRestrictionSupport {
       Map.empty
     } else {
       val existingAttrs: Map[AttributeName, Attribute] = libraryAttrs.flatMap {
-        // Handle the String->Boolean case first
+        // Handle the String->Boolean conversion cases first
+        case (attr: AttributeName, value: AttributeString) if attr.name.equals("NAGR") =>
+          value.value match {
+            case x if x.equalsIgnoreCase("yes") => Map(AttributeName.withDefaultNS("NAGR") -> AttributeBoolean(true))
+            case _ => Map(AttributeName.withDefaultNS("NAGR") -> AttributeBoolean(false))
+          }
         case (attr: AttributeName, value: AttributeString) if attr.name.equals("RS-G") =>
           value.value match {
             case x if x.equalsIgnoreCase("female") =>

@@ -32,7 +32,7 @@ object DataUseRestrictionTestFixture {
 
 
   // Datasets are named by the code for easier identification in tests
-  val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL","RS-PD")
+  val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NCTRL", "RS-PD")
   val booleanDatasets: Seq[Workspace] = booleanCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeBoolean(true))
     mkWorkspace(attributes, code)
@@ -52,7 +52,13 @@ object DataUseRestrictionTestFixture {
     mkWorkspace(attributes, gender)
   }
 
-  val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ genderDatasets
+  val nagrVals: Seq[String] = Seq("Yes", "No", "Unspecified")
+  val nagrDatasets: Seq[Workspace] = nagrVals.map { value =>
+    val attributes = Map(AttributeName.withLibraryNS("NAGR") -> AttributeString(value))
+    mkWorkspace(attributes, value)
+  }
+
+  val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ genderDatasets ++ nagrDatasets
 
   def mkWorkspace(attributes: Map[AttributeName, Attribute], wsName: String): Workspace = {
     val testUUID: UUID = UUID.randomUUID()
@@ -94,7 +100,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
 
       "dur should have appropriate gender codes populated" in {
         genderDatasets.map { ds =>
-          val attrs = generateDataUseRestriction(ds)
           val dur: DataUseRestriction = makeDURFromWorkspace(ds)
           if (ds.name.equalsIgnoreCase("Female")) {
             dur.`RS-G` should be(true)
@@ -108,6 +113,17 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
             dur.`RS-G` should be(false)
             dur.`RS-FM` should be(false)
             dur.`RS-M` should be(false)
+          }
+        }
+      }
+
+      "dur should have appropriate NAGR code populated" in {
+        nagrDatasets.map { ds =>
+          val dur: DataUseRestriction = makeDURFromWorkspace(ds)
+          if (ds.name.equalsIgnoreCase("Yes")) {
+            dur.NAGR should be (true)
+          } else {
+            dur.NAGR should be (false)
           }
         }
       }
@@ -178,7 +194,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation
 
   private def checkListValues(dur: DataUseRestriction, fieldName: String): Boolean = {
     val fieldValue: Seq[String] = getFieldMap(dur).getOrElse(fieldName, Seq.empty[String]).asInstanceOf[Seq[String]]
-    listValues.forall { lv => fieldValue.contains(lv)}
+    listValues.forall { lv => fieldValue.contains(lv) }
   }
 
   private def getFieldMap(dur: DataUseRestriction): Map[String, Object] = {
