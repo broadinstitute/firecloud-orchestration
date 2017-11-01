@@ -4861,6 +4861,30 @@ definitions:
         items:
           $ref: '#/definitions/KeyValuePair'
 
+  ResearchPurpose:
+    type: object
+    properties:
+      DS:
+        type: array
+        items:
+          type: string
+        description: Disease focused research. Values are DOID ontology node ids in the form http://purl.obolibrary.org/obo/DOID_NNN.
+      NDMS:
+        type: boolean
+        description: Methods development/Validation study
+      NCTRL:
+        type: boolean
+        description: Control set
+      NAGR:
+        type: boolean
+        description: Aggregate analysis to understand variation in the general population
+      POA:
+        type: boolean
+        description: Study population origins or ancestry
+      NCU:
+        type: boolean
+        description: Commercial purpose/by a commercial entity
+
   SearchTermRef:
     type: object
     properties:
@@ -4870,6 +4894,10 @@ definitions:
       filters:
         type: object
         description: Map[String, Array[String]] Each entry contains the column name (i.e. "library:indication") and a list of terms that will be or'ed in the query (["cancer", "sleep apnea"])
+      researchPurpose:
+        type: object
+        schema:
+          $ref: '#/definitions/ResearchPurpose'
       fieldAggregations:
         type: object
         description: Map[String, Int] The list of fields for which you would like to retrieve aggregations and the number of aggregations to return. Default is 5. Specify 0 to get all

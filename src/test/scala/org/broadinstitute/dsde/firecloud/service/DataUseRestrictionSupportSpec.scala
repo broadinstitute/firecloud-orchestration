@@ -30,6 +30,8 @@ object DataUseRestrictionTestFixture {
     `RS-M`: Boolean = false,
     `RS-POP`: Seq[String] = Seq.empty[String])
 
+  implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer = new AttributeFormat with PlainArrayAttributeListSerializer
+  implicit val impDataUseRestriction: RootJsonFormat[DataUseRestriction] = jsonFormat13(DataUseRestriction)
 
   // Datasets are named by the code for easier identification in tests
   val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NCTRL", "RS-PD")
@@ -81,8 +83,7 @@ object DataUseRestrictionTestFixture {
 
 class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with DataUseRestrictionSupport {
 
-  implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer = new AttributeFormat with PlainArrayAttributeListSerializer
-  implicit val impDataUseRestriction: RootJsonFormat[DataUseRestriction] = jsonFormat13(DataUseRestriction)
+  import DataUseRestrictionTestFixture.{impAttributeFormat, impDataUseRestriction}
 
   "DataUseRestrictionSupport" - {
 
