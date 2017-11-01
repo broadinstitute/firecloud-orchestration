@@ -89,7 +89,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
         getDataUseRestrictions(searchResponse).exists { dur => dur.NDMS } should be(true)
       }
 
-      "NAGR dataset should be indexed as true" in {
+      "NAGR datasets should have at least one indexed as true" in {
         val searchResponse = searchFor("NAGR")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(3)
@@ -110,7 +110,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
         getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-PD` } should be(true)
       }
 
-      "RS-G dataset should be indexed as true" in {
+      "RS-G datasets should have at least one indexed as true" in {
         val searchResponse = searchFor("RS-G")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(3)
@@ -131,14 +131,14 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
         getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-M` } should be(true)
       }
 
-      "DS:non-empty list dataset should be have values" in {
+      "DS:non-empty list dataset should have values" in {
         val searchResponse = searchFor("DS")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
         getDataUseRestrictions(searchResponse).head.DS.nonEmpty should be(true)
       }
 
-      "RS-POP:non-empty list dataset should be have values" in {
+      "RS-POP:non-empty list dataset should have values" in {
         val searchResponse = searchFor("RS-POP")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
