@@ -2,6 +2,8 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
+import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
+import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures.DataUseRestriction
 import org.broadinstitute.dsde.firecloud.service.{DataUseRestrictionTestFixtures, LibraryServiceSupport}
 import org.broadinstitute.dsde.rawls.model.Workspace
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
@@ -21,7 +23,6 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
     // time the tests start, leading to test failures.
     logger.info("indexing fixtures ...")
     val docs = Await.result(indexableDocuments(datasets, new MockOntologyDAO), dur)
-    docs.map { doc => logger.info(s"Document: ${doc.toString}") }
     searchDAO.bulkIndex(docs, refresh = true)
     logger.info("... fixtures indexed.")
   }
@@ -41,75 +42,120 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
     "Data Use Restriction Search" -{
 
       "should find all datasets" in {
-        // TODO: returned list should equal the number of datasets indexed
-        val searchResponse = searchFor("project")
-        logger.info(s"Searching on: 'project'")
+        // All dataset workspaces have the same name for ease of testing
+        val searchResponse = searchFor("projectName")
         searchResponse shouldNot be(null)
-        logger.info(s"Result size: ${searchResponse.results.size}")
+        searchResponse.results.size should be(datasets.size)
       }
 
-//      "should not find non-existent dataset" in {
+      "should not find non-existent dataset" in {
+        val searchResponse = searchFor("nonexistentdataset")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(0)
+      }
+
+      "GRU dataset should be indexed as true" in {
+        val searchResponse = searchFor("GRU")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.GRU }
+      }
+
+      "HMB dataset should be indexed as true" in {
+        val searchResponse = searchFor("HMB")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.HMB }
+      }
+
+      "NCU dataset should be indexed as true" in {
+        val searchResponse = searchFor("NCU")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.NCU }
+      }
+
+      "NPU dataset should be indexed as true" in {
+        val searchResponse = searchFor("NPU")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.NPU }
+      }
+
+      "NDMS dataset should be indexed as true" in {
+        val searchResponse = searchFor("NDMS")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.NDMS }
+      }
+
+      "NAGR dataset should be indexed as true" in {
+        val searchResponse = searchFor("NAGR")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(3)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.NAGR }
+      }
+
+      "NCTRL dataset should be indexed as true" in {
+        val searchResponse = searchFor("NCTRL")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.NCTRL }
+      }
+
+      "RS-PD dataset should be indexed as true" in {
+        val searchResponse = searchFor("RS-PD")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-PD` }
+      }
+
+      "RS-G dataset should be indexed as true" in {
+        val searchResponse = searchFor("RS-G")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(3)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-G` }
+      }
+
+      "RS-FM dataset should be indexed as true" in {
+        val searchResponse = searchFor("RS-FM")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-FM` }
+      }
+
+      "RS-M dataset should be indexed as true" in {
+        val searchResponse = searchFor("RS-M")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-M` }
+      }
+
+//      "DS:non-empty list datasets" in {
 //        // TODO
 //      }
 //
-//      "should not find GRU:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find HMB:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find NCU:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find NPU:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find NCU:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find NDMS:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find NAGR:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find NCTRL:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find RS-PD:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find RS-G:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find RS-FM:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find RS-M:true datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find DS:non-empty list datasets" in {
-//        // TODO
-//      }
-//
-//      "should not find RS-POP:non-empty list datasets" in {
+//      "RS-POP:non-empty list datasets" in {
 //        // TODO
 //      }
 
     }
 
+  }
+
+  override def searchFor(text: String): LibrarySearchResponse = {
+    val criteria = emptyCriteria.copy(
+      searchString = Some(text),
+      size = datasets.size)
+    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String]), dur)
+  }
+
+
+  private def getDataUseRestrictions(searchResponse: LibrarySearchResponse): Seq[DataUseRestriction] = {
+    searchResponse.results.map { hit =>
+      val sdur = hit.asJsObject.fields("library:structuredUseRestriction").asJsObject
+      sdur.convertTo[DataUseRestriction]
+    }
   }
 
 }

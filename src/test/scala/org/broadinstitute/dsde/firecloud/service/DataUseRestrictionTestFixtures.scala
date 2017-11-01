@@ -32,37 +32,37 @@ object DataUseRestrictionTestFixtures {
   val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NCTRL", "RS-PD")
   val booleanDatasets: Seq[Workspace] = booleanCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeBoolean(true))
-    mkWorkspace(attributes, code)
+    mkWorkspace(attributes, code, code)
   }
 
   val listCodes: Seq[String] = Seq("DS", "RS-POP")
   val listValues: Seq[String] = Seq("TERM-1", "TERM-2")
   val listDatasets: Seq[Workspace] = listCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeValueList(listValues.map(AttributeString)))
-    mkWorkspace(attributes, code)
+    mkWorkspace(attributes, code, code)
   }
 
   // Gender datasets are named by the gender value for easier identification in tests
-  val genderVals: Seq[String] = Seq("Female", "Male", "N/A")
-  val genderDatasets: Seq[Workspace] = genderVals.map { gender =>
+  val genderVals: Seq[(String, String)] = Seq(("Female", "RS-FM"), ("Male", "RS-M"), ("N/A", "N/A"))
+  val genderDatasets: Seq[Workspace] = genderVals.flatMap { case (gender: String, code: String) =>
     val attributes = Map(AttributeName.withLibraryNS("RS-G") -> AttributeString(gender))
-    mkWorkspace(attributes, gender)
+    Seq(mkWorkspace(attributes, gender, code), mkWorkspace(attributes, gender, "RS-G"))
   }
 
   // Both gender and 'NAGR' codes are saved as string values in workspace attributes
   val nagrVals: Seq[String] = Seq("Yes", "No", "Unspecified")
   val nagrDatasets: Seq[Workspace] = nagrVals.map { value =>
     val attributes = Map(AttributeName.withLibraryNS("NAGR") -> AttributeString(value))
-    mkWorkspace(attributes, value)
+    mkWorkspace(attributes, value, "NAGR")
   }
 
   val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ genderDatasets ++ nagrDatasets
 
-  def mkWorkspace(attributes: Map[AttributeName, Attribute], wsName: String): Workspace = {
+  def mkWorkspace(attributes: Map[AttributeName, Attribute], wsName: String, wsDescription: String): Workspace = {
     val testUUID: UUID = UUID.randomUUID()
     val defaultAttributes = attributes ++ Map(
-      AttributeName.withDefaultNS("description") -> AttributeString("some description"),
-      AttributeName.withDefaultNS("userAttributeOne") -> AttributeString("one"),
+      AttributeName.withDefaultNS("description") -> AttributeString(wsDescription),
+      AttributeName.withLibraryNS("description") -> AttributeString(wsDescription),
       AttributeName.withDefaultNS("userAttributeTwo") -> AttributeString("two"),
       AttributeName.withLibraryNS("datasetName") -> AttributeString("name"),
       AttributeName.withLibraryNS("datasetVersion") -> AttributeString("v1.0"),

@@ -82,7 +82,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
     "when there are no library data use restriction fields" - {
 
       "dataset should not have any data use restriction for empty attributes" in {
-        val workspace = mkWorkspace(Map.empty[AttributeName, Attribute], "empty")
+        val workspace = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
         val attrs = generateStructuredUseRestriction(workspace)
         attrs should be(empty)
       }
@@ -94,7 +94,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           AttributeName.withDefaultNS("workspaceId") -> AttributeString("three"),
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
         )
-        val workspace = mkWorkspace(nonLibraryAttributes, "non-library")
+        val workspace = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
         val attrs = generateStructuredUseRestriction(workspace)
         attrs should be(empty)
       }
