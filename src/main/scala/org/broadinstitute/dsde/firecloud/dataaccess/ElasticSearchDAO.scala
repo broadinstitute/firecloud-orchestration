@@ -111,10 +111,12 @@ class ElasticSearchDAO(servers: Seq[Authority], clusterName: String, indexName: 
     }
   }
 
+  // TODO: needs access to ontology dao
   override def findDocuments(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
     findDocumentsWithAggregateInfo(client, indexName, criteria, groups)
   }
 
+  // TODO: needs access to ontology dao
   override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
     autocompleteSuggestions(client, indexName, criteria, groups)
   }

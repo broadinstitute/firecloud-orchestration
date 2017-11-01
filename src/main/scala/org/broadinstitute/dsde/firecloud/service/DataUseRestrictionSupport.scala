@@ -1,10 +1,16 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
+import org.broadinstitute.dsde.firecloud.dataaccess.OntologyDAO
+import org.broadinstitute.dsde.firecloud.model.DataUse.DiseaseOntologyNodeId
+import org.broadinstitute.dsde.firecloud.model.LibrarySearchParams
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
 import org.broadinstitute.dsde.rawls.model._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 trait DataUseRestrictionSupport extends LazyLogging {
 
@@ -89,6 +95,25 @@ trait DataUseRestrictionSupport extends LazyLogging {
       Map(structuredUseRestrictionAttributeName -> AttributeValueRawJson.apply(allAttrs.toJson.compactPrint))
     }
 
+  }
+
+  def augmentSearchCriteria(criteria:LibrarySearchParams, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[LibrarySearchParams] = {
+    if (criteria.researchPurpose.isEmpty || criteria.researchPurpose.get.DS.isEmpty)
+      Future.successful(criteria) // return unchanged; no ontology nodes to augment
+    else {
+      val origPurpose = criteria.researchPurpose.get
+      // for all nodes in the research purpose's DS value, query ontology to get their parent nodes
+      val targetNodes = origPurpose.DS
+      Future.sequence(targetNodes map (node => ontologyDAO.search(node.uri.toString))) map { allTermResults =>
+        val parentsToAugment:Seq[DiseaseOntologyNodeId] = (allTermResults collect {
+          case Some(terms:List[TermResource]) => terms.head.parents.getOrElse(List.empty[TermParent]).map(parent => DiseaseOntologyNodeId(parent.id))
+        }).flatten
+        // append the parent node info to the original research purpose
+        val newDSValue = targetNodes ++ parentsToAugment
+        val newResearchPurpose = origPurpose.copy(DS = newDSValue)
+        criteria.copy(researchPurpose = Some(newResearchPurpose))
+      }
+    }
   }
 
 }
