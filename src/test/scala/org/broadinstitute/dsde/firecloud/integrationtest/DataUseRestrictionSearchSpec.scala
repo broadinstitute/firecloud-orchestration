@@ -131,17 +131,29 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
         getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-M` }
       }
 
-//      "DS:non-empty list datasets" in {
-//        // TODO
-//      }
-//
-//      "RS-POP:non-empty list datasets" in {
-//        // TODO
-//      }
+      "DS:non-empty list dataset should be have values" in {
+        val searchResponse = searchFor("DS")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).head.DS.nonEmpty should be(true)
+      }
+
+      "RS-POP:non-empty list dataset should be have values" in {
+        val searchResponse = searchFor("RS-POP")
+        searchResponse shouldNot be(null)
+        searchResponse.results.size should be(1)
+        getDataUseRestrictions(searchResponse).head.`RS-POP`.nonEmpty should be(true)
+      }
 
     }
 
   }
+
+
+  //////////////////
+  // Utility methods
+  //////////////////
+
 
   override def searchFor(text: String): LibrarySearchResponse = {
     val criteria = emptyCriteria.copy(
@@ -149,7 +161,6 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
       size = datasets.size)
     Await.result(searchDAO.findDocuments(criteria, Seq.empty[String]), dur)
   }
-
 
   private def getDataUseRestrictions(searchResponse: LibrarySearchResponse): Seq[DataUseRestriction] = {
     searchResponse.results.map { hit =>
