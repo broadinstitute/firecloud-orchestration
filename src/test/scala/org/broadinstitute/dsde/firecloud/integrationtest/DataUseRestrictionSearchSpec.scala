@@ -48,65 +48,65 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
         logger.info(s"Result size: ${searchResponse.results.size}")
       }
 
-      "should not find non-existent dataset" in {
-        // TODO
-      }
-
-      "should not find GRU:true datasets" in {
-        // TODO
-      }
-
-      "should not find HMB:true datasets" in {
-        // TODO
-      }
-
-      "should not find NCU:true datasets" in {
-        // TODO
-      }
-
-      "should not find NPU:true datasets" in {
-        // TODO
-      }
-
-      "should not find NCU:true datasets" in {
-        // TODO
-      }
-
-      "should not find NDMS:true datasets" in {
-        // TODO
-      }
-
-      "should not find NAGR:true datasets" in {
-        // TODO
-      }
-
-      "should not find NCTRL:true datasets" in {
-        // TODO
-      }
-
-      "should not find RS-PD:true datasets" in {
-        // TODO
-      }
-
-      "should not find RS-G:true datasets" in {
-        // TODO
-      }
-
-      "should not find RS-FM:true datasets" in {
-        // TODO
-      }
-
-      "should not find RS-M:true datasets" in {
-        // TODO
-      }
-
-      "should not find DS:non-empty list datasets" in {
-        // TODO
-      }
-
-      "should not find RS-POP:non-empty list datasets" in {
-        // TODO
-      }
+//      "should not find non-existent dataset" in {
+//        // TODO
+//      }
+//
+//      "should not find GRU:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find HMB:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find NCU:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find NPU:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find NCU:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find NDMS:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find NAGR:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find NCTRL:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find RS-PD:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find RS-G:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find RS-FM:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find RS-M:true datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find DS:non-empty list datasets" in {
+//        // TODO
+//      }
+//
+//      "should not find RS-POP:non-empty list datasets" in {
+//        // TODO
+//      }
 
     }
 
