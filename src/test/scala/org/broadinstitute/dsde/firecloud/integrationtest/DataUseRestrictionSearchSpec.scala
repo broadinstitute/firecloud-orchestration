@@ -42,7 +42,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
     "Data Use Restriction Search" -{
 
       "should find all datasets" in {
-        // All dataset workspaces have the same name for ease of testing
+        // All dataset workspaces have the same "library:projectName" value for ease of testing
         val searchResponse = searchFor("projectName")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(datasets.size)
@@ -58,77 +58,77 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
         val searchResponse = searchFor("GRU")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.GRU }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.GRU } should be(true)
       }
 
       "HMB dataset should be indexed as true" in {
         val searchResponse = searchFor("HMB")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.HMB }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.HMB } should be(true)
       }
 
       "NCU dataset should be indexed as true" in {
         val searchResponse = searchFor("NCU")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.NCU }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.NCU } should be(true)
       }
 
       "NPU dataset should be indexed as true" in {
         val searchResponse = searchFor("NPU")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.NPU }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.NPU } should be(true)
       }
 
       "NDMS dataset should be indexed as true" in {
         val searchResponse = searchFor("NDMS")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.NDMS }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.NDMS } should be(true)
       }
 
       "NAGR dataset should be indexed as true" in {
         val searchResponse = searchFor("NAGR")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(3)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.NAGR }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.NAGR } should be(true)
       }
 
       "NCTRL dataset should be indexed as true" in {
         val searchResponse = searchFor("NCTRL")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.NCTRL }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.NCTRL } should be(true)
       }
 
       "RS-PD dataset should be indexed as true" in {
         val searchResponse = searchFor("RS-PD")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-PD` }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-PD` } should be(true)
       }
 
       "RS-G dataset should be indexed as true" in {
         val searchResponse = searchFor("RS-G")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(3)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-G` }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-G` } should be(true)
       }
 
       "RS-FM dataset should be indexed as true" in {
         val searchResponse = searchFor("RS-FM")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-FM` }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-FM` } should be(true)
       }
 
       "RS-M dataset should be indexed as true" in {
         val searchResponse = searchFor("RS-M")
         searchResponse shouldNot be(null)
         searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-M` }
+        getDataUseRestrictions(searchResponse).exists { dur => dur.`RS-M` } should be(true)
       }
 
       "DS:non-empty list dataset should be have values" in {
