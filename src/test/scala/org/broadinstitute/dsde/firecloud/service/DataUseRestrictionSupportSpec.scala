@@ -1,89 +1,15 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import java.lang.reflect.Field
-import java.util.UUID
 
-import org.broadinstitute.dsde.firecloud.integrationtest.SearchResultValidation
-import DataUseRestrictionTestFixture._
+import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures._
 import org.broadinstitute.dsde.rawls.model.{ManagedGroupRef, Workspace, _}
-import org.joda.time.DateTime
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
-import spray.json.DefaultJsonProtocol._
+import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
 import scala.language.postfixOps
 
-object DataUseRestrictionTestFixture {
-
-  case class DataUseRestriction(
-    GRU: Boolean = false,
-    HMB: Boolean = false,
-    DS: Seq[String] = Seq.empty[String],
-    NCU: Boolean = false,
-    NPU: Boolean = false,
-    NDMS: Boolean = false,
-    NAGR: Boolean = false,
-    NCTRL: Boolean = false,
-    `RS-PD`: Boolean = false,
-    `RS-G`: Boolean = false,
-    `RS-FM`: Boolean = false,
-    `RS-M`: Boolean = false,
-    `RS-POP`: Seq[String] = Seq.empty[String])
-
-  implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer = new AttributeFormat with PlainArrayAttributeListSerializer
-  implicit val impDataUseRestriction: RootJsonFormat[DataUseRestriction] = jsonFormat13(DataUseRestriction)
-
-  // Datasets are named by the code for easier identification in tests
-  val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NCTRL", "RS-PD")
-  val booleanDatasets: Seq[Workspace] = booleanCodes.map { code =>
-    val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeBoolean(true))
-    mkWorkspace(attributes, code)
-  }
-
-  val listCodes: Seq[String] = Seq("DS", "RS-POP")
-  val listValues: Seq[String] = Seq("TERM-1", "TERM-2")
-  val listDatasets: Seq[Workspace] = listCodes.map { code =>
-    val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeValueList(listValues.map(AttributeString)))
-    mkWorkspace(attributes, code)
-  }
-
-  // Gender datasets are named by the gender value for easier identification in tests
-  val genderVals: Seq[String] = Seq("Female", "Male", "N/A")
-  val genderDatasets: Seq[Workspace] = genderVals.map { gender =>
-    val attributes = Map(AttributeName.withLibraryNS("RS-G") -> AttributeString(gender))
-    mkWorkspace(attributes, gender)
-  }
-
-  val nagrVals: Seq[String] = Seq("Yes", "No", "Unspecified")
-  val nagrDatasets: Seq[Workspace] = nagrVals.map { value =>
-    val attributes = Map(AttributeName.withLibraryNS("NAGR") -> AttributeString(value))
-    mkWorkspace(attributes, value)
-  }
-
-  val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ genderDatasets ++ nagrDatasets
-
-  def mkWorkspace(attributes: Map[AttributeName, Attribute], wsName: String): Workspace = {
-    val testUUID: UUID = UUID.randomUUID()
-    Workspace(
-      workspaceId=testUUID.toString,
-      namespace="testWorkspaceNamespace",
-      name=wsName,
-      authorizationDomain=Set.empty[ManagedGroupRef],
-      isLocked=false,
-      createdBy="createdBy",
-      createdDate=DateTime.now(),
-      lastModified=DateTime.now(),
-      attributes=attributes,
-      bucketName="bucketName",
-      accessLevels=Map.empty,
-      authDomainACLs=Map())
-  }
-
-}
-
-class DataUseRestrictionSupportSpec extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with DataUseRestrictionSupport {
-
-  import DataUseRestrictionTestFixture.{impAttributeFormat, impDataUseRestriction}
+class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseRestrictionSupport {
 
   "DataUseRestrictionSupport" - {
 
