@@ -4,7 +4,6 @@ import org.parboiled.common.FileUtils
 import spray.http.{HttpMethod, Uri}
 import spray.http.MediaTypes._
 import spray.routing._
-import spray.util._
 
 import scala.util.Try
 
@@ -24,47 +23,30 @@ object FireCloudDirectiveUtils {
 trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreator with spray.httpx.RequestBuilding {
   def respondWithJSON = respondWithMediaType(`application/json`)
 
-  def passthrough(unencodedPath: String, methods: HttpMethod*): Route =
-    passthrough(Uri(unencodedPath), methods:_*)
-
-  def passthrough(uri: Uri, methods: HttpMethod*): Route =
-    passthrough(requestCompression = true, uri, methods:_*)
-
-  def passthrough(requestCompression: Boolean, unencodedPath: String, methods: HttpMethod*): Route =
-    passthrough(requestCompression, Uri(unencodedPath), methods:_*)
-
-  def passthrough(requestCompression: Boolean, uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
-    generateExternalHttpPerRequestForMethod(requestCompression = true, uri, inMethod)
-  } reduce (_ ~ _)
-
-
-  @deprecated("Makes routing confusing!","2017-08-29")
-  def passthroughAllPaths(ourEndpointPath: String, targetEndpointUrl: String, requestCompression: Boolean = true) = pathPrefix( separateOnSlashes(ourEndpointPath) ) {
-    extract(_.request.method) { httpMethod =>
-      unmatchedPath { remaining =>
-        parameterMap { params =>
-          passthrough(requestCompression, Uri(encodeUri(targetEndpointUrl + remaining)).withQuery(params).toString, httpMethod)
-        }
-      }
-    }
+  def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
+    passthrough(Uri(unencodedPath), methods: _*)
   }
+
+  def passthrough(uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
+    generateExternalHttpPerRequestForMethod(uri, inMethod)
+  } reduce (_ ~ _)
 
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
 
-  private def generateExternalHttpPerRequestForMethod(requestCompression: Boolean, uri: Uri, inMethod: HttpMethod) = {
+  private def generateExternalHttpPerRequestForMethod(uri: Uri, inMethod: HttpMethod) = {
     val outMethod = new RequestBuilder(inMethod)
     // POST, PUT, PATCH
     if (inMethod.isEntityAccepted) {
       method(inMethod) {
         respondWithJSON { requestContext =>
-          externalHttpPerRequest(requestCompression, requestContext, outMethod(uri, requestContext.request.entity))
+          externalHttpPerRequest(requestContext, outMethod(uri, requestContext.request.entity))
         }
       }
     }
     else {
       // GET, DELETE
       method(inMethod) { requestContext =>
-        externalHttpPerRequest(requestCompression, requestContext, outMethod(uri))
+        externalHttpPerRequest(requestContext, outMethod(uri))
       }
     }
   }

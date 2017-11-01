@@ -144,9 +144,4 @@ trait PerRequestCreator {
   /** convenience for HttpClient */
   def externalHttpPerRequest(r: RequestContext, request: HttpRequest) =
     perRequest(r, Props(new HttpClient(r)), HttpClient.PerformExternalRequest(requestCompression = true, request))
-
-  /** overloaded convenience method for HttpClient */
-  def externalHttpPerRequest(requestCompression: Boolean, r: RequestContext, request: HttpRequest) =
-    perRequest(r, Props(new HttpClient(r)), HttpClient.PerformExternalRequest(requestCompression, request))
-
 }

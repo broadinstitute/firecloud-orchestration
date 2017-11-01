@@ -16,17 +16,13 @@ import spray.http.HttpMethod
 import spray.http.HttpMethods._
 import spray.http.StatusCodes._
 
-class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
+final class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
 
   def actorRefFactory:ActorSystem = system
 
   var methodsServer: ClientAndServer = _
 
   case class Api(localPath: String, verb: HttpMethod, remotePath: String, allowQueryParams: Boolean)
-
-  // we don't include OPTIONS here because we accept all OPTIONS requests to all endpoints for CORS.
-  // we also don't include TRACE or CONNECT or any of the more obscure verbs.
-  val allHttpMethods = Seq(GET, POST, PUT, PATCH, DELETE, HEAD)
 
   /*
     list all the passthrough routes in MethodsApiService.
@@ -61,10 +57,10 @@ class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
     non-passthrough routes for different http verbs. As of this writing, each path is either all passthrough
     or all non-passthrough.
    */
-  val negativeCases:Map[String,Seq[HttpMethod]] = testCases
+  val negativeCases: Map[String, Seq[HttpMethod]] = testCases
     .groupBy(_.localPath)
     .map(api => api._1 -> api._2.map(_.verb))
-    .map(neg => neg._1 -> allHttpMethods.diff(neg._2))
+    .map(neg => neg._1 -> allHttpMethodsExcept(neg._2))
 
   // pick a status code to represent success in our mocks that we don't use elsewhere.
   // this guarantees the code is coming from our mock, not from some other route.
@@ -123,12 +119,9 @@ class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
       }
     }
   }
-
 }
 
-class MethodsApiServiceSpecCallback extends ExpectationCallback with Matchers with LazyLogging {
-
-
+final class MethodsApiServiceSpecCallback extends ExpectationCallback {
   override def handle(httpRequest: HttpRequest): HttpResponse = {
     val method:String = httpRequest.getMethod.getValue
     val path:String = httpRequest.getPath.getValue

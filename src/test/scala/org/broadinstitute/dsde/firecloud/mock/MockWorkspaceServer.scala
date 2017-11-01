@@ -11,7 +11,6 @@ import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
-import org.mockserver.model.Parameter._
 import spray.http.StatusCodes._
 import spray.json._
 
@@ -75,8 +74,32 @@ object MockWorkspaceServer {
     MockWorkspaceServer.workspaceServer
       .when(
         request()
+          .withMethod("GET")
+          .withPath("/api/submissions/queueStatus")
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
           .withMethod("POST")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name))
+          .withHeader(authHeader))
+      .callback(
+        callback().
+          withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidSubmissionCallback")
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("POST")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/validate"
             .format(mockValidWorkspace.namespace, mockValidWorkspace.name))
           .withHeader(authHeader))
       .callback(
@@ -156,6 +179,62 @@ object MockWorkspaceServer {
           .withMethod("DELETE")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
             .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s/workflows/%s"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockValidId, mockValidId))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+          .withBody(mockValidSubmission.toJson.prettyPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s/workflows/%s"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId, mockInvalidId))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s/workflows/%s/outputs"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockValidId, mockValidId))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+          .withBody(mockValidSubmission.toJson.prettyPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s/workflows/%s/outputs"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId, mockInvalidId))
           .withHeader(authHeader))
       .respond(
         response()

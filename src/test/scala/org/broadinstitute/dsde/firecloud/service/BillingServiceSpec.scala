@@ -1,36 +1,47 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import spray.http.HttpMethods
+import org.mockserver.model.HttpResponse
+import spray.http.HttpMethods._
 import spray.http.StatusCodes._
 
-class BillingServiceSpec extends ServiceSpec with BillingService {
-
+final class BillingServiceSpec extends ServiceSpec with BillingService {
   def actorRefFactory = system
   var workspaceServer: ClientAndServer = _
 
   override def beforeAll(): Unit = {
+    val billingPath = FireCloudConfig.Rawls.authPrefix + "/billing"
+
     workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
 
-    workspaceServer.when(request().withMethod(HttpMethods.POST.name).withPath(BillingService.billingPath))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
-      )
-    workspaceServer.when(request().withMethod(HttpMethods.GET.name).withPath(BillingService.billingPath + "/project1/members"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-      )
-    List(HttpMethods.PUT, HttpMethods.DELETE).foreach { method =>
-      workspaceServer.when(request().withMethod(method.name).withPath(BillingService.billingPath + "/project1/user/foo@bar.com"))
-        .respond(
-          org.mockserver.model.HttpResponse.response()
-            .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-        )
+    workspaceServer.when(
+      request()
+        .withMethod(POST.name)
+        .withPath(billingPath))
+      .respond(HttpResponse.response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(Created.intValue))
+
+    workspaceServer.when(
+      request()
+        .withMethod(GET.name)
+        .withPath(billingPath + "/project1/members"))
+      .respond(HttpResponse.response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(OK.intValue))
+
+    List(PUT, DELETE).foreach { method =>
+      workspaceServer.when(
+        request()
+          .withMethod(method.name)
+          .withPath(billingPath + "/project2/user/foo@bar.com"))
+        .respond(HttpResponse.response()
+            .withHeaders(MockUtils.header)
+            .withStatusCode(OK.intValue))
     }
   }
 
@@ -44,21 +55,23 @@ class BillingServiceSpec extends ServiceSpec with BillingService {
         status should be(Created)
       }
     }
+
     "list project members" in {
       Get("/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
         status should be(OK)
       }
     }
+
     "add user" in {
-      Put("/billing/project1/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      Put("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
         status should be(OK)
       }
     }
+
     "remove user" in {
-      Delete("/billing/project1/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      Delete("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
         status should be(OK)
       }
     }
   }
-
 }

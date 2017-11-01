@@ -35,7 +35,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
           pathPrefix("entities") {
             pathEnd {
               requireUserInfo() { _ =>
-                passthrough(requestCompression = true, baseRawlsEntitiesUrl, HttpMethods.GET)
+                passthrough(baseRawlsEntitiesUrl, HttpMethods.GET)
               }
             } ~
               path("copy") {
@@ -66,18 +66,18 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                 val entityTypeUrl = encodeUri(baseRawlsEntitiesUrl + "/" + entityType)
                 pathEnd {
                   requireUserInfo() { _ =>
-                    passthrough(requestCompression = true, entityTypeUrl, HttpMethods.GET)
+                    passthrough(entityTypeUrl, HttpMethods.GET)
                   }
                 } ~
                   pathPrefix(Segment) { entityName =>
                     pathEnd {
                       requireUserInfo() { _ =>
-                        passthrough(requestCompression = true, entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
+                        passthrough(entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
                       }
                     } ~
                     path("evaluate") {
                       requireUserInfo() { _ =>
-                        passthrough(requestCompression = true, entityTypeUrl + "/" + entityName + "/evaluate", HttpMethods.POST)
+                        passthrough(entityTypeUrl + "/" + entityName + "/evaluate", HttpMethods.POST)
                       }
                     }
                   }
@@ -92,7 +92,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                     entityQueryUriFromWorkspaceAndQuery(workspaceNamespace, workspaceName, entityType).
                     withQuery(requestUri.query)
                   val extReq = Get(entityQueryUri)
-                  externalHttpPerRequest(requestCompression = true, requestContext, extReq)
+                  externalHttpPerRequest(requestContext, extReq)
                 }
               }
             }
