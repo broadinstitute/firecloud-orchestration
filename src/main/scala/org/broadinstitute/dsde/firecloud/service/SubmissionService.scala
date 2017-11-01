@@ -11,7 +11,7 @@ abstract class SubmissionServiceActor extends Actor with SubmissionService {
 }
 
 trait SubmissionService extends HttpService with PerRequestCreator with FireCloudDirectives {
-
+  // TODO Resolve https://broadinstitute.atlassian.net/browse/GAWB-2807
   val routes: Route = {
     path("submissions" / "queueStatus") {
       get {
