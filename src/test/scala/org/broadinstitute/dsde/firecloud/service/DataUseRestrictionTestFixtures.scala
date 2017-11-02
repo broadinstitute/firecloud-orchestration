@@ -46,14 +46,14 @@ object DataUseRestrictionTestFixtures {
   val genderVals: Seq[(String, String)] = Seq(("Female", "RS-FM"), ("Male", "RS-M"), ("N/A", "N/A"))
   val genderDatasets: Seq[Workspace] = genderVals.flatMap { case (gender: String, code: String) =>
     val attributes = Map(AttributeName.withLibraryNS("RS-G") -> AttributeString(gender))
-    Seq(mkWorkspace(attributes, gender, code), mkWorkspace(attributes, gender, "RS-G"))
+    Seq(mkWorkspace(attributes, gender, code), mkWorkspace(attributes, gender, s"""RSG${gender.replace("/","")}"""))
   }
 
   // Both gender and 'NAGR' codes are saved as string values in workspace attributes
   val nagrVals: Seq[String] = Seq("Yes", "No", "Unspecified")
   val nagrDatasets: Seq[Workspace] = nagrVals.map { value =>
     val attributes = Map(AttributeName.withLibraryNS("NAGR") -> AttributeString(value))
-    mkWorkspace(attributes, value, "NAGR")
+    mkWorkspace(attributes, value, s"NAGR$value")
   }
 
   val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ genderDatasets ++ nagrDatasets
