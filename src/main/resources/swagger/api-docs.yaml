@@ -1603,7 +1603,7 @@ paths:
         500:
           description: Internal Server Error
 
-  /api/version/executionEngine:
+  /version/executionEngine:
     get:
       tags:
         - Version
@@ -1614,11 +1614,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/ExecutionEngineVersion'
-      security:
-        - googleoauth:
-          - openid
-          - email
-          - profile
+      security: []
 
   /api/workspaces:
     get:
