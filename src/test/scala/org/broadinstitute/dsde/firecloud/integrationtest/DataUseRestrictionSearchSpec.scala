@@ -39,7 +39,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
       }
     }
 
-    "Data Use Restriction Search" -{
+    "Data Use Restriction Search" - {
 
       "should find all datasets" in {
         // All dataset workspaces have the same "library:projectName" value for ease of testing
@@ -56,32 +56,32 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
 
       "GRU dataset should be indexed as true" in {
         val searchResponse = searchFor("GRU")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(GRU=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(GRU = true))
       }
 
       "HMB dataset should be indexed as true" in {
         val searchResponse = searchFor("HMB")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(HMB=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(HMB = true))
       }
 
       "NCU dataset should be indexed as true" in {
         val searchResponse = searchFor("NCU")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NCU=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NCU = true))
       }
 
       "NPU dataset should be indexed as true" in {
         val searchResponse = searchFor("NPU")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NPU=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NPU = true))
       }
 
       "NDMS dataset should be indexed as true" in {
         val searchResponse = searchFor("NDMS")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NDMS=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NDMS = true))
       }
 
       "NAGR:Yes should be indexed as true" in {
         val searchResponse = searchFor("NAGRYes")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NAGR=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NAGR = true))
       }
 
       "NAGR:No should be indexed as false" in {
@@ -96,22 +96,22 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
 
       "NCTRL dataset should be indexed as true" in {
         val searchResponse = searchFor("NCTRL")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NCTRL=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NCTRL = true))
       }
 
       "RS-PD dataset should be indexed as true" in {
         val searchResponse = searchFor("RS-PD")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-PD`=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-PD` = true))
       }
 
       "RS-G:Female should be indexed as RS-G:true, RS-FM:true" in {
         val searchResponse = searchFor("RSGFemale")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G`=true,`RS-FM`=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-FM` = true))
       }
 
       "RS-G:Male should be indexed as RS-G:true, RS-M:true" in {
         val searchResponse = searchFor("RSGMale")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G`=true,`RS-M`=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-M` = true))
       }
 
       "RS-G:N/A should be indexed as RS-G:false" in {
@@ -121,22 +121,22 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
 
       "RS-FM dataset should be indexed as true" in {
         val searchResponse = searchFor("RS-FM")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G`=true, `RS-FM`=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-FM` = true))
       }
 
       "RS-M dataset should be indexed as true" in {
         val searchResponse = searchFor("RS-M")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G`=true, `RS-M`=true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-M` = true))
       }
 
       "DS:non-empty list dataset should have values" in {
         val searchResponse = searchFor("DS")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(DS=Seq("TERM-1","TERM-2")))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(DS = Seq("TERM-1", "TERM-2")))
       }
 
       "RS-POP:non-empty list dataset should have values" in {
         val searchResponse = searchFor("RS-POP")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-POP`=Seq("TERM-1","TERM-2")))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-POP` = Seq("TERM-1", "TERM-2")))
       }
 
       "'EVERYTHING' dataset should have a mix of values" in {
@@ -145,7 +145,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
           DataUseRestriction(
             GRU = true,
             HMB = true,
-            DS=Seq("TERM-1","TERM-2"),
+            DS = Seq("TERM-1", "TERM-2"),
             NCU = true,
             NPU = true,
             NDMS = true,
@@ -154,7 +154,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
             `RS-PD` = true,
             `RS-G` = true,
             `RS-FM` = true,
-            `RS-POP`=Seq("TERM-1","TERM-2")
+            `RS-POP` = Seq("TERM-1", "TERM-2")
           )
         )
       }
@@ -165,7 +165,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
           DataUseRestriction(
             GRU = true,
             HMB = true,
-            DS=Seq("TERM-1","TERM-2")
+            DS = Seq("TERM-1", "TERM-2")
           )
         )
       }
@@ -199,7 +199,9 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
     searchResponse.results.size should be(1)
     val listActual = getDataUseRestrictions(searchResponse)
     listActual.foreach { actual =>
-      assertResult(expected) { actual }
+      assertResult(expected) {
+        actual
+      }
     }
 
   }
