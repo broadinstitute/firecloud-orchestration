@@ -160,6 +160,46 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       }
     }
 
+    "Methods development/Validation study (NDMS)" - {
+      "should return any dataset where NDMS is true and the disease matches exactly" in {
+        fail("test not implemented")
+      }
+      "should return any dataset where NDMS is true and the RP's disease is a parent of the dataset's disease" in {
+        fail("test not implemented")
+      }
+      "should return any dataset where NDMS is false" in {
+        fail("test not implemented")
+      }
+      "should intersect with a text search" in {
+        fail("test not implemented")
+      }
+      "should affect search suggestions" in {
+        fail("test not implemented")
+      }
+    }
+
+    "Control set (NCTRL)" - {
+      "should return any dataset where the disease matches exactly" in {
+        fail("test not implemented")
+      }
+      "should return any dataset where the RP's disease is a parent of the dataset's disease" in {
+        fail("test not implemented")
+      }
+      "should return any dataset where NCTRL is false and is (GRU or HMB)" in {
+        fail("test not implemented")
+      }
+      "should intersect with a standard facet filter" in {
+        fail("test not implemented")
+      }
+      "should intersect with a text search" in {
+        fail("test not implemented")
+      }
+      "should affect search suggestions" in {
+        fail("test not implemented")
+      }
+    }
+
+
     "Research purpose with multiple restrictions enabled" - {
       "should intersect each restriction" in {
         val researchPurpose = ResearchPurpose.default.copy(NAGR = true, NCU = true)

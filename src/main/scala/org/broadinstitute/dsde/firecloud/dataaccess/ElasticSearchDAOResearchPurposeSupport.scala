@@ -102,9 +102,6 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
       bool.must(nctrlClause)
     }
 
-
-    logger.warn(bool.toString)
-
     bool
   }
 
