@@ -56,93 +56,87 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
 
       "GRU dataset should be indexed as true" in {
         val searchResponse = searchFor("GRU")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists(_.GRU) should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(GRU=true))
       }
 
       "HMB dataset should be indexed as true" in {
         val searchResponse = searchFor("HMB")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists(_.HMB) should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(HMB=true))
       }
 
       "NCU dataset should be indexed as true" in {
         val searchResponse = searchFor("NCU")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists(_.NCU) should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NCU=true))
       }
 
       "NPU dataset should be indexed as true" in {
         val searchResponse = searchFor("NPU")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists(_.NPU) should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NPU=true))
       }
 
       "NDMS dataset should be indexed as true" in {
         val searchResponse = searchFor("NDMS")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists(_.NDMS) should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NDMS=true))
       }
 
-      "NAGR datasets should have at least one indexed as true" in {
-        val searchResponse = searchFor("NAGR")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(3)
-        getDataUseRestrictions(searchResponse).exists(_.NAGR) should be(true)
+      "NAGR:Yes should be indexed as true" in {
+        val searchResponse = searchFor("NAGRYes")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NAGR=true))
+      }
+
+      "NAGR:No should be indexed as false" in {
+        val searchResponse = searchFor("NAGRNo")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction())
+      }
+
+      "NAGR:Unspecified should be indexed as false" in {
+        val searchResponse = searchFor("NAGRUnspecified")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction())
       }
 
       "NCTRL dataset should be indexed as true" in {
         val searchResponse = searchFor("NCTRL")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists(_.NCTRL) should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NCTRL=true))
       }
 
       "RS-PD dataset should be indexed as true" in {
         val searchResponse = searchFor("RS-PD")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists(_.`RS-PD`) should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-PD`=true))
       }
 
-      "RS-G datasets should have at least one indexed as true" in {
-        val searchResponse = searchFor("RS-G")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(3)
-        getDataUseRestrictions(searchResponse).exists(_.`RS-G`) should be(true)
+      "RS-G:Female should be indexed as RS-G:true, RS-FM:true" in {
+        val searchResponse = searchFor("RSGFemale")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G`=true,`RS-FM`=true))
+      }
+
+      "RS-G:Male should be indexed as RS-G:true, RS-M:true" in {
+        val searchResponse = searchFor("RSGMale")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G`=true,`RS-M`=true))
+      }
+
+      "RS-G:N/A should be indexed as RS-G:false" in {
+        val searchResponse = searchFor("RSGNA")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction())
       }
 
       "RS-FM dataset should be indexed as true" in {
         val searchResponse = searchFor("RS-FM")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists(_.`RS-FM`) should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G`=true, `RS-FM`=true))
       }
 
       "RS-M dataset should be indexed as true" in {
         val searchResponse = searchFor("RS-M")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).exists(_.`RS-M`) should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G`=true, `RS-M`=true))
       }
 
       "DS:non-empty list dataset should have values" in {
         val searchResponse = searchFor("DS")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).head.DS.nonEmpty should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(DS=Seq("TERM-1","TERM-2")))
       }
 
       "RS-POP:non-empty list dataset should have values" in {
         val searchResponse = searchFor("RS-POP")
-        searchResponse shouldNot be(null)
-        searchResponse.results.size should be(1)
-        getDataUseRestrictions(searchResponse).head.`RS-POP`.nonEmpty should be(true)
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-POP`=Seq("TERM-1","TERM-2")))
       }
 
     }
@@ -167,6 +161,16 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
       val sdur = hit.asJsObject.fields("library:structuredUseRestriction").asJsObject
       sdur.convertTo[DataUseRestriction]
     }
+  }
+
+  private def assertDataUseRestrictions(searchResponse: LibrarySearchResponse, expected: DataUseRestriction) = {
+    searchResponse shouldNot be(null)
+    searchResponse.results.size should be(1)
+    val listActual = getDataUseRestrictions(searchResponse)
+    listActual.foreach { actual =>
+      assertResult(expected) { actual }
+    }
+
   }
 
 }
