@@ -139,6 +139,37 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
         assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-POP`=Seq("TERM-1","TERM-2")))
       }
 
+      "'EVERYTHING' dataset should have a mix of values" in {
+        val searchResponse = searchFor("EVERYTHING")
+        assertDataUseRestrictions(searchResponse,
+          DataUseRestriction(
+            GRU = true,
+            HMB = true,
+            DS=Seq("TERM-1","TERM-2"),
+            NCU = true,
+            NPU = true,
+            NDMS = true,
+            NAGR = true,
+            NCTRL = true,
+            `RS-PD` = true,
+            `RS-G` = true,
+            `RS-FM` = true,
+            `RS-POP`=Seq("TERM-1","TERM-2")
+          )
+        )
+      }
+
+      "'TOP_THREE' dataset should have a mix of values" in {
+        val searchResponse = searchFor("TOP_THREE")
+        assertDataUseRestrictions(searchResponse,
+          DataUseRestriction(
+            GRU = true,
+            HMB = true,
+            DS=Seq("TERM-1","TERM-2")
+          )
+        )
+      }
+
     }
 
   }
@@ -163,7 +194,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
     }
   }
 
-  private def assertDataUseRestrictions(searchResponse: LibrarySearchResponse, expected: DataUseRestriction) = {
+  private def assertDataUseRestrictions(searchResponse: LibrarySearchResponse, expected: DataUseRestriction): Unit = {
     searchResponse shouldNot be(null)
     searchResponse.results.size should be(1)
     val listActual = getDataUseRestrictions(searchResponse)

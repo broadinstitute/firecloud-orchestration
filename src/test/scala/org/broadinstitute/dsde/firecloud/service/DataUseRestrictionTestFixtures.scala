@@ -56,7 +56,23 @@ object DataUseRestrictionTestFixtures {
     mkWorkspace(attributes, value, s"NAGR$value")
   }
 
-  val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ genderDatasets ++ nagrDatasets
+  val everythingDataset = Seq(mkWorkspace(
+    booleanCodes.map(AttributeName.withLibraryNS(_) -> AttributeBoolean(true)).toMap ++
+      listCodes.map(AttributeName.withLibraryNS(_) -> AttributeValueList(listValues.map(AttributeString))).toMap ++
+      Map(AttributeName.withLibraryNS("NAGR") -> AttributeString("Yes")) ++
+      Map(AttributeName.withLibraryNS("RS-G") -> AttributeString("Female")),
+    "EVERYTHING",
+    "EVERYTHING")
+  )
+
+  val topThreeDataset = Seq(mkWorkspace(
+    Seq("GRU", "HMB").map(AttributeName.withLibraryNS(_) -> AttributeBoolean(true)).toMap ++
+      Seq("DS").map(AttributeName.withLibraryNS(_) -> AttributeValueList(listValues.map(AttributeString))).toMap,
+    "TOP_THREE",
+    "TOP_THREE")
+  )
+
+  val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ genderDatasets ++ nagrDatasets ++ everythingDataset ++ topThreeDataset
 
   def mkWorkspace(attributes: Map[AttributeName, Attribute], wsName: String, wsDescription: String): Workspace = {
     val testUUID: UUID = UUID.randomUUID()
