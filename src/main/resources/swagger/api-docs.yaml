@@ -2720,7 +2720,7 @@ paths:
             description: Internal Error
             schema:
               $ref: '#/definitions/ErrorReport'
-        description: Counts all submissions run in this workspace, grouped by status. Returns a map of status:count.
+        description: Counts all submissions run in the workspace, grouped by status. Returns a map of status:count.
         tags:
           - Submissions
         summary: Count submissions by status
@@ -2736,11 +2736,6 @@ paths:
             name: workspaceName
             required: true
             type: string
-        security:
-          - authorization:
-              - openid
-              - email
-              - profile
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
     delete:
