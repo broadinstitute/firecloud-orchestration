@@ -2,7 +2,8 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import org.broadinstitute.dsde.firecloud.model.Document
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionSupport
-import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixture.{DataUseRestriction, impDataUseRestriction}
+import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures._
+import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures.DataUseRestriction
 import org.broadinstitute.dsde.rawls.model._
 import spray.json._
 
