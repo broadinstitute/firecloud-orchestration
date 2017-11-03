@@ -12,6 +12,10 @@ final class SubmissionServiceNegativeSpec extends ServiceSpec with SubmissionSer
 
   def actorRefFactory = system
 
+  val localSubmissionsCountPath = FireCloudConfig.Rawls.submissionsCountPath.format(
+    MockWorkspaceServer.mockValidWorkspace.namespace,
+    MockWorkspaceServer.mockValidWorkspace.name)
+
   val localSubmissionsPath = FireCloudConfig.Rawls.submissionsPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name)
@@ -25,6 +29,12 @@ final class SubmissionServiceNegativeSpec extends ServiceSpec with SubmissionSer
     "non-GET requests hitting the /submissions/queueStatus path are not passed through" in {
       allHttpMethodsExcept(GET) foreach { method =>
         checkIfPassedThrough(routes, method, "/submissions/queueStatus", toBeHandled = false)
+      }
+    }
+
+    "non-GET requests hitting the /workspaces/*/*/submissionsCount path are not passed through" in {
+      allHttpMethodsExcept(GET) foreach { method =>
+        checkIfPassedThrough(routes, method, localSubmissionsCountPath, toBeHandled = false)
       }
     }
 
