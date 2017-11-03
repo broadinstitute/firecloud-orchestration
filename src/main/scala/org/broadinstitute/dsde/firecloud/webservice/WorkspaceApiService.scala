@@ -50,6 +50,9 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               }
         }
     } ~
+    path("version" / "executionEngine") {
+      passthrough(FireCloudConfig.Rawls.executionEngineVersionUrl, HttpMethods.GET)
+    } ~
     pathPrefix("api") {
       pathPrefix("workspaces") {
         pathEnd {
@@ -296,11 +299,6 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           }
-        }
-      } ~
-      path("version" / "executionEngine") {
-        requireUserInfo() { _ =>
-          passthrough(FireCloudConfig.Rawls.executionEngineVersionUrl, HttpMethods.GET)
         }
       }
     }
