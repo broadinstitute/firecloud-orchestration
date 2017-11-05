@@ -34,7 +34,19 @@ object ResearchPurposeSearchTestFixtures extends DataUseRestrictionSupport {
     ("fourteen", "lithium",  "antidisestablishmentarianism", "lazy dog", DataUseRestriction(NAGR=true)),
     ("fifteen",  "lithium",  "antidote",                     "lazy dog", DataUseRestriction(NPU=true))
 
+//    ("sixteen",   "beryllium",  "antiegalitarian", "sphinx of", DataUseRestriction(GRU=true, NCU=true)),
+//    ("seventeen", "beryllium",  "antielectron",    "sphinx of", DataUseRestriction(HMB=true)),
+//    ("eighteen",  "beryllium",  "antielitism",     "sphinx of", DataUseRestriction(NCU=true)),
+//    ("nineteen",  "beryllium",  "antiepileptic",   "sphinx of", DataUseRestriction(NAGR=true)),
+//    ("twenty",    "beryllium",  "antifashion",     "sphinx of", DataUseRestriction(NPU=true))
   )
+
+  /*
+  Sphinx of black quartz, judge my vow.
+  Five quacking zephyrs jolt my wax bed
+  The five boxing wizards jump quickly
+  Jinxed wizards pluck ivy from the big quilt
+   */
 
   val fixtureDocs:Seq[Document] = datasetTuples map {x:(String,String,String,String,DataUseRestriction) =>
     Document(x._1, Map(
