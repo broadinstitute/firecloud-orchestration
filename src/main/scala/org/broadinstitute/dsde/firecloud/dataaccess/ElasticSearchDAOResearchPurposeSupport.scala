@@ -113,7 +113,6 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
   }
 
   private def generateDiseaseQuery(nodeids: Seq[DiseaseOntologyNodeId]): BoolQueryBuilder = {
-    // TODO: query to get all parents of the given node, add parents to this query
     val dsClause = boolQuery()
     nodeids foreach { id =>
       dsClause.should(termQuery(s"$durRoot.DS", id.numericId))

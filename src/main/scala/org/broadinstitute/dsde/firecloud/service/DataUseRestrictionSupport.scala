@@ -1,16 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.OntologyDAO
-import org.broadinstitute.dsde.firecloud.model.DataUse.DiseaseOntologyNodeId
-import org.broadinstitute.dsde.firecloud.model.LibrarySearchParams
-import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
 import org.broadinstitute.dsde.rawls.model._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-
-import scala.concurrent.{ExecutionContext, Future}
 
 trait DataUseRestrictionSupport extends LazyLogging {
 
