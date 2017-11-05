@@ -2,16 +2,23 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionSupport
 import org.broadinstitute.dsde.rawls.model.AttributeName
 import org.elasticsearch.index.query.BoolQueryBuilder
 import org.elasticsearch.index.query.QueryBuilders.{boolQuery, termQuery}
 
+import scala.concurrent.{Await, ExecutionContext, Future}
+
 trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport with LazyLogging {
 
   val durRoot = AttributeName.toDelimitedName(structuredUseRestrictionAttributeName)
 
-  def researchPurposeFilters(rp: ResearchPurpose): BoolQueryBuilder = {
+  def researchPurposeFilters(userRp: ResearchPurpose, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): BoolQueryBuilder = {
+
+    // TODO: don't block on the future here!!!
+    val rp = Await.result(augmentResearchPurpose(userRp, ontologyDAO), scala.concurrent.duration.Duration.Inf)
+
     val bool = boolQuery
 
     /*
@@ -112,6 +119,24 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
       dsClause.should(termQuery(s"$durRoot.DS", id.numericId))
     }
     dsClause
+  }
+
+  private def augmentResearchPurpose(researchPurpose: ResearchPurpose, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[ResearchPurpose] = {
+    if (researchPurpose.DS.isEmpty)
+      Future.successful(researchPurpose) // return unchanged; no ontology nodes to augment
+    else {
+      // for all nodes in the research purpose's DS value, query ontology to get their parent nodes
+      val targetNodes = researchPurpose.DS
+      Future.sequence(targetNodes map (node => ontologyDAO.search(node.uri.toString))) map { allTermResults =>
+        val parentsToAugment:Seq[DiseaseOntologyNodeId] = (allTermResults collect {
+          case Some(terms:List[TermResource]) => terms.head.parents.getOrElse(List.empty[TermParent]).map(parent => DiseaseOntologyNodeId(parent.id))
+        }).flatten
+        // append the parent node info to the original research purpose
+        val newDSValue = targetNodes ++ parentsToAugment
+        val newResearchPurpose = researchPurpose.copy(DS = newDSValue)
+        newResearchPurpose
+      }
+    }
   }
 
   private def code(code: String, value: Boolean) = termQuery(s"$durRoot.$code", value)

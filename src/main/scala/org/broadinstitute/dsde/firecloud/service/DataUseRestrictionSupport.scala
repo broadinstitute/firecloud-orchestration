@@ -97,23 +97,4 @@ trait DataUseRestrictionSupport extends LazyLogging {
 
   }
 
-  def augmentSearchCriteria(criteria:LibrarySearchParams, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[LibrarySearchParams] = {
-    if (criteria.researchPurpose.isEmpty || criteria.researchPurpose.get.DS.isEmpty)
-      Future.successful(criteria) // return unchanged; no ontology nodes to augment
-    else {
-      val origPurpose = criteria.researchPurpose.get
-      // for all nodes in the research purpose's DS value, query ontology to get their parent nodes
-      val targetNodes = origPurpose.DS
-      Future.sequence(targetNodes map (node => ontologyDAO.search(node.uri.toString))) map { allTermResults =>
-        val parentsToAugment:Seq[DiseaseOntologyNodeId] = (allTermResults collect {
-          case Some(terms:List[TermResource]) => terms.head.parents.getOrElse(List.empty[TermParent]).map(parent => DiseaseOntologyNodeId(parent.id))
-        }).flatten
-        // append the parent node info to the original research purpose
-        val newDSValue = targetNodes ++ parentsToAugment
-        val newResearchPurpose = origPurpose.copy(DS = newDSValue)
-        criteria.copy(researchPurpose = Some(newResearchPurpose))
-      }
-    }
-  }
-
 }

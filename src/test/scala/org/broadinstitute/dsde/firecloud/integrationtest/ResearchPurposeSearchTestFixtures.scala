@@ -32,13 +32,13 @@ object ResearchPurposeSearchTestFixtures extends DataUseRestrictionSupport {
     ("twelve",   "lithium",  "anticorruption",               "lazy dog", DataUseRestriction(HMB=true)),
     ("thirteen", "lithium",  "antidepressant",               "lazy dog", DataUseRestriction(NCU=true)),
     ("fourteen", "lithium",  "antidisestablishmentarianism", "lazy dog", DataUseRestriction(NAGR=true)),
-    ("fifteen",  "lithium",  "antidote",                     "lazy dog", DataUseRestriction(NPU=true))
+    ("fifteen",  "lithium",  "antidote",                     "lazy dog", DataUseRestriction(NPU=true)),
 
-//    ("sixteen",   "beryllium",  "antiegalitarian", "sphinx of", DataUseRestriction(GRU=true, NCU=true)),
-//    ("seventeen", "beryllium",  "antielectron",    "sphinx of", DataUseRestriction(HMB=true)),
-//    ("eighteen",  "beryllium",  "antielitism",     "sphinx of", DataUseRestriction(NCU=true)),
-//    ("nineteen",  "beryllium",  "antiepileptic",   "sphinx of", DataUseRestriction(NAGR=true)),
-//    ("twenty",    "beryllium",  "antifashion",     "sphinx of", DataUseRestriction(NPU=true))
+    ("sixteen",   "beryllium",  "antiegalitarian", "sphinx of", DataUseRestriction(NCU=true, DS=Seq(535))), // sleep disorder, parent of central sleep apnea
+    ("seventeen", "beryllium",  "antielectron",    "sphinx of", DataUseRestriction(NCU=true, DS=Seq(9220))), // central sleep apnea
+    ("eighteen",  "beryllium",  "antielitism",     "sphinx of", DataUseRestriction(NCU=true, DS=Seq(535,4325))), // sleep disorder and Ebola hemorrhagic fever
+    ("nineteen",  "beryllium",  "antiepileptic",   "sphinx of", DataUseRestriction(NCU=true, DS=Seq(4325))), // Ebola hemorrhagic fever
+    ("twenty",    "beryllium",  "antifashion",     "sphinx of", DataUseRestriction(NCU=true, DS=Seq(9220,4325))) // central sleep apnea and Ebola hemorrhagic fever
   )
 
   /*
