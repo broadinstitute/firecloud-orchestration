@@ -14,10 +14,7 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
 
   val durRoot = AttributeName.toDelimitedName(structuredUseRestrictionAttributeName)
 
-  def researchPurposeFilters(userRp: ResearchPurpose, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): BoolQueryBuilder = {
-
-    // TODO: don't block on the future here!!!
-    val rp = Await.result(augmentResearchPurpose(userRp, ontologyDAO), scala.concurrent.duration.Duration.Inf)
+  def researchPurposeFilters(rp: ResearchPurpose, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): BoolQueryBuilder = {
 
     val bool = boolQuery
 
@@ -60,7 +57,7 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
 
      */
     if (rp.DS.nonEmpty) {
-      val dsClause = generateDiseaseQuery(rp.DS)
+      val dsClause = generateDiseaseQuery(rp.DS, ontologyDAO)
       dsClause.should(code("GRU", true))
       dsClause.should(code("HMB", true))
       bool.must(dsClause)
@@ -79,7 +76,7 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
       if (rp.DS.nonEmpty) {
         ndmsClause.should(boolQuery()
           .must(code("NDMS", true))
-          .must(generateDiseaseQuery(rp.DS))
+          .must(generateDiseaseQuery(rp.DS, ontologyDAO))
         )
       } else {
         ndmsClause.should(code("NDMS", false))
@@ -105,35 +102,35 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
         )
       )
       if (rp.DS.nonEmpty)
-        nctrlClause.should(generateDiseaseQuery(rp.DS))
+        nctrlClause.should(generateDiseaseQuery(rp.DS, ontologyDAO))
       bool.must(nctrlClause)
     }
 
     bool
   }
 
-  private def generateDiseaseQuery(nodeids: Seq[DiseaseOntologyNodeId]): BoolQueryBuilder = {
+  private def generateDiseaseQuery(nodeids: Seq[DiseaseOntologyNodeId], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): BoolQueryBuilder = {
+    // TODO: don't block on the future here!!!
+    val allnodes = Await.result(augmentWithDiseaseParents(nodeids, ontologyDAO), scala.concurrent.duration.Duration.Inf)
+
     val dsClause = boolQuery()
-    nodeids foreach { id =>
+    allnodes foreach { id =>
       dsClause.should(termQuery(s"$durRoot.DS", id.numericId))
     }
     dsClause
   }
 
-  private def augmentResearchPurpose(researchPurpose: ResearchPurpose, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[ResearchPurpose] = {
-    if (researchPurpose.DS.isEmpty)
-      Future.successful(researchPurpose) // return unchanged; no ontology nodes to augment
+  private def augmentWithDiseaseParents(nodeids: Seq[DiseaseOntologyNodeId], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Seq[DiseaseOntologyNodeId]] = {
+    if (nodeids.isEmpty)
+      Future.successful(nodeids) // return unchanged; no ontology nodes to augment
     else {
       // for all nodes in the research purpose's DS value, query ontology to get their parent nodes
-      val targetNodes = researchPurpose.DS
-      Future.sequence(targetNodes map (node => ontologyDAO.search(node.uri.toString))) map { allTermResults =>
+      Future.sequence(nodeids map (node => ontologyDAO.search(node.uri.toString))) map { allTermResults =>
         val parentsToAugment:Seq[DiseaseOntologyNodeId] = (allTermResults collect {
           case Some(terms:List[TermResource]) => terms.head.parents.getOrElse(List.empty[TermParent]).map(parent => DiseaseOntologyNodeId(parent.id))
         }).flatten
         // append the parent node info to the original research purpose
-        val newDSValue = targetNodes ++ parentsToAugment
-        val newResearchPurpose = researchPurpose.copy(DS = newDSValue)
-        newResearchPurpose
+        nodeids ++ parentsToAugment
       }
     }
   }
