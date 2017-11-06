@@ -20,7 +20,7 @@ import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ElasticSearchDAO(servers: Seq[Authority], clusterName: String, indexName: String) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
+class ElasticSearchDAO(servers: Seq[Authority], clusterName: String, indexName: String, ontologyDAO: OntologyDAO) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
   private val client: TransportClient = buildClient(servers, clusterName)
   private final val datatype = "dataset"
@@ -112,11 +112,11 @@ class ElasticSearchDAO(servers: Seq[Authority], clusterName: String, indexName: 
   }
 
   override def findDocuments(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
-    findDocumentsWithAggregateInfo(client, indexName, criteria, groups)
+    findDocumentsWithAggregateInfo(client, indexName, criteria, groups, ontologyDAO)
   }
 
   override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
-    autocompleteSuggestions(client, indexName, criteria, groups)
+    autocompleteSuggestions(client, indexName, criteria, groups, ontologyDAO)
   }
 
   override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {

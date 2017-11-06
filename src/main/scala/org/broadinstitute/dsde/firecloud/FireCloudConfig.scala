@@ -60,7 +60,7 @@ object FireCloudConfig {
     val submissionQueueStatusPath = workspace.getString("submissionQueueStatusPath")
     val submissionQueueStatusUrl = authUrl + submissionQueueStatusPath
     val executionEngineVersionPath = workspace.getString("executionEngineVersionPath")
-    val executionEngineVersionUrl = authUrl + executionEngineVersionPath
+    val executionEngineVersionUrl = baseUrl + executionEngineVersionPath
     val notificationsPath = workspace.getString("notificationsPath")
     val notificationsUrl = authUrl + notificationsPath
     val defaultPageSize = rawls.getInt("defaultPageSize")

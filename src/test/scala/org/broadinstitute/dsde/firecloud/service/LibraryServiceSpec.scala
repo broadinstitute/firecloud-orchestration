@@ -373,11 +373,11 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     "with diseaseOntologyID attribute" - {
       "should generate indexable document with parent info when DOID valid" in {
         val w = testWorkspace.copy(attributes = Map(
-          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220")
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_9220")
         ))
-        val parentData = ontologyDao.data("DOID_9220").head.parents.get.map(_.toESTermParent)
+        val parentData = ontologyDao.data("http://purl.obolibrary.org/obo/DOID_9220").head.parents.get.map(_.toESTermParent)
         val expected = Document(testUUID.toString, Map(
-          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_9220"),
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_9220"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
@@ -390,10 +390,10 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
       "should generate indexable document with no parent info when DOID has no parents" in {
         val w = testWorkspace.copy(attributes = Map(
-          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_4")
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_4")
         ))
         val expected = Document(testUUID.toString, Map(
-          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_4"),
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_4"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
@@ -405,10 +405,10 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
       "should generate indexable document with no parent info when DOID not valid" in {
         val w = testWorkspace.copy(attributes = Map(
-          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_99999")
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_99999")
         ))
         val expected = Document(testUUID.toString, Map(
-          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("DOID_99999"),
+          AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_99999"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
           AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),

@@ -13,7 +13,7 @@ object DataUseRestrictionTestFixtures {
   case class DataUseRestriction(
     GRU: Boolean = false,
     HMB: Boolean = false,
-    DS: Seq[String] = Seq.empty[String],
+    DS: Seq[Int] = Seq.empty[Int],
     NCU: Boolean = false,
     NPU: Boolean = false,
     NDMS: Boolean = false,
@@ -35,10 +35,17 @@ object DataUseRestrictionTestFixtures {
     mkWorkspace(attributes, code, code)
   }
 
-  val listCodes: Seq[String] = Seq("DS", "RS-POP")
+  val listCodes: Seq[String] = Seq("RS-POP")
   val listValues: Seq[String] = Seq("TERM-1", "TERM-2")
   val listDatasets: Seq[Workspace] = listCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeValueList(listValues.map(AttributeString)))
+    mkWorkspace(attributes, code, code)
+  }
+
+  val diseaseCodes: Seq[String] = Seq("DS")
+  val diseaseValues: Seq[Int] = Seq(123, 456)
+  val diseaseDatasets: Seq[Workspace] = diseaseCodes.map { code =>
+    val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeValueList(diseaseValues.map(n => AttributeNumber(BigDecimal(n)))))
     mkWorkspace(attributes, code, code)
   }
 
@@ -59,6 +66,7 @@ object DataUseRestrictionTestFixtures {
   val everythingDataset = Seq(mkWorkspace(
     booleanCodes.map(AttributeName.withLibraryNS(_) -> AttributeBoolean(true)).toMap ++
       listCodes.map(AttributeName.withLibraryNS(_) -> AttributeValueList(listValues.map(AttributeString))).toMap ++
+      diseaseCodes.map(AttributeName.withLibraryNS(_) -> AttributeValueList(diseaseValues.map(n => AttributeNumber(BigDecimal(n))))).toMap ++
       Map(AttributeName.withLibraryNS("NAGR") -> AttributeString("Yes")) ++
       Map(AttributeName.withLibraryNS("RS-G") -> AttributeString("Female")),
     "EVERYTHING",
@@ -67,12 +75,12 @@ object DataUseRestrictionTestFixtures {
 
   val topThreeDataset = Seq(mkWorkspace(
     Seq("GRU", "HMB").map(AttributeName.withLibraryNS(_) -> AttributeBoolean(true)).toMap ++
-      Seq("DS").map(AttributeName.withLibraryNS(_) -> AttributeValueList(listValues.map(AttributeString))).toMap,
+      Seq("DS").map(AttributeName.withLibraryNS(_) -> AttributeValueList(diseaseValues.map(n => AttributeNumber(BigDecimal(n))))).toMap,
     "TOP_THREE",
     "TOP_THREE")
   )
 
-  val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ genderDatasets ++ nagrDatasets ++ everythingDataset ++ topThreeDataset
+  val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ diseaseDatasets ++ genderDatasets ++ nagrDatasets ++ everythingDataset ++ topThreeDataset
 
   def mkWorkspace(attributes: Map[AttributeName, Attribute], wsName: String, wsDescription: String): Workspace = {
     val testUUID: UUID = UUID.randomUUID()
