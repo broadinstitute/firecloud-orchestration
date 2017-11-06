@@ -3,8 +3,8 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.UserService
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.webservice.UserApiService
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import spray.client.pipelining._
@@ -23,7 +23,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
 
   override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
     wrapExceptions {
-      userAuthedRequest(Get(UserService.remoteGetAllURL.format(userInfo.getUniqueId)), false, true)(userInfo) map { response =>
+      userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(userInfo.getUniqueId)), false, true)(userInfo) map { response =>
         response.status match {
           case StatusCodes.OK => Some(Profile(unmarshal[ProfileWrapper].apply(response)))
           case StatusCodes.NotFound => None
@@ -34,7 +34,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   }
 
   override def getAllUserValuesForKey(key: String): Future[Map[String, String]] = {
-    val queryUri = Uri(UserService.remoteGetQueryURL).withQuery(Map("key"->key))
+    val queryUri = Uri(UserApiService.remoteGetQueryURL).withQuery(Map("key"->key))
     wrapExceptions {
       adminAuthedRequest(Get(queryUri), false, true).map(unmarshal[Seq[ThurloeKeyValue]]).map { tkvs =>
         val resultOptions = tkvs.map { tkv => (tkv.userId, tkv.keyValuePair.flatMap { kvp => kvp.value }) }
@@ -47,7 +47,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Try[Unit]] = {
     val thurloeKeyValues = ThurloeKeyValues(Option(userInfo.getUniqueId), Option(keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value)) }.toSeq))
     wrapExceptions {
-      userAuthedRequest(Post(UserService.remoteSetKeyURL, thurloeKeyValues), false, true)(userInfo) map { response =>
+      userAuthedRequest(Post(UserApiService.remoteSetKeyURL, thurloeKeyValues), false, true)(userInfo) map { response =>
         if(response.status.isSuccess) Try(())
         else Try(throw new FireCloudException(s"Unable to update user profile"))
       }
