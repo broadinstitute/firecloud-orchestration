@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
-import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
@@ -34,27 +34,31 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
   def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
     val nodesSeq:Seq[String] = workspaces.collect {
-        case w if w.attributes.contains(AttributeName.withLibraryNS("diseaseOntologyID")) =>
-          w.attributes(AttributeName.withLibraryNS("diseaseOntologyID"))
-      }.collect {
-        case s:AttributeString => s.value
-      }
-    logger.debug(s"found ${nodesSeq.size} workspaces with ontology nodes assigned")
+      case w if w.attributes.contains(AttributeName.withLibraryNS("diseaseOntologyID")) =>
+        w.attributes(AttributeName.withLibraryNS("diseaseOntologyID"))
+      case x if x.attributes.contains(AttributeName.withLibraryNS("DS")) =>
+        x.attributes(AttributeName.withLibraryNS("DS"))
+    }.collect {
+      case s:AttributeString => s.value
+    }
+    logger.debug(s"found ${nodesSeq.size} ontology terms in workspaces with ontology nodes or DS:X nodes assigned")
 
     val nodes = nodesSeq.toSet
     logger.debug(s"found ${nodes.size} unique ontology nodes")
 
     // query ontology for this set of nodes, save in a map
-    val parentCache = Future.sequence(nodes map {id =>
-      lookupParentNodes(id, ontologyDAO) map {parents:Seq[TermParent] => (id, parents)}
-    })
+    val termCache = Future.sequence {
+      nodes map { id => lookupTermNodes(id, ontologyDAO) }
+    }
 
-    // using the cached parent information, build the indexable documents
-    val docsResult: Future[Seq[Document]] = parentCache map { parentSet =>
-      val parentMap = parentSet.toMap.filter(e => e._2.nonEmpty) // remove nodes that have no parent
+    // using the cached term information, build the indexable documents
+    val docsResult: Future[Seq[Document]] = termCache map { termSeq =>
+      val termMap: Map[String, TermResource] = termSeq.flatten.map { t => t.id -> t }.toMap
+      val parentMap: Map[String, List[TermParent]] = termSeq.flatten.filter(_.parents.nonEmpty).map { t => t.id -> t.parents.get }.toMap
+      logger.debug(s"have term results for ${termMap.size} ontology nodes")
       logger.debug(s"have parent results for ${parentMap.size} ontology nodes")
       workspaces map {w =>
-       indexableDocument(w, parentMap)
+        indexableDocument(w, termMap, parentMap)
       }
     }
 
@@ -62,7 +66,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   }
 
-  private def indexableDocument(workspace: Workspace, parentCache: Map[String,Seq[TermParent]])(implicit ec: ExecutionContext): Document = {
+  private def indexableDocument(workspace: Workspace, termCache: Map[String, TermResource], parentCache: Map[String,Seq[TermParent]])(implicit ec: ExecutionContext): Document = {
     val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {
@@ -82,10 +86,11 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       case None => Map()
     }
 
-    val dur: Map[AttributeName, Attribute] = generateStructuredUseRestriction(workspace)
     val durAttributeNames = durFieldNames.map(AttributeName.withLibraryNS)
+    val dur: Map[AttributeName, Attribute] = generateStructuredUseRestriction(workspace)
+    val displayDur: Map[AttributeName, Attribute] = generateUseRestrictionDisplay(workspace, termCache)
 
-    val fields = (attrfields -- durAttributeNames) ++ idfields ++ tagfields ++ dur
+    val fields = (attrfields -- durAttributeNames) ++ idfields ++ tagfields ++ dur ++ displayDur
 
     workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
@@ -102,16 +107,14 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   // wraps the ontologyDAO call, handles Nones/nulls, and returns a [Future[Seq].
   // the Seq is populated if the leaf node exists and has parents; Seq is empty otherwise.
-  def lookupParentNodes(leafId:String, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext):Future[Seq[TermParent]] = {
+  def lookupTermNodes(leafId:String, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext):Future[Seq[TermResource]] = {
     ontologyDAO.search(leafId) map {
-      case Some(terms) if terms.nonEmpty =>
-        terms.head.parents.getOrElse(Seq.empty)
-      case None => Seq.empty[TermParent]
+      case Some(terms) if terms.nonEmpty => terms
+      case None => Seq.empty[TermResource]
     } recoverWith {
-      case ex:Exception => {
+      case ex:Exception =>
         logger.warn(s"exception getting term and parents from ontology: ${ex.getMessage}")
-        Future(Seq.empty[TermParent])
-      }
+        Future(Seq.empty[TermResource])
     }
   }
 
@@ -135,7 +138,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     rawlsDAO.getGroupsForUser map {FireCloudConfig.ElasticSearch.discoverGroupNames intersect _}
   }
 
-  def updateAccess(docs: LibrarySearchResponse, workspaces: Seq[WorkspaceListResponse]) = {
+  def updateAccess(docs: LibrarySearchResponse, workspaces: Seq[WorkspaceListResponse]): LibrarySearchResponse = {
 
     val accessMap = workspaces map { workspaceResponse: WorkspaceListResponse =>
       workspaceResponse.workspace.workspaceId -> workspaceResponse.accessLevel

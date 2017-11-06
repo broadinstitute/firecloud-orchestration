@@ -2,6 +2,8 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.util.UUID
 
+import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
+import org.broadinstitute.dsde.firecloud.model.Ontology
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import spray.json.DefaultJsonProtocol.{jsonFormat13, _}
@@ -32,7 +34,7 @@ object DataUseRestrictionTestFixtures {
   val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NCTRL", "RS-PD")
   val booleanDatasets: Seq[Workspace] = booleanCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeBoolean(true))
-    mkWorkspace(attributes, code, code)
+    mkWorkspace(attributes, code, s"{${code.replace("-","")}}-unique")
   }
 
   val listCodes: Seq[String] = Seq("RS-POP")
@@ -43,7 +45,7 @@ object DataUseRestrictionTestFixtures {
   }
 
   val diseaseCodes: Seq[String] = Seq("DS")
-  val diseaseValues: Seq[Int] = Seq(123, 456)
+  val diseaseValues: Seq[Int] = Seq(9220, 535)
   val diseaseDatasets: Seq[Workspace] = diseaseCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeValueList(diseaseValues.map(n => AttributeNumber(BigDecimal(n)))))
     mkWorkspace(attributes, code, code)
@@ -81,6 +83,8 @@ object DataUseRestrictionTestFixtures {
   )
 
   val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ diseaseDatasets ++ genderDatasets ++ nagrDatasets ++ everythingDataset ++ topThreeDataset
+
+  val validDisplayDatasets: Seq[Workspace] = booleanDatasets ++ diseaseDatasets ++ everythingDataset ++ topThreeDataset
 
   def mkWorkspace(attributes: Map[AttributeName, Attribute], wsName: String, wsDescription: String): Workspace = {
     val testUUID: UUID = UUID.randomUUID()
@@ -123,5 +127,7 @@ object DataUseRestrictionTestFixtures {
       accessLevels=Map.empty,
       authDomainACLs=Map())
   }
+
+  val termCache: Map[String, Ontology.TermResource] = new MockOntologyDAO().data.values.flatten.map { t => t.id -> t }.toMap
 
 }

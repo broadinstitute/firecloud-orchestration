@@ -4,7 +4,7 @@ import spray.http.Uri
 
 object DataUse {
 
-  private final val doid_prefix = "http://purl.obolibrary.org/obo/DOID_"
+  final val doid_prefix = "http://purl.obolibrary.org/obo/DOID_"
 
   case class ResearchPurpose(
     DS:    Seq[DiseaseOntologyNodeId],
