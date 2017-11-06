@@ -16,22 +16,22 @@ object ResearchPurposeSearchTestFixtures extends DataUseRestrictionSupport {
   //   datasetCustodian: used to test text search
   //   restriction: used to test research purpose matching
   val datasetTuples:Seq[(String,String,String,String,DataUseRestriction)] = Seq(
-    ("one",      "hydrogen", "antiaging",     "the quick brown fox", DataUseRestriction(GRU=true, NCU=true)),
+    ("one",      "hydrogen", "antiaging",     "the quick brown fox", DataUseRestriction(GRU=true, NCU=true, NCTRL = true)),
     ("two",      "hydrogen", "antialias",     "the quick brown fox", DataUseRestriction(HMB=true, NDMS=true)),
-    ("three",    "hydrogen", "antianxiety",   "the quick brown fox", DataUseRestriction(NCU=true, NDMS=true)),
-    ("four",     "hydrogen", "antibacterial", "the quick brown fox", DataUseRestriction(NAGR=true, NDMS=true)),
+    ("three",    "hydrogen", "antianxiety",   "the quick brown fox", DataUseRestriction(NCU=true, NDMS=true, NCTRL = true)),
+    ("four",     "hydrogen", "antibacterial", "the quick brown fox", DataUseRestriction(NAGR=true, NDMS=true, NCTRL = true)),
     ("five",     "hydrogen", "antibiotic",    "the quick brown fox", DataUseRestriction(NPU=true, NDMS=true)),
 
     ("six",      "helium",   "antibody",      "jumped over the",     DataUseRestriction(GRU=true, NCU=true)),
-    ("seven",    "helium",   "antic",         "jumped over the",     DataUseRestriction(HMB=true, NDMS=true)),
-    ("eight",    "helium",   "anticavity",    "jumped over the",     DataUseRestriction(NCU=true, NDMS=true)),
-    ("nine",     "helium",   "anticipate",    "jumped over the",     DataUseRestriction(NAGR=true, NDMS=true)),
+    ("seven",    "helium",   "antic",         "jumped over the",     DataUseRestriction(HMB=true, NDMS=true, NCTRL = true)),
+    ("eight",    "helium",   "anticavity",    "jumped over the",     DataUseRestriction(NCU=true, NDMS=true, NCTRL = true)),
+    ("nine",     "helium",   "anticipate",    "jumped over the",     DataUseRestriction(NAGR=true, NDMS=true, NCTRL = true)),
     ("ten",      "helium",   "anticlimactic", "jumped over the",     DataUseRestriction(NPU=true, NDMS=true)),
 
-    ("eleven",   "lithium",  "anticoagulant",                "lazy dog", DataUseRestriction(GRU=true, NCU=true)),
+    ("eleven",   "lithium",  "anticoagulant",                "lazy dog", DataUseRestriction(GRU=true, NCU=true, NCTRL = true)),
     ("twelve",   "lithium",  "anticorruption",               "lazy dog", DataUseRestriction(HMB=true, NDMS=true)),
-    ("thirteen", "lithium",  "antidepressant",               "lazy dog", DataUseRestriction(NCU=true, NDMS=true)),
-    ("fourteen", "lithium",  "antidisestablishmentarianism", "lazy dog", DataUseRestriction(NAGR=true, NDMS=true)),
+    ("thirteen", "lithium",  "antidepressant",               "lazy dog", DataUseRestriction(NCU=true, NDMS=true, NCTRL = true)),
+    ("fourteen", "lithium",  "antidisestablishmentarianism", "lazy dog", DataUseRestriction(NAGR=true, NDMS=true, NCTRL = true)),
     ("fifteen",  "lithium",  "antidote",                     "lazy dog", DataUseRestriction(NPU=true, NDMS=true)),
 
     ("sixteen",   "beryllium",  "antiegalitarian", "sphinx of", DataUseRestriction(NCU=true, DS=Seq(535))), // sleep disorder, parent of central sleep apnea

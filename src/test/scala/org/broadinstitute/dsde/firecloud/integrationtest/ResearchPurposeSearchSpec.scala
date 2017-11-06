@@ -249,29 +249,54 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
     }
 
     "Control set (NCTRL)" - {
-      "should return any dataset where the disease matches exactly" ignore {
-        fail("test not implemented")
-      }
-      "should return any dataset where the RP's disease is a child of the dataset's disease" ignore {
-        fail("test not implemented")
-      }
-      "should return any dataset where NCTRL is false and is (GRU or HMB)" in {
-        // TODO: better exemplar data
-        val researchPurpose = ResearchPurpose.default.copy(NCTRL = true)
+      "should return any dataset where the disease matches exactly" in {
+        val researchPurpose = ResearchPurpose.default.copy(NCTRL = true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("one", "two", "six", "seven", "eleven", "twelve"),
+          Set("two", "six", "twelve", "sixteen", "eighteen"), // sleep disorder, or NCTRL=false+(GRU||HMB)
           searchResponse
         )
       }
-      "should intersect with a standard facet filter" ignore {
-        fail("test not implemented")
+      "should return any dataset where the RP's disease is a child of the dataset's disease" in {
+        val researchPurpose = ResearchPurpose.default.copy(NCTRL = true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
+        val searchResponse = searchWithPurpose(researchPurpose)
+        validateResultNames(
+          Set("two", "six", "twelve", "sixteen", "seventeen", "eighteen", "twenty"), // central sleep apnea, and sleep disorder, or NCTRL=false+(GRU||HMB)
+          searchResponse
+        )
       }
-      "should intersect with a text search" ignore {
-        fail("test not implemented")
+      "should return any dataset where NCTRL is false and is (GRU or HMB)" in {
+        val researchPurpose = ResearchPurpose.default.copy(NCTRL = true)
+        val searchResponse = searchWithPurpose(researchPurpose)
+        validateResultNames(
+          Set("two", "six", "twelve"),
+          searchResponse
+        )
       }
-      "should affect search suggestions" ignore {
-        fail("test not implemented")
+      "should intersect with a standard facet filter" in {
+        val researchPurpose = ResearchPurpose.default.copy(NCTRL = true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
+        val filter = Map("library:projectName" -> Seq("beryllium"))
+        val searchResponse = searchWithPurpose(researchPurpose, filter)
+        validateResultNames(
+          Set("sixteen", "eighteen"),
+          searchResponse
+        )
+      }
+      "should intersect with a text search" in {
+        val researchPurpose = ResearchPurpose.default.copy(NCTRL = true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
+        val searchResponse = searchWithPurpose(researchPurpose, "lazy")
+        validateResultNames(
+          Set("twelve"),
+          searchResponse
+        )
+      }
+      "should affect search suggestions" in {
+        val researchPurpose = ResearchPurpose.default.copy(NCTRL = true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
+        val searchResponse = suggestWithPurpose(researchPurpose, "anti")
+        validateSuggestions(
+          Set("antialias", "antibody", "anticorruption", "antiegalitarian", "antielitism"),
+          searchResponse
+        )
       }
     }
 
