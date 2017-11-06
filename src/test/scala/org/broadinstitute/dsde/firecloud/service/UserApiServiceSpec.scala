@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.webservice.RegisterApiService
+import org.broadinstitute.dsde.firecloud.webservice.{RegisterApiService, UserApiService}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -14,7 +14,7 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
-class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserService {
+class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService {
 
   def actorRefFactory = system
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
@@ -58,7 +58,7 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
 
     workspaceServer = startClientAndServer(workspaceServerPort)
     workspaceServer
-      .when(request.withMethod("GET").withPath(UserService.billingPath))
+      .when(request.withMethod("GET").withPath(UserApiService.billingPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -72,49 +72,49 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       )
 
     workspaceServer
-      .when(request.withMethod("GET").withPath(UserService.rawlsGroupBasePath))
+      .when(request.withMethod("GET").withPath(UserApiService.rawlsGroupBasePath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
 
     workspaceServer
-      .when(request.withMethod("POST").withPath(UserService.rawlsGroupPath("example-group")))
+      .when(request.withMethod("POST").withPath(UserApiService.rawlsGroupPath("example-group")))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
       )
 
     workspaceServer
-      .when(request.withMethod("DELETE").withPath(UserService.rawlsGroupPath("example-group")))
+      .when(request.withMethod("DELETE").withPath(UserApiService.rawlsGroupPath("example-group")))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
 
     workspaceServer
-      .when(request.withMethod("GET").withPath(UserService.rawlsGroupPath("example-group")))
+      .when(request.withMethod("GET").withPath(UserApiService.rawlsGroupPath("example-group")))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
 
     workspaceServer
-      .when(request.withMethod("PUT").withPath(UserService.rawlsGroupMemberPath("example-group", "owner", "test@test.test")))
+      .when(request.withMethod("PUT").withPath(UserApiService.rawlsGroupMemberPath("example-group", "owner", "test@test.test")))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
 
     workspaceServer
-      .when(request.withMethod("DELETE").withPath(UserService.rawlsGroupMemberPath("example-group", "owner", "test@test.test")))
+      .when(request.withMethod("DELETE").withPath(UserApiService.rawlsGroupMemberPath("example-group", "owner", "test@test.test")))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
 
     workspaceServer
-      .when(request.withMethod("POST").withPath(UserService.rawlsGroupRequestAccessPath("example-group")))
+      .when(request.withMethod("POST").withPath(UserApiService.rawlsGroupRequestAccessPath("example-group")))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(NoContent.intValue)
@@ -122,21 +122,21 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
 
     samServer = startClientAndServer(samServerPort)
     samServer
-      .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+      .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
 
     samServer
-      .when(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
+      .when(request.withMethod("POST").withPath(UserApiService.samRegisterUserPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
       )
 
     samServer
-      .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+      .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(userStatus).withStatusCode(OK.intValue)
@@ -149,7 +149,7 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       key =>
         profileServer
           .when(request().withMethod("POST").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(
-            UserService.remoteGetKeyPath.format(uniqueId, key)))
+            UserApiService.remoteGetKeyPath.format(uniqueId, key)))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -160,20 +160,20 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
       method =>
         profileServer
           .when(request().withMethod(method.name).withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(
-            UserService.remoteGetKeyPath.format(uniqueId, exampleKey)))
+            UserApiService.remoteGetKeyPath.format(uniqueId, exampleKey)))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
     }
     profileServer
-      .when(request().withMethod("GET").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(UserService.remoteGetAllPath.format(uniqueId)))
+      .when(request().withMethod("GET").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(UserApiService.remoteGetAllPath.format(uniqueId)))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
     profileServer
-      .when(request().withMethod("POST").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(UserService.remoteSetKeyPath))
+      .when(request().withMethod("POST").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(UserApiService.remoteSetKeyPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -315,9 +315,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
 
     "When testing profile update for a brand new user in sam" - {
       "OK response is returned" in {
-        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
         samServer
-          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
@@ -332,16 +332,16 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
 
     "When testing profile update for a pre-existing but non-enabled user in sam" - {
       "OK response is returned" in {
-        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
-        samServer.clear(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
+        samServer.clear(request.withMethod("POST").withPath(UserApiService.samRegisterUserPath))
         samServer
-          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
           )
         samServer
-          .when(request.withMethod("POST").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("POST").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header)
@@ -371,9 +371,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and sam returns 401" - {
       "Unauthorized response is returned" in {
 
-        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
         samServer
-          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(Unauthorized.intValue)
@@ -387,9 +387,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and sam returns 404" - {
       "NotFound response is returned" in {
 
-        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
         samServer
-          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
@@ -403,9 +403,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and sam returns 500" - {
       "InternalServerError response is returned" in {
 
-        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
         samServer
-          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(InternalServerError.intValue)
@@ -419,9 +419,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and sam says not-google-enabled" - {
       "Forbidden response is returned" in {
 
-        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
         samServer
-          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withBody("""{"enabled": {"google": false, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
@@ -436,9 +436,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and sam says not-ldap-enabled" - {
       "Forbidden response is returned" in {
 
-        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
         samServer
-          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withBody("""{"enabled": {"google": true, "ldap": false, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
@@ -453,11 +453,11 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and sam says fully enabled" - {
       "OK response is returned" in {
 
-        println(UserService.samRegisterUserPath)
+        println(UserApiService.samRegisterUserPath)
 
-        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
         samServer
-          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withBody("""{"enabled": {"google": true, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
@@ -472,9 +472,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and sam returns ugly json" - {
       "InternalServerError response is returned" in {
 
-        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
         samServer
-          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withBody("""{"userInfo": "whaaaaaaat??"}""")
@@ -489,9 +489,9 @@ class UserServiceSpec extends BaseServiceSpec with RegisterApiService with UserS
     "when calling /me and sam returns an unexpected HTTP response code" - {
       "echo the error code from sam" in {
 
-        samServer.clear(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
         samServer
-          .when(request.withMethod("GET").withPath(UserService.samRegisterUserPath))
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(EnhanceYourCalm.intValue)

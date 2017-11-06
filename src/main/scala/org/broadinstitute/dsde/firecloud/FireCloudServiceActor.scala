@@ -69,7 +69,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     methodConfigurationService.routes ~ submissionsService.routes ~
     nihRoutes ~ billingService.routes
 
-  val userService = new UserService with ActorRefFactoryContext
+  val userService = new UserApiService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
 
   override lazy val log = LoggerFactory.getLogger(getClass)
