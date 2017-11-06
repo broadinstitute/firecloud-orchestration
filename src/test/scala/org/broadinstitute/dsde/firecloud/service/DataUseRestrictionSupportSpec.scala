@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.lang.reflect.Field
 
+import org.broadinstitute.dsde.firecloud.model.DataUse
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures._
 import org.broadinstitute.dsde.rawls.model.{ManagedGroupRef, Workspace, _}
@@ -199,6 +200,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         att match {
           case x: AttributeValueList => x.list.map {
             case avl@(a: AttributeString) => a.value
+            case avl@(a: AttributeNumber) => DataUse.doid_prefix + a.value.intValue().toString
             case _ => ""
           }
           case unhandled => Seq.empty[String]

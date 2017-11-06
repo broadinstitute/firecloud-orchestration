@@ -27,6 +27,11 @@ object DataUse {
       val numericId = stringid.stripPrefix(doid_prefix).toInt
       new DiseaseOntologyNodeId(uri, numericId)
     }
+    def apply(numericId: Int) = {
+      val uri = Uri(doid_prefix + numericId.toString)
+      new DiseaseOntologyNodeId(uri, numericId)
+
+    }
   }
 
 }

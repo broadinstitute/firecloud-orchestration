@@ -3,10 +3,11 @@ package org.broadinstitute.dsde.firecloud.service
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.model.DataUse.DiseaseOntologyNodeId
 import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
-import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{DataUse, Document, ElasticSearch, LibrarySearchResponse, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.everit.json.schema.{Schema, ValidationException}
@@ -20,6 +21,7 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by davidan on 10/2/16.
@@ -39,8 +41,19 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       case x if x.attributes.contains(AttributeName.withLibraryNS("DS")) =>
         x.attributes(AttributeName.withLibraryNS("DS"))
     }.collect {
-      case s:AttributeString => s.value
-    }
+      // Type safety check ontology terms that could be a string or an integer
+      case s:AttributeString =>
+        // Convert string terms into full DiseaseOntologyNodeIds for accurate indexing
+        Try(s.value.stripPrefix(DataUse.doid_prefix).toInt) match {
+          case Success(i) => DiseaseOntologyNodeId(i).uri.toString()
+          case Failure(e) =>
+            logger.warn(s"Unable to parse a disease ontology id from ${s.value}, e: ${e.getMessage}")
+            ""
+        }
+      case s:AttributeNumber =>
+        DiseaseOntologyNodeId(s.value.toInt).uri.toString()
+    }.filter(_.nonEmpty).distinct
+
     logger.debug(s"found ${nodesSeq.size} ontology terms in workspaces with ontology nodes or DS:X nodes assigned")
 
     val nodes = nodesSeq.toSet
