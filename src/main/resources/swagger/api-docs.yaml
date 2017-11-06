@@ -2705,37 +2705,22 @@ paths:
           description: Internal Error
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissionsCount:
-      get:
-        responses:
-          '200':
-            description: Successful Request
-            schema:
-              type: object
-              description: Map[String,Int]
-          '404':
-            description: Workspace not found
-            schema:
-              $ref: '#/definitions/ErrorReport'
-          '500':
-            description: Internal Error
-            schema:
-              $ref: '#/definitions/ErrorReport'
-        description: Counts all submissions run in the workspace, grouped by status. Returns a map of status:count.
-        tags:
-          - Submissions
-        summary: Count submissions by status
-        operationId: countSubmissions
-        parameters:
-          - in: path
-            description: Workspace Namespace
-            name: workspaceNamespace
-            required: true
-            type: string
-          - in: path
-            description: Workspace Name
-            name: workspaceName
-            required: true
-            type: string
+    get:
+      tags:
+        - Submissions
+      summary: Count submissions by status
+      description: Counts all submissions run in the workspace, grouped by status. Returns a map of status:count.
+      operationId: countSubmissions
+      responses:
+        '200':
+          description: Successful Request
+        '404':
+          description: Workspace not found
+        '500':
+          description: Internal Error
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
     delete:
