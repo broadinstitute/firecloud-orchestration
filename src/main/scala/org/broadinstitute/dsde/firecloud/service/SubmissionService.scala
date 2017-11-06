@@ -18,36 +18,43 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
         passthrough(submissionQueueStatusUrl, GET)
       }
     } ~
-    pathPrefix("workspaces" / Segment / Segment / "submissions") { (namespace, name) =>
-      pathEnd {
-        (get | post) {
-          extract(_.request.method) { method =>
-            passthrough(s"$workspacesUrl/$namespace/$name/submissions", method)
-          }
-        }
+    pathPrefix("workspaces" / Segment/ Segment) { (namespace, name) =>
+      path("submissionsCount") {
+         get {
+           passthrough(s"$workspacesUrl/$namespace/$name/submissionsCount", GET)
+         }
       } ~
-      path("validate") {
-        post {
-          passthrough(s"$workspacesUrl/$namespace/$name/submissions/validate", POST)
-        }
-      } ~
-      pathPrefix(Segment) { submissionId =>
+      pathPrefix("submissions") {
         pathEnd {
-          (delete | get) {
+          (get | post) {
             extract(_.request.method) { method =>
-              passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId", method)
+              passthrough(s"$workspacesUrl/$namespace/$name/submissions", method)
             }
           }
         } ~
-        pathPrefix("workflows" / Segment) { workflowId =>
+        path("validate") {
+          post {
+            passthrough(s"$workspacesUrl/$namespace/$name/submissions/validate", POST)
+          }
+        } ~
+        pathPrefix(Segment) { submissionId =>
           pathEnd {
-            get {
-              passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId", GET)
+            (delete | get) {
+              extract(_.request.method) { method =>
+                passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId", method)
+              }
             }
           } ~
-          pathPrefix("outputs") {
-            get {
-              passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId/outputs", GET)
+          pathPrefix("workflows" / Segment) { workflowId =>
+            pathEnd {
+              get {
+                passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId", GET)
+              }
+            } ~
+            pathPrefix("outputs") {
+              get {
+                passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId/outputs", GET)
+              }
             }
           }
         }
