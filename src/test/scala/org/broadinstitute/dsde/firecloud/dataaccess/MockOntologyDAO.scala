@@ -9,7 +9,7 @@ import scala.concurrent.Future
 class MockOntologyDAO extends OntologyDAO {
   val data = Map(
     // central sleep apnea
-    "DOID_9220" -> List(TermResource(
+    "http://purl.obolibrary.org/obo/DOID_9220" -> List(TermResource(
       id="http://purl.obolibrary.org/obo/DOID_9220",
       ontology="Disease",
       usable=true,
@@ -44,8 +44,31 @@ class MockOntologyDAO extends OntologyDAO {
         )
       )))),
 
+    // central sleep apnea
+    "http://purl.obolibrary.org/obo/DOID_535" -> List(TermResource(
+      id="http://purl.obolibrary.org/obo/DOID_535",
+      ontology="Disease",
+      usable=true,
+      label="sleep disorder",
+      definition=Some("A disease of mental health that involves disruption of sleep patterns."),
+      synonyms=Some(List("Non-organic sleep disorder")),
+      parents=Some(List(
+        TermParent(
+          id="http://purl.obolibrary.org/obo/DOID_150",
+          order=3,
+          label="disease of mental health",
+          definition=Some("A disease that involves a psychological or behavioral pattern generally associated with subjective distress or disability that occurs in an individual, and which are not a part of normal development or culture.")
+        ),
+        TermParent(
+          id="http://purl.obolibrary.org/obo/DOID_4",
+          order=4,
+          label="disease",
+          definition=Some("A disease is a disposition (i) to undergo pathological processes that (ii) exists in an organism because of one or more disorders in that organism.")
+        )
+      )))),
+
     // ebola
-    "DOID_4325" -> List(TermResource(
+    "http://purl.obolibrary.org/obo/DOID_4325" -> List(TermResource(
       id="http://purl.obolibrary.org/obo/DOID_4325",
       ontology="Disease",
       usable=true,
@@ -74,7 +97,7 @@ class MockOntologyDAO extends OntologyDAO {
       )))),
 
     // leukemia
-    "DOID_1240" -> List(TermResource(
+    "http://purl.obolibrary.org/obo/DOID_1240" -> List(TermResource(
       id="http://purl.obolibrary.org/obo/DOID_1240",
       ontology="Disease",
       usable=true,
@@ -121,7 +144,7 @@ class MockOntologyDAO extends OntologyDAO {
       )))),
 
     // hematologic cancer (first parent of leukemia)
-    "DOID_2531" -> List(TermResource(
+    "http://purl.obolibrary.org/obo/DOID_2531" -> List(TermResource(
       id="http://purl.obolibrary.org/obo/DOID_2531",
       ontology="Disease",
       usable=true,
@@ -162,7 +185,7 @@ class MockOntologyDAO extends OntologyDAO {
       )))),
 
     // fetal alcohol spectrum disorder (has multiple parents at the same level)
-    "DOID_0050696" -> List(TermResource(
+    "http://purl.obolibrary.org/obo/DOID_0050696" -> List(TermResource(
       id="http://purl.obolibrary.org/obo/DOID_0050696",
       ontology="Disease",
       usable=true,
@@ -202,7 +225,7 @@ class MockOntologyDAO extends OntologyDAO {
       )))),
 
     // disease, the root of the ontology tree
-    "DOID_4" -> List(TermResource(
+    "http://purl.obolibrary.org/obo/DOID_4" -> List(TermResource(
       id="http://purl.obolibrary.org/obo/DOID_4",
       ontology="Disease",
       usable=true,

@@ -71,9 +71,20 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           Map(ds.name -> makeDurFromWorkspace(ds))
         }.toMap
 
-        listCodes.map { code =>
+        listCodes.foreach { code =>
           val dur: DataUseRestriction = durs(code)
-          checkListValues(dur, code) should be(true)
+          checkListValues(dur, code)
+        }
+      }
+
+      "dataset should have the correct disease values for the consent code for which it was specified" in {
+        val durs: Map[String, DataUseRestriction] = diseaseDatasets.flatMap { ds =>
+          Map(ds.name -> makeDurFromWorkspace(ds))
+        }.toMap
+
+        diseaseCodes.foreach { code =>
+          val dur: DataUseRestriction = durs(code)
+          checkDiseaseValues(dur, code)
         }
       }
 
@@ -119,9 +130,14 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
     getFieldMap(dur).getOrElse(fieldName, false).asInstanceOf[Boolean]
   }
 
-  private def checkListValues(dur: DataUseRestriction, fieldName: String): Boolean = {
+  private def checkListValues(dur: DataUseRestriction, fieldName: String): Unit = {
     val fieldValue: Seq[String] = getFieldMap(dur).getOrElse(fieldName, Seq.empty[String]).asInstanceOf[Seq[String]]
-    listValues.forall { lv => fieldValue.contains(lv) }
+    listValues should contain theSameElementsAs fieldValue
+  }
+
+  private def checkDiseaseValues(dur: DataUseRestriction, fieldName: String): Unit = {
+    val fieldValue: Seq[Int] = getFieldMap(dur).getOrElse(fieldName, Seq.empty[Int]).asInstanceOf[Seq[Int]]
+    diseaseValues should contain theSameElementsAs fieldValue
   }
 
   private def getFieldMap(dur: DataUseRestriction): Map[String, Object] = {

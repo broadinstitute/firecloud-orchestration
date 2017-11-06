@@ -131,7 +131,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
 
       "DS:non-empty list dataset should have values" in {
         val searchResponse = searchFor("DS")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(DS = Seq("TERM-1", "TERM-2")))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(DS = Seq(123, 456)))
       }
 
       "RS-POP:non-empty list dataset should have values" in {
@@ -145,7 +145,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
           DataUseRestriction(
             GRU = true,
             HMB = true,
-            DS = Seq("TERM-1", "TERM-2"),
+            DS = Seq(123, 456),
             NCU = true,
             NPU = true,
             NDMS = true,
@@ -165,7 +165,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
           DataUseRestriction(
             GRU = true,
             HMB = true,
-            DS = Seq("TERM-1", "TERM-2")
+            DS = Seq(123, 456)
           )
         )
       }
