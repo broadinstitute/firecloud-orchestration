@@ -54,7 +54,6 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
                 Any dataset with HMB=true
                 Any dataset tagged to this disease exactly
                 Any dataset tagged to a DOID ontology Parent of disease X
-
      */
     if (rp.DS.nonEmpty) {
       val dsClause = generateDiseaseQuery(rp.DS, ontologyDAO)
@@ -68,19 +67,17 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
       dul:
                 Any dataset where NDMS is false
                 Any dataset where NDMS is true AND DS-X match
-
-
      */
     if (rp.NDMS) {
       val ndmsClause = boolQuery()
+      ndmsClause.should(code("NDMS", false))
       if (rp.DS.nonEmpty) {
         ndmsClause.should(boolQuery()
           .must(code("NDMS", true))
           .must(generateDiseaseQuery(rp.DS, ontologyDAO))
         )
-      } else {
-        ndmsClause.should(code("NDMS", false))
       }
+
       bool.must(ndmsClause)
     }
 
@@ -89,8 +86,6 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
       dul:
                 Any dataset where NCTRL is false and is (GRU or HMB)
                 Any DS-X match, if user specified a disease in the res purpose search
-
-
      */
     if (rp.NCTRL) {
       val nctrlClause = boolQuery()

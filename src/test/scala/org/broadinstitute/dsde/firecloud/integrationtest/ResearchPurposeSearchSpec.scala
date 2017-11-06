@@ -165,32 +165,86 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
           searchResponse
         )
       }
-      "should intersect with a standard facet filter" ignore {
-        fail("test not implemented")
+      "should intersect with a standard facet filter" in {
+        val researchPurpose = ResearchPurpose.default.copy(DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
+        val filter = Map("library:projectName" -> Seq("beryllium"))
+        val searchResponse = searchWithPurpose(researchPurpose, filter)
+        validateResultNames(
+          Set("sixteen", "eighteen"),
+          searchResponse
+        )
       }
-      "should intersect with a text search" ignore {
-        fail("test not implemented")
+      "should intersect with a text search" in {
+        val researchPurpose = ResearchPurpose.default.copy(DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
+        val searchResponse = searchWithPurpose(researchPurpose, "lazy")
+        validateResultNames(
+          Set("eleven", "twelve"),
+          searchResponse
+        )
       }
-      "should affect search suggestions" ignore {
-        fail("test not implemented")
+      "should affect search suggestions" in {
+        val researchPurpose = ResearchPurpose.default.copy(DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
+        val searchResponse = suggestWithPurpose(researchPurpose, "anti")
+        validateSuggestions(
+          // Set("one", "two", "six", "seven", "eleven", "twelve", "sixteen", "eighteen"), // GRU, HMB, and sleep disorder
+          Set("antiaging", "antialias", "antibody", "antic", "anticoagulant", "anticorruption", "antiegalitarian", "antielitism"),
+          searchResponse
+        )
       }
     }
 
     "Methods development/Validation study (NDMS)" - {
-      "should return any dataset where NDMS is true and the disease matches exactly" ignore {
-        fail("test not implemented")
+      "should return any dataset where NDMS is true and the disease matches exactly" in {
+        val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
+        val searchResponse = searchWithPurpose(researchPurpose)
+        validateResultNames(
+          Set("one", "six", "eleven", "sixteen", "eighteen"), // NDMS=false or (NDMS=true and DS match)
+          searchResponse
+        )
+        // NB: this doesn't match fixture "twenty" because even though the NDMS clauses are satisfied, the DS
+        // clause is not. In other words, if you made this search without specifying NDMS=true, you wouldn't
+        // match on "twenty". TODO: verify this is correct business logic.
       }
-      "should return any dataset where NDMS is true and the RP's disease is a child of the dataset's disease" ignore {
-        fail("test not implemented")
+      "should return any dataset where NDMS is true and the RP's disease is a child of the dataset's disease" in {
+        val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
+        val searchResponse = searchWithPurpose(researchPurpose)
+        validateResultNames(
+          Set("one", "six", "eleven", "sixteen", "seventeen", "eighteen", "twenty"), // NDMS=false or (NDMS=true and DS match)
+          searchResponse
+        )
       }
-      "should return any dataset where NDMS is false" ignore {
-        fail("test not implemented")
+      "should return any dataset where NDMS is false" in {
+        val researchPurpose = ResearchPurpose.default.copy(NDMS = true)
+        val searchResponse = searchWithPurpose(researchPurpose)
+        validateResultNames(
+          Set("one", "six", "eleven", "sixteen", "twenty"),
+          searchResponse
+        )
       }
-      "should intersect with a text search" ignore {
-        fail("test not implemented")
+      "should intersect with a standard facet filter" in {
+        val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
+        val filter = Map("library:projectName" -> Seq("beryllium"))
+        val searchResponse = searchWithPurpose(researchPurpose, filter)
+        validateResultNames(
+          Set("sixteen", "eighteen"),
+          searchResponse
+        )
       }
-      "should affect search suggestions" ignore {
-        fail("test not implemented")
+      "should intersect with a text search" in {
+        val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
+        val searchResponse = searchWithPurpose(researchPurpose, "lazy")
+        validateResultNames(
+          Set("eleven"),
+          searchResponse
+        )
+      }
+      "should affect search suggestions" in {
+        val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
+        val searchResponse = suggestWithPurpose(researchPurpose, "anti")
+        validateSuggestions(
+          Set("antiaging", "antibody", "anticoagulant", "antiegalitarian", "antielectron", "antielitism", "antifashion"),
+          searchResponse
+        )
       }
     }
 
@@ -201,8 +255,14 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       "should return any dataset where the RP's disease is a child of the dataset's disease" ignore {
         fail("test not implemented")
       }
-      "should return any dataset where NCTRL is false and is (GRU or HMB)" ignore {
-        fail("test not implemented")
+      "should return any dataset where NCTRL is false and is (GRU or HMB)" in {
+        // TODO: better exemplar data
+        val researchPurpose = ResearchPurpose.default.copy(NCTRL = true)
+        val searchResponse = searchWithPurpose(researchPurpose)
+        validateResultNames(
+          Set("one", "two", "six", "seven", "eleven", "twelve"),
+          searchResponse
+        )
       }
       "should intersect with a standard facet filter" ignore {
         fail("test not implemented")
