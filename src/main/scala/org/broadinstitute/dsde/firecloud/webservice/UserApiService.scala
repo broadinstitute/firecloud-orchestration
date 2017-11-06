@@ -20,12 +20,12 @@ import spray.routing._
 
 import scala.util.{Failure, Success}
 
-class UserServiceActor extends Actor with UserService {
+class UserApiServiceActor extends Actor with UserApiService {
   def actorRefFactory = context
   def receive = runRoute(routes)
 }
 
-object UserService {
+object UserApiService {
   val remoteGetKeyPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.get
   val remoteGetKeyURL = FireCloudConfig.Thurloe.baseUrl + remoteGetKeyPath
 
@@ -65,7 +65,7 @@ object UserService {
 
 // TODO: this should use UserInfoDirectives, not StandardUserInfoDirectives. That would require a refactoring
 // of how we create service actors, so I'm pushing that work out to later.
-trait UserService extends HttpService with PerRequestCreator with FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
+trait UserApiService extends HttpService with PerRequestCreator with FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
   private implicit val executionContext = actorRefFactory.dispatcher
 
@@ -87,7 +87,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
           // browser sent Authorization header; try to query rawls for user status
           case Some(c) =>
             val pipeline = authHeaders(requestContext) ~> sendReceive
-            val extReq = Get(UserService.samRegisterUserURL)
+            val extReq = Get(UserApiService.samRegisterUserURL)
             pipeline(extReq) onComplete {
               case Success(response) =>
                 response.status match {
@@ -126,42 +126,42 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
     } ~
     pathPrefix("api") {
       path("profile" / "billing") {
-        passthrough(UserService.billingUrl, HttpMethods.GET)
+        passthrough(UserApiService.billingUrl, HttpMethods.GET)
       } ~
       path("profile" / "billingAccounts") {
         get {
-          passthrough(UserService.billingAccountsUrl, HttpMethods.GET)
+          passthrough(UserApiService.billingAccountsUrl, HttpMethods.GET)
         }
       } ~
       pathPrefix("groups") {
         pathEnd {
           get {
-            passthrough(UserService.rawlsGroupBaseUrl, HttpMethods.GET)
+            passthrough(UserApiService.rawlsGroupBaseUrl, HttpMethods.GET)
           }
         } ~
         pathPrefix(Segment) { groupName =>
           pathEnd {
             get {
-              passthrough(UserService.rawlsGroupUrl(groupName), HttpMethods.GET)
+              passthrough(UserApiService.rawlsGroupUrl(groupName), HttpMethods.GET)
             } ~
             post {
-              passthrough(UserService.rawlsGroupUrl(groupName), HttpMethods.POST)
+              passthrough(UserApiService.rawlsGroupUrl(groupName), HttpMethods.POST)
             } ~
             delete {
-              passthrough(UserService.rawlsGroupUrl(groupName), HttpMethods.DELETE)
+              passthrough(UserApiService.rawlsGroupUrl(groupName), HttpMethods.DELETE)
             }
           } ~
           path("requestAccess") {
             post {
-              passthrough(UserService.rawlsGroupRequestAccessUrl(groupName), HttpMethods.POST)
+              passthrough(UserApiService.rawlsGroupRequestAccessUrl(groupName), HttpMethods.POST)
             }
           } ~
           path(Segment / Segment) { (role, email) =>
             put {
-              passthrough(UserService.rawlsGroupMemberUrl(groupName, role, email), HttpMethods.PUT)
+              passthrough(UserApiService.rawlsGroupMemberUrl(groupName, role, email), HttpMethods.PUT)
             } ~
             delete {
-              passthrough(UserService.rawlsGroupMemberUrl(groupName, role, email), HttpMethods.DELETE)
+              passthrough(UserApiService.rawlsGroupMemberUrl(groupName, role, email), HttpMethods.DELETE)
             }
           }
         }
@@ -170,7 +170,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
     pathPrefix("register") {
       pathEnd {
         get {
-          passthrough(UserService.samRegisterUserURL, HttpMethods.GET)
+          passthrough(UserApiService.samRegisterUserURL, HttpMethods.GET)
         }
       } ~
       path("userinfo") { requestContext =>
@@ -182,7 +182,7 @@ trait UserService extends HttpService with PerRequestCreator with FireCloudReque
           get {
             requireUserInfo() { userInfo =>
               mapRequest(addFireCloudCredentials) {
-                passthrough(UserService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
+                passthrough(UserApiService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
               }
             }
           }
