@@ -19,6 +19,10 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     MockWorkspaceServer.stopWorkspaceServer()
   }
 
+  val localSubmissionsCountPath = FireCloudConfig.Rawls.submissionsCountPath.format(
+    MockWorkspaceServer.mockValidWorkspace.namespace,
+    MockWorkspaceServer.mockValidWorkspace.name)
+
   val localSubmissionsPath = FireCloudConfig.Rawls.submissionsPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name)
@@ -64,6 +68,15 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
           Get("/submissions/queueStatus") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
             status should equal(OK)
           }
+        }
+      }
+    }
+
+    "when calling GET on the /workspaces/*/*/submissionsCount path" - {
+      "OK status is returned" in {
+        (Get(localSubmissionsCountPath)
+          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
+          status should equal(OK)
         }
       }
     }

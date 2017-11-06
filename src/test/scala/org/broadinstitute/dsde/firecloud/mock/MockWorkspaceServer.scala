@@ -86,6 +86,19 @@ object MockWorkspaceServer {
     MockWorkspaceServer.workspaceServer
       .when(
         request()
+          .withMethod("GET")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissionsCount"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
           .withMethod("POST")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions"
             .format(mockValidWorkspace.namespace, mockValidWorkspace.name))
