@@ -1,17 +1,18 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.{Actor, Props}
+import akka.actor.Actor
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PerRequestCreator}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.HttpHeaders.Authorization
 import spray.http.StatusCodes._
-import spray.http.{HttpCredentials, HttpMethods, StatusCode, StatusCodes}
+import spray.http.{HttpCredentials, HttpMethods, StatusCode}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._

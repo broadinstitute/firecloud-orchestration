@@ -3,8 +3,8 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.UserService
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.webservice.UserService
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import spray.client.pipelining._
