@@ -2714,10 +2714,16 @@ paths:
       responses:
         '200':
           description: Successful Request
+          schema:
+            $ref: '#/definitions/SubmissionsCountResponse'
         '404':
           description: Workspace not found
+          schema:
+            $ref: '#/definitions/ErrorReport'
         '500':
           description: Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
@@ -4997,6 +5003,24 @@ definitions:
         description: What happens after a task fails. Choose from ContinueWhilePossible and NoNewCalls. Defaults to NoNewCalls if not specified. See Cromwell docs for more information.
         default: NoNewCalls
         enum: ["NoNewCalls", "ContinueWhilePossible"]
+
+  SubmissionsCountResponse:
+      type: object
+      properties:
+        Accepted:
+          type: integer
+        Evaluating:
+          type: integer
+        Submitting:
+          type: integer
+        Submitted:
+          type: integer
+        Aborting:
+          type: integer
+        Aborted:
+          type: integer
+        Done:
+          type: integer
 
   SubmissionValidationEntityInputs:
     description: the results of parsing each of the inputs for one entity
