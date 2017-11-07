@@ -54,14 +54,11 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
         DiseaseOntologyNodeId(s.value.toInt).uri.toString()
     }.filter(_.nonEmpty).distinct
 
-    logger.debug(s"found ${nodesSeq.size} ontology terms in workspaces with ontology nodes or DS:X nodes assigned")
-
-    val nodes = nodesSeq.toSet
-    logger.debug(s"found ${nodes.size} unique ontology nodes")
+    logger.info(s"found ${nodesSeq.size} ontology terms in workspaces with ontology nodes or DS:X nodes assigned")
 
     // query ontology for this set of nodes, save in a map
     val termCache = Future.sequence {
-      nodes map { id => lookupTermNodes(id, ontologyDAO) }
+      nodesSeq map { id => lookupTermNodes(id, ontologyDAO) }
     }
 
     // using the cached term information, build the indexable documents
