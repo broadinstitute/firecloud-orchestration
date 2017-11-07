@@ -18,6 +18,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
   def actorRefFactory = system
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
+  val trialServiceConstructor:() => TrialService = TrialService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
   var samServer: ClientAndServer = _
@@ -192,7 +193,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling GET for the user registration service" - {
       "MethodNotAllowed response is not returned" in {
-        Get("/register") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        Get("/register") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           log.debug("/register: " + status)
           status shouldNot equal(MethodNotAllowed)
         }
@@ -201,7 +202,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling GET for user billing service" - {
       "MethodNotAllowed response is not returned" in {
-        Get("/api/profile/billing") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        Get("/api/profile/billing") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           log.debug("/api/profile/billing: " + status)
           status shouldNot equal(MethodNotAllowed)
         }
@@ -210,7 +211,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling GET for user refresh token date service" - {
       "MethodNotAllowed response is not returned" in {
-        Get("/api/profile/refreshTokenDate") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        Get("/api/profile/refreshTokenDate") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           status shouldNot equal(MethodNotAllowed)
         }
       }
@@ -218,7 +219,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when GET-ting all profile information" - {
       "MethodNotAllowed response is not returned" in {
-        Get(s"/$ApiPrefix") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+        Get(s"/$ApiPrefix") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           log.debug(s"GET /$ApiPrefix: " + status)
           status shouldNot equal(MethodNotAllowed)
         }
@@ -249,7 +250,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     "when GET-ting my group membership" - {
       "OK response is returned" in {
         Get("/api/groups") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -258,7 +259,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     "when POST-ing to create a group" - {
       "Created response is returned" in {
         Post("/api/groups/example-group") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(Created)
         }
       }
@@ -267,7 +268,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     "when GET-ting membership of a group" - {
       "OK response is returned" in {
         Get("/api/groups/example-group") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -276,7 +277,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     "when DELETE-ing to create a group" - {
       "OK response is returned" in {
         Delete("/api/groups/example-group") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -285,7 +286,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     "when PUT-ting to add a member to a group" - {
       "OK response is returned" in {
         Put("/api/groups/example-group/owner/test@test.test") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -294,7 +295,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     "when DELETE-ing to remove a member from a group" - {
       "OK response is returned" in {
         Delete("/api/groups/example-group/owner/test@test.test") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -303,7 +304,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     "when POST-ing to request access to a group" - {
       "OK response is returned" in {
         Post("/api/groups/example-group/requestAccess") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(routes) ~> check {
+          dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(NoContent)
         }
       }
@@ -362,7 +363,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me without Authorization header" - {
       "Unauthorized response is returned" in {
-        Get(s"/me") ~> sealRoute(routes) ~> check {
+        Get(s"/me") ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(Unauthorized)
         }
       }
@@ -378,7 +379,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(Unauthorized.intValue)
           )
-        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(Unauthorized)
         }
       }
@@ -394,7 +395,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
           )
-        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(NotFound)
         }
       }
@@ -410,7 +411,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(InternalServerError.intValue)
           )
-        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(InternalServerError)
         }
       }
@@ -427,7 +428,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
               .withBody("""{"enabled": {"google": false, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
-        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(Forbidden)
         }
       }
@@ -444,7 +445,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
               .withBody("""{"enabled": {"google": true, "ldap": false, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
-        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(Forbidden)
         }
       }
@@ -463,7 +464,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
               .withBody("""{"enabled": {"google": true, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
-        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -480,7 +481,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
               .withBody("""{"userInfo": "whaaaaaaat??"}""")
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
-        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(InternalServerError)
         }
       }
@@ -496,7 +497,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(EnhanceYourCalm.intValue)
           )
-        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(EnhanceYourCalm)
         }
       }

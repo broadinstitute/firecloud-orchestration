@@ -29,6 +29,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with StatusApiService
   with MethodsApiService
   with Ga4ghApiService
+  with UserApiService
   {
 
   implicit val system = context.system
@@ -60,6 +61,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(app)
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
+  val trialServiceConstructor: () => TrialService = TrialService.constructor(app)
 
   // routes under /api
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
@@ -69,7 +71,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     methodConfigurationService.routes ~ submissionsService.routes ~
     nihRoutes ~ billingService.routes
 
-  val userService = new UserApiService with ActorRefFactoryContext
   val healthService = new HealthService with ActorRefFactoryContext
 
   override lazy val log = LoggerFactory.getLogger(getClass)
@@ -112,7 +113,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         storageRoutes ~
         swaggerUiService ~
         syncRoute ~
-        userService.routes ~
+        userServiceRoutes ~
         workspaceRoutes ~
         notificationsRoutes ~
         statusRoutes ~
