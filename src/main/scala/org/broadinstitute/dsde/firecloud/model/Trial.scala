@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import java.time.Instant
+
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.TrialState
 
@@ -39,17 +41,27 @@ object Trial {
   case class UserTrialStatus(
     userId: String,
     currentState: Option[TrialState],
-    enabledDate: Long,    // timestamp a campaign manager granted the user trial permissions
-    enrolledDate: Long,   // timestamp user started their trial
-    terminatedDate: Long, // timestamp user was actually terminated
-    expirationDate: Long  // timestamp user is due to face termination
+    enabledDate: Instant,    // timestamp a campaign manager granted the user trial permissions
+    enrolledDate: Instant,   // timestamp user started their trial
+    terminatedDate: Instant, // timestamp user was actually terminated
+    expirationDate: Instant  // timestamp user is due to face termination
     )
 
   object UserTrialStatus {
+    // convenience apply method that accepts epoch millisecond times instead of java.time.Instants
+    def apply(userId: String, currentState: Option[TrialState],
+              enabledEpoch: Long, enrolledEpoch: Long, terminatedEpoch: Long, expirationEpoch: Long) = {
+      new UserTrialStatus(userId, currentState,
+        Instant.ofEpochMilli(enabledEpoch),
+        Instant.ofEpochMilli(enrolledEpoch),
+        Instant.ofEpochMilli(terminatedEpoch),
+        Instant.ofEpochMilli(expirationEpoch)
+      )
+    }
     def apply(profileWrapper:ProfileWrapper) = {
 
-      def profileDate(key: String, kvps: Map[String,String], default: Int = 0): Int = {
-        Try(kvps.getOrElse(key, default.toString).toInt).toOption.getOrElse(default)
+      def profileDate(key: String, kvps: Map[String,String], default: Instant = Instant.ofEpochMilli(0)): Instant = {
+        Try(Instant.ofEpochMilli(kvps.getOrElse(key, default.toString).toLong)).toOption.getOrElse(default)
       }
 
       val mappedKVPs:Map[String,String] = (profileWrapper.keyValuePairs collect {
@@ -73,10 +85,10 @@ object Trial {
         case None => Map.empty[String,String]
       }
       Map(
-        "trialEnabledDate" -> userTrialStatus.enabledDate.toString,
-        "trialEnrolledDate" -> userTrialStatus.enrolledDate.toString,
-        "trialTerminatedDate" -> userTrialStatus.terminatedDate.toString,
-        "trialExpirationDate" -> userTrialStatus.expirationDate.toString
+        "trialEnabledDate" -> userTrialStatus.enabledDate.toEpochMilli.toString,
+        "trialEnrolledDate" -> userTrialStatus.enrolledDate.toEpochMilli.toString,
+        "trialTerminatedDate" -> userTrialStatus.terminatedDate.toEpochMilli.toString,
+        "trialExpirationDate" -> userTrialStatus.expirationDate.toEpochMilli.toString
       ) ++ stateKV
     }
 
