@@ -2,8 +2,6 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.lang.reflect.Field
 
-import org.broadinstitute.dsde.firecloud.model.DataUse
-import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures._
 import org.broadinstitute.dsde.rawls.model.{ManagedGroupRef, Workspace, _}
 import org.scalatest.{FreeSpec, Matchers}
