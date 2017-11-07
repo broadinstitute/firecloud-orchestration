@@ -201,7 +201,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         att match {
           case x: AttributeValueList => x.list.map {
             case avl@(a: AttributeString) => a.value
-            case avl@(a: AttributeNumber) => DataUse.doid_prefix + a.value.intValue().toString
             case _ => ""
           }
           case unhandled => Seq.empty[String]
