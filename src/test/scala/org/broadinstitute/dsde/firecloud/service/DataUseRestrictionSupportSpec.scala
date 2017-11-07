@@ -21,7 +21,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
         "dataset should have a fully populated data use restriction attribute" in {
           allDatasets.map { ds =>
-            val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestriction(ds)
+            val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(ds)
             val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
             durAtt shouldNot be(AttributeNull)
             val dur: DataUseRestriction = makeDurFromWorkspace(ds)
@@ -98,7 +98,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
         "dataset should not have any data use restriction for empty attributes" in {
           val workspace: Workspace = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
-          val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestriction(workspace)
+          val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(workspace)
           attrs should be(empty)
         }
 
@@ -110,7 +110,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
           )
           val workspace: Workspace = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
-          val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestriction(workspace)
+          val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(workspace)
           attrs should be(empty)
         }
 
@@ -124,7 +124,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
         "valid datasets should have some form of data use display attribute" in {
           validDisplayDatasets.map { ds =>
-            val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplay(ds, termCache)
+            val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(ds)
             val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
             codes shouldNot be(empty)
           }
@@ -132,7 +132,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
         "datasets with single boolean code should have that single display code" in {
           booleanDatasets.map { ds =>
-            val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplay(ds, termCache)
+            val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(ds)
             val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
             // Boolean datasets are named with the same code value
             codes should contain(ds.name)
@@ -141,17 +141,18 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         }
 
         "'EVERYTHING' dataset should have the right codes" in {
-          val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplay(everythingDataset.head, termCache)
+          val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(everythingDataset.head)
           val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
           (booleanCodes ++ Seq("RS-G", "RS-FM", "NAGR")).map { c => codes should contain(c) }
-          Seq("DS:central sleep apnea", "DS:sleep disorder").map { c => codes should contain(c) }
+          diseaseValuesLabels.map { c => codes should contain("DS:" + c) }
           Seq("RS-M", "RS-POP").map { c => codes shouldNot contain(c) }
         }
 
         "'TOP_THREE' dataset should have the right codes" in {
-          val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplay(topThreeDataset.head, termCache)
+          val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(topThreeDataset.head)
           val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
-          Seq("GRU", "HMB", "DS:central sleep apnea", "DS:sleep disorder").map { c => codes should contain(c) }
+          Seq("GRU", "HMB").map { c => codes should contain(c) }
+          diseaseValuesLabels.map { c => codes should contain("DS:" + c) }
           Seq("NCU", "NPU", "NDMS", "NCTRL", "RS-PD", "NAGR", "RS-G", "RS-FM", "RS-M", "RS-POP").map { c => codes shouldNot contain(c) }
         }
       }
@@ -160,7 +161,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
         "dataset should not have any data use display codes for empty attributes" in {
           val workspace: Workspace = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
-          val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplay(workspace, termCache)
+          val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(workspace)
           attrs should be(empty)
         }
 
@@ -172,13 +173,13 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
           )
           val workspace: Workspace = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
-          val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplay(workspace, termCache)
+          val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(workspace)
           attrs should be(empty)
         }
 
         "dataset should not have any data use display codes for missing/not-found disease terms" in {
           listDatasets.map { ds =>
-            val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplay(ds, Map.empty[String, TermResource])
+            val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(ds)
             attrs should be(empty)
           }
         }
@@ -211,7 +212,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
   }
 
   private def makeDurFromWorkspace(ds: Workspace): DataUseRestriction = {
-    val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestriction(ds)
+    val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(ds)
     val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
     durAtt.toJson.convertTo[DataUseRestriction]
   }
@@ -227,7 +228,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
   private def checkDiseaseValues(dur: DataUseRestriction, fieldName: String): Unit = {
     val fieldValue: Seq[Int] = getFieldMap(dur).getOrElse(fieldName, Seq.empty[Int]).asInstanceOf[Seq[Int]]
-    diseaseValues should contain theSameElementsAs fieldValue
+    diseaseValuesInts should contain theSameElementsAs fieldValue
   }
 
   private def getFieldMap(dur: DataUseRestriction): Map[String, Object] = {

@@ -131,8 +131,8 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
       }
 
       "DS:non-empty list dataset should have values" in {
-        val searchResponse = searchFor("DS")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(DS = DataUseRestrictionTestFixtures.diseaseValues))
+        val searchResponse = searchFor("DS-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(DS = DataUseRestrictionTestFixtures.diseaseValuesInts), DataUseRestrictionTestFixtures.diseaseValuesLabels.map("DS:" + _))
       }
 
       "RS-POP:non-empty list dataset should have values" in {
@@ -146,7 +146,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
           DataUseRestriction(
             GRU = true,
             HMB = true,
-            DS = DataUseRestrictionTestFixtures.diseaseValues,
+            DS = DataUseRestrictionTestFixtures.diseaseValuesInts,
             NCU = true,
             NPU = true,
             NDMS = true,
@@ -157,7 +157,8 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
             `RS-FM` = true,
             `RS-POP` = Seq("TERM-1", "TERM-2")
           ),
-          Seq("NPU", "RS-G", "NCU", "HMB", "NDMS", "RS-FM", "NCTRL", "RS-PD", "NAGR", "GRU")
+          Seq("NPU", "RS-G", "NCU", "HMB", "NDMS", "RS-FM", "NCTRL", "RS-PD", "NAGR", "GRU") ++
+            DataUseRestrictionTestFixtures.diseaseValuesLabels.map("DS:" + _)
         )
       }
 
@@ -167,9 +168,10 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
           DataUseRestriction(
             GRU = true,
             HMB = true,
-            DS = DataUseRestrictionTestFixtures.diseaseValues
+            DS = DataUseRestrictionTestFixtures.diseaseValuesInts
           ),
-          Seq("GRU", "HMB")
+          Seq("GRU", "HMB") ++
+            DataUseRestrictionTestFixtures.diseaseValuesLabels.map("DS:" + _)
         )
       }
 
