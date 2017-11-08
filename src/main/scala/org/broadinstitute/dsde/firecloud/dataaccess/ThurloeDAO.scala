@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
+import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
 import org.broadinstitute.dsde.firecloud.model.{BasicProfile, Profile, UserInfo}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
@@ -22,5 +23,11 @@ trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
   def getAllUserValuesForKey(key: String): Future[Map[String, String]]
   def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit]
   def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Try[Unit]]
+
+  // methods to work with free-trial objects
+  def getTrialStatus(userInfo: UserInfo): Future[Option[UserTrialStatus]]
+  def saveTrialStatus(userInfo: UserInfo, trialStatus: UserTrialStatus): Future[Unit]
+
+
   override def serviceName:String = ThurloeDAO.serviceName
 }

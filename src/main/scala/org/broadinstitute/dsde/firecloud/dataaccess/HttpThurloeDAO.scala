@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.webservice.UserApiService
@@ -59,7 +60,23 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     saveKeyValues(userInfo, profilePropertyMap).map(_ => ())
   }
 
-  def wrapExceptions[T](codeBlock: => Future[T]): Future[T] = {
+  override def getTrialStatus(userInfo: UserInfo): Future[Option[UserTrialStatus]] = {
+    wrapExceptions {
+      userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(userInfo.getUniqueId)), false, true)(userInfo) map { response =>
+        response.status match {
+          case StatusCodes.OK => Some(UserTrialStatus(unmarshal[ProfileWrapper].apply(response)))
+          case StatusCodes.NotFound => None
+          case _ => throw new FireCloudException("Unable to get user trial status")
+        }
+      }
+    }
+  }
+
+  override def saveTrialStatus(userInfo: UserInfo, trialStatus: UserTrialStatus) =
+    saveKeyValues(userInfo, UserTrialStatus.toKVPs(trialStatus)).map(_ => ())
+
+
+  private def wrapExceptions[T](codeBlock: => Future[T]): Future[T] = {
     codeBlock.recover {
       case t: Throwable => {
         throw new FireCloudExceptionWithErrorReport(ErrorReport.apply(StatusCodes.InternalServerError, t))
@@ -76,4 +93,5 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
       }
     }
   }
+
 }

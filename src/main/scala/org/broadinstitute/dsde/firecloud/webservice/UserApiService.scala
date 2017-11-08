@@ -1,11 +1,10 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.Actor
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PerRequestCreator}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PerRequestCreator, TrialService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.slf4j.LoggerFactory
@@ -19,11 +18,6 @@ import spray.json.DefaultJsonProtocol._
 import spray.routing._
 
 import scala.util.{Failure, Success}
-
-class UserApiServiceActor extends Actor with UserApiService {
-  def actorRefFactory = context
-  def receive = runRoute(routes)
-}
 
 object UserApiService {
   val remoteGetKeyPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.get
@@ -71,7 +65,9 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  val routes =
+  val trialServiceConstructor: () => TrialService
+
+  val userServiceRoutes =
     path("me") {
       get { requestContext =>
 
@@ -131,6 +127,15 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       path("profile" / "billingAccounts") {
         get {
           passthrough(UserApiService.billingAccountsUrl, HttpMethods.GET)
+        }
+      } ~
+      path("profile" / "trial") {
+        post {
+          requireUserInfo() { userInfo => requestContext =>
+            perRequest(requestContext, TrialService.props(trialServiceConstructor),
+              TrialService.EnrollUser(userInfo)
+            )
+          }
         }
       } ~
       pathPrefix("groups") {

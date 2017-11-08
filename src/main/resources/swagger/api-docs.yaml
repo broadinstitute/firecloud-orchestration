@@ -1519,6 +1519,18 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/profile/trial:
+    post:
+      tags:
+        - Profile
+      operationId: enrollTrial
+      summary: Enroll yourself in FireCloud free trial
+      responses:
+        204:
+          description: Success (No Content)
+        500:
+          description: Internal Server Error
+
   /api/refresh-token-status:
     get:
       tags:
