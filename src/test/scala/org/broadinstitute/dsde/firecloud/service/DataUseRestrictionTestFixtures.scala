@@ -51,7 +51,7 @@ object DataUseRestrictionTestFixtures {
   val diseaseDatasets: Seq[Workspace] = diseaseCodes.map { code =>
     val attributes = Map(
       AttributeName.withLibraryNS(code) -> AttributeValueList(diseaseValues.map(AttributeString)),
-      AttributeName.withLibraryNS("DS-labels") -> AttributeValueList(diseaseValuesLabels.map(AttributeString))
+      AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(diseaseValuesLabels.map(AttributeString))
     )
     mkWorkspace(attributes, code, s"{${code.replace("-","")}}-unique")
   }
@@ -74,7 +74,7 @@ object DataUseRestrictionTestFixtures {
     booleanCodes.map(AttributeName.withLibraryNS(_) -> AttributeBoolean(true)).toMap ++
       listCodes.map(AttributeName.withLibraryNS(_) -> AttributeValueList(listValues.map(AttributeString))).toMap ++
       diseaseCodes.map(AttributeName.withLibraryNS(_) -> AttributeValueList(diseaseValues.map(AttributeString))).toMap ++
-      Map(AttributeName.withLibraryNS("DS-labels") -> AttributeValueList(diseaseValuesLabels.map(AttributeString))) ++
+      Map(AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(diseaseValuesLabels.map(AttributeString))) ++
       Map(AttributeName.withLibraryNS("NAGR") -> AttributeString("Yes")) ++
       Map(AttributeName.withLibraryNS("RS-G") -> AttributeString("Female")),
     "EVERYTHING",
@@ -84,7 +84,7 @@ object DataUseRestrictionTestFixtures {
   val topThreeDataset = Seq(mkWorkspace(
     Seq("GRU", "HMB").map(AttributeName.withLibraryNS(_) -> AttributeBoolean(true)).toMap ++
       diseaseCodes.map(AttributeName.withLibraryNS(_) -> AttributeValueList(diseaseValues.map(AttributeString))).toMap ++
-      Map(AttributeName.withLibraryNS("DS-labels") -> AttributeValueList(diseaseValuesLabels.map(AttributeString))),
+      Map(AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(diseaseValuesLabels.map(AttributeString))),
     "TOP_THREE",
     "TOP_THREE")
   )

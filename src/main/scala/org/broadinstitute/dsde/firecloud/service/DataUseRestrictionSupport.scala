@@ -16,8 +16,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
   private val genderCodes: Seq[String] = Seq("RS-G", "RS-FM", "RS-M")
   val durFieldNames: Seq[String] = booleanCodes ++ listCodes ++ genderCodes
 
-  // TODO: This value will change depending on what is implemented for GAWB-2758
-  val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS("DS-labels")
+  val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS("DS_URL")
   val structuredUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("structuredUseRestriction")
   val dataUseDisplayAttributeName: AttributeName = AttributeName.withLibraryNS("dataUseDisplay")
 
@@ -37,7 +36,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer =
       new AttributeFormat with PlainArrayAttributeListSerializer
 
-    getDataUseAttributes(workspace).filter { t => durFieldNames.contains(t._1.name) } match {
+    getDataUseAttributes(workspace) match {
       case x if x.isEmpty => Map.empty[AttributeName, Attribute]
       case existingAttrs =>
 
@@ -67,27 +66,29 @@ trait DataUseRestrictionSupport extends LazyLogging {
     * @return An Attribute Map representing a data use display
     */
   def generateUseRestrictionDisplayAttribute(workspace: Workspace): Map[AttributeName, Attribute] = {
-    getDataUseAttributes(workspace).flatMap {
-      case (attr: AttributeName, value: AttributeBoolean) if value.value =>  Seq(attr.name)
-      case (attr: AttributeName, value: AttributeValueList) if attr.name.equals(diseaseLabelsAttributeName.name) => value.list.map {
-        case avl@(a: AttributeString) => "DS:" + a.value
-        case _ =>
-          logger.warn(s"Attribute value list is of the wrong type (workspace-id: ${workspace.workspaceId}, attribute name: ${attr.name}, value type: ${value.getClass})")
-          ""
+
+    val booleanCodes:Seq[String] = getDataUseAttributes(workspace).collect {
+      case (attr: AttributeName, AttributeBoolean(true)) => attr.name
+    }.toSeq
+
+    val dsLabels:Seq[String] = (workspace.attributes.get(diseaseLabelsAttributeName) collect {
+      case value: AttributeValueList => value.list.collect {
+        case a: AttributeString => "DS:" + a.value
       }
-      case (attr: AttributeName, value: Attribute) =>
-        logger.debug(s"Ignored attribute: ${attr.name}; value: ${value.getClass.getName}")
-        Seq.empty[String]
-    }.toSeq.filter(_.nonEmpty) match {
-      case x if x.nonEmpty => Map(dataUseDisplayAttributeName -> AttributeValueList(x.map(AttributeString)))
-      case _ => Map.empty[AttributeName, Attribute]
-    }
+    }).getOrElse(Seq.empty[String])
+
+    val displayCodes = booleanCodes ++ dsLabels
+
+    if (displayCodes.nonEmpty)
+      Map(dataUseDisplayAttributeName -> AttributeValueList(displayCodes.map(AttributeString)))
+    else
+      Map.empty[AttributeName, Attribute]
   }
 
   private def getDataUseAttributes(workspace: Workspace): Map[AttributeName, Attribute] = {
 
     // Find all library attributes that contribute to data use restrictions
-    val dataUseAttributes = workspace.attributes.filter { case (attr, value) => (durFieldNames ++ Seq(diseaseLabelsAttributeName.name)).contains(attr.name) }
+    val dataUseAttributes = workspace.attributes.filter { case (attr, value) => durFieldNames.contains(attr.name) }
 
     if (dataUseAttributes.isEmpty) {
       Map.empty[AttributeName, Attribute]
@@ -124,24 +125,13 @@ trait DataUseRestrictionSupport extends LazyLogging {
         case (attr: AttributeName, value: AttributeBoolean) => Map(AttributeName.withDefaultNS(attr.name) -> value)
         // Turn DS string ids into numeric IDs for ES indexing
         case (attr: AttributeName, value: AttributeValueList) if attr.name.equals("DS") =>
-          val diseaseNumericIdValues: Seq[AttributeNumber] = value match {
-            case x: AttributeValueList => x.list.map {
-              case avl@(a: AttributeString) =>
-                Try(DiseaseOntologyNodeId.apply(a.value)) match {
-                  case Success(id) => AttributeNumber(id.numericId)
-                  case Failure(e) =>
-                    logger.warn(s"Unable to coerce term ${a.value} into a node id for workspace-id: ${workspace.workspaceId}")
-                    AttributeNumber(0)
-                }
-              case avl@(a: AttributeNumber) => AttributeNumber(a.value.toInt)
-              case _ => AttributeNumber(0)
-            }
-            case _ => Seq.empty[AttributeNumber]
-          }
-          diseaseNumericIdValues.filter(_.value > 0) match {
-            case values if values.nonEmpty => Map(AttributeName.withDefaultNS(attr.name) -> AttributeValueList(values))
-            case _ => Map.empty[AttributeName, Attribute]
-          }
+          val diseaseNumericIdValues = value.list.collect {
+            case a: AttributeString => Try(DiseaseOntologyNodeId(a.value)).toOption.map(_.numericId)
+          }.flatten
+          if (diseaseNumericIdValues.nonEmpty)
+            Map(AttributeName.withDefaultNS(attr.name) -> AttributeValueList(diseaseNumericIdValues.map { n => AttributeNumber(n) }))
+          else
+            Map.empty[AttributeName, Attribute]
         case (attr: AttributeName, value: AttributeValueList) => Map(AttributeName.withDefaultNS(attr.name) -> value)
         case unmatched =>
           logger.warn(s"Unexpected data use attribute type: (workspace-id: ${workspace.workspaceId}, attribute name: ${unmatched._1.name}, attribute value: ${unmatched._2.toString})")

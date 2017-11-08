@@ -133,7 +133,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(ds)
             val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
             // Boolean datasets are named with the same code value
-            codes should contain(ds.name)
+            codes should contain theSameElementsAs Seq(ds.name)
             codes.size should be(1)
           }
         }
@@ -141,17 +141,15 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "'EVERYTHING' dataset should have the right codes" in {
           val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(everythingDataset.head)
           val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
-          (booleanCodes ++ Seq("RS-G", "RS-FM", "NAGR")).map { c => codes should contain(c) }
-          diseaseValuesLabels.map { c => codes should contain("DS:" + c) }
-          Seq("RS-M", "RS-POP").map { c => codes shouldNot contain(c) }
+          val expected = booleanCodes ++ Seq("RS-G", "RS-FM", "NAGR") ++ diseaseValuesLabels.map(s => s"DS:$s")
+          codes should contain theSameElementsAs expected
         }
 
         "'TOP_THREE' dataset should have the right codes" in {
           val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(topThreeDataset.head)
           val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
-          Seq("GRU", "HMB").map { c => codes should contain(c) }
-          diseaseValuesLabels.map { c => codes should contain("DS:" + c) }
-          Seq("NCU", "NPU", "NDMS", "NCTRL", "RS-PD", "NAGR", "RS-G", "RS-FM", "RS-M", "RS-POP").map { c => codes shouldNot contain(c) }
+          val expected = Seq("GRU", "HMB") ++ diseaseValuesLabels.map(s => s"DS:$s")
+          codes should contain theSameElementsAs expected
         }
       }
 
@@ -194,18 +192,11 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
 
   private def getValuesFromAttributeValueListAsAttribute(attrs: Option[Attribute]): Seq[String] = {
-    val results: Seq[String] = attrs match {
-      case Some(att) =>
-        att match {
-          case x: AttributeValueList => x.list.map {
-            case avl@(a: AttributeString) => a.value
-            case _ => ""
-          }
-          case unhandled => Seq.empty[String]
-        }
-      case None => Seq.empty[String]
-    }
-    results.distinct.filter(_.nonEmpty)
+    (attrs collect {
+      case x: AttributeValueList => x.list.collect {
+        case a: AttributeString => a.value
+      }
+    }).getOrElse(Seq.empty[String])
   }
 
   private def makeDurFromWorkspace(ds: Workspace): DataUseRestriction = {
