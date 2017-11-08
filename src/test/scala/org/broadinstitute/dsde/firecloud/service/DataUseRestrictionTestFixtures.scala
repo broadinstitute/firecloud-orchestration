@@ -2,8 +2,6 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.util.UUID
 
-import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
-import org.broadinstitute.dsde.firecloud.model.Ontology
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import spray.json.DefaultJsonProtocol.{jsonFormat13, _}
