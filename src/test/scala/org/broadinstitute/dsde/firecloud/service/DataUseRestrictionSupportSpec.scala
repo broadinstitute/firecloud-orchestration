@@ -134,7 +134,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
             // Boolean datasets are named with the same code value
             codes should contain theSameElementsAs Seq(ds.name)
-            codes.size should be(1)
           }
         }
 
