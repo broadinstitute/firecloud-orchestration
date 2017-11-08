@@ -9,6 +9,7 @@ import scala.util.Try
 
 object Trial {
 
+  // enum-style case objects to track a user's progress through the free trial
   object TrialStates {
     sealed trait TrialState  {
       override def toString: String = TrialStates.stringify(this)
@@ -38,6 +39,7 @@ object Trial {
     case object Terminated extends TrialState
   }
 
+  // "profile" object to hold all free trial-related information for a single user
   case class UserTrialStatus(
     userId: String,
     currentState: Option[TrialState],
@@ -58,6 +60,7 @@ object Trial {
         Instant.ofEpochMilli(expirationEpoch)
       )
     }
+    // apply method to create a UserTrialStatus from raw Thurloe KVPs
     def apply(profileWrapper:ProfileWrapper) = {
 
       def profileDate(key: String, kvps: Map[String,String], default: Instant = Instant.ofEpochMilli(0)): Instant = {
@@ -79,6 +82,7 @@ object Trial {
         enabledDate, enrolledDate, terminatedDate, expirationDate)
     }
 
+    // translates a UserTrialStatus to Thurloe KVPs
     def toKVPs(userTrialStatus: UserTrialStatus): Map[String,String] = {
       val stateKV:Map[String,String] = userTrialStatus.currentState match {
         case Some(state) => Map("trialCurrentState" -> state.toString)
