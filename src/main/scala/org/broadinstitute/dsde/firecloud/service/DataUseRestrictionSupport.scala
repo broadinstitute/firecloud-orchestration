@@ -7,6 +7,8 @@ import org.broadinstitute.dsde.rawls.model._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
+import scala.util.{Failure, Success, Try}
+
 trait DataUseRestrictionSupport extends LazyLogging {
 
   private val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-PD")
@@ -124,7 +126,14 @@ trait DataUseRestrictionSupport extends LazyLogging {
         case (attr: AttributeName, value: AttributeValueList) if attr.name.equals("DS") =>
           val diseaseNumericIdValues: Seq[AttributeNumber] = value match {
             case x: AttributeValueList => x.list.map {
-              case avl@(a: AttributeString) => AttributeNumber(DiseaseOntologyNodeId(a.value).numericId)
+              case avl@(a: AttributeString) =>
+                val nodeId = Try(DiseaseOntologyNodeId.apply(a.value))
+                nodeId match {
+                  case Success(id) => AttributeNumber(id.numericId)
+                  case Failure(e) =>
+                    logger.warn(s"Unable to coerce term ${a.value} into a node id for workspace-id: ${workspace.workspaceId}")
+                    AttributeNumber(0)
+                }
               case avl@(a: AttributeNumber) => AttributeNumber(a.value.toInt)
               case _ => AttributeNumber(0)
             }
