@@ -127,8 +127,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
           val diseaseNumericIdValues: Seq[AttributeNumber] = value match {
             case x: AttributeValueList => x.list.map {
               case avl@(a: AttributeString) =>
-                val nodeId = Try(DiseaseOntologyNodeId.apply(a.value))
-                nodeId match {
+                Try(DiseaseOntologyNodeId.apply(a.value)) match {
                   case Success(id) => AttributeNumber(id.numericId)
                   case Failure(e) =>
                     logger.warn(s"Unable to coerce term ${a.value} into a node id for workspace-id: ${workspace.workspaceId}")
@@ -139,8 +138,10 @@ trait DataUseRestrictionSupport extends LazyLogging {
             }
             case _ => Seq.empty[AttributeNumber]
           }
-          val filteredValues = diseaseNumericIdValues.filter(_.value > 0)
-          Map(AttributeName.withDefaultNS(attr.name) -> AttributeValueList(filteredValues))
+          diseaseNumericIdValues.filter(_.value > 0) match {
+            case values if values.nonEmpty => Map(AttributeName.withDefaultNS(attr.name) -> AttributeValueList(values))
+            case _ => Map.empty[AttributeName, Attribute]
+          }
         case (attr: AttributeName, value: AttributeValueList) => Map(AttributeName.withDefaultNS(attr.name) -> value)
         case unmatched =>
           logger.warn(s"Unexpected data use attribute type: (workspace-id: ${workspace.workspaceId}, attribute name: ${unmatched._1.name}, attribute value: ${unmatched._2.toString})")
