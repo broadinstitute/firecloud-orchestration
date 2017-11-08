@@ -135,6 +135,4 @@ object DataUseRestrictionTestFixtures {
       authDomainACLs=Map())
   }
 
-  val termCache: Map[String, Ontology.TermResource] = new MockOntologyDAO().data.values.flatten.map { t => t.id -> t }.toMap
-
 }
