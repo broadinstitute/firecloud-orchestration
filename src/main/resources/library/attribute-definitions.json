@@ -9,8 +9,22 @@
     "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:dataUseRestriction",
     "library:studyDesign", "library:requiresExternalApproval", "library:useLimitationOption"],
   "oneOf": [{
-    "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
+    "required": ["library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
       "library:NCTRL", "library:RS-G", "library:RS-PD", "library:useLimitationOption"],
+    "anyOf": [
+      {
+        "required": ["library:GRU"],
+        "properties": {"library:GRU": {"enum": [true]}}
+      },
+      {
+        "required": ["library:HMB"],
+        "properties": {"library:HMB": {"enum": [true]}}
+      },
+      {
+        "required": ["library:DS"],
+        "properties": {"library:DS": {"minItems": 1}}
+      }
+    ],
     "properties": {
       "library:useLimitationOption": {
         "type": "string",
@@ -227,19 +241,28 @@
     "library:GRU": {
       "title": "Data is available for future general research use",
       "type": "boolean",
-      "renderHint": {"wording": "yes/no"},
+      "renderHint": {
+        "wording": "yes/no",
+        "requireGroup": "limitation"
+      },
       "consentCode": "GRU"
     },
     "library:HMB": {
       "title": "Future use is limited for health/medical/biomedical research",
       "type": "boolean",
-      "renderHint": {"wording": "yes/no"},
+      "renderHint": {
+        "wording": "yes/no",
+        "requireGroup": "limitation"
+      },
       "consentCode": "HMB"
     },
     "library:DS": {
       "title": "Future use is limited to research involving the following disease area(s)",
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string",
+        "requireGroup": "limitation"
+      },
       "consentCode": "DS"
     },
     "library:NCU": {
@@ -368,7 +391,7 @@
       "options": {
         "questionnaire": {
           "enumerate": true,
-          "questions": ["library:GRU", "library:HMB", "library:DS", "library:NCU", "library:NPU", "library:NDMS",
+          "questions": [["library:GRU", "library:HMB", "library:DS"], "library:NCU", "library:NPU", "library:NDMS",
             "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate"]
         },
         "orsp": {
