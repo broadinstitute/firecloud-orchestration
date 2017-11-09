@@ -81,7 +81,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       case None => Map()
     }
 
-    val durAttributeNames = durFieldNames.map(AttributeName.withLibraryNS)
+    val durAttributeNames = allDurFieldNames.map(AttributeName.withLibraryNS)
     val dur: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(workspace)
     val displayDur: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(workspace)
 

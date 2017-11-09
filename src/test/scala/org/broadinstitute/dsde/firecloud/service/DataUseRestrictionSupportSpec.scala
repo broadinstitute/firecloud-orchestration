@@ -84,7 +84,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             Map(ds.name -> makeDurFromWorkspace(ds))
           }.toMap
 
-          diseaseCodes.foreach { code =>
+          Seq("DS").foreach { code =>
             val dur: DataUseRestriction = durs(code)
             checkDiseaseValues(dur, code)
           }

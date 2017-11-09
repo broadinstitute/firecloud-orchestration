@@ -7,16 +7,16 @@ import org.broadinstitute.dsde.rawls.model._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 trait DataUseRestrictionSupport extends LazyLogging {
 
   private val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-PD")
-  private val listCodes: Seq[String] = Seq("DS", "RS-POP")
   private val genderCodes: Seq[String] = Seq("RS-G", "RS-FM", "RS-M")
-  val durFieldNames: Seq[String] = booleanCodes ++ listCodes ++ genderCodes
+  private val duRestrictionFieldNames: Seq[String] = booleanCodes ++ genderCodes ++ Seq("DS_URL", "RS-POP")
+  val allDurFieldNames: Seq[String] = booleanCodes ++ genderCodes ++ Seq("DS", "DS_URL", "RS-POP")
 
-  val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS("DS_URL")
+  private val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS("DS")
   val structuredUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("structuredUseRestriction")
   val dataUseDisplayAttributeName: AttributeName = AttributeName.withLibraryNS("dataUseDisplay")
 
@@ -48,7 +48,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
         }.toMap
 
         // Missing list codes default to empty lists
-        val listAttrs: Map[AttributeName, Attribute] = (listCodes diff existingKeyNames).map { code =>
+        val listAttrs: Map[AttributeName, Attribute] = (Seq("DS", "RS-POP") diff existingKeyNames).map { code =>
           AttributeName.withDefaultNS(code) -> AttributeValueList(Seq.empty)
         }.toMap
 
@@ -88,7 +88,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
   private def getDataUseAttributes(workspace: Workspace): Map[AttributeName, Attribute] = {
 
     // Find all library attributes that contribute to data use restrictions
-    val dataUseAttributes = workspace.attributes.filter { case (attr, value) => durFieldNames.contains(attr.name) }
+    val dataUseAttributes = workspace.attributes.filter { case (attr, value) => duRestrictionFieldNames.contains(attr.name) }
 
     if (dataUseAttributes.isEmpty) {
       Map.empty[AttributeName, Attribute]
@@ -124,17 +124,18 @@ trait DataUseRestrictionSupport extends LazyLogging {
         // Handle only what is correctly tagged and ignore anything improperly tagged
         case (attr: AttributeName, value: AttributeBoolean) => Map(AttributeName.withDefaultNS(attr.name) -> value)
         // Turn DS string ids into numeric IDs for ES indexing
-        case (attr: AttributeName, value: AttributeValueList) if attr.name.equals("DS") =>
+        // Also, in this case, we are generating a "DS" attribute to index, not a "DS_URL" attribute
+        case (attr: AttributeName, value: AttributeValueList) if attr.name.equals("DS_URL") =>
           val diseaseNumericIdValues = value.list.collect {
             case a: AttributeString => Try(DiseaseOntologyNodeId(a.value)).toOption.map(_.numericId)
           }.flatten
           if (diseaseNumericIdValues.nonEmpty)
-            Map(AttributeName.withDefaultNS(attr.name) -> AttributeValueList(diseaseNumericIdValues.map { n => AttributeNumber(n) }))
+            Map(AttributeName.withDefaultNS("DS") -> AttributeValueList(diseaseNumericIdValues.map { n => AttributeNumber(n) }))
           else
             Map.empty[AttributeName, Attribute]
-        case (attr: AttributeName, value: AttributeValueList) => Map(AttributeName.withDefaultNS(attr.name) -> value)
+        case (attr: AttributeName, value: AttributeValueList) if attr.name.equals("RS-POP") => Map(AttributeName.withDefaultNS(attr.name) -> value)
         case unmatched =>
-          logger.warn(s"Unexpected data use attribute type: (workspace-id: ${workspace.workspaceId}, attribute name: ${unmatched._1.name}, attribute value: ${unmatched._2.toString})")
+          logger.warn(s"Unexpected library data use attribute type: (workspace-id: ${workspace.workspaceId}, attribute name: ${unmatched._1.name}, attribute value: ${unmatched._2.toString})")
           Map.empty[AttributeName, Attribute]
       }
     }
