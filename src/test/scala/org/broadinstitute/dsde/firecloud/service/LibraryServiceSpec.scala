@@ -444,7 +444,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(30){ex.getViolationCount}
+        assertResult(31){ex.getViolationCount}
       }
       "fails with one missing key" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
