@@ -14,7 +14,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
   private val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-PD")
   private val genderCodes: Seq[String] = Seq("RS-G", "RS-FM", "RS-M")
   private val duRestrictionFieldNames: Seq[String] = booleanCodes ++ genderCodes ++ Seq("DS_URL", "RS-POP")
-  val allDurFieldNames: Seq[String] = booleanCodes ++ genderCodes ++ Seq("DS", "DS_URL", "RS-POP")
+  val allDurFieldNames: Seq[String] = duRestrictionFieldNames ++ Seq("DS")
 
   private val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS("DS")
   val structuredUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("structuredUseRestriction")
