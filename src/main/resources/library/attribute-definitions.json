@@ -9,15 +9,13 @@
     "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:dataUseRestriction",
     "library:studyDesign", "library:requiresExternalApproval", "library:useLimitationOption"],
   "oneOf": [{
-    "required": ["library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
+    "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
       "library:NCTRL", "library:RS-G", "library:RS-PD", "library:useLimitationOption"],
     "anyOf": [
       {
-        "required": ["library:GRU"],
         "properties": {"library:GRU": {"enum": [true]}}
       },
       {
-        "required": ["library:HMB"],
         "properties": {"library:HMB": {"enum": [true]}}
       },
       {
@@ -241,28 +239,19 @@
     "library:GRU": {
       "title": "Data is available for future general research use",
       "type": "boolean",
-      "renderHint": {
-        "wording": "yes/no",
-        "requireGroup": "limitation"
-      },
+      "renderHint": {"wording": "yes/no"},
       "consentCode": "GRU"
     },
     "library:HMB": {
       "title": "Future use is limited for health/medical/biomedical research",
       "type": "boolean",
-      "renderHint": {
-        "wording": "yes/no",
-        "requireGroup": "limitation"
-      },
+      "renderHint": {"wording": "yes/no"},
       "consentCode": "HMB"
     },
     "library:DS": {
       "title": "Future use is limited to research involving the following disease area(s)",
       "type": "array",
-      "items": {
-        "type": "string",
-        "requireGroup": "limitation"
-      },
+      "items": {"type": "string"},
       "consentCode": "DS"
     },
     "library:NCU": {
@@ -391,7 +380,7 @@
       "options": {
         "questionnaire": {
           "enumerate": true,
-          "questions": [["library:GRU", "library:HMB", "library:DS"], "library:NCU", "library:NPU", "library:NDMS",
+          "questions": [{"requireGroup": "library:primaryLimitation", "items": ["library:GRU", "library:HMB", "library:DS"]}, "library:NCU", "library:NPU", "library:NDMS",
             "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate"]
         },
         "orsp": {
@@ -404,6 +393,13 @@
     "library:dulvn",
     "library:lmsvn"
   ],
+  "requireGroups": {
+    "library:primaryLimitation": {
+      "title": "Define Primary Data Use Limitations",
+      "required": true,
+      "renderHint": {"wording": "Select at least one primary limitation."}
+    }
+  },
   "searchResultColumns":
   [
     "library:datasetName",
