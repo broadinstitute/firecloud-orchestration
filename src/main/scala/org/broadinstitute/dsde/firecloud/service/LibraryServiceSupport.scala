@@ -3,21 +3,20 @@ package org.broadinstitute.dsde.firecloud.service
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
-import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
-import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
-import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
+import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.everit.json.schema.{Schema, ValidationException}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
+import org.broadinstitute.dsde.rawls.model._
 import org.everit.json.schema.loader.SchemaLoader
+import org.everit.json.schema.{Schema, ValidationException}
 import org.json.{JSONObject, JSONTokener}
 import org.parboiled.common.FileUtils
+import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 import scala.collection.JavaConversions._
-import spray.json._
-import spray.json.DefaultJsonProtocol._
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
@@ -82,10 +81,11 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       case None => Map()
     }
 
-    val dur: Map[AttributeName, Attribute] = generateStructuredUseRestriction(workspace)
-    val durAttributeNames = durFieldNames.map(AttributeName.withLibraryNS)
+    val durAttributeNames = allDurFieldNames.map(AttributeName.withLibraryNS)
+    val dur: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(workspace)
+    val displayDur: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(workspace)
 
-    val fields = (attrfields -- durAttributeNames) ++ idfields ++ tagfields ++ dur
+    val fields = (attrfields -- durAttributeNames) ++ idfields ++ tagfields ++ dur ++ displayDur
 
     workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
