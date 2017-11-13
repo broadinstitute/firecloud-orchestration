@@ -140,6 +140,11 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
         assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-POP` = Seq("TERM-1", "TERM-2")))
       }
 
+      "IRB dataset should be indexed as true" in {
+        val searchResponse = searchFor("IRB-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(IRB = true), Seq("IRB"))
+      }
+
       "'EVERYTHING' dataset should have a mix of values" in {
         val searchResponse = searchFor("EVERYTHING")
         assertDataUseRestrictions(searchResponse,
@@ -155,9 +160,10 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
             `RS-PD` = true,
             `RS-G` = true,
             `RS-FM` = true,
-            `RS-POP` = Seq("TERM-1", "TERM-2")
+            `RS-POP` = Seq("TERM-1", "TERM-2"),
+            IRB = true
           ),
-          Seq("NPU", "RS-G", "NCU", "HMB", "NDMS", "RS-FM", "NCTRL", "RS-PD", "NAGR", "GRU") ++
+          Seq("NPU", "RS-G", "NCU", "HMB", "NDMS", "RS-FM", "NCTRL", "RS-PD", "NAGR", "GRU", "IRB") ++
             DataUseRestrictionTestFixtures.diseaseValuesLabels.map("DS:" + _)
         )
       }
