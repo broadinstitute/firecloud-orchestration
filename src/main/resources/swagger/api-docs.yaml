@@ -895,8 +895,8 @@ paths:
         - $ref: '#/parameters/workspaceNameParam'
         - name: validate
           description: >
-            should the payload be validated for correctness and completeness? Defaults to false if unpublished
-            and true if published.
+            Should the payload be validated? Validation is always enabled
+            for published datasets and defaults to false for unpublished datasets.
           in: query
           type: boolean
           required: false
