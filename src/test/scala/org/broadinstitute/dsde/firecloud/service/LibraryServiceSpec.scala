@@ -92,7 +92,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       |  "library:NAGR" : "Unspecified",
       |  "library:NCTRL": true,
       |  "library:RS-G" : "Female",
-      |  "library:RS-PD": false
+      |  "library:RS-PD": false,
+      |  "library:IRB"  : false
       |}
     """.stripMargin.parseJson.asJsObject
   val DULfields = (testLibraryMetadataJsObject.fields-"library:orsp") ++ DULAdditionalJsObject.fields
@@ -444,7 +445,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
         }
-        assertResult(30){ex.getViolationCount}
+        assertResult(31){ex.getViolationCount}
       }
       "fails with one missing key" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")

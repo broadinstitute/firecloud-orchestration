@@ -4,7 +4,7 @@ import java.util.UUID
 
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
-import spray.json.DefaultJsonProtocol.{jsonFormat13, _}
+import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
 
 
@@ -23,13 +23,15 @@ object DataUseRestrictionTestFixtures {
     `RS-G`: Boolean = false,
     `RS-FM`: Boolean = false,
     `RS-M`: Boolean = false,
-    `RS-POP`: Seq[String] = Seq.empty[String])
+    `RS-POP`: Seq[String] = Seq.empty[String],
+    IRB: Boolean = false
+  )
 
   implicit val impAttributeFormat: AttributeFormat with PlainArrayAttributeListSerializer = new AttributeFormat with PlainArrayAttributeListSerializer
-  implicit val impDataUseRestriction: RootJsonFormat[DataUseRestriction] = jsonFormat13(DataUseRestriction)
+  implicit val impDataUseRestriction: RootJsonFormat[DataUseRestriction] = jsonFormat14(DataUseRestriction)
 
   // Datasets are named by the code for easier identification in tests
-  val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NCTRL", "RS-PD")
+  val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NCTRL", "RS-PD", "IRB")
   val booleanDatasets: Seq[Workspace] = booleanCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeBoolean(true))
     mkWorkspace(attributes, code, s"{${code.replace("-","")}}-unique")
