@@ -195,6 +195,12 @@
       "type": "string",
       "typeahead": "populate"
     },
+    "library:consentCodes" : {
+      "title": "Consent Codes",
+      "type": "array",
+      "items": { "type": "string" },
+      "renderHint": { "type": "tag" }
+    },
     "library:requiresExternalApproval": {
       "title": "Requires External Approval",
       "type": "boolean",
@@ -324,6 +330,7 @@
       "title": "Tags",
       "type": "array",
       "items": { "type": "string" },
+      "renderHint": { "type": "tag" },
       "aggregate": {
         "renderHint": "typeahead-multiselect"
       }
@@ -393,6 +400,7 @@
     "library:indication",
     "library:dataUseRestriction",
     "library:numSubjects",
+    "library:consentCodes",
     "library:datasetVersion",
     "library:datasetDescription",
     "library:datasetOwner",
@@ -414,6 +422,7 @@
     "library:coverage",
     "library:cellType",
     "library:ethnicity",
-    "library:cohortCountry"
+    "library:cohortCountry",
+    "tag:tags"
   ]
 }

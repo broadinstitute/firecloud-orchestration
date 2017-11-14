@@ -205,11 +205,11 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
     }
   }
 
-  private def getDataUseDisplayCodes(searchResponse: LibrarySearchResponse): Seq[String] = {
+  private def getConsentCodes(searchResponse: LibrarySearchResponse): Seq[String] = {
     searchResponse.results.flatMap { hit =>
       val jsObj = hit.asJsObject
-      if (jsObj.getFields(AttributeName.toDelimitedName(dataUseDisplayAttributeName)).nonEmpty) {
-        jsObj.fields(AttributeName.toDelimitedName(dataUseDisplayAttributeName)).convertTo[Seq[String]]
+      if (jsObj.getFields(AttributeName.toDelimitedName(consentCodesAttributeName)).nonEmpty) {
+        jsObj.fields(AttributeName.toDelimitedName(consentCodesAttributeName)).convertTo[Seq[String]]
       } else { Seq.empty}
     }
   }
@@ -230,7 +230,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
       }
     }
 
-    val ddulCodes: Seq[String] = getDataUseDisplayCodes(searchResponse)
+    val ddulCodes: Seq[String] = getConsentCodes(searchResponse)
     expectedCodes should contain theSameElementsAs ddulCodes
 
   }
