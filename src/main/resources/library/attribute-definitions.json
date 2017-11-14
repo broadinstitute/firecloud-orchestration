@@ -10,7 +10,7 @@
     "library:studyDesign", "library:requiresExternalApproval", "library:useLimitationOption"],
   "oneOf": [{
     "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
-      "library:NCTRL", "library:RS-G", "library:RS-PD", "library:useLimitationOption"],
+      "library:NCTRL", "library:RS-G", "library:RS-PD", "library:useLimitationOption", "library:IRB"],
     "anyOf": [
       {
         "properties": {"library:GRU": {"enum": [true]}}
@@ -307,6 +307,12 @@
       "type": "string",
       "renderHint": {"datatype": "date"}
     },
+    "library:IRB": {
+      "title": "Requester must provide documentation of local IRB/REC approval",
+      "type": "boolean",
+      "renderHint": {"wording": "yes/no"},
+      "consentCode": "IRB"
+    },
     "library:orsp": {
       "title": "Specify Broad ORSP",
       "type": "string",
@@ -315,14 +321,14 @@
     "library:lmsvn": {
       "title": "Library Metadata Schema Version Number",
       "description": "Library Metadata Schema Version Number",
-      "default": 4,
+      "default": 5,
       "indexable": false,
       "type": "integer"
     },
     "library:dulvn": {
       "title": "Structured Data Use Limitations  Version Number",
       "description": "Structured Data Use Limitations Version Number",
-      "default": 1,
+      "default": 2,
       "indexable": false,
       "type": "integer"
     },
@@ -381,7 +387,7 @@
         "questionnaire": {
           "enumerate": true,
           "questions": [{"requireGroup": "library:primaryLimitation", "items": ["library:GRU", "library:HMB", "library:DS"]}, "library:NCU", "library:NPU", "library:NDMS",
-            "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate"]
+            "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate", "library:IRB"]
         },
         "orsp": {
           "questions": ["library:orsp"]

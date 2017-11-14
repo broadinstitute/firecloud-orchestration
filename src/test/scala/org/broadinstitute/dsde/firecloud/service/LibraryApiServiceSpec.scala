@@ -162,12 +162,41 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         }
       }
 
-      "cannot save incomplete data save if already published dataset" in {
+      "cannot save incomplete data if already published dataset" in {
         val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
         new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(BadRequest)
         }
       }
+
+      "validates for unpublished dataset if user specifies validate=true" in {
+        val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter") + "?validate=true", content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+
+      "validation defaults to false if user specifies a non-boolean value" in {
+        val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter") + "?validate=cat", content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "always validates for published workspace even if user specifies validate=false" in {
+        val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter") + "?validate=false", content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+
+      "always validates for published workspace even if user specifies a non-boolean value" in {
+        val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter") + "?validate=cat", content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+
     }
 
     "when getting metadata" - {

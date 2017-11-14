@@ -5,12 +5,13 @@ import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures.DataUseRestriction
 import org.broadinstitute.dsde.firecloud.service.{DataUseRestrictionTestFixtures, LibraryServiceSupport}
-import org.broadinstitute.dsde.rawls.model.Workspace
+import org.broadinstitute.dsde.rawls.model.{AttributeName, Workspace}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
+import spray.json.DefaultJsonProtocol._
 
 class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation with BeforeAndAfterAll with Matchers with LibraryServiceSupport {
 
@@ -55,33 +56,33 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
       }
 
       "GRU dataset should be indexed as true" in {
-        val searchResponse = searchFor("GRU")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(GRU = true))
+        val searchResponse = searchFor("GRU-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(GRU = true), Seq("GRU"))
       }
 
       "HMB dataset should be indexed as true" in {
-        val searchResponse = searchFor("HMB")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(HMB = true))
+        val searchResponse = searchFor("HMB-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(HMB = true), Seq("HMB"))
       }
 
       "NCU dataset should be indexed as true" in {
-        val searchResponse = searchFor("NCU")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NCU = true))
+        val searchResponse = searchFor("NCU-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NCU = true), Seq("NCU"))
       }
 
       "NPU dataset should be indexed as true" in {
-        val searchResponse = searchFor("NPU")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NPU = true))
+        val searchResponse = searchFor("NPU-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NPU = true), Seq("NPU"))
       }
 
       "NDMS dataset should be indexed as true" in {
-        val searchResponse = searchFor("NDMS")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NDMS = true))
+        val searchResponse = searchFor("NDMS-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NDMS = true), Seq("NDMS"))
       }
 
       "NAGR:Yes should be indexed as true" in {
         val searchResponse = searchFor("NAGRYes")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NAGR = true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NAGR = true), Seq("NAGR"))
       }
 
       "NAGR:No should be indexed as false" in {
@@ -95,23 +96,23 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
       }
 
       "NCTRL dataset should be indexed as true" in {
-        val searchResponse = searchFor("NCTRL")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NCTRL = true))
+        val searchResponse = searchFor("NCTRL-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NCTRL = true), Seq("NCTRL"))
       }
 
       "RS-PD dataset should be indexed as true" in {
-        val searchResponse = searchFor("RS-PD")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-PD` = true))
+        val searchResponse = searchFor("RSPD-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-PD` = true), Seq("RS-PD"))
       }
 
       "RS-G:Female should be indexed as RS-G:true, RS-FM:true" in {
         val searchResponse = searchFor("RSGFemale")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-FM` = true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-FM` = true), Seq("RS-G", "RS-FM"))
       }
 
       "RS-G:Male should be indexed as RS-G:true, RS-M:true" in {
         val searchResponse = searchFor("RSGMale")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-M` = true))
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-M` = true), Seq("RS-G", "RS-M"))
       }
 
       "RS-G:N/A should be indexed as RS-G:false" in {
@@ -120,23 +121,28 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
       }
 
       "RS-FM dataset should be indexed as true" in {
-        val searchResponse = searchFor("RS-FM")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-FM` = true))
+        val searchResponse = searchFor("RSGFemale")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-FM` = true), Seq("RS-G", "RS-FM"))
       }
 
       "RS-M dataset should be indexed as true" in {
-        val searchResponse = searchFor("RS-M")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-M` = true))
+        val searchResponse = searchFor("RSGMale")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-M` = true), Seq("RS-G", "RS-M"))
       }
 
       "DS:non-empty list dataset should have values" in {
-        val searchResponse = searchFor("DS")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(DS = Seq(123, 456)))
+        val searchResponse = searchFor("DS-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(DS = DataUseRestrictionTestFixtures.diseaseValuesInts), DataUseRestrictionTestFixtures.diseaseValuesLabels.map("DS:" + _))
       }
 
       "RS-POP:non-empty list dataset should have values" in {
         val searchResponse = searchFor("RS-POP")
         assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-POP` = Seq("TERM-1", "TERM-2")))
+      }
+
+      "IRB dataset should be indexed as true" in {
+        val searchResponse = searchFor("IRB-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(IRB = true), Seq("IRB"))
       }
 
       "'EVERYTHING' dataset should have a mix of values" in {
@@ -145,7 +151,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
           DataUseRestriction(
             GRU = true,
             HMB = true,
-            DS = Seq(123, 456),
+            DS = DataUseRestrictionTestFixtures.diseaseValuesInts,
             NCU = true,
             NPU = true,
             NDMS = true,
@@ -154,8 +160,11 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
             `RS-PD` = true,
             `RS-G` = true,
             `RS-FM` = true,
-            `RS-POP` = Seq("TERM-1", "TERM-2")
-          )
+            `RS-POP` = Seq("TERM-1", "TERM-2"),
+            IRB = true
+          ),
+          Seq("NPU", "RS-G", "NCU", "HMB", "NDMS", "RS-FM", "NCTRL", "RS-PD", "NAGR", "GRU", "IRB") ++
+            DataUseRestrictionTestFixtures.diseaseValuesLabels.map("DS:" + _)
         )
       }
 
@@ -165,8 +174,10 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
           DataUseRestriction(
             GRU = true,
             HMB = true,
-            DS = Seq(123, 456)
-          )
+            DS = DataUseRestrictionTestFixtures.diseaseValuesInts
+          ),
+          Seq("GRU", "HMB") ++
+            DataUseRestrictionTestFixtures.diseaseValuesLabels.map("DS:" + _)
         )
       }
 
@@ -189,13 +200,28 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
 
   private def getDataUseRestrictions(searchResponse: LibrarySearchResponse): Seq[DataUseRestriction] = {
     searchResponse.results.map { hit =>
-      val sdur = hit.asJsObject.fields("library:structuredUseRestriction").asJsObject
+      val sdur = hit.asJsObject.fields(AttributeName.toDelimitedName(structuredUseRestrictionAttributeName)).asJsObject
       sdur.convertTo[DataUseRestriction]
     }
   }
 
-  private def assertDataUseRestrictions(searchResponse: LibrarySearchResponse, expected: DataUseRestriction): Unit = {
+  private def getDataUseDisplayCodes(searchResponse: LibrarySearchResponse): Seq[String] = {
+    searchResponse.results.flatMap { hit =>
+      val jsObj = hit.asJsObject
+      if (jsObj.getFields(AttributeName.toDelimitedName(dataUseDisplayAttributeName)).nonEmpty) {
+        jsObj.fields(AttributeName.toDelimitedName(dataUseDisplayAttributeName)).convertTo[Seq[String]]
+      } else { Seq.empty}
+    }
+  }
+
+  private def assertDataUseRestrictions(searchResponse: LibrarySearchResponse, expected: DataUseRestriction, expectedCodes: Seq[String] = Seq.empty[String]): Unit = {
     searchResponse shouldNot be(null)
+
+    if (searchResponse.results.size != 1) {
+      logger.error(s"Size: ${searchResponse.results.size}")
+      searchResponse.results.map { sr => logger.error(s"${sr.toString}")}
+    }
+
     searchResponse.results.size should be(1)
     val listActual = getDataUseRestrictions(searchResponse)
     listActual.foreach { actual =>
@@ -203,6 +229,9 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
         actual
       }
     }
+
+    val ddulCodes: Seq[String] = getDataUseDisplayCodes(searchResponse)
+    expectedCodes should contain theSameElementsAs ddulCodes
 
   }
 

@@ -31,7 +31,7 @@ object LibraryService {
   final val schemaLocation = "library/attribute-definitions.json"
 
   sealed trait LibraryServiceMessage
-  case class UpdateLibraryMetadata(ns: String, name: String, attrsJsonString: String) extends LibraryServiceMessage
+  case class UpdateLibraryMetadata(ns: String, name: String, attrsJsonString: String, validate: Boolean) extends LibraryServiceMessage
   case class GetLibraryMetadata(ns: String, name: String) extends LibraryServiceMessage
   case class UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) extends LibraryServiceMessage
   case class GetDiscoverableByGroups(ns: String, name: String) extends LibraryServiceMessage
@@ -65,7 +65,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
   override def receive = {
-    case UpdateLibraryMetadata(ns: String, name: String, attrsJsonString: String) => updateLibraryMetadata(ns, name, attrsJsonString) pipeTo sender
+    case UpdateLibraryMetadata(ns: String, name: String, attrsJsonString: String, validate: Boolean) => updateLibraryMetadata(ns, name, attrsJsonString, validate) pipeTo sender
     case GetLibraryMetadata(ns: String, name: String) => getLibraryMetadata(ns, name) pipeTo sender
     case UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) => updateDiscoverableByGroups(ns, name, newGroups) pipeTo sender
     case GetDiscoverableByGroups(ns: String, name: String) => getDiscoverableByGroups(ns, name) pipeTo sender
@@ -112,7 +112,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
-  def updateLibraryMetadata(ns: String, name: String, attrsJsonString: String): Future[PerRequestMessage] = {
+  def updateLibraryMetadata(ns: String, name: String, attrsJsonString: String, validate: Boolean): Future[PerRequestMessage] = {
     // we accept a string here, not a JsValue so we can most granularly handle json parsing
 
     Try(attrsJsonString.parseJson.asJsObject.convertTo[AttributeMap]) match {
@@ -122,7 +122,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
         val (invalid, errorMessage): (Boolean, Option[String]) = isInvalid(attrsJsonString)
         rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
           val published = isPublished(workspaceResponse)
-          if (published && invalid) {
+          if (invalid && (published || validate)) {
             Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
           } else {
             // because not all editors can update discoverableByGroups, if the request does not include discoverableByGroups

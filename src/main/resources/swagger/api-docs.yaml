@@ -893,6 +893,13 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
+        - name: validate
+          description: >
+            Should the payload be validated? Validation is always enabled
+            for published datasets and defaults to false for unpublished datasets.
+          in: query
+          type: boolean
+          required: false
         - name: libraryMetadataJson
           description: Library metadata
           required: true
@@ -4895,26 +4902,42 @@ definitions:
 
   ResearchPurpose:
     type: object
+    required:
+      - DS
+      - NDMS
+      - NCTRL
+      - NAGR
+      - POA
+      - NCU
     properties:
       DS:
         type: array
         items:
           type: string
-        description: Disease focused research. Values are DOID ontology node ids in the form http://purl.obolibrary.org/obo/DOID_NNN.
+          example: "http://purl.obolibrary.org/obo/DOID_4"
+        description: >
+          Disease focused research. Values are DOID ontology node ids in the form
+          http://purl.obolibrary.org/obo/DOID_NNN. Specify an empty array if this
+          is not disease focused research.
       NDMS:
         type: boolean
+        default: false
         description: Methods development/Validation study
       NCTRL:
         type: boolean
+        default: false
         description: Control set
       NAGR:
         type: boolean
+        default: false
         description: Aggregate analysis to understand variation in the general population
       POA:
         type: boolean
+        default: false
         description: Study population origins or ancestry
       NCU:
         type: boolean
+        default: false
         description: Commercial purpose/by a commercial entity
 
   SearchTermRef:
@@ -4927,9 +4950,7 @@ definitions:
         type: object
         description: Map[String, Array[String]] Each entry contains the column name (i.e. "library:indication") and a list of terms that will be or'ed in the query (["cancer", "sleep apnea"])
       researchPurpose:
-        type: object
-        schema:
-          $ref: '#/definitions/ResearchPurpose'
+        $ref: '#/definitions/ResearchPurpose'
       fieldAggregations:
         type: object
         description: Map[String, Int] The list of fields for which you would like to retrieve aggregations and the number of aggregations to return. Default is 5. Specify 0 to get all

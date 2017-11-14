@@ -81,10 +81,14 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
           pathPrefix(Segment / Segment) { (namespace, name) =>
             path("metadata") {
               put {
-                entity(as[String]) { rawAttrsString => requestContext =>
-                  perRequest(requestContext,
-                    LibraryService.props(libraryServiceConstructor, userInfo),
-                    LibraryService.UpdateLibraryMetadata(namespace, name, rawAttrsString))
+                parameter("validate" ? "false") { validationParam =>
+                  val doValidate = java.lang.Boolean.valueOf(validationParam) // for lenient parsing
+                  entity(as[String]) { rawAttrsString =>
+                    requestContext =>
+                      perRequest(requestContext,
+                        LibraryService.props(libraryServiceConstructor, userInfo),
+                        LibraryService.UpdateLibraryMetadata(namespace, name, rawAttrsString, doValidate))
+                  }
                 }
               } ~ {
                 get {
