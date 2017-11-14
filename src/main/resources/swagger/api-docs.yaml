@@ -893,6 +893,13 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
+        - name: validate
+          description: >
+            Should the payload be validated? Validation is always enabled
+            for published datasets and defaults to false for unpublished datasets.
+          in: query
+          type: boolean
+          required: false
         - name: libraryMetadataJson
           description: Library metadata
           required: true
