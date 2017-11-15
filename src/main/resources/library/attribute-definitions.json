@@ -11,6 +11,18 @@
   "oneOf": [{
     "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
       "library:NCTRL", "library:RS-G", "library:RS-PD", "library:useLimitationOption", "library:IRB"],
+    "anyOf": [
+      {
+        "properties": {"library:GRU": {"enum": [true]}}
+      },
+      {
+        "properties": {"library:HMB": {"enum": [true]}}
+      },
+      {
+        "required": ["library:DS"],
+        "properties": {"library:DS": {"minItems": 1}}
+      }
+    ],
     "properties": {
       "library:useLimitationOption": {
         "type": "string",
@@ -392,7 +404,7 @@
       "options": {
         "questionnaire": {
           "enumerate": true,
-          "questions": ["library:GRU", "library:HMB", "library:DS", "library:DS_URL", "library:NCU", "library:NPU", "library:NDMS",
+          "questions": [{"requireGroup": "library:primaryLimitation", "items": ["library:GRU", "library:HMB", "library:DS"]}, "library:DS_URL", "library:NCU", "library:NPU", "library:NDMS",
             "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate", "library:IRB"]
         },
         "orsp": {
@@ -405,6 +417,13 @@
     "library:dulvn",
     "library:lmsvn"
   ],
+  "requireGroups": {
+    "library:primaryLimitation": {
+      "title": "Define Primary Data Use Limitations",
+      "required": true,
+      "renderHint": {"wording": "Select at least one primary limitation."}
+    }
+  },
   "searchResultColumns":
   [
     "library:datasetName",

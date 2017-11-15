@@ -567,6 +567,45 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         assert( errorMessages.contains("#: required key [library:NPU] not found"),
           "does not have library:NPU in error messages" )
       }
+      "has error message when primary DUL keys (GRU, HMB, DS) are specified but are all false/empty" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryDULMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields ++ Map(
+          "library:HMB" -> JsBoolean(false),
+          "library:GRU" -> JsBoolean(false),
+          "library:DS" -> JsArray.empty
+        )).compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        val errorMessages = getSchemaValidationMessages(ex)
+        assert( errorMessages.contains("#/library:GRU: false is not a valid enum value") )
+        assert( errorMessages.contains("#/library:HMB: false is not a valid enum value") )
+        assert( errorMessages.contains("#/library:DS: expected minimum item count: 1, found: 0") )
+      }
+      "has error message when library:DS is not an array" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryDULMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields.updated(
+          "library:DS", JsString("astring")
+        )).compactPrint
+        val ex = intercept[ValidationException] {
+          validateJsonSchema(sampleData, testSchema)
+        }
+        val errorMessages = getSchemaValidationMessages(ex)
+        assert( errorMessages.contains("#/library:DS: expected type: JSONArray, found: String") )
+      }
+      "validates when multiple primary DUL keys are true" in {
+        val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+        val defaultData = testLibraryDULMetadata.parseJson.asJsObject
+        val sampleData = defaultData.copy(defaultData.fields ++ Map(
+          "library:useLimitationOption" -> JsString("questionnaire"),
+          "library:HMB" -> JsBoolean(true),
+          "library:GRU" -> JsBoolean(true),
+          "library:DS" -> JsArray(JsString("foo"))
+        )).compactPrint
+        validateJsonSchema(sampleData, testSchema)
+      }
     }
     "when creating schema mappings" - {
       "works for string type" in {
