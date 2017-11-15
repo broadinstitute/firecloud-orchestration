@@ -218,7 +218,8 @@
       "title": "Data Access Instructions",
       "type": "string",
       "renderHint": {"datatype": "markdown"},
-      "inputHint": "Users will see this message when attempting to access a workspace they are unauthorized to enter. Leave blank for a default message with the Contact Email above."
+      "inputHint": "Users will see this message when attempting to access a workspace they are unauthorized to enter. Leave blank for a default message with the Contact Email above.",
+      "indexable": false
     },
     "library:primaryDiseaseSite": {
       "title": "Primary Disease Site",
