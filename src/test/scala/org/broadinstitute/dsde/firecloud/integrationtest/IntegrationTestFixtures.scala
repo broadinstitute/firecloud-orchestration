@@ -43,6 +43,7 @@ object IntegrationTestFixtures {
     Document(x._1, Map(
       AttributeName("library","datasetName") -> AttributeString(x._1),
       AttributeName("library","indication") -> AttributeString(x._2),
+      AttributeName("library","datasetOwner") -> AttributeString(x._2),
       AttributeName("library","numSubjects") -> AttributeNumber(x._3)
     ))
   }
