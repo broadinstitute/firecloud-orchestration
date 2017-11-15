@@ -214,6 +214,12 @@
       "default": false,
       "inputHint": "i.e. approval from a second source is required in order to access the data"
     },
+    "library:dataAccessInstructions": {
+      "title": "Data Access Instructions",
+      "type": "string",
+      "renderHint": {"datatype": "markdown"},
+      "inputHint": "Users will see this message when attempting to access a workspace they are unauthorized to enter. Leave blank for a default message with the Contact Email above."
+    },
     "library:primaryDiseaseSite": {
       "title": "Primary Disease Site",
       "type": "string",
@@ -373,7 +379,7 @@
         "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:reference",
         "library:dataFileFormats", "library:technology", "library:profilingProtocol", "library:coverage",
         "library:dataUseRestriction", "library:studyDesign", "library:cellType", "library:ethnicity",
-        "library:cohortCountry", "library:requiresExternalApproval"
+        "library:cohortCountry", "library:requiresExternalApproval", "library:dataAccessInstructions"
       ]
     },
     {
