@@ -398,9 +398,9 @@
   [
     "library:datasetName",
     "library:indication",
-    "library:dataUseRestriction",
     "library:numSubjects",
     "library:consentCodes",
+    "tag:tags",
     "library:datasetVersion",
     "library:datasetDescription",
     "library:datasetOwner",
@@ -423,6 +423,6 @@
     "library:cellType",
     "library:ethnicity",
     "library:cohortCountry",
-    "tag:tags"
+    "library:dataUseRestriction"
   ]
 }
