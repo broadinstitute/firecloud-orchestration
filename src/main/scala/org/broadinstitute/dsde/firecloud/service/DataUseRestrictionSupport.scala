@@ -18,7 +18,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
 
   private val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS("DS")
   val structuredUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("structuredUseRestriction")
-  val dataUseDisplayAttributeName: AttributeName = AttributeName.withLibraryNS("dataUseDisplay")
+  val consentCodesAttributeName: AttributeName = AttributeName.withLibraryNS("consentCodes")
 
   /**
     * This method looks at all of the library attributes that are associated to Consent Codes and
@@ -80,7 +80,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     val displayCodes = booleanCodes ++ dsLabels
 
     if (displayCodes.nonEmpty)
-      Map(dataUseDisplayAttributeName -> AttributeValueList(displayCodes.map(AttributeString)))
+      Map(consentCodesAttributeName -> AttributeValueList(displayCodes.map(AttributeString)))
     else
       Map.empty[AttributeName, Attribute]
   }

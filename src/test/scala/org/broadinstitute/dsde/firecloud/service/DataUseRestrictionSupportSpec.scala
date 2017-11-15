@@ -123,7 +123,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "valid datasets should have some form of data use display attribute" in {
           validDisplayDatasets.map { ds =>
             val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(ds)
-            val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
+            val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
             codes shouldNot be(empty)
           }
         }
@@ -131,7 +131,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "datasets with single boolean code should have that single display code" in {
           booleanDatasets.map { ds =>
             val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(ds)
-            val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
+            val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
             // Boolean datasets are named with the same code value
             codes should contain theSameElementsAs Seq(ds.name)
           }
@@ -139,14 +139,14 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
         "'EVERYTHING' dataset should have the right codes" in {
           val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(everythingDataset.head)
-          val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
+          val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
           val expected = booleanCodes ++ Seq("RS-G", "RS-FM", "NAGR") ++ diseaseValuesLabels.map(s => s"DS:$s")
           codes should contain theSameElementsAs expected
         }
 
         "'TOP_THREE' dataset should have the right codes" in {
           val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(topThreeDataset.head)
-          val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(dataUseDisplayAttributeName))
+          val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
           val expected = Seq("GRU", "HMB") ++ diseaseValuesLabels.map(s => s"DS:$s")
           codes should contain theSameElementsAs expected
         }
