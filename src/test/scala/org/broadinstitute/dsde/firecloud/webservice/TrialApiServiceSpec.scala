@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import java.time.temporal.ChronoUnit
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpThurloeDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
@@ -131,8 +132,7 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService {
       // result in InternalServerErrors instead of appearing nicely in unit test output.
       userInfo.id match {
         case `enabledUser` => {
-          // TODO: read duration from conf, once runtime also reads it from conf
-          val expectedExpirationDate = trialStatus.enrolledDate.plus(60,ChronoUnit.DAYS)
+          val expectedExpirationDate = trialStatus.enrolledDate.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
           assertResult(Some(TrialStates.Enrolled)) { trialStatus.currentState }
           assert(trialStatus.enrolledDate.toEpochMilli > 0)
           assert(trialStatus.expirationDate.toEpochMilli > 0)
