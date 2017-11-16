@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.searchDAO
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
+import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
 class ResearchPurposeSearchUseCasesSpec extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with LazyLogging {
@@ -32,71 +33,90 @@ class ResearchPurposeSearchUseCasesSpec extends FreeSpec with SearchResultValida
       }
     }
 
-    "Research purpose B: Cancer (DOID:162)" - {
+    "Research purpose C: Cancer (DOID:162)" - {
       "should return PO-defined results" in {
         val researchPurpose = ResearchPurpose.default.copy(DS=Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_162")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("7", "8", "9", "12", "13", "14", "15", "16"),
+          Set(7, 8, 9, 12, 13, 14, 15, 16),
           searchResponse
         )
       }
     }
 
-    "Research purpose C: Cancer, Methods" - {
+    "Research purpose D: Cancer, Methods" - {
       "should return PO-defined results" in {
         val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS=Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_162")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("7", "8", "9", "12", "15", "16"),
+          Set(7, 8, 9, 12, 15, 16),
           searchResponse
         )
       }
     }
 
-    "Research purpose D: Controls" - {
+    "Research purpose E: Controls" - {
       "should return PO-defined results" in {
         val researchPurpose = ResearchPurpose.default.copy(NCTRL=true)
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("7", "8", "13", "14", "15", "16"),
+          Set(7, 8, 13, 14, 15, 16),
           searchResponse
         )
       }
     }
 
-    "Research purpose E: Cancer, controls" - {
+    "Research purpose F: Cancer, controls" - {
       "should return PO-defined results" in {
         val researchPurpose = ResearchPurpose.default.copy(NCTRL=true, DS=Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_162")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("7", "8", "9", "12", "13", "14", "15", "16"),
+          Set(7, 8, 9, 12, 13, 14, 15, 16),
           searchResponse
         )
       }
     }
 
-    "Research purpose F: Diabetes, controls" - {
+    "Research purpose G: Diabetes, controls" - {
       "should return PO-defined results" in {
         val researchPurpose = ResearchPurpose.default.copy(NCTRL=true, DS=Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9351")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("7", "8", "11", "13", "14", "15", "16"),
+          Set(7, 8, 11, 13, 14, 15, 16),
           searchResponse
         )
       }
     }
 
-    "Research purpose G: Commercial use" - {
+    "Research purpose H: Commercial use" - {
       "should return PO-defined results" in {
         val researchPurpose = ResearchPurpose.default.copy(NCU=true)
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("7", "8", "9", "10", "12", "13", "14"),
+          Set(7, 8, 9, 10, 12, 13, 14),
+          searchResponse
+        )
+      }
+    }
+
+    "Research purpose I: methods, commercial use" - {
+      "should return PO-defined results" in {
+        val researchPurpose = ResearchPurpose.default.copy(NCU=true, NDMS=true)
+        val searchResponse = searchWithPurpose(researchPurpose)
+        validateResultNames(
+          Set(7, 8, 9, 10),
           searchResponse
         )
       }
     }
 
   }
+
+  private def validateResultNames(expectedNames:Set[Int], response:LibrarySearchResponse): Unit = {
+    val stringNames = expectedNames.map(_.toString)
+    super.validateResultNames(stringNames, response)
+  }
+
+
+
 }
