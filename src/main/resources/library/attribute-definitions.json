@@ -264,60 +264,78 @@
     "library:DS": {
       "title": "Future use is limited to research involving the following disease area(s)",
       "type": "array",
-      "items": {"type": "string"},
-      "consentCode": "DS"
+      "items": { "type": "string" },
+      "typeahead": "ontology",
+      "consentCode": "DS",
+      "relatedID": "library:DS_URL",
+      "relatedLabel": "library:DS",
+      "indexable": false
+    },
+    "library:DS_URL": {
+      "type": "array",
+      "items": { "type": "string" },
+      "hidden": true
     },
     "library:NCU": {
       "title": "Future commercial use is prohibited",
       "type": "boolean",
       "renderHint": {"wording": "yes/no"},
+      "indexable": false,
       "consentCode": "NCU"
     },
     "library:NPU": {
       "title": "Future use by for-profit entities is prohibited",
       "type": "boolean",
       "renderHint": {"wording": "yes/no"},
+      "indexable": false,
       "consentCode": "NPU"
     },
     "library:NMDS": {
       "title": "Future use for methods research (analytic/software/technology development) outside the bounds of the other specified restrictions is prohibited",
       "type": "boolean",
       "renderHint": {"wording": "yes/no"},
+      "indexable": false,
       "consentCode": "NMDS"
     },
     "library:NAGR": {
       "title": "Future use of aggregate-level data for general research purposes is prohibited",
       "type": "string",
       "enum": ["Yes", "No", "Unspecified"],
+      "indexable": false,
       "consentCode": "NAGR"
     },
     "library:NCTRL": {
       "title": "Future use as a control set for diseases other than those specified is prohibited",
       "type": "boolean",
       "renderHint": {"wording": "yes/no"},
+      "indexable": false,
       "consentCode": "NCTRL"
     },
     "library:RS-G": {
       "title": "Future use is limited to research involving a particular gender",
       "type": "string",
       "enum": ["Male", "Female", "N/A"],
+      "indexable": false,
       "consentCode": "RS-G"
     },
     "library:RS-PD": {
       "title": "Future use is limited to pediatric research",
       "type": "boolean",
       "renderHint": {"wording": "yes/no"},
+      "indexable": false,
       "consentCode": "RS-PD"
     },
     "library:RS-POP": {
       "title": "Future use is limited to research involving a specific population",
       "type": "array",
       "items": { "type": "string" },
+      "indexable": false,
       "consentCode": "RS-POP"
     },
     "library:futureUseDate": {
       "title": "Future use is limited to data generated from samples collected after the following consent form date",
       "type": "string",
+      "indexable": false,
       "renderHint": {"datatype": "date"}
     },
     "library:IRB": {
@@ -400,7 +418,7 @@
       "options": {
         "questionnaire": {
           "enumerate": true,
-          "questions": [{"requireGroup": "library:primaryLimitation", "items": ["library:GRU", "library:HMB", "library:DS"]}, "library:NCU", "library:NPU", "library:NMDS",
+          "questions": [{"requireGroup": "library:primaryLimitation", "items": ["library:GRU", "library:HMB", "library:DS"]}, "library:DS_URL", "library:NCU", "library:NPU", "library:NMDS",
             "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate", "library:IRB"]
         },
         "orsp": {
