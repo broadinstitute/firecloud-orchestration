@@ -45,7 +45,7 @@ class ResearchPurposeSearchUseCasesSpec extends FreeSpec with SearchResultValida
     }
 
     "Research purpose D: Cancer, Methods" - {
-      "should return PO-defined results" in {
+      "should return PO-defined results" ignore {
         val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS=Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_162")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
@@ -89,7 +89,7 @@ class ResearchPurposeSearchUseCasesSpec extends FreeSpec with SearchResultValida
     }
 
     "Research purpose H: Commercial use" - {
-      "should return PO-defined results" in {
+      "should return PO-defined results" ignore {
         val researchPurpose = ResearchPurpose.default.copy(NCU=true)
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
@@ -100,7 +100,7 @@ class ResearchPurposeSearchUseCasesSpec extends FreeSpec with SearchResultValida
     }
 
     "Research purpose I: methods, commercial use" - {
-      "should return PO-defined results" in {
+      "should return PO-defined results" ignore {
         val researchPurpose = ResearchPurpose.default.copy(NCU=true, NDMS=true)
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
