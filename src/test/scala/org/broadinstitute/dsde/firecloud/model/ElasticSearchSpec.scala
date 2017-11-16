@@ -44,18 +44,18 @@ class ElasticSearchSpec  extends FreeSpec with Assertions {
       "should handle a valid research purpose" in {
         val testData =
           """ {"filters": {"library:datatype":["cancer"]},"fieldAggregations":{"library:indication":5},
-            |  "researchPurpose": {"NDMS": true, "NCTRL": false, "NAGR": true, "POA": false, "NCU": true,
+            |  "researchPurpose": {"NMDS": true, "NCTRL": false, "NAGR": true, "POA": false, "NCU": true,
             |    "DS": ["http://purl.obolibrary.org/obo/DOID_123", "http://purl.obolibrary.org/obo/DOID_456"]}
             | } """.stripMargin
         val item = testData.parseJson.convertTo[LibrarySearchParams]
         val expectedResearchPurpose = ResearchPurpose(
           Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_123"), DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_456")),
-          NDMS=true, NCTRL=false, NAGR=true, POA=false, NCU=true
+          NMDS=true, NCTRL=false, NAGR=true, POA=false, NCU=true
         )
         assertResult(Some(expectedResearchPurpose)) {item.researchPurpose}
       }
       "should reject an incomplete research purpose" in {
-        // testData is missing NDMS
+        // testData is missing NMDS
         val testData =
           """ {"filters": {"library:datatype":["cancer"]},"fieldAggregations":{"library:indication":5},
             |  "researchPurpose": {"NCTRL": false, "NAGR": true, "POA": false, "NCU": true,
@@ -69,7 +69,7 @@ class ElasticSearchSpec  extends FreeSpec with Assertions {
         // testData has bad DOID uris
         val testData =
           """ {"filters": {"library:datatype":["cancer"]},"fieldAggregations":{"library:indication":5},
-            |  "researchPurpose": {"NDMS": true, "NCTRL": false, "NAGR": true, "POA": false, "NCU": true,
+            |  "researchPurpose": {"NMDS": true, "NCTRL": false, "NAGR": true, "POA": false, "NCU": true,
             |    "DS": ["DOID:123"]}
             | } """.stripMargin
         intercept[IllegalArgumentException] {
@@ -89,12 +89,12 @@ class ElasticSearchSpec  extends FreeSpec with Assertions {
       "should properly serialize research purpose" in {
         val researchPurpose = ResearchPurpose(
           Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_123"), DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_456")),
-          NDMS=true, NCTRL=false, NAGR=true, POA=false, NCU=true
+          NMDS=true, NCTRL=false, NAGR=true, POA=false, NCU=true
         )
         val testData = LibrarySearchParams(None, Map.empty, Some(researchPurpose), Map.empty)
         assertResult(
           """{"filters":{},
-            | "researchPurpose":{"POA":false,"NCU":true,"NAGR":true,"NDMS":true,"NCTRL":false,
+            | "researchPurpose":{"POA":false,"NCU":true,"NAGR":true,"NMDS":true,"NCTRL":false,
             |  "DS":["http://purl.obolibrary.org/obo/DOID_123","http://purl.obolibrary.org/obo/DOID_456"]},
             | "fieldAggregations":{},"from":0,"size":10}""".stripMargin.parseJson) {testData.toJson.toString.parseJson}
       }

@@ -63,22 +63,22 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
     }
 
     /*
-      purpose: NDMS: Methods development/Validation study
+      purpose: NMDS: Methods development/Validation study
       dul:
-                Any dataset where NDMS is false
-                Any dataset where NDMS is true AND DS-X match
+                Any dataset where NMDS is false
+                Any dataset where NMDS is true AND DS-X match
      */
-    if (rp.NDMS) {
-      val ndmsClause = boolQuery()
-      ndmsClause.should(code("NDMS", false))
+    if (rp.NMDS) {
+      val nmdsClause = boolQuery()
+      nmdsClause.should(code("NMDS", false))
       if (rp.DS.nonEmpty) {
-        ndmsClause.should(boolQuery()
-          .must(code("NDMS", true))
+        nmdsClause.should(boolQuery()
+          .must(code("NMDS", true))
           .must(generateDiseaseQuery(rp.DS, ontologyDAO))
         )
       }
 
-      bool.must(ndmsClause)
+      bool.must(nmdsClause)
     }
 
     /*

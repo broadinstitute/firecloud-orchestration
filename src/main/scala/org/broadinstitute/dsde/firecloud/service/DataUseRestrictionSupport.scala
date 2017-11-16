@@ -11,7 +11,7 @@ import scala.util.Try
 
 trait DataUseRestrictionSupport extends LazyLogging {
 
-  private val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-PD", "IRB")
+  private val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NMDS", "NAGR", "NCTRL", "RS-PD", "IRB")
   private val genderCodes: Seq[String] = Seq("RS-G", "RS-FM", "RS-M")
   private val duRestrictionFieldNames: Seq[String] = booleanCodes ++ genderCodes ++ Seq("DS_URL", "RS-POP")
   val allDurFieldNames: Seq[String] = duRestrictionFieldNames ++ Seq("DS")
