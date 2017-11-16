@@ -16,7 +16,7 @@ object DataUseRestrictionTestFixtures {
     DS: Seq[Int] = Seq.empty[Int],
     NCU: Boolean = false,
     NPU: Boolean = false,
-    NDMS: Boolean = false,
+    NMDS: Boolean = false,
     NAGR: Boolean = false,
     NCTRL: Boolean = false,
     `RS-PD`: Boolean = false,
@@ -31,7 +31,7 @@ object DataUseRestrictionTestFixtures {
   implicit val impDataUseRestriction: RootJsonFormat[DataUseRestriction] = jsonFormat14(DataUseRestriction)
 
   // Datasets are named by the code for easier identification in tests
-  val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NDMS", "NCTRL", "RS-PD", "IRB")
+  val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NMDS", "NCTRL", "RS-PD", "IRB")
   val booleanDatasets: Seq[Workspace] = booleanCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeBoolean(true))
     mkWorkspace(attributes, code, s"{${code.replace("-","")}}-unique")
