@@ -4904,7 +4904,7 @@ definitions:
     type: object
     required:
       - DS
-      - NDMS
+      - NMDS
       - NCTRL
       - NAGR
       - POA
@@ -4919,7 +4919,7 @@ definitions:
           Disease focused research. Values are DOID ontology node ids in the form
           http://purl.obolibrary.org/obo/DOID_NNN. Specify an empty array if this
           is not disease focused research.
-      NDMS:
+      NMDS:
         type: boolean
         default: false
         description: Methods development/Validation study

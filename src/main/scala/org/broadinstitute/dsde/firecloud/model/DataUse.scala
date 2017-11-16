@@ -8,14 +8,14 @@ object DataUse {
 
   case class ResearchPurpose(
     DS:    Seq[DiseaseOntologyNodeId],
-    NDMS:  Boolean,
+    NMDS:  Boolean,
     NCTRL: Boolean,
     NAGR:  Boolean,
     POA:   Boolean,
     NCU:   Boolean)
   object ResearchPurpose {
     def default = {
-      new ResearchPurpose(Seq.empty[DiseaseOntologyNodeId], NDMS=false, NCTRL=false, NAGR=false, POA=false, NCU=false)
+      new ResearchPurpose(Seq.empty[DiseaseOntologyNodeId], NMDS=false, NCTRL=false, NAGR=false, POA=false, NCU=false)
     }
   }
 

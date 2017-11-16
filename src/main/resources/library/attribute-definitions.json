@@ -9,7 +9,7 @@
     "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:dataUseRestriction",
     "library:studyDesign", "library:requiresExternalApproval", "library:useLimitationOption"],
   "oneOf": [{
-    "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NDMS", "library:NAGR",
+    "required": ["library:GRU", "library:HMB", "library:NCU", "library:NPU", "library:NMDS", "library:NAGR",
       "library:NCTRL", "library:RS-G", "library:RS-PD", "library:useLimitationOption", "library:IRB"],
     "anyOf": [
       {
@@ -279,11 +279,11 @@
       "renderHint": {"wording": "yes/no"},
       "consentCode": "NPU"
     },
-    "library:NDMS": {
+    "library:NMDS": {
       "title": "Future use for methods research (analytic/software/technology development) outside the bounds of the other specified restrictions is prohibited",
       "type": "boolean",
       "renderHint": {"wording": "yes/no"},
-      "consentCode": "NDMS"
+      "consentCode": "NMDS"
     },
     "library:NAGR": {
       "title": "Future use of aggregate-level data for general research purposes is prohibited",
@@ -334,14 +334,14 @@
     "library:lmsvn": {
       "title": "Library Metadata Schema Version Number",
       "description": "Library Metadata Schema Version Number",
-      "default": 5,
+      "default": 6,
       "indexable": false,
       "type": "integer"
     },
     "library:dulvn": {
       "title": "Structured Data Use Limitations  Version Number",
       "description": "Structured Data Use Limitations Version Number",
-      "default": 2,
+      "default": 3,
       "indexable": false,
       "type": "integer"
     },
@@ -361,7 +361,7 @@
     "DS": "Use of the data must be related to a particular disease.",
     "NCU": "Use of the data is limited to non-commercial use.",
     "NPU": "Use of the data is limited to not-for-profit organizations.",
-    "NDMS": "Use of the data includes methods development research (e.g., development of software or algorithms) ONLY within the bounds of other specified data use limitations.",
+    "NMDS": "Use of the data includes methods development research (e.g., development of software or algorithms) ONLY within the bounds of other specified data use limitations.",
     "NAGR": "Use of the data includes aggregate level analysis to address research questions (e.g., determine variant frequencies across the general population) ONLY within the bounds of other specified data use limitations.",
     "NCTRL": "Data can be used as a control set ONLY within the bounds of other specified data use limitations (e.g. only for cancer studies).",
     "RS-G": "Use of the data is limited to studies of particular gender.",
@@ -375,7 +375,7 @@
       "library:projectName", "library:reference", "library:dataFileFormats", "library:technology", "library:profilingProtocol",
       "library:coverage", "library:studyDesign", "library:cellType", "library:ethnicity", "library:cohortCountry", "library:requiresExternalApproval",
       "library:lmsvn", "library:dulvn"],
-    "consentCodes": ["GRU", "HMB", "DS", "NCU", "NPU", "NDMS", "NAGR", "NCTRL", "RS-G", "RS-PD", "RS-POP"]
+    "consentCodes": ["GRU", "HMB", "DS", "NCU", "NPU", "NMDS", "NAGR", "NCTRL", "RS-G", "RS-PD", "RS-POP"]
   },
   "wizard":
   [
@@ -400,7 +400,7 @@
       "options": {
         "questionnaire": {
           "enumerate": true,
-          "questions": [{"requireGroup": "library:primaryLimitation", "items": ["library:GRU", "library:HMB", "library:DS"]}, "library:NCU", "library:NPU", "library:NDMS",
+          "questions": [{"requireGroup": "library:primaryLimitation", "items": ["library:GRU", "library:HMB", "library:DS"]}, "library:NCU", "library:NPU", "library:NMDS",
             "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate", "library:IRB"]
         },
         "orsp": {

@@ -193,28 +193,28 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       }
     }
 
-    "Methods development/Validation study (NDMS)" - {
-      "should return any dataset where NDMS is true and the disease matches exactly" in {
-        val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
+    "Methods development/Validation study (NMDS)" - {
+      "should return any dataset where NMDS is true and the disease matches exactly" in {
+        val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("one", "six", "eleven", "sixteen", "eighteen"), // NDMS=false or (NDMS=true and DS match)
+          Set("one", "six", "eleven", "sixteen", "eighteen"), // NMDS=false or (NMDS=true and DS match)
           searchResponse
         )
-        // NB: this doesn't match fixture "twenty" because even though the NDMS clauses are satisfied, the DS
-        // clause is not. In other words, if you made this search without specifying NDMS=true, you wouldn't
+        // NB: this doesn't match fixture "twenty" because even though the NMDS clauses are satisfied, the DS
+        // clause is not. In other words, if you made this search without specifying NMDS=true, you wouldn't
         // match on "twenty". TODO: verify this is correct business logic.
       }
-      "should return any dataset where NDMS is true and the RP's disease is a child of the dataset's disease" in {
-        val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
+      "should return any dataset where NMDS is true and the RP's disease is a child of the dataset's disease" in {
+        val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("one", "six", "eleven", "sixteen", "seventeen", "eighteen", "twenty"), // NDMS=false or (NDMS=true and DS match)
+          Set("one", "six", "eleven", "sixteen", "seventeen", "eighteen", "twenty"), // NMDS=false or (NMDS=true and DS match)
           searchResponse
         )
       }
-      "should return any dataset where NDMS is false" in {
-        val researchPurpose = ResearchPurpose.default.copy(NDMS = true)
+      "should return any dataset where NMDS is false" in {
+        val researchPurpose = ResearchPurpose.default.copy(NMDS = true)
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
           Set("one", "six", "eleven", "sixteen", "twenty"),
@@ -222,7 +222,7 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
         )
       }
       "should intersect with a standard facet filter" in {
-        val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
+        val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
         val filter = Map("library:projectName" -> Seq("beryllium"))
         val searchResponse = searchWithPurpose(researchPurpose, filter)
         validateResultNames(
@@ -231,7 +231,7 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
         )
       }
       "should intersect with a text search" in {
-        val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
+        val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val searchResponse = searchWithPurpose(researchPurpose, "lazy")
         validateResultNames(
           Set("eleven"),
@@ -239,7 +239,7 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
         )
       }
       "should affect search suggestions" in {
-        val researchPurpose = ResearchPurpose.default.copy(NDMS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
+        val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val searchResponse = suggestWithPurpose(researchPurpose, "anti")
         validateSuggestions(
           Set("antiaging", "antibody", "anticoagulant", "antiegalitarian", "antielectron", "antielitism", "antifashion"),

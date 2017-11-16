@@ -88,7 +88,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       |  "library:HMB"  : false,
       |  "library:NCU"  : false,
       |  "library:NPU"  : false,
-      |  "library:NDMS" : true,
+      |  "library:NMDS" : true,
       |  "library:NAGR" : "Unspecified",
       |  "library:NCTRL": true,
       |  "library:RS-G" : "Female",

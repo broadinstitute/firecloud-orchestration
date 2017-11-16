@@ -75,9 +75,9 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
         assertDataUseRestrictions(searchResponse, DataUseRestriction(NPU = true), Seq("NPU"))
       }
 
-      "NDMS dataset should be indexed as true" in {
-        val searchResponse = searchFor("NDMS-unique")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(NDMS = true), Seq("NDMS"))
+      "NMDS dataset should be indexed as true" in {
+        val searchResponse = searchFor("NMDS-unique")
+        assertDataUseRestrictions(searchResponse, DataUseRestriction(NMDS = true), Seq("NMDS"))
       }
 
       "NAGR:Yes should be indexed as true" in {
@@ -154,7 +154,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
             DS = DataUseRestrictionTestFixtures.diseaseValuesInts,
             NCU = true,
             NPU = true,
-            NDMS = true,
+            NMDS = true,
             NAGR = true,
             NCTRL = true,
             `RS-PD` = true,
@@ -163,7 +163,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
             `RS-POP` = Seq("TERM-1", "TERM-2"),
             IRB = true
           ),
-          Seq("NPU", "RS-G", "NCU", "HMB", "NDMS", "RS-FM", "NCTRL", "RS-PD", "NAGR", "GRU", "IRB") ++
+          Seq("NPU", "RS-G", "NCU", "HMB", "NMDS", "RS-FM", "NCTRL", "RS-PD", "NAGR", "GRU", "IRB") ++
             DataUseRestrictionTestFixtures.diseaseValuesLabels.map("DS:" + _)
         )
       }
