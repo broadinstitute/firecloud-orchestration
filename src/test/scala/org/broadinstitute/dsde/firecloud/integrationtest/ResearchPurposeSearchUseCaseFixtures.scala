@@ -25,7 +25,23 @@ object ResearchPurposeSearchUseCaseFixtures extends DataUseRestrictionSupport {
     (13, "GRU, NMDS",                  DataUseRestriction(GRU=true, NDMS=true)),
     (14, "HMB, NMDS",                  DataUseRestriction(HMB=true, NDMS=true)),
     (15, "GRU, NPU",                   DataUseRestriction(GRU=true, NPU=true)),
-    (16, "HMB, NPU",                   DataUseRestriction(HMB=true, NPU=true))
+    (16, "HMB, NPU",                   DataUseRestriction(HMB=true, NPU=true)),
+    (17, "MESA",                       DataUseRestriction(HMB=true, NPU=true)),
+    (18, "WHI",                        DataUseRestriction(HMB=true, NPU=true, IRB=true)),
+    (19, "GeneSTAR",                   DataUseRestriction(DS=Seq(1287), IRB=true, NDMS=true, NPU=true)),
+    (20, "Diabetes Heart HMB",         DataUseRestriction(HMB=true)),
+    (21, "Diabetes Heart DS",          DataUseRestriction(DS=Seq(1287))),
+    (22, "GENOA",                      DataUseRestriction(DS=Seq(2349), NPU=true)),
+    (23, "COPDGENE",                   DataUseRestriction(HMB=true)),
+    (24, "EO-COPD",                    DataUseRestriction(DS=Seq(3083))),
+    (25, "Mitchell Amish",             DataUseRestriction(HMB=true, IRB=true, NDMS=true)),
+    (26, "FHS",                        DataUseRestriction(HMB=true, IRB=true, NPU=true, NDMS=true)),
+    (27, "MGH HMB",                    DataUseRestriction(HMB=true, IRB=true)),
+    (28, "MGH DS",                     DataUseRestriction(DS=Seq(60224), IRB=true)),
+    (29, "VU - Dawood",                DataUseRestriction(GRU=true, IRB=true)),
+    (30, "VU - Ben",                   DataUseRestriction(HMB=true, IRB=true)),
+    (31, "HVH HMB",                    DataUseRestriction(HMB=true, IRB=true, NDMS=true)),
+    (32, "HVH DS",                     DataUseRestriction(DS=Seq(1287), IRB=true, NDMS=true))
   )
 
   val fixtureDocs:Seq[Document] = datasetTuples map {x:(Int,String,DataUseRestriction) =>
