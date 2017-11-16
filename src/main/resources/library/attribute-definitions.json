@@ -207,12 +207,25 @@
       "type": "string",
       "typeahead": "populate"
     },
+    "library:consentCodes" : {
+      "title": "Consent Codes",
+      "type": "array",
+      "items": { "type": "string" },
+      "renderHint": { "type": "tag" }
+    },
     "library:requiresExternalApproval": {
       "title": "Requires External Approval",
       "type": "boolean",
       "renderHint": {"wording": "yes/no"},
       "default": false,
       "inputHint": "i.e. approval from a second source is required in order to access the data"
+    },
+    "library:dataAccessInstructions": {
+      "title": "Data Access Instructions",
+      "type": "string",
+      "renderHint": {"datatype": "markdown"},
+      "inputHint": "Users will see this message when attempting to access a workspace they are unauthorized to enter. Leave blank for a default message with the Contact Email above.",
+      "indexable": false
     },
     "library:primaryDiseaseSite": {
       "title": "Primary Disease Site",
@@ -354,6 +367,7 @@
       "title": "Tags",
       "type": "array",
       "items": { "type": "string" },
+      "renderHint": { "type": "tag" },
       "aggregate": {
         "renderHint": "typeahead-multiselect"
       }
@@ -391,7 +405,7 @@
         "library:numSubjects", "library:projectName", "library:dataCategory", "library:datatype", "library:reference",
         "library:dataFileFormats", "library:technology", "library:profilingProtocol", "library:coverage",
         "library:dataUseRestriction", "library:studyDesign", "library:cellType", "library:ethnicity",
-        "library:cohortCountry", "library:requiresExternalApproval"
+        "library:cohortCountry", "library:requiresExternalApproval", "library:dataAccessInstructions"
       ]
     },
     {
@@ -428,8 +442,9 @@
   [
     "library:datasetName",
     "library:indication",
-    "library:dataUseRestriction",
     "library:numSubjects",
+    "library:consentCodes",
+    "tag:tags",
     "library:datasetVersion",
     "library:datasetDescription",
     "library:datasetOwner",
@@ -451,6 +466,7 @@
     "library:coverage",
     "library:cellType",
     "library:ethnicity",
-    "library:cohortCountry"
+    "library:cohortCountry",
+    "library:dataUseRestriction"
   ]
 }
