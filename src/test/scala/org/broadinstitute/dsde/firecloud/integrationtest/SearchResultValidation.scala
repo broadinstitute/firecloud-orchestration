@@ -42,7 +42,8 @@ trait SearchResultValidation {
     val criteria = emptyCriteria.copy(
       searchString = Some(term),
       researchPurpose = Some(researchPurpose))
-    Await.result(searchDAO.suggestionsFromAll(criteria, Seq.empty[String]), dur)
+    // set size to 100 to make sure we return all results for testing comparisons
+    Await.result(searchDAO.suggestionsFromAll(criteria.copy(size=100), Seq.empty[String]), dur)
   }
 
   def validateResultNames(expectedNames:Set[String], response:LibrarySearchResponse) = {

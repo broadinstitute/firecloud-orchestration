@@ -56,10 +56,7 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
                 Any dataset tagged to a DOID ontology Parent of disease X
      */
     if (rp.DS.nonEmpty) {
-      val dsClause = generateDiseaseQuery(rp.DS, ontologyDAO)
-      dsClause.should(code("GRU", true))
-      dsClause.should(code("HMB", true))
-      bool.must(dsClause)
+      generateDiseaseMatchLogic(rp, ontologyDAO) map { dsClause => bool.must(dsClause) }
     }
 
     /*
@@ -72,12 +69,13 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
       val nmdsClause = boolQuery()
       nmdsClause.should(code("NMDS", false))
       if (rp.DS.nonEmpty) {
-        nmdsClause.should(boolQuery()
-          .must(code("NMDS", true))
-          .must(generateDiseaseQuery(rp.DS, ontologyDAO))
-        )
+        generateDiseaseMatchLogic(rp, ontologyDAO) map { dsClause =>
+          nmdsClause.should(boolQuery()
+            .must(code("NMDS", true))
+            .must(dsClause)
+          )
+        }
       }
-
       bool.must(nmdsClause)
     }
 
@@ -102,6 +100,25 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
     }
 
     bool
+  }
+
+  private def generateDiseaseMatchLogic(rp: ResearchPurpose, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Option[BoolQueryBuilder] = {
+    /*
+      purpose: DS: Disease focused research
+      dul:
+                Any dataset with GRU=true
+                Any dataset with HMB=true
+                Any dataset tagged to this disease exactly
+                Any dataset tagged to a DOID ontology Parent of disease X
+     */
+    if (rp.DS.nonEmpty) {
+      val dsClause = generateDiseaseQuery(rp.DS, ontologyDAO)
+      dsClause.should(code("GRU", true))
+      dsClause.should(code("HMB", true))
+      Some(dsClause)
+    } else {
+      None
+    }
   }
 
   private def generateDiseaseQuery(nodeids: Seq[DiseaseOntologyNodeId], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): BoolQueryBuilder = {
