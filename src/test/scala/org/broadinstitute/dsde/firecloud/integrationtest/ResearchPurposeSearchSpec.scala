@@ -238,17 +238,13 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
           searchResponse
         )
       }
-      // TODO: unignore
-      "should affect search suggestions" ignore {
+      "should affect search suggestions" in {
         val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val searchResponse = suggestWithPurpose(researchPurpose, "anti")
         validateSuggestions(
           Set("antiaging", "antialias", "antibody", "antic", "anticoagulant", "anticorruption", "antiegalitarian", "antielectron", "antielitism", "antifashion"),
           searchResponse
         )
-        // TODO: we're differing on these results:
-        // "antifashion" - "twenty"
-        // "antiegalitarian" - "sixteen"
       }
     }
 
