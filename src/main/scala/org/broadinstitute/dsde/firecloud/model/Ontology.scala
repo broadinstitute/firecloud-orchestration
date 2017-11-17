@@ -16,12 +16,12 @@ object Ontology {
   case class TermParent(
     id: String,
     order: Int,
-    label: String,
+    label: Option[String],
     definition: Option[String] = None,
     synonyms: Option[List[String]] = None
   ) {
     def toESTermParent: ESTermParent =
-      ESTermParent(label, order)
+      ESTermParent(label.getOrElse(""), order)
   }
 
   case class ESTermParent(label: String, order: Int)

@@ -1,5 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
-import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
+import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.SubsystemStatus
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
@@ -7,8 +7,8 @@ import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.index.query.QueryBuilders._
 import spray.http.Uri.Authority
 import spray.json._
-
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOntologyTermResource
+import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -20,7 +20,33 @@ class ElasticSearchOntologyDAO(servers: Seq[Authority], clusterName: String, ind
   private final val datatype = "ontology_term"
 
 
-  override def search(term: String): Future[Option[List[TermResource]]] = Future(None)
+  override def search(term: String): Future[Option[List[TermResource]]] = {
+    val getRequest = client.prepareGet(indexName, datatype, term)
+    val getResult = executeESRequest[GetRequest, GetResponse, GetRequestBuilder](getRequest)
+    if (!getResult.isExists) {
+      Future(None)
+    } else {
+      val term = getResult.getSourceAsString.parseJson.convertTo[TermResource]
+
+      val annotatedTerm = if (term.parents.nonEmpty && term.parents.get.nonEmpty) {
+        val parents = term.parents.get
+        val ids = parents map (_.id)
+        val query = client.prepareSearch(indexName).setQuery(idsQuery().addIds(ids:_*))
+        val idsResult = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](query)
+        val hitMap = idsResult.getHits.getHits.map { hit =>
+          hit.getId -> hit.getSourceAsString.parseJson.convertTo[TermResource]
+        }.toMap
+        val annotatedParents = parents map { origParent =>
+          val newLabel = hitMap.get(origParent.id) map (_.label)
+          origParent.copy(label = newLabel)
+        }
+        term.copy(parents = Some(annotatedParents))
+      } else {
+        term
+      }
+      Future(Some(List(annotatedTerm)))
+    }
+  }
 
   override def autocomplete(term: String): List[TermResource] = {
     val prefix = term.toLowerCase
