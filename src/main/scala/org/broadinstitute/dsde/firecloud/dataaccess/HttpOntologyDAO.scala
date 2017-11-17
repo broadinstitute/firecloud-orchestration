@@ -64,4 +64,5 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
     getStatusFromDropwizardChecks(unAuthedRequest(Get(ontologyUri.withPath(Uri.Path("/status")))))
   }
 
+  override def autocomplete(term: String) = List.empty[TermResource]
 }

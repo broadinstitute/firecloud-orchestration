@@ -18,6 +18,8 @@ trait OntologyDAO extends ReportsSubsystemStatus {
 
   def search(term: String): Future[Option[List[TermResource]]]
 
+  def autocomplete(term: String): List[TermResource]
+
   override def serviceName:String = OntologyDAO.serviceName
 
 }

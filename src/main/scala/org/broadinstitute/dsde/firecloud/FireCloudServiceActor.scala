@@ -43,7 +43,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val samDAO:SamDAO = new HttpSamDAO
   val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
   val googleServicesDAO:GoogleServicesDAO = HttpGoogleServicesDAO
-  val ontologyDAO:OntologyDAO = new HttpOntologyDAO
+  val ontologyDAO:OntologyDAO = new ElasticSearchOntologyDAO(FireCloudConfig.ElasticSearch.servers,
+    FireCloudConfig.ElasticSearch.clusterName, FireCloudConfig.ElasticSearch.ontologyIndexName)
   val consentDAO:ConsentDAO = new HttpConsentDAO
   val searchDAO:SearchDAO = new ElasticSearchDAO(FireCloudConfig.ElasticSearch.servers,
     FireCloudConfig.ElasticSearch.clusterName, FireCloudConfig.ElasticSearch.indexName, ontologyDAO)
@@ -53,6 +54,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
 
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
+  val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val nihServiceConstructor: () => NihServiceActor = NihService.constructor(app)
   val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)

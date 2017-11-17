@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{Curator, UserInfo}
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, LibraryService}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, LibraryService, OntologyService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -25,6 +25,7 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
 
   val libraryServiceConstructor: UserInfo => LibraryService
+  val ontologyServiceConstructor: () => OntologyService
 
   val duosAutocompleteUrl = FireCloudConfig.Duos.baseOntologyUrl + "/autocomplete"
   val consentUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
@@ -32,8 +33,9 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
   val libraryRoutes: Route =
     path("duos" / "autocomplete" / Segment) { (searchTerm) =>
       get { requestContext =>
-        val extReq = Get(Uri(duosAutocompleteUrl).withQuery(("types", "disease"), ("q", searchTerm)))
-        externalHttpPerRequest(requestContext, extReq)
+        perRequest(requestContext,
+          OntologyService.props(ontologyServiceConstructor),
+          OntologyService.AutocompleteOntology(searchTerm))
       }
     } ~
     pathPrefix("schemas") {
