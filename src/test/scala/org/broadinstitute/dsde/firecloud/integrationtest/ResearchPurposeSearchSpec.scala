@@ -198,18 +198,18 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
         val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("one", "six", "eleven", "sixteen", "eighteen"), // NMDS=false or (NMDS=true and DS match)
+          Set("one", "two", "six", "seven", "eleven", "twelve", "sixteen", "eighteen"), // NMDS=false or (NMDS=true and disease-match logic)
           searchResponse
         )
         // NB: this doesn't match fixture "twenty" because even though the NMDS clauses are satisfied, the DS
         // clause is not. In other words, if you made this search without specifying NMDS=true, you wouldn't
-        // match on "twenty". TODO: verify this is correct business logic.
+        // match on "twenty".
       }
       "should return any dataset where NMDS is true and the RP's disease is a child of the dataset's disease" in {
         val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("one", "six", "eleven", "sixteen", "seventeen", "eighteen", "twenty"), // NMDS=false or (NMDS=true and DS match)
+          Set("one", "two", "six", "seven", "eleven", "twelve", "sixteen", "seventeen", "eighteen", "twenty"),
           searchResponse
         )
       }
@@ -234,7 +234,7 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
         val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val searchResponse = searchWithPurpose(researchPurpose, "lazy")
         validateResultNames(
-          Set("eleven"),
+          Set("eleven", "twelve"),
           searchResponse
         )
       }
@@ -242,7 +242,7 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
         val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val searchResponse = suggestWithPurpose(researchPurpose, "anti")
         validateSuggestions(
-          Set("antiaging", "antibody", "anticoagulant", "antiegalitarian", "antielectron", "antielitism", "antifashion"),
+          Set("antiaging", "antialias", "antibody", "antic", "anticoagulant", "anticorruption", "antiegalitarian", "antielectron", "antielitism", "antifashion"),
           searchResponse
         )
       }
@@ -253,7 +253,7 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
         val researchPurpose = ResearchPurpose.default.copy(NCTRL = true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("two", "six", "twelve", "sixteen", "eighteen"), // sleep disorder, or NCTRL=false+(GRU||HMB)
+          Set("two", "six", "twelve", "sixteen", "eighteen"),
           searchResponse
         )
       }
@@ -261,7 +261,7 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
         val researchPurpose = ResearchPurpose.default.copy(NCTRL = true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val searchResponse = searchWithPurpose(researchPurpose)
         validateResultNames(
-          Set("two", "six", "twelve", "sixteen", "seventeen", "eighteen", "twenty"), // central sleep apnea, and sleep disorder, or NCTRL=false+(GRU||HMB)
+          Set("two", "six", "twelve", "sixteen", "seventeen", "eighteen", "twenty"),
           searchResponse
         )
       }

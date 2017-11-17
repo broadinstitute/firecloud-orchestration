@@ -162,7 +162,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport with ElasticS
   }
 
   def buildAutocompleteQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], ontologyDAO: OntologyDAO): SearchRequestBuilder = {
-    createESAutocompleteRequest(client, indexname, createQuery(criteria, groups, ontologyDAO, searchField=fieldSuggest, phrase=true), 0, 8)
+    createESAutocompleteRequest(client, indexname, createQuery(criteria, groups, ontologyDAO, searchField=fieldSuggest, phrase=true), 0, criteria.size)
   }
 
   def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], ontologyDAO: OntologyDAO): Seq[SearchRequestBuilder] = {
