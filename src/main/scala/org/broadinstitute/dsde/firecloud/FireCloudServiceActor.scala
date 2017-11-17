@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud
 
 import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess._
+import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
@@ -9,6 +10,7 @@ import spray.http._
 import spray.routing.{HttpServiceActor, Route}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.webservice._
+import org.elasticsearch.client.transport.TransportClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
@@ -38,16 +40,16 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     def actorRefFactory = context
   }
 
+  val elasticSearchClient: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
+
   val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora)
   val rawlsDAO:RawlsDAO = new HttpRawlsDAO
   val samDAO:SamDAO = new HttpSamDAO
   val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
   val googleServicesDAO:GoogleServicesDAO = HttpGoogleServicesDAO
-  val ontologyDAO:OntologyDAO = new ElasticSearchOntologyDAO(FireCloudConfig.ElasticSearch.servers,
-    FireCloudConfig.ElasticSearch.clusterName, FireCloudConfig.ElasticSearch.ontologyIndexName)
+  val ontologyDAO:OntologyDAO = new ElasticSearchOntologyDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.ontologyIndexName)
   val consentDAO:ConsentDAO = new HttpConsentDAO
-  val searchDAO:SearchDAO = new ElasticSearchDAO(FireCloudConfig.ElasticSearch.servers,
-    FireCloudConfig.ElasticSearch.clusterName, FireCloudConfig.ElasticSearch.indexName, ontologyDAO)
+  val searchDAO:SearchDAO = new ElasticSearchDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.indexName, ontologyDAO)
 
   val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, thurloeDAO)
   val materializer: ActorMaterializer = ActorMaterializer()

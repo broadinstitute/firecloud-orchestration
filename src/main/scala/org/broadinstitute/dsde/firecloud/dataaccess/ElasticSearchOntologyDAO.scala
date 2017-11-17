@@ -13,9 +13,7 @@ import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ElasticSearchOntologyDAO(servers: Seq[Authority], clusterName: String, indexName: String) extends OntologyDAO with ElasticSearchDAOSupport {
-
-  private val client: TransportClient = buildClient(servers, clusterName)
+class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) extends OntologyDAO with ElasticSearchDAOSupport {
 
   private final val datatype = "ontology_term"
 

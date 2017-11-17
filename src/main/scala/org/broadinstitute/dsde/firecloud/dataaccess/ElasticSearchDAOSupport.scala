@@ -19,15 +19,7 @@ import scala.util.{Failure, Success, Try}
 
 trait ElasticSearchDAOSupport extends LazyLogging {
 
-  def buildClient(servers:Seq[Authority], clusterName: String): TransportClient = {
-    val settings = Settings.builder
-      .put("cluster.name", clusterName)
-      .build
-    val addresses = servers map { server =>
-      new InetSocketTransportAddress(InetAddress.getByName(server.host.address), server.port)
-    }
-    new PreBuiltTransportClient(settings).addTransportAddresses(addresses: _*)
-  }
+
 
   def executeESRequest[T <: ActionRequest, U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): U = {
     val tick = System.currentTimeMillis

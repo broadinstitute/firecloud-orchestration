@@ -3,8 +3,11 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, MockOntologyDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchParams
+import org.elasticsearch.client.transport.TransportClient
 
 import scala.util.{Failure, Success, Try}
 
@@ -32,7 +35,8 @@ object ESIntegrationSupport extends IntegrationTestConfig {
   lazy val searchDAO:SearchDAO = {
     // construct a dao, using IntegrationTestConfig's server names (which should be the runtime server names)
     // and the index name defined above
-    new ElasticSearchDAO(ITElasticSearch.servers, ITElasticSearch.clusterName, itTestIndexName, new MockOntologyDAO)
+    val client: TransportClient = ElasticUtils.buildClient(ITElasticSearch.servers, ITElasticSearch.clusterName)
+    new ElasticSearchDAO(client, itTestIndexName, new MockOntologyDAO)
   }
 
   lazy val emptyCriteria = LibrarySearchParams(None,Map.empty[String,Seq[String]],None,Map.empty[String,Int],None,None,None,None)
