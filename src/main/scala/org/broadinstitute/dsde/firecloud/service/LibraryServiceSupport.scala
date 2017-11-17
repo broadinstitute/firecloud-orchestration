@@ -19,6 +19,7 @@ import spray.json._
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by davidan on 10/2/16.
@@ -30,6 +31,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
+  // TODO: this doesn't have to be a future, leaving it as a Future for compatibility
   def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
     val nodesSeq:Seq[String] = workspaces.collect {
@@ -44,20 +46,14 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     logger.debug(s"found ${nodes.size} unique ontology nodes")
 
     // query ontology for this set of nodes, save in a map
-    val parentCache = Future.sequence(nodes map {id =>
-      lookupParentNodes(id, ontologyDAO) map {parents:Seq[TermParent] => (id, parents)}
-    })
+    val parentCache = nodes map {id => (id, lookupParentNodes(id, ontologyDAO))}
 
     // using the cached parent information, build the indexable documents
-    val docsResult: Future[Seq[Document]] = parentCache map { parentSet =>
-      val parentMap = parentSet.toMap.filter(e => e._2.nonEmpty) // remove nodes that have no parent
-      logger.debug(s"have parent results for ${parentMap.size} ontology nodes")
-      workspaces map {w =>
-       indexableDocument(w, parentMap)
-      }
-    }
+    val parentMap = parentCache.toMap.filter(e => e._2.nonEmpty) // remove nodes that have no parent
+    logger.debug(s"have parent results for ${parentMap.size} ontology nodes")
+    val docsResult: Seq[Document] = workspaces map {w => indexableDocument(w, parentMap)}
 
-    docsResult
+    Future(docsResult)
 
   }
 
@@ -102,16 +98,14 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   // wraps the ontologyDAO call, handles Nones/nulls, and returns a [Future[Seq].
   // the Seq is populated if the leaf node exists and has parents; Seq is empty otherwise.
-  def lookupParentNodes(leafId:String, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext):Future[Seq[TermParent]] = {
-    ontologyDAO.search(leafId) map {
-      case Some(terms) if terms.nonEmpty =>
+  def lookupParentNodes(leafId:String, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext):Seq[TermParent] = {
+    Try(ontologyDAO.search(leafId)) match {
+      case Success(terms) if terms.nonEmpty =>
         terms.head.parents.getOrElse(Seq.empty)
-      case None => Seq.empty[TermParent]
-    } recoverWith {
-      case ex:Exception => {
+      case Success(empty) => Seq.empty[TermParent]
+      case Failure(ex) =>
         logger.warn(s"exception getting term and parents from ontology: ${ex.getMessage}")
-        Future(Seq.empty[TermParent])
-      }
+        Seq.empty[TermParent]
     }
   }
 

@@ -55,13 +55,13 @@ class MockOntologyDAO extends OntologyDAO {
       parents=Some(List(
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_150",
-          order=3,
+          order=1,
           label=Some("disease of mental health"),
           definition=Some("A disease that involves a psychological or behavioral pattern generally associated with subjective distress or disability that occurs in an individual, and which are not a part of normal development or culture.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_4",
-          order=4,
+          order=2,
           label=Some("disease"),
           definition=Some("A disease is a disposition (i) to undergo pathological processes that (ii) exists in an organism because of one or more disorders in that organism.")
         )
@@ -234,10 +234,9 @@ class MockOntologyDAO extends OntologyDAO {
     ))
   )
 
-  override def search(term: String): Future[Option[List[TermResource]]] = Future(data.get(term))
+  override def search(term: String): List[TermResource] = data.getOrElse(term, List.empty[TermResource])
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true))
 
-  // TODO: implement
   override def autocomplete(term: String) = List.empty[TermResource]
 }

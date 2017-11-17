@@ -1,11 +1,10 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
-import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
+import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.firecloud.model.SubsystemStatus
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.index.query.QueryBuilders._
-import spray.http.Uri.Authority
 import spray.json._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOntologyTermResource
 import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
@@ -18,11 +17,11 @@ class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) exten
   private final val datatype = "ontology_term"
 
 
-  override def search(term: String): Future[Option[List[TermResource]]] = {
+  override def search(term: String): List[TermResource] = {
     val getRequest = client.prepareGet(indexName, datatype, term)
     val getResult = executeESRequest[GetRequest, GetResponse, GetRequestBuilder](getRequest)
     if (!getResult.isExists) {
-      Future(None)
+      List.empty[TermResource]
     } else {
       val term = getResult.getSourceAsString.parseJson.convertTo[TermResource]
 
@@ -42,7 +41,7 @@ class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) exten
       } else {
         term
       }
-      Future(Some(List(annotatedTerm)))
+      List(annotatedTerm)
     }
   }
 
@@ -50,11 +49,17 @@ class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) exten
     val prefix = term.toLowerCase
     // user's term must be a prefix in either label or synonyms
     val query = boolQuery()
-      .should(prefixQuery("label", prefix))
-      .should(prefixQuery("synonyms", prefix))
+        .must(termQuery("ontology.keyword", "Disease"))
+        .must(termQuery("usable", true))
+        .must(boolQuery()
+          .should(prefixQuery("label", prefix))
+          .should(prefixQuery("synonyms", prefix)
+          )
+        )
 
     val searchRequest = client.prepareSearch(indexName)
       .setQuery(query)
+        .setSize(20)
         .setFetchSource(List("id","ontology","usable","label","synonyms","definition").toArray, null)
 
     val autocompleteResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchRequest)
