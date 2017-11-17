@@ -25,7 +25,8 @@ trait SearchResultValidation {
       researchPurpose = researchPurpose,
       filters = filters.getOrElse(Map.empty[String, Seq[String]])
     )
-    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String]), dur)
+    // set size to 100 to make sure we return all results for testing comparisons
+    Await.result(searchDAO.findDocuments(criteria.copy(size=100), Seq.empty[String]), dur)
   }
 
   def searchWithPurpose(researchPurpose: ResearchPurpose): LibrarySearchResponse =
