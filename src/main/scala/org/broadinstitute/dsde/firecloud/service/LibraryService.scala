@@ -245,7 +245,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
 
   private def errorMessageFromSearchException(ex: Throwable): String = {
     // elasticsearch errors are often nested, try to dig into them safely to find a message
-    if (ex.getCause != null) {
+    val message = if (ex.getCause != null) {
       val firstCause = ex.getCause
       if (firstCause.getCause != null) {
         firstCause.getCause.getMessage
@@ -255,6 +255,12 @@ class LibraryService (protected val argUserInfo: UserInfo,
     } else {
       ex.getMessage
     }
+
+    Option(message) match {
+      case Some(m:String) => m
+      case _ => "Unknown error during search."
+    }
+
   }
 
 }
