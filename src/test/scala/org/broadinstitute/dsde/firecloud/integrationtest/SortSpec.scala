@@ -44,7 +44,7 @@ class SortSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLo
     }
     "search with empty string as sort criteria" - {
       "returns all results in engine-defined order" in {
-        val searchResponse = sortBy(None, None)
+        val searchResponse = sortBy(Some(""), None)
         assertResult(IntegrationTestFixtures.datasetTuples.size) {searchResponse.total}
         // results are sorted by relevancy/native index order, which we won't test here
       }
