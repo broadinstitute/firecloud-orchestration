@@ -27,7 +27,6 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
   val libraryServiceConstructor: UserInfo => LibraryService
   val ontologyServiceConstructor: () => OntologyService
 
-  val duosAutocompleteUrl = FireCloudConfig.Duos.baseOntologyUrl + "/autocomplete"
   val consentUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
 
   val libraryRoutes: Route =

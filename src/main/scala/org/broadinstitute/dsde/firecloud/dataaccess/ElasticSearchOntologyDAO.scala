@@ -52,9 +52,10 @@ class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) exten
         .must(termQuery("ontology.keyword", "Disease"))
         .must(termQuery("usable", true))
         .must(boolQuery()
-          .should(prefixQuery("label", prefix))
-          .should(prefixQuery("synonyms", prefix)
-          )
+          .should(termQuery("label.keyword", prefix).boost(10)) // exact match on label gets pushed to top
+          .should(matchPhrasePrefixQuery("label", prefix).boost(5)) // prefix matches on label are more relevant than ...
+          .should(matchPhrasePrefixQuery("synonyms", prefix)) /// prefix matches on synonyms
+          .minimumShouldMatch(1) // match at least one of the above cases
         )
 
     val searchRequest = client.prepareSearch(indexName)
@@ -65,9 +66,7 @@ class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) exten
     val autocompleteResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchRequest)
 
     val allHits = autocompleteResults.getHits.getHits
-    allHits.map { hit =>
-      hit.getSourceAsString.parseJson.convertTo[TermResource]
-    }.toList
+    allHits.map(_.getSourceAsString.parseJson.convertTo[TermResource]).toList
   }
 
   private def indexExists: Boolean = {

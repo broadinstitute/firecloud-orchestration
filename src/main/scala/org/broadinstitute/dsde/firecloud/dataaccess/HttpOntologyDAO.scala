@@ -38,10 +38,6 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
   override def search(term: String): List[TermResource] = List.empty[TermResource]
   override def autocomplete(term: String) = List.empty[TermResource]
 
-//  override def search(term: String): Future[Option[List[TermResource]]] = {
-//    searchAsync(term)
-//  }
-
   private def searchAsync(term: String): Future[Option[List[TermResource]]] = {
     getHostConnector flatMap { hostConnector =>
       val targetUri = Uri(ontologySearchUrl).withQuery(("id", term))
