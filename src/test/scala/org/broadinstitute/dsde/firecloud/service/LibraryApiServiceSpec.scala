@@ -42,6 +42,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
   private def duosConsentOrspIdPath(orspId: String): String = "/api/duos/consent/orsp/%s".format(orspId)
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
+  val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
 
   val testLibraryMetadata =
     """

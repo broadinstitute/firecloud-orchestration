@@ -20,26 +20,26 @@ class MockOntologyDAO extends OntologyDAO {
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_0050847",
           order=1,
-          label="sleep apnea",
+          label=Some("sleep apnea"),
           definition=Some("A sleep disorder characterized by repeated cessation and commencing of breathing that repeatedly disrupts sleep.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_535",
           order=2,
-          label="sleep disorder",
+          label=Some("sleep disorder"),
           definition=Some("A disease of mental health that involves disruption of sleep patterns."),
           synonyms=Some(List("Non-organic sleep disorder"))
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_150",
           order=3,
-          label="disease of mental health",
+          label=Some("disease of mental health"),
           definition=Some("A disease that involves a psychological or behavioral pattern generally associated with subjective distress or disability that occurs in an individual, and which are not a part of normal development or culture.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_4",
           order=4,
-          label="disease",
+          label=Some("disease"),
           definition=Some("A disease is a disposition (i) to undergo pathological processes that (ii) exists in an organism because of one or more disorders in that organism.")
         )
       )))),
@@ -55,14 +55,14 @@ class MockOntologyDAO extends OntologyDAO {
       parents=Some(List(
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_150",
-          order=3,
-          label="disease of mental health",
+          order=1,
+          label=Some("disease of mental health"),
           definition=Some("A disease that involves a psychological or behavioral pattern generally associated with subjective distress or disability that occurs in an individual, and which are not a part of normal development or culture.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_4",
-          order=4,
-          label="disease",
+          order=2,
+          label=Some("disease"),
           definition=Some("A disease is a disposition (i) to undergo pathological processes that (ii) exists in an organism because of one or more disorders in that organism.")
         )
       )))),
@@ -79,19 +79,19 @@ class MockOntologyDAO extends OntologyDAO {
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_934",
           order=1,
-          label="viral infectious disease",
+          label=Some("viral infectious disease"),
           definition=Some("A disease by infectious agent that results_in infection, has_material_basis_in Viruses.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_0050117",
           order=2,
-          label="disease by infectious agent",
+          label=Some("disease by infectious agent"),
           definition=Some("A disease that is the consequence of the presence of pathogenic microbial agents, including pathogenic viruses, pathogenic bacteria, fungi, protozoa, multicellular parasites, and aberrant proteins known as prions.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_4",
           order=3,
-          label="disease",
+          label=Some("disease"),
           definition=Some("A disease is a disposition (i) to undergo pathological processes that (ii) exists in an organism because of one or more disorders in that organism.")
         )
       )))),
@@ -107,38 +107,38 @@ class MockOntologyDAO extends OntologyDAO {
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_2531",
           order=1,
-          label="hematologic cancer",
+          label=Some("hematologic cancer"),
           definition=Some("An immune system cancer located_in the hematological system that is characterized by uncontrolled cellular proliferation in blood, bone marrow and lymph nodes.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_0060083",
           order=2,
-          label="immune system cancer",
+          label=Some("immune system cancer"),
           definition=Some("An organ system cancer located_in the immune system that is characterized by uncontrolled cellular proliferation in organs of the immune system.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_0050686",
           order=3,
-          label="organ system cancer",
+          label=Some("organ system cancer"),
           definition=Some("A cancer that is classified based on the organ it starts in.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_162",
           order=4,
-          label="cancer",
+          label=Some("cancer"),
           definition=Some("A disease of cellular proliferation that is malignant and primary, characterized by uncontrolled cellular proliferation, local cell invasion and metastasis."),
           synonyms=Some(List("primary cancer","malignant tumor ","malignant neoplasm"))
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_14566",
           order=5,
-          label="disease of cellular proliferation",
+          label=Some("disease of cellular proliferation"),
           definition=Some("A disease that is characterized by abnormally rapid cell division.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_4",
           order=6,
-          label="disease",
+          label=Some("disease"),
           definition=Some("A disease is a disposition (i) to undergo pathological processes that (ii) exists in an organism because of one or more disorders in that organism.")
         )
       )))),
@@ -154,32 +154,32 @@ class MockOntologyDAO extends OntologyDAO {
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_0060083",
           order=1,
-          label="immune system cancer",
+          label=Some("immune system cancer"),
           definition=Some("An organ system cancer located_in the immune system that is characterized by uncontrolled cellular proliferation in organs of the immune system.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_0050686",
           order=2,
-          label="organ system cancer",
+          label=Some("organ system cancer"),
           definition=Some("A cancer that is classified based on the organ it starts in.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_162",
           order=3,
-          label="cancer",
+          label=Some("cancer"),
           definition=Some("A disease of cellular proliferation that is malignant and primary, characterized by uncontrolled cellular proliferation, local cell invasion and metastasis."),
           synonyms=Some(List("primary cancer","malignant tumor ","malignant neoplasm"))
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_14566",
           order=4,
-          label="disease of cellular proliferation",
+          label=Some("disease of cellular proliferation"),
           definition=Some("A disease that is characterized by abnormally rapid cell division.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_4",
           order=5,
-          label="disease",
+          label=Some("disease"),
           definition=Some("A disease is a disposition (i) to undergo pathological processes that (ii) exists in an organism because of one or more disorders in that organism.")
         )
       )))),
@@ -195,31 +195,31 @@ class MockOntologyDAO extends OntologyDAO {
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_0080015",
           order=1,
-          label="physical disorder",
+          label=Some("physical disorder"),
           definition=Some("A disease that has_material_basis_in a genetic abnormality, error with embryonic development, infection or compromised intrauterine environment.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_0080015",
           order=1,
-          label="specific developmental disorder",
+          label=Some("specific developmental disorder"),
           definition=Some("A developmental disorder of mental health that categorizes specific learning disabilities and developmental disorders affecting coordination.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_0060083",
           order=2,
-          label="developmental disorder of mental health",
+          label=Some("developmental disorder of mental health"),
           definition=Some("A disease of mental health that occur during a child's developmental period between birth and age 18 resulting in retarding of the child's psychological or physical development.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_150",
           order=3,
-          label="disease of mental health",
+          label=Some("disease of mental health"),
           definition=Some("A disease that involves a psychological or behavioral pattern generally associated with subjective distress or disability that occurs in an individual, and which are not a part of normal development or culture.")
         ),
         TermParent(
           id="http://purl.obolibrary.org/obo/DOID_4",
           order=4,
-          label="disease",
+          label=Some("disease"),
           definition=Some("A disease is a disposition (i) to undergo pathological processes that (ii) exists in an organism because of one or more disorders in that organism.")
         )
       )))),
@@ -234,7 +234,9 @@ class MockOntologyDAO extends OntologyDAO {
     ))
   )
 
-  override def search(term: String): Future[Option[List[TermResource]]] = Future(data.get(term))
+  override def search(term: String): List[TermResource] = data.getOrElse(term, List.empty[TermResource])
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true))
+
+  override def autocomplete(term: String) = List.empty[TermResource]
 }

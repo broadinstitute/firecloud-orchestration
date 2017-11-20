@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAOQuerySupport, ElasticSearchDAOSupport, MockOntologyDAO, OntologyDAO}
+import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model._
 import org.elasticsearch.action.search.SearchRequestBuilder
 import org.elasticsearch.client.transport.TransportClient
@@ -24,7 +25,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
 
   // create an ElasticSearch client. Client requires legal urls for its servers argument, but those
   // urls don't have to point to an actual ES instance.
-  val client: TransportClient = buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
+  val client: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
 
   // create a mock ontology dao
   val ontologyDao: OntologyDAO = new MockOntologyDAO

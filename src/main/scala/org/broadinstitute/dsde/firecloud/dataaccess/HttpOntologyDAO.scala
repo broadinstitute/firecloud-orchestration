@@ -19,7 +19,7 @@ import spray.json.DefaultJsonProtocol._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-
+@deprecated("use ElasticSearchOntologyDAO instead", "2017-11-17")
 class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
   extends OntologyDAO with RestJsonClient with LazyLogging {
 
@@ -35,9 +35,8 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
 
   private val ontologyHostSetup = Http.HostConnectorSetup(ontologyUri.authority.host.address, ontologyPort, sslEncryption)
 
-  override def search(term: String): Future[Option[List[TermResource]]] = {
-    searchAsync(term)
-  }
+  override def search(term: String): List[TermResource] = List.empty[TermResource]
+  override def autocomplete(term: String) = List.empty[TermResource]
 
   private def searchAsync(term: String): Future[Option[List[TermResource]]] = {
     getHostConnector flatMap { hostConnector =>
@@ -63,5 +62,6 @@ class HttpOntologyDAO(implicit val system: ActorSystem, implicit val executionCo
   override def status: Future[SubsystemStatus] = {
     getStatusFromDropwizardChecks(unAuthedRequest(Get(ontologyUri.withPath(Uri.Path("/status")))))
   }
+
 
 }

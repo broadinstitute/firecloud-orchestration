@@ -122,8 +122,7 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
   }
 
   private def generateDiseaseQuery(nodeids: Seq[DiseaseOntologyNodeId], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): BoolQueryBuilder = {
-    // TODO: don't block on the future here!!!
-    val allnodes = Await.result(augmentWithDiseaseParents(nodeids, ontologyDAO), scala.concurrent.duration.Duration.Inf)
+    val allnodes = augmentWithDiseaseParents(nodeids, ontologyDAO)
 
     val dsClause = boolQuery()
     allnodes foreach { id =>
@@ -132,14 +131,14 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
     dsClause
   }
 
-  private def augmentWithDiseaseParents(nodeids: Seq[DiseaseOntologyNodeId], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Seq[DiseaseOntologyNodeId]] = {
+  private def augmentWithDiseaseParents(nodeids: Seq[DiseaseOntologyNodeId], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Seq[DiseaseOntologyNodeId] = {
     if (nodeids.isEmpty)
-      Future.successful(nodeids) // return unchanged; no ontology nodes to augment
+      nodeids // return unchanged; no ontology nodes to augment
     else {
       // for all nodes in the research purpose's DS value, query ontology to get their parent nodes
-      Future.sequence(nodeids map (node => ontologyDAO.search(node.uri.toString))) map { allTermResults =>
+      nodeids map (node => ontologyDAO.search(node.uri.toString)) flatMap { allTermResults =>
         val parentsToAugment:Seq[DiseaseOntologyNodeId] = (allTermResults collect {
-          case Some(terms:List[TermResource]) => terms.head.parents.getOrElse(List.empty[TermParent]).map(parent => DiseaseOntologyNodeId(parent.id))
+          case termWithParents => termWithParents.parents.getOrElse(List.empty[TermParent]).map(parent => DiseaseOntologyNodeId(parent.id))
         }).flatten
         // append the parent node info to the original research purpose
         nodeids ++ parentsToAugment

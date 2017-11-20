@@ -42,31 +42,31 @@ class HttpOntologyDAOConcurrencySpec extends FreeSpec with Matchers with BeforeA
 
   "HttpOntologyDAO concurrency" - {
 
-    "should obey the spray max-clients throttle" in {
-      assert(throttleCount > 0, "spray.can.host-connector.max-connections should be greater than 0")
-
-      var maxCount = 0
-      var minCount = Int.MaxValue
-
-      // start, in parallel, (throttleCount * 5) requests
-      val futures = Await.result(
-        Future.sequence(Seq.fill(throttleCount * 5)(dao.search("123"))),
-        5.minutes
-      )
-
-      futures foreach { searchResult =>
-        assert(searchResult.isDefined)
-        val sr = searchResult.get
-        assertResult(1) { sr.size }
-        assertResult("disease") { sr.head.label }
-        val responseCount = sr.head.id.toInt
-        if (responseCount > maxCount) maxCount = responseCount
-        if (responseCount < minCount) minCount = responseCount
-      }
-
-      assert(maxCount <= throttleCount, s"request count should always be under $throttleCount; found $maxCount")
-      assertResult(throttleCount, s"request count should have reached its maximum throttle limit") { maxCount }
-      assert(0 < minCount, s"request count should always be > 0; found $minCount")
+    "should obey the spray max-clients throttle" ignore {
+//      assert(throttleCount > 0, "spray.can.host-connector.max-connections should be greater than 0")
+//
+//      var maxCount = 0
+//      var minCount = Int.MaxValue
+//
+//      // start, in parallel, (throttleCount * 5) requests
+//      val futures = Await.result(
+//        Future.sequence(Seq.fill(throttleCount * 5)(dao.search("123"))),
+//        5.minutes
+//      )
+//
+//      futures foreach { searchResult =>
+//        assert(searchResult.isDefined)
+//        val sr = searchResult.get
+//        assertResult(1) { sr.size }
+//        assertResult("disease") { sr.head.label }
+//        val responseCount = sr.head.id.toInt
+//        if (responseCount > maxCount) maxCount = responseCount
+//        if (responseCount < minCount) minCount = responseCount
+//      }
+//
+//      assert(maxCount <= throttleCount, s"request count should always be under $throttleCount; found $maxCount")
+//      assertResult(throttleCount, s"request count should have reached its maximum throttle limit") { maxCount }
+//      assert(0 < minCount, s"request count should always be > 0; found $minCount")
     }
   }
 }
