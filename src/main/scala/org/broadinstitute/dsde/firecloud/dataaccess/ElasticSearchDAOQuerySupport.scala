@@ -232,8 +232,16 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport with ElasticS
 
     results map { suggestResult =>
       val compSugg: CompletionSuggestion = suggestResult.getSuggest.getSuggestion(suggestionName)
-      val options : Seq[CompletionSuggestion.Entry.Option] = compSugg.getEntries.get(0).getOptions.asScala
-      (options map { option: CompletionSuggestion.Entry.Option => option.getText.string }).distinct
+      if (compSugg != null) {
+        val entries = compSugg.getEntries
+        if (!entries.isEmpty) {
+          entries.get(0).getOptions.asScala.map(_.getText.string).distinct
+        } else {
+          Seq.empty[String] // getEntries returned empty
+        }
+      } else {
+        Seq.empty[String] // getSuggestion(suggestionName) returned null
+      }
     }
   }
 
