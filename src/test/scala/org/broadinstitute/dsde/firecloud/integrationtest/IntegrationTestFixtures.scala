@@ -39,13 +39,14 @@ object IntegrationTestFixtures {
     ("ZZZ <encodingtest>&foo", "results won't be escaped", 1)
   )
 
-  val fixtureDocs:Seq[Document] = datasetTuples map {x:(String,String,Int) =>
-    Document(x._1, Map(
-      AttributeName("library","datasetName") -> AttributeString(x._1),
-      AttributeName("library","indication") -> AttributeString(x._2),
-      AttributeName("library","datasetOwner") -> AttributeString(x._2),
-      AttributeName("library","numSubjects") -> AttributeNumber(x._3)
-    ))
+  val fixtureDocs:Seq[Document] = datasetTuples map {
+    case (name, phenotype, count) =>
+      Document(name, Map(
+        AttributeName("library","datasetName") -> AttributeString(name),
+        AttributeName("library","indication") -> AttributeString(phenotype),
+        AttributeName("library","datasetOwner") -> AttributeString(phenotype),
+        AttributeName("library","numSubjects") -> AttributeNumber(count)
+      ))
   }
 
 }
