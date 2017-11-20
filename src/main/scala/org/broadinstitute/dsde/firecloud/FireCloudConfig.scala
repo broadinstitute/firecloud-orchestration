@@ -160,4 +160,10 @@ object FireCloudConfig {
     val baseConsentUrl = duos.getString("baseConsentUrl")
     val baseOntologyUrl = duos.getString("baseOntologyUrl")
   }
+
+  object Trial {
+    private val trial = config.getConfig("trial")
+    val durationDays = trial.getInt("durationDays")
+    val managerGroup = trial.getString("managerGroup")
+  }
 }

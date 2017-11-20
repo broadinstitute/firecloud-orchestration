@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
@@ -67,8 +67,7 @@ class TrialService
             case Some(TrialStates.Enabled) => {
               // build the new state that we want to persist to indicate the user is enrolled
               val now = Instant.now
-              // TODO: read expiration-date duration from config instead of hardcoding!
-              val expirationDate = now.plus(60, ChronoUnit.DAYS)
+              val expirationDate = now.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
               val enrolledStatus = status.copy(
                 currentState = Some(TrialStates.Enrolled),
                 enrolledDate = now,
