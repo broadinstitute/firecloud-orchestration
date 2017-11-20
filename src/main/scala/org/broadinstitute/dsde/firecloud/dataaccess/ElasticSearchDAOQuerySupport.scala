@@ -125,7 +125,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport with ElasticS
       .setFrom(from)
       .setSize(size)
 
-    if (sortField.isDefined) {
+    if (sortField.isDefined && sortField.get.trim.nonEmpty) {
       val direction = sortDirection match {
         case Some("desc") => SortOrder.DESC
         case _ => SortOrder.ASC

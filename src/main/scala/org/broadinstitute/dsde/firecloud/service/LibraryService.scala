@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
@@ -218,14 +218,19 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    getEffectiveDiscoverGroups(rawlsDAO) map { userGroups =>
+    getEffectiveDiscoverGroups(rawlsDAO) flatMap { userGroups =>
+      // we want docsFuture and ids to be parallelized - so declare them here, outside
+      // of the for-yield.
       val docsFuture = searchDAO.findDocuments(criteria, userGroups)
       val idsFuture = rawlsDAO.getWorkspaces
-      val searchResults = for {
+
+      (for {
         docs <- docsFuture
         ids <- idsFuture
-      } yield updateAccess(docs, ids)
-      RequestComplete(searchResults)
+      } yield RequestComplete(updateAccess(docs, ids))) recover {
+        case ex =>
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(errorMessageFromSearchException(ex)))
+      }
     }
   }
 
@@ -239,4 +244,25 @@ class LibraryService (protected val argUserInfo: UserInfo,
       case e: FireCloudException => Future(RequestCompleteWithErrorReport(BadRequest, s"suggestions not available for field %s".format(field)))
     }
   }
+
+  private def errorMessageFromSearchException(ex: Throwable): String = {
+    // elasticsearch errors are often nested, try to dig into them safely to find a message
+    val message = if (ex.getCause != null) {
+      val firstCause = ex.getCause
+      if (firstCause.getCause != null) {
+        firstCause.getCause.getMessage
+      } else {
+        firstCause.getMessage
+      }
+    } else {
+      ex.getMessage
+    }
+
+    Option(message) match {
+      case Some(m:String) => m
+      case _ => "Unknown error during search."
+    }
+
+  }
+
 }
