@@ -90,6 +90,18 @@ class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     }
   }
 
+  "Per-field autocomplete suggestions for populating the catalog wizard" - {
+    "should not return duplicates" in {
+      // "Pancreatic adenocarcinoma" exists twice, but should be de-duplicated
+      val results = Await.result(searchDAO.suggestionsForFieldPopulate("library:datasetOwner", "pan"), dur)
+      assertResult(Seq("Pancreatic adenocarcinoma")) { results }
+    }
+    "should return multiple distinct suggestions" in {
+      val results = Await.result(searchDAO.suggestionsForFieldPopulate("library:datasetOwner", "thy"), dur)
+      assertResult(Set("Thyroid carcinoma", "Thymoma")) { results.toSet }
+    }
+  }
+
   val dur = Duration(2, MINUTES)
   private def suggestionsFor(txt:String) = {
     val criteria = emptyCriteria.copy(searchString = Some(txt))
