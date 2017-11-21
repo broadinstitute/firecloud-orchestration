@@ -1,9 +1,9 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
-import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken, errorReportSource}
-import org.broadinstitute.dsde.rawls.model.{ErrorReport}
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsGroupName}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import spray.http.{HttpRequest, StatusCodes}
@@ -53,6 +53,19 @@ trait PermissionsSupport {
         Future.successful(true)
       }
     }
+  }
+
+  def asTrialCampaignManager(op: => Future[PerRequestMessage])(implicit userInfo: UserInfo): Future[PerRequestMessage] =
+    asGroupMember(FireCloudConfig.Trial.managerGroup)(op)
+
+  def asGroupMember(group: String)(op: => Future[PerRequestMessage])(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+    tryIsGroupMember(userInfo, group) flatMap { isGroupMember =>
+      if (isGroupMember) op else Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, "You must be in the appropriate group.")))
+    }
+  }
+
+  def tryIsGroupMember(userInfo: UserInfo, group: String): Future[Boolean] = {
+    rawlsDAO.isGroupMember(userInfo, group) recoverWith { case t => throw new FireCloudException("Unable to query for group membership status.", t) }
   }
 }
 
