@@ -223,18 +223,23 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport with ElasticS
         generate suggestions for populating a single field in the catalog wizard,
         based off what other users have entered for this field.
       implementation:
-        perform a matchPhrasePrefixQuery within the target field to filter the corpus
+        perform a (prefixQuery OR matchPhrasePrefixQuery) within the target field to filter the corpus
         to the set of documents where the field has a phrase starting with the user's term.
         Then, calculate a terms aggregation, in order to return the top 10 unique values
-        for the field, within our filtered corpus.
+        for the field, within our filtered corpus. Results are ordered by document count descending -
+        i.e. how many times they are used in the corpus.
      */
-    val prefixQuery = matchPhrasePrefixQuery(field, text)
+    val keywordField = field + ".suggestKeyword" // non-analyzed variant of the field
+
+    val prefixFilter = boolQuery()
+        .should(prefixQuery(keywordField, text))
+        .should(matchPhrasePrefixQuery(field, text))
 
     val aggregationName = "suggTerms"
-    val termsAgg = AggregationBuilders.terms(aggregationName).field(field + ".suggestKeyword").size(10)
+    val termsAgg = AggregationBuilders.terms(aggregationName).field(keywordField).size(10)
 
     val suggestQuery = client.prepareSearch(indexName)
-                                .setQuery(prefixQuery)
+                                .setQuery(prefixFilter)
                                 .addAggregation(termsAgg)
                                 .setFetchSource(false)
                                 .setSize(0)
