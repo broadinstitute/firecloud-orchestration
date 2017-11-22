@@ -3842,6 +3842,11 @@ definitions:
   ConfigurationResponse:
     type: object
     properties:
+      managers:
+        type: array
+        items:
+          type: string
+        description: List of users with Agora's Manage permission. FireCloud method Owners have Manage.
       method:
         type: object
       namespace:
@@ -3886,6 +3891,9 @@ definitions:
         type: string
         description: Type of the AgoraEntity -- Task or Workflow.
         default: Task
+      public:
+        type: boolean
+        description: Is this method publicly readable?
 
   ConfigurationResponseWithPayloadObject:
     type: object
@@ -4521,10 +4529,10 @@ definitions:
         type: array
         items:
           type: string
-        description: managers of this method
+        description: List of users with Agora's Manage permission. FireCloud method Owners have Manage.
       public:
         type: boolean
-        description: true if the method is publicly readable
+        description: Is this method publicly readable?
       numConfigurations:
         type: number
         description: count of configurations associated with this method
@@ -4603,6 +4611,7 @@ definitions:
         type: array
         items:
           type: string
+        description: List of users with Agora's Manage permission. FireCloud method Owners have Manage.
       namespace:
         type: string
         description: Namespace which contains AgoraEntity.
@@ -4648,6 +4657,7 @@ definitions:
         type: array
         items:
           type: string
+        description: List of users with Agora's Manage permission. FireCloud method Owners have Manage.
       namespace:
         type: string
         description: Namespace which contains AgoraEntity.
