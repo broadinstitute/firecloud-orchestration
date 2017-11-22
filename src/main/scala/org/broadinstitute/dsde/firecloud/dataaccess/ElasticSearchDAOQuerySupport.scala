@@ -9,17 +9,16 @@ import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
-import org.elasticsearch.search.aggregations.bucket.terms.Terms
+import org.elasticsearch.search.aggregations.bucket.terms.{StringTerms, Terms}
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.elasticsearch.search.sort.SortOrder
-import org.elasticsearch.search.suggest.{SuggestBuilder, SuggestBuilders}
-import org.elasticsearch.search.suggest.completion.CompletionSuggestion
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
 
 
@@ -219,29 +218,50 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport with ElasticS
   }
 
   def populateSuggestions(client: TransportClient, indexName: String, field: String, text: String) : Future[Seq[String]] = {
-    val suggestionName = "populateSuggestion"
-    val suggestion = new SuggestBuilder()
-        .addSuggestion(suggestionName,
-          SuggestBuilders.completionSuggestion(field + ".suggest")
-            .text(text))
+    /*
+      goal:
+        generate suggestions for populating a single field in the catalog wizard,
+        based off what other users have entered for this field.
+      implementation:
+        perform a (prefixQuery OR matchPhrasePrefixQuery) within the target field to filter the corpus
+        to the set of documents where the field has a phrase starting with the user's term.
+        Then, calculate a terms aggregation, in order to return the top 10 unique values
+        for the field, within our filtered corpus. Results are ordered by document count descending -
+        i.e. how many times they are used in the corpus.
+     */
+    val keywordField = field + ".suggestKeyword" // non-analyzed variant of the field
 
-    val suggestQuery = client.prepareSearch(indexName).suggest(suggestion)
+    val prefixFilter = boolQuery()
+        .should(prefixQuery(keywordField, text))
+        .should(matchPhrasePrefixQuery(field, text))
 
-    logger.debug(s"populate suggestions query: $suggestQuery.toJson")
-    val results = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](suggestQuery))
+    val aggregationName = "suggTerms"
+    val termsAgg = AggregationBuilders.terms(aggregationName).field(keywordField).size(10)
 
-    results map { suggestResult =>
-      val compSugg: CompletionSuggestion = suggestResult.getSuggest.getSuggestion(suggestionName)
-      if (compSugg != null) {
-        val entries = compSugg.getEntries
-        if (!entries.isEmpty) {
-          entries.get(0).getOptions.asScala.map(_.getText.string).distinct
-        } else {
-          Seq.empty[String] // getEntries returned empty
+    val suggestQuery = client.prepareSearch(indexName)
+                                .setQuery(prefixFilter)
+                                .addAggregation(termsAgg)
+                                .setFetchSource(false)
+                                .setSize(0)
+
+    val suggestTry = Try(executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](suggestQuery))
+
+    suggestTry match {
+      case Success(suggestResult) =>
+        val allAggs = suggestResult.getAggregations.asMap().asScala
+        val termsAgg = allAggs.get(aggregationName)
+        val buckets = termsAgg match {
+          case Some(st:StringTerms) =>
+            st.getBuckets.asScala.map(_.getKey.toString)
+          case _ =>
+            logger.warn(s"failed to get populate suggestions for field [$field] and term [$text]")
+            Seq.empty[String]
         }
-      } else {
-        Seq.empty[String] // getSuggestion(suggestionName) returned null
-      }
+        Future(buckets)
+
+      case Failure(ex) =>
+        logger.warn(s"failed to get populate suggestions for field [$field] and term [$text]: ${ex.getMessage}")
+        Future(Seq.empty[String])
     }
   }
 

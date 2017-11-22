@@ -62,7 +62,7 @@ object ESType extends ESPropertyFields {
       else
         Map("sort" -> ESInnerField(`type`))) ++
       (if (isAggregatable) Map("keyword" -> keywordField(`type`)) else Nil) ++
-      (if (hasPopulateSuggest) Map("suggest" -> completionField) else Nil)
+      (if (hasPopulateSuggest) Map("suggestKeyword" -> keywordField(`type`)) else Nil)
     if (hasSearchSuggest)
       new ESType(`type`, Option(innerFields), Option(ElasticSearch.fieldSuggest))
     else
