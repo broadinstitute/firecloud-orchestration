@@ -15,6 +15,9 @@
         </filter>
     </appender>
 
+    <logger name="PerformanceLogging" level="warn" additivity="false">
+        <appender-ref ref="console"/>
+    </logger>
 
     <logger name="org.broadinstitute.dsde" level="info" additivity="false">
         <appender-ref ref="console"/>

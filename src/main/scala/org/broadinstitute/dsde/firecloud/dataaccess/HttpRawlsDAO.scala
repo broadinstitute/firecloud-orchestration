@@ -62,13 +62,13 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] =
-    authedRequestToObject[Seq[String]]( Get(rawlsGroupsForUserUrl) )
+    authedRequestToObject[Seq[String]]( Get(rawlsGroupsForUserUrl), label=Some("HttpRawlsDAO.getGroupsForUser") )
 
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] =
     authedRequestToObject[BucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
 
   override def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]] =
-    authedRequestToObject[Seq[WorkspaceListResponse]] ( Get(rawlsWorkpacesUrl))
+    authedRequestToObject[Seq[WorkspaceListResponse]] ( Get(rawlsWorkpacesUrl), label=Some("HttpRawlsDAO.getWorkspaces") )
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
     authedRequestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
@@ -133,7 +133,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   private def workspaceCatalogUrl(ns: String, name: String) = FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s/catalog".format(ns, name)
 
   override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
-    userAuthedRequest(Get(RawlsDAO.refreshTokenDateUrl))(userInfo) map { response =>
+    userAuthedRequest(Get(RawlsDAO.refreshTokenDateUrl), label=Some("HttpRawlsDAO.getRefreshTokenStatus"))(userInfo) map { response =>
       response.status match {
         case OK =>
           Option(DateTime.parse(unmarshal[RawlsTokenDate].apply(response).refreshTokenUpdatedDate))
