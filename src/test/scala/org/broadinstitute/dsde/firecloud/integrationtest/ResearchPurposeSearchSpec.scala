@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.searchDAO
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}

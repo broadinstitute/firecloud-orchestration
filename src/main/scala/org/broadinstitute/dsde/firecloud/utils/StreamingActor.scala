@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import akka.actor.{Actor, Props}
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.utils.StreamingActor._
 import spray.http.{ContentType, _}
 import spray.routing.RequestContext

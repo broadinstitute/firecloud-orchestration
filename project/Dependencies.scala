@@ -17,7 +17,7 @@ object Dependencies {
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.8.2", // ... but we redirect log4j to logback.
     "ch.qos.logback"                 % "logback-classic"     % "1.2.2",
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
-    "com.typesafe.scala-logging"    %% "scala-logging-slf4j" % "2.1.2",
+    "com.typesafe.scala-logging"    %% "scala-logging"       % "3.7.2",
 
     "org.broadinstitute.dsde.vault" %% "vault-common"        % "0.1-19-ca8b927",
     "org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-aab4976-SNAP"
