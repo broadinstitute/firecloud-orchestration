@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, SubsystemStatus, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.Future
 

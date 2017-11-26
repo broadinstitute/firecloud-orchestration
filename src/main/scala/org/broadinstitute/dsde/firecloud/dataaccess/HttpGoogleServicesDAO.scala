@@ -10,9 +10,10 @@ import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorRepo
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
-import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata, SubsystemStatus}
+import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.StatusCodes._

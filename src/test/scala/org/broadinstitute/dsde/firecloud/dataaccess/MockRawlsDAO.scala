@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUp
 import org.joda.time.DateTime
 import spray.http.StatusCodes
 import MockRawlsDAO._
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -356,7 +357,7 @@ class MockRawlsDAO  extends RawlsDAO {
   override def getMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken) =
     Future.successful(Seq.empty[MethodConfigurationShort])
 
-  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true))
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(true, None))
 
   def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
     Future.successful(WorkspaceDeleteResponse(Some("Your Google bucket 'bucketId' will be deleted within 24h.")))

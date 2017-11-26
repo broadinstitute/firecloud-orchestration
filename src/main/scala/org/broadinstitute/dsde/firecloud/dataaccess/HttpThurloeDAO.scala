@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.webservice.UserApiService
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.client.pipelining._
 import spray.http._
 import spray.httpx.SprayJsonSupport._
@@ -88,7 +89,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     val thurloeStatus = unAuthedRequestToObject[ThurloeStatus](Get(Uri(FireCloudConfig.Thurloe.baseUrl).withPath(Uri.Path("/status"))), useFireCloudHeader = true)
     thurloeStatus map { thurloeStatus =>
       thurloeStatus.status match {
-        case "up" => SubsystemStatus(ok = true)
+        case "up" => SubsystemStatus(ok = true, None)
         case "down" => SubsystemStatus(ok = false, thurloeStatus.error.map(List(_)))
       }
     }

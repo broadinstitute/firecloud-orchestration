@@ -3,8 +3,9 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.util.NoSuchElementException
 
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, Profile, ProfileWrapper, SubsystemStatus, Trial, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, Profile, ProfileWrapper, Trial, UserInfo}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -121,7 +122,7 @@ class MockThurloeDAO extends ThurloeDAO {
     Future.successful(userValuesForKey)
   }
 
-  def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true))
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
 
   override def getTrialStatus(userInfo: UserInfo) = Future.successful(Some(
     UserTrialStatus(userInfo.id, Some(TrialStates.Terminated), 0, 0, 0, 0

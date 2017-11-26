@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, SubsystemStatus, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
 import scala.concurrent.Future

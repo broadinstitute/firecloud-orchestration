@@ -240,8 +240,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impOntologyTermResource = jsonFormat7(TermResource)
   implicit val impOntologyESTermParent = jsonFormat2(ESTermParent)
 
-  implicit val impSubsystemStatus = jsonFormat2(SubsystemStatus)
-  implicit val impSystemStatus = jsonFormat2(SystemStatus)
   implicit val impAgoraStatus = jsonFormat2(AgoraStatus)
   implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
   implicit val impDropwizardHealth = jsonFormat2(DropwizardHealth)
