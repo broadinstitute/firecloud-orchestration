@@ -3,21 +3,17 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.net.InetAddress
 
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.utils.PerformanceLogging
 import org.elasticsearch.action.{ActionRequest, ActionRequestBuilder, ActionResponse}
-import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.common.settings.Settings
-import org.elasticsearch.common.transport.InetSocketTransportAddress
-import org.elasticsearch.transport.client.PreBuiltTransportClient
-import spray.http.Uri.Authority
 import spray.json._
 
 import scala.util.{Failure, Success, Try}
 
-trait ElasticSearchDAOSupport extends LazyLogging {
+trait ElasticSearchDAOSupport extends LazyLogging with PerformanceLogging {
 
 
 
@@ -27,9 +23,10 @@ trait ElasticSearchDAOSupport extends LazyLogging {
     val elapsed = System.currentTimeMillis - tick
     responseTry match {
       case Success(s) =>
-        logger.debug(s"ElasticSearch %s request succeeded in %s ms.".format(req.getClass.getName, elapsed))
+        perfLogger.info(perfmsg(req.getClass.getSimpleName, elapsed, "success"))
         s
       case Failure(f) =>
+        perfLogger.info(perfmsg(req.getClass.getSimpleName, elapsed, "failure"))
         logger.warn(s"ElasticSearch %s request failed in %s ms: %s".format(req.getClass.getName, elapsed, f.getMessage))
         throw new FireCloudException("ElasticSearch request failed", f)
     }
