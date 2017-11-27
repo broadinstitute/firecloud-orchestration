@@ -1,12 +1,11 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
-import org.broadinstitute.dsde.firecloud.webservice.StatusApiService
-import org.broadinstitute.dsde.workbench.util.health.{HealthMonitor, StatusCheckResponse}
+import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, StatusService}
 import org.broadinstitute.dsde.workbench.util.health.StatusJsonSupport.StatusCheckResponseFormat
 import org.broadinstitute.dsde.workbench.util.health.Subsystems._
+import org.broadinstitute.dsde.workbench.util.health.{HealthMonitor, StatusCheckResponse}
 import spray.http.HttpMethods.GET
 import spray.http.StatusCodes.OK
-
 import spray.httpx.SprayJsonSupport._
 
 import scala.concurrent.duration._
