@@ -3,17 +3,12 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.net.InetAddress
 
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.PerformanceLogging
 import org.elasticsearch.action.{ActionRequest, ActionRequestBuilder, ActionResponse}
-import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.common.settings.Settings
-import org.elasticsearch.common.transport.InetSocketTransportAddress
-import org.elasticsearch.transport.client.PreBuiltTransportClient
-import spray.http.Uri.Authority
 import spray.json._
 
 import scala.util.{Failure, Success, Try}
