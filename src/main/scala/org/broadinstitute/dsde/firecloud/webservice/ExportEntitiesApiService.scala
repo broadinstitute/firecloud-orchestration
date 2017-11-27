@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.Props
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.service.{ExportEntitiesByTypeActor, ExportEntitiesByTypeArguments, FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.routing.{HttpService, Route}

@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud
 
 import scala.concurrent.duration._
 import akka.actor.{ActorSystem, Props}
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.vault.common.util.ServerInitializer
 
 object FireCloudApp extends LazyLogging {

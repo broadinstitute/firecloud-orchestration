@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 
 import akka.actor.{Actor, Props}
 import akka.pattern.pipe
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._

@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit
 
 import akka.actor.{Actor, Props}
 import akka.pattern._
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}

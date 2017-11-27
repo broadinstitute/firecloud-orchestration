@@ -7,7 +7,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.{ByteString, Timeout}
 import better.files.File
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
