@@ -21,14 +21,13 @@ case class Application(agoraDAO: AgoraDAO,
 
   def healthMonitorChecks: Map[Subsystem, Future[SubsystemStatus]] = Map(
     Agora -> agoraDAO.status,
+    Consent -> consentDAO.status,
     GoogleBuckets -> googleServicesDAO.status,
+    LibraryIndex -> searchDAO.status,
+    OntologyIndex -> ontologyDAO.status,
+    Rawls -> rawlsDAO.status,
     Sam -> samDAO.status,
     Thurloe -> thurloeDAO.status
-    // TODO: add the following subsystems
-    // Rawls
-    // LibraryIndex
-    // Consent
-    // OntologyIndex
   )
 
 }
