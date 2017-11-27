@@ -58,17 +58,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, thurloeDAO)
   val materializer: ActorMaterializer = ActorMaterializer()
 
-  val healthMonitorChecks: Map[Subsystem, Future[SubsystemStatus]] = Map(
-    Agora -> agoraDAO.status,
-    GoogleBuckets -> googleServicesDAO.status,
-    Sam -> samDAO.status,
-    Thurloe -> thurloeDAO.status
-    // TODO: add the following subsystems
-    // Rawls
-    // LibraryIndex
-    // Consent
-    // OntologyIndex
-  )
+  val healthMonitorChecks = app.healthMonitorChecks
   val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks.keySet)( () => healthMonitorChecks ), "health-monitor")
   system.scheduler.schedule(10.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
 

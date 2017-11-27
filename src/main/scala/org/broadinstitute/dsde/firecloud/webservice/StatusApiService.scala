@@ -14,8 +14,9 @@ trait StatusApiService extends HttpService with PerRequestCreator with FireCloud
 
   val statusRoutes: Route = {
     path("status") {
-      requestContext =>
+      get { requestContext =>
         perRequest(requestContext, StatusService.props(statusServiceConstructor), StatusService.CollectStatusInfo)
+      }
     }
   }
 
