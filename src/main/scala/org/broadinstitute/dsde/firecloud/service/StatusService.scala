@@ -29,8 +29,7 @@ object StatusService {
 
 class StatusService (val healthMonitor: ActorRef)
                     (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
-  implicit val timeout = Timeout(1.minute)
-
+  implicit val timeout = Timeout(1.minute) // timeout for the ask to healthMonitor for GetCurrentStatus
 
   override def receive: Receive = {
     case CollectStatusInfo => collectStatusInfo() pipeTo sender
