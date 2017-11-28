@@ -49,7 +49,8 @@ class TrialService
     val zero = Instant.ofEpochMilli(0)
     val enabledStatus = UserTrialStatus(userInfo.id, Some(TrialStates.Enabled), now, zero, zero, zero)
     thurloeDao.saveTrialStatus(userInfo, enabledStatus) map { _ =>
-      RequestComplete(spray.http.StatusCodes.OK)
+      //RequestComplete(spray.http.StatusCodes.OK)
+      RequestComplete(spray.http.StatusCodes.EnhanceYourCalm)
     }
   }
 
