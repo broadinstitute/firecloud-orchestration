@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.JsValue
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -56,6 +57,6 @@ class MockSearchDAO extends SearchDAO {
     populateSuggestInvoked = false
   }
 
-  def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true))
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
 
 }

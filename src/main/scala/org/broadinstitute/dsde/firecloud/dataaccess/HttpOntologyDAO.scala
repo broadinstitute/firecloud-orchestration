@@ -7,9 +7,9 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
-import org.broadinstitute.dsde.firecloud.model.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.can.Http
 import spray.http.{HttpResponse, Uri}
 import spray.httpx.SprayJsonSupport._

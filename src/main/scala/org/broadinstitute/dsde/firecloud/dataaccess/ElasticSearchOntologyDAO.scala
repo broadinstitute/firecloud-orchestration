@@ -1,12 +1,12 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
-import org.broadinstitute.dsde.firecloud.model.SubsystemStatus
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.index.query.QueryBuilders._
 import spray.json._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOntologyTermResource
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
