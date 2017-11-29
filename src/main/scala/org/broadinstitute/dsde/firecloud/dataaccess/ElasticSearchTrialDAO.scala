@@ -1,9 +1,10 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impTrialProject
-import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.WorkbenchUserInfo
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialProject
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
 import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
