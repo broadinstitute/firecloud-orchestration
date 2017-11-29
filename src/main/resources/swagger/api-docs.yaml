@@ -3846,7 +3846,7 @@ definitions:
         type: array
         items:
           type: string
-        description: List of users with Agora's Manage permission. FireCloud method Owners have Manage.
+        description: List of Owners.
       method:
         type: object
       namespace:
@@ -4529,7 +4529,7 @@ definitions:
         type: array
         items:
           type: string
-        description: List of users with Agora's Manage permission. FireCloud method Owners have Manage.
+        description: List of Owners.
       public:
         type: boolean
         description: Is this method publicly readable?
@@ -4611,7 +4611,7 @@ definitions:
         type: array
         items:
           type: string
-        description: List of users with Agora's Manage permission. FireCloud method Owners have Manage.
+        description: List of Owners.
       namespace:
         type: string
         description: Namespace which contains AgoraEntity.
@@ -4657,7 +4657,7 @@ definitions:
         type: array
         items:
           type: string
-        description: List of users with Agora's Manage permission. FireCloud method Owners have Manage.
+        description: List of Owners.
       namespace:
         type: string
         description: Namespace which contains AgoraEntity.
