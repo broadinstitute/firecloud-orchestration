@@ -1628,6 +1628,21 @@ paths:
           - Trial
         operationId: updateTrialUserStatus
         summary: Update user status in FireCloud free trial
+        parameters:
+          - name: operation
+            description: operation to perform on the specified users
+            required: true
+            in: query
+            enum:
+              - enable
+              - disable
+              - terminate
+          - name: users
+            description: list of users on which to operate
+            required: true
+            in: body
+            schema:
+              $ref: '#/definitions/StringArray'
         responses:
           204:
             description: Success (No Content)

@@ -2,24 +2,26 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, PerRequestCreator, TrialService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import spray.httpx.SprayJsonSupport
+import spray.json.DefaultJsonProtocol._
 import spray.routing.{HttpService, Route}
 
 trait TrialApiService extends HttpService with PerRequestCreator with FireCloudDirectives
-  with StandardUserInfoDirectives {
+  with StandardUserInfoDirectives with SprayJsonSupport {
 
   private implicit val executionContext = actorRefFactory.dispatcher
   val trialServiceConstructor: () => TrialService
 
   val trialApiServiceRoutes: Route = {
     post {
-      path("trial" / "manager" / "{operation}") {
+      path("trial" / "manager" / Segment) { operation =>
         // TODO: Validate operation
-        requireUserInfo() {
-          userInfo =>
-            requestContext =>
+        requireUserInfo() { userInfo =>
+          entity(as[Seq[String]]) { users => requestContext =>
               perRequest(requestContext,
                 TrialService.props(trialServiceConstructor),
-                TrialService.EnableUser(userInfo))
+                TrialService.EnableUsers(userInfo, operation, users))
+          }
         }
       }
     }
