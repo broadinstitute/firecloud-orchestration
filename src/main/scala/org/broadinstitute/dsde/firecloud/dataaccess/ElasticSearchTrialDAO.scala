@@ -27,8 +27,13 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
 
   init // checks for the presence of the index
 
+  // because the two following methods are not defined at the TrialDAO level, they will
+  // be inaccessible to most callers. Callers should be in the habit of using:
+  //    val dao:TrialDAO = ElasticSearchTrialDAO(...)
+  // which will limit callers to those methods defined in TrialDAO.
+
   // gets a single project record, with its Elasticsearch version
-  private def getProjectInternal(projectName: RawlsBillingProjectName): (Long, TrialProject) = {
+  def getProjectInternal(projectName: RawlsBillingProjectName): (Long, TrialProject) = {
     val getProjectQuery = client.prepareGet(indexName, datatype, projectName.value)
 
     val getProjectResponse = Try(executeESRequest[GetRequest, GetResponse, GetRequestBuilder](getProjectQuery))
@@ -41,6 +46,17 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
       case Success(notfound) => throw new FireCloudException(s"project ${projectName.value} not found!")
       case Failure(f) => throw new FireCloudException(s"error retrieving project [${projectName.value}]: ${f.getMessage}")
     }
+  }
+
+  // update a project, with a check on its Elasticsearch version
+  def updateProjectInternal(updatedProject: TrialProject, version: Long) = {
+    val update = client
+      .prepareUpdate(indexName, datatype, updatedProject.name.value)
+      .setDoc(updatedProject.toJson.compactPrint, XContentType.JSON)
+      .setVersion(version) // guarantee nobody else has updated in the meantime
+      .setRefreshPolicy(refreshMode)
+
+    executeESRequest[UpdateRequest, UpdateResponse, UpdateRequestBuilder](update) // will throw error if update fails
   }
 
   /**
@@ -89,13 +105,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
       project
     } else {
       val updatedProject = project.copy(verified = verified)
-      val update = client
-        .prepareUpdate(indexName, datatype, updatedProject.name.value)
-        .setDoc(updatedProject.toJson.compactPrint, XContentType.JSON)
-        .setVersion(version) // guarantee nobody else has updated in the meantime
-        .setRefreshPolicy(refreshMode)
-
-      executeESRequest[UpdateRequest, UpdateResponse, UpdateRequestBuilder](update) // will throw error if update fails
+      updateProjectInternal(updatedProject, version) // will throw error if update fails
       updatedProject
     }
   }
@@ -135,13 +145,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     assert(project.user.isEmpty)
 
     val updatedProject = project.copy(user = Some(userInfo))
-    val update = client
-      .prepareUpdate(indexName, datatype, updatedProject.name.value)
-      .setDoc(updatedProject.toJson.compactPrint, XContentType.JSON)
-      .setVersion(version) // guarantee nobody else has updated in the meantime
-      .setRefreshPolicy(refreshMode)
-
-    executeESRequest[UpdateRequest, UpdateResponse, UpdateRequestBuilder](update) // will throw error if update fails
+    updateProjectInternal(updatedProject, version) // will throw error if update fails
     updatedProject
   }
 

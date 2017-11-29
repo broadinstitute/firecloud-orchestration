@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchTrialDAO
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.{searchDAO, trialDAO}
 import org.broadinstitute.dsde.firecloud.model.WorkbenchUserInfo
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialProject
@@ -47,6 +48,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
           trialDAO.createProject(RawlsBillingProjectName("endive"))
         }
         assert(ex.getMessage == "ElasticSearch request failed")
+        assert(ex.getCause.getMessage == "[billingproject][endive]: version conflict, document already exists (current version [1])")
       }
     }
     "verifyProject" - {
@@ -119,6 +121,43 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
         )
         val actual = trialDAO.projectReport
         assertResult(expected) { actual }
+      }
+    }
+    "concurrent updates" - {
+      "should be rejected via Elasticsearch's versioning checks" in {
+        // explicitly cast the dao to ElasticSearchTrialDAO (naughty!) so we can get access to
+        // certain methods for testing
+        val esTrialDAO = trialDAO.asInstanceOf[ElasticSearchTrialDAO]
+
+        val name = RawlsBillingProjectName("jackfruit")
+
+        // create the project
+        trialDAO.createProject(name)
+
+        // get the project using internal
+        val (version, project) = esTrialDAO.getProjectInternal(name)
+        assert(version == 1)
+        assert(project.name == name)
+
+        // verify the project - this will increment the version in ES from 1 to 2
+        trialDAO.verifyProject(name, verified=true)
+        val (newVersion, newProject) = esTrialDAO.getProjectInternal(name)
+        assert(newVersion == 2)
+        assert(newProject.name == name)
+
+        // update the project using internal, specifying version 0. This should throw an error.
+        val ex1 = intercept[FireCloudException] {
+          esTrialDAO.updateProjectInternal(project, 1)
+        }
+        assert(ex1.getMessage == "ElasticSearch request failed")
+        assert(ex1.getCause.getMessage == "[billingproject][jackfruit]: version conflict, current version [2] is different than the one provided [1]")
+
+        // update the project using internal, specifying version 3. This should throw an error.
+        val ex3 = intercept[FireCloudException] {
+          esTrialDAO.updateProjectInternal(project, 3)
+        }
+        assert(ex3.getMessage == "ElasticSearch request failed")
+        assert(ex3.getCause.getMessage == "[billingproject][jackfruit]: version conflict, current version [2] is different than the one provided [3]")
       }
     }
   }
