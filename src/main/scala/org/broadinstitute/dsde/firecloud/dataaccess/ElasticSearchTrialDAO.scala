@@ -65,7 +65,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     * @param projectName name of the project record to read.
     * @return the project record
     */
-  override def getProject(projectName: RawlsBillingProjectName): TrialProject = {
+  override def getProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
     val (_, project) = getProjectInternal(projectName)
     project
   }
@@ -77,7 +77,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     * @param projectName name of the project to use when creating a record
     * @return the created project record
     */
-  override def createProject(projectName: RawlsBillingProjectName): TrialProject = {
+  override def insertProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
     val trialProject = TrialProject(projectName)
     val insert = client
       .prepareIndex(indexName, datatype, projectName.value)
@@ -98,7 +98,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     * @param verified verified value with which to update the project record
     * @return the updated project record
     */
-  override def verifyProject(projectName: RawlsBillingProjectName, verified: Boolean): TrialProject = {
+  override def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean): TrialProject = {
     val (version, project) = getProjectInternal(projectName)
 
     if (project.verified == verified) {
@@ -119,7 +119,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     * @param userInfo the user (email and subjectid) with which to update the project record.
     * @return the updated project record
     */
-  override def claimProject(userInfo: WorkbenchUserInfo): TrialProject = {
+  override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject = {
     val nextProjectQuery = boolQuery()
       .must(termQuery("verified", true))
       .mustNot(existsQuery("user.userSubjectId.keyword"))

@@ -17,13 +17,13 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
 
     // set up example data
     logger.info("indexing fixtures ...")
-    ElasticSearchTrialDAOFixtures.fixtureProjects foreach { project => trialDAO.createProject(project.name)}
+    ElasticSearchTrialDAOFixtures.fixtureProjects foreach { project => trialDAO.insertProjectRecord(project.name)}
 
     ElasticSearchTrialDAOFixtures.fixtureProjects collect {
-      case project if project.verified => trialDAO.verifyProject(project.name, verified=project.verified)
+      case project if project.verified => trialDAO.setProjectRecordVerified(project.name, verified=project.verified)
     }
     ElasticSearchTrialDAOFixtures.fixtureProjects collect {
-      case project if project.user.nonEmpty => trialDAO.claimProject(project.user.get)
+      case project if project.user.nonEmpty => trialDAO.claimProjectRecord(project.user.get)
     }
     logger.info("... fixtures indexed.")
   }
@@ -37,15 +37,15 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
     "createProject" - {
       "should insert a new project" in {
         val name = RawlsBillingProjectName("garlic")
-        val actual = trialDAO.createProject(name)
+        val actual = trialDAO.insertProjectRecord(name)
         val expected = TrialProject(name, verified=false, user=None)
         assertResult(expected) { actual }
-        val expectedCheck = trialDAO.getProject(name)
+        val expectedCheck = trialDAO.getProjectRecord(name)
         assertResult(expected) { expectedCheck }
       }
       "should throw error when inserting an existing project" in {
         val ex = intercept[FireCloudException] {
-          trialDAO.createProject(RawlsBillingProjectName("endive"))
+          trialDAO.insertProjectRecord(RawlsBillingProjectName("endive"))
         }
         assert(ex.getMessage == "ElasticSearch request failed")
         assert(ex.getCause.getMessage == "[billingproject][endive]: version conflict, document already exists (current version [1])")
@@ -54,19 +54,19 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
     "verifyProject" - {
       "should update a project with a new value for verified" in {
         val name=RawlsBillingProjectName("endive")
-        trialDAO.verifyProject(name, verified=true)
-        val actual1 = trialDAO.getProject(name)
+        trialDAO.setProjectRecordVerified(name, verified=true)
+        val actual1 = trialDAO.getProjectRecord(name)
         val expected1 = TrialProject(name, verified=true, user=None)
         assertResult(expected1) { actual1 }
-        trialDAO.verifyProject(name, verified=false)
-        val actual2 = trialDAO.getProject(name)
+        trialDAO.setProjectRecordVerified(name, verified=false)
+        val actual2 = trialDAO.getProjectRecord(name)
         val expected2 = TrialProject(name, verified=false, user=None)
         assertResult(expected2) { actual2 }
 
       }
       "should throw an error if project is not found" in {
         val ex = intercept[FireCloudException] {
-          trialDAO.verifyProject(RawlsBillingProjectName("habanero"), verified=true)
+          trialDAO.setProjectRecordVerified(RawlsBillingProjectName("habanero"), verified=true)
         }
         assert(ex.getMessage == "project habanero not found!")
       }
@@ -75,19 +75,19 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
     "claimProject" - {
       "should claim the first available project by alphabetical order" in {
         val user = WorkbenchUserInfo("789", "me")
-        val claimed = trialDAO.claimProject(user)
+        val claimed = trialDAO.claimProjectRecord(user)
         val expected = TrialProject(RawlsBillingProjectName("date"), verified=true, user=Some(user))
         assertResult(expected) { claimed }
-        val claimCheck = trialDAO.getProject(RawlsBillingProjectName("date"))
+        val claimCheck = trialDAO.getProjectRecord(RawlsBillingProjectName("date"))
         assertResult(expected) { claimCheck }
       }
       "should throw an error when no available/verified projects exist" in {
         // this one should succeed - "fennel" is available
         val user = WorkbenchUserInfo("101010", "me2")
-        val claimed = trialDAO.claimProject(user)
+        val claimed = trialDAO.claimProjectRecord(user)
         // this one should fail - nothing left
         val ex = intercept[FireCloudException] {
-          trialDAO.claimProject(user)
+          trialDAO.claimProjectRecord(user)
         }
         assert(ex.getMessage == "no available projects")
       }
@@ -98,9 +98,9 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
       }
       "should return accurate count of available projects" in {
         // insert three
-        Seq("orange", "pineapple", "quince") foreach { proj => trialDAO.createProject(RawlsBillingProjectName(proj))}
+        Seq("orange", "pineapple", "quince") foreach { proj => trialDAO.insertProjectRecord(RawlsBillingProjectName(proj))}
         // verify two
-        Seq("orange", "quince") foreach { proj => trialDAO.verifyProject(RawlsBillingProjectName(proj), verified=true)}
+        Seq("orange", "quince") foreach { proj => trialDAO.setProjectRecordVerified(RawlsBillingProjectName(proj), verified=true)}
         assertResult(2) { trialDAO.countAvailableProjects }
       }
     }
@@ -132,7 +132,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
         val name = RawlsBillingProjectName("jackfruit")
 
         // create the project
-        trialDAO.createProject(name)
+        trialDAO.insertProjectRecord(name)
 
         // get the project using internal
         val (version, project) = esTrialDAO.getProjectInternal(name)
@@ -140,7 +140,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
         assert(project.name == name)
 
         // verify the project - this will increment the version in ES from 1 to 2
-        trialDAO.verifyProject(name, verified=true)
+        trialDAO.setProjectRecordVerified(name, verified=true)
         val (newVersion, newProject) = esTrialDAO.getProjectInternal(name)
         assert(newVersion == 2)
         assert(newProject.name == name)

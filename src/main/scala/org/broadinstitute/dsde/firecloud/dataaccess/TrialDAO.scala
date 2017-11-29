@@ -19,7 +19,7 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param projectName name of the project record to read.
     * @return the project record
     */
-  def getProject(projectName: RawlsBillingProjectName): TrialProject
+  def getProjectRecord(projectName: RawlsBillingProjectName): TrialProject
 
   /**
     * Create a record for the specified project. Throws error if name
@@ -28,7 +28,7 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param projectName name of the project to use when creating a record
     * @return the created project record
     */
-  def createProject(projectName: RawlsBillingProjectName): TrialProject
+  def insertProjectRecord(projectName: RawlsBillingProjectName): TrialProject
 
   /**
     * Update the "verified" field for a specified project record. The "verified" field indicates whether
@@ -39,7 +39,7 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param verified verified value with which to update the project record
     * @return the updated project record
     */
-  def verifyProject(projectName: RawlsBillingProjectName, verified: Boolean): TrialProject
+  def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean): TrialProject
 
   /**
     * Associates the next-available project record with a specified user. Definition of "next available"
@@ -49,7 +49,7 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param userInfo the user (email and subjectid) with which to update the project record.
     * @return the updated project record
     */
-  def claimProject(userInfo: WorkbenchUserInfo): TrialProject
+  def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject
 
   /**
     * Returns a count of available project records. Definition of "available" is deferred to impl classes.
