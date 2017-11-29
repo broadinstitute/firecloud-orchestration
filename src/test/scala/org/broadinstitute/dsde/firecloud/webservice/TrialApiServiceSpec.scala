@@ -19,9 +19,9 @@ import spray.json._
 
 import scala.concurrent.Future
 
-class TrialApiServiceSpec extends BaseServiceSpec with UserApiService {
-  // note that the endpoint tested in this class lives in UserApiService, but I'm breaking it out into
-  // a standalone test class for modularity.
+class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with TrialApiService {
+  // The user enrollment endpoint tested in this class lives in UserApiService,
+  // but it is tested here since it is used for the trial feature.
 
   def actorRefFactory = system
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app.copy(thurloeDAO = new TrialApiServiceSpecThurloeDAO))
@@ -61,7 +61,13 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService {
   override protected def beforeAll(): Unit = {
     profileServer = startClientAndServer(thurloeServerPort)
 
-    List((disabledUser,disabledProps),(enabledUser,enabledProps),(enrolledUser,enrolledProps),(terminatedUser,terminatedProps)).foreach {
+    val allUsersAndProps = List(
+      (disabledUser, disabledProps),
+      (enabledUser, enabledProps),
+      (enrolledUser, enrolledProps),
+      (terminatedUser, terminatedProps))
+
+    allUsersAndProps.foreach {
       case (user, props) =>
         profileServer
           .when(request()
@@ -71,8 +77,7 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService {
           .respond(
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-              .withBody(profile(user, props).toJson.compactPrint)
-          )
+              .withBody(profile(user, props).toJson.compactPrint))
     }
   }
 
@@ -80,9 +85,9 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService {
     profileServer.stop()
   }
 
-  val enrollPath = "/api/profile/trial"
+  "Free Trial Enrollment" - {
+    val enrollPath = "/api/profile/trial"
 
-  "Free Trial Endpoints" - {
     "User-initiated enrollment endpoint" - {
       allHttpMethodsExcept(POST) foreach { method =>
         s"should reject ${method.toString} method" in {
@@ -123,6 +128,26 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService {
           status should equal(BadRequest)
         }
       }
+    }
+  }
+
+  "User status updates via manager endpoints" - {
+    val disablePath = "/api/trial/manager/disable"
+
+    "when manager endpoint for disabling user is hit" - {
+      allHttpMethodsExcept(POST) foreach { method =>
+        s"should reject ${method.toString} method" in {
+          new RequestBuilder(method)(disablePath) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+            assert(!handled)
+          }
+        }
+      }
+
+//      "POST request" in {
+//        Post(disablePath) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+//          assert(handled)
+//        }
+//      }
     }
   }
 
