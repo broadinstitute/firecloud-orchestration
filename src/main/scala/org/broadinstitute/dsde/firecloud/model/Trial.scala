@@ -4,6 +4,7 @@ import java.time.Instant
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.TrialState
+import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 
 import scala.util.Try
 
@@ -96,6 +97,11 @@ object Trial {
       ) ++ stateKV
     }
 
+  }
+
+  case class TrialProject(name: RawlsBillingProjectName, verified: Boolean, user: Option[WorkbenchUserInfo])
+  object TrialProject {
+    def apply(name: RawlsBillingProjectName) = new TrialProject(name, verified=false, user=None)
   }
 
 }

@@ -7,6 +7,7 @@ import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialProject
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
@@ -243,6 +244,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impAgoraStatus = jsonFormat2(AgoraStatus)
   implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
   implicit val impDropwizardHealth = jsonFormat2(DropwizardHealth)
+
+  implicit val impTrialProject = jsonFormat3(TrialProject.apply)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {

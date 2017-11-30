@@ -7,6 +7,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchParams
+import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.transport.TransportClient
 
 import scala.util.{Failure, Success, Try}
@@ -43,6 +44,11 @@ object ESIntegrationSupport extends IntegrationTestConfig {
   lazy val ontologyDAO:OntologyDAO = {
     // use the index name defined in reference.conf, since we execute read-only
     new ElasticSearchOntologyDAO(client, FireCloudConfig.ElasticSearch.ontologyIndexName)
+  }
+
+  lazy val trialDAO:TrialDAO = {
+    // use the temporary index name defined above
+    new ElasticSearchTrialDAO(client, itTestIndexName, RefreshPolicy.IMMEDIATE)
   }
 
   lazy val emptyCriteria = LibrarySearchParams(None,Map.empty[String,Seq[String]],None,Map.empty[String,Int],None,None,None,None)
