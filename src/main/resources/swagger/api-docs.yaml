@@ -1632,7 +1632,7 @@ paths:
           - name: operation
             description: operation to perform on the specified users
             required: true
-            in: query
+            in: path
             enum:
               - enable
               - disable
