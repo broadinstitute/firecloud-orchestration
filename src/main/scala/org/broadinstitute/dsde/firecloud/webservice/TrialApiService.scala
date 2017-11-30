@@ -36,7 +36,7 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
                           users: Seq[String]): TrialServiceMessage = operation match {
     case Enable => TrialService.EnableUsers(userInfo, users)
     case Disable => TrialService.DisableUsers(userInfo, users)
-    case Terminate => TrialService.TerminateUsers(userInfo)
+    case Terminate => TrialService.TerminateUsers(userInfo, users)
   }
 
   // TODO: Update for the other valid operations (i.e. disableUser and terminateUser)

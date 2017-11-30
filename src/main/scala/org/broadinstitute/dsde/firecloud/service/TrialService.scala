@@ -25,7 +25,7 @@ object TrialService {
   case class EnableUsers(userInfo:UserInfo, users: Seq[String]) extends TrialServiceMessage
   case class DisableUsers(userInfo:UserInfo, users: Seq[String]) extends TrialServiceMessage
   case class EnrollUser(userInfo:UserInfo) extends TrialServiceMessage
-  case class TerminateUsers(userInfo:UserInfo) extends TrialServiceMessage
+  case class TerminateUsers(userInfo:UserInfo, users: Seq[String]) extends TrialServiceMessage
 
   def props(service: () => TrialService): Props = {
     Props(service())
@@ -44,7 +44,7 @@ class TrialService
     case EnableUsers(userInfo, users) => enableUsers(userInfo, users) pipeTo sender
     case DisableUsers(userInfo, users) => disableUsers(userInfo, users) pipeTo sender
     case EnrollUser(userInfo) => enrollUser(userInfo) pipeTo sender
-    case TerminateUsers(userInfo) => terminateUsers(userInfo) pipeTo sender
+    case TerminateUsers(userInfo, users) => terminateUsers(userInfo, users) pipeTo sender
   }
 
   // TODO: implement fully! Check that the user does not already have a state, before overwriting.
@@ -130,7 +130,7 @@ class TrialService
   }
 
   // TODO: implement
-  private def terminateUsers(userInfo: UserInfo): Future[PerRequestMessage] = {
+  private def terminateUsers(userInfo: UserInfo, users: Seq[String]): Future[PerRequestMessage] = {
     Future(RequestCompleteWithErrorReport(NotImplemented, "not implemented"))
   }
 
