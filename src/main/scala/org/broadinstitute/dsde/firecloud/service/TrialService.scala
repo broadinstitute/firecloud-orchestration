@@ -51,13 +51,17 @@ class TrialService
   // this method exists solely for developer-testing purposes right now.
   private def enableUsers(userInfo: UserInfo,
                           users: Seq[String]): Future[PerRequestMessage] = {
-    // TODO: for each user in the list, query to get registration status/subject id from sam
-    // following is probably not the data structure you want but it's illustrative of what needs to happen
-    // may need to catch errors in the lookups here
-    val registeredUsers:Map[String,Future[RegistrationInfo]] = (users.map { user =>
-      val rue = RawlsUserEmail(user)
-      user -> samDao.adminGetUserByEmail(rue)
-    }).toMap
+
+    // For each user in the list, query SAM to get their subjectIds
+    val registrationInfoFutures = users.map(user => samDao.adminGetUserByEmail(RawlsUserEmail(user)))
+    val registrationInfosFuture = Future.sequence(registrationInfoFutures)
+
+    val subjectIdsFuture = for {
+      registrationInfos <- registrationInfosFuture
+      subjectIds = registrationInfos.map(_.userInfo.userSubjectId)
+    } yield subjectIds
+
+    //return subjectIdsFuture.map(RequestComplete(OK, _))
 
     // TODO: separate the input list into registered/unregistered users
     // (and maybe a third category of users that had an error during lookup)
