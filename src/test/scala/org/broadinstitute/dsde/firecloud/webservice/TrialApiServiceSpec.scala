@@ -14,11 +14,9 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
 import spray.http.StatusCodes.{BadRequest, NoContent, OK}
-import spray.http.{ContentTypes, HttpEntity, MediaTypes}
 import spray.http.HttpMethods.POST
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-import spray.httpx.SprayJsonSupport._
 
 import scala.concurrent.Future
 
@@ -135,31 +133,25 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with Trial
   }
 
   "User status updates via manager endpoints" - {
-    val disablePath = "/api/trial/manager/disable"
-
-    val userEmails =
-      """
-        |[
-        |  "foo1.bar1@baz.org",
-        |  "foo2.bar2@baz.org"
-        |]
-      """.stripMargin
-
-    val content = HttpEntity(ContentTypes.`application/json`, userEmails)
+    val disablePath = "/trial/manager/disable"
+    val userEmails = Seq("foo1.bar1@baz.org", "foo2.bar2@baz.org")
 
     "when manager endpoint for disabling user is hit" - {
       allHttpMethodsExcept(POST) foreach { method =>
         s"should reject ${method.toString} method" in {
-          new RequestBuilder(method)(disablePath) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
-            assert(!handled)
-          }
+          new RequestBuilder(method)(disablePath, userEmails) ~> dummyUserIdHeaders(enabledUser) ~>
+            trialApiServiceRoutes ~>
+            check {
+              assert(!handled)
+            }
         }
       }
 
       "POST request" in {
-        Post(disablePath, content) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
-          assert(handled)
-        }
+        Post(disablePath, userEmails) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~>
+          check {
+            assert(handled)
+          }
       }
     }
   }
