@@ -8,6 +8,20 @@ import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.TrialState
 import scala.util.Try
 
 object Trial {
+  object TrialOperations {
+    sealed trait TrialOperation
+
+    case object Enable extends TrialOperation
+    case object Disable extends TrialOperation
+    case object Terminate extends TrialOperation
+
+    def withName(name: String): TrialOperation = name match {
+      case "enable" => Enable
+      case "disable" => Disable
+      case "terminate" => Terminate
+      case _ => throw new FireCloudException(s"invalid TrialOperation [$name]")
+    }
+  }
 
   // enum-style case objects to track a user's progress through the free trial
   object TrialStates {

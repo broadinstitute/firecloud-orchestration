@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.service.TrialService.{EnableUsers, EnrollUser, TerminateUser}
+import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import spray.http.OAuth2BearerToken
 import spray.http.StatusCodes._
@@ -22,9 +22,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object TrialService {
   sealed trait TrialServiceMessage
-  case class EnableUsers(userInfo:UserInfo, operation: String, users: Seq[String]) extends TrialServiceMessage
+  case class EnableUsers(userInfo:UserInfo, users: Seq[String]) extends TrialServiceMessage
+  case class DisableUsers(userInfo:UserInfo, users: Seq[String]) extends TrialServiceMessage
   case class EnrollUser(userInfo:UserInfo) extends TrialServiceMessage
-  case class TerminateUser(userInfo:UserInfo) extends TrialServiceMessage
+  case class TerminateUsers(userInfo:UserInfo) extends TrialServiceMessage
 
   def props(service: () => TrialService): Props = {
     Props(service())
@@ -40,14 +41,16 @@ class TrialService
   extends Actor with LazyLogging with SprayJsonSupport {
 
   override def receive = {
-    case EnableUsers(userInfo, operation, users) => enableUsers(userInfo, operation, users) pipeTo sender
+    case EnableUsers(userInfo, users) => enableUsers(userInfo, users) pipeTo sender
+    case DisableUsers(userInfo, users) => disableUsers(userInfo, users) pipeTo sender
     case EnrollUser(userInfo) => enrollUser(userInfo) pipeTo sender
-    case TerminateUser(userInfo) => terminateUser(userInfo) pipeTo sender
+    case TerminateUsers(userInfo) => terminateUsers(userInfo) pipeTo sender
   }
 
   // TODO: implement fully! Check that the user does not already have a state, before overwriting.
   // this method exists solely for developer-testing purposes right now.
-  private def enableUsers(userInfo: UserInfo, operation: String, users: Seq[String]): Future[PerRequestMessage] = {
+  private def enableUsers(userInfo: UserInfo,
+                          users: Seq[String]): Future[PerRequestMessage] = {
     // TODO: for each user in the list, query to get registration status/subject id from sam
     // following is probably not the data structure you want but it's illustrative of what needs to happen
     // may need to catch errors in the lookups here
@@ -90,6 +93,10 @@ class TrialService
     )))
   }
 
+  // TODO: implement
+  private def disableUsers(userInfo: UserInfo,
+                           users: Seq[String]): Future[PerRequestMessage] = ???
+
   private def enrollUser(userInfo:UserInfo): Future[PerRequestMessage] = {
     // get user's trial status, then check the current state
     thurloeDao.getTrialStatus(userInfo) flatMap { userTrialStatus =>
@@ -123,7 +130,7 @@ class TrialService
   }
 
   // TODO: implement
-  private def terminateUser(userInfo: UserInfo): Future[PerRequestMessage] = {
+  private def terminateUsers(userInfo: UserInfo): Future[PerRequestMessage] = {
     Future(RequestCompleteWithErrorReport(NotImplemented, "not implemented"))
   }
 

@@ -133,13 +133,13 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with Trial
   }
 
   "User status updates via manager endpoints" - {
-    val disablePath = "/trial/manager/disable"
+    val enablePath = "/trial/manager/enable"
     val userEmails = Seq("foo1.bar1@baz.org", "foo2.bar2@baz.org")
 
     "when manager endpoint for disabling user is hit" - {
       allHttpMethodsExcept(POST) foreach { method =>
         s"should reject ${method.toString} method" in {
-          new RequestBuilder(method)(disablePath, userEmails) ~> dummyUserIdHeaders(enabledUser) ~>
+          new RequestBuilder(method)(enablePath, userEmails) ~> dummyUserIdHeaders(enabledUser) ~>
             trialApiServiceRoutes ~>
             check {
               assert(!handled)
@@ -148,7 +148,7 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with Trial
       }
 
       "POST request" in {
-        Post(disablePath, userEmails) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~>
+        Post(enablePath, userEmails) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~>
           check {
             assert(handled)
           }
