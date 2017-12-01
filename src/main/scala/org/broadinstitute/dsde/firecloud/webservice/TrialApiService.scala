@@ -18,7 +18,7 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
 
   val trialApiServiceRoutes: Route = {
     post {
-      path("trial" / "manager" / Segment) { operation =>
+      path("trial" / "manager" / Segment) { (operation: String) =>
         // TODO: Validate operation
         requireUserInfo() { userInfo =>
           entity(as[Seq[String]]) { users => requestContext =>
@@ -39,6 +39,4 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
     case Terminate => TrialService.TerminateUsers(userInfo, users)
   }
 
-  // TODO: Update for the other valid operations (i.e. disableUser and terminateUser)
-  private def isValid(operation: String): Boolean = operation == "enableUser"
 }
