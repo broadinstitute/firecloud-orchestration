@@ -1662,6 +1662,8 @@ paths:
           required: true
           in: query
           type: number
+      produces:
+        - text/plain
       responses:
         204:
           description: Created

@@ -161,10 +161,9 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   case class CreateRawlsBillingProjectFullRequest(projectName: String, billingAccount: String)
   implicit val impCreateRawlsBillingProjectFullRequestFormat = jsonFormat2(CreateRawlsBillingProjectFullRequest)
-  def createProject(projectName: String, billingAccount: String): Future[Boolean] = {
+  override def createProject(projectName: String, billingAccount: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
     val create = CreateRawlsBillingProjectFullRequest(projectName, billingAccount)
-    trialBillingAuthedRequest(Post(FireCloudConfig.Rawls.authUrl + "/billing", create)).map { resp =>
-      logger.warn("response from rawls: " + resp.entity.asString)
+    userAuthedRequest(Post(FireCloudConfig.Rawls.authUrl + "/billing", create)).map { resp =>
       resp.status.isSuccess
     }
   }

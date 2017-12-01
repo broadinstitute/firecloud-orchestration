@@ -18,7 +18,7 @@ import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, Profile, RegistrationInfo, RequestCompleteWithErrorReport, UserInfo, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, BasicProfile, Profile, RegistrationInfo, RequestCompleteWithErrorReport, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.trial.ProjectNamer
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
@@ -65,9 +65,7 @@ final class TrialService
       enrollUser(userInfo) pipeTo sender
     case TerminateUsers(managerInfo, userEmails) =>
       asTrialCampaignManager(terminateUsers(managerInfo, userEmails))(managerInfo) pipeTo sender
-    case CreateProjects(userInfo, count) => asTrialCampaignManager {
-      createProjects(count)
-    }(userInfo) pipeTo sender
+    case CreateProjects(userInfo, count) => asTrialCampaignManager {createProjects(count)}(userInfo) pipeTo sender
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
@@ -210,85 +208,40 @@ final class TrialService
   }
 
   private def createProjects(count: Int): Future[PerRequestMessage] = {
-    // TODO: loop over {count} times
 
-    ProjectNamer.exampleNames
-    throw new FireCloudException("stop here")
+      if (count < 0 || count > 100)
+        throw new FireCloudException("please provide a count between 1 and 100.")
 
-//    ProjectNamer.trimLists
-//    throw new FireCloudException("stop here")
+      val createResults:Future[Seq[Boolean]] = Future.sequence(1 to count map { idx =>
+        // generate a unique project name
+        def verifyUniqueProjectName(name: String): String = {
+          var sanityCheck = 1
+          Try(trialDAO.insertProjectRecord(RawlsBillingProjectName(name))) match {
+            case scala.util.Success(project) =>
+              logger.info(s"found unique project name in $sanityCheck attempts; recorded in pool.")
+              project.name.value
+            case scala.util.Failure(f) =>
+              sanityCheck += 1
+              if (sanityCheck > 100) throw new FireCloudException(s"Could not generate a unique project name after $sanityCheck tries: ${f.getMessage}")
+              verifyUniqueProjectName(ProjectNamer.randomName)
+          }
+        }
+        val projectName = verifyUniqueProjectName(ProjectNamer.randomName)
+        val billingAcct = FireCloudConfig.Trial.billingAccount
 
-//    val saToken = HttpGoogleServicesDAO.getTrialBillingManagerAccessToken
-//
-//    val saInfo:UserInfo = new UserInfo("free-trial-billing-manager@broad-dsde-dev.iam.gserviceaccount.com", OAuth2BearerToken(saToken), 12345, "110709330359854943358")
-//
-//    // temp: register SA
-//    val saProfile = BasicProfile(
-//      firstName = "FreeTrial",
-//      lastName = "BillingManager",
-//      title = "Free Trial Billing Manager Service Account",
-//      contactEmail = Option("billing@firecloud.org"),
-//      institute = "Broad Institute",
-//      institutionalProgram = "DSP",
-//      programLocationCity = "Cambridge",
-//      programLocationState = "MA",
-//      programLocationCountry = "USA",
-//      pi = "Broad Institute",
-//      nonProfitStatus = "true")
-//    val registrationInfo: RegistrationInfo = scala.concurrent.Await.result(createUpdateProfile(saInfo, saProfile), scala.concurrent.duration.Duration.Inf)
-//    logger.warn(s" ############# registration result: " + registrationInfo)
+        logger.info(s"creating name '$projectName' via rawls ...")
 
-    // generate a unique project name
-    def verifyUniqueProjectName(seed: String): String = {
-      var sanityCheck = 1
-      Try(trialDAO.insertProjectRecord(RawlsBillingProjectName(seed))) match {
-        case scala.util.Success(project) =>
-          logger.warn(s"created unique project name in $sanityCheck attempts.")
-          project.name.value
-        case scala.util.Failure(f) =>
-          sanityCheck += 1
-          if (sanityCheck > 100) throw new FireCloudException(s"Could not generate a unique project name after $sanityCheck tries")
-          verifyUniqueProjectName(ProjectNamer.randomName)
-      }
-    }
+        // create project via rawls, after sudoing to the trial billing manager
+        val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(HttpGoogleServicesDAO.getTrialBillingManagerAccessToken))
+        rawlsDAO.createProject(projectName, billingAcct)(saToken)
+    })
 
-    val projectName = verifyUniqueProjectName(ProjectNamer.randomName)
-//    val billingAcct = "billingAccounts/00708C-45D19D-27AAFA"
-    val billingAcct = FireCloudConfig.Trial.billingAccount
-
-    logger.warn(s"creating name '$projectName' ...")
-
-
-    // create project via rawls
-    rawlsDAO.asInstanceOf[HttpRawlsDAO].createProject(projectName, billingAcct) map { createSuccess =>
-      RequestComplete(StatusCodes.EnhanceYourCalm)
-    }
-
-  }
-
-
-  private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[RegistrationInfo] = {
-    for {
-      _ <- thurloeDao.saveProfile(userInfo, basicProfile)
-      _ <- thurloeDao.saveKeyValues(
-        userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString)
-      )
-      isRegistered <- samDao.getRegistrationStatus(userInfo) recover {
-        case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
-          RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail), WorkbenchEnabled(false, false, false))
-      }
-      userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
-        for {
-          registrationInfo <- samDao.registerUser(userInfo)
-          _ <- rawlsDAO.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
-        } yield registrationInfo
-      } else Future.successful(isRegistered)
-    } yield {
-      userStatus
+    createResults map { res =>
+      val grouped = res.groupBy(b => b)
+      if (!grouped.contains(false))
+        RequestComplete(Created)
+      else
+        RequestComplete(InternalServerError, s"${grouped.get(false).size} errors")
     }
   }
 }
-
-
-
-
