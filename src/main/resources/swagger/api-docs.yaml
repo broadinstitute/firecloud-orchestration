@@ -1633,6 +1633,7 @@ paths:
             description: operation to perform on the specified users
             required: true
             in: path
+            type: string
             enum:
               - enable
               - disable
@@ -1648,6 +1649,30 @@ paths:
             description: Success (No Content)
           500:
             description: Internal Server Error
+
+  /api/trial/manager/projects:
+    post:
+      tags:
+        - Trial
+      operationId: createTrialProjects
+      summary: Create free trial projects
+      parameters:
+        - name: count
+          description: number of projects to create
+          required: true
+          in: query
+          type: number
+      responses:
+        204:
+          description: Created
+        400:
+          description: firecloud billing user must be an admin of the billing account
+        403:
+          description: You must be an admin of the google billing account
+        409:
+          description: project already exists in rawls or google
+        500:
+          description: Internal Server Error
 
   /version/executionEngine:
     get:

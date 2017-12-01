@@ -17,7 +17,8 @@ case class Application(agoraDAO: AgoraDAO,
                        rawlsDAO: RawlsDAO,
                        samDAO: SamDAO,
                        searchDAO: SearchDAO,
-                       thurloeDAO: ThurloeDAO) {
+                       thurloeDAO: ThurloeDAO,
+                       trialDAO: TrialDAO) {
 
   def healthMonitorChecks: Map[Subsystem, Future[SubsystemStatus]] = Map(
     Agora -> agoraDAO.status,
@@ -28,6 +29,7 @@ case class Application(agoraDAO: AgoraDAO,
     Rawls -> rawlsDAO.status,
     Sam -> samDAO.status,
     Thurloe -> thurloeDAO.status
+    // TODO: add free-trial index as a monitorable healthcheck
   )
 
 }
