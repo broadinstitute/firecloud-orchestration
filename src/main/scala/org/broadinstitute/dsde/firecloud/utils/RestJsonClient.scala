@@ -111,14 +111,11 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
 
       response.status match {
         case s if s.isSuccess =>
-          println(s"Successful response: ${s.value}")
           response.entity.as[T] match {
             case Right(obj) => obj
             case Left(error) => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
           }
-        case f =>
-          println(s"Failure response: ${f.value}")
-          throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
+        case f => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }
