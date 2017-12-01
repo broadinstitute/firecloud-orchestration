@@ -4,7 +4,8 @@ import java.io.{ByteArrayInputStream, InputStream}
 
 import akka.actor.ActorRefFactory
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, SubsystemStatus}
+import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.http.HttpResponse
 import spray.routing.RequestContext
 

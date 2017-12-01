@@ -1,8 +1,8 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{DropwizardHealth, SubsystemStatus}
-import org.broadinstitute.dsde.rawls.model.ErrorReportSource
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impDropwizardHealth
+import org.broadinstitute.dsde.firecloud.model.DropwizardHealth
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.http.HttpResponse
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -26,7 +26,7 @@ trait ReportsSubsystemStatus {
         filter(dw => !dw._2.healthy).
         map(dw => s"Error in ${dw._1}: ${dw._2.message.getOrElse("unspecified error")}").toList
       if (ok)
-        SubsystemStatus(ok)
+        SubsystemStatus(ok, None)
       else
         SubsystemStatus(ok, Some(errors))
     }

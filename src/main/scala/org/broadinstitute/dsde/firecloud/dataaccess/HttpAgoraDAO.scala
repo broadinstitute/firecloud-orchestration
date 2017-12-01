@@ -4,8 +4,9 @@ import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraEntityType, AgoraPermission, EntityAccessControlAgora, Method}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, SubsystemStatus, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, UserInfo}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.http.Uri
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
@@ -38,7 +39,7 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
 
     agoraStatus map { agoraStatus =>
       agoraStatus.status match {
-        case "up" => SubsystemStatus(ok = true)
+        case "up" => SubsystemStatus(ok = true, None)
         case _ => SubsystemStatus(ok = false, if (agoraStatus.message.nonEmpty) Some(agoraStatus.message) else None)
       }
     }

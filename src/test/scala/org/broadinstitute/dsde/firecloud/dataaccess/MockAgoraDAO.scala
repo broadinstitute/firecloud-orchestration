@@ -1,7 +1,8 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{ACLNames, AgoraPermission, EntityAccessControlAgora, Method}
-import org.broadinstitute.dsde.firecloud.model.{SubsystemStatus, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -29,7 +30,7 @@ class MockAgoraDAO extends AgoraDAO {
   }
 
   def status: Future[SubsystemStatus] = {
-    Future(throw new Exception("Agora Mock DAO exception"))
+    Future(SubsystemStatus(ok = true, None))
   }
 
 }

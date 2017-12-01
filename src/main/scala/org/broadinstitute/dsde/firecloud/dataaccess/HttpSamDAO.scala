@@ -2,7 +2,8 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, WithAccessToken}
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import spray.client.pipelining.{Get, sendReceive}
@@ -32,7 +33,7 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
     val pipeline = sendReceive
     pipeline(Get(samStatusUrl)) map { response =>
       val ok = response.status.isSuccess
-      SubsystemStatus(ok, if (ok) Option(List(response.entity.asString)) else None)
+      SubsystemStatus(ok, if (!ok) Option(List(response.entity.asString)) else None)
     }
   }
 

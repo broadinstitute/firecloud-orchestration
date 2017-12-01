@@ -10,9 +10,10 @@ import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorRepo
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
-import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata, SubsystemStatus}
+import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -276,10 +277,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def status: Future[SubsystemStatus] = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
-    val bucketResponse = storage.buckets().list(FireCloudConfig.FireCloud.serviceProject).executeUsingHead()
-    bucketResponse.getStatusCode match {
-      case x if x == 200 => Future(SubsystemStatus(ok = true, messages = None))
-      case _ => Future(SubsystemStatus(ok = false, messages = Some(List(bucketResponse.parseAsString()))))
+    val bucketResponseTry = Try(storage.buckets().list(FireCloudConfig.FireCloud.serviceProject).executeUsingHead())
+    bucketResponseTry match {
+      case scala.util.Success(bucketResponse) => bucketResponse.getStatusCode match {
+        case x if x == 200 => Future(SubsystemStatus(ok = true, messages = None))
+        case _ => Future(SubsystemStatus(ok = false, messages = Some(List(bucketResponse.parseAsString()))))
+      }
+      case Failure(ex) => Future(SubsystemStatus(ok = false, messages = Some(List(ex.getMessage))))
     }
   }
 

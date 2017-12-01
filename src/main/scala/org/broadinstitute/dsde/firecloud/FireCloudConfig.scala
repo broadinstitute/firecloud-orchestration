@@ -141,6 +141,7 @@ object FireCloudConfig {
     val clusterName = elasticsearch.getString("clusterName")
     val indexName = elasticsearch.getString("index") // for library
     val ontologyIndexName = elasticsearch.getString("ontologyIndex")
+    val trialIndexName = elasticsearch.getString("trialIndex")
     val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
   }
 

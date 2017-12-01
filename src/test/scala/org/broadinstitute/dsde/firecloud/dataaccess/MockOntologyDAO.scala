@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
-import org.broadinstitute.dsde.firecloud.model.SubsystemStatus
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -236,7 +236,7 @@ class MockOntologyDAO extends OntologyDAO {
 
   override def search(term: String): List[TermResource] = data.getOrElse(term, List.empty[TermResource])
 
-  def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true))
+  def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
 
   override def autocomplete(term: String) = List.empty[TermResource]
 }

@@ -10,9 +10,13 @@ import spray.http._
 import spray.routing.{HttpServiceActor, Route}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.webservice._
+import org.broadinstitute.dsde.workbench.util.health.{HealthMonitor, SubsystemStatus}
+import org.broadinstitute.dsde.workbench.util.health.Subsystems._
 import org.elasticsearch.client.transport.TransportClient
 
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.language.postfixOps
 
 
@@ -55,6 +59,10 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, thurloeDAO)
   val materializer: ActorMaterializer = ActorMaterializer()
 
+  val healthMonitorChecks = app.healthMonitorChecks
+  val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks.keySet)( () => healthMonitorChecks ), "health-monitor")
+  system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
+
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
@@ -64,7 +72,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
-  val statusServiceConstructor: () => StatusService = StatusService.constructor(app)
+  val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
   val trialServiceConstructor: () => TrialService = TrialService.constructor(app)
 
