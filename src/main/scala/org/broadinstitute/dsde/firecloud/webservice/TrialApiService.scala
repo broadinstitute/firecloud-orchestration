@@ -18,7 +18,7 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
 
   val trialApiServiceRoutes: Route = {
     post {
-      path("trial" / "manager" / "enrolled|enabled|terminated".r) { (operation: String) =>
+      path("trial" / "manager" / "enable|disable|terminate".r) { (operation: String) =>
         requireUserInfo() { userInfo =>
           entity(as[Seq[String]]) { users => requestContext =>
               perRequest(requestContext,
