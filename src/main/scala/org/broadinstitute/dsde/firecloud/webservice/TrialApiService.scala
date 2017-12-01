@@ -19,7 +19,7 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
   val trialApiServiceRoutes: Route = {
     post {
       path("trial" / "manager" / Segment) { (operation: String) =>
-        // TODO: Validate operation
+        // TODO: Do we need to return a more user-friendly message when user specifies an invalid operation?
         requireUserInfo() { userInfo =>
           entity(as[Seq[String]]) { users => requestContext =>
               perRequest(requestContext,

@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.Enabled
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
@@ -14,7 +14,6 @@ import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, 
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
-import spray.http.OAuth2BearerToken
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
@@ -48,7 +47,7 @@ class TrialService
     case TerminateUsers(userInfo, users) => terminateUsers(userInfo, users) pipeTo sender
   }
 
-  private def enableUsers(userInfo: UserInfo,
+  private def enableUsers(managerInfo: UserInfo,
                           users: Seq[String]): Future[PerRequestMessage] = {
 
     // For each user in the list, query SAM to get their subjectIds
@@ -66,29 +65,33 @@ class TrialService
 
     workbenchUserInfosFuture.map { workbenchUserInfos =>
       workbenchUserInfos.foreach { info =>
-        // Create a UserInfo as the target user, faking the fields we don't care about
-        val sudoUserInfo = UserInfo(info.userEmail, OAuth2BearerToken("unused-can-be-anything"), 12345, info.userSubjectId)
+        // Create hybrid UserInfo with the managerInfo's credentials and users' subjectIds
+        // so the Thurloe calls can be authenticated
+        val sudoUserInfo = managerInfo.copy(id = info.userSubjectId)
 
         // Get the user's trial status from Thurloe
         val userProfile = thurloeDao.getTrialStatus(sudoUserInfo)
 
-        userProfile.foreach {
-          trialStatusOpt =>
-            // TODO Handle case where TrialStatus is None
-            val trialStatus = trialStatusOpt.get
-            println(s"Current trial status of ${info.userEmail} is $trialStatus")
-            println("Checking if enabling is allowed from that state...")
+        userProfile.foreach { trialStatusOpt =>
+          trialStatusOpt match {
+            case None => throw new FireCloudException("User profile not found")
+            case Some(trialStatus) =>
+              // TODO Handle case where TrialStatus is None
+              logger.warn(s"Current trial status of ${info.userEmail} is $trialStatus")
+              logger.warn("Checking if enabling is allowed from that state...")
 
-            // TODO Handle invalid trial status
-            assert(Enabled.isAllowedFrom(trialStatus.currentState))
+              // TODO Handle invalid trial status
+              assert(Enabled.isAllowedFrom(trialStatus.currentState))
 
-            // Generate and persist a new TrialStatus to indicate the user is enabled
-            val now = Instant.now
-            val zero = Instant.ofEpochMilli(0)
-            val enabledStatus = UserTrialStatus(userInfo.id, Some(TrialStates.Enabled), now, zero, zero, zero)
+              // Generate and persist a new TrialStatus to indicate the user is enabled
+              val now = Instant.now
+              val zero = Instant.ofEpochMilli(0)
+              val enabledStatus = UserTrialStatus(managerInfo.id, Some(TrialStates.Enabled), now, zero, zero, zero)
 
-            // Save updates to user's trial status
-            thurloeDao.saveTrialStatus(sudoUserInfo, enabledStatus)
+              // Save updates to user's trial status
+              thurloeDao.saveTrialStatus(sudoUserInfo, enabledStatus)
+              logger.warn("Updated profile saved; we are complete!")
+          }
         }
       }
 
