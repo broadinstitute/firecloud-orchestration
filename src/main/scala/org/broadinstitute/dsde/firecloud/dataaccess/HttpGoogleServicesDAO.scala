@@ -69,7 +69,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
-  // billing scope for creating projects. We don't have the billing client lib so we hardcode it here.
+  // billing scope for creating projects. We don't have the billing client lib as a dependency so we hardcode it here.
   val billingScope = Seq("https://www.googleapis.com/auth/cloud-billing")
 
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
@@ -99,11 +99,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     googleCredential.getAccessToken
   }
 
-  // TODO: use trialBillingPemFileClientId and trialBillingPemFile instead
   def getTrialBillingManagerAccessToken = {
-
-    log.warn(s"*****>>>>>>>>> using client id [$trialBillingPemFileClientId] and pemfile [$trialBillingPemFile]")
-
     val googleCredential = new GoogleCredential.Builder()
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
@@ -113,9 +109,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .build()
 
     googleCredential.refreshToken()
-    val accessToken = googleCredential.getAccessToken
-    log.warn(s"*****>>>>>>>>> access token is: $accessToken")
-    accessToken
+    googleCredential.getAccessToken
   }
 
   private def getBucketServiceAccountCredential: Credential = {
