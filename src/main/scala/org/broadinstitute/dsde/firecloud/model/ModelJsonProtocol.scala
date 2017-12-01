@@ -7,7 +7,8 @@ import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialProject
+import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
+import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership, TrialProject}
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
@@ -245,7 +246,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
   implicit val impDropwizardHealth = jsonFormat2(DropwizardHealth)
 
-  implicit val impTrialProject = jsonFormat3(TrialProject.apply)
+
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler {
@@ -260,5 +261,31 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
     def write(either: Either[A, B]) = format.write(either)
     def read(value: JsValue) = format.read(value)
   }
+
+
+
+  // following are horribly copied-and-pasted from rawls core, since they're not available as shared models
+
+  implicit object ProjectStatusFormat extends RootJsonFormat[CreationStatuses.CreationStatus] {
+    override def write(obj: CreationStatuses.CreationStatus): JsValue = JsString(obj.toString)
+
+    override def read(json: JsValue): CreationStatuses.CreationStatus = json match {
+      case JsString(name) => CreationStatuses.withName(name)
+      case _ => throw new DeserializationException("could not deserialize project status")
+    }
+  }
+
+  implicit object ProjectRoleFormat extends RootJsonFormat[ProjectRole] {
+    override def write(obj: ProjectRole): JsValue = JsString(obj.toString)
+
+    override def read(json: JsValue): ProjectRole = json match {
+      case JsString(name) => ProjectRoles.withName(name)
+      case _ => throw new DeserializationException("could not deserialize project role")
+    }
+  }
+
+  implicit val impRawlsBillingProjectMembership = jsonFormat4(RawlsBillingProjectMembership)
+
+  implicit val impTrialProject = jsonFormat4(TrialProject.apply)
 
 }

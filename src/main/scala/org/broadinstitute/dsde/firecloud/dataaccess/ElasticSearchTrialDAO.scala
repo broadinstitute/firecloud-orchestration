@@ -1,8 +1,9 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impTrialProject
+import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.WorkbenchUserInfo
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialProject
+import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, TrialProject}
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
@@ -71,6 +72,18 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     project
   }
 
+
+  /**
+    * Check to see if the project record exists.
+    *
+    * @param projectName name of the project record to read.
+    * @return whether or not the project record exists
+    */
+  override def projectRecordExists(projectName: RawlsBillingProjectName): Boolean = {
+    Try(getProjectInternal(projectName)).isSuccess
+  }
+
+
   /**
     * Create a record for the specified project. Throws error if name
     * already exists or could not be otherwise created.
@@ -99,13 +112,13 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     * @param verified verified value with which to update the project record
     * @return the updated project record
     */
-  override def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean): TrialProject = {
+  override def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean, status: CreationStatus): TrialProject = {
     val (version, project) = getProjectInternal(projectName)
 
-    if (project.verified == verified) {
-      project
+    if (project.verified == verified && project.status.contains(status)) {
+      project // noop
     } else {
-      val updatedProject = project.copy(verified = verified)
+      val updatedProject = project.copy(verified = verified, status=Some(status))
       updateProjectInternal(updatedProject, version) // will throw error if update fails
       updatedProject
     }
@@ -123,6 +136,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject = {
     val nextProjectQuery = boolQuery()
       .must(termQuery("verified", true))
+      .must(termQuery("status.keyword", CreationStatuses.Ready))
       .mustNot(existsQuery("user.userSubjectId.keyword"))
 
     // if we find regular race conditions in which multiple users attempt to claim the "next" project,
@@ -150,8 +164,33 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     updatedProject
   }
 
+
+  /**
+    * Returns a list of project records in the pool that are unverified.
+    *
+    * @return list of project records in the pool that are unverified.
+    */
+  override def listUnverifiedProjects: Seq[TrialProject] = {
+    val unverifiedQuery = boolQuery()
+      .must(termQuery("verified", false))
+
+    val unverifiedRequest = client
+      .prepareSearch(indexName)
+      .setQuery(unverifiedQuery)
+      .setSize(1000)
+
+    val unverifiedResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](unverifiedRequest)
+
+    if (unverifiedResponse.getHits.totalHits == 0)
+      Seq.empty[TrialProject]
+    else
+      unverifiedResponse.getHits.getHits.toSeq map ( _.getSourceAsString.parseJson.convertTo[TrialProject] )
+
+  }
+
   /**
     * Returns a count of available project records. "Available" is defined as verified and unclaimed.
+    *
     * @return count of available project records.
     */
   override def countAvailableProjects: Long = {

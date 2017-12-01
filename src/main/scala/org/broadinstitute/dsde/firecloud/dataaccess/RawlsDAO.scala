@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.model.Trial.RawlsBillingProjectMembership
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
@@ -91,6 +92,7 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse]
 
   def createProject(projectName: String, billingAccount: String)(implicit userToken: WithAccessToken): Future[Boolean]
+  def getProjects(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMembership]]
 
   override def serviceName:String = RawlsDAO.serviceName
 

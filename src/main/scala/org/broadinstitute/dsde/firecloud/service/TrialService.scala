@@ -17,15 +17,18 @@ import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
+import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
+import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, RawlsBillingProjectMembership, TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, BasicProfile, Profile, RegistrationInfo, RequestCompleteWithErrorReport, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.firecloud.trial.ProjectNamer
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 import spray.http.{OAuth2BearerToken, StatusCodes}
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
+import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -41,6 +44,7 @@ object TrialService {
   case class EnrollUser(managerInfo: UserInfo) extends TrialServiceMessage
   case class TerminateUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
   case class CreateProjects(userInfo:UserInfo, count:Int) extends TrialServiceMessage
+  case class VerifyProjects(userInfo:UserInfo) extends TrialServiceMessage
 
   def props(service: () => TrialService): Props = {
     Props(service())
@@ -66,6 +70,7 @@ final class TrialService
     case TerminateUsers(managerInfo, userEmails) =>
       asTrialCampaignManager(terminateUsers(managerInfo, userEmails))(managerInfo) pipeTo sender
     case CreateProjects(userInfo, count) => asTrialCampaignManager {createProjects(count)}(userInfo) pipeTo sender
+    case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
@@ -244,4 +249,41 @@ final class TrialService
         RequestComplete(InternalServerError, s"${grouped.get(false).size} errors")
     }
   }
+
+  private def verifyProjects: Future[PerRequestMessage] = {
+
+    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(HttpGoogleServicesDAO.getTrialBillingManagerAccessToken))
+    rawlsDAO.getProjects(saToken) map { projects =>
+
+      val projectStatuses:Map[RawlsBillingProjectName, CreationStatus] = projects.map { proj =>
+        proj.projectName -> proj.creationStatus
+      }.toMap
+
+      // get unverified projects from the pool
+      val unverified = trialDAO.listUnverifiedProjects
+
+      unverified.foreach { unv =>
+        // get status from the rawls map
+        projectStatuses.get(unv.name) match {
+          case Some(CreationStatuses.Creating) => // noop
+          case Some(CreationStatuses.Error) =>
+            logger.warn(s"project ${unv.name.value} errored, so we have to give up on it.")
+            trialDAO.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Error)
+          case Some(CreationStatuses.Ready) =>
+            trialDAO.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Error)
+          case None =>
+            logger.warn(s"project ${unv.name.value} exists in pool but not found via Rawls!")
+        }
+      }
+
+      val grouped = projects.groupBy(_.creationStatus)
+
+      val responseCounts = grouped.map {
+        case (status, projlist) => (status.toString, projlist.size)
+      }
+
+      RequestComplete(OK, responseCounts)
+    }
+  }
+
 }
