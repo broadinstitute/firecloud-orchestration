@@ -28,10 +28,21 @@ object Trial {
     sealed trait TrialState  {
       override def toString: String = TrialStates.stringify(this)
       def withName(name: String): TrialState = TrialStates.withName(name)
+      def isAllowedFrom(previous: Option[TrialState]) = {
+        previous match {
+          case None => isAllowedFromNone
+          case Some(state) => isAllowedFromState(state)
+        }
+      }
+      def isAllowedFromState(previous: TrialState): Boolean
+      def isAllowedFromNone: Boolean = false
     }
+
+    val allStates = Seq(Disabled, Enabled, Enrolled, Terminated)
 
     def withName(name: String): TrialState = {
       name match {
+        case "Disabled" => Disabled
         case "Enabled" => Enabled
         case "Enrolled" => Enrolled
         case "Terminated" => Terminated
@@ -41,6 +52,7 @@ object Trial {
 
     def stringify(state: TrialState): String = {
       state match {
+        case Disabled => "Disabled"
         case Enabled => "Enabled"
         case Enrolled => "Enrolled"
         case Terminated => "Terminated"
@@ -48,9 +60,19 @@ object Trial {
       }
     }
 
-    case object Enabled extends TrialState
-    case object Enrolled extends TrialState
-    case object Terminated extends TrialState
+    case object Disabled extends TrialState  {
+      override def isAllowedFromState(previous: TrialState): Boolean = previous == Enabled
+    }
+    case object Enabled extends TrialState {
+      override def isAllowedFromNone: Boolean = true
+      override def isAllowedFromState(previous: TrialState): Boolean = previous == Disabled
+    }
+    case object Enrolled extends TrialState {
+      override def isAllowedFromState(previous: TrialState): Boolean = previous == Enabled
+    }
+    case object Terminated extends TrialState {
+      override def isAllowedFromState(previous: TrialState): Boolean = previous == Enrolled
+    }
   }
 
   // "profile" object to hold all free trial-related information for a single user

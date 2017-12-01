@@ -9,7 +9,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, RequestCompleteWithErrorReport, UserInfo, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
@@ -56,12 +56,14 @@ class TrialService
     val registrationInfoFutures = users.map(user => samDao.adminGetUserByEmail(RawlsUserEmail(user)))
     val registrationInfosFuture = Future.sequence(registrationInfoFutures)
 
-    val subjectIdsFuture = for {
+    val workbenchUserInfosFuture: Future[Seq[WorkbenchUserInfo]] = for {
       registrationInfos <- registrationInfosFuture
-      subjectIds = registrationInfos.map(_.userInfo.userSubjectId)
-    } yield subjectIds
+      workbenchUserInfos = registrationInfos.map {
+        regInfo => WorkbenchUserInfo(regInfo.userInfo.userSubjectId, regInfo.userInfo.userEmail)
+      }
+    } yield workbenchUserInfos
 
-    //return subjectIdsFuture.map(RequestComplete(OK, _))
+    //return workbenchUserInfosFuture.map(infos => RequestComplete(OK, infos.map(_.userSubjectId)))
 
     // TODO: separate the input list into registered/unregistered users
     // (and maybe a third category of users that had an error during lookup)
