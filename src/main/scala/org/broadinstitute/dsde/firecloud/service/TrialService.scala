@@ -8,8 +8,9 @@ import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.Enabled
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, RequestCompleteWithErrorReport, UserInfo, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
@@ -47,12 +48,12 @@ class TrialService
     case TerminateUsers(userInfo, users) => terminateUsers(userInfo, users) pipeTo sender
   }
 
-  // TODO: implement fully! Check that the user does not already have a state, before overwriting.
-  // this method exists solely for developer-testing purposes right now.
   private def enableUsers(userInfo: UserInfo,
                           users: Seq[String]): Future[PerRequestMessage] = {
 
     // For each user in the list, query SAM to get their subjectIds
+    // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
+    // TODO: Handle errors that may come up while querying Sam
     val registrationInfoFutures = users.map(user => samDao.adminGetUserByEmail(RawlsUserEmail(user)))
     val registrationInfosFuture = Future.sequence(registrationInfoFutures)
 
@@ -63,40 +64,36 @@ class TrialService
       }
     } yield workbenchUserInfos
 
-    //return workbenchUserInfosFuture.map(infos => RequestComplete(OK, infos.map(_.userSubjectId)))
+    workbenchUserInfosFuture.map { workbenchUserInfos =>
+      workbenchUserInfos.foreach { info =>
+        // Create a UserInfo as the target user, faking the fields we don't care about
+        val sudoUserInfo = UserInfo(info.userEmail, OAuth2BearerToken("unused-can-be-anything"), 12345, info.userSubjectId)
 
-    // TODO: separate the input list into registered/unregistered users
-    // (and maybe a third category of users that had an error during lookup)
+        // Get the user's trial status from Thurloe
+        val userProfile = thurloeDao.getTrialStatus(sudoUserInfo)
 
-    // TODO: loop over all registered users
-    Seq("these", "are", "fake", "registered", "users") foreach { user =>
+        userProfile.foreach {
+          trialStatusOpt =>
+            // TODO Handle case where TrialStatus is None
+            val trialStatus = trialStatusOpt.get
+            println(s"Current trial status of ${info.userEmail} is $trialStatus")
+            println("Checking if enabling is allowed from that state...")
 
-      // TODO: make a fake userinfo as the target user. Pull the info from the "registeredUsers" lookup
-      val sudoUserInfo: UserInfo = UserInfo("target user's email", OAuth2BearerToken("unused-can-be-anything"), 12345, "target-users-subject-id")
+            // TODO Handle invalid trial status
+            assert(Enabled.isAllowedFrom(trialStatus.currentState))
 
-      // TODO: get the user's trial status from Thurloe
-      val userProfile = thurloeDao.getTrialStatus(sudoUserInfo)
+            // Generate and persist a new TrialStatus to indicate the user is enabled
+            val now = Instant.now
+            val zero = Instant.ofEpochMilli(0)
+            val enabledStatus = UserTrialStatus(userInfo.id, Some(TrialStates.Enabled), now, zero, zero, zero)
 
-      // TODO: read the user's trial status; enforce business logic
-      // e.g. if enabling user, the user must currently be disabled or have no trial state at all
-      // if business logic validation fails, add to an "errors" list that can be returned to the caller
+            // Save updates to user's trial status
+            thurloeDao.saveTrialStatus(sudoUserInfo, enabledStatus)
+        }
+      }
 
-      // TODO: generate a new TrialStatus
-      // build the state that we want to persist to indicate the user is enabled
-      val now = Instant.now
-      val zero = Instant.ofEpochMilli(0)
-      val enabledStatus = UserTrialStatus(userInfo.id, Some(TrialStates.Enabled), now, zero, zero, zero)
-
-      // TODO: save updates to user's trial status
-      thurloeDao.saveTrialStatus(sudoUserInfo, enabledStatus)
+      RequestComplete(OK, workbenchUserInfos.map(_.userSubjectId))
     }
-
-    // TODO: return something helpful to the caller
-    Future(RequestComplete(EnhanceYourCalm, Map(
-      "enabled" -> Seq("foo", "bar"),
-      "unregistered" -> Seq("baz", "qux"),
-      "errors" -> Seq("can we return", "error messages here", "in a useful way?")
-    )))
   }
 
   // TODO: implement
