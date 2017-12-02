@@ -6,10 +6,10 @@ import java.time.temporal.ChronoUnit
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.Enabled
-import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
+import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TrialService._
@@ -50,45 +50,37 @@ class TrialService
   private def enableUsers(managerInfo: UserInfo,
                           users: Seq[String]): Future[PerRequestMessage] = {
 
-    // For each user in the list, query SAM to get their subjectIds
+    require(users.size == 1, "For the time being, we can only enable one user at a time.")
+    val user = users.head
+
+    // Query SAM to get the user's subjectId
     // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
     // TODO: Handle errors that may come up while querying Sam
-    val registrationInfoFutures = users.map(user => samDao.adminGetUserByEmail(RawlsUserEmail(user)))
-    val registrationInfosFuture = Future.sequence(registrationInfoFutures)
-
-    val workbenchUserInfosFuture: Future[Seq[WorkbenchUserInfo]] = for {
-      registrationInfos <- registrationInfosFuture
-      workbenchUserInfos = registrationInfos.map {
-        regInfo => WorkbenchUserInfo(regInfo.userInfo.userSubjectId, regInfo.userInfo.userEmail)
-      }
-    } yield workbenchUserInfos
-
-    workbenchUserInfosFuture.map { workbenchUserInfos =>
-      workbenchUserInfos.foreach { workbenchUserInfo =>
-        enableSingleUser(managerInfo, workbenchUserInfo)
-      }
-
-      RequestComplete(OK, workbenchUserInfos.map(_.userSubjectId))
+    for {
+      regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(user))
+      workbenchUserInfo = WorkbenchUserInfo(regInfo.userInfo.userSubjectId, regInfo.userInfo.userEmail)
+      result <- enableSingleUser(managerInfo, workbenchUserInfo)
+    } yield result match {
+      case StatusUpdate.Success => RequestComplete(OK)
+      case StatusUpdate.Failure => RequestComplete(InternalServerError)
     }
   }
 
-  private def enableSingleUser(managerInfo: UserInfo, userInfo: WorkbenchUserInfo): Unit = {
+  private def enableSingleUser(managerInfo: UserInfo,
+                               userInfo: WorkbenchUserInfo): Future[StatusUpdate.Attempt] = {
     // Create hybrid UserInfo with the managerInfo's credentials and users' subjectIds
-    // so the Thurloe calls can be authenticated
     val sudoUserInfo = managerInfo.copy(id = userInfo.userSubjectId)
 
-    // Get the user's trial status from Thurloe
-    val userProfile = thurloeDao.getTrialStatus(sudoUserInfo)
-
-    userProfile.foreach { trialStatusOpt =>
+    // Use the hybrid UserInfo while querying Thurloe
+    thurloeDao.getTrialStatus(sudoUserInfo) map { trialStatusOpt =>
       trialStatusOpt match {
-        case None => throw new FireCloudException("User profile not found")
         case Some(trialStatus) =>
-          // TODO Handle case where TrialStatusOpt is None
           logger.warn(s"Current trial status of ${userInfo.userEmail} is $trialStatus")
           logger.warn("Checking if enabling is allowed from that state...")
 
-          // TODO Handle invalid trial status
+          // TODO Handle invalid initial trial status
+          // TODO: Should we consider it a success and do nothing if the user's initial status
+          // is already Enabled?
           assert(Enabled.isAllowedFrom(trialStatus.currentState))
 
           // Generate and persist a new TrialStatus to indicate the user is enabled
@@ -98,7 +90,16 @@ class TrialService
 
           // Save updates to user's trial status
           thurloeDao.saveTrialStatus(sudoUserInfo, enabledStatus)
-          logger.warn("Updated profile saved; we are complete!")
+          logger.warn("Updated profile saved; we are done!")
+
+          StatusUpdate.Success
+
+        // TODO: Handle case where TrialStatusOpt is None, i.e., if the user profile doesn't exist
+        // in Thurloe, create one and set to Enabled along with the other tags
+        case None =>
+          logger.warn(s"Trial status could not be found for ${userInfo.userEmail}")
+
+          StatusUpdate.Failure
       }
     }
   }

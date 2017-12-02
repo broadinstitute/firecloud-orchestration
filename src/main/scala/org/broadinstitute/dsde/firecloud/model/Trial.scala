@@ -140,4 +140,10 @@ object Trial {
     def apply(name: RawlsBillingProjectName) = new TrialProject(name, verified=false, user=None)
   }
 
+  object StatusUpdate {
+    sealed trait Attempt
+
+    case object Success extends Attempt
+    case object Failure extends Attempt
+  }
 }
