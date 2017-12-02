@@ -64,38 +64,42 @@ class TrialService
     } yield workbenchUserInfos
 
     workbenchUserInfosFuture.map { workbenchUserInfos =>
-      workbenchUserInfos.foreach { info =>
-        // Create hybrid UserInfo with the managerInfo's credentials and users' subjectIds
-        // so the Thurloe calls can be authenticated
-        val sudoUserInfo = managerInfo.copy(id = info.userSubjectId)
-
-        // Get the user's trial status from Thurloe
-        val userProfile = thurloeDao.getTrialStatus(sudoUserInfo)
-
-        userProfile.foreach { trialStatusOpt =>
-          trialStatusOpt match {
-            case None => throw new FireCloudException("User profile not found")
-            case Some(trialStatus) =>
-              // TODO Handle case where TrialStatus is None
-              logger.warn(s"Current trial status of ${info.userEmail} is $trialStatus")
-              logger.warn("Checking if enabling is allowed from that state...")
-
-              // TODO Handle invalid trial status
-              assert(Enabled.isAllowedFrom(trialStatus.currentState))
-
-              // Generate and persist a new TrialStatus to indicate the user is enabled
-              val now = Instant.now
-              val zero = Instant.ofEpochMilli(0)
-              val enabledStatus = UserTrialStatus(managerInfo.id, Some(TrialStates.Enabled), now, zero, zero, zero)
-
-              // Save updates to user's trial status
-              thurloeDao.saveTrialStatus(sudoUserInfo, enabledStatus)
-              logger.warn("Updated profile saved; we are complete!")
-          }
-        }
+      workbenchUserInfos.foreach { workbenchUserInfo =>
+        enableSingleUser(managerInfo, workbenchUserInfo)
       }
 
       RequestComplete(OK, workbenchUserInfos.map(_.userSubjectId))
+    }
+  }
+
+  private def enableSingleUser(managerInfo: UserInfo, userInfo: WorkbenchUserInfo): Unit = {
+    // Create hybrid UserInfo with the managerInfo's credentials and users' subjectIds
+    // so the Thurloe calls can be authenticated
+    val sudoUserInfo = managerInfo.copy(id = userInfo.userSubjectId)
+
+    // Get the user's trial status from Thurloe
+    val userProfile = thurloeDao.getTrialStatus(sudoUserInfo)
+
+    userProfile.foreach { trialStatusOpt =>
+      trialStatusOpt match {
+        case None => throw new FireCloudException("User profile not found")
+        case Some(trialStatus) =>
+          // TODO Handle case where TrialStatusOpt is None
+          logger.warn(s"Current trial status of ${userInfo.userEmail} is $trialStatus")
+          logger.warn("Checking if enabling is allowed from that state...")
+
+          // TODO Handle invalid trial status
+          assert(Enabled.isAllowedFrom(trialStatus.currentState))
+
+          // Generate and persist a new TrialStatus to indicate the user is enabled
+          val now = Instant.now
+          val zero = Instant.ofEpochMilli(0)
+          val enabledStatus = UserTrialStatus(managerInfo.id, Some(TrialStates.Enabled), now, zero, zero, zero)
+
+          // Save updates to user's trial status
+          thurloeDao.saveTrialStatus(sudoUserInfo, enabledStatus)
+          logger.warn("Updated profile saved; we are complete!")
+      }
     }
   }
 
