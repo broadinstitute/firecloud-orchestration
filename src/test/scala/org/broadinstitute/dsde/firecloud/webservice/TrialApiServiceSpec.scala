@@ -25,7 +25,8 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with Trial
   // but it is tested here since it is used for the trial feature.
 
   def actorRefFactory = system
-  val trialServiceConstructor:() => TrialService = TrialService.constructor(app.copy(thurloeDAO = new TrialApiServiceSpecThurloeDAO))
+  val localThurloeDao = new TrialApiServiceSpecThurloeDAO
+  val trialServiceConstructor:() => TrialService = TrialService.constructor(app.copy(thurloeDAO = localThurloeDao))
 
   var profileServer: ClientAndServer = _
 
@@ -133,7 +134,10 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with Trial
   }
 
   "User status updates via manager endpoints" - {
-    val enablePath = "/trial/manager/enable"
+    val enablePath    = "/trial/manager/enable"
+    val disablePath   = "/trial/manager/disable"
+    val terminatePath = "/trial/manager/terminate"
+
     val userEmails = Seq("foo1.bar1@baz.org", "foo2.bar2@baz.org")
 
     "when manager endpoint for disabling user is hit" - {
@@ -151,12 +155,17 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with Trial
         Post(enablePath, userEmails) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~>
           check {
             assert(handled)
+            assert(this.localThurloeDao.usersEnabled == userEmails)
           }
       }
     }
   }
 
   class TrialApiServiceSpecThurloeDAO extends HttpThurloeDAO {
+
+    var usersEnabled = Seq[String]()
+    var usersSkipped = Seq[String]()
+
     override def saveTrialStatus(userInfo: UserInfo, trialStatus: UserTrialStatus) = {
       // Note: because HttpThurloeDAO catches exceptions, the assertions here will
       // result in InternalServerErrors instead of appearing nicely in unit test output.
@@ -168,9 +177,13 @@ class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with Trial
           assert(trialStatus.expirationDate.toEpochMilli > 0)
           assertResult( expectedExpirationDate ) { trialStatus.expirationDate }
           assertResult(0) { trialStatus.terminatedDate.toEpochMilli }
+          usersEnabled = usersEnabled :+ userInfo.userEmail
           Future.successful(())
         }
-        case _ => fail("should only be updating the enabled user")
+        case _ => {
+          usersSkipped = usersSkipped :+ userInfo.userEmail
+          fail("should only be updating the enabled user")
+        }
       }
     }
   }
