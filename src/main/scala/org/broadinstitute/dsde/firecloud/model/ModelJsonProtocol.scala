@@ -265,7 +265,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
 
   // following are horribly copied-and-pasted from rawls core, since they're not available as shared models
-
   implicit object ProjectStatusFormat extends RootJsonFormat[CreationStatuses.CreationStatus] {
     override def write(obj: CreationStatuses.CreationStatus): JsValue = JsString(obj.toString)
 
@@ -283,6 +282,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
       case _ => throw new DeserializationException("could not deserialize project role")
     }
   }
+  // END copy/paste from rawls
 
   implicit val impRawlsBillingProjectMembership = jsonFormat4(RawlsBillingProjectMembership)
 

@@ -67,10 +67,10 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
   def listUnverifiedProjects: Seq[TrialProject]
 
   /**
-    * Returns a count of available project records. Definition of "available" is deferred to impl classes.
-    * @return count of available project records.
+    * Returns a counts of project records by status.
+    * @return counts of project records.
     */
-  def countAvailableProjects: Long
+  def countProjects: Map[String,Long]
 
   /**
     * Returns a list of project records that have associated users.

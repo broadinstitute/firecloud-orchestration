@@ -65,11 +65,10 @@ class MockTrialDAO extends TrialDAO {
   override def listUnverifiedProjects: Seq[TrialProject] = Seq.empty[TrialProject]
 
   /**
-    * Returns a count of available project records. Definition of "available" is deferred to impl classes.
-    *
-    * @return count of available project records.
+    * Returns a counts of project records by status.
+    * @return counts of project records.
     */
-  override def countAvailableProjects: Long = 0
+  override def countProjects: Map[String,Long] = Map.empty[String,Long]
 
   /**
     * Returns a list of project records that have associated users.

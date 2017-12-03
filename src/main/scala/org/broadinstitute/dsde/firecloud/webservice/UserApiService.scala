@@ -124,12 +124,14 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       // TODO: move to TrialApiService, once that exists
       path("trial" / "manager" / "projects") {
         post {
-          parameter("count".as[Int]) { count =>
+          parameter("count".as[Int] ? 0) { count =>
             parameter("operation") { op =>
               requireUserInfo() { userInfo => requestContext =>
                 val message = op.toLowerCase match {
                   case "create" => TrialService.CreateProjects(userInfo, count)
-                  case "verify" => TrialService.VerifyProjects
+                  case "verify" => TrialService.VerifyProjects(userInfo)
+                  case "count" => TrialService.CountProjects(userInfo)
+                  case "report" => TrialService.Report(userInfo)
                 }
                 perRequest(requestContext, TrialService.props(trialServiceConstructor), message)
               }

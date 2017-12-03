@@ -46,8 +46,6 @@ trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
   // with great power comes great responsibility!
   def addAdminCredentials = addCredentials(OAuth2BearerToken(HttpGoogleServicesDAO.getAdminUserAccessToken))
 
-  def addTrialBillingCredentials = addCredentials(OAuth2BearerToken(HttpGoogleServicesDAO.getTrialBillingManagerAccessToken))
-
   def addFireCloudCredentials = addHeader(fireCloudHeader)
 
 }

@@ -208,4 +208,5 @@ object Trial {
 
     val all: Set[ProjectRole] = Set(Owner, User)
   }
+  // END copy/paste from rawls
 }

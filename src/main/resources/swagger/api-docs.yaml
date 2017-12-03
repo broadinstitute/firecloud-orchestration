@@ -1654,22 +1654,28 @@ paths:
     post:
       tags:
         - Trial
-      operationId: createTrialProjects
-      summary: Create free trial projects
+      operationId: manageTrialProjects
+      summary: Manage free trial projects
       parameters:
         - name: operation
-          description: |
-            operation to perform on projects. "Create" will create projects and verify those projects.
+          description: >
+            operation to perform on projects.
+            "Create" will create projects and verify those projects.
             "Verify" will verify all projects in the pool.
+            "Count" will return the number of projects in various statuses.
+            "Report" will return a report of all claimed projects.
           required: true
           in: query
           type: string
           enum:
             - create
             - verify
+            - count
+            - report
+          default: count
         - name: count
           description: number of projects to create; only used for create operation
-          required: true
+          required: false
           in: query
           type: number
       responses:

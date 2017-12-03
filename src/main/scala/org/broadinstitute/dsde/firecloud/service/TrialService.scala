@@ -18,7 +18,7 @@ import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impCreateProjectsResponse
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impCreateProjectsResponse, impTrialProject}
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.Trial._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
@@ -48,6 +48,8 @@ object TrialService {
   case class TerminateUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
   case class CreateProjects(userInfo:UserInfo, count:Int) extends TrialServiceMessage
   case class VerifyProjects(userInfo:UserInfo) extends TrialServiceMessage
+  case class CountProjects(userInfo:UserInfo) extends TrialServiceMessage
+  case class Report(userInfo:UserInfo) extends TrialServiceMessage
 
   def props(service: () => TrialService): Props = {
     Props(service())
@@ -74,6 +76,8 @@ final class TrialService
       asTrialCampaignManager(terminateUsers(managerInfo, userEmails))(managerInfo) pipeTo sender
     case CreateProjects(userInfo, count) => asTrialCampaignManager {createProjects(count)}(userInfo) pipeTo sender
     case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
+    case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
+    case Report(userInfo) => asTrialCampaignManager {projectReport}(userInfo) pipeTo sender
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
@@ -251,14 +255,14 @@ final class TrialService
         }
       }
 
-      val grouped = projects.groupBy(_.creationStatus)
-
-      val responseCounts = grouped.map {
-        case (status, projlist) => (status.toString, projlist.size)
-      }
-
-      RequestComplete(OK, responseCounts)
+      RequestComplete(OK, trialDAO.countProjects)
     }
   }
+
+  private def countProjects: Future[PerRequestMessage] =
+    Future(RequestComplete(OK, trialDAO.countProjects))
+
+  private def projectReport: Future[PerRequestMessage] =
+    Future(RequestComplete(OK, trialDAO.projectReport))
 
 }
