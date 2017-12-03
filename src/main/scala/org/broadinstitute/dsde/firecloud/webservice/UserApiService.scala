@@ -132,17 +132,11 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
                   case "verify" => TrialService.VerifyProjects(userInfo)
                   case "count" => TrialService.CountProjects(userInfo)
                   case "report" => TrialService.Report(userInfo)
+                  case _ => requestContext.complete(spray.http.StatusCodes.BadRequest)
                 }
                 perRequest(requestContext, TrialService.props(trialServiceConstructor), message)
               }
             }
-          }
-        } ~
-        put {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, TrialService.props(trialServiceConstructor),
-              TrialService.VerifyProjects(userInfo)
-            )
           }
         }
       } ~
