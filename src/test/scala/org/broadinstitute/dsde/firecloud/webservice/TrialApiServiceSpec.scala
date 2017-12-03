@@ -159,6 +159,10 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         assertResult(NoContent, response.entity.asString) { status }
       }
     }
+
+    // TODO: Test user disabling
+
+    // TODO: Test user termination
   }
 
   final class TrialApiServiceSpecThurloeDAO extends HttpThurloeDAO {
