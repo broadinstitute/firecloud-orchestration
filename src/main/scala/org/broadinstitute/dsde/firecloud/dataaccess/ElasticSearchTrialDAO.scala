@@ -25,22 +25,21 @@ import scala.util.{Failure, Success, Try}
 
 trait TrialQueries {
 
-  val Unverified = termQuery("verified", false)
+  val Unverified:QueryBuilder = termQuery("verified", false)
 
-  val Errored = boolQuery()
+  val Errored:QueryBuilder = boolQuery()
     .must(termQuery("verified", true))
     .must(termQuery("status.keyword", CreationStatuses.Error.toString))
 
-  val Available = boolQuery()
+  val Available:QueryBuilder = boolQuery()
     .must(termQuery("verified", true))
     .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
     .mustNot(existsQuery("user.userSubjectId.keyword"))
 
-  val Claimed = boolQuery()
+  val Claimed:QueryBuilder = boolQuery()
     .must(termQuery("verified", true))
     .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
     .must(existsQuery("user.userSubjectId.keyword"))
-
 }
 
 class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshMode: RefreshPolicy = RefreshPolicy.NONE)
@@ -195,7 +194,6 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
       Seq.empty[TrialProject]
     else
       unverifiedResponse.getHits.getHits.toSeq map ( _.getSourceAsString.parseJson.convertTo[TrialProject] )
-
   }
 
   /**
@@ -203,17 +201,11 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     * @return counts of project records.
     */
   override def countProjects: Map[String,Long] = {
-    // unverified, errored, available, claimed
-    val unverified = count(Unverified)
-    val errored = count(Errored)
-    val available = count(Available)
-    val claimed = count(Claimed)
-
     Map(
-      "unverified" -> unverified,
-      "errored" -> errored,
-      "available" -> available,
-      "claimed" -> claimed
+      "unverified" -> count(Unverified),
+      "errored" -> count(Errored),
+      "available" -> count(Available),
+      "claimed" -> count(Claimed)
     )
   }
 

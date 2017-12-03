@@ -1658,7 +1658,7 @@ paths:
       summary: Manage free trial projects
       parameters:
         - name: operation
-          description: >
+          description: |
             operation to perform on projects.
             "Create" will create projects and verify those projects.
             "Verify" will verify all projects in the pool.
