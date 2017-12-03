@@ -54,14 +54,16 @@ final class TrialService
 
     val user = users.head
 
-    // Generate a new UserTrialStatus to persist
-    val newStatus = UserTrialStatus(
-      userId = managerInfo.id,
-      state = Some(Enabled),
-      enabledDate = Instant.now
-    )
+    // Define what to overwrite in user's status
+    val statusTransition: UserTrialStatus => UserTrialStatus =
+      currentStatus =>
+        currentStatus.copy(
+          userId = managerInfo.id,
+          state = Some(Enabled),
+          enabledDate = Instant.now
+        )
 
-    updateUserState(managerInfo, user, newStatus)
+    updateUserState(managerInfo, user, statusTransition)
   }
 
   private def disableUsers(managerInfo: UserInfo, users: Seq[String]): Future[PerRequestMessage] = {
@@ -70,13 +72,15 @@ final class TrialService
 
     val user = users.head
 
-    // Generate a new UserTrialStatus to persist
-    val newStatus = UserTrialStatus(
-      userId = managerInfo.id,
-      state = Some(Disabled)
-    )
+    // Define what to overwrite in user's status
+    val statusTransition: UserTrialStatus => UserTrialStatus =
+      currentStatus =>
+        currentStatus.copy(
+          userId = managerInfo.id,
+          state = Some(Disabled)
+        )
 
-    updateUserState(managerInfo, user, newStatus)
+    updateUserState(managerInfo, user, statusTransition)
   }
 
   private def terminateUsers(managerInfo: UserInfo, users: Seq[String]): Future[PerRequestMessage] = {
@@ -85,25 +89,27 @@ final class TrialService
 
     val user = users.head
 
-    // Generate a new UserTrialStatus to persist
-    val newStatus = UserTrialStatus(
-      userId = managerInfo.id,
-      state = Some(Terminated),
-      terminatedDate = Instant.now
-    )
+    // Define what to overwrite in user's status
+    val statusTransition: UserTrialStatus => UserTrialStatus =
+      currentStatus =>
+        currentStatus.copy(
+          userId = managerInfo.id,
+          state = Some(Terminated),
+          terminatedDate = Instant.now
+        )
 
-    updateUserState(managerInfo, user, newStatus)
+    updateUserState(managerInfo, user, statusTransition)
   }
 
   private def updateUserState(managerInfo: UserInfo,
                               user: String,
-                              newStatus: UserTrialStatus): Future[PerRequestMessage] = {
+                              statusTransition: UserTrialStatus => UserTrialStatus): Future[PerRequestMessage] = {
     // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
     // TODO: Handle errors that may come up while querying Sam
     for {
       regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(user))
       workbenchUserInfo = WorkbenchUserInfo(regInfo.userInfo.userSubjectId, regInfo.userInfo.userEmail)
-      result <- updateTrialStatus(managerInfo, workbenchUserInfo, newStatus)
+      result <- updateTrialStatus(managerInfo, workbenchUserInfo, statusTransition)
     } yield result match {
       case StatusUpdate.Success => RequestComplete(NoContent)
       case StatusUpdate.Failure => RequestComplete(InternalServerError)
@@ -112,14 +118,15 @@ final class TrialService
 
   private def updateTrialStatus(managerInfo: UserInfo,
                                 userInfo: WorkbenchUserInfo,
-                                newStatus: UserTrialStatus): Future[StatusUpdate.Attempt] = {
+                                statusTransition: UserTrialStatus => UserTrialStatus): Future[StatusUpdate.Attempt] = {
     // Create hybrid UserInfo with the managerInfo's credentials and users' subjectIds
     val sudoUserInfo = managerInfo.copy(id = userInfo.userSubjectId)
 
     // Use the hybrid UserInfo while querying Thurloe
     thurloeDao.getTrialStatus(sudoUserInfo) map {
-      case Some(trialStatus) =>
-        val currentState = trialStatus.state
+      case Some(currentStatus) =>
+        val currentState = currentStatus.state
+        val newStatus = statusTransition(currentStatus)
         val newState = newStatus.state
 
         if (currentState == newState) {

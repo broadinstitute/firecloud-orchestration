@@ -14,7 +14,7 @@ import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
-import spray.http.StatusCodes.{BadRequest, NoContent, NotFound, OK}
+import spray.http.StatusCodes.{BadRequest, NoContent, OK}
 import spray.http.HttpMethods.POST
 import spray.json.DefaultJsonProtocol._
 import spray.json._
