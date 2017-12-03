@@ -20,7 +20,7 @@ object Trial {
       case "enable" => Enable
       case "disable" => Disable
       case "terminate" => Terminate
-      case _ => throw new FireCloudException(s"invalid TrialOperation [$name]")
+      case _ => throw new FireCloudException(s"Invalid trial operation: [$name]")
     }
   }
 

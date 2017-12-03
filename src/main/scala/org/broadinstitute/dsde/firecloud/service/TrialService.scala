@@ -66,7 +66,7 @@ class TrialService
       workbenchUserInfo = WorkbenchUserInfo(regInfo.userInfo.userSubjectId, regInfo.userInfo.userEmail)
       result <- updateTrialStatus(managerInfo, workbenchUserInfo, TrialStates.Enabled)
     } yield result match {
-      case StatusUpdate.Success => RequestComplete(OK)
+      case StatusUpdate.Success => RequestComplete(NoContent)
       case StatusUpdate.Failure => RequestComplete(InternalServerError)
     }
   }
@@ -93,10 +93,10 @@ class TrialService
         // Generate and persist a new TrialStatus to indicate the user is enabled
         val now = Instant.now
         val zero = Instant.ofEpochMilli(0)
-        val enabledStatus = UserTrialStatus(managerInfo.id, Some(newState), now, zero, zero, zero)
+        val newStatus = UserTrialStatus(managerInfo.id, Some(newState), now, zero, zero, zero)
 
         // Save updates to user's trial status
-        thurloeDao.saveTrialStatus(sudoUserInfo, enabledStatus)
+        thurloeDao.saveTrialStatus(sudoUserInfo, newStatus)
         logger.warn("Updated profile saved; we are done!")
 
         StatusUpdate.Success
