@@ -249,7 +249,7 @@ final class TrialService
             logger.warn(s"project ${unv.name.value} errored, so we have to give up on it.")
             trialDAO.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Error)
           case Some(CreationStatuses.Ready) =>
-            trialDAO.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Error)
+            trialDAO.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Ready)
           case None =>
             logger.warn(s"project ${unv.name.value} exists in pool but not found via Rawls!")
         }

@@ -75,7 +75,7 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val createD
       logger.info(s"project creation cycle: $getCurrentStatus")
 
       // generate a unique project name
-      val uniqueProjectName = verifyUniqueProjectName(ProjectNamer.randomName, 1)
+      val uniqueProjectName = getAndRecordUniqueProjectName
 
       uniqueProjectName map { projectName =>
         logger.info(s"creating name <$projectName> via rawls ...")
@@ -126,20 +126,24 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val createD
     }
   }
 
-  private def verifyUniqueProjectName(name: String, currentAttempt: Int): Option[String] = {
-    val sanityLimit = 100
-    Try(trialDAO.insertProjectRecord(RawlsBillingProjectName(name))) match {
-      case scala.util.Success(project) =>
-        logger.debug(s"found unique project name in $currentAttempt attempt(s); recorded in pool.")
-        Some(project.name.value)
-      case scala.util.Failure(f) =>
-        if (currentAttempt > sanityLimit) {
-          logger.error(s"Could not generate a unique project name after $currentAttempt tries: ${f.getMessage}")
-          None
-        } else {
-          verifyUniqueProjectName(ProjectNamer.randomName, currentAttempt+1)
-        }
+  private def getAndRecordUniqueProjectName: Option[String] = {
+    def verifyUniqueProjectName(name: String, currentAttempt: Int): Option[String] = {
+      val sanityLimit = 100
+      Try(trialDAO.insertProjectRecord(RawlsBillingProjectName(name))) match {
+        case scala.util.Success(project) =>
+          logger.debug(s"found unique project name in $currentAttempt attempt(s); recorded in pool.")
+          Some(project.name.value)
+        case scala.util.Failure(f) =>
+          if (currentAttempt > sanityLimit) {
+            logger.error(s"Could not generate a unique project name after $currentAttempt tries: ${f.getMessage}")
+            None
+          } else {
+            verifyUniqueProjectName(ProjectNamer.randomName, currentAttempt+1)
+          }
+      }
     }
+
+    verifyUniqueProjectName(ProjectNamer.randomName, 1)
   }
 
   private def setCurrentStatus(status: String) = currentStatus = status
