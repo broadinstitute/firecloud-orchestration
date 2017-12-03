@@ -95,14 +95,14 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
     }
     "countAvailableProjects" - {
       "should return zero when no projects available" in {
-        assertResult(0) { trialDAO.countAvailableProjects }
+        assertResult(Some(0)) { trialDAO.countProjects.get("available") }
       }
       "should return accurate count of available projects" in {
         // insert three
         Seq("orange", "pineapple", "quince") foreach { proj => trialDAO.insertProjectRecord(RawlsBillingProjectName(proj))}
         // verify two
         Seq("orange", "quince") foreach { proj => trialDAO.setProjectRecordVerified(RawlsBillingProjectName(proj), verified=true, status=Ready)}
-        assertResult(2) { trialDAO.countAvailableProjects }
+        assertResult(Some(2)) { trialDAO.countProjects.get("available") }
       }
     }
     "projectReport" - {
