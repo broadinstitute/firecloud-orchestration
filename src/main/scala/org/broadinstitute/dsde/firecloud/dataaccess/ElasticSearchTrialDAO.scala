@@ -136,7 +136,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject = {
     val nextProjectQuery = boolQuery()
       .must(termQuery("verified", true))
-      .must(termQuery("status.keyword", CreationStatuses.Ready))
+      .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
       .mustNot(existsQuery("user.userSubjectId.keyword"))
 
     // if we find regular race conditions in which multiple users attempt to claim the "next" project,

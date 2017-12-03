@@ -8,7 +8,7 @@ import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
-import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership, TrialProject}
+import org.broadinstitute.dsde.firecloud.model.Trial._
 import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
@@ -287,5 +287,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impRawlsBillingProjectMembership = jsonFormat4(RawlsBillingProjectMembership)
 
   implicit val impTrialProject = jsonFormat4(TrialProject.apply)
+  implicit val impCreateProjectsResponse = jsonFormat3(CreateProjectsResponse)
 
 }

@@ -3,8 +3,9 @@ package org.broadinstitute.dsde.firecloud.service
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
+import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO}
@@ -17,12 +18,13 @@ import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impCreateProjectsResponse
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
-import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, RawlsBillingProjectMembership, TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, BasicProfile, Profile, RegistrationInfo, RequestCompleteWithErrorReport, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.Trial._
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TrialService._
-import org.broadinstitute.dsde.firecloud.trial.ProjectNamer
+import org.broadinstitute.dsde.firecloud.trial.ProjectManager.StartCreation
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 import spray.http.{OAuth2BearerToken, StatusCodes}
@@ -31,6 +33,7 @@ import spray.httpx.SprayJsonSupport
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 import scala.util.Try
@@ -50,13 +53,13 @@ object TrialService {
     Props(service())
   }
 
-  def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new TrialService(app.samDAO, app.thurloeDAO, app.rawlsDAO, app.trialDAO)
+  def constructor(app: Application, projectManager: ActorRef)()(implicit executionContext: ExecutionContext) =
+    new TrialService(app.samDAO, app.thurloeDAO, app.rawlsDAO, app.trialDAO, projectManager)
 }
 
 // TODO: Remove loggers used for development purposes or lower their level
 final class TrialService
-  (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO)
+  (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, projectManager: ActorRef)
   (implicit protected val executionContext: ExecutionContext)
   extends Actor with PermissionsSupport with SprayJsonSupport with LazyLogging {
 
@@ -213,40 +216,12 @@ final class TrialService
   }
 
   private def createProjects(count: Int): Future[PerRequestMessage] = {
-
-      if (count < 0 || count > 100)
-        throw new FireCloudException("please provide a count between 1 and 100.")
-
-      val createResults:Future[Seq[Boolean]] = Future.sequence(1 to count map { idx =>
-        // generate a unique project name
-        def verifyUniqueProjectName(name: String): String = {
-          var sanityCheck = 1
-          Try(trialDAO.insertProjectRecord(RawlsBillingProjectName(name))) match {
-            case scala.util.Success(project) =>
-              logger.info(s"found unique project name in $sanityCheck attempts; recorded in pool.")
-              project.name.value
-            case scala.util.Failure(f) =>
-              sanityCheck += 1
-              if (sanityCheck > 100) throw new FireCloudException(s"Could not generate a unique project name after $sanityCheck tries: ${f.getMessage}")
-              verifyUniqueProjectName(ProjectNamer.randomName)
-          }
-        }
-        val projectName = verifyUniqueProjectName(ProjectNamer.randomName)
-        val billingAcct = FireCloudConfig.Trial.billingAccount
-
-        logger.info(s"creating name '$projectName' via rawls ...")
-
-        // create project via rawls, after sudoing to the trial billing manager
-        val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(HttpGoogleServicesDAO.getTrialBillingManagerAccessToken))
-        rawlsDAO.createProject(projectName, billingAcct)(saToken)
-    })
-
-    createResults map { res =>
-      val grouped = res.groupBy(b => b)
-      if (!grouped.contains(false))
-        RequestComplete(Created)
-      else
-        RequestComplete(InternalServerError, s"${grouped.get(false).size} errors")
+    implicit val timeout:Timeout = 1.minute // timeout to get a response from projectManager
+    val create = projectManager ? StartCreation(count)
+    create.map {
+      case c:CreateProjectsResponse if c.success => RequestComplete(StatusCodes.Accepted, c)
+      case c:CreateProjectsResponse if !c.success => RequestComplete(BadRequest, c)
+      case _ => RequestComplete(InternalServerError)
     }
   }
 

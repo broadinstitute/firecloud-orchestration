@@ -142,7 +142,6 @@ object Trial {
     def apply(name: RawlsBillingProjectName) = new TrialProject(name, verified=false, user=None, status=None)
   }
 
-
   object StatusUpdate {
     sealed trait Attempt
 
@@ -151,8 +150,9 @@ object Trial {
     case class ServerError(msg: String) extends Attempt
   }
 
-  // following are horribly copied-and-pasted from rawls core, since they're not available as shared models
+  case class CreateProjectsResponse(success: Boolean, count: Int, message: Option[String])
 
+  // following are horribly copied-and-pasted from rawls core, since they're not available as shared models
   case class RawlsBillingProjectMembership(projectName: RawlsBillingProjectName, role: ProjectRoles.ProjectRole, creationStatus: CreationStatuses.CreationStatus, message: Option[String] = None)
 
   object CreationStatuses {

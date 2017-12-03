@@ -1657,13 +1657,19 @@ paths:
       operationId: createTrialProjects
       summary: Create free trial projects
       parameters:
+        - name: operation
+          description: operation to perform on projects
+          required: true
+          in: query
+          type: string
+          enum:
+            - create
+            - verify
         - name: count
-          description: number of projects to create
+          description: number of projects to create; only used for create operation
           required: true
           in: query
           type: number
-      produces:
-        - text/plain
       responses:
         204:
           description: Created
@@ -1675,27 +1681,6 @@ paths:
           description: project already exists in rawls or google
         500:
           description: Internal Server Error
-    put:
-      tags:
-        - Trial
-      operationId: verifyTrialProjects
-      summary: Verify free trial projects
-      description: This is a horrible, horrible use of the PUT verb
-      produces:
-        - text/plain
-        - application/json
-      responses:
-        200:
-          description: Verifications complete
-        400:
-          description: firecloud billing user must be an admin of the billing account
-        403:
-          description: You must be an admin of the google billing account
-        409:
-          description: project already exists in rawls or google
-        500:
-          description: Internal Server Error
-
 
   /version/executionEngine:
     get:

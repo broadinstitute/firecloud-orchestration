@@ -15,6 +15,9 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
 import spray.http.StatusCodes.{BadRequest, NoContent, OK}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
+import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
+import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import spray.http.HttpMethods.POST
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -31,8 +34,9 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   def actorRefFactory = system
   val localThurloeDao = new TrialApiServiceSpecThurloeDAO
   val localSamDao = new TrialApiServiceSpecSamDAO
-  val trialServiceConstructor:() => TrialService =
-    TrialService.constructor(app.copy(thurloeDAO = localThurloeDao, samDAO = localSamDao))
+
+  val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO), "trial-project-manager")
+  val trialServiceConstructor:() => TrialService = TrialService.constructor(app.copy(thurloeDAO = localThurloeDao, samDAO = localSamDao), trialProjectManager)
 
   var profileServer: ClientAndServer = _
 
