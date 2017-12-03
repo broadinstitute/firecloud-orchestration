@@ -54,17 +54,18 @@ class TrialService
 
     val user = users.head
 
-    enableUser(managerInfo, user)
+    updateUserState(managerInfo, user, newState = Enabled)
   }
 
-  private def enableUser(managerInfo: UserInfo,
-                         user: String): Future[PerRequestMessage] = {
+  private def updateUserState(managerInfo: UserInfo,
+                         user: String,
+                         newState: TrialState): Future[PerRequestMessage] = {
     // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
     // TODO: Handle errors that may come up while querying Sam
     for {
       regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(user))
       workbenchUserInfo = WorkbenchUserInfo(regInfo.userInfo.userSubjectId, regInfo.userInfo.userEmail)
-      result <- updateTrialStatus(managerInfo, workbenchUserInfo, TrialStates.Enabled)
+      result <- updateTrialStatus(managerInfo, workbenchUserInfo, newState)
     } yield result match {
       case StatusUpdate.Success => RequestComplete(NoContent)
       case StatusUpdate.Failure => RequestComplete(InternalServerError)

@@ -117,7 +117,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   }
 
   // TODO: Keep track of and check all users whose statuses are updated when multi-user updates are supported
-  "Free Trial Manager Updates" - {
+  "Free Trial User Updates by Campaign Manager" - {
     val enablePath    = "/trial/manager/enable"
     val disablePath   = "/trial/manager/disable"
     val terminatePath = "/trial/manager/terminate"
@@ -136,29 +136,25 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
             }
         }
       }
+    }
 
-      "attempting an invalid operation" - {
-        "should not be handled" in {
-          Post(invalidPath, disabledUserEmail) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
-            assert(!handled)
-          }
-        }
+    // TODO: Test updates of users who aren't registered (i.e. no RegistrationInfo in Sam)
+
+    "Attempting an invalid operation should not be handled" in {
+      Post(invalidPath, disabledUserEmail) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
+        assert(!handled)
       }
+    }
 
-      "attempting to enable a previously disabled user" - {
-        "should return NoContent success" in {
-          Post(enablePath, disabledUserEmail) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
-            assertResult(NoContent, response.entity.asString) { status }
-          }
-        }
+    "Attempting to enable a previously disabled user should return NoContent success" in {
+      Post(enablePath, disabledUserEmail) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
+        assertResult(NoContent, response.entity.asString) { status }
       }
+    }
 
-      "attempting to enable a previously enabled user" - {
-        "should return NoContent success" in {
-          Post(enablePath, enabledUserEmail) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
-            assertResult(NoContent, response.entity.asString) { status }
-          }
-        }
+    "Attempting to enable a previously enabled user should return NoContent success" in {
+      Post(enablePath, enabledUserEmail) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+        assertResult(NoContent, response.entity.asString) { status }
       }
     }
   }

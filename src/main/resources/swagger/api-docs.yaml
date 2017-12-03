@@ -1646,8 +1646,6 @@ paths:
         responses:
           204:
             description: Success (No Content)
-          400:
-            description: Invalid operation
           500:
             description: Internal Server Error
 
