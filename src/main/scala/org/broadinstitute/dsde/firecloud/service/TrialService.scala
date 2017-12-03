@@ -58,7 +58,7 @@ class TrialService
   }
 
   private def enableUser(managerInfo: UserInfo,
-                          user: String): Future[PerRequestMessage] = {
+                         user: String): Future[PerRequestMessage] = {
     // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
     // TODO: Handle errors that may come up while querying Sam
     for {
@@ -80,27 +80,34 @@ class TrialService
     // Use the hybrid UserInfo while querying Thurloe
     thurloeDao.getTrialStatus(sudoUserInfo) map {
       case Some(trialStatus) =>
-        logger.warn(s"Current trial status of ${userInfo.userEmail} is $trialStatus")
-        logger.warn("Checking if enabling is allowed from that state...")
-
-        // TODO Handle invalid initial trial status
-        // TODO: Should we consider it a success and do nothing if the user's initial status
-        // is already Enabled?
         val currentState = trialStatus.currentState
-        assert(Enabled.isAllowedFrom(currentState),
-          s"Cannot transition from $currentState to $newState")
 
-        // Generate and persist a new TrialStatus to indicate the user is enabled
-        val now = Instant.now
-        val zero = Instant.ofEpochMilli(0)
-        val newStatus = UserTrialStatus(managerInfo.id, Some(newState), now, zero, zero, zero)
+        if (currentState.contains(newState)) {
+          logger.warn(
+            s"The user '${userInfo.userEmail}' is already in the trial state of '$newState'. " +
+            s"No further action will be taken.")
 
-        // Save updates to user's trial status
-        thurloeDao.saveTrialStatus(sudoUserInfo, newStatus)
-        logger.warn("Updated profile saved; we are done!")
+          StatusUpdate.Success
+        } else {
+          logger.warn(s"Current trial state of the user '${userInfo.userEmail}' is '$currentState'")
+          logger.warn("Checking if enabling is allowed from that state...")
+          // TODO Handle invalid initial trial status
+          // TODO: Should we consider it a success and do nothing if the user's initial status
+          // is already Enabled?
+          assert(Enabled.isAllowedFrom(currentState),
+            s"Cannot transition from $currentState to $newState")
 
-        StatusUpdate.Success
+          // Generate and persist a new TrialStatus to indicate the user is enabled
+          val now = Instant.now
+          val zero = Instant.ofEpochMilli(0)
+          val newStatus = UserTrialStatus(managerInfo.id, Some(newState), now, zero, zero, zero)
 
+          // Save updates to user's trial status
+          thurloeDao.saveTrialStatus(sudoUserInfo, newStatus)
+          logger.warn("Updated profile saved; we are done!")
+
+          StatusUpdate.Success
+        }
       // TODO: Handle case where TrialStatusOpt is None, i.e., if the user profile doesn't exist
       // in Thurloe, create one and set to Enabled along with the other tags
       case None =>

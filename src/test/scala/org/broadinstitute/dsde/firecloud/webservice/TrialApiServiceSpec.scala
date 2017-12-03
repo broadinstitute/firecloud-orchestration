@@ -123,12 +123,13 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     val terminatePath = "/trial/manager/terminate"
     val invalidPath = "/trial/manager/unsupported-operation"
 
-    val userEmails = Seq(disabledUser)
+    val disabledUserEmail = Seq(disabledUser)
+    val enabledUserEmail = Seq(enabledUser)
 
     "Manager endpoint" - {
       allHttpMethodsExcept(POST) foreach { method =>
         s"should reject ${method.toString} method" in {
-          new RequestBuilder(method)(enablePath, userEmails) ~> dummyUserIdHeaders(enabledUser) ~>
+          new RequestBuilder(method)(enablePath, disabledUserEmail) ~> dummyUserIdHeaders(enabledUser) ~>
             trialApiServiceRoutes ~>
             check {
               assert(!handled)
@@ -138,15 +139,23 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
       "attempting an invalid operation" - {
         "should not be handled" in {
-          Post(invalidPath, userEmails) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
+          Post(invalidPath, disabledUserEmail) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
             assert(!handled)
           }
         }
       }
 
-      "attempting to enable a disabled user" - {
-        "should be NoContent success" in {
-          Post(enablePath, userEmails) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
+      "attempting to enable a previously disabled user" - {
+        "should return NoContent success" in {
+          Post(enablePath, disabledUserEmail) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
+            assertResult(NoContent, response.entity.asString) { status }
+          }
+        }
+      }
+
+      "attempting to enable a previously enabled user" - {
+        "should return NoContent success" in {
+          Post(enablePath, enabledUserEmail) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
             assertResult(NoContent, response.entity.asString) { status }
           }
         }
@@ -198,7 +207,10 @@ object TrialApiServiceSpec {
   val enrolledUser = "enrolled-user"
   val terminatedUser = "terminated-user"
 
-  val disabledProps = Map.empty[String,String]
+  val disabledProps = Map(
+    "trialCurrentState" -> "Disabled",
+    "trialEnabledDate" -> "555"
+  )
   val enabledProps = Map(
     "trialCurrentState" -> "Enabled",
     "trialEnabledDate" -> "1"
