@@ -140,6 +140,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
     // TODO: Test updates of users who aren't registered (i.e. no RegistrationInfo in Sam)
 
+    // TODO: Test invalid trial status transition request (e.g. Terminated -> Enabled)
+
     "Attempting an invalid operation should not be handled" in {
       Post(invalidPath, disabledUserEmail) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
         assert(!handled)
@@ -167,7 +169,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         case `enabledUser` =>
           val expectedExpirationDate = trialStatus.enrolledDate.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
 
-          assertResult(Some(TrialStates.Enrolled)) { trialStatus.currentState }
+          assertResult(Some(TrialStates.Enrolled)) { trialStatus.state }
           assert(trialStatus.enrolledDate.toEpochMilli > 0)
           assert(trialStatus.expirationDate.toEpochMilli > 0)
           assertResult( expectedExpirationDate ) { trialStatus.expirationDate }
@@ -175,7 +177,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
           Future.successful(())
         case `disabledUser` => {
-          assertResult(Some(TrialStates.Enabled)) { trialStatus.currentState }
+          assertResult(Some(TrialStates.Enabled)) { trialStatus.state }
           assert(trialStatus.enabledDate.toEpochMilli > 0)
           assert(trialStatus.enrolledDate.toEpochMilli === 0)
           assert(trialStatus.terminatedDate.toEpochMilli === 0)

@@ -8,7 +8,7 @@ import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO}
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Enabled, TrialState}
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Terminated, TrialState}
 import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -35,7 +35,8 @@ object TrialService {
     new TrialService(app.samDAO, app.thurloeDAO)
 }
 
-class TrialService
+// TODO: Remove loggers used for development purposes or lower their level
+final class TrialService
   (val samDao: SamDAO, val thurloeDao: ThurloeDAO)
   (implicit protected val executionContext: ExecutionContext)
   extends Actor with LazyLogging with SprayJsonSupport {
@@ -47,25 +48,62 @@ class TrialService
     case TerminateUsers(userInfo, users) => terminateUsers(userInfo, users) pipeTo sender
   }
 
-  private def enableUsers(managerInfo: UserInfo,
-                          users: Seq[String]): Future[PerRequestMessage] = {
+  private def enableUsers(managerInfo: UserInfo, users: Seq[String]): Future[PerRequestMessage] = {
     // TODO: Handle multiple users
     require(users.size == 1, "For the time being, we can only enable one user at a time.")
 
     val user = users.head
 
-    updateUserState(managerInfo, user, newState = Enabled)
+    // Generate a new UserTrialStatus to persist
+    val newStatus = UserTrialStatus(
+      userId = managerInfo.id,
+      state = Some(Enabled),
+      enabledDate = Instant.now
+    )
+
+    updateUserState(managerInfo, user, newStatus)
+  }
+
+  private def disableUsers(managerInfo: UserInfo, users: Seq[String]): Future[PerRequestMessage] = {
+    // TODO: Handle multiple users
+    require(users.size == 1, "For the time being, we can only disable one user at a time.")
+
+    val user = users.head
+
+    // Generate a new UserTrialStatus to persist
+    val newStatus = UserTrialStatus(
+      userId = managerInfo.id,
+      state = Some(Disabled)
+    )
+
+    updateUserState(managerInfo, user, newStatus)
+  }
+
+  private def terminateUsers(managerInfo: UserInfo, users: Seq[String]): Future[PerRequestMessage] = {
+    // TODO: Handle multiple users
+    require(users.size == 1, "For the time being, we can only terminate one user at a time.")
+
+    val user = users.head
+
+    // Generate a new UserTrialStatus to persist
+    val newStatus = UserTrialStatus(
+      userId = managerInfo.id,
+      state = Some(Terminated),
+      terminatedDate = Instant.now
+    )
+
+    updateUserState(managerInfo, user, newStatus)
   }
 
   private def updateUserState(managerInfo: UserInfo,
-                         user: String,
-                         newState: TrialState): Future[PerRequestMessage] = {
+                              user: String,
+                              newStatus: UserTrialStatus): Future[PerRequestMessage] = {
     // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
     // TODO: Handle errors that may come up while querying Sam
     for {
       regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(user))
       workbenchUserInfo = WorkbenchUserInfo(regInfo.userInfo.userSubjectId, regInfo.userInfo.userEmail)
-      result <- updateTrialStatus(managerInfo, workbenchUserInfo, newState)
+      result <- updateTrialStatus(managerInfo, workbenchUserInfo, newStatus)
     } yield result match {
       case StatusUpdate.Success => RequestComplete(NoContent)
       case StatusUpdate.Failure => RequestComplete(InternalServerError)
@@ -74,16 +112,17 @@ class TrialService
 
   private def updateTrialStatus(managerInfo: UserInfo,
                                 userInfo: WorkbenchUserInfo,
-                                newState: TrialState): Future[StatusUpdate.Attempt] = {
+                                newStatus: UserTrialStatus): Future[StatusUpdate.Attempt] = {
     // Create hybrid UserInfo with the managerInfo's credentials and users' subjectIds
     val sudoUserInfo = managerInfo.copy(id = userInfo.userSubjectId)
 
     // Use the hybrid UserInfo while querying Thurloe
     thurloeDao.getTrialStatus(sudoUserInfo) map {
       case Some(trialStatus) =>
-        val currentState = trialStatus.currentState
+        val currentState = trialStatus.state
+        val newState = newStatus.state
 
-        if (currentState.contains(newState)) {
+        if (currentState == newState) {
           logger.warn(
             s"The user '${userInfo.userEmail}' is already in the trial state of '$newState'. " +
             s"No further action will be taken.")
@@ -92,35 +131,29 @@ class TrialService
         } else {
           logger.warn(s"Current trial state of the user '${userInfo.userEmail}' is '$currentState'")
           logger.warn("Checking if enabling is allowed from that state...")
-          // TODO Handle invalid initial trial status
-          // TODO: Should we consider it a success and do nothing if the user's initial status
-          // is already Enabled?
-          assert(Enabled.isAllowedFrom(currentState),
-            s"Cannot transition from $currentState to $newState")
 
-          // Generate and persist a new TrialStatus to indicate the user is enabled
-          val now = Instant.now
-          val zero = Instant.ofEpochMilli(0)
-          val newStatus = UserTrialStatus(managerInfo.id, Some(newState), now, zero, zero, zero)
+          require(newState.nonEmpty, "Cannot transition to an unspecified state")
+
+          // TODO Handle invalid initial trial status by
+          //    -adding another case to Trial.StatusUpdate
+          //    -using that case to return a BadRequest from the parent method (i.e. updateUserState())
+          assert(newState.get.isAllowedFrom(currentState),
+            s"Cannot transition from $currentState to $newState")
 
           // Save updates to user's trial status
           thurloeDao.saveTrialStatus(sudoUserInfo, newStatus)
-          logger.warn("Updated profile saved; we are done!")
+          logger.warn(s"Updated profile saved as $newState; we are done!")
 
           StatusUpdate.Success
         }
       // TODO: Handle case where TrialStatusOpt is None, i.e., if the user profile doesn't exist
-      // in Thurloe, create one and set to Enabled along with the other tags
+      // in Thurloe, create one and set to the new state along with the other tags
       case None =>
         logger.warn(s"Trial status could not be found for ${userInfo.userEmail}")
 
         StatusUpdate.Failure
     }
   }
-
-  // TODO: implement
-  private def disableUsers(userInfo: UserInfo,
-                           users: Seq[String]): Future[PerRequestMessage] = ???
 
   private def enrollUser(userInfo:UserInfo): Future[PerRequestMessage] = {
     // get user's trial status, then check the current state
@@ -129,7 +162,7 @@ class TrialService
         // can't determine the user's trial status; don't enroll
         case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial."))
         case Some(status) =>
-          status.currentState match {
+          status.state match {
             // user already enrolled; don't re-enroll
             case Some(TrialStates.Enrolled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are already enrolled in a free trial."))
             // user enabled (eligible) for trial, enroll!
@@ -138,7 +171,7 @@ class TrialService
               val now = Instant.now
               val expirationDate = now.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
               val enrolledStatus = status.copy(
-                currentState = Some(TrialStates.Enrolled),
+                state = Some(TrialStates.Enrolled),
                 enrolledDate = now,
                 expirationDate = expirationDate
               )
@@ -153,11 +186,5 @@ class TrialService
       }
     }
   }
-
-  // TODO: implement
-  private def terminateUsers(userInfo: UserInfo, users: Seq[String]): Future[PerRequestMessage] = {
-    Future(RequestCompleteWithErrorReport(NotImplemented, "not implemented"))
-  }
-
 }
 

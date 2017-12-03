@@ -78,12 +78,12 @@ object Trial {
 
   // "profile" object to hold all free trial-related information for a single user
   case class UserTrialStatus(
-    userId: String,
-    currentState: Option[TrialState],
-    enabledDate: Instant,    // timestamp a campaign manager granted the user trial permissions
-    enrolledDate: Instant,   // timestamp user started their trial
-    terminatedDate: Instant, // timestamp user was actually terminated
-    expirationDate: Instant  // timestamp user is due to face termination
+      userId: String,
+      state: Option[TrialState],
+      enabledDate: Instant = Instant.ofEpochMilli(0), // timestamp a campaign manager granted the user trial permissions
+      enrolledDate: Instant = Instant.ofEpochMilli(0), // timestamp user started their trial
+      terminatedDate: Instant = Instant.ofEpochMilli(0), // timestamp user was actually terminated
+      expirationDate: Instant = Instant.ofEpochMilli(0) // timestamp user is due to face termination
     )
 
   object UserTrialStatus {
@@ -121,7 +121,7 @@ object Trial {
 
     // translates a UserTrialStatus to Thurloe KVPs
     def toKVPs(userTrialStatus: UserTrialStatus): Map[String,String] = {
-      val stateKV:Map[String,String] = userTrialStatus.currentState match {
+      val stateKV:Map[String,String] = userTrialStatus.state match {
         case Some(state) => Map("trialCurrentState" -> state.toString)
         case None => Map.empty[String,String]
       }
