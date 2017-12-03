@@ -289,4 +289,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impTrialProject = jsonFormat4(TrialProject.apply)
   implicit val impCreateProjectsResponse = jsonFormat3(CreateProjectsResponse)
 
+  implicit val impCreateRawlsBillingProjectFullRequestFormat = jsonFormat2(CreateRawlsBillingProjectFullRequest)
+
+
 }

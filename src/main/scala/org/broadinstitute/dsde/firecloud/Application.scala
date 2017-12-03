@@ -29,7 +29,7 @@ case class Application(agoraDAO: AgoraDAO,
     Rawls -> rawlsDAO.status,
     Sam -> samDAO.status,
     Thurloe -> thurloeDAO.status
-    // TODO: add free-trial index as a monitorable healthcheck
+    // TODO: add free-trial index as a monitorable healthcheck; requires updates to workbench-libs
   )
 
 }

@@ -1658,7 +1658,9 @@ paths:
       summary: Create free trial projects
       parameters:
         - name: operation
-          description: operation to perform on projects
+          description: |
+            operation to perform on projects. "Create" will create projects and verify those projects.
+            "Verify" will verify all projects in the pool.
           required: true
           in: query
           type: string
@@ -1671,14 +1673,14 @@ paths:
           in: query
           type: number
       responses:
-        204:
-          description: Created
+        200:
+          description: OK; used for verify operation
+        202:
+          description: Accepted; used for create operation
         400:
-          description: firecloud billing user must be an admin of the billing account
+          description: Bad Request. Creation already in progress or incorrect credentials.
         403:
-          description: You must be an admin of the google billing account
-        409:
-          description: project already exists in rawls or google
+          description: You must be a campaign manager to call this endpoint.
         500:
           description: Internal Server Error
 

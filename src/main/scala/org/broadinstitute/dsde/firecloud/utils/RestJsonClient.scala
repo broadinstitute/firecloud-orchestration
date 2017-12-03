@@ -40,9 +40,6 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
                          connector: Option[ActorRef] = None, label: Option[String] = None): Future[HttpResponse] =
     doRequest(Option(addAdminCredentials))(req, compressed, useFireCloudHeader, connector, label)
 
-  def trialBillingAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false, connector: Option[ActorRef] = None, label: Option[String] = None): Future[HttpResponse] =
-    doRequest(Option(addTrialBillingCredentials))(req, compressed, useFireCloudHeader, connector, label)
-
   private def doRequest(addCreds: Option[RequestTransformer])(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
                                                               connector: Option[ActorRef] = None, label: Option[String] = None): Future[HttpResponse] = {
     val sr = if (connector.isDefined) {

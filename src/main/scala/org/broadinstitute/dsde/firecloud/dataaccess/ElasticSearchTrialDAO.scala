@@ -72,7 +72,6 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     project
   }
 
-
   /**
     * Check to see if the project record exists.
     *
@@ -82,7 +81,6 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   override def projectRecordExists(projectName: RawlsBillingProjectName): Boolean = {
     Try(getProjectInternal(projectName)).isSuccess
   }
-
 
   /**
     * Create a record for the specified project. Throws error if name
@@ -164,7 +162,6 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     updatedProject
   }
 
-
   /**
     * Returns a list of project records in the pool that are unverified.
     *
@@ -196,6 +193,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   override def countAvailableProjects: Long = {
     val countProjectQuery = boolQuery()
       .must(termQuery("verified", true))
+      .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
       .mustNot(existsQuery("user.userSubjectId.keyword"))
 
     val countProjectRequest = client
@@ -215,6 +213,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   override def projectReport: Seq[TrialProject] = {
     val reportProjectQuery = boolQuery()
       .must(termQuery("verified", true))
+      .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
       .must(existsQuery("user.userSubjectId.keyword"))
 
     val reportProjectRequest = client
@@ -230,7 +229,6 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     else
       reportProjectResponse.getHits.getHits.toSeq map ( _.getSourceAsString.parseJson.convertTo[TrialProject] )
   }
-
 
   private def indexExists: Boolean = {
     executeESRequest[IndicesExistsRequest, IndicesExistsResponse, IndicesExistsRequestBuilder](

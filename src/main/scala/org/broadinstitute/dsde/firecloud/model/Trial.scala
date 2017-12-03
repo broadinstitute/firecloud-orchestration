@@ -153,6 +153,8 @@ object Trial {
   case class CreateProjectsResponse(success: Boolean, count: Int, message: Option[String])
 
   // following are horribly copied-and-pasted from rawls core, since they're not available as shared models
+  case class CreateRawlsBillingProjectFullRequest(projectName: String, billingAccount: String)
+
   case class RawlsBillingProjectMembership(projectName: RawlsBillingProjectName, role: ProjectRoles.ProjectRole, creationStatus: CreationStatuses.CreationStatus, message: Option[String] = None)
 
   object CreationStatuses {
