@@ -128,5 +128,6 @@ class MockThurloeDAO extends ThurloeDAO {
     UserTrialStatus(userInfo.id, Some(TrialStates.Terminated), 0, 0, 0, 0
   )))
 
-  override def saveTrialStatus(userInfo: UserInfo, trialStatus: Trial.UserTrialStatus) = Future.successful(())
+  override def saveTrialStatus(userInfo: UserInfo, trialStatus: Trial.UserTrialStatus): Future[Try[Unit]] =
+    Future.successful(Success(()))
 }

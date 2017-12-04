@@ -28,6 +28,70 @@ class TrialSpec extends FreeSpec  {
       assertResult("Enrolled") { TrialStates.Enrolled.toString }
       assertResult("Terminated") { TrialStates.Terminated.toString }
     }
+    "the Disabled state" - {
+      val testState = TrialStates.Disabled
+      "should not allow from None" in {
+        assert(!testState.isAllowedFrom(None))
+      }
+      "should allow from Enabled" in {
+        assert(testState.isAllowedFrom(Some(TrialStates.Enabled)))
+      }
+      "should disallow from anything other than Enabled" - {
+        (TrialStates.allStates.toSet - TrialStates.Enabled) foreach { state =>
+          s"${state.toString}" in {
+            assert(!testState.isAllowedFrom(Some(state)))
+          }
+        }
+      }
+    }
+    "the Enabled state" - {
+      val testState = TrialStates.Enabled
+      "should allow from None" in {
+        assert(testState.isAllowedFrom(None))
+      }
+      "should allow from Disabled" in {
+        assert(testState.isAllowedFrom(Some(TrialStates.Disabled)))
+      }
+      "should disallow from anything other than Disabled" - {
+        (TrialStates.allStates.toSet - TrialStates.Disabled) foreach { state =>
+          s"${state.toString}" in {
+            assert(!testState.isAllowedFrom(Some(state)))
+          }
+        }
+      }
+    }
+    "the Enrolled state" - {
+      val testState = TrialStates.Enrolled
+      "should not allow from None" in {
+        assert(!testState.isAllowedFrom(None))
+      }
+      "should allow from Enabled" in {
+        assert(testState.isAllowedFrom(Some(TrialStates.Enabled)))
+      }
+      "should disallow from anything other than Enabled" - {
+        (TrialStates.allStates.toSet - TrialStates.Enabled) foreach { state =>
+          s"${state.toString}" in {
+            assert(!testState.isAllowedFrom(Some(state)))
+          }
+        }
+      }
+    }
+    "the Terminated state" - {
+      val testState = TrialStates.Terminated
+      "should not allow from None" in {
+        assert(!testState.isAllowedFrom(None))
+      }
+      "should allow from Enrolled" in {
+        assert(testState.isAllowedFrom(Some(TrialStates.Enrolled)))
+      }
+      "should disallow from anything other than Enrolled" - {
+        (TrialStates.allStates.toSet - TrialStates.Enrolled) foreach { state =>
+          s"${state.toString}" in {
+            assert(!testState.isAllowedFrom(Some(state)))
+          }
+        }
+      }
+    }
   }
 
   "UserTrialStatus" - {
@@ -37,7 +101,7 @@ class TrialSpec extends FreeSpec  {
         FireCloudKeyValue(Some("trialEnrolledDate"), Some("34")),
         FireCloudKeyValue(Some("trialTerminatedDate"), Some("56")),
         FireCloudKeyValue(Some("trialExpirationDate"), Some("78")),
-        FireCloudKeyValue(Some("trialCurrentState"), Some("Enrolled"))
+        FireCloudKeyValue(Some("trialState"), Some("Enrolled"))
       ))
       val actual = UserTrialStatus(profileWrapper)
       val expected = UserTrialStatus("userid", Some(TrialStates.Enrolled), 12, 34, 56, 78)
@@ -52,7 +116,7 @@ class TrialSpec extends FreeSpec  {
     "should partially populate timestamps when only some in profile" in {
       val profileWrapper = ProfileWrapper("userid", List(
         FireCloudKeyValue(Some("trialEnabledDate"), Some("12")),
-        FireCloudKeyValue(Some("trialCurrentState"), Some("Enabled"))
+        FireCloudKeyValue(Some("trialState"), Some("Enabled"))
       ))
       val actual = UserTrialStatus(profileWrapper)
       val expected = UserTrialStatus("userid", Some(TrialStates.Enabled), 12, 0, 0, 0)
@@ -66,7 +130,7 @@ class TrialSpec extends FreeSpec  {
         "trialEnrolledDate" -> "34",
         "trialTerminatedDate" -> "56",
         "trialExpirationDate" -> "78",
-        "trialCurrentState" -> "Terminated"
+        "trialState" -> "Terminated"
       )
       assertResult(expected) { actual }
     }
@@ -78,7 +142,7 @@ class TrialSpec extends FreeSpec  {
         "trialEnrolledDate" -> "0",
         "trialTerminatedDate" -> "0",
         "trialExpirationDate" -> "0",
-        "trialCurrentState" -> "Enabled"
+        "trialState" -> "Enabled"
       )
       assertResult(expected) { actual }
     }

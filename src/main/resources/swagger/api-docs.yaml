@@ -1622,6 +1622,33 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/trial/manager/{operation}:
+      post:
+        tags:
+          - Trial
+        operationId: updateTrialUserStatus
+        summary: Update user status in FireCloud free trial
+        parameters:
+          - name: operation
+            description: operation to perform on the specified users
+            required: true
+            in: path
+            enum:
+              - enable
+              - disable
+              - terminate
+          - name: users
+            description: list of users on which to operate
+            required: true
+            in: body
+            schema:
+              $ref: '#/definitions/StringArray'
+        responses:
+          204:
+            description: Success (No Content)
+          500:
+            description: Internal Server Error
+
   /version/executionEngine:
     get:
       tags:

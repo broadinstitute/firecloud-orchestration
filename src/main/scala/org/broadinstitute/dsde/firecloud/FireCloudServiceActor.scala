@@ -36,6 +36,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with MethodsApiService
   with Ga4ghApiService
   with UserApiService
+  with TrialApiService
   {
 
   implicit val system = context.system
@@ -81,7 +82,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val billingService = new BillingService with ActorRefFactoryContext
   val apiRoutes = methodsApiServiceRoutes ~ profileRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    nihRoutes ~ billingService.routes
+    nihRoutes ~ billingService.routes ~ trialApiServiceRoutes
 
   val healthService = new HealthService with ActorRefFactoryContext
 

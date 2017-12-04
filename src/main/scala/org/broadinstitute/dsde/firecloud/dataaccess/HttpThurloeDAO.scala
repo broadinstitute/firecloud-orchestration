@@ -73,8 +73,8 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     }
   }
 
-  override def saveTrialStatus(userInfo: UserInfo, trialStatus: UserTrialStatus) =
-    saveKeyValues(userInfo, UserTrialStatus.toKVPs(trialStatus)).map(_ => ())
+  override def saveTrialStatus(userInfo: UserInfo, trialStatus: UserTrialStatus): Future[Try[Unit]] =
+    saveKeyValues(userInfo, UserTrialStatus.toKVPs(trialStatus))
 
 
   private def wrapExceptions[T](codeBlock: => Future[T]): Future[T] = {

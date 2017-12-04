@@ -9,16 +9,41 @@ import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 import scala.util.Try
 
 object Trial {
+  object TrialOperations {
+    sealed trait TrialOperation
+
+    case object Enable extends TrialOperation
+    case object Disable extends TrialOperation
+    case object Terminate extends TrialOperation
+
+    def withName(name: String): TrialOperation = name match {
+      case "enable" => Enable
+      case "disable" => Disable
+      case "terminate" => Terminate
+      case _ => throw new FireCloudException(s"Invalid trial operation: [$name]")
+    }
+  }
 
   // enum-style case objects to track a user's progress through the free trial
   object TrialStates {
     sealed trait TrialState  {
       override def toString: String = TrialStates.stringify(this)
       def withName(name: String): TrialState = TrialStates.withName(name)
+      def isAllowedFrom(previous: Option[TrialState]) = {
+        previous match {
+          case None => isAllowedFromNone
+          case Some(state) => isAllowedFromState(state)
+        }
+      }
+      def isAllowedFromState(previous: TrialState): Boolean
+      def isAllowedFromNone: Boolean = false
     }
+
+    val allStates = Seq(Disabled, Enabled, Enrolled, Terminated)
 
     def withName(name: String): TrialState = {
       name match {
+        case "Disabled" => Disabled
         case "Enabled" => Enabled
         case "Enrolled" => Enrolled
         case "Terminated" => Terminated
@@ -28,6 +53,7 @@ object Trial {
 
     def stringify(state: TrialState): String = {
       state match {
+        case Disabled => "Disabled"
         case Enabled => "Enabled"
         case Enrolled => "Enrolled"
         case Terminated => "Terminated"
@@ -35,26 +61,36 @@ object Trial {
       }
     }
 
-    case object Enabled extends TrialState
-    case object Enrolled extends TrialState
-    case object Terminated extends TrialState
+    case object Disabled extends TrialState  {
+      override def isAllowedFromState(previous: TrialState): Boolean = previous == Enabled
+    }
+    case object Enabled extends TrialState {
+      override def isAllowedFromNone: Boolean = true
+      override def isAllowedFromState(previous: TrialState): Boolean = previous == Disabled
+    }
+    case object Enrolled extends TrialState {
+      override def isAllowedFromState(previous: TrialState): Boolean = previous == Enabled
+    }
+    case object Terminated extends TrialState {
+      override def isAllowedFromState(previous: TrialState): Boolean = previous == Enrolled
+    }
   }
 
   // "profile" object to hold all free trial-related information for a single user
   case class UserTrialStatus(
-    userId: String,
-    currentState: Option[TrialState],
-    enabledDate: Instant,    // timestamp a campaign manager granted the user trial permissions
-    enrolledDate: Instant,   // timestamp user started their trial
-    terminatedDate: Instant, // timestamp user was actually terminated
-    expirationDate: Instant  // timestamp user is due to face termination
+      userId: String,
+      state: Option[TrialState],
+      enabledDate: Instant = Instant.ofEpochMilli(0), // timestamp a campaign manager granted the user trial permissions
+      enrolledDate: Instant = Instant.ofEpochMilli(0), // timestamp user started their trial
+      terminatedDate: Instant = Instant.ofEpochMilli(0), // timestamp user was actually terminated
+      expirationDate: Instant = Instant.ofEpochMilli(0) // timestamp user is due to face termination
     )
 
   object UserTrialStatus {
     // convenience apply method that accepts epoch millisecond times instead of java.time.Instants
-    def apply(userId: String, currentState: Option[TrialState],
+    def apply(userId: String, state: Option[TrialState],
               enabledEpoch: Long, enrolledEpoch: Long, terminatedEpoch: Long, expirationEpoch: Long) = {
-      new UserTrialStatus(userId, currentState,
+      new UserTrialStatus(userId, state,
         Instant.ofEpochMilli(enabledEpoch),
         Instant.ofEpochMilli(enrolledEpoch),
         Instant.ofEpochMilli(terminatedEpoch),
@@ -77,16 +113,16 @@ object Trial {
       val terminatedDate = profileDate("trialTerminatedDate", mappedKVPs)
       val expirationDate = profileDate("trialExpirationDate", mappedKVPs)
 
-      val currentState = mappedKVPs.get("trialCurrentState") map TrialStates.withName
+      val state = mappedKVPs.get("trialState") map TrialStates.withName
 
-      new UserTrialStatus(profileWrapper.userId, currentState,
+      new UserTrialStatus(profileWrapper.userId, state,
         enabledDate, enrolledDate, terminatedDate, expirationDate)
     }
 
     // translates a UserTrialStatus to Thurloe KVPs
     def toKVPs(userTrialStatus: UserTrialStatus): Map[String,String] = {
-      val stateKV:Map[String,String] = userTrialStatus.currentState match {
-        case Some(state) => Map("trialCurrentState" -> state.toString)
+      val stateKV:Map[String,String] = userTrialStatus.state match {
+        case Some(state) => Map("trialState" -> state.toString)
         case None => Map.empty[String,String]
       }
       Map(
@@ -104,4 +140,11 @@ object Trial {
     def apply(name: RawlsBillingProjectName) = new TrialProject(name, verified=false, user=None)
   }
 
+  object StatusUpdate {
+    sealed trait Attempt
+
+    case object Success extends Attempt
+    case object Failure extends Attempt
+    case class ServerError(msg: String) extends Attempt
+  }
 }
