@@ -93,16 +93,30 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
         assert(ex.getMessage == "no available projects")
       }
     }
-    "countAvailableProjects" - {
-      "should return zero when no projects available" in {
-        assertResult(Some(0)) { trialDAO.countProjects.get("available") }
+    "countProjects" - {
+      "should return zero when no projects im a given state" in {
+        val expected = Map(
+          "unverified" -> 3,
+          "errored" -> 0,
+          "available" -> 0,
+          "claimed" -> 4
+        )
+        assertResult(expected) { trialDAO.countProjects }
       }
-      "should return accurate count of available projects" in {
+      "should return accurate counts of all states" in {
         // insert three
         Seq("orange", "pineapple", "quince") foreach { proj => trialDAO.insertProjectRecord(RawlsBillingProjectName(proj))}
         // verify two
         Seq("orange", "quince") foreach { proj => trialDAO.setProjectRecordVerified(RawlsBillingProjectName(proj), verified=true, status=Ready)}
-        assertResult(Some(2)) { trialDAO.countProjects.get("available") }
+        // call one an error
+        Seq("pineapple") foreach { proj => trialDAO.setProjectRecordVerified(RawlsBillingProjectName(proj), verified=true, status=Error)}
+        val expected = Map(
+          "unverified" -> 3,
+          "errored" -> 1,
+          "available" -> 2,
+          "claimed" -> 4
+        )
+        assertResult(expected) { trialDAO.countProjects }
       }
     }
     "projectReport" - {
@@ -117,7 +131,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
           TrialProject(RawlsBillingProjectName("fennel"), verified=true, Some(WorkbenchUserInfo("101010", "me2")), Some(Ready))
           // TrialProject(RawlsBillingProjectName("garlic"), verified=false, None),
           // TrialProject(RawlsBillingProjectName("orange"), verified=true, None),
-          // TrialProject(RawlsBillingProjectName("pineapple"), verified=false, None),
+          // TrialProject(RawlsBillingProjectName("pineapple"), verified=true, Some(Error)),
           // TrialProject(RawlsBillingProjectName("quince"), verified=true, None)
         )
         val actual = trialDAO.projectReport
