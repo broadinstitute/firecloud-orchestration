@@ -45,7 +45,7 @@ final class TrialService
   override def receive = {
     case EnableUsers(managerInfo, userEmails) => enableUsers(managerInfo, userEmails) pipeTo sender
     case DisableUsers(managerInfo, userEmails) => disableUsers(managerInfo, userEmails) pipeTo sender
-    case EnrollUser(managerInfo) => enrollUser(managerInfo) pipeTo sender
+    case EnrollUser(userInfo) => enrollUser(userInfo) pipeTo sender
     case TerminateUsers(managerInfo, userEmails) => terminateUsers(managerInfo, userEmails) pipeTo sender
   }
 
@@ -149,7 +149,7 @@ final class TrialService
     }
   }
 
-  private def enrollUser(userInfo:UserInfo): Future[PerRequestMessage] = {
+  private def enrollUser(userInfo: UserInfo): Future[PerRequestMessage] = {
     // get user's trial status, then check the current state
     thurloeDao.getTrialStatus(userInfo) flatMap { userTrialStatus =>
       userTrialStatus match {
