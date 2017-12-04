@@ -112,6 +112,17 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
       assert(rawlsGetProjectsCallCount > 1 && verifiedProjects.isEmpty)
       system.stop(pm)
     }
+    s"should only retry verification ${ProjectManager.verificationLimit} times" in {
+      // we use the rawls getProjects() call as a proxy for verification - in ProjectManager,
+      // getProjects() is only called within the verify handler.
+      val (pm, rawlsDAO, trialDAO, googleDAO) = initTestState(mockRawlsDAO = new StillCreatingProjectsRawlsDAO)
+      pm ! StartCreation(1)
+      Thread.sleep(3000)
+      // if projects are still creating, and we have zero verification delay, we should be able to reach
+      // the limit within 3 seconds.
+      assert(rawlsGetProjectsCallCount == ProjectManager.verificationLimit && verifiedProjects.isEmpty)
+      system.stop(pm)
+    }
     "should mark projects as error during verification if they failed to create" in {
       val (pm, rawlsDAO, trialDAO, googleDAO) = initTestState(mockRawlsDAO = new BadGetProjectsRawlsDAO)
       pm ! StartCreation(3)

@@ -42,7 +42,15 @@ trait TrialQueries {
     .must(existsQuery("user.userSubjectId.keyword"))
 }
 
-class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshMode: RefreshPolicy = RefreshPolicy.NONE)
+/**
+  * DAO, talking to Elasticsearch, for the free trial project pool.
+  *
+  * @param client Elasticsearch client.
+  * @param indexName name of the target free trial index.
+  * @param refreshMode refresh policy. Using IMMEDIATE - the default - is a performance hit but ensures transactionality
+  *                    of updates across multiple users.
+  */
+class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshMode: RefreshPolicy = RefreshPolicy.IMMEDIATE)
   extends TrialDAO with TrialQueries with ElasticSearchDAOSupport {
 
   lazy private final val datatype = "billingproject"
@@ -154,7 +162,8 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject = {
     // if we find regular race conditions in which multiple users attempt to claim the "next" project,
     // we could change this to return N (= ~20) available projects, then choose a random project
-    // from that list.
+    // from that list. Either way, the caller of this method should retry this method to ensure
+    // a successful claim.
     val nextProjectRequest = client
       .prepareSearch(indexName)
       .setQuery(Available)
@@ -241,8 +250,6 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   private def init: Unit = {
     if (!indexExists)
       throw new FireCloudException(s"index $indexName does not exist!")
-    if (refreshMode != RefreshPolicy.NONE)
-      logger.warn(s"refresh policy ${refreshMode.getValue} should only be used for testing")
   }
 
   private def count(qb: QueryBuilder): Long = {

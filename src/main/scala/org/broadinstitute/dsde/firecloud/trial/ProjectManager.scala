@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.trial
 import akka.actor.{Actor, Props}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, HttpGoogleServicesDAO, RawlsDAO, TrialDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.{CreateProjectsResponse, CreationStatuses}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager.{Create, StartCreation, Verify}
@@ -18,10 +18,12 @@ object ProjectManager {
   val DefaultCreateDelay = 2.minutes // pause between creating projects to avoid triggering Google quotas
   val DefaultVerifyDelay = 3.minutes // pause between creating a project and verifying it, to allow Google to finish creation
 
+  val verificationLimit: Int = 60 // with a default of 3 minutes, this gives us 3 hours for Google to create a project
+
   sealed trait ProjectManagerMessage
   case class StartCreation(count: Int) extends ProjectManagerMessage
   case class Create(current: Int, target: Int) extends ProjectManagerMessage
-  case class Verify(projectName: String) extends ProjectManagerMessage
+  case class Verify(projectName: String, attemptCount: Int) extends ProjectManagerMessage
 
   def props(rawlsDAO: RawlsDAO, trialDAO: TrialDAO, googleDAO: GoogleServicesDAO,
             createDelay: FiniteDuration = DefaultCreateDelay, verifyDelay: FiniteDuration = DefaultVerifyDelay): Props =
@@ -52,7 +54,7 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleD
   override def receive: Receive = {
     case StartCreation(count: Int) => sender ! startCreation(count)
     case Create(current: Int, target: Int) => sender ! create(current, target)
-    case Verify(projectName: String) => verify(projectName)
+    case Verify(projectName: String, attemptCount: Int) => verify(projectName, attemptCount)
   }
 
   private def startCreation(count: Int): CreateProjectsResponse = {
@@ -85,7 +87,7 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleD
           if (createSuccess) {
             logger.debug(s"rawls acknowledged create request for <$projectName>.")
             // schedule a verify for the project we just created
-            context.system.scheduler.scheduleOnce(verifyDelay, self, Verify(projectName))
+            context.system.scheduler.scheduleOnce(verifyDelay, self, Verify(projectName, 1))
           } else {
             logger.warn(s"rawls reports error when creating <$projectName>.")
           }
@@ -96,33 +98,39 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleD
     }
   }
 
-  private def verify(projectName: String) = {
-    logger.debug(s"verifying project <$projectName> ...")
-    val rawlsName = RawlsBillingProjectName(projectName)
-    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
-    // as the trial billing manager, get the list of all projects I own (no API to get a single project)
-    rawlsDAO.getProjects(saToken) map { projects =>
-      projects.find(p => p.projectName == rawlsName) match {
-        case None => // project doesn't exist in rawls. This shouldn't happen.
-          logger.warn(s"Project <$projectName> was created in rawls but not returned by rawls. Calling it an error.")
-          trialDAO.setProjectRecordVerified(rawlsName, verified = true, status = CreationStatuses.Error)
-        case Some(proj) =>
-          proj.creationStatus match {
-            case CreationStatuses.Creating =>
-              logger.debug(s"Project <$projectName> still creating; will retry verification.")
-              context.system.scheduler.scheduleOnce(verifyDelay, self, Verify(projectName))
-            case CreationStatuses.Ready =>
-              logger.debug(s"Project <$projectName> verified as ready!")
-              trialDAO.setProjectRecordVerified(rawlsName, verified = true, status = CreationStatuses.Ready)
-            case CreationStatuses.Error =>
-              logger.warn(s"Project <$projectName> errored during creation: ${proj.message}")
-              trialDAO.setProjectRecordVerified(rawlsName, verified = true, status = CreationStatuses.Error)
-          }
+  private def verify(projectName: String, attemptCount: Int) = {
+    if (attemptCount > ProjectManager.verificationLimit) {
+      logger.warn(s"Project <$projectName> could not be verified within ${attemptCount-1} tries." +
+        s"Abandoning attempts, but will leave unverified for later manual verification.")
+    } else {
+      logger.debug(s"verifying project <$projectName> ...")
+      val rawlsName = RawlsBillingProjectName(projectName)
+      val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
+      // as the trial billing manager, get the list of all projects I own (no API to get a single project)
+      rawlsDAO.getProjects(saToken) map { projects =>
+        projects.find(p => p.projectName == rawlsName) match {
+          case None => // project doesn't exist in rawls. This shouldn't happen.
+            logger.warn(s"Project <$projectName> was created in rawls but not returned by rawls. Calling it an error.")
+            trialDAO.setProjectRecordVerified(rawlsName, verified = true, status = CreationStatuses.Error)
+          case Some(proj) =>
+            proj.creationStatus match {
+              case CreationStatuses.Creating =>
+                logger.debug(s"Project <$projectName> still creating; will retry verification.")
+                context.system.scheduler.scheduleOnce(verifyDelay, self, Verify(projectName, attemptCount + 1))
+              case CreationStatuses.Ready =>
+                logger.debug(s"Project <$projectName> verified as ready!")
+                trialDAO.setProjectRecordVerified(rawlsName, verified = true, status = CreationStatuses.Ready)
+              case CreationStatuses.Error =>
+                logger.warn(s"Project <$projectName> errored during creation: ${proj.message}")
+                logger.debug("underlying error is: " + proj.message)
+                trialDAO.setProjectRecordVerified(rawlsName, verified = true, status = CreationStatuses.Error)
+            }
+        }
+      } recover {
+        case t:Throwable =>
+          logger.warn(s"Error checking status on <$projectName>: ${t.getMessage}")
+          context.system.scheduler.scheduleOnce(verifyDelay, self, Verify(projectName, attemptCount + 1))
       }
-    } recover {
-      case t:Throwable =>
-        logger.warn(s"Error checking status on <$projectName>: ${t.getMessage}")
-        context.system.scheduler.scheduleOnce(verifyDelay, self, Verify(projectName))
     }
   }
 
