@@ -20,6 +20,7 @@ import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 // TODO: Contain userEmail in value class for stronger type safety without incurring performance penalty
 object TrialService {
@@ -104,9 +105,11 @@ final class TrialService(val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloe
     } yield result match {
       case StatusUpdate.Success => RequestComplete(NoContent)
       case StatusUpdate.Failure => RequestComplete(InternalServerError)
+      case StatusUpdate.ServerError(msg) => RequestComplete(InternalServerError, msg)
     }
   }
 
+  // TODO: Try to refactor this method that got unwieldy
   private def updateTrialStatus(managerInfo: UserInfo,
                                 userInfo: WorkbenchUserInfo,
                                 statusTransition: UserTrialStatus => UserTrialStatus): Future[StatusUpdate.Attempt] = {
@@ -114,8 +117,8 @@ final class TrialService(val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloe
     val sudoUserInfo = managerInfo.copy(id = userInfo.userSubjectId)
 
     // Use the hybrid UserInfo while querying Thurloe
-    thurloeDao.getTrialStatus(sudoUserInfo) map {
-      case Some(currentStatus) =>
+    thurloeDao.getTrialStatus(sudoUserInfo) flatMap {
+      case Some(currentStatus) => {
         val currentState = currentStatus.state
         val newStatus = statusTransition(currentStatus)
         val newState = newStatus.state
@@ -123,32 +126,38 @@ final class TrialService(val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloe
         if (currentState == newState) {
           logger.warn(
             s"The user '${userInfo.userEmail}' is already in the trial state of '$newState'. " +
-            s"No further action will be taken.")
+              s"No further action will be taken.")
 
-          StatusUpdate.Success
+          Future(StatusUpdate.Success)
         } else {
           logger.warn(s"Current trial state of the user '${userInfo.userEmail}' is '$currentState'")
           logger.warn("Checking if enabling is allowed from that state...")
 
           require(newState.nonEmpty, "Cannot transition to an unspecified state")
 
-          // TODO Handle invalid initial trial status by
+          // TODO: Handle invalid initial trial status by
           //    -adding another case to Trial.StatusUpdate
           //    -using that case to return a BadRequest from the parent method (i.e. updateUserState())
           assert(newState.get.isAllowedFrom(currentState),
             s"Cannot transition from $currentState to $newState")
 
+          // TODO: Test the logic below by adding a mock ThurloeDAO whose saveTrialStatus() returns Failure
           // Save updates to user's trial status
-          thurloeDao.saveTrialStatus(sudoUserInfo, newStatus)
-          logger.warn(s"Updated profile saved as $newState; we are done!")
-
-          StatusUpdate.Success
+          thurloeDao.saveTrialStatus(sudoUserInfo, newStatus) map {
+            case Success(_) =>
+              logger.warn(s"Updated profile saved as $newState; we are done!")
+              StatusUpdate.Success
+            case Failure(ex) =>
+              StatusUpdate.ServerError(ex.getMessage)
+          }
         }
+      }
       // TODO: Respond with a more user-friendly error
-      case None =>
+      case None => {
         logger.warn(s"Trial status could not be found for ${userInfo.userEmail}")
 
-        StatusUpdate.Failure
+        Future(StatusUpdate.Failure)
+      }
     }
   }
 

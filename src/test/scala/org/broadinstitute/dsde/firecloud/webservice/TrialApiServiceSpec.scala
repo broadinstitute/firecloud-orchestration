@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.mock.MockUtils.{samServerPort, thurloeServerPort}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
@@ -20,6 +20,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.concurrent.Future
+import scala.util.Success
 
 final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with TrialApiService {
   import TrialApiServiceSpec._
@@ -34,7 +35,6 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     TrialService.constructor(app.copy(thurloeDAO = localThurloeDao, samDAO = localSamDao))
 
   var profileServer: ClientAndServer = _
-  var samServer: ClientAndServer = _
 
   private def profile(user:String, props:Map[String,String]): ProfileWrapper =
     ProfileWrapper(user, props.toList.map {
@@ -44,7 +44,6 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   override protected def beforeAll(): Unit = {
     profileServer = startClientAndServer(thurloeServerPort)
-    samServer = startClientAndServer(samServerPort)
 
     val allUsersAndProps = List(
       (disabledUser, disabledProps),
@@ -179,7 +178,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assertResult( expectedExpirationDate ) { trialStatus.expirationDate }
           assertResult(0) { trialStatus.terminatedDate.toEpochMilli }
 
-          Future.successful(())
+          Future.successful(Success(()))
         case `disabledUser` => {
           assertResult(Some(TrialStates.Enabled)) { trialStatus.state }
           assert(trialStatus.enabledDate.toEpochMilli > 0)
@@ -187,7 +186,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assert(trialStatus.terminatedDate.toEpochMilli === 0)
           assert(trialStatus.expirationDate.toEpochMilli === 0)
 
-          Future.successful(())
+          Future.successful(Success(()))
         }
         case _ => {
           fail("Should only be updating enabled and disabled users")

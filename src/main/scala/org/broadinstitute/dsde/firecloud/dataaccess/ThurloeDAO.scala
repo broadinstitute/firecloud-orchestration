@@ -26,7 +26,7 @@ trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
 
   // methods to work with free-trial objects
   def getTrialStatus(userInfo: UserInfo): Future[Option[UserTrialStatus]]
-  def saveTrialStatus(userInfo: UserInfo, trialStatus: UserTrialStatus): Future[Unit]
+  def saveTrialStatus(userInfo: UserInfo, trialStatus: UserTrialStatus): Future[Try[Unit]]
 
 
   override def serviceName:String = ThurloeDAO.serviceName

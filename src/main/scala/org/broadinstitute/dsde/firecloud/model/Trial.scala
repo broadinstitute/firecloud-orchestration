@@ -145,5 +145,6 @@ object Trial {
 
     case object Success extends Attempt
     case object Failure extends Attempt
+    case class ServerError(msg: String) extends Attempt
   }
 }
