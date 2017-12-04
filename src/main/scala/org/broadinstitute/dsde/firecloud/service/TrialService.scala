@@ -17,6 +17,7 @@ import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impCreateProjectsResponse, impTrialProject}
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
@@ -78,6 +79,7 @@ final class TrialService
     case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
     case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
     case Report(userInfo) => asTrialCampaignManager {projectReport}(userInfo) pipeTo sender
+    case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
