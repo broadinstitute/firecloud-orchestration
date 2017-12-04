@@ -140,8 +140,7 @@ final class TrialService
 
           StatusUpdate.Success
         }
-      // TODO: Handle case where TrialStatusOpt is None, i.e., if the user profile doesn't exist
-      // in Thurloe, create one and set to the new state along with the other tags
+      // TODO: Respond with a more user-friendly error
       case None =>
         logger.warn(s"Trial status could not be found for ${userInfo.userEmail}")
 
