@@ -14,6 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getAdminUserAccessToken: String = ""
+  override def getTrialBillingManagerAccessToken: String = ""
   override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = {
     objectKey match {
       case "target-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntarget-user".getBytes("UTF-8"))

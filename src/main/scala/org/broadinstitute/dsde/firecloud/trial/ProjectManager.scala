@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.trial
 import akka.actor.{Actor, Props}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.{HttpGoogleServicesDAO, RawlsDAO, TrialDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, HttpGoogleServicesDAO, RawlsDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.{CreateProjectsResponse, CreationStatuses}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager.{Create, StartCreation, Verify}
@@ -23,9 +23,9 @@ object ProjectManager {
   case class Create(current: Int, target: Int) extends ProjectManagerMessage
   case class Verify(projectName: String) extends ProjectManagerMessage
 
-  def props(rawlsDAO: RawlsDAO, trialDAO: TrialDAO,
+  def props(rawlsDAO: RawlsDAO, trialDAO: TrialDAO, googleDAO: GoogleServicesDAO,
             createDelay: FiniteDuration = DefaultCreateDelay, verifyDelay: FiniteDuration = DefaultVerifyDelay): Props =
-    Props(new ProjectManager(rawlsDAO, trialDAO, createDelay, verifyDelay))
+    Props(new ProjectManager(rawlsDAO, trialDAO, googleDAO, createDelay, verifyDelay))
 }
 
 /**
@@ -36,7 +36,7 @@ object ProjectManager {
   * @param createDelay pause between creating projects to avoid triggering Google quotas
   * @param verifyDelay pause between creating a project and verifying it, to allow Google to finish creation
   */
-class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val createDelay: FiniteDuration, val verifyDelay: FiniteDuration)
+class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleDAO: GoogleServicesDAO, val createDelay: FiniteDuration, val verifyDelay: FiniteDuration)
   extends Actor with LazyLogging {
 
   import context.dispatcher
@@ -68,22 +68,22 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val createD
   private def create(current: Int, target: Int) = {
     if (current > target) {
       setCurrentStatus(idle)
-      logger.info("project creation requests complete.")
+      logger.debug("project creation requests complete.")
       // don't stop the actor, because we are likely still verifying
     } else {
       setCurrentStatus(s"$creating: $current / $target")
-      logger.info(s"project creation cycle: $getCurrentStatus")
+      logger.debug(s"project creation cycle: $getCurrentStatus")
 
       // generate a unique project name
       val uniqueProjectName = getAndRecordUniqueProjectName
 
       uniqueProjectName map { projectName =>
-        logger.info(s"creating name <$projectName> via rawls ...")
+        logger.debug(s"creating name <$projectName> via rawls ...")
         // create project via rawls, after sudoing to the trial billing manager
-        val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(HttpGoogleServicesDAO.getTrialBillingManagerAccessToken))
+        val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
         rawlsDAO.createProject(projectName, billingAcct)(saToken) map { createSuccess =>
           if (createSuccess) {
-            logger.info(s"rawls acknowledged create request for <$projectName>.")
+            logger.debug(s"rawls acknowledged create request for <$projectName>.")
             // schedule a verify for the project we just created
             context.system.scheduler.scheduleOnce(verifyDelay, self, Verify(projectName))
           } else {
@@ -97,9 +97,9 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val createD
   }
 
   private def verify(projectName: String) = {
-    logger.info(s"verifying project <$projectName> ...")
+    logger.debug(s"verifying project <$projectName> ...")
     val rawlsName = RawlsBillingProjectName(projectName)
-    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(HttpGoogleServicesDAO.getTrialBillingManagerAccessToken))
+    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
     // as the trial billing manager, get the list of all projects I own (no API to get a single project)
     rawlsDAO.getProjects(saToken) map { projects =>
       projects.find(p => p.projectName == rawlsName) match {
@@ -109,10 +109,10 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val createD
         case Some(proj) =>
           proj.creationStatus match {
             case CreationStatuses.Creating =>
-              logger.info(s"Project <$projectName> still creating; will retry verification.")
+              logger.debug(s"Project <$projectName> still creating; will retry verification.")
               context.system.scheduler.scheduleOnce(verifyDelay, self, Verify(projectName))
             case CreationStatuses.Ready =>
-              logger.info(s"Project <$projectName> verified as ready!")
+              logger.debug(s"Project <$projectName> verified as ready!")
               trialDAO.setProjectRecordVerified(rawlsName, verified = true, status = CreationStatuses.Ready)
             case CreationStatuses.Error =>
               logger.warn(s"Project <$projectName> errored during creation: ${proj.message}")

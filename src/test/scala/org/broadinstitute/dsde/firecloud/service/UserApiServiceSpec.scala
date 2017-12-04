@@ -19,7 +19,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
   def actorRefFactory = system
 
-  val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO), "trial-project-manager")
+  val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
 
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app, trialProjectManager)

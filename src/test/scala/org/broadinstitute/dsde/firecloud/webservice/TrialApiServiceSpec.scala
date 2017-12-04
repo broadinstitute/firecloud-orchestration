@@ -32,10 +32,11 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   // but it is tested here since it is used for the trial feature.
 
   def actorRefFactory = system
+
   val localThurloeDao = new TrialApiServiceSpecThurloeDAO
   val localSamDao = new TrialApiServiceSpecSamDAO
 
-  val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO), "trial-project-manager")
+  val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app.copy(thurloeDAO = localThurloeDao, samDAO = localSamDao), trialProjectManager)
 
   var profileServer: ClientAndServer = _

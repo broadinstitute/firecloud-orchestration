@@ -63,7 +63,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks.keySet)( () => healthMonitorChecks ), "health-monitor")
   system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
 
-  val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO), "trial-project-manager")
+  val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
 
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
