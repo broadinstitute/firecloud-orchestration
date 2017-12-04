@@ -1661,7 +1661,7 @@ paths:
           description: |
             operation to perform on projects.
             "Create" will create projects and verify those projects.
-            "Verify" will verify all projects in the pool.
+            "Verify" will verify all unverified projects in the pool.
             "Count" will return the number of projects in various statuses.
             "Report" will return a report of all claimed projects.
           required: true

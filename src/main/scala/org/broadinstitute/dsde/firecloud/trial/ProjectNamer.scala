@@ -29,19 +29,4 @@ object ProjectNamer {
     s"$prefix-$element-$color-$suffix".replace(" ", "-").toLowerCase
   }
 
-  def trimLists = {
-    val shortElements = elements.collect {
-      case s if s.length <= 7 => s
-    }
-    val shortColor = colors.collect {
-      case s if s.length <= 7 => s
-    }
-
-    println(shortElements)
-    println(shortColor)
-  }
-
-  def exampleNames = 1 to 10 foreach (_ => println(randomName))
-
-
 }
