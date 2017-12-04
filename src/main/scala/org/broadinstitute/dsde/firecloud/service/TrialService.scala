@@ -7,12 +7,13 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Terminated, TrialState}
 import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TrialService._
+import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
@@ -33,20 +34,23 @@ object TrialService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new TrialService(app.samDAO, app.thurloeDAO)
+    new TrialService(app.rawlsDAO, app.samDAO, app.thurloeDAO)
 }
 
 // TODO: Remove loggers used for development purposes or lower their level
-final class TrialService
-  (val samDao: SamDAO, val thurloeDao: ThurloeDAO)
-  (implicit protected val executionContext: ExecutionContext)
-  extends Actor with LazyLogging with SprayJsonSupport {
+final class TrialService(val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO)
+                        (implicit protected val executionContext: ExecutionContext)
+  extends Actor with LazyLogging with SprayJsonSupport with PermissionsSupport {
 
   override def receive = {
-    case EnableUsers(managerInfo, userEmails) => enableUsers(managerInfo, userEmails) pipeTo sender
-    case DisableUsers(managerInfo, userEmails) => disableUsers(managerInfo, userEmails) pipeTo sender
-    case EnrollUser(userInfo) => enrollUser(userInfo) pipeTo sender
-    case TerminateUsers(managerInfo, userEmails) => terminateUsers(managerInfo, userEmails) pipeTo sender
+    case EnableUsers(managerInfo, userEmails) =>
+      asTrialCampaignManager(enableUsers(managerInfo, userEmails))(managerInfo) pipeTo sender
+    case DisableUsers(managerInfo, userEmails) =>
+      asTrialCampaignManager(disableUsers(managerInfo, userEmails))(managerInfo) pipeTo sender
+    case EnrollUser(userInfo) =>
+      enrollUser(userInfo) pipeTo sender
+    case TerminateUsers(managerInfo, userEmails) =>
+      asTrialCampaignManager(terminateUsers(managerInfo, userEmails))(managerInfo) pipeTo sender
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
