@@ -20,12 +20,13 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 
+// TODO: Contain userEmail in value class for stronger type safety without incurring performance penalty
 object TrialService {
   sealed trait TrialServiceMessage
-  case class EnableUsers(userInfo:UserInfo, users: Seq[String]) extends TrialServiceMessage
-  case class DisableUsers(userInfo:UserInfo, users: Seq[String]) extends TrialServiceMessage
-  case class EnrollUser(userInfo:UserInfo) extends TrialServiceMessage
-  case class TerminateUsers(userInfo:UserInfo, users: Seq[String]) extends TrialServiceMessage
+  case class EnableUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
+  case class DisableUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
+  case class EnrollUser(managerInfo: UserInfo) extends TrialServiceMessage
+  case class TerminateUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
 
   def props(service: () => TrialService): Props = {
     Props(service())
@@ -42,74 +43,60 @@ final class TrialService
   extends Actor with LazyLogging with SprayJsonSupport {
 
   override def receive = {
-    case EnableUsers(userInfo, users) => enableUsers(userInfo, users) pipeTo sender
-    case DisableUsers(userInfo, users) => disableUsers(userInfo, users) pipeTo sender
-    case EnrollUser(userInfo) => enrollUser(userInfo) pipeTo sender
-    case TerminateUsers(userInfo, users) => terminateUsers(userInfo, users) pipeTo sender
+    case EnableUsers(managerInfo, userEmails) => enableUsers(managerInfo, userEmails) pipeTo sender
+    case DisableUsers(managerInfo, userEmails) => disableUsers(managerInfo, userEmails) pipeTo sender
+    case EnrollUser(managerInfo) => enrollUser(managerInfo) pipeTo sender
+    case TerminateUsers(managerInfo, userEmails) => terminateUsers(managerInfo, userEmails) pipeTo sender
   }
 
-  private def enableUsers(managerInfo: UserInfo, users: Seq[String]): Future[PerRequestMessage] = {
+  private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
     // TODO: Handle multiple users
-    require(users.size == 1, "For the time being, we can only enable one user at a time.")
+    require(userEmails.size == 1, "For the time being, we can only enable one user at a time.")
 
-    val user = users.head
+    val userEmail = userEmails.head
 
     // Define what to overwrite in user's status
     val statusTransition: UserTrialStatus => UserTrialStatus =
-      currentStatus =>
-        currentStatus.copy(
-          userId = managerInfo.id,
-          state = Some(Enabled),
-          enabledDate = Instant.now
-        )
+      status => status.copy(state = Some(Enabled), enabledDate = Instant.now)
 
-    updateUserState(managerInfo, user, statusTransition)
+    updateUserState(managerInfo, userEmail, statusTransition)
   }
 
-  private def disableUsers(managerInfo: UserInfo, users: Seq[String]): Future[PerRequestMessage] = {
+  private def disableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
     // TODO: Handle multiple users
-    require(users.size == 1, "For the time being, we can only disable one user at a time.")
+    require(userEmails.size == 1, "For the time being, we can only disable one user at a time.")
 
-    val user = users.head
+    val userEmail = userEmails.head
 
     // Define what to overwrite in user's status
     val statusTransition: UserTrialStatus => UserTrialStatus =
-      currentStatus =>
-        currentStatus.copy(
-          userId = managerInfo.id,
-          state = Some(Disabled)
-        )
+      status => status.copy(state = Some(Disabled))
 
-    updateUserState(managerInfo, user, statusTransition)
+    updateUserState(managerInfo, userEmail, statusTransition)
   }
 
-  private def terminateUsers(managerInfo: UserInfo, users: Seq[String]): Future[PerRequestMessage] = {
+  private def terminateUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
     // TODO: Handle multiple users
-    require(users.size == 1, "For the time being, we can only terminate one user at a time.")
+    require(userEmails.size == 1, "For the time being, we can only terminate one user at a time.")
 
-    val user = users.head
+    val userEmail = userEmails.head
 
     // Define what to overwrite in user's status
     val statusTransition: UserTrialStatus => UserTrialStatus =
-      currentStatus =>
-        currentStatus.copy(
-          userId = managerInfo.id,
-          state = Some(Terminated),
-          terminatedDate = Instant.now
-        )
+      status => status.copy(state = Some(Terminated), terminatedDate = Instant.now)
 
-    updateUserState(managerInfo, user, statusTransition)
+    updateUserState(managerInfo, userEmail, statusTransition)
   }
 
   private def updateUserState(managerInfo: UserInfo,
-                              user: String,
+                              userEmail: String,
                               statusTransition: UserTrialStatus => UserTrialStatus): Future[PerRequestMessage] = {
     // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
     // TODO: Handle errors that may come up while querying Sam
     for {
-      regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(user))
-      workbenchUserInfo = WorkbenchUserInfo(regInfo.userInfo.userSubjectId, regInfo.userInfo.userEmail)
-      result <- updateTrialStatus(managerInfo, workbenchUserInfo, statusTransition)
+      regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(userEmail))
+      userInfo = WorkbenchUserInfo(regInfo.userInfo.userSubjectId, regInfo.userInfo.userEmail)
+      result <- updateTrialStatus(managerInfo, userInfo, statusTransition)
     } yield result match {
       case StatusUpdate.Success => RequestComplete(NoContent)
       case StatusUpdate.Failure => RequestComplete(InternalServerError)
