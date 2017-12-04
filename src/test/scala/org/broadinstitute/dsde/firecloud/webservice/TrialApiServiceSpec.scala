@@ -210,21 +210,21 @@ object TrialApiServiceSpec {
   val terminatedUser = "terminated-user"
 
   val disabledProps = Map(
-    "trialCurrentState" -> "Disabled",
+    "trialState" -> "Disabled",
     "trialEnabledDate" -> "555"
   )
   val enabledProps = Map(
-    "trialCurrentState" -> "Enabled",
+    "trialState" -> "Enabled",
     "trialEnabledDate" -> "1"
   )
   val enrolledProps = Map(
-    "trialCurrentState" -> "Enrolled",
+    "trialState" -> "Enrolled",
     "trialEnabledDate" -> "11",
     "trialEnrolledDate" -> "22",
     "trialExpirationDate" -> "99"
   )
   val terminatedProps = Map(
-    "trialCurrentState" -> "Terminated",
+    "trialState" -> "Terminated",
     "trialEnabledDate" -> "111",
     "trialEnrolledDate" -> "222",
     "trialTerminatedDate" -> "333",

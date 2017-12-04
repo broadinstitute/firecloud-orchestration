@@ -88,9 +88,9 @@ object Trial {
 
   object UserTrialStatus {
     // convenience apply method that accepts epoch millisecond times instead of java.time.Instants
-    def apply(userId: String, currentState: Option[TrialState],
+    def apply(userId: String, state: Option[TrialState],
               enabledEpoch: Long, enrolledEpoch: Long, terminatedEpoch: Long, expirationEpoch: Long) = {
-      new UserTrialStatus(userId, currentState,
+      new UserTrialStatus(userId, state,
         Instant.ofEpochMilli(enabledEpoch),
         Instant.ofEpochMilli(enrolledEpoch),
         Instant.ofEpochMilli(terminatedEpoch),
@@ -113,16 +113,16 @@ object Trial {
       val terminatedDate = profileDate("trialTerminatedDate", mappedKVPs)
       val expirationDate = profileDate("trialExpirationDate", mappedKVPs)
 
-      val currentState = mappedKVPs.get("trialCurrentState") map TrialStates.withName
+      val state = mappedKVPs.get("trialState") map TrialStates.withName
 
-      new UserTrialStatus(profileWrapper.userId, currentState,
+      new UserTrialStatus(profileWrapper.userId, state,
         enabledDate, enrolledDate, terminatedDate, expirationDate)
     }
 
     // translates a UserTrialStatus to Thurloe KVPs
     def toKVPs(userTrialStatus: UserTrialStatus): Map[String,String] = {
       val stateKV:Map[String,String] = userTrialStatus.state match {
-        case Some(state) => Map("trialCurrentState" -> state.toString)
+        case Some(state) => Map("trialState" -> state.toString)
         case None => Map.empty[String,String]
       }
       Map(

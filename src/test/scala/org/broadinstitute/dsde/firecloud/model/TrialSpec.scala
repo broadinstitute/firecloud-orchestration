@@ -101,7 +101,7 @@ class TrialSpec extends FreeSpec  {
         FireCloudKeyValue(Some("trialEnrolledDate"), Some("34")),
         FireCloudKeyValue(Some("trialTerminatedDate"), Some("56")),
         FireCloudKeyValue(Some("trialExpirationDate"), Some("78")),
-        FireCloudKeyValue(Some("trialCurrentState"), Some("Enrolled"))
+        FireCloudKeyValue(Some("trialState"), Some("Enrolled"))
       ))
       val actual = UserTrialStatus(profileWrapper)
       val expected = UserTrialStatus("userid", Some(TrialStates.Enrolled), 12, 34, 56, 78)
@@ -116,7 +116,7 @@ class TrialSpec extends FreeSpec  {
     "should partially populate timestamps when only some in profile" in {
       val profileWrapper = ProfileWrapper("userid", List(
         FireCloudKeyValue(Some("trialEnabledDate"), Some("12")),
-        FireCloudKeyValue(Some("trialCurrentState"), Some("Enabled"))
+        FireCloudKeyValue(Some("trialState"), Some("Enabled"))
       ))
       val actual = UserTrialStatus(profileWrapper)
       val expected = UserTrialStatus("userid", Some(TrialStates.Enabled), 12, 0, 0, 0)
@@ -130,7 +130,7 @@ class TrialSpec extends FreeSpec  {
         "trialEnrolledDate" -> "34",
         "trialTerminatedDate" -> "56",
         "trialExpirationDate" -> "78",
-        "trialCurrentState" -> "Terminated"
+        "trialState" -> "Terminated"
       )
       assertResult(expected) { actual }
     }
@@ -142,7 +142,7 @@ class TrialSpec extends FreeSpec  {
         "trialEnrolledDate" -> "0",
         "trialTerminatedDate" -> "0",
         "trialExpirationDate" -> "0",
-        "trialCurrentState" -> "Enabled"
+        "trialState" -> "Enabled"
       )
       assertResult(expected) { actual }
     }
