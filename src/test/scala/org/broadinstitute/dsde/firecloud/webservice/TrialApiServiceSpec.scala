@@ -7,6 +7,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enrolled}
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
@@ -118,7 +119,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   }
 
   // TODO: Keep track of and check all users whose statuses are updated when multi-user updates are supported
-  "Free Trial User Updates by Campaign Manager" - {
+  "Campaign manager user enable/disable/terminate endpoint" - {
     val enablePath    = "/trial/manager/enable"
     val disablePath   = "/trial/manager/disable"
     val terminatePath = "/trial/manager/terminate"
@@ -144,24 +145,34 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     // TODO: Test invalid trial status transition request (e.g. Terminated -> Enabled)
 
     "Attempting an invalid operation should not be handled" in {
-      Post(invalidPath, disabledUserEmail) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
+      Post(invalidPath, disabledUserEmail) ~> dummyUserIdHeaders(dummyUser) ~> trialApiServiceRoutes ~> check {
         assert(!handled)
       }
     }
 
     "Attempting to enable a previously disabled user should return NoContent success" in {
-      Post(enablePath, disabledUserEmail) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
+      Post(enablePath, disabledUserEmail) ~> dummyUserIdHeaders(dummyUser) ~> trialApiServiceRoutes ~> check {
         assertResult(NoContent, response.entity.asString) { status }
       }
     }
 
     "Attempting to enable a previously enabled user should return NoContent success" in {
-      Post(enablePath, enabledUserEmail) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+      Post(enablePath, enabledUserEmail) ~> dummyUserIdHeaders(dummyUser) ~> trialApiServiceRoutes ~> check {
         assertResult(NoContent, response.entity.asString) { status }
       }
     }
 
-    // TODO: Test user disabling
+    "Attempting to disable a previously enabled user should return NoContent success" in {
+      Post(disablePath, enabledUserEmail) ~> dummyUserIdHeaders(dummyUser) ~> trialApiServiceRoutes ~> check {
+        assertResult(NoContent, response.entity.asString) { status }
+      }
+    }
+
+    "Attempting to disable a previously disabled user should return NoContent success" in {
+      Post(disablePath, disabledUserEmail) ~> dummyUserIdHeaders(dummyUser) ~> trialApiServiceRoutes ~> check {
+        assertResult(NoContent, response.entity.asString) { status }
+      }
+    }
 
     // TODO: Test user termination
   }
@@ -213,26 +224,31 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   }
 
   final class TrialApiServiceSpecThurloeDAO extends HttpThurloeDAO {
-    override def saveTrialStatus(userInfo: UserInfo, trialStatus: UserTrialStatus) = {
+    override def saveTrialStatus(userInfo: UserInfo, newTrialStatus: UserTrialStatus) = {
       // Note: because HttpThurloeDAO catches exceptions, the assertions here will
       // result in InternalServerErrors instead of appearing nicely in unit test output.
       userInfo.id match {
-        case `enabledUser` =>
-          val expectedExpirationDate = trialStatus.enrolledDate.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
+        case `enabledUser` => newTrialStatus.state match {
+          case Some(Enrolled) =>
+            val expectedExpirationDate = newTrialStatus.enrolledDate.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
 
-          assertResult(Some(TrialStates.Enrolled)) { trialStatus.state }
-          assert(trialStatus.enrolledDate.toEpochMilli > 0)
-          assert(trialStatus.expirationDate.toEpochMilli > 0)
-          assertResult( expectedExpirationDate ) { trialStatus.expirationDate }
-          assertResult(0) { trialStatus.terminatedDate.toEpochMilli }
+            assert(newTrialStatus.enrolledDate.toEpochMilli > 0)
+            assert(newTrialStatus.expirationDate.toEpochMilli > 0)
+            assertResult( expectedExpirationDate ) { newTrialStatus.expirationDate }
+            assertResult(0) { newTrialStatus.terminatedDate.toEpochMilli }
 
-          Future.successful(Success(()))
+            Future.successful(Success(()))
+          case Some(Disabled) =>
+            Future.successful(Success(()))
+          case _ =>
+            Future.failed(new IllegalArgumentException(s"Enabled status can only transition to Enrolled or Disabled"))
+        }
         case `disabledUser` => {
-          assertResult(Some(TrialStates.Enabled)) { trialStatus.state }
-          assert(trialStatus.enabledDate.toEpochMilli > 0)
-          assert(trialStatus.enrolledDate.toEpochMilli === 0)
-          assert(trialStatus.terminatedDate.toEpochMilli === 0)
-          assert(trialStatus.expirationDate.toEpochMilli === 0)
+          assertResult(Some(TrialStates.Enabled)) { newTrialStatus.state }
+          assert(newTrialStatus.enabledDate.toEpochMilli > 0)
+          assert(newTrialStatus.enrolledDate.toEpochMilli === 0)
+          assert(newTrialStatus.terminatedDate.toEpochMilli === 0)
+          assert(newTrialStatus.expirationDate.toEpochMilli === 0)
 
           Future.successful(Success(()))
         }
@@ -251,6 +267,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 }
 
 object TrialApiServiceSpec {
+  val dummyUser = "dummy-user"
   val disabledUser = "disabled-user"
   val enabledUser = "enabled-user"
   val enrolledUser = "enrolled-user"
