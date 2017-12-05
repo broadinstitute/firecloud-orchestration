@@ -60,8 +60,12 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleD
   private def startCreation(count: Int): CreateProjectsResponse = {
     getCurrentStatus match {
       case `idle` =>
-        self ! Create(1, count)
-        CreateProjectsResponse(success = true, count, Some(s"$count projects are queued for creation."))
+        if (count < 1) {
+          CreateProjectsResponse(success = false, count, Some("You must specify a positive number."))
+        } else {
+          self ! Create(1, count)
+          CreateProjectsResponse(success = true, count, Some(s"$count projects are queued for creation."))
+        }
       case x =>
         CreateProjectsResponse(success = false, 0, Some("ProjectManager is already creating projects; don't try to create more!"))
     }

@@ -46,12 +46,12 @@ object TrialService {
   }
 
   def constructor(app: Application, projectManager: ActorRef)()(implicit executionContext: ExecutionContext) =
-    new TrialService(app.samDAO, app.thurloeDAO, app.rawlsDAO, app.trialDAO, projectManager)
+    new TrialService(app.samDAO, app.thurloeDAO, app.rawlsDAO, app.trialDAO, app.googleServicesDAO, projectManager)
 }
 
 // TODO: Remove loggers used for development purposes or lower their level
 final class TrialService
-  (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, projectManager: ActorRef)
+  (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleDAO: GoogleServicesDAO, projectManager: ActorRef)
   (implicit protected val executionContext: ExecutionContext)
   extends Actor with PermissionsSupport with SprayJsonSupport with LazyLogging {
 
@@ -222,7 +222,7 @@ final class TrialService
 
   private def verifyProjects: Future[PerRequestMessage] = {
 
-    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(HttpGoogleServicesDAO.getTrialBillingManagerAccessToken))
+    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
     rawlsDAO.getProjects(saToken) map { projects =>
 
       val projectStatuses:Map[RawlsBillingProjectName, CreationStatus] = projects.map { proj =>
