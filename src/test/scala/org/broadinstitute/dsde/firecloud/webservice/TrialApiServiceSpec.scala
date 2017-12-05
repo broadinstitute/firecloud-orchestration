@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
@@ -213,10 +213,10 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   }
 
   final class TrialApiServiceSpecThurloeDAO extends HttpThurloeDAO {
-    override def saveTrialStatus(userInfo: UserInfo, trialStatus: UserTrialStatus) = {
+    override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus) = {
       // Note: because HttpThurloeDAO catches exceptions, the assertions here will
       // result in InternalServerErrors instead of appearing nicely in unit test output.
-      userInfo.id match {
+      forUserId match {
         case `enabledUser` =>
           val expectedExpirationDate = trialStatus.enrolledDate.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
 
