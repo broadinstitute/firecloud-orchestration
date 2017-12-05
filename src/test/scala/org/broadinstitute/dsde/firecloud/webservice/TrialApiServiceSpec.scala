@@ -6,19 +6,17 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
-import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
+import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
+import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
-import spray.http.StatusCodes.{BadRequest, NoContent, OK}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
-import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import spray.http.HttpMethods.POST
+import spray.http.StatusCodes.{BadRequest, NoContent, OK}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -32,7 +30,6 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   // but it is tested here since it is used for the trial feature.
 
   def actorRefFactory = system
-
   val localThurloeDao = new TrialApiServiceSpecThurloeDAO
   val localSamDao = new TrialApiServiceSpecSamDAO
 

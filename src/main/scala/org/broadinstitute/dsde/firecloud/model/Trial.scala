@@ -5,7 +5,6 @@ import java.time.Instant
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.TrialState
-import org.broadinstitute.dsde.rawls.RawlsException
 import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsEnumeration}
 
 import scala.util.Try

@@ -7,37 +7,26 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO}
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Terminated, TrialState}
-import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo, WorkbenchUserInfo}
-import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.service.TrialService._
-import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
-import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
-import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impCreateProjectsResponse, impTrialProject}
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO, _}
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
-import org.broadinstitute.dsde.firecloud.model.Trial._
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Terminated}
+import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus, _}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, RequestCompleteWithErrorReport, UserInfo, WithAccessToken, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impCreateProjectsResponse, impTrialProject}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager.StartCreation
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
-import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
-import spray.http.{OAuth2BearerToken, StatusCodes}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsUserEmail}
 import spray.http.StatusCodes._
+import spray.http.{OAuth2BearerToken, StatusCodes}
 import spray.httpx.SprayJsonSupport
-import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-import scala.util.Try
 
 // TODO: Contain userEmail in value class for stronger type safety without incurring performance penalty
 object TrialService {
