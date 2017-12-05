@@ -1,26 +1,22 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
-
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialProject
-import org.broadinstitute.dsde.firecloud.model.WorkbenchUserInfo
-import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, RawlsBillingProjectName}
+import org.broadinstitute.dsde.firecloud.model.{Trial, WorkbenchUserInfo}
+import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
-object TrialDAO {
-  lazy val serviceName = "TrialDAO"
-}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
-
-  override def serviceName:String = TrialDAO.serviceName
-  implicit val errorReportSource = ErrorReportSource(TrialDAO.serviceName)
-
+class MockTrialDAO extends TrialDAO {
   /**
     * Read the record for a specified project. Throws an error if record not found.
     *
     * @param projectName name of the project record to read.
     * @return the project record
     */
-  def getProjectRecord(projectName: RawlsBillingProjectName): TrialProject
+  override def getProjectRecord(projectName: RawlsBillingProjectName): Trial.TrialProject = throw new Exception("unit test intentional exception")
+
 
   /**
     * Check to see if the project record exists.
@@ -28,7 +24,7 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param projectName name of the project record to read.
     * @return whether or not the project record exists
     */
-  def projectRecordExists(projectName: RawlsBillingProjectName): Boolean
+  override def projectRecordExists(projectName: RawlsBillingProjectName): Boolean = false
 
   /**
     * Create a record for the specified project. Throws error if name
@@ -37,7 +33,7 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param projectName name of the project to use when creating a record
     * @return the created project record
     */
-  def insertProjectRecord(projectName: RawlsBillingProjectName): TrialProject
+  override def insertProjectRecord(projectName: RawlsBillingProjectName): Trial.TrialProject = throw new Exception("unit test intentional exception")
 
   /**
     * Update the "verified" field for a specified project record. The "verified" field indicates whether
@@ -45,10 +41,10 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * the record was not found or the record could not be updated.
     *
     * @param projectName name of the project record to update
-    * @param verified verified value with which to update the project record
+    * @param verified    verified value with which to update the project record
     * @return the updated project record
     */
-  def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean, status: CreationStatus): TrialProject
+  override def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean, status: CreationStatus): Trial.TrialProject = throw new Exception("unit test intentional exception")
 
   /**
     * Associates the next-available project record with a specified user. Definition of "next available"
@@ -58,24 +54,28 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param userInfo the user (email and subjectid) with which to update the project record.
     * @return the updated project record
     */
-  def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject
+  override def claimProjectRecord(userInfo: WorkbenchUserInfo): Trial.TrialProject = throw new Exception("unit test intentional exception")
+
 
   /**
     * Returns a list of project records in the pool that are unverified.
+    *
     * @return list of project records in the pool that are unverified.
     */
-  def listUnverifiedProjects: Seq[TrialProject]
+  override def listUnverifiedProjects: Seq[TrialProject] = Seq.empty[TrialProject]
 
   /**
     * Returns a counts of project records by status.
     * @return counts of project records.
     */
-  def countProjects: Map[String,Long]
+  override def countProjects: Map[String,Long] = Map.empty[String,Long]
 
   /**
     * Returns a list of project records that have associated users.
+    *
     * @return list of project records that have associated users.
     */
-  def projectReport: Seq[TrialProject] // return a list of projects-to-users
+  override def projectReport: Seq[Trial.TrialProject] = Seq.empty[TrialProject]
 
+  override def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
 }

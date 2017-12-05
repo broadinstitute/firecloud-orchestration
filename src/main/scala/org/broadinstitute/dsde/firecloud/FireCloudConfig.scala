@@ -18,6 +18,8 @@ object FireCloudConfig {
     val pemFileClientId = auth.getString("pemFileClientId")
     val rawlsPemFile = auth.getString("rawlsPemFile")
     val rawlsPemFileClientId = auth.getString("rawlsPemFileClientId")
+    val trialBillingPemFile = auth.getString("trialBillingPemFile")
+    val trialBillingPemFileClientId = auth.getString("trialBillingPemFileClientId")
     val swaggerRealm = auth.getString("swaggerRealm")
   }
 
@@ -167,5 +169,6 @@ object FireCloudConfig {
     private val trial = config.getConfig("trial")
     val durationDays = trial.getInt("durationDays")
     val managerGroup = trial.getString("managerGroup")
+    val billingAccount = trial.getString("billingAccount")
   }
 }

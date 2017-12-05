@@ -1633,6 +1633,7 @@ paths:
             description: operation to perform on the specified users
             required: true
             in: path
+            type: string
             enum:
               - enable
               - disable
@@ -1648,6 +1649,46 @@ paths:
             description: Success (No Content)
           500:
             description: Internal Server Error
+
+  /api/trial/manager/projects:
+    post:
+      tags:
+        - Trial
+      operationId: manageTrialProjects
+      summary: Manage free trial projects
+      parameters:
+        - name: operation
+          description: |
+            operation to perform on projects.
+            "Create" will create projects and verify those projects.
+            "Verify" will verify all unverified projects in the pool.
+            "Count" will return the number of projects in various statuses.
+            "Report" will return a report of all claimed projects.
+          required: true
+          in: query
+          type: string
+          enum:
+            - create
+            - verify
+            - count
+            - report
+          default: count
+        - name: count
+          description: number of projects to create; only used for create operation
+          required: false
+          in: query
+          type: number
+      responses:
+        200:
+          description: OK; used for verify operation
+        202:
+          description: Accepted; used for create operation
+        400:
+          description: Bad Request. Creation already in progress or incorrect credentials.
+        403:
+          description: You must be a campaign manager to call this endpoint.
+        500:
+          description: Internal Server Error
 
   /version/executionEngine:
     get:

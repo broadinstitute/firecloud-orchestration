@@ -1,8 +1,9 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impTrialProject
+import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.WorkbenchUserInfo
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialProject
+import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, TrialProject}
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
@@ -13,6 +14,7 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.action.update.{UpdateRequest, UpdateRequestBuilder, UpdateResponse}
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.xcontent.XContentType
+import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.sort.SortOrder
 import spray.json._
@@ -21,8 +23,35 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
 
+trait TrialQueries {
 
-class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshMode: RefreshPolicy = RefreshPolicy.NONE) extends TrialDAO with ElasticSearchDAOSupport {
+  val Unverified:QueryBuilder = termQuery("verified", false)
+
+  val Errored:QueryBuilder = boolQuery()
+    .must(termQuery("verified", true))
+    .must(termQuery("status.keyword", CreationStatuses.Error.toString))
+
+  val Available:QueryBuilder = boolQuery()
+    .must(termQuery("verified", true))
+    .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
+    .mustNot(existsQuery("user.userSubjectId.keyword"))
+
+  val Claimed:QueryBuilder = boolQuery()
+    .must(termQuery("verified", true))
+    .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
+    .must(existsQuery("user.userSubjectId.keyword"))
+}
+
+/**
+  * DAO, talking to Elasticsearch, for the free trial project pool.
+  *
+  * @param client Elasticsearch client.
+  * @param indexName name of the target free trial index.
+  * @param refreshMode refresh policy. Using IMMEDIATE - the default - is a performance hit but ensures transactionality
+  *                    of updates across multiple users.
+  */
+class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshMode: RefreshPolicy = RefreshPolicy.IMMEDIATE)
+  extends TrialDAO with TrialQueries with ElasticSearchDAOSupport {
 
   lazy private final val datatype = "billingproject"
 
@@ -72,6 +101,16 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   /**
+    * Check to see if the project record exists.
+    *
+    * @param projectName name of the project record to read.
+    * @return whether or not the project record exists
+    */
+  override def projectRecordExists(projectName: RawlsBillingProjectName): Boolean = {
+    Try(getProjectInternal(projectName)).isSuccess
+  }
+
+  /**
     * Create a record for the specified project. Throws error if name
     * already exists or could not be otherwise created.
     *
@@ -99,13 +138,13 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     * @param verified verified value with which to update the project record
     * @return the updated project record
     */
-  override def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean): TrialProject = {
+  override def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean, status: CreationStatus): TrialProject = {
     val (version, project) = getProjectInternal(projectName)
 
-    if (project.verified == verified) {
-      project
+    if (project.verified == verified && project.status.contains(status)) {
+      project // noop
     } else {
-      val updatedProject = project.copy(verified = verified)
+      val updatedProject = project.copy(verified = verified, status=Some(status))
       updateProjectInternal(updatedProject, version) // will throw error if update fails
       updatedProject
     }
@@ -121,16 +160,13 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     * @return the updated project record
     */
   override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject = {
-    val nextProjectQuery = boolQuery()
-      .must(termQuery("verified", true))
-      .mustNot(existsQuery("user.userSubjectId.keyword"))
-
     // if we find regular race conditions in which multiple users attempt to claim the "next" project,
     // we could change this to return N (= ~20) available projects, then choose a random project
-    // from that list.
+    // from that list. Either way, the caller of this method should retry this method to ensure
+    // a successful claim.
     val nextProjectRequest = client
       .prepareSearch(indexName)
-      .setQuery(nextProjectQuery)
+      .setQuery(Available)
       .addSort("name.keyword", SortOrder.ASC)
       .setSize(1)
       .setVersion(true)
@@ -151,22 +187,35 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   /**
-    * Returns a count of available project records. "Available" is defined as verified and unclaimed.
-    * @return count of available project records.
+    * Returns a list of project records in the pool that are unverified.
+    *
+    * @return list of project records in the pool that are unverified.
     */
-  override def countAvailableProjects: Long = {
-    val countProjectQuery = boolQuery()
-      .must(termQuery("verified", true))
-      .mustNot(existsQuery("user.userSubjectId.keyword"))
-
-    val countProjectRequest = client
+  override def listUnverifiedProjects: Seq[TrialProject] = {
+    val unverifiedRequest = client
       .prepareSearch(indexName)
-      .setQuery(countProjectQuery)
-      .setSize(0)
+      .setQuery(Unverified)
+      .setSize(1000)
 
-    val countProjectResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](countProjectRequest)
+    val unverifiedResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](unverifiedRequest)
 
-    countProjectResponse.getHits.totalHits
+    if (unverifiedResponse.getHits.totalHits == 0)
+      Seq.empty[TrialProject]
+    else
+      unverifiedResponse.getHits.getHits.toSeq map ( _.getSourceAsString.parseJson.convertTo[TrialProject] )
+  }
+
+  /**
+    * Returns a counts of project records by status.
+    * @return counts of project records.
+    */
+  override def countProjects: Map[String,Long] = {
+    Map(
+      "unverified" -> count(Unverified),
+      "errored" -> count(Errored),
+      "available" -> count(Available),
+      "claimed" -> count(Claimed)
+    )
   }
 
   /**
@@ -174,13 +223,9 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     * @return list of project records that have associated users.
     */
   override def projectReport: Seq[TrialProject] = {
-    val reportProjectQuery = boolQuery()
-      .must(termQuery("verified", true))
-      .must(existsQuery("user.userSubjectId.keyword"))
-
     val reportProjectRequest = client
       .prepareSearch(indexName)
-      .setQuery(reportProjectQuery)
+      .setQuery(Claimed)
       .addSort("name.keyword", SortOrder.ASC)
       .setSize(1000)
 
@@ -191,7 +236,6 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     else
       reportProjectResponse.getHits.getHits.toSeq map ( _.getSourceAsString.parseJson.convertTo[TrialProject] )
   }
-
 
   private def indexExists: Boolean = {
     executeESRequest[IndicesExistsRequest, IndicesExistsResponse, IndicesExistsRequestBuilder](
@@ -206,8 +250,17 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   private def init: Unit = {
     if (!indexExists)
       throw new FireCloudException(s"index $indexName does not exist!")
-    if (refreshMode != RefreshPolicy.NONE)
-      logger.warn(s"refresh policy ${refreshMode.getValue} should only be used for testing")
+  }
+
+  private def count(qb: QueryBuilder): Long = {
+    val countProjectRequest = client
+      .prepareSearch(indexName)
+      .setQuery(qb)
+      .setSize(0)
+
+    val countProjectResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](countProjectRequest)
+
+    countProjectResponse.getHits.totalHits
   }
 
 }

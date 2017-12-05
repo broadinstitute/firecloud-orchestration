@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchTrialDAO
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.{searchDAO, trialDAO}
+import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses._
 import org.broadinstitute.dsde.firecloud.model.WorkbenchUserInfo
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialProject
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
@@ -20,7 +21,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
     ElasticSearchTrialDAOFixtures.fixtureProjects foreach { project => trialDAO.insertProjectRecord(project.name)}
 
     ElasticSearchTrialDAOFixtures.fixtureProjects collect {
-      case project if project.verified => trialDAO.setProjectRecordVerified(project.name, verified=project.verified)
+      case project if project.verified => trialDAO.setProjectRecordVerified(project.name, verified=project.verified, status=Ready)
     }
     ElasticSearchTrialDAOFixtures.fixtureProjects collect {
       case project if project.user.nonEmpty => trialDAO.claimProjectRecord(project.user.get)
@@ -38,7 +39,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
       "should insert a new project" in {
         val name = RawlsBillingProjectName("garlic")
         val actual = trialDAO.insertProjectRecord(name)
-        val expected = TrialProject(name, verified=false, user=None)
+        val expected = TrialProject(name, verified=false, user=None, status=None)
         assertResult(expected) { actual }
         val expectedCheck = trialDAO.getProjectRecord(name)
         assertResult(expected) { expectedCheck }
@@ -54,19 +55,19 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
     "verifyProject" - {
       "should update a project with a new value for verified" in {
         val name=RawlsBillingProjectName("endive")
-        trialDAO.setProjectRecordVerified(name, verified=true)
+        trialDAO.setProjectRecordVerified(name, verified=true, status=Ready)
         val actual1 = trialDAO.getProjectRecord(name)
-        val expected1 = TrialProject(name, verified=true, user=None)
+        val expected1 = TrialProject(name, verified=true, user=None, status=Some(Ready))
         assertResult(expected1) { actual1 }
-        trialDAO.setProjectRecordVerified(name, verified=false)
+        trialDAO.setProjectRecordVerified(name, verified=false, status=Creating)
         val actual2 = trialDAO.getProjectRecord(name)
-        val expected2 = TrialProject(name, verified=false, user=None)
+        val expected2 = TrialProject(name, verified=false, user=None, status=Some(Creating))
         assertResult(expected2) { actual2 }
 
       }
       "should throw an error if project is not found" in {
         val ex = intercept[FireCloudException] {
-          trialDAO.setProjectRecordVerified(RawlsBillingProjectName("habanero"), verified=true)
+          trialDAO.setProjectRecordVerified(RawlsBillingProjectName("habanero"), verified=true, status=Ready)
         }
         assert(ex.getMessage == "project habanero not found!")
       }
@@ -76,7 +77,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
       "should claim the first available project by alphabetical order" in {
         val user = WorkbenchUserInfo("789", "me")
         val claimed = trialDAO.claimProjectRecord(user)
-        val expected = TrialProject(RawlsBillingProjectName("date"), verified=true, user=Some(user))
+        val expected = TrialProject(RawlsBillingProjectName("date"), verified=true, user=Some(user), status=Some(Ready))
         assertResult(expected) { claimed }
         val claimCheck = trialDAO.getProjectRecord(RawlsBillingProjectName("date"))
         assertResult(expected) { claimCheck }
@@ -92,16 +93,30 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
         assert(ex.getMessage == "no available projects")
       }
     }
-    "countAvailableProjects" - {
-      "should return zero when no projects available" in {
-        assertResult(0) { trialDAO.countAvailableProjects }
+    "countProjects" - {
+      "should return zero when no projects im a given state" in {
+        val expected = Map(
+          "unverified" -> 3,
+          "errored" -> 0,
+          "available" -> 0,
+          "claimed" -> 4
+        )
+        assertResult(expected) { trialDAO.countProjects }
       }
-      "should return accurate count of available projects" in {
+      "should return accurate counts of all states" in {
         // insert three
         Seq("orange", "pineapple", "quince") foreach { proj => trialDAO.insertProjectRecord(RawlsBillingProjectName(proj))}
         // verify two
-        Seq("orange", "quince") foreach { proj => trialDAO.setProjectRecordVerified(RawlsBillingProjectName(proj), verified=true)}
-        assertResult(2) { trialDAO.countAvailableProjects }
+        Seq("orange", "quince") foreach { proj => trialDAO.setProjectRecordVerified(RawlsBillingProjectName(proj), verified=true, status=Ready)}
+        // call one an error
+        Seq("pineapple") foreach { proj => trialDAO.setProjectRecordVerified(RawlsBillingProjectName(proj), verified=true, status=Error)}
+        val expected = Map(
+          "unverified" -> 3,
+          "errored" -> 1,
+          "available" -> 2,
+          "claimed" -> 4
+        )
+        assertResult(expected) { trialDAO.countProjects }
       }
     }
     "projectReport" - {
@@ -109,14 +124,14 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
         // unverified/unclaimed projects listed below but commented out for developer clarity
         val expected = Seq(
           // TrialProject(RawlsBillingProjectName("apple"), verified=false, None),
-          TrialProject(RawlsBillingProjectName("banana"), verified=true, Some(WorkbenchUserInfo("123", "alice@example.com"))),
-          TrialProject(RawlsBillingProjectName("carrot"), verified=true, Some(WorkbenchUserInfo("456", "bob@example.com"))),
-          TrialProject(RawlsBillingProjectName("date"), verified=true, Some(WorkbenchUserInfo("789", "me"))),
+          TrialProject(RawlsBillingProjectName("banana"), verified=true, Some(WorkbenchUserInfo("123", "alice@example.com")), Some(Ready)),
+          TrialProject(RawlsBillingProjectName("carrot"), verified=true, Some(WorkbenchUserInfo("456", "bob@example.com")), Some(Ready)),
+          TrialProject(RawlsBillingProjectName("date"), verified=true, Some(WorkbenchUserInfo("789", "me")), Some(Ready)),
           // TrialProject(RawlsBillingProjectName("endive"), verified=false, None),
-          TrialProject(RawlsBillingProjectName("fennel"), verified=true, Some(WorkbenchUserInfo("101010", "me2")))
+          TrialProject(RawlsBillingProjectName("fennel"), verified=true, Some(WorkbenchUserInfo("101010", "me2")), Some(Ready))
           // TrialProject(RawlsBillingProjectName("garlic"), verified=false, None),
           // TrialProject(RawlsBillingProjectName("orange"), verified=true, None),
-          // TrialProject(RawlsBillingProjectName("pineapple"), verified=false, None),
+          // TrialProject(RawlsBillingProjectName("pineapple"), verified=true, Some(Error)),
           // TrialProject(RawlsBillingProjectName("quince"), verified=true, None)
         )
         val actual = trialDAO.projectReport
@@ -140,7 +155,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
         assert(project.name == name)
 
         // verify the project - this will increment the version in ES from 1 to 2
-        trialDAO.setProjectRecordVerified(name, verified=true)
+        trialDAO.setProjectRecordVerified(name, verified=true, status=Ready)
         val (newVersion, newProject) = esTrialDAO.getProjectInternal(name)
         assert(newVersion == 2)
         assert(newProject.name == name)
@@ -165,12 +180,12 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
 
 object ElasticSearchTrialDAOFixtures {
   val fixtureProjects: Seq[TrialProject] = Seq(
-    TrialProject(RawlsBillingProjectName("apple"), verified=false, None),
-    TrialProject(RawlsBillingProjectName("banana"), verified=true, Some(WorkbenchUserInfo("123", "alice@example.com"))),
-    TrialProject(RawlsBillingProjectName("carrot"), verified=true, Some(WorkbenchUserInfo("456", "bob@example.com"))),
-    TrialProject(RawlsBillingProjectName("date"), verified=true, None),
-    TrialProject(RawlsBillingProjectName("endive"), verified=false, None),
-    TrialProject(RawlsBillingProjectName("fennel"), verified=true, None)
+    TrialProject(RawlsBillingProjectName("apple"), verified=false, None, None),
+    TrialProject(RawlsBillingProjectName("banana"), verified=true, Some(WorkbenchUserInfo("123", "alice@example.com")), Some(Ready)),
+    TrialProject(RawlsBillingProjectName("carrot"), verified=true, Some(WorkbenchUserInfo("456", "bob@example.com")), Some(Ready)),
+    TrialProject(RawlsBillingProjectName("date"), verified=true, None, None),
+    TrialProject(RawlsBillingProjectName("endive"), verified=false, None, None),
+    TrialProject(RawlsBillingProjectName("fennel"), verified=true, None, None)
   )
 }
 

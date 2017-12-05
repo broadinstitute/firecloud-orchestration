@@ -3,8 +3,9 @@ package org.broadinstitute.dsde.firecloud.model
 import java.time.Instant
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.TrialState
-import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
+import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsEnumeration}
 
 import scala.util.Try
 
@@ -135,9 +136,9 @@ object Trial {
 
   }
 
-  case class TrialProject(name: RawlsBillingProjectName, verified: Boolean, user: Option[WorkbenchUserInfo])
+  case class TrialProject(name: RawlsBillingProjectName, verified: Boolean, user: Option[WorkbenchUserInfo], status: Option[CreationStatus])
   object TrialProject {
-    def apply(name: RawlsBillingProjectName) = new TrialProject(name, verified=false, user=None)
+    def apply(name: RawlsBillingProjectName) = new TrialProject(name, verified=false, user=None, status=None)
   }
 
   object StatusUpdate {
@@ -147,4 +148,64 @@ object Trial {
     case object Failure extends Attempt
     case class ServerError(msg: String) extends Attempt
   }
+
+  case class CreateProjectsResponse(success: Boolean, count: Int, message: Option[String])
+
+  // following are horribly copied-and-pasted from rawls core, since they're not available as shared models
+  case class CreateRawlsBillingProjectFullRequest(projectName: String, billingAccount: String)
+
+  case class RawlsBillingProjectMembership(projectName: RawlsBillingProjectName, role: ProjectRoles.ProjectRole, creationStatus: CreationStatuses.CreationStatus, message: Option[String] = None)
+
+  object CreationStatuses {
+    sealed trait CreationStatus extends RawlsEnumeration[CreationStatus] {
+      override def toString = toName(this)
+
+      override def withName(name: String): CreationStatus = CreationStatuses.withName(name)
+    }
+
+    def toName(status: CreationStatus): String = status match {
+      case Creating => "Creating"
+      case Ready => "Ready"
+      case Error => "Error"
+    }
+
+    def withName(name: String): CreationStatus = name.toLowerCase match {
+      case "creating" => Creating
+      case "ready" => Ready
+      case "error" => Error
+      case _ => throw new FireCloudException(s"invalid CreationStatus [${name}]")
+    }
+
+    case object Creating extends CreationStatus
+    case object Ready extends CreationStatus
+    case object Error extends CreationStatus
+
+    val all: Set[CreationStatus] = Set(Creating, Ready, Error)
+    val terminal: Set[CreationStatus] = Set(Ready, Error)
+  }
+
+  object ProjectRoles {
+    sealed trait ProjectRole extends RawlsEnumeration[ProjectRole] {
+      override def toString = toName(this)
+
+      override def withName(name: String): ProjectRole = ProjectRoles.withName(name)
+    }
+
+    def toName(role: ProjectRole): String = role match {
+      case Owner => "Owner"
+      case User => "User"
+    }
+
+    def withName(name: String): ProjectRole = name.toLowerCase match {
+      case "owner" => Owner
+      case "user" => User
+      case _ => throw new FireCloudException(s"invalid ProjectRole [${name}]")
+    }
+
+    case object Owner extends ProjectRole
+    case object User extends ProjectRole
+
+    val all: Set[ProjectRole] = Set(Owner, User)
+  }
+  // END copy/paste from rawls
 }

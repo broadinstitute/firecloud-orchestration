@@ -3,45 +3,57 @@ package org.broadinstitute.dsde.firecloud.service
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
+import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO}
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Terminated, TrialState}
-import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO, _}
+import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Terminated}
+import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus, _}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, RequestCompleteWithErrorReport, UserInfo, WithAccessToken, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impCreateProjectsResponse, impTrialProject}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TrialService._
+import org.broadinstitute.dsde.firecloud.trial.ProjectManager.StartCreation
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
-import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsUserEmail}
 import spray.http.StatusCodes._
+import spray.http.{OAuth2BearerToken, StatusCodes}
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 // TODO: Contain userEmail in value class for stronger type safety without incurring performance penalty
 object TrialService {
   sealed trait TrialServiceMessage
+
   case class EnableUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
   case class DisableUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
   case class EnrollUser(managerInfo: UserInfo) extends TrialServiceMessage
   case class TerminateUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
+  case class CreateProjects(userInfo:UserInfo, count:Int) extends TrialServiceMessage
+  case class VerifyProjects(userInfo:UserInfo) extends TrialServiceMessage
+  case class CountProjects(userInfo:UserInfo) extends TrialServiceMessage
+  case class Report(userInfo:UserInfo) extends TrialServiceMessage
 
   def props(service: () => TrialService): Props = {
     Props(service())
   }
 
-  def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new TrialService(app.rawlsDAO, app.samDAO, app.thurloeDAO)
+  def constructor(app: Application, projectManager: ActorRef)()(implicit executionContext: ExecutionContext) =
+    new TrialService(app.samDAO, app.thurloeDAO, app.rawlsDAO, app.trialDAO, projectManager)
 }
 
 // TODO: Remove loggers used for development purposes or lower their level
-final class TrialService(val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO)
-                        (implicit protected val executionContext: ExecutionContext)
-  extends Actor with LazyLogging with SprayJsonSupport with PermissionsSupport {
+final class TrialService
+  (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, projectManager: ActorRef)
+  (implicit protected val executionContext: ExecutionContext)
+  extends Actor with PermissionsSupport with SprayJsonSupport with LazyLogging {
 
   override def receive = {
     case EnableUsers(managerInfo, userEmails) =>
@@ -52,6 +64,11 @@ final class TrialService(val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloe
       enrollUser(userInfo) pipeTo sender
     case TerminateUsers(managerInfo, userEmails) =>
       asTrialCampaignManager(terminateUsers(managerInfo, userEmails))(managerInfo) pipeTo sender
+    case CreateProjects(userInfo, count) => asTrialCampaignManager {createProjects(count)}(userInfo) pipeTo sender
+    case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
+    case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
+    case Report(userInfo) => asTrialCampaignManager {projectReport}(userInfo) pipeTo sender
+    case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
@@ -192,5 +209,51 @@ final class TrialService(val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloe
       }
     }
   }
-}
 
+  private def createProjects(count: Int): Future[PerRequestMessage] = {
+    implicit val timeout:Timeout = 1.minute // timeout to get a response from projectManager
+    val create = projectManager ? StartCreation(count)
+    create.map {
+      case c:CreateProjectsResponse if c.success => RequestComplete(StatusCodes.Accepted, c)
+      case c:CreateProjectsResponse if !c.success => RequestComplete(BadRequest, c)
+      case _ => RequestComplete(InternalServerError)
+    }
+  }
+
+  private def verifyProjects: Future[PerRequestMessage] = {
+
+    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(HttpGoogleServicesDAO.getTrialBillingManagerAccessToken))
+    rawlsDAO.getProjects(saToken) map { projects =>
+
+      val projectStatuses:Map[RawlsBillingProjectName, CreationStatus] = projects.map { proj =>
+        proj.projectName -> proj.creationStatus
+      }.toMap
+
+      // get unverified projects from the pool
+      val unverified = trialDAO.listUnverifiedProjects
+
+      unverified.foreach { unv =>
+        // get status from the rawls map
+        projectStatuses.get(unv.name) match {
+          case Some(CreationStatuses.Creating) => // noop
+          case Some(CreationStatuses.Error) =>
+            logger.warn(s"project ${unv.name.value} errored, so we have to give up on it.")
+            trialDAO.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Error)
+          case Some(CreationStatuses.Ready) =>
+            trialDAO.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Ready)
+          case None =>
+            logger.warn(s"project ${unv.name.value} exists in pool but not found via Rawls!")
+        }
+      }
+
+      RequestComplete(OK, trialDAO.countProjects)
+    }
+  }
+
+  private def countProjects: Future[PerRequestMessage] =
+    Future(RequestComplete(OK, trialDAO.countProjects))
+
+  private def projectReport: Future[PerRequestMessage] =
+    Future(RequestComplete(OK, trialDAO.projectReport))
+
+}
