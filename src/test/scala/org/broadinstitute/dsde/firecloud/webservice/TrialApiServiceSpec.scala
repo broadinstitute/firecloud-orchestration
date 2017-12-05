@@ -173,38 +173,38 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         case Some(c) => s"&count=$c"
         case None => ""
       }
-      s"/api/trial/manager/projects?operation=$operation$countParam"
+      s"/trial/manager/projects?operation=$operation$countParam"
     }
 
     allHttpMethodsExcept(POST) foreach { method =>
       s"should reject ${method.toString} method" in {
-        new RequestBuilder(method)(projectManagementPath("count")) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+        new RequestBuilder(method)(projectManagementPath("count")) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
           assert(!handled)
         }
       }
     }
     "should return BadRequest for operations other than create, verify, count, and report" in {
-      Post(projectManagementPath("invalid")) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+      Post(projectManagementPath("invalid")) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
         assertResult(BadRequest) {status}
       }
     }
     "should require a positive count for create" - {
       Seq(0,-1,-50) foreach { neg =>
         s"value tested: $neg" in {
-          Post(projectManagementPath("create", Some(neg))) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+          Post(projectManagementPath("create", Some(neg))) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
             assertResult(BadRequest) {status}
           }
         }
       }
     }
     "should return Accepted for operation 'create' with a positive count" in {
-      Post(projectManagementPath("create", Some(2))) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+      Post(projectManagementPath("create", Some(2))) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
         assertResult(Accepted) {status}
       }
     }
     Seq("verify","count","report") foreach { op =>
       s"should return success for operation '$op'" in {
-        Post(projectManagementPath(op)) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+        Post(projectManagementPath(op)) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
           assert(status.isSuccess)
           assertResult(OK) {status}
         }
