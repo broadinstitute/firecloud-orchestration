@@ -130,11 +130,8 @@ final class TrialService
   private def updateTrialStatus(managerInfo: UserInfo,
                                 userInfo: WorkbenchUserInfo,
                                 statusTransition: UserTrialStatus => UserTrialStatus): Future[StatusUpdate.Attempt] = {
-    // Create hybrid UserInfo with the managerInfo's credentials and users' subjectIds
-    val sudoUserInfo = managerInfo.copy(id = userInfo.userSubjectId)
-
-    // Use the hybrid UserInfo while querying Thurloe
-    thurloeDao.getTrialStatus(sudoUserInfo) flatMap {
+    // get the status of the "userInfo" user, but authenticating to Thurloe as the "managerInfo" user
+    thurloeDao.getTrialStatus(userInfo.userSubjectId, managerInfo) flatMap {
       case Some(currentStatus) => {
         val currentState = currentStatus.state
         val newStatus = statusTransition(currentStatus)
@@ -159,8 +156,8 @@ final class TrialService
             s"Cannot transition from $currentState to $newState")
 
           // TODO: Test the logic below by adding a mock ThurloeDAO whose saveTrialStatus() returns Failure
-          // Save updates to user's trial status
-          thurloeDao.saveTrialStatus(sudoUserInfo, newStatus) map {
+          // Save updates to "userInfo's" trial status, authenticating to Thurloe as "managerInfo" user
+          thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, newStatus) map {
             case Success(_) =>
               logger.warn(s"Updated profile saved as $newState; we are done!")
               StatusUpdate.Success
@@ -180,7 +177,7 @@ final class TrialService
 
   private def enrollUser(userInfo: UserInfo): Future[PerRequestMessage] = {
     // get user's trial status, then check the current state
-    thurloeDao.getTrialStatus(userInfo) flatMap { userTrialStatus =>
+    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { userTrialStatus =>
       userTrialStatus match {
         // can't determine the user's trial status; don't enroll
         case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial."))
@@ -198,7 +195,7 @@ final class TrialService
                 enrolledDate = now,
                 expirationDate = expirationDate
               )
-              thurloeDao.saveTrialStatus(userInfo, enrolledStatus) map { _ =>
+              thurloeDao.saveTrialStatus(userInfo.id, userInfo, enrolledStatus) map { _ =>
                 // TODO: add user to free-trial billing project / create said project if necessary
                 RequestComplete(NoContent)
               }

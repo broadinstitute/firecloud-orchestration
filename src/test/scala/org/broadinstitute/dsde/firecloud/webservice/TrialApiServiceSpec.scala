@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enrolled}
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
@@ -17,7 +17,7 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
 import spray.http.HttpMethods.POST
-import spray.http.StatusCodes.{Accepted, BadRequest, NoContent, OK}
+import spray.http.StatusCodes.{Accepted, BadRequest, InternalServerError, NoContent, OK}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -127,6 +127,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
     val disabledUserEmail = Seq(disabledUser)
     val enabledUserEmail = Seq(enabledUser)
+    val enrolledUserEmail = Seq(enrolledUser)
+    val terminatedUserEmail = Seq(terminatedUser)
 
     "Manager endpoint" - {
       allHttpMethodsExcept(POST) foreach { method =>
@@ -141,8 +143,6 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
 
     // TODO: Test updates of users who aren't registered (i.e. no RegistrationInfo in Sam)
-
-    // TODO: Test invalid trial status transition request (e.g. Terminated -> Enabled)
 
     "Attempting an invalid operation should not be handled" in {
       Post(invalidPath, disabledUserEmail) ~> dummyUserIdHeaders(dummyUser) ~> trialApiServiceRoutes ~> check {
@@ -174,7 +174,29 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
-    // TODO: Test user termination
+    "Attempting to terminate a previously enabled user should return NoContent success" in {
+      Post(terminatePath, enabledUserEmail) ~> dummyUserIdHeaders(dummyUser) ~> trialApiServiceRoutes ~> check {
+        assertResult(InternalServerError, response.entity.asString) { status }
+      }
+    }
+
+    "Attempting to terminate a previously disabled user should return NoContent success" in {
+      Post(terminatePath, disabledUserEmail) ~> dummyUserIdHeaders(dummyUser) ~> trialApiServiceRoutes ~> check {
+        assertResult(InternalServerError, response.entity.asString) { status }
+      }
+    }
+
+    "Attempting to terminate a previously enrolled user should return NoContent success" in {
+      Post(terminatePath, enrolledUserEmail) ~> dummyUserIdHeaders(dummyUser) ~> trialApiServiceRoutes ~> check {
+        assertResult(NoContent, response.entity.asString) { status }
+      }
+    }
+
+    "Attempting to terminate a previously terminated user should return NoContent success" in {
+      Post(terminatePath, terminatedUserEmail) ~> dummyUserIdHeaders(dummyUser) ~> trialApiServiceRoutes ~> check {
+        assertResult(NoContent, response.entity.asString) { status }
+      }
+    }
   }
 
   "Campaign manager project-management endpoint" - {
@@ -224,18 +246,18 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   }
 
   final class TrialApiServiceSpecThurloeDAO extends HttpThurloeDAO {
-    override def saveTrialStatus(userInfo: UserInfo, newTrialStatus: UserTrialStatus) = {
+    override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus) = {
       // Note: because HttpThurloeDAO catches exceptions, the assertions here will
       // result in InternalServerErrors instead of appearing nicely in unit test output.
-      userInfo.id match {
-        case `enabledUser` => newTrialStatus.state match {
+      forUserId match {
+        case `enabledUser` => trialStatus.state match {
           case Some(Enrolled) =>
-            val expectedExpirationDate = newTrialStatus.enrolledDate.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
+            val expectedExpirationDate = trialStatus.enrolledDate.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
 
-            assert(newTrialStatus.enrolledDate.toEpochMilli > 0)
-            assert(newTrialStatus.expirationDate.toEpochMilli > 0)
-            assertResult( expectedExpirationDate ) { newTrialStatus.expirationDate }
-            assertResult(0) { newTrialStatus.terminatedDate.toEpochMilli }
+            assert(trialStatus.enrolledDate.toEpochMilli > 0)
+            assert(trialStatus.expirationDate.toEpochMilli > 0)
+            assertResult( expectedExpirationDate ) { trialStatus.expirationDate }
+            assertResult(0) { trialStatus.terminatedDate.toEpochMilli }
 
             Future.successful(Success(()))
           case Some(Disabled) =>
@@ -244,16 +266,25 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
             Future.failed(new IllegalArgumentException(s"Enabled status can only transition to Enrolled or Disabled"))
         }
         case `disabledUser` => {
-          assertResult(Some(TrialStates.Enabled)) { newTrialStatus.state }
-          assert(newTrialStatus.enabledDate.toEpochMilli > 0)
-          assert(newTrialStatus.enrolledDate.toEpochMilli === 0)
-          assert(newTrialStatus.terminatedDate.toEpochMilli === 0)
-          assert(newTrialStatus.expirationDate.toEpochMilli === 0)
+          assertResult(Some(TrialStates.Enabled)) { trialStatus.state }
+          assert(trialStatus.enabledDate.toEpochMilli > 0)
+          assert(trialStatus.enrolledDate.toEpochMilli === 0)
+          assert(trialStatus.terminatedDate.toEpochMilli === 0)
+          assert(trialStatus.expirationDate.toEpochMilli === 0)
+
+          Future.successful(Success(()))
+        }
+        case `enrolledUser` => {
+          assertResult(Some(TrialStates.Terminated)) { trialStatus.state }
+          assert(trialStatus.enabledDate.toEpochMilli > 0)
+          assert(trialStatus.enrolledDate.toEpochMilli > 0)
+          assert(trialStatus.terminatedDate.toEpochMilli > 0)
+          assert(trialStatus.expirationDate.toEpochMilli > 0)
 
           Future.successful(Success(()))
         }
         case _ => {
-          fail("Should only be updating enabled and disabled users")
+          fail("Should only be updating enabled, disabled or enrolled users")
         }
       }
     }
@@ -299,12 +330,22 @@ object TrialApiServiceSpec {
 
   val enabledUserEmail = "enabled-user-email"
   val disabledUserEmail = "disabled-user-email"
+  val enrolledUserEmail = "enrolled-user-email"
+  val terminatedUserEmail = "terminated-user-email"
 
   val enabledUserInfo = WorkbenchUserInfo(userSubjectId = enabledUser, enabledUserEmail)
   val disabledUserInfo = WorkbenchUserInfo(userSubjectId = disabledUser, disabledUserEmail)
+  val enrolledUserInfo = WorkbenchUserInfo(userSubjectId = enrolledUser, enrolledUserEmail)
+  val terminatedUserInfo = WorkbenchUserInfo(userSubjectId = terminatedUser, terminatedUserEmail)
 
   val enabledUserRegInfo = RegistrationInfo(enabledUserInfo, workbenchEnabled)
   val disabledUserRegInfo = RegistrationInfo(disabledUserInfo, workbenchEnabled)
+  val enrolledUserRegInfo = RegistrationInfo(enrolledUserInfo, workbenchEnabled)
+  val terminatedUserRegInfo = RegistrationInfo(terminatedUserInfo, workbenchEnabled)
 
-  val registrationInfoByEmail = Map(enabledUser -> enabledUserRegInfo, disabledUser -> disabledUserRegInfo)
+  val registrationInfoByEmail = Map(
+    enabledUser -> enabledUserRegInfo,
+    disabledUser -> disabledUserRegInfo,
+    enrolledUser -> enrolledUserRegInfo,
+    terminatedUser -> terminatedUserRegInfo)
 }

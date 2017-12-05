@@ -3,13 +3,13 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.util.NoSuchElementException
 
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, Profile, ProfileWrapper, Trial, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, Profile, ProfileWrapper, Trial, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by mbemis on 10/25/16.
@@ -106,7 +106,13 @@ class MockThurloeDAO extends ThurloeDAO {
     val newKVsForUser = (userInfo.id -> (mockKeyValues(userInfo.id) ++ keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value))}))
     mockKeyValues = mockKeyValues + newKVsForUser
     Future.successful(Success(()))
+  }
 
+
+  override def saveKeyValues(forUserId: String, callerToken: WithAccessToken, keyValues: Map[String, String]): Future[Try[Unit]] = {
+    val newKVsForUser = (forUserId -> (mockKeyValues(forUserId) ++ keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value))}))
+    mockKeyValues = mockKeyValues + newKVsForUser
+    Future.successful(Success(()))
   }
 
   override def getAllUserValuesForKey(key: String): Future[Map[String, String]] = {
@@ -124,10 +130,10 @@ class MockThurloeDAO extends ThurloeDAO {
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
 
-  override def getTrialStatus(userInfo: UserInfo) = Future.successful(Some(
-    UserTrialStatus(userInfo.id, Some(TrialStates.Terminated), 0, 0, 0, 0
+  override def getTrialStatus(forUserId: String, callerToken: WithAccessToken) = Future.successful(Some(
+    UserTrialStatus(forUserId, Some(TrialStates.Terminated), 0, 0, 0, 0
   )))
 
-  override def saveTrialStatus(userInfo: UserInfo, trialStatus: Trial.UserTrialStatus): Future[Try[Unit]] =
+  override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus): Future[Try[Unit]] =
     Future.successful(Success(()))
 }
