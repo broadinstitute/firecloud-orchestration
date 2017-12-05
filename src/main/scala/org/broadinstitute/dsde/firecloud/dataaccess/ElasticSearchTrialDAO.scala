@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.WorkbenchUserInfo
 import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, TrialProject}
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
+import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
 import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
@@ -248,8 +249,13 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   private def init: Unit = {
-    if (!indexExists)
-      throw new FireCloudException(s"index $indexName does not exist!")
+    if (!indexExists) {
+      executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
+        client.admin.indices.prepareCreate(indexName))
+      // Try one more time and fail if index creation fails
+      if (!indexExists)
+        throw new FireCloudException(s"index $indexName does not exist!")
+    }
   }
 
   private def count(qb: QueryBuilder): Long = {
