@@ -38,6 +38,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with TrialApiService
 {
 
+  override lazy val log = LoggerFactory.getLogger(getClass)
+
   implicit val system = context.system
 
   trait ActorRefFactoryContext {
@@ -65,6 +67,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
 
   val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
 
+  // perform startup checks
+  new StartupChecks(app).check
+
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
@@ -88,7 +93,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
 
   val healthService = new HealthService with ActorRefFactoryContext
 
-  override lazy val log = LoggerFactory.getLogger(getClass)
+
   val logRequests = mapInnerRoute { route => requestContext =>
     log.debug(requestContext.request.toString)
     route(requestContext)

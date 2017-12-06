@@ -13,8 +13,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class MockGoogleServicesDAO extends GoogleServicesDAO {
-  override def getAdminUserAccessToken: String = ""
-  override def getTrialBillingManagerAccessToken: String = ""
+  override def getAdminUserAccessToken: String = "adminUserAccessToken"
+  override def getTrialBillingManagerAccessToken: String = "billingManagerAccessToken"
   override def getTrialBillingManagerEmail: String = "mock-trial-billing-mgr-email"
   override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = {
     objectKey match {
