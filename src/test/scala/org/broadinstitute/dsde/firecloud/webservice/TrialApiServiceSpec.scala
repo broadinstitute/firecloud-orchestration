@@ -15,7 +15,7 @@ import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
-import spray.http.HttpMethods.POST
+import spray.http.HttpMethods.{POST, PUT}
 import spray.http.StatusCodes.{Accepted, BadRequest, NoContent, OK}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -210,6 +210,47 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         }
       }
     }
+  }
+
+  "Campaign manager report endpoints" - {
+
+    "Create Report endpoint" - {
+
+      allHttpMethodsExcept(POST) foreach { method =>
+        s"should reject ${method.toString} method" in {
+          new RequestBuilder(method)("/trial/manager/report") ~> dummyUserIdHeaders("campaignManager") ~> trialApiServiceRoutes ~> check {
+            assert(!handled)
+          }
+        }
+      }
+
+      "should succeed with a create request" in {
+        Post("/trial/manager/report") ~> dummyUserIdHeaders("campaignManager") ~> trialApiServiceRoutes ~> check {
+          assert(status.isSuccess)
+          assertResult(OK) {status}
+        }
+      }
+
+    }
+
+    "Update Report endpoint" - {
+
+      allHttpMethodsExcept(PUT) foreach { method =>
+        s"should reject ${method.toString} method" in {
+          new RequestBuilder(method)("/trial/manager/report/12345678") ~> dummyUserIdHeaders("campaignManager") ~> trialApiServiceRoutes ~> check {
+            assert(!handled)
+          }
+        }
+      }
+
+      "should succeed with an update request" in {
+        Put("/trial/manager/report/12345") ~> dummyUserIdHeaders("campaignManager") ~> trialApiServiceRoutes ~> check {
+          assert(status.isSuccess)
+          assertResult(OK) {status}
+        }
+      }
+    }
+
   }
 
   final class TrialApiServiceSpecThurloeDAO extends HttpThurloeDAO {

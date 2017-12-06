@@ -42,6 +42,11 @@ trait TrialQueries {
     .must(termQuery("verified", true))
     .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
     .must(existsQuery("user.userSubjectId.keyword"))
+
+  val Ready:QueryBuilder = boolQuery()
+    .must(termQuery("verified", true))
+    .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
+
 }
 
 /**
@@ -221,32 +226,13 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   /**
-    * Returns a list of project records that have associated users.
-    * @return list of project records that have associated users.
+    * Returns a list of all project records.
+    * @return list of all project records.
     */
   override def projectReport: Seq[TrialProject] = {
     val reportProjectRequest = client
       .prepareSearch(indexName)
-      .setQuery(Claimed)
-      .addSort("name.keyword", SortOrder.ASC)
-      .setSize(1000)
-
-    val reportProjectResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](reportProjectRequest)
-
-    if (reportProjectResponse.getHits.totalHits == 0)
-      Seq.empty[TrialProject]
-    else
-      reportProjectResponse.getHits.getHits.toSeq map ( _.getSourceAsString.parseJson.convertTo[TrialProject] )
-  }
-
-  /**
-    * Returns a list of all project records that have no associated users.
-    * @return list of project records that have no associated users.
-    */
-  override def availableProjectReport: Seq[TrialProject] = {
-    val reportProjectRequest = client
-      .prepareSearch(indexName)
-      .setQuery(Available)
+      .setQuery(Ready)
       .addSort("name.keyword", SortOrder.ASC)
       .setSize(1000)
 

@@ -9,12 +9,64 @@ import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, UserInfo}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.http.HttpResponse
 import spray.json.JsObject
+import spray.json._
 import spray.routing.RequestContext
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 class MockGoogleServicesDAO extends GoogleServicesDAO {
+
+  private final val spreadsheetJson = """{
+                                        |  "properties": {
+                                        |    "autoRecalc": "ON_CHANGE",
+                                        |    "defaultFormat": {
+                                        |      "backgroundColor": {
+                                        |        "blue": 1.0,
+                                        |        "green": 1.0,
+                                        |        "red": 1.0
+                                        |      },
+                                        |      "padding": {
+                                        |        "bottom": 2,
+                                        |        "left": 3,
+                                        |        "right": 3,
+                                        |        "top": 2
+                                        |      },
+                                        |      "textFormat": {
+                                        |        "bold": false,
+                                        |        "fontFamily": "arial,sans,sans-serif",
+                                        |        "fontSize": 10,
+                                        |        "foregroundColor": {},
+                                        |        "italic": false,
+                                        |        "strikethrough": false,
+                                        |        "underline": false
+                                        |      },
+                                        |      "verticalAlignment": "BOTTOM",
+                                        |      "wrapStrategy": "OVERFLOW_CELL"
+                                        |    },
+                                        |    "locale": "en_US",
+                                        |    "timeZone": "Etc/GMT",
+                                        |    "title": "Billing User Report"
+                                        |  },
+                                        |  "sheets": [
+                                        |    {
+                                        |      "properties": {
+                                        |        "gridProperties": {
+                                        |          "columnCount": 26,
+                                        |          "rowCount": 1000
+                                        |        },
+                                        |        "index": 0,
+                                        |        "sheetId": 0,
+                                        |        "sheetType": "GRID",
+                                        |        "title": "Sheet1"
+                                        |      }
+                                        |    }
+                                        |  ],
+                                        |  "spreadsheetId": "randomId",
+                                        |  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/randomId/edit"
+                                        |}
+                                        |""".stripMargin.parseJson.asJsObject
+
   override def getAdminUserAccessToken: String = ""
   override def getTrialBillingManagerAccessToken: String = ""
   override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = {
@@ -36,12 +88,8 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
     Future.successful(GooglePriceList(GooglePrices(UsPriceItem(BigDecimal(0.01)), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
   }
-  override def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties)(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[JsObject] = {
-    Future.successful[JsObject](JsObject.empty)
-  }
-  override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, range: String, content: ValueRange)(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[JsObject] = {
-    Future.successful[JsObject](JsObject.empty)
-  }
+  override def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties)(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): JsObject = spreadsheetJson
+  override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, range: String, content: ValueRange)(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): JsObject = spreadsheetJson
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 

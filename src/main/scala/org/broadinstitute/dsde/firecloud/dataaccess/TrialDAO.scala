@@ -78,10 +78,4 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     */
   def projectReport: Seq[TrialProject] // return a list of projects-to-users
 
-  /**
-    * Returns a list of all project records that have no associated users.
-    * @return list of project records that have no associated users.
-    */
-  def availableProjectReport: Seq[TrialProject] // return a list of projects
-
 }

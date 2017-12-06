@@ -307,24 +307,12 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     *
     */
   def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties)
-    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[JsObject] = {
-
-    getUserProfile(requestContext) map { userResponse =>
-      val responseStr = userResponse.entity.toString
-      userResponse.status match {
-        case OK =>
-          val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
-          val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
-          val spreadsheet = new Spreadsheet().setProperties(props)
-          val response = service.spreadsheets().create(spreadsheet).execute()
-          val spreadsheetJson = response.toString.parseJson.asJsObject
-          logger.debug(s"Spreadsheet Create Response: ${spreadsheetJson.toString}")
-          spreadsheetJson
-        case x =>
-          log.error(s"Failed to save a google sheets service for [$responseStr]")
-          throw new FireCloudException(s"Failed to build a google sheets service for [$responseStr]")
-      }
-    }
+    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): JsObject = {
+    val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
+    val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
+    val spreadsheet = new Spreadsheet().setProperties(props)
+    val response = service.spreadsheets().create(spreadsheet).execute()
+    response.toString.parseJson.asJsObject
   }
 
   /**
@@ -339,22 +327,11 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     *
     */
   def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, range: String, content: ValueRange)
-    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[JsObject] = {
-    getUserProfile(requestContext) map { userResponse =>
-      val responseStr = userResponse.entity.toString
-      userResponse.status match {
-        case OK =>
-          val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
-          val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
-          val response = service.spreadsheets().values().update(spreadsheetId, range, content).setValueInputOption("RAW").execute()
-          val spreadsheetJson = response.toString.parseJson.asJsObject
-          logger.debug(s"Spreadsheet Update Response: ${spreadsheetJson.toString}")
-          spreadsheetJson
-        case x =>
-          log.error(s"Failed to save a google sheets service for [$responseStr]")
-          throw new FireCloudException(s"Failed to build a google sheets service for [$responseStr]")
-      }
-    }
+    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): JsObject = {
+    val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
+    val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
+    val response = service.spreadsheets().values().update(spreadsheetId, range, content).setValueInputOption("RAW").execute()
+    response.toString.parseJson.asJsObject
   }
 
   def status: Future[SubsystemStatus] = {

@@ -25,19 +25,18 @@ trait TrialServiceSupport extends LazyLogging {
   def makeSpreadsheetValues(managerInfo: UserInfo, trialDAO: TrialDAO, thurloeDAO: ThurloeDAO, majorDimension: String, range: String)
     (implicit executionContext: ExecutionContext): Future[ValueRange] = {
     import scala.collection.JavaConverters._
-    val claimedProjects: Seq[TrialProject] = trialDAO.projectReport
-    val availableProjects: Seq[TrialProject] = trialDAO.availableProjectReport
-    val trialStatuses = Future.sequence(claimedProjects.map { p =>
+    val projects: Seq[TrialProject] = trialDAO.projectReport
+    val trialStatuses = Future.sequence(projects.map { p =>
       if (p.user.isDefined)
         thurloeDAO.getTrialStatus(p.user.get.userSubjectId, managerInfo)
       else
         Future[Option[UserTrialStatus]](None)
     })
     trialStatuses.map { userTrialStatuses =>
-      val headers = List("Project Name", "User Subject Id", "User Email", "Enrollment Date", "User Agreement").map(_.asInstanceOf[AnyRef]).asJava
-      val rows: List[util.List[AnyRef]] = (claimedProjects ++ availableProjects).map { trialProject =>
-        val (userSubjectId, userEmail, enrollmentDate) = getTrialUserInformation(trialProject.user, userTrialStatuses)
-        List(trialProject.name.value, userSubjectId, userEmail, enrollmentDate, "Accepted").map(_.asInstanceOf[AnyRef]).asJava
+      val headers = List("Project Name", "User Subject Id", "User Email", "Enrollment Date", "Terminated Date", "User Agreement").map(_.asInstanceOf[AnyRef]).asJava
+      val rows: List[util.List[AnyRef]] = projects.map { trialProject =>
+        val (userSubjectId, userEmail, enrollmentDate, terminatedDate) = getTrialUserInformation(trialProject.user, userTrialStatuses)
+        List(trialProject.name.value, userSubjectId, userEmail, enrollmentDate, terminatedDate, "Accepted").map(_.asInstanceOf[AnyRef]).asJava
       }.toList
       val values: util.List[util.List[AnyRef]] = (headers :: rows).asJava
       new ValueRange().setMajorDimension(majorDimension).setRange(range).setValues(values)
@@ -45,7 +44,7 @@ trait TrialServiceSupport extends LazyLogging {
   }
 
   // convenience method to pull user information from options
-  private def getTrialUserInformation(user: Option[WorkbenchUserInfo], userTrialStatuses: Seq[Option[UserTrialStatus]]): (String, String, String) = {
+  private def getTrialUserInformation(user: Option[WorkbenchUserInfo], userTrialStatuses: Seq[Option[UserTrialStatus]]): (String, String, String, String) = {
     if (user.isDefined) {
       val userSubjectId = user.get.userSubjectId
       val userEmail = user.get.userEmail
@@ -56,9 +55,13 @@ trait TrialServiceSupport extends LazyLogging {
         dateFormat.format(Date.from(userTrialStatus.get.enrolledDate))
       else
         ""
-      (userSubjectId, userEmail, enrollmentDate)
+      val terminatedDate = if (userTrialStatus.isDefined)
+        dateFormat.format(Date.from(userTrialStatus.get.terminatedDate))
+      else
+        ""
+      (userSubjectId, userEmail, enrollmentDate, terminatedDate)
     } else {
-      ("", "", "")
+      ("", "", "", "")
     }
   }
 
