@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud
 
 import akka.actor.ActorSystem
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.model.AccessToken
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, RegistrationInfo}
 import spray.http.StatusCodes
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Encapsulate bootstrap/startup checks into a single class. Note that individual DAOs may
   * also make their own startup checks, outside of this class.
   */
-class StartupChecks(app: Application)
+class StartupChecks(app: Application, registerSAs: Boolean = true)
                    (implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
                     extends LazyLogging {
 
@@ -50,7 +50,19 @@ class StartupChecks(app: Application)
 
 
   private def isServiceAccountRegistered(name: String, token: AccessToken): Future[Boolean] = {
-    app.samDAO.getRegistrationStatus(implicitly(token)) map { regInfo =>
+    val lookup = manageRegistration(name, app.samDAO.getRegistrationStatus(implicitly(token)))
+    lookup flatMap { isRegistered =>
+      if (!isRegistered && registerSAs) {
+        logger.warn(s"attempting to register $name ...")
+        manageRegistration(name, app.samDAO.registerUser(implicitly(token)))
+      } else {
+        Future.successful(isRegistered)
+      }
+    }
+  }
+
+  private def manageRegistration(name: String, req: Future[RegistrationInfo]): Future[Boolean] = {
+    req map { regInfo =>
       if (regInfo.enabled.ldap)
         logger.info(s"$name is properly registered.")
       else
@@ -61,9 +73,10 @@ class StartupChecks(app: Application)
         logger.error(s"***    $name is not registered!!    ***")
         false
       case e: Exception =>
-        logger.error(s"***    Error getting registration status for $name: ${e.getMessage}    ***")
+        logger.error(s"***    Error on registration status for $name: ${e.getMessage}    ***")
         false
     }
   }
+
 
 }
