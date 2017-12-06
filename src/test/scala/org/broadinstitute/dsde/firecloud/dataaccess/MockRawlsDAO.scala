@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUp
 import org.joda.time.DateTime
 import spray.http.StatusCodes
 import MockRawlsDAO._
+import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial.RawlsBillingProjectMember
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
@@ -369,4 +370,6 @@ class MockRawlsDAO  extends RawlsDAO {
   override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Trial.RawlsBillingProjectMembership]] = Future(Seq.empty[Trial.RawlsBillingProjectMembership])
 
   override def getProjectMembers(projectId: String)(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMember]] = ???
+
+  override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = ???
 }

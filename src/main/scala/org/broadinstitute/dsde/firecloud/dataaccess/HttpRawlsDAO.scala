@@ -20,6 +20,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsBillingProjectMember
+import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -179,6 +180,12 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   override def getProjectMembers(projectId: String)(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMember]] = {
     authedRequestToObject[Seq[RawlsBillingProjectMember]](Get(FireCloudConfig.Rawls.authUrl + s"/billing/$projectId/members"), true)
+  }
+
+  override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
+    userAuthedRequest(Get(FireCloudConfig.Rawls.authUrl + s"/billing/$projectId/${role.toString}/$email"), true) map { resp =>
+      resp.status.isSuccess
+    }
   }
 
   override def status: Future[SubsystemStatus] = {

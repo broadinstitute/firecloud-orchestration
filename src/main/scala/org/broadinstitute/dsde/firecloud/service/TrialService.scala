@@ -17,7 +17,7 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager.StartCreation
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsUserEmail}
 import spray.http.StatusCodes._
 import spray.http.{OAuth2BearerToken, StatusCodes}
@@ -202,19 +202,36 @@ final class TrialService
   private def enrollUserInternal(userInfo: UserInfo, status: UserTrialStatus): Future[PerRequestMessage] = {
     thurloeDao.saveTrialStatus(userInfo, enrolledStatusFromStatus(status)) flatMap { _ =>
       // TODO: read the user's profile and find the billing project that was reserved for the user
-      val bpName = "broad-dsde-dev"
-      // TODO: double-check that the project has no other users
-      // GET /api/billing/{projectId}/members
-      // list members of billing project the caller owns
-      // The SA was set as an owner of the BP when it was created
+      val bpName = "fccredits-hafnium-peach-3794"
+
       val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
+
+      // GET /api/billing/{projectId}/members
       rawlsDAO.getProjectMembers(projectId = bpName)(userToken = saToken) map { members: Seq[RawlsBillingProjectMember] =>
-        RequestComplete(OK, members)
+        // The billing project must contain exactly one member, the SA we used to create it
+        if (members.map(_.email.value) != Seq(HttpGoogleServicesDAO.trialBillingPemFileClientId)) {
+          RequestCompleteWithErrorReport(InternalServerError, s"We could not complete your enrollment due to a problem assigning you to a billing project. (Error 60)")
+        } else {
+          // TODO: add the user to that billing project as owner
+          // PUT /api/billing/{projectId}/{role}/{email}
+          //          rawlsDAO.addUserToBillingProject(bpName, ProjectRoles.Owner, userInfo.userEmail) map { success: Boolean =>
+          //            if (success) {
+          //              RequestComplete(OK, members)
+          //            } else {
+          //              RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to a problem assigning you to a billing project. (Error 70)")
+          //            }
+          //          } recover {
+          //            case e: FireCloudException =>
+          //              RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to a problem assigning you to a billing project. (Error 80)")
+          //            case _: Throwable => RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to an unknown error. (Error 90)")
+          //          }
+          RequestComplete(OK, members)
+        }
       } recover {
-        case e: Throwable =>
-          RequestCompleteWithErrorReport(InternalServerError,  s"We could not complete your enrollment: ${e.getMessage}")
+        case e: FireCloudExceptionWithErrorReport =>
+        RequestCompleteWithErrorReport(InternalServerError,  s"We could not complete your enrollment: ${e.errorReport.message} (Error 100)")
+        case _: Throwable => RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to an unknown error. (Error 110)")
       }
-      // TODO: add the user to that billing project as owner
     }
   }
 
