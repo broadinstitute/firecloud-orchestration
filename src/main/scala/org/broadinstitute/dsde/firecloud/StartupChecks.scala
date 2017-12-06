@@ -72,6 +72,9 @@ class StartupChecks(app: Application, registerSAs: Boolean = true)
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
         logger.error(s"***    $name is not registered!!    ***")
         false
+      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.Conflict) =>
+        logger.error(s"***    $name already exists!!    ***")
+        false
       case e: Exception =>
         logger.error(s"***    Error on registration status for $name: ${e.getMessage}    ***")
         false
