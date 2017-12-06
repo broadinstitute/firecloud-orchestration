@@ -1690,6 +1690,18 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/trial/userAgreement:
+    put:
+      tags:
+        - Trial
+      operationId: recordUserAgreement
+      summary: Set userAgreed flag to true
+      responses:
+        204:
+          description: NoContent; userAgreed set to true
+        500:
+          description: Internal Server Error
+
   /version/executionEngine:
     get:
       tags:

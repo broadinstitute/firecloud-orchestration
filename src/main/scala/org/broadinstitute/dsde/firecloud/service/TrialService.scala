@@ -40,6 +40,7 @@ object TrialService {
   case class VerifyProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class CountProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class Report(userInfo:UserInfo) extends TrialServiceMessage
+  case class RecordUserAgreement(userInfo: UserInfo) extends TrialServiceMessage
 
   def props(service: () => TrialService): Props = {
     Props(service())
@@ -68,6 +69,7 @@ final class TrialService
     case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
     case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
     case Report(userInfo) => asTrialCampaignManager {projectReport}(userInfo) pipeTo sender
+    case RecordUserAgreement(userInfo) => recordUserAgreement(userInfo) pipeTo sender
     case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
@@ -253,4 +255,7 @@ final class TrialService
   private def projectReport: Future[PerRequestMessage] =
     Future(RequestComplete(OK, trialDAO.projectReport))
 
+  private def recordUserAgreement(userInfo: UserInfo): Future[PerRequestMessage] = {
+    Future(RequestComplete(NoContent))
+  }
 }
