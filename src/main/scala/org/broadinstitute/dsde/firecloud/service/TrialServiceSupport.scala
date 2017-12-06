@@ -5,26 +5,61 @@ import java.util
 import java.util.Date
 
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
-import org.broadinstitute.dsde.firecloud.dataaccess.TrialDAO
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialProject
+import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.dataaccess.{ThurloeDAO, TrialDAO}
+import org.broadinstitute.dsde.firecloud.model.Trial.{TrialProject, UserTrialStatus}
+import org.broadinstitute.dsde.firecloud.model.{UserInfo, WorkbenchUserInfo}
 
-trait TrialServiceSupport {
+import scala.concurrent.{ExecutionContext, Future}
+
+trait TrialServiceSupport extends LazyLogging {
+
+  private val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
 
   def makeSpreadsheetProperties(title: String): SpreadsheetProperties = {
-    val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     val dateString = dateFormat.format(new Date())
-    val now = System.currentTimeMillis()
     new SpreadsheetProperties().setTitle(s"$title: $dateString")
   }
 
-  // TODO: This will need to query for more user information as well.
-  // TODO: Populate the `values` object with real data
-  def makeTrialProjectValues(trialDAO: TrialDAO): ValueRange = {
+  // TODO: Look further into the Onix "User Agreement" field
+  def makeSpreadsheetValues(managerInfo: UserInfo, trialDAO: TrialDAO, thurloeDAO: ThurloeDAO, majorDimension: String, range: String)
+    (implicit executionContext: ExecutionContext): Future[ValueRange] = {
     import scala.collection.JavaConverters._
     val claimedProjects: Seq[TrialProject] = trialDAO.projectReport
     val availableProjects: Seq[TrialProject] = trialDAO.availableProjectReport
-    val values: util.List[util.List[AnyRef]] = List(List[AnyRef]("Test").asJava).asJava
-    new ValueRange().setMajorDimension("ROWS").setRange("Sheet1!A1").setValues(values)
+    val trialStatuses = Future.sequence(claimedProjects.map { p =>
+      if (p.user.isDefined)
+        thurloeDAO.getTrialStatus(p.user.get.userSubjectId, managerInfo)
+      else
+        Future[Option[UserTrialStatus]](None)
+    })
+    trialStatuses.map { userTrialStatuses =>
+      val headers = List("Project Name", "User Subject Id", "User Email", "Enrollment Date", "User Agreement").map(_.asInstanceOf[AnyRef]).asJava
+      val rows: List[util.List[AnyRef]] = (claimedProjects ++ availableProjects).map { trialProject =>
+        val (userSubjectId, userEmail, enrollmentDate) = getTrialUserInformation(trialProject.user, userTrialStatuses)
+        List(trialProject.name.value, userSubjectId, userEmail, enrollmentDate, "Accepted").map(_.asInstanceOf[AnyRef]).asJava
+      }.toList
+      val values: util.List[util.List[AnyRef]] = (headers :: rows).asJava
+      new ValueRange().setMajorDimension(majorDimension).setRange(range).setValues(values)
+    }
+  }
+
+  // convenience method to pull user information from options
+  private def getTrialUserInformation(user: Option[WorkbenchUserInfo], userTrialStatuses: Seq[Option[UserTrialStatus]]): (String, String, String) = {
+    if (user.isDefined) {
+      val userSubjectId = user.get.userSubjectId
+      val userEmail = user.get.userEmail
+      val userTrialStatus = userTrialStatuses.find { trialStatus =>
+        trialStatus.isDefined && trialStatus.get.userId.equals(userSubjectId)
+      }.flatten
+      val enrollmentDate = if (userTrialStatus.isDefined)
+        dateFormat.format(Date.from(userTrialStatus.get.enrolledDate))
+      else
+        ""
+      (userSubjectId, userEmail, enrollmentDate)
+    } else {
+      ("", "", "")
+    }
   }
 
 }

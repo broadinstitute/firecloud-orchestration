@@ -270,21 +270,23 @@ final class TrialService
         case Success(spreadsheetId) if spreadsheetId.nonEmpty =>
           updateBillingReport(requestContext, userInfo, spreadsheetId)
         case Failure(e) =>
-          logger.error(s"Unable to create new google spreadsheet for user context: ${userInfo.userEmail}: ${e.getMessage}")
+          logger.error(s"Unable to create new google spreadsheet for user context [${userInfo.userEmail}]: ${e.getMessage}")
           throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, e.getMessage))
       }
     }
   }
 
   private def updateBillingReport(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String): Future[PerRequestMessage] = {
-    val content: ValueRange = makeTrialProjectValues(trialDAO)
-    googleDAO.updateSpreadsheet(requestContext, userInfo, spreadsheetId, "Sheet1!A1", content).map { updatedSheet =>
-      logger.debug(s"Updated spreadsheet: ${updatedSheet.toString}")
-      RequestComplete(OK)
-    } recoverWith {
-      case e: Throwable =>
-        logger.error(s"Unable to update google spreadsheet for user context: ${userInfo.userEmail}")
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, e.getMessage))
+    val majorDimension: String = "ROWS"
+    val range: String = "Sheet1!A1"
+    makeSpreadsheetValues(userInfo, trialDAO, thurloeDao, majorDimension, range).flatMap { content =>
+      googleDAO.updateSpreadsheet(requestContext, userInfo, spreadsheetId, range, content).map { updatedSheet =>
+        RequestComplete(OK)
+      } recoverWith {
+        case e: Throwable =>
+          logger.error(s"Unable to update google spreadsheet for user context [${userInfo.userEmail}]: ${e.getMessage}")
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, e.getMessage))
+      }
     }
   }
 
