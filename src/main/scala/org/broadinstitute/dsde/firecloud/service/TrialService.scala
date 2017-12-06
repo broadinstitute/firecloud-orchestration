@@ -23,6 +23,7 @@ import spray.http.StatusCodes._
 import spray.http.{OAuth2BearerToken, StatusCodes}
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsBillingProjectMember
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,12 +47,13 @@ object TrialService {
   }
 
   def constructor(app: Application, projectManager: ActorRef)()(implicit executionContext: ExecutionContext) =
-    new TrialService(app.samDAO, app.thurloeDAO, app.rawlsDAO, app.trialDAO, projectManager)
+    new TrialService(app.samDAO, app.thurloeDAO, app.rawlsDAO, app.trialDAO, app.googleServicesDAO, projectManager)
 }
 
 // TODO: Remove loggers used for development purposes or lower their level
 final class TrialService
-  (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, projectManager: ActorRef)
+  (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO,
+   val trialDAO: TrialDAO, val googleDAO: GoogleServicesDAO, projectManager: ActorRef)
   (implicit protected val executionContext: ExecutionContext)
   extends Actor with PermissionsSupport with SprayJsonSupport with LazyLogging {
 
@@ -182,29 +184,49 @@ final class TrialService
     // get user's trial status, then check the current state
     thurloeDao.getTrialStatus(userInfo) flatMap {
       // can't determine the user's trial status; don't enroll
-      case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial."))
+      case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 10)"))
       case Some(status) =>
         status.state match {
           // user already enrolled; don't re-enroll
-          case Some(TrialStates.Enrolled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are already enrolled in a free trial."))
+          case Some(TrialStates.Enrolled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are already enrolled in a free trial. (Error 20)"))
           // user enabled (eligible) for trial, enroll!
-          case Some(TrialStates.Enabled) =>
-            // build the new state that we want to persist to indicate the user is enrolled
-            val now = Instant.now
-            val expirationDate = now.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
-            val enrolledStatus = status.copy(
-              state = Some(TrialStates.Enrolled),
-              enrolledDate = now,
-              expirationDate = expirationDate
-            )
-            thurloeDao.saveTrialStatus(userInfo, enrolledStatus) map { _ =>
-              // TODO: add user to free-trial billing project / create said project if necessary
-              RequestComplete(NoContent)
-            }
+          case Some(TrialStates.Enabled) => enrollUserInternal(userInfo, status)
           // user in some other state; don't enroll
-          case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial."))
+          case Some(TrialStates.Disabled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 30)"))
+          case Some(TrialStates.Terminated) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 40)"))
+          case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
         }
     }
+  }
+
+  private def enrollUserInternal(userInfo: UserInfo, status: UserTrialStatus): Future[PerRequestMessage] = {
+    thurloeDao.saveTrialStatus(userInfo, enrolledStatusFromStatus(status)) flatMap { _ =>
+      // TODO: read the user's profile and find the billing project that was reserved for the user
+      val bpName = "broad-dsde-dev"
+      // TODO: double-check that the project has no other users
+      // GET /api/billing/{projectId}/members
+      // list members of billing project the caller owns
+      // The SA was set as an owner of the BP when it was created
+      val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
+      rawlsDAO.getProjectMembers(projectId = bpName)(userToken = saToken) map { members: Seq[RawlsBillingProjectMember] =>
+        RequestComplete(OK, members)
+      } recover {
+        case e: Throwable =>
+          RequestCompleteWithErrorReport(InternalServerError,  s"We could not complete your enrollment: ${e.getMessage}")
+      }
+      // TODO: add the user to that billing project as owner
+    }
+  }
+
+  private def enrolledStatusFromStatus(status: UserTrialStatus): UserTrialStatus = {
+    // build the new state that we want to persist to indicate the user is enrolled
+    val now = Instant.now
+    val expirationDate = now.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
+    status.copy(
+      state = Some(TrialStates.Enrolled),
+      enrolledDate = now,
+      expirationDate = expirationDate
+    )
   }
 
   private def createProjects(count: Int): Future[PerRequestMessage] = {

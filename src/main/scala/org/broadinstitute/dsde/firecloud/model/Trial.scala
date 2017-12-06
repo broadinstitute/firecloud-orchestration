@@ -5,7 +5,7 @@ import java.time.Instant
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.TrialState
-import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsEnumeration}
+import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsEnumeration, RawlsUserEmail}
 
 import scala.util.Try
 
@@ -155,6 +155,8 @@ object Trial {
   case class CreateRawlsBillingProjectFullRequest(projectName: String, billingAccount: String)
 
   case class RawlsBillingProjectMembership(projectName: RawlsBillingProjectName, role: ProjectRoles.ProjectRole, creationStatus: CreationStatuses.CreationStatus, message: Option[String] = None)
+
+  case class RawlsBillingProjectMember(email: RawlsUserEmail, role: ProjectRoles.ProjectRole)
 
   object CreationStatuses {
     sealed trait CreationStatus extends RawlsEnumeration[CreationStatus] {

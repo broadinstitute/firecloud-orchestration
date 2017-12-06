@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.Trial.{CreateRawlsBillingProjectFullRequest, RawlsBillingProjectMembership}
+import org.broadinstitute.dsde.firecloud.model.Trial.{CreateRawlsBillingProjectFullRequest, RawlsBillingProjectMember, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
@@ -19,6 +19,7 @@ import spray.http.{OAuth2BearerToken, StatusCodes, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsBillingProjectMember
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -174,6 +175,10 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
         case Left(error) => throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
       }
     }
+  }
+
+  override def getProjectMembers(projectId: String)(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMember]] = {
+    authedRequestToObject[Seq[RawlsBillingProjectMember]](Get(FireCloudConfig.Rawls.authUrl + s"/billing/$projectId/members"), true)
   }
 
   override def status: Future[SubsystemStatus] = {
