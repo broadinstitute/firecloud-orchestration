@@ -153,7 +153,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName(appName).build()
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
@@ -349,7 +349,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val billingService = getCloudBillingManager(getTrialBillingManagerCredential)
     // get the current billing info to make sure we are removing the right thing
     val readRequest = billingService.projects().getBillingInfo(projectName)
-    Try(readRequest.execute()) match {
+    Try(executeGoogleRequest[ProjectBillingInfo](readRequest)) match {
       case Failure(f) => Future.failed(f)
       case Success(currentBillingInfo) =>
         if (currentBillingInfo.getBillingAccountName != FireCloudConfig.Trial.billingAccount) {
@@ -402,7 +402,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   // ====================================================================================
 
   def status: Future[SubsystemStatus] = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName(appName).build()
     val bucketResponseTry = Try(storage.buckets().list(FireCloudConfig.FireCloud.serviceProject).executeUsingHead())
     bucketResponseTry match {
       case scala.util.Success(bucketResponse) => bucketResponse.getStatusCode match {
