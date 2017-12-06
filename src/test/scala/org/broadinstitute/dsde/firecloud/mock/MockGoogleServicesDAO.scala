@@ -3,14 +3,16 @@ package org.broadinstitute.dsde.firecloud.mock
 import java.io.{ByteArrayInputStream, InputStream}
 
 import akka.actor.ActorRefFactory
+import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
+import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, UserInfo}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.http.HttpResponse
+import spray.json.JsObject
 import spray.routing.RequestContext
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
 class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getAdminUserAccessToken: String = ""
@@ -32,7 +34,13 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getDownload(requestContext: RequestContext, bucketName: String, objectKey: String, userAuthToken: String)
                           (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Unit = {}
   override def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
-    Future.successful(new GooglePriceList(new GooglePrices(new UsPriceItem(BigDecimal(0.01)), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
+    Future.successful(GooglePriceList(GooglePrices(UsPriceItem(BigDecimal(0.01)), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
+  }
+  override def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties)(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[JsObject] = {
+    Future.successful[JsObject](JsObject.empty)
+  }
+  override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, range: String, content: ValueRange)(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[JsObject] = {
+    Future.successful[JsObject](JsObject.empty)
   }
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))

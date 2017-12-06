@@ -210,6 +210,8 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
     override def countProjects: Map[String, Long] = Map.empty[String,Long]
 
     override def projectReport: Seq[TrialProject] = Seq.empty[TrialProject]
+
+    override def availableProjectReport: Seq[TrialProject] = Seq.empty[TrialProject]
   }
 
   /**

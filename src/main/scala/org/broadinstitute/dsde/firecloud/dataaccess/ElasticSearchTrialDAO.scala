@@ -1,4 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
+
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impTrialProject
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
@@ -227,6 +228,25 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     val reportProjectRequest = client
       .prepareSearch(indexName)
       .setQuery(Claimed)
+      .addSort("name.keyword", SortOrder.ASC)
+      .setSize(1000)
+
+    val reportProjectResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](reportProjectRequest)
+
+    if (reportProjectResponse.getHits.totalHits == 0)
+      Seq.empty[TrialProject]
+    else
+      reportProjectResponse.getHits.getHits.toSeq map ( _.getSourceAsString.parseJson.convertTo[TrialProject] )
+  }
+
+  /**
+    * Returns a list of all project records that have no associated users.
+    * @return list of project records that have no associated users.
+    */
+  override def availableProjectReport: Seq[TrialProject] = {
+    val reportProjectRequest = client
+      .prepareSearch(indexName)
+      .setQuery(Available)
       .addSort("name.keyword", SortOrder.ASC)
       .setSize(1000)
 

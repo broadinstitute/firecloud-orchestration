@@ -77,5 +77,11 @@ class MockTrialDAO extends TrialDAO {
     */
   override def projectReport: Seq[Trial.TrialProject] = Seq.empty[TrialProject]
 
+  /**
+    * Returns a list of all project records that have no associated users.
+    * @return list of project records that have no associated users.
+    */
+  override def availableProjectReport: Seq[Trial.TrialProject] = Seq.empty[TrialProject]
+
   override def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
 }

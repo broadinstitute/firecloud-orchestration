@@ -14,10 +14,12 @@ import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
 import spray.routing.{HttpService, Route}
 
+import scala.concurrent.ExecutionContextExecutor
+
 trait TrialApiService extends HttpService with PerRequestCreator with FireCloudDirectives
   with StandardUserInfoDirectives with SprayJsonSupport {
 
-  private implicit val executionContext = actorRefFactory.dispatcher
+  private implicit val executionContext: ExecutionContextExecutor = actorRefFactory.dispatcher
   val trialServiceConstructor: () => TrialService
 
   // TODO: See if it makes sense to use DELETE for terminate, and perhaps PUT for disable
@@ -50,6 +52,24 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
                   requestContext.complete(BadRequest, ErrorReport(s"invalid operation '$op'"))
               }
             }
+          }
+        }
+      } ~
+      path("report") {
+        post {
+          requireUserInfo() { userInfo => requestContext =>
+            perRequest(requestContext, TrialService.props(trialServiceConstructor),
+              TrialService.CreateBillingReport(requestContext, userInfo)
+            )
+          }
+        }
+      } ~
+      path("report" / Segment) { (spreadsheetId) =>
+        put {
+          requireUserInfo() { userInfo => requestContext =>
+            perRequest(requestContext, TrialService.props(trialServiceConstructor),
+              TrialService.UpdateBillingReport(requestContext, userInfo, spreadsheetId)
+            )
           }
         }
       }

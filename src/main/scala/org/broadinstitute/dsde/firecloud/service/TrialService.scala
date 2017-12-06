@@ -6,27 +6,31 @@ import java.time.temporal.ChronoUnit
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
+import com.google.api.services.sheets.v4.model._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO, _}
+import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Terminated}
 import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus, _}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, RequestCompleteWithErrorReport, UserInfo, WithAccessToken, WorkbenchUserInfo}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impCreateProjectsResponse, impTrialProject}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager.StartCreation
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
-import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsUserEmail}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsBillingProjectName, RawlsUserEmail}
 import spray.http.StatusCodes._
 import spray.http.{OAuth2BearerToken, StatusCodes}
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
+import spray.json._
+import spray.routing.RequestContext
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 // TODO: Contain userEmail in value class for stronger type safety without incurring performance penalty
 object TrialService {
@@ -40,6 +44,8 @@ object TrialService {
   case class VerifyProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class CountProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class Report(userInfo:UserInfo) extends TrialServiceMessage
+  case class CreateBillingReport(requestContext: RequestContext, userInfo: UserInfo) extends TrialServiceMessage
+  case class UpdateBillingReport(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String) extends TrialServiceMessage
 
   def props(service: () => TrialService): Props = {
     Props(service())
@@ -53,7 +59,7 @@ object TrialService {
 final class TrialService
   (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleDAO: GoogleServicesDAO, projectManager: ActorRef)
   (implicit protected val executionContext: ExecutionContext)
-  extends Actor with PermissionsSupport with SprayJsonSupport with LazyLogging {
+  extends Actor with PermissionsSupport with SprayJsonSupport with TrialServiceSupport with LazyLogging {
 
   override def receive = {
     case EnableUsers(managerInfo, userEmails) =>
@@ -68,6 +74,10 @@ final class TrialService
     case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
     case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
     case Report(userInfo) => asTrialCampaignManager {projectReport}(userInfo) pipeTo sender
+    case CreateBillingReport(requestContext, userInfo) =>
+      asTrialCampaignManager { createBillingReport(requestContext, userInfo) }(userInfo) pipeTo sender
+    case UpdateBillingReport(requestContext, userInfo, spreadsheetId) =>
+      asTrialCampaignManager { updateBillingReport(requestContext, userInfo, spreadsheetId) }(userInfo) pipeTo sender
     case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
@@ -252,5 +262,30 @@ final class TrialService
 
   private def projectReport: Future[PerRequestMessage] =
     Future(RequestComplete(OK, trialDAO.projectReport))
+
+  private def createBillingReport(requestContext: RequestContext, userInfo: UserInfo): Future[PerRequestMessage] = {
+    val properties = makeSpreadsheetProperties("Trial Billing Project Report")
+    googleDAO.createSpreadsheet(requestContext, userInfo, properties).flatMap { sheet =>
+      Try(sheet.fields.getOrElse("spreadsheetId", JsString("")).asInstanceOf[JsString].value) match {
+        case Success(spreadsheetId) if spreadsheetId.nonEmpty =>
+          updateBillingReport(requestContext, userInfo, spreadsheetId)
+        case Failure(e) =>
+          logger.error(s"Unable to create new google spreadsheet for user context: ${userInfo.userEmail}: ${e.getMessage}")
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, e.getMessage))
+      }
+    }
+  }
+
+  private def updateBillingReport(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String): Future[PerRequestMessage] = {
+    val content: ValueRange = makeTrialProjectValues(trialDAO)
+    googleDAO.updateSpreadsheet(requestContext, userInfo, spreadsheetId, "Sheet1!A1", content).map { updatedSheet =>
+      logger.debug(s"Updated spreadsheet: ${updatedSheet.toString}")
+      RequestComplete(OK)
+    } recoverWith {
+      case e: Throwable =>
+        logger.error(s"Unable to update google spreadsheet for user context: ${userInfo.userEmail}")
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, e.getMessage))
+    }
+  }
 
 }

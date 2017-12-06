@@ -40,6 +40,7 @@ object Dependencies {
       exclude("com.google.guava", "guava-jdk5"),
     "com.google.apis"                % "google-api-services-storage" % "v1-rev58-1.21.0",
     "com.google.apis"                % "google-api-services-compute" % "v1-rev120-1.22.0",
+    "com.google.apis"                % "google-api-services-sheets"  % "v4-rev493-1.23.0",
 
     "org.webjars"                    % "swagger-ui"          % "2.2.5",
     "com.jason-goodwin"             %% "authentikat-jwt"     % "0.4.1",

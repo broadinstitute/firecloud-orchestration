@@ -31,6 +31,9 @@ securityDefinitions:
       openid: open id authorization
       email: email authorization
       profile: profile authorization
+      https://www.googleapis.com/auth/drive: Google Drive Access
+      https://www.googleapis.com/auth/drive.file: Google Drive Files
+      https://www.googleapis.com/auth/spreadsheets: Google Spreadsheets Access
       https://www.googleapis.com/auth/devstorage.full_control: GCS storage
       https://www.googleapis.com/auth/cloud-billing: GCS billing
 
@@ -1689,6 +1692,58 @@ paths:
           description: You must be a campaign manager to call this endpoint.
         500:
           description: Internal Server Error
+
+  /api/trial/manager/report:
+    post:
+      tags:
+        - Trial
+      operationId: createReportTrialProjects
+      summary: Create a Spreadsheet Report of free trial projects
+      responses:
+        200:
+          description: OK; report data spreadsheet is created
+        403:
+          description: You must be a campaign manager to call this endpoint.
+        500:
+          description: Internal Server Error
+      security:
+        - googleoauth:
+          - openid
+          - email
+          - profile
+          - https://www.googleapis.com/auth/drive
+          - https://www.googleapis.com/auth/drive.file
+          - https://www.googleapis.com/auth/spreadsheets
+          - https://www.googleapis.com/auth/devstorage.full_control
+
+  /api/trial/manager/report/{spreadsheetId}:
+    put:
+      tags:
+        - Trial
+      operationId: updateReportTrialProjects
+      summary: Update a Spreadsheet Report of free trial projects
+      parameters:
+        - name: spreadsheetId
+          description: the spreadsheet id to update
+          required: true
+          in: path
+          type: string
+      responses:
+        200:
+          description: OK; report data spreadsheet is updated
+        403:
+          description: You must be a campaign manager to call this endpoint.
+        500:
+          description: Internal Server Error
+      security:
+        - googleoauth:
+          - openid
+          - email
+          - profile
+          - https://www.googleapis.com/auth/drive
+          - https://www.googleapis.com/auth/drive.file
+          - https://www.googleapis.com/auth/spreadsheets
+          - https://www.googleapis.com/auth/devstorage.full_control
 
   /version/executionEngine:
     get:
