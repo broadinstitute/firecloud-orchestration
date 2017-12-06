@@ -177,6 +177,22 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
+    "Attempting to enable a previously disabled user should return success" in {
+      Post(enablePath, Seq(disabledUser,enabledUser)) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
+        val enableResponse = responseAs[Map[String, String]]
+        assertResult(enableResponse) { Map(disabledUser->"Success",enabledUser->"NoChangeRequired") }
+        assertResult(OK) {status}
+      }
+    }
+
+    "Attempting to enable a previously enabled user should return NoChangeRequired success" in {
+      Post(enablePath, enabledUserEmail) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+        val enableResponse = responseAs[Map[String, String]]
+        assertResult(enableResponse) { Map(enabledUser->"NoChangeRequired") }
+        assertResult(OK) {status}
+      }
+    }
+
     // Positive and negative tests for status transitions among {enable, disable, terminate}
     val allManagerOperations = Seq(enablePath, disablePath, terminatePath)
 
@@ -339,6 +355,7 @@ object TrialApiServiceSpec {
   val dummy1User = "dummy1-user"
   val dummy2User = "dummy2-user"
   val disabledUser = "disabled-user"
+  val disabledUser2 = "disabled-user2"
   val enabledUser = "enabled-user"
   val enrolledUser = "enrolled-user"
   val terminatedUser = "terminated-user"

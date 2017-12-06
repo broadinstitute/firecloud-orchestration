@@ -56,6 +56,14 @@ class MockTrialDAO extends TrialDAO {
     */
   override def claimProjectRecord(userInfo: WorkbenchUserInfo): Trial.TrialProject = throw new Exception("unit test intentional exception")
 
+  /**
+  * Removes the associated user from the project record, making it available again.
+  * Throws an error if the project record could not be updated.
+  *
+  * @param projectName the name of the project to return to the available pool
+  */
+  override def releaseProjectRecord(projectName: RawlsBillingProjectName): Unit = throw new Exception("unit test intentional exception")
+
 
   /**
     * Returns a list of project records in the pool that are unverified.

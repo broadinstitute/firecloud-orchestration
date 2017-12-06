@@ -205,6 +205,8 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
     override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject =
       TrialProject(RawlsBillingProjectName("unittest"))
 
+    override def releaseProjectRecord(projectName: RawlsBillingProjectName): Unit = Unit
+
     override def listUnverifiedProjects: Seq[TrialProject] = Seq.empty[TrialProject]
 
     override def countProjects: Map[String, Long] = Map.empty[String,Long]

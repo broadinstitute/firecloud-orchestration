@@ -188,6 +188,20 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   /**
+    * Removes the associated user from the project record, making it available again.
+    * Throws an error if the project record could not be updated.
+    *
+    * @param projectName the name of the project to return to the available pool
+    */
+  override def releaseProjectRecord(projectName: RawlsBillingProjectName): Unit = {
+    val (version, project) = getProjectInternal(projectName)
+    project.user match {
+      // should i take user info and verify that it is assigned to the user that is releasing it?
+      case Some(_) => updateProjectInternal(project.copy(user = None), version)
+    }
+  }
+
+  /**
     * Returns a list of project records in the pool that are unverified.
     *
     * @return list of project records in the pool that are unverified.

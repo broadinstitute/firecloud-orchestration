@@ -61,6 +61,14 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
   def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject
 
   /**
+  * Removes the associated user from the project record, making it available again.
+  * Throws an error if the project record could not be updated.
+  *
+  * @param projectName the name of the project to return to the available pool
+  */
+  def releaseProjectRecord(projectName: RawlsBillingProjectName): Unit
+
+    /**
     * Returns a list of project records in the pool that are unverified.
     * @return list of project records in the pool that are unverified.
     */
