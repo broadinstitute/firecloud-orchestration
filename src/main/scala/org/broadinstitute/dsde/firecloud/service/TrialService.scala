@@ -145,7 +145,7 @@ final class TrialService
           Future(StatusUpdate.Success)
         } else {
           logger.warn(s"Current trial state of the user '${userInfo.userEmail}' is '$currentState'")
-          logger.warn("Checking if enabling is allowed from that state...")
+          logger.warn(s"Checking if we can transition from $currentState to $newState...")
 
           require(newState.nonEmpty, "Cannot transition to an unspecified state")
 
@@ -155,6 +155,8 @@ final class TrialService
           assert(newState.get.isAllowedFrom(currentState),
             s"Cannot transition from $currentState to $newState")
 
+          logger.warn(s"Yes, we can! Proceeding...")
+
           // TODO: Test the logic below by adding a mock ThurloeDAO whose saveTrialStatus() returns Failure
           // Save updates to "userInfo's" trial status, authenticating to Thurloe as "managerInfo" user
           thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, newStatus) map {
@@ -162,6 +164,7 @@ final class TrialService
               logger.warn(s"Updated profile saved as $newState; we are done!")
               StatusUpdate.Success
             case Failure(ex) =>
+              logger.warn(s"We could not have Thurloe update the new state as $newState; aborting...")
               StatusUpdate.ServerError(ex.getMessage)
           }
         }

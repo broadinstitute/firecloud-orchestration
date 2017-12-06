@@ -22,7 +22,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.concurrent.Future
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with TrialApiService {
   import TrialApiServiceSpec._
@@ -48,13 +48,14 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   override protected def beforeAll(): Unit = {
     profileServer = startClientAndServer(thurloeServerPort)
 
-    val allValidUsersAndProps = List(
+    val allUsersAndProps = List(
+      (dummy2User, dummy2Props),
       (disabledUser, disabledProps),
       (enabledUser, enabledProps),
       (enrolledUser, enrolledProps),
       (terminatedUser, terminatedProps))
 
-    allValidUsersAndProps.foreach {
+    allUsersAndProps.foreach {
       case (user, props) =>
         profileServer
           .when(request()
@@ -125,16 +126,17 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     val terminatePath = "/trial/manager/terminate"
     val invalidPath = "/trial/manager/unsupported-operation"
 
-    val dummy1UserEmail = Seq(dummy1User)
-    val disabledUserEmail = Seq(disabledUser)
-    val enabledUserEmail = Seq(enabledUser)
-    val enrolledUserEmail = Seq(enrolledUser)
-    val terminatedUserEmail = Seq(terminatedUser)
+    val dummy1UserEmails = Seq(dummy1User)
+    val dummy2UserEmails = Seq(dummy2User)
+    val disabledUserEmails = Seq(disabledUser)
+    val enabledUserEmails = Seq(enabledUser)
+    val enrolledUserEmails = Seq(enrolledUser)
+    val terminatedUserEmails = Seq(terminatedUser)
 
     "Manager endpoint" - {
       allHttpMethodsExcept(POST) foreach { method =>
         s"should reject ${method.toString} method" in {
-          new RequestBuilder(method)(enablePath, disabledUserEmail) ~> dummyUserIdHeaders(enabledUser) ~>
+          new RequestBuilder(method)(enablePath, disabledUserEmails) ~> dummyUserIdHeaders(enabledUser) ~>
             trialApiServiceRoutes ~>
             check {
               assert(!handled)
@@ -147,68 +149,68 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
     "Thurloe errors" - {
       "preventing us from getting user trial status should return a server error to the user" in {
-        Post(enablePath, dummy1UserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+        Post(enablePath, dummy1UserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
           assertResult(InternalServerError, response.entity.asString) { status }
         }
       }
 
       "preventing us from saving user trial status should be properly communicated to the user" in {
-        Post(terminatePath, dummy1UserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+        Post(disablePath, dummy2UserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
           assertResult(InternalServerError, response.entity.asString) { status }
         }
       }
     }
 
     "Attempting an invalid operation should not be handled" in {
-      Post(invalidPath, disabledUserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+      Post(invalidPath, disabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assert(!handled)
       }
     }
 
     "Attempting to enable a previously disabled user should return NoContent success" in {
-      Post(enablePath, disabledUserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+      Post(enablePath, disabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assertResult(NoContent, response.entity.asString) { status }
       }
     }
 
     "Attempting to enable a previously enabled user should return NoContent success" in {
-      Post(enablePath, enabledUserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+      Post(enablePath, enabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assertResult(NoContent, response.entity.asString) { status }
       }
     }
 
     "Attempting to disable a previously enabled user should return NoContent success" in {
-      Post(disablePath, enabledUserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+      Post(disablePath, enabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assertResult(NoContent, response.entity.asString) { status }
       }
     }
 
     "Attempting to disable a previously disabled user should return NoContent success" in {
-      Post(disablePath, disabledUserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+      Post(disablePath, disabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assertResult(NoContent, response.entity.asString) { status }
       }
     }
 
     "Attempting to terminate a previously enabled user should return NoContent success" in {
-      Post(terminatePath, enabledUserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+      Post(terminatePath, enabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assertResult(InternalServerError, response.entity.asString) { status }
       }
     }
 
     "Attempting to terminate a previously disabled user should return NoContent success" in {
-      Post(terminatePath, disabledUserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+      Post(terminatePath, disabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assertResult(InternalServerError, response.entity.asString) { status }
       }
     }
 
     "Attempting to terminate a previously enrolled user should return NoContent success" in {
-      Post(terminatePath, enrolledUserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+      Post(terminatePath, enrolledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assertResult(NoContent, response.entity.asString) { status }
       }
     }
 
     "Attempting to terminate a previously terminated user should return NoContent success" in {
-      Post(terminatePath, terminatedUserEmail) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+      Post(terminatePath, terminatedUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assertResult(NoContent, response.entity.asString) { status }
       }
     }
@@ -298,6 +300,9 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
           Future.successful(Success(()))
         }
+        case user @ `dummy2User` => { // Mocking Thurloe status saving failures
+          Future.successful(Failure(new InternalError(s"Cannot save trial status for $user")))
+        }
         case _ => {
           fail("Should only be updating enabled, disabled or enrolled users")
         }
@@ -314,12 +319,17 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
 object TrialApiServiceSpec {
   val dummy1User = "dummy1-user"
+  val dummy2User = "dummy2-user"
   val disabledUser = "disabled-user"
   val enabledUser = "enabled-user"
   val enrolledUser = "enrolled-user"
   val terminatedUser = "terminated-user"
 
   val dummy1Props = Map(
+    "trialState" -> "Enabled"
+  )
+
+  val dummy2Props = Map(
     "trialState" -> "Enabled"
   )
   val disabledProps = Map(
@@ -347,18 +357,21 @@ object TrialApiServiceSpec {
   val workbenchEnabled = WorkbenchEnabled(google = true, ldap = true, allUsersGroup = true)
 
   val dummy1UserEmail = "dummy1-user-email"
+  val dummy2UserEmail = "dummy2-user-email"
   val enabledUserEmail = "enabled-user-email"
   val disabledUserEmail = "disabled-user-email"
   val enrolledUserEmail = "enrolled-user-email"
   val terminatedUserEmail = "terminated-user-email"
 
   val dummy1UserInfo = WorkbenchUserInfo(userSubjectId = dummy1User, dummy1UserEmail)
+  val dummy2UserInfo = WorkbenchUserInfo(userSubjectId = dummy2User, dummy2UserEmail)
   val enabledUserInfo = WorkbenchUserInfo(userSubjectId = enabledUser, enabledUserEmail)
   val disabledUserInfo = WorkbenchUserInfo(userSubjectId = disabledUser, disabledUserEmail)
   val enrolledUserInfo = WorkbenchUserInfo(userSubjectId = enrolledUser, enrolledUserEmail)
   val terminatedUserInfo = WorkbenchUserInfo(userSubjectId = terminatedUser, terminatedUserEmail)
 
   val dummy1UserRegInfo = RegistrationInfo(dummy1UserInfo, workbenchEnabled)
+  val dummy2UserRegInfo = RegistrationInfo(dummy2UserInfo, workbenchEnabled)
   val enabledUserRegInfo = RegistrationInfo(enabledUserInfo, workbenchEnabled)
   val disabledUserRegInfo = RegistrationInfo(disabledUserInfo, workbenchEnabled)
   val enrolledUserRegInfo = RegistrationInfo(enrolledUserInfo, workbenchEnabled)
@@ -366,6 +379,7 @@ object TrialApiServiceSpec {
 
   val registrationInfoByEmail = Map(
     dummy1User -> dummy1UserRegInfo,
+    dummy2User -> dummy2UserRegInfo,
     enabledUser -> enabledUserRegInfo,
     disabledUser -> disabledUserRegInfo,
     enrolledUser -> enrolledUserRegInfo,
