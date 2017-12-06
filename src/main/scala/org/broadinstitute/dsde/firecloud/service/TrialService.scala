@@ -279,10 +279,9 @@ final class TrialService
     val majorDimension: String = "ROWS"
     val range: String = "Sheet1!A1"
     makeSpreadsheetValues(userInfo, trialDAO, thurloeDao, majorDimension, range).map { content =>
-      val updatedSheet = googleDAO.updateSpreadsheet(requestContext, userInfo, spreadsheetId, range, content)
-      Try (updatedSheet.fields.getOrElse("spreadsheetUrl", JsString("")).asInstanceOf[JsString].value) match {
-        case Success(spreadsheetUrl) if spreadsheetUrl.nonEmpty =>
-          RequestComplete(OK)
+      Try (googleDAO.updateSpreadsheet(requestContext, userInfo, spreadsheetId, range, content)) match {
+        case Success(updatedSheet) =>
+          RequestComplete(OK, makeSpreadsheetResponse(spreadsheetId))
         case Failure(e) =>
           logger.error(s"Unable to update google spreadsheet for user context [${userInfo.userEmail}]: ${e.getMessage}")
           throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, e.getMessage))

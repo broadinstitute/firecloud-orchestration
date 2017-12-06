@@ -151,6 +151,8 @@ object Trial {
 
   case class CreateProjectsResponse(success: Boolean, count: Int, message: Option[String])
 
+  case class SpreadsheetResponse(spreadsheetUrl: String)
+
   // following are horribly copied-and-pasted from rawls core, since they're not available as shared models
   case class CreateRawlsBillingProjectFullRequest(projectName: String, billingAccount: String)
 

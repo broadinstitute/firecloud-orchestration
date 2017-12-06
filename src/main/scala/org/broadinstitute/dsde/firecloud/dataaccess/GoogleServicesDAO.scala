@@ -32,10 +32,8 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def getObjectMetadata(bucketName: String, objectKey: String, userAuthToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata]
   def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList]
-  def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties)
-    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): JsObject
-  def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, range: String, content: ValueRange)
-    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): JsObject
+  def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties): JsObject
+  def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, range: String, content: ValueRange): JsObject
 
   def status: Future[SubsystemStatus]
   override def serviceName: String = GoogleServicesDAO.serviceName

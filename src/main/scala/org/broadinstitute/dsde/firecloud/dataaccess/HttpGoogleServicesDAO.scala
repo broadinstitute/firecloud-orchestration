@@ -304,10 +304,8 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     * @param userInfo       UserInfo
     * @param props          SpreadsheetProperties
     * @return               JsObject representing the Google Create response
-    *
     */
-  def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties)
-    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): JsObject = {
+  def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties): JsObject = {
     val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
     val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
     val spreadsheet = new Spreadsheet().setProperties(props)
@@ -324,10 +322,8 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     * @param range          Range for where data updates begin, i.e. "Sheet1!A1" or "Sheet2!B1", etc.
     * @param content        ValueRange
     * @return               JsObject representing the Google Update response
-    *
     */
-  def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, range: String, content: ValueRange)
-    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): JsObject = {
+  def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, range: String, content: ValueRange): JsObject = {
     val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
     val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
     val response = service.spreadsheets().values().update(spreadsheetId, range, content).setValueInputOption("RAW").execute()

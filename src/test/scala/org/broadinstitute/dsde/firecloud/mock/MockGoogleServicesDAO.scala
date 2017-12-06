@@ -66,6 +66,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
                                         |  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/randomId/edit"
                                         |}
                                         |""".stripMargin.parseJson.asJsObject
+  private final val spreadsheetUpdateJson = """{"spreadsheetId":"randomId","updatedRange":"Sheet1!A1:F45","updatedRows":45,"updatedCells":270,"updatedColumns":6}""".parseJson.asJsObject
 
   override def getAdminUserAccessToken: String = ""
   override def getTrialBillingManagerAccessToken: String = ""
@@ -88,8 +89,8 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
     Future.successful(GooglePriceList(GooglePrices(UsPriceItem(BigDecimal(0.01)), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
   }
-  override def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties)(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): JsObject = spreadsheetJson
-  override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, range: String, content: ValueRange)(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): JsObject = spreadsheetJson
+  override def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties): JsObject = spreadsheetJson
+  override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, range: String, content: ValueRange): JsObject = spreadsheetUpdateJson
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 

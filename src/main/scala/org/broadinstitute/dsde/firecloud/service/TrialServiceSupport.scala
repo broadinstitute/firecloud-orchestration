@@ -7,7 +7,7 @@ import java.util.Date
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{ThurloeDAO, TrialDAO}
-import org.broadinstitute.dsde.firecloud.model.Trial.{TrialProject, UserTrialStatus}
+import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, TrialProject, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WorkbenchUserInfo}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,6 +15,10 @@ import scala.concurrent.{ExecutionContext, Future}
 trait TrialServiceSupport extends LazyLogging {
 
   private val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+
+  def makeSpreadsheetResponse(spreadsheetId: String): SpreadsheetResponse = {
+    SpreadsheetResponse(s"https://docs.google.com/spreadsheets/d/$spreadsheetId")
+  }
 
   def makeSpreadsheetProperties(title: String): SpreadsheetProperties = {
     val dateString = dateFormat.format(new Date())

@@ -1702,6 +1702,8 @@ paths:
       responses:
         200:
           description: OK; report data spreadsheet is created
+          schema:
+            $ref: '#/definitions/SpreadsheetResponse'
         403:
           description: You must be a campaign manager to call this endpoint.
         500:
@@ -1731,6 +1733,8 @@ paths:
       responses:
         200:
           description: OK; report data spreadsheet is updated
+          schema:
+            $ref: '#/definitions/SpreadsheetResponse'
         403:
           description: You must be a campaign manager to call this endpoint.
         500:
@@ -5101,6 +5105,14 @@ definitions:
       sortDirection:
         type: string
         description: asc or desc; defaults to asc if not specified
+
+  SpreadsheetResponse:
+    description: ''
+    type: object
+    properties:
+      spreadsheetUrl:
+        type: string
+        description: The url of the created/updated spreadsheet
 
   StackTraceElement:
     description: ''
