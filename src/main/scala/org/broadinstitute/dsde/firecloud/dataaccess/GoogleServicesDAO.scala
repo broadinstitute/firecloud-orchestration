@@ -36,6 +36,8 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties): JsObject
   def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject
 
+  def trialBillingManagerRemoveBillingAccount(projectName: String): Future[Boolean]
+
   def status: Future[SubsystemStatus]
   override def serviceName: String = GoogleServicesDAO.serviceName
 

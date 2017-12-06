@@ -4,7 +4,11 @@ import akka.actor.ActorRefFactory
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
+import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.services.cloudbilling.Cloudbilling
+import com.google.api.services.cloudbilling.model.ProjectBillingInfo
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.{Spreadsheet, SpreadsheetProperties, ValueRange}
 import com.google.api.services.storage.{Storage, StorageScopes}
@@ -14,7 +18,6 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObject
 import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
@@ -29,7 +32,7 @@ import spray.routing.RequestContext
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -67,11 +70,14 @@ import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol.
 
 object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging {
 
+  // application name to use within Google api libraries
+  private final val appName = "firecloud:orchestration"
+
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
-  // billing scope for creating projects. We don't have the billing client lib as a dependency so we hardcode it here.
+  // the scope we want is not defined in CloudbillingScopes, so we hardcode it here
   val billingScope = Seq("https://www.googleapis.com/auth/cloud-billing")
 
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
@@ -101,20 +107,27 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     googleCredential.getAccessToken
   }
 
-  def getTrialBillingManagerAccessToken = {
-    val googleCredential = new GoogleCredential.Builder()
+  def getTrialBillingManagerCredential: Credential = {
+    new GoogleCredential.Builder()
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
       .setServiceAccountId(trialBillingPemFileClientId)
       .setServiceAccountScopes(authScopes ++ billingScope)
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(trialBillingPemFile))
       .build()
+  }
 
+  def getTrialBillingManagerAccessToken = {
+    val googleCredential = getTrialBillingManagerCredential
     googleCredential.refreshToken()
     googleCredential.getAccessToken
   }
 
   def getTrialBillingManagerEmail = trialBillingPemFileClientId
+
+  def getCloudBillingManager(credential: Credential): Cloudbilling = {
+    new Cloudbilling.Builder(httpTransport, jsonFactory, credential).setApplicationName(appName).build()
+  }
 
   private def getBucketServiceAccountCredential: Credential = {
     new GoogleCredential.Builder()
@@ -330,6 +343,63 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val response = service.spreadsheets().values().update(spreadsheetId, content.getRange, content).setValueInputOption("RAW").execute()
     response.toString.parseJson.asJsObject
   }
+
+  override def trialBillingManagerRemoveBillingAccount(project: String): Future[Boolean] = {
+    val projectName = s"projects/$project" // format needed by Google
+    val billingService = getCloudBillingManager(getTrialBillingManagerCredential)
+    // get the current billing info to make sure we are removing the right thing
+    val readRequest = billingService.projects().getBillingInfo(projectName)
+    Try(readRequest.execute()) match {
+      case Failure(f) => Future.failed(f)
+      case Success(currentBillingInfo) =>
+        if (currentBillingInfo.getBillingAccountName != FireCloudConfig.Trial.billingAccount) {
+          // the project is not linked to the free-tier billing account. Don't change anything.
+          log.warn(s"Free trial project $project has third-party billing account ${currentBillingInfo.getBillingAccountName}; not removing it.")
+          Future.successful(true)
+        } else {
+          // create a ProjectBillingInfo with null account name - that's how Google
+          // indicates we want to remove the billing account association.
+          val noBillingInfo = new ProjectBillingInfo().setBillingAccountName(null)
+          // generate the request to send to Google
+          val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential)
+            .projects().updateBillingInfo(projectName, noBillingInfo)
+          // send the request, catch exceptions
+          Try(executeGoogleRequest[ProjectBillingInfo](noBillingRequest)) match {
+            case Success(billingInfo) => Future.successful(billingInfo.getBillingEnabled)
+            case Failure(f) => Future.failed(f)
+          }
+        }
+    }
+  }
+
+  // ====================================================================================
+  // following two methods borrowed from rawls. I'd much prefer to just import workbench-google
+  // from workbench-libs, but that has spray vs. akka-http conflicts. So this will do for now.
+  // ====================================================================================
+  protected def executeGoogleRequest[T](request: AbstractGoogleClientRequest[T]): T = {
+    executeGoogleCall(request) { response =>
+      response.parseAs(request.getResponseClass)
+    }
+  }
+  protected def executeGoogleCall[A,B](request: AbstractGoogleClientRequest[A])(processResponse: (com.google.api.client.http.HttpResponse) => B): B = {
+    Try {
+      request.executeUnparsed()
+    } match {
+      case Success(response) =>
+        try {
+          processResponse(response)
+        } finally {
+          response.disconnect()
+        }
+      case Failure(httpRegrets: HttpResponseException) =>
+        throw httpRegrets
+      case Failure(regrets) =>
+        throw regrets
+    }
+  }
+  // ====================================================================================
+  // END methods borrowed from rawls
+  // ====================================================================================
 
   def status: Future[SubsystemStatus] = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName("firecloud").build()

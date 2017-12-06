@@ -4,6 +4,7 @@ import java.io.{ByteArrayInputStream, InputStream}
 
 import akka.actor.ActorRefFactory
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, UserInfo}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -92,6 +93,10 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   }
   override def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties): JsObject = spreadsheetJson
   override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject = spreadsheetUpdateJson
+
+
+  override def trialBillingManagerRemoveBillingAccount(projectName: String): Future[Boolean] =
+    Future.failed(new FireCloudException("intentional MockGoogleServicesDAO failure"))
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 
