@@ -83,6 +83,7 @@ final class TrialService
         thurloeDao.getTrialStatus(subId, managerInfo) flatMap { userTrialStatus =>
           userTrialStatus match {
             case None => {
+              // a project will only be claimed if the user is disabled
               val billingProjectName = trialDAO.claimProjectRecord(WorkbenchUserInfo(subId, userEmail))
 
               // Define what to overwrite in user's status
@@ -91,6 +92,12 @@ final class TrialService
               for {
                 stateResponse <- updateUserState(managerInfo, WorkbenchUserInfo(subId, userEmail), statusTransition)
               } yield {
+                // if the update was not successful, release the claimed project
+                if (stateResponse != StatusUpdate.Success) {
+                  logger.info(
+                    s"The user '${userEmail}' failed to be enabled, releasing the billing project '${billingProjectName.name.value}' back into the available pool.")
+                  trialDAO.releaseProjectRecord(billingProjectName.name)
+                }
                 (userEmail, StatusUpdate.toName(stateResponse))
               }
             }
@@ -103,40 +110,36 @@ final class TrialService
   }
 
   private def disableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
+
+    val statusTransition: UserTrialStatus => UserTrialStatus =
+      status => status.copy(state = Some(Disabled), billingProjectName = None)
+
     val results: Seq[Future[(String, String)]] = userEmails map { userEmail =>
       getUserSubjectId(userEmail) flatMap { subId =>
         thurloeDao.getTrialStatus(subId, managerInfo) flatMap { userTrialStatus =>
-          userTrialStatus match {
-            case Some(status) => status.state match {
-              // user enabled, can be disabled
-              case Some(TrialStates.Enabled) => {
-                // Define what to overwrite in user's status
-                val statusTransition: UserTrialStatus => UserTrialStatus =
-                  status => status.copy(state = Some(Disabled))
-                for {
-                  stateResponse <- updateUserState(managerInfo, WorkbenchUserInfo(subId, userEmail), statusTransition)
-                } yield {
-                  if (status.billingProjectName.isDefined && stateResponse == StatusUpdate.Success)
-                    trialDAO.releaseProjectRecord(RawlsBillingProjectName(status.billingProjectName.get))
-                  (userEmail, StatusUpdate.toName(stateResponse))
-                }
-              }
-              case _ => Future.successful((userEmail, StatusUpdate.toName(StatusUpdate.NoChangeRequired)))
-            }
-            case _ => Future.successful((userEmail, StatusUpdate.toName(StatusUpdate.NoChangeRequired)))
+          // we need to get the billing project name from the state before we clear it out
+          val billingProjectName = userTrialStatus match {
+            case None => None
+            case Some(state) => state.billingProjectName
+          }
+          for {
+            stateResponse <- updateUserState(managerInfo, WorkbenchUserInfo(subId, userEmail), statusTransition)
+          } yield {
+            if (billingProjectName.isDefined && stateResponse == StatusUpdate.Success)
+              trialDAO.releaseProjectRecord(RawlsBillingProjectName(billingProjectName.get))
+            (userEmail, StatusUpdate.toName(stateResponse))
           }
         }
       }
     }
-
     Future.sequence(results) map { output => RequestComplete(output.toMap) }
   }
 
   private def terminateUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
+    val statusTransition: UserTrialStatus => UserTrialStatus =
+      status => status.copy(state = Some(Terminated), terminatedDate = Instant.now)
+
     val results = userEmails map { userEmail =>
-      // Define what to overwrite in user's status
-      val statusTransition: UserTrialStatus => UserTrialStatus =
-        status => status.copy(state = Some(Terminated), terminatedDate = Instant.now)
       for {
         stateResponse <- updateUserState(managerInfo, userEmail, statusTransition)
       } yield {
