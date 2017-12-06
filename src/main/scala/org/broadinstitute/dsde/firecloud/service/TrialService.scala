@@ -200,37 +200,34 @@ final class TrialService
   }
 
   private def enrollUserInternal(userInfo: UserInfo, status: UserTrialStatus): Future[PerRequestMessage] = {
+    // 1. Update the user's Thurloe profile to indicate Enrolled status
     thurloeDao.saveTrialStatus(userInfo, enrolledStatusFromStatus(status)) flatMap { _ =>
-      // TODO: read the user's profile and find the billing project that was reserved for the user
-      val bpName = "fccredits-hafnium-peach-3794"
+      val bpName = "fccredits-hafnium-peach-3794" // TODO: Make this status.billingProjectName when GAWB-2911 lands
 
       val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
 
-      // GET /api/billing/{projectId}/members
-      rawlsDAO.getProjectMembers(projectId = bpName)(userToken = saToken) map { members: Seq[RawlsBillingProjectMember] =>
-        // The billing project must contain exactly one member, the SA we used to create it
+      // 2. Check that the assigned Billing Project contains exactly one member, the SA we used to create it
+      rawlsDAO.getProjectMembers(projectId = bpName)(userToken = saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
         if (members.map(_.email.value) != Seq(HttpGoogleServicesDAO.trialBillingPemFileClientId)) {
-          RequestCompleteWithErrorReport(InternalServerError, s"We could not complete your enrollment due to a problem assigning you to a billing project. (Error 60)")
+          Future(RequestCompleteWithErrorReport(InternalServerError, s"We could not complete your enrollment due to a problem assigning you to a billing project. (Error 60)"))
         } else {
-          // TODO: add the user to that billing project as owner
-          // PUT /api/billing/{projectId}/{role}/{email}
-          //          rawlsDAO.addUserToBillingProject(bpName, ProjectRoles.Owner, userInfo.userEmail) map { success: Boolean =>
-          //            if (success) {
-          //              RequestComplete(OK, members)
-          //            } else {
-          //              RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to a problem assigning you to a billing project. (Error 70)")
-          //            }
-          //          } recover {
-          //            case e: FireCloudException =>
-          //              RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to a problem assigning you to a billing project. (Error 80)")
-          //            case _: Throwable => RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to an unknown error. (Error 90)")
-          //          }
-          RequestComplete(OK, members)
+          // 3. Add the user as Owner to the assigned Billing Project
+          rawlsDAO.addUserToBillingProject(bpName, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) map { success: Boolean =>
+            if (success) {
+              RequestComplete(NoContent)
+            } else {
+              RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to a problem assigning you to a billing project. (Error 70)")
+            }
+          } recover {
+            case e: FireCloudException =>
+              RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to a problem assigning you to a billing project. (Error 80)")
+            case _: Throwable => RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to an unknown error. (Error 90)")
+          }
         }
       } recover {
         case e: FireCloudExceptionWithErrorReport =>
         RequestCompleteWithErrorReport(InternalServerError,  s"We could not complete your enrollment: ${e.errorReport.message} (Error 100)")
-        case _: Throwable => RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to an unknown error. (Error 110)")
+        case _: Throwable => RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to an unknown error. (Error 110")
       }
     }
   }
