@@ -24,11 +24,11 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
     pathPrefix("trial") {
       path("userAgreement") {
         put {
-          requireUserInfo() { userInfo => // We will need the manager's credentials for authentication downstream
+          requireUserInfo() { userInfo =>
             requestContext =>
               perRequest(requestContext,
                 TrialService.props(trialServiceConstructor),
-                recordUserAgreement(userInfo))
+                TrialService.RecordUserAgreement(userInfo))
           }
         }
       } ~
@@ -77,5 +77,4 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
     case Disable => TrialService.DisableUsers(managerInfo, userEmails)
     case Terminate => TrialService.TerminateUsers(managerInfo, userEmails)
   }
-
 }

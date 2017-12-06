@@ -1699,6 +1699,8 @@ paths:
       responses:
         204:
           description: NoContent; userAgreed set to true
+        400:
+          description: BadRequest; user is not enabled
         500:
           description: Internal Server Error
 
