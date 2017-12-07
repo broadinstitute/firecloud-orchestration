@@ -170,51 +170,34 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
-    "Attempting to enable a previously disabled user should return NoContent success" in {
-      Post(enablePath, disabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
-        assertResult(NoContent, response.entity.asString) { status }
-      }
-    }
+    // Positive and negative tests for status transitions among {enable, disable, terminate}
+    val allManagerOperations = Seq(enablePath, disablePath, terminatePath)
 
-    "Attempting to enable a previously enabled user should return NoContent success" in {
-      Post(enablePath, enabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
-        assertResult(NoContent, response.entity.asString) { status }
-      }
-    }
+    // Define the operations that should succeed. All other operations should fail.
+    val successes: Map[Seq[String], Seq[String]] = Map(
+      disabledUserEmails -> Seq(enablePath, disablePath),
+      enabledUserEmails -> Seq(enablePath, disablePath),
+      enrolledUserEmails -> Seq(terminatePath),
+      terminatedUserEmails -> Seq(terminatePath)
+    )
 
-    "Attempting to disable a previously enabled user should return NoContent success" in {
-      Post(disablePath, enabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
-        assertResult(NoContent, response.entity.asString) { status }
+    successes.foreach { case (targetUsers: Seq[String], operationPaths: Seq[String]) =>
+      operationPaths.foreach { path =>
+        s"Attempting $path on ${targetUsers.head} should return NoContent success" in {
+          Post(path, targetUsers) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+            assertResult(NoContent, response.entity.asString) { status }
+          }
+        }
       }
-    }
-
-    "Attempting to disable a previously disabled user should return NoContent success" in {
-      Post(disablePath, disabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
-        assertResult(NoContent, response.entity.asString) { status }
-      }
-    }
-
-    "Attempting to terminate a previously enabled user should return InternalServerError success" in {
-      Post(terminatePath, enabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
-        assertResult(InternalServerError, response.entity.asString) { status }
-      }
-    }
-
-    "Attempting to terminate a previously disabled user should return InternalServerError success" in {
-      Post(terminatePath, disabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
-        assertResult(InternalServerError, response.entity.asString) { status }
-      }
-    }
-
-    "Attempting to terminate a previously enrolled user should return NoContent success" in {
-      Post(terminatePath, enrolledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
-        assertResult(NoContent, response.entity.asString) { status }
-      }
-    }
-
-    "Attempting to terminate a previously terminated user should return NoContent success" in {
-      Post(terminatePath, terminatedUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
-        assertResult(NoContent, response.entity.asString) { status }
+      val expectedFailPaths: Set[String] = allManagerOperations.toSet diff operationPaths.toSet
+      expectedFailPaths.foreach { path =>
+        s"Attempting $path on ${targetUsers.head} should return InternalServerError failure" in {
+          Post(path, targetUsers) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+            assertResult(InternalServerError, response.entity.asString) {
+              status
+            }
+          }
+        }
       }
     }
   }
