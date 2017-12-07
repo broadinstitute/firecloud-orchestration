@@ -215,7 +215,10 @@ final class TrialService
             // 3. Update the user's Thurloe profile to indicate Enrolled status
             thurloeDao.saveTrialStatus(userInfo, enrolledStatusFromStatus(status)) map {
               case Success(_) => RequestComplete(NoContent)
-              case Failure(e) => RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 70 - ${e.getMessage})")
+              case Failure(e) => {
+                // TODO: Remove user from billing project on failure? Is this even likely?
+                RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 70 - ${e.getMessage})")
+              }
             }
           } else {
             Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. (Error 75 - could not add user to billing project)"))
