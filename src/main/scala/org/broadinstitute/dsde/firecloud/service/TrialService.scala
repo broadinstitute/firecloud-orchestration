@@ -207,18 +207,14 @@ final class TrialService
         Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. (Error 60 - billing project exists but cannot be used)"))
       } else {
         // 2. Add the user as Owner to the assigned Billing Project
-        rawlsDAO.addUserToBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) flatMap { success: Boolean =>
-          if (success) {
-            // 3. Update the user's Thurloe profile to indicate Enrolled status
-            thurloeDao.saveTrialStatus(userInfo.id, userInfo, enrolledStatusFromStatus(status)) map {
-              case Success(_) => RequestComplete(NoContent)
-              case Failure(e) => {
-                // TODO: Remove user from billing project on failure? Is this even likely?
-                RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 70 - ${e.getMessage})")
-              }
+        rawlsDAO.addUserToBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) flatMap { _ =>
+          // 3. Update the user's Thurloe profile to indicate Enrolled status
+          thurloeDao.saveTrialStatus(userInfo.id, userInfo, enrolledStatusFromStatus(status)) map {
+            case Success(_) => RequestComplete(NoContent)
+            case Failure(e) => {
+              // TODO: Remove user from billing project on failure? Is this even likely?
+              RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 70 - ${e.getMessage})")
             }
-          } else {
-            Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. (Error 75 - could not add user to billing project)"))
           }
         } recover {
           case e: FireCloudExceptionWithErrorReport =>

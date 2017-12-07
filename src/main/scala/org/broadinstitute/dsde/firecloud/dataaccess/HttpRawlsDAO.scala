@@ -182,9 +182,12 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     authedRequestToObject[Seq[RawlsBillingProjectMember]](Get(FireCloudConfig.Rawls.authUrl + s"/billing/$projectId/members"), true)
   }
 
-  override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
+  override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Unit] = {
     userAuthedRequest(Get(FireCloudConfig.Rawls.authUrl + s"/billing/$projectId/${role.toString}/$email"), true) map { resp =>
-      resp.status.isSuccess
+      resp.status match {
+        case OK => ()
+        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
+      }
     }
   }
 

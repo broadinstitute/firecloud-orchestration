@@ -97,7 +97,7 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def getProjectMembers(projectId: String)(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMember]]
 
-  def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean]
+  def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Unit]
 
   override def serviceName:String = RawlsDAO.serviceName
 
