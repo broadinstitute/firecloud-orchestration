@@ -37,7 +37,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app.copy(thurloeDAO = localThurloeDao, samDAO = localSamDao), trialProjectManager)
 
-  var profileServer: ClientAndServer = _
+  var mockThurloeServer: ClientAndServer = _
 
   private def profile(user:String, props:Map[String,String]): ProfileWrapper =
     ProfileWrapper(user, props.toList.map {
@@ -46,7 +46,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
 
   override protected def beforeAll(): Unit = {
-    profileServer = startClientAndServer(thurloeServerPort)
+    // Used by positive and negative tests where `getTrialStatus` is called
+    mockThurloeServer = startClientAndServer(thurloeServerPort)
 
     val allUsersAndProps = List(
       (dummy2User, dummy2Props),
@@ -57,7 +58,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
     allUsersAndProps.foreach {
       case (user, props) =>
-        profileServer
+        mockThurloeServer
           .when(request()
             .withMethod("GET")
             .withHeader(fireCloudHeader.name, fireCloudHeader.value)
@@ -70,7 +71,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   }
 
   override protected def afterAll(): Unit = {
-    profileServer.stop()
+    mockThurloeServer.stop()
   }
 
   "Free Trial Enrollment" - {
@@ -149,12 +150,14 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
     "Thurloe errors" - {
       "preventing us from getting user trial status should return a server error to the user" in {
+        // Utilizes mockThurloeServer
         Post(enablePath, dummy1UserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
           assertResult(InternalServerError, response.entity.asString) { status }
         }
       }
 
       "preventing us from saving user trial status should be properly communicated to the user" in {
+        // Utilizes localThurloeDao
         Post(disablePath, dummy2UserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
           assertResult(InternalServerError, response.entity.asString) { status }
         }
@@ -262,6 +265,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
   }
 
+  /** Used by positive and negative tests where `saveTrialStatus` is called */
   final class TrialApiServiceSpecThurloeDAO extends HttpThurloeDAO {
     override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus) = {
       // Note: because HttpThurloeDAO catches exceptions, the assertions here will
