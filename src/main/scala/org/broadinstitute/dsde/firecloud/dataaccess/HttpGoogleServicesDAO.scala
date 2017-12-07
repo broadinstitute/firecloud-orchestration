@@ -348,6 +348,8 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val projectName = s"projects/$project" // format needed by Google
     val billingService = getCloudBillingManager(getTrialBillingManagerCredential)
     // get the current billing info to make sure we are removing the right thing
+    // TODO: user making the call (SA) must have permission to view the project (see https://developers.google.com/apis-explorer/#p/cloudbilling/v1/)
+    // if the user removed the SA from the project, this next call can fail!
     val readRequest = billingService.projects().getBillingInfo(projectName)
     Try(executeGoogleRequest[ProjectBillingInfo](readRequest)) match {
       case Failure(f) => Future.failed(f)

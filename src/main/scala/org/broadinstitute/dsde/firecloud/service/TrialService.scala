@@ -198,7 +198,6 @@ final class TrialService
   private def updateTrialStatus(managerInfo: UserInfo,
                                 userInfo: WorkbenchUserInfo,
                                 updatedTrialStatus: UserTrialStatus): Future[StatusUpdate.Attempt] = {
-
     thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, updatedTrialStatus) map {
       case Success(_) => StatusUpdate.Success
       case Failure(ex) => StatusUpdate.ServerError(ex.getMessage)
@@ -206,10 +205,36 @@ final class TrialService
   }
 
   private def handleTermination(trialStatus: UserTrialStatus, managerInfo: WithAccessToken): Future[Boolean] = {
-    val projectName = trialStatus.userId // TODO: use real project name
-    // TODO: do we need to double-check project membership here? Use rawls admin api?
+    // TODO: Make this status.billingProjectName when GAWB-2911 lands
+    val projectId = "fccredits-hafnium-peach-3794"
+
+    /* TODO: do we need to double-check project membership here?
+     * This is the last step before we remove the billing account from the project, cutting off compute
+     * and starting a Google clock to delete data in storage. We should be sure we are terminating billing
+     * for the right account. If somehow we reached this point and we have the wrong projectid, we would
+     * be cutting off billing for the WRONG free trial user.
+     *
+     * Things to consider:
+     *   - Read https://developers.google.com/apis-explorer/#p/cloudbilling/v1/ to understand required permissions
+     *   - The call to Google will fail if our service account is not an administrator of the billing account.
+     *   - We could/should add an assert/validation check here to be sure the projectid matches our free trial
+     *     pattern regex "fccredits-[a-z]{7}-[a-z]{7}-[0-9]{4}"
+     *   - Because the user is an owner of the project, the user could have removed the billing SA from the project.
+     *     Thus, we can't be sure that we can query for project membership using the SA.
+     *   - We don't have the user token at this point, so we can't query as the user.
+     *   - Rawls admin endpoints for billing/membership are going away (pls talk to Rawls team to understand details),
+     *     so those aren't safe to use
+     *   - We could potentially use the SA with domain-wide-delegation enabled to make the query as the user.
+     *     See https://developers.google.com/admin-sdk/directory/v1/guides/delegation for example. This will require
+     *     some setup in Google console to enable for the SA.
+     *   - Project team are the experts on billing and projects and they may have advice.
+     *
+     *   - Please remove all of this commentary before committing!
+     */
+
+
     // disassociate billing
-    googleDAO.trialBillingManagerRemoveBillingAccount(projectName) map { removed =>
+    googleDAO.trialBillingManagerRemoveBillingAccount(projectId) map { removed =>
       !removed // google call returns "false" to indicate project has no billing
     }
     // let exceptions bubble up
