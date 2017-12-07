@@ -85,7 +85,7 @@ object Trial {
       enrolledDate: Instant = Instant.ofEpochMilli(0), // timestamp user started their trial
       terminatedDate: Instant = Instant.ofEpochMilli(0), // timestamp user was actually terminated
       expirationDate: Instant = Instant.ofEpochMilli(0), // timestamp user is due to face termination
-      billingProjectName: Option[String]
+      billingProjectName: Option[String] = None
     )
 
   object UserTrialStatus {

@@ -65,8 +65,9 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
   * Throws an error if the project record could not be updated.
   *
   * @param projectName the name of the project to return to the available pool
+  * @return the released project record
   */
-  def releaseProjectRecord(projectName: RawlsBillingProjectName): Unit
+  def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject
 
     /**
     * Returns a list of project records in the pool that are unverified.

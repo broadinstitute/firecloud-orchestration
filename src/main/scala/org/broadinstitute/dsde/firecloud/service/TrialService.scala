@@ -191,7 +191,7 @@ final class TrialService
         }
       }
     }
-    Future.sequence(results) map { output => println(output); RequestComplete(output.toMap) }
+    Future.sequence(results) map { output => RequestComplete(output.toMap) }
   }
 
   private def updateTrialStatus(managerInfo: UserInfo,

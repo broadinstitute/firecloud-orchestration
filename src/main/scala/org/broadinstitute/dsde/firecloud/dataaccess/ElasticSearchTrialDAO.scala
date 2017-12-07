@@ -91,7 +91,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   // update a project, with a check on its Elasticsearch version
-  def updateProjectInternal(updatedProject: TrialProject, version: Long) = {
+  def indexProjectInternal(updatedProject: TrialProject, version: Long) = {
     val update = client
       .prepareIndex(indexName, datatype, updatedProject.name.value)
       .setSource(updatedProject.toJson.compactPrint, XContentType.JSON)
@@ -204,12 +204,16 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     *
     * @param projectName the name of the project to return to the available pool
     */
-  override def releaseProjectRecord(projectName: RawlsBillingProjectName): Unit = {
+  override def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
     val (version, project) = getProjectInternal(projectName)
     project.user match {
       // TODO should i take user info and verify that it is assigned to the user that is releasing it?
-      case Some(_) => updateProjectInternal(project.copy(user = None), version)
-      case None => Unit
+      case Some(_) => {
+        val updatedProject = project.copy(user = None)
+        indexProjectInternal(project.copy(user = None), version)
+        updatedProject
+      }
+      case None => project
     }
   }
 

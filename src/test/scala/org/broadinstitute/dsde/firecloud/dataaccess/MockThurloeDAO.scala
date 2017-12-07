@@ -131,7 +131,6 @@ class MockThurloeDAO extends ThurloeDAO {
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
 
   override def getTrialStatus(forUserId: String, callerToken: WithAccessToken) = {
-    println("in get trial status: " + forUserId)
     Future.successful(
       forUserId match {
         case "enabled-user" =>
