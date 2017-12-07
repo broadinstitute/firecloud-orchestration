@@ -201,46 +201,36 @@ final class TrialService
 
   private def enrollUserInternal(userInfo: UserInfo, status: UserTrialStatus): Future[PerRequestMessage] = {
 
-    val bpName = "fccredits-hafnium-peach-3794" // TODO: Make this status.billingProjectName when GAWB-2911 lands
+    val projectId = "fccredits-hafnium-peach-3794" // TODO: Make this status.billingProjectName when GAWB-2911 lands
     val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
 
     // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
-    rawlsDAO.getProjectMembers(projectId = bpName)(userToken = saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
+    rawlsDAO.getProjectMembers(projectId)(saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
       if (members.map(_.email.value) != Seq(HttpGoogleServicesDAO.trialBillingPemFileClientId)) {
-        Future(RequestCompleteWithErrorReport(InternalServerError, s"We could not complete your enrollment because your billing project is missing or unusable. (Error 60)"))
+        Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. (Error 60 - billing project exists but cannot be used)"))
       } else {
         // 2. Add the user as Owner to the assigned Billing Project
-        rawlsDAO.addUserToBillingProject(bpName, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) flatMap { success: Boolean =>
+        rawlsDAO.addUserToBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) flatMap { success: Boolean =>
           if (success) {
             // 3. Update the user's Thurloe profile to indicate Enrolled status
             thurloeDao.saveTrialStatus(userInfo, enrolledStatusFromStatus(status)) map {
               case Success(_) => RequestComplete(NoContent)
-              case Failure(e) =>
-                RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to a problem assigning you to a billing project. (Error 70)")
+              case Failure(e) => RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 70 - ${e.getMessage})")
             }
           } else {
-            Future(RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to a problem assigning you to a billing project. (Error 70)"))
+            Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. (Error 75 - could not add user to billing project)"))
           }
         } recover {
-          case e: FireCloudException =>
-            RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to a problem assigning you to a billing project. (Error 80)")
-          case _: Throwable => RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to an unknown error. (Error 90)")
+          case e: FireCloudExceptionWithErrorReport =>
+            RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 80 - ${e.errorReport.message})")
+          case t: Throwable => RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 90 - ${t.getMessage})")
         }
       }
     } recover {
       case e: FireCloudExceptionWithErrorReport =>
-        RequestCompleteWithErrorReport(InternalServerError,  s"We could not complete your enrollment: ${e.errorReport.message} (Error 100)")
-      case _: Throwable => RequestCompleteWithErrorReport(InternalServerError, "We could not complete your enrollment due to an unknown error. (Error 110")
+        RequestCompleteWithErrorReport(InternalServerError,  s"We could not process your enrollment. (Error 100 - ${e.errorReport.message})")
+      case t: Throwable => RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 110 - ${t.getMessage})")
     }
-
-    // 1. Update the user's Thurloe profile to indicate Enrolled status
-//    thurloeDao.saveTrialStatus(userInfo, enrolledStatusFromStatus(status)) flatMap { _ =>
-//      val bpName = "fccredits-hafnium-peach-3794" // TODO: Make this status.billingProjectName when GAWB-2911 lands
-//
-//      val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
-//
-//
-//    }
   }
 
   private def enrolledStatusFromStatus(status: UserTrialStatus): UserTrialStatus = {
