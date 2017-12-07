@@ -91,13 +91,13 @@ object Trial {
   object UserTrialStatus {
     // convenience apply method that accepts epoch millisecond times instead of java.time.Instants
     def apply(userId: String, state: Option[TrialState],
-              enabledEpoch: Long, enrolledEpoch: Long, terminatedEpoch: Long, expirationEpoch: Long) = {
+              enabledEpoch: Long, enrolledEpoch: Long, terminatedEpoch: Long, expirationEpoch: Long, billingProjectName: Option[String]) = {
       new UserTrialStatus(userId, state,
         Instant.ofEpochMilli(enabledEpoch),
         Instant.ofEpochMilli(enrolledEpoch),
         Instant.ofEpochMilli(terminatedEpoch),
         Instant.ofEpochMilli(expirationEpoch),
-        None
+        billingProjectName
       )
     }
     // apply method to create a UserTrialStatus from raw Thurloe KVPs

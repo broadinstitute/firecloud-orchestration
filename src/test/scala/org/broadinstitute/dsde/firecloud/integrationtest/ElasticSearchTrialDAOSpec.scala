@@ -73,6 +73,17 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
       }
 
     }
+    "releaseProject" - {
+      "should release a previously claimed project" in {
+        val user = WorkbenchUserInfo("789", "me")
+        // first claim a project
+        val claimed = trialDAO.claimProjectRecord(user)
+        trialDAO.releaseProjectRecord(claimed.name)
+        val expected = TrialProject(claimed.name, verified=true, user=None, status=Some(Ready))
+        val releaseCheck = trialDAO.getProjectRecord(claimed.name)
+        assertResult(expected) { releaseCheck }
+      }
+    }
     "claimProject" - {
       "should claim the first available project by alphabetical order" in {
         val user = WorkbenchUserInfo("789", "me")
@@ -162,14 +173,14 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
 
         // update the project using internal, specifying version 0. This should throw an error.
         val ex1 = intercept[FireCloudException] {
-          esTrialDAO.updateProjectInternal(project, 1)
+          esTrialDAO.mergeProjectInternal(project, 1)
         }
         assert(ex1.getMessage == "ElasticSearch request failed")
         assert(ex1.getCause.getMessage == "[billingproject][jackfruit]: version conflict, current version [2] is different than the one provided [1]")
 
         // update the project using internal, specifying version 3. This should throw an error.
         val ex3 = intercept[FireCloudException] {
-          esTrialDAO.updateProjectInternal(project, 3)
+          esTrialDAO.mergeProjectInternal(project, 3)
         }
         assert(ex3.getMessage == "ElasticSearch request failed")
         assert(ex3.getCause.getMessage == "[billingproject][jackfruit]: version conflict, current version [2] is different than the one provided [3]")

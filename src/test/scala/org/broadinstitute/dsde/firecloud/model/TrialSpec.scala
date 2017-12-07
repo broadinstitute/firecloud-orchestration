@@ -101,41 +101,44 @@ class TrialSpec extends FreeSpec  {
         FireCloudKeyValue(Some("trialEnrolledDate"), Some("34")),
         FireCloudKeyValue(Some("trialTerminatedDate"), Some("56")),
         FireCloudKeyValue(Some("trialExpirationDate"), Some("78")),
-        FireCloudKeyValue(Some("trialState"), Some("Enrolled"))
+        FireCloudKeyValue(Some("trialState"), Some("Enrolled")),
+        FireCloudKeyValue(Some("trialBillingProjectName"), Some("testProject"))
       ))
       val actual = UserTrialStatus(profileWrapper)
-      val expected = UserTrialStatus("userid", Some(TrialStates.Enrolled), 12, 34, 56, 78)
+      val expected = UserTrialStatus("userid", Some(TrialStates.Enrolled), 12, 34, 56, 78, Some("testProject"))
       assertResult(expected) { actual }
     }
     "should create with empty state and zero timestamps when nothing in profile" in {
       val profileWrapper = ProfileWrapper("userid", List.empty[FireCloudKeyValue])
       val actual = UserTrialStatus(profileWrapper)
-      val expected = UserTrialStatus("userid", None, 0, 0, 0, 0)
+      val expected = UserTrialStatus("userid", None, 0, 0, 0, 0, None)
       assertResult(expected) { actual }
     }
     "should partially populate timestamps when only some in profile" in {
       val profileWrapper = ProfileWrapper("userid", List(
         FireCloudKeyValue(Some("trialEnabledDate"), Some("12")),
-        FireCloudKeyValue(Some("trialState"), Some("Enabled"))
+        FireCloudKeyValue(Some("trialState"), Some("Enabled")),
+        FireCloudKeyValue(Some("trialBillingProjectName"), Some("testProject"))
       ))
       val actual = UserTrialStatus(profileWrapper)
-      val expected = UserTrialStatus("userid", Some(TrialStates.Enabled), 12, 0, 0, 0)
+      val expected = UserTrialStatus("userid", Some(TrialStates.Enabled), 12, 0, 0, 0, Some("testProject"))
       assertResult(expected) { actual }
     }
     "should convert full UserTrialStatus to Thurloe KVPs" in {
-      val userTrialStatus = UserTrialStatus("userid", Some(TrialStates.Terminated), 12, 34, 56, 78)
+      val userTrialStatus = UserTrialStatus("userid", Some(TrialStates.Terminated), 12, 34, 56, 78, Some("testProject"))
       val actual = UserTrialStatus.toKVPs(userTrialStatus)
       val expected = Map(
         "trialEnabledDate" -> "12",
         "trialEnrolledDate" -> "34",
         "trialTerminatedDate" -> "56",
         "trialExpirationDate" -> "78",
-        "trialState" -> "Terminated"
+        "trialState" -> "Terminated",
+        "trialBillingProjectName" -> "testProject"
       )
       assertResult(expected) { actual }
     }
     "should convert partial UserTrialStatus to Thurloe KVPs" in {
-      val userTrialStatus = UserTrialStatus("userid", Some(TrialStates.Enabled), 12, 0, 0, 0)
+      val userTrialStatus = UserTrialStatus("userid", Some(TrialStates.Enabled), 12, 0, 0, 0, None)
       val actual = UserTrialStatus.toKVPs(userTrialStatus)
       val expected = Map(
         "trialEnabledDate" -> "12",
@@ -147,7 +150,7 @@ class TrialSpec extends FreeSpec  {
       assertResult(expected) { actual }
     }
     "should convert empty UserTrialStatus to Thurloe KVPs" in {
-      val userTrialStatus = UserTrialStatus("userid", None, 0, 0, 0, 0)
+      val userTrialStatus = UserTrialStatus("userid", None, 0, 0, 0, 0, None)
       val actual = UserTrialStatus.toKVPs(userTrialStatus)
       val expected = Map(
         "trialEnabledDate" -> "0",

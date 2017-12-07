@@ -80,7 +80,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   // update a project, with a check on its Elasticsearch version
-  def updateProjectInternal(updatedProject: TrialProject, version: Long) = {
+  def mergeProjectInternal(updatedProject: TrialProject, version: Long) = {
     val update = client
       .prepareUpdate(indexName, datatype, updatedProject.name.value)
       .setDoc(updatedProject.toJson.compactPrint, XContentType.JSON)
@@ -88,6 +88,17 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
       .setRefreshPolicy(refreshMode)
 
     executeESRequest[UpdateRequest, UpdateResponse, UpdateRequestBuilder](update) // will throw error if update fails
+  }
+
+  // update a project, with a check on its Elasticsearch version
+  def updateProjectInternal(updatedProject: TrialProject, version: Long) = {
+    val update = client
+      .prepareIndex(indexName, datatype, updatedProject.name.value)
+      .setSource(updatedProject.toJson.compactPrint, XContentType.JSON)
+      .setVersion(version) // guarantee nobody else has updated in the meantime
+      .setRefreshPolicy(refreshMode)
+
+    executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder](update) // will throw error if update fails
   }
 
   /**
@@ -146,7 +157,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
       project // noop
     } else {
       val updatedProject = project.copy(verified = verified, status=Some(status))
-      updateProjectInternal(updatedProject, version) // will throw error if update fails
+      mergeProjectInternal(updatedProject, version) // will throw error if update fails
       updatedProject
     }
   }
@@ -183,7 +194,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     assert(project.user.isEmpty)
 
     val updatedProject = project.copy(user = Some(userInfo))
-    updateProjectInternal(updatedProject, version) // will throw error if update fails
+    mergeProjectInternal(updatedProject, version) // will throw error if update fails
     updatedProject
   }
 
@@ -196,8 +207,9 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   override def releaseProjectRecord(projectName: RawlsBillingProjectName): Unit = {
     val (version, project) = getProjectInternal(projectName)
     project.user match {
-      // should i take user info and verify that it is assigned to the user that is releasing it?
+      // TODO should i take user info and verify that it is assigned to the user that is releasing it?
       case Some(_) => updateProjectInternal(project.copy(user = None), version)
+      case None => Unit
     }
   }
 
