@@ -279,7 +279,7 @@ final class TrialService
     val majorDimension: String = "ROWS"
     val range: String = "Sheet1!A1"
     makeSpreadsheetValues(userInfo, trialDAO, thurloeDao, majorDimension, range).map { content =>
-      Try (googleDAO.updateSpreadsheet(requestContext, userInfo, spreadsheetId, range, content)) match {
+      Try (googleDAO.updateSpreadsheet(requestContext, userInfo, spreadsheetId, content)) match {
         case Success(updatedSheet) =>
           RequestComplete(OK, makeSpreadsheetResponse(spreadsheetId))
         case Failure(e) =>
