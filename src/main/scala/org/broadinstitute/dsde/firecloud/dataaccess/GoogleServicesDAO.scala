@@ -21,6 +21,7 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
 
   def getAdminUserAccessToken: String
   def getTrialBillingManagerAccessToken: String
+  def getTrialBillingManagerEmail: String
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
   def getUserProfile(requestContext: RequestContext)

@@ -112,6 +112,8 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     googleCredential.getAccessToken
   }
 
+  def getTrialBillingManagerEmail = trialBillingPemFileClientId
+
   private def getBucketServiceAccountCredential: Credential = {
     new GoogleCredential.Builder()
       .setTransport(httpTransport)

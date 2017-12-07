@@ -203,7 +203,7 @@ final class TrialService
 
     // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
     rawlsDAO.getProjectMembers(projectId)(saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
-      if (members.map(_.email.value) != Seq(HttpGoogleServicesDAO.trialBillingPemFileClientId)) {
+      if (members.map(_.email.value) != Seq(googleDAO.getTrialBillingManagerEmail)) {
         Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. (Error 60 - billing project exists but cannot be used)"))
       } else {
         // 2. Add the user as Owner to the assigned Billing Project
