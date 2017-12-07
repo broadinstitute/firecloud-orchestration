@@ -3,13 +3,13 @@ package org.broadinstitute.dsde.firecloud.webservice
 import java.time.temporal.ChronoUnit
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enrolled}
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
@@ -17,7 +17,7 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
 import spray.http.HttpMethods.POST
-import spray.http.StatusCodes.{Accepted, BadRequest, InternalServerError, NoContent, OK}
+import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -33,11 +33,18 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   def actorRefFactory = system
   val localThurloeDao = new TrialApiServiceSpecThurloeDAO
   val localSamDao = new TrialApiServiceSpecSamDAO
+  val localRawlsDao = new TrialApiServiceSpecRawlsDAO
 
   val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
-  val trialServiceConstructor:() => TrialService = TrialService.constructor(app.copy(thurloeDAO = localThurloeDao, samDAO = localSamDao), trialProjectManager)
+  val trialServiceConstructor:() => TrialService =
+    TrialService.constructor(
+      app.copy(
+        thurloeDAO = localThurloeDao,
+        samDAO = localSamDao,
+        rawlsDAO = localRawlsDao),
+      trialProjectManager)
 
-  var mockThurloeServer: ClientAndServer = _
+  var localThurloeServer: ClientAndServer = _
 
   private def profile(user:String, props:Map[String,String]): ProfileWrapper =
     ProfileWrapper(user, props.toList.map {
@@ -47,7 +54,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   override protected def beforeAll(): Unit = {
     // Used by positive and negative tests where `getTrialStatus` is called
-    mockThurloeServer = startClientAndServer(thurloeServerPort)
+    localThurloeServer = startClientAndServer(thurloeServerPort)
 
     val allUsersAndProps = List(
       (dummy2User, dummy2Props),
@@ -58,7 +65,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
     allUsersAndProps.foreach {
       case (user, props) =>
-        mockThurloeServer
+        localThurloeServer
           .when(request()
             .withMethod("GET")
             .withHeader(fireCloudHeader.name, fireCloudHeader.value)
@@ -71,7 +78,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   }
 
   override protected def afterAll(): Unit = {
-    mockThurloeServer.stop()
+    localThurloeServer.stop()
   }
 
   "Free Trial Enrollment" - {
@@ -151,21 +158,21 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     "Thurloe errors" - {
       "preventing us from getting user trial status should return a server error to the user" in {
         // Utilizes mockThurloeServer
-        Post(enablePath, dummy1UserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+        Post(enablePath, dummy1UserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           assertResult(InternalServerError, response.entity.asString) { status }
         }
       }
 
       "preventing us from saving user trial status should be properly communicated to the user" in {
         // Utilizes localThurloeDao
-        Post(disablePath, dummy2UserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+        Post(disablePath, dummy2UserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           assertResult(InternalServerError, response.entity.asString) { status }
         }
       }
     }
 
     "Attempting an invalid operation should not be handled" in {
-      Post(invalidPath, disabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+      Post(invalidPath, disabledUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
         assert(!handled)
       }
     }
@@ -181,18 +188,24 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       terminatedUserEmails -> Seq(terminatePath)
     )
 
-    successes.foreach { case (targetUsers: Seq[String], operationPaths: Seq[String]) =>
-      operationPaths.foreach { path =>
-        s"Attempting $path on ${targetUsers.head} should return NoContent success" in {
-          Post(path, targetUsers) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+    successes.foreach { case (targetUsers: Seq[String], successfulOperationPaths: Seq[String]) =>
+      successfulOperationPaths.foreach { successfulOperationPath =>
+        s"Attempting $successfulOperationPath on ${targetUsers.head} as $manager should return NoContent success" in {
+          Post(successfulOperationPath, targetUsers) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
             assertResult(NoContent, response.entity.asString) { status }
           }
         }
+
+        s"Attempting $successfulOperationPath on ${targetUsers.head} as $unauthorizedUser should return Forbidden" in {
+          Post(successfulOperationPath, targetUsers) ~> dummyUserIdHeaders(unauthorizedUser) ~> trialApiServiceRoutes ~> check {
+            assertResult(Forbidden, response.entity.asString) { status }
+          }
+        }
       }
-      val expectedFailPaths: Set[String] = allManagerOperations.toSet diff operationPaths.toSet
+      val expectedFailPaths: Set[String] = allManagerOperations.toSet diff successfulOperationPaths.toSet
       expectedFailPaths.foreach { path =>
         s"Attempting $path on ${targetUsers.head} should return InternalServerError failure" in {
-          Post(path, targetUsers) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
+          Post(path, targetUsers) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
             assertResult(InternalServerError, response.entity.asString) {
               status
             }
@@ -214,33 +227,33 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
     allHttpMethodsExcept(POST) foreach { method =>
       s"should reject ${method.toString} method" in {
-        new RequestBuilder(method)(projectManagementPath("count")) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+        new RequestBuilder(method)(projectManagementPath("count")) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           assert(!handled)
         }
       }
     }
     "should return BadRequest for operations other than create, verify, count, and report" in {
-      Post(projectManagementPath("invalid")) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+      Post(projectManagementPath("invalid")) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
         assertResult(BadRequest) {status}
       }
     }
     "should require a positive count for create" - {
       Seq(0,-1,-50) foreach { neg =>
         s"value tested: $neg" in {
-          Post(projectManagementPath("create", Some(neg))) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+          Post(projectManagementPath("create", Some(neg))) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
             assertResult(BadRequest) {status}
           }
         }
       }
     }
     "should return Accepted for operation 'create' with a positive count" in {
-      Post(projectManagementPath("create", Some(2))) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+      Post(projectManagementPath("create", Some(2))) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
         assertResult(Accepted) {status}
       }
     }
     Seq("verify","count","report") foreach { op =>
       s"should return success for operation '$op'" in {
-        Post(projectManagementPath(op)) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+        Post(projectManagementPath(op)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           assert(status.isSuccess)
           assertResult(OK) {status}
         }
@@ -302,9 +315,27 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       Future.successful(registrationInfoByEmail(email.value))
     }
   }
+
+  /** Used to ensure that manager endpoints only serve managers */
+  final class TrialApiServiceSpecRawlsDAO extends MockRawlsDAO {
+    private val groupMap = Map(
+      "apples" -> Seq("alice"),
+      "bananas" -> Seq("bob"),
+      "trial_managers" -> Seq("manager") // the name "trial_managers" is defined in reference.conf
+    )
+
+    override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
+      userInfo.id match {
+        case "failme" => Future.failed(new Exception("intentional exception for unit tests"))
+        case _ => Future.successful(groupMap.getOrElse(groupName, Seq.empty[String]).contains(userInfo.id))
+      }
+    }
+  }
 }
 
 object TrialApiServiceSpec {
+  val manager = "manager"
+  val unauthorizedUser = "unauthorized"
   val dummy1User = "dummy1-user"
   val dummy2User = "dummy2-user"
   val disabledUser = "disabled-user"
