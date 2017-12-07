@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
@@ -16,7 +16,7 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
 import spray.http.HttpMethods.POST
-import spray.http.StatusCodes.{BadRequest, NoContent, OK}
+import spray.http.StatusCodes.{Accepted, BadRequest, NoContent, OK}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -166,11 +166,57 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     // TODO: Test user termination
   }
 
+  "Campaign manager project-management endpoint" - {
+
+    def projectManagementPath(operation:String, count:Option[Int] = None): String = {
+      val countParam = count match {
+        case Some(c) => s"&count=$c"
+        case None => ""
+      }
+      s"/trial/manager/projects?operation=$operation$countParam"
+    }
+
+    allHttpMethodsExcept(POST) foreach { method =>
+      s"should reject ${method.toString} method" in {
+        new RequestBuilder(method)(projectManagementPath("count")) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+          assert(!handled)
+        }
+      }
+    }
+    "should return BadRequest for operations other than create, verify, count, and report" in {
+      Post(projectManagementPath("invalid")) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+        assertResult(BadRequest) {status}
+      }
+    }
+    "should require a positive count for create" - {
+      Seq(0,-1,-50) foreach { neg =>
+        s"value tested: $neg" in {
+          Post(projectManagementPath("create", Some(neg))) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+            assertResult(BadRequest) {status}
+          }
+        }
+      }
+    }
+    "should return Accepted for operation 'create' with a positive count" in {
+      Post(projectManagementPath("create", Some(2))) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+        assertResult(Accepted) {status}
+      }
+    }
+    Seq("verify","count","report") foreach { op =>
+      s"should return success for operation '$op'" in {
+        Post(projectManagementPath(op)) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+          assert(status.isSuccess)
+          assertResult(OK) {status}
+        }
+      }
+    }
+  }
+
   final class TrialApiServiceSpecThurloeDAO extends HttpThurloeDAO {
-    override def saveTrialStatus(userInfo: UserInfo, trialStatus: UserTrialStatus) = {
+    override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus) = {
       // Note: because HttpThurloeDAO catches exceptions, the assertions here will
       // result in InternalServerErrors instead of appearing nicely in unit test output.
-      userInfo.id match {
+      forUserId match {
         case `enabledUser` =>
           val expectedExpirationDate = trialStatus.enrolledDate.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
 
