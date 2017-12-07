@@ -62,7 +62,7 @@ class MockTrialDAO extends TrialDAO {
   *
   * @param projectName the name of the project to return to the available pool
   */
-  override def releaseProjectRecord(projectName: RawlsBillingProjectName): Unit = throw new Exception("unit test intentional exception")
+  override def releaseProjectRecord(projectName: RawlsBillingProjectName): Trial.TrialProject = throw new Exception("unit test intentional exception")
 
 
   /**

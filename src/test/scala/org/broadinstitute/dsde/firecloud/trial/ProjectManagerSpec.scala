@@ -273,7 +273,8 @@ object ProjectManagerSpec {
     override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject =
       TrialProject(RawlsBillingProjectName("unittest"))
 
-    override def releaseProjectRecord(projectName: RawlsBillingProjectName): Unit = Unit
+    override def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject =
+      TrialProject(projectName)
 
     override def listUnverifiedProjects: Seq[TrialProject] = Seq.empty[TrialProject]
 
