@@ -81,7 +81,7 @@ final class TrialService
 
     // Define what to overwrite in user's status
     val statusTransition: UserTrialStatus => UserTrialStatus =
-      status => status.copy(state = Some(Enabled), enabledDate = Instant.now)
+      status => status.copy(state = Some(Enabled), userAgreed = false, enabledDate = Instant.now)
 
     updateUserState(managerInfo, userEmail, statusTransition)
   }
@@ -262,7 +262,7 @@ final class TrialService
           case Success(_) => Future(RequestComplete(NoContent))
           case Failure(ex) => Future(RequestComplete(InternalServerError, ex.getMessage))
         }
-        case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial."))
+        case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not Enabled to agree to terms."))
       }
       case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial."))
     }
