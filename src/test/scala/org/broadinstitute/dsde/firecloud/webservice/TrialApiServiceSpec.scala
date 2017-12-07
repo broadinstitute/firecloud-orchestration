@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 import java.time.temporal.ChronoUnit
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
@@ -16,7 +16,7 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
 import spray.http.HttpMethods.{POST, PUT}
-import spray.http.StatusCodes.{Accepted, BadRequest, NoContent, OK}
+import spray.http.StatusCodes.{Accepted, BadRequest, NoContent, OK, Forbidden}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -32,9 +32,10 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   def actorRefFactory = system
   val localThurloeDao = new TrialApiServiceSpecThurloeDAO
   val localSamDao = new TrialApiServiceSpecSamDAO
+  val localRawlsDao = new TrialApiServiceSpecRawlsDAO
 
   val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
-  val trialServiceConstructor:() => TrialService = TrialService.constructor(app.copy(thurloeDAO = localThurloeDao, samDAO = localSamDao), trialProjectManager)
+  val trialServiceConstructor:() => TrialService = TrialService.constructor(app.copy(thurloeDAO = localThurloeDao, samDAO = localSamDao, rawlsDAO = localRawlsDao), trialProjectManager)
 
   var profileServer: ClientAndServer = _
 
@@ -231,6 +232,13 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         }
       }
 
+      "non-campaign manager should fail creating request" in {
+        Post("/trial/manager/report") ~> dummyUserIdHeaders("nonCampaignManager") ~> trialApiServiceRoutes ~> check {
+          assert(status.isFailure)
+          assertResult(Forbidden) {status}
+        }
+      }
+
     }
 
     "Update Report endpoint" - {
@@ -249,6 +257,14 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assertResult(OK) {status}
         }
       }
+
+      "non-campaign manager should fail an update request" in {
+        Put("/trial/manager/report/12345") ~> dummyUserIdHeaders("nonCampaignManager") ~> trialApiServiceRoutes ~> check {
+          assert(status.isFailure)
+          assertResult(Forbidden) {status}
+        }
+      }
+
     }
 
   }
@@ -289,6 +305,16 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       Future.successful(registrationInfoByEmail(email.value))
     }
   }
+
+  final class TrialApiServiceSpecRawlsDAO extends MockRawlsDAO {
+    override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
+      userInfo.id match {
+        case "nonCampaignManager" => Future.successful(false)
+        case _ => Future.successful(true)
+      }
+    }
+  }
+
 }
 
 object TrialApiServiceSpec {
