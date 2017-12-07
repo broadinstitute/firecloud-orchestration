@@ -194,13 +194,13 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
-    "Attempting to terminate a previously enabled user should return NoContent success" in {
+    "Attempting to terminate a previously enabled user should return InternalServerError success" in {
       Post(terminatePath, enabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assertResult(InternalServerError, response.entity.asString) { status }
       }
     }
 
-    "Attempting to terminate a previously disabled user should return NoContent success" in {
+    "Attempting to terminate a previously disabled user should return InternalServerError success" in {
       Post(terminatePath, disabledUserEmails) ~> dummyUserIdHeaders(dummy1User) ~> trialApiServiceRoutes ~> check {
         assertResult(InternalServerError, response.entity.asString) { status }
       }
