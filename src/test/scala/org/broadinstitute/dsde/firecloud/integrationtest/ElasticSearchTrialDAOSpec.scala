@@ -120,7 +120,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
       }
     }
     "projectReport" - {
-      "should return an accurate report with only verified/claimed projects" in {
+      "should return an accurate report with all verified/ready projects" in {
         // unverified/unclaimed projects listed below but commented out for developer clarity
         val expected = Seq(
           // TrialProject(RawlsBillingProjectName("apple"), verified=false, None),
@@ -128,11 +128,11 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
           TrialProject(RawlsBillingProjectName("carrot"), verified=true, Some(WorkbenchUserInfo("456", "bob@example.com")), Some(Ready)),
           TrialProject(RawlsBillingProjectName("date"), verified=true, Some(WorkbenchUserInfo("789", "me")), Some(Ready)),
           // TrialProject(RawlsBillingProjectName("endive"), verified=false, None),
-          TrialProject(RawlsBillingProjectName("fennel"), verified=true, Some(WorkbenchUserInfo("101010", "me2")), Some(Ready))
+          TrialProject(RawlsBillingProjectName("fennel"), verified=true, Some(WorkbenchUserInfo("101010", "me2")), Some(Ready)),
           // TrialProject(RawlsBillingProjectName("garlic"), verified=false, None),
-          // TrialProject(RawlsBillingProjectName("orange"), verified=true, None),
+           TrialProject(RawlsBillingProjectName("orange"), verified=true, None, Some(Ready)),
           // TrialProject(RawlsBillingProjectName("pineapple"), verified=true, Some(Error)),
-          // TrialProject(RawlsBillingProjectName("quince"), verified=true, None)
+           TrialProject(RawlsBillingProjectName("quince"), verified=true, None, Some(Ready))
         )
         val actual = trialDAO.projectReport
         assertResult(expected) { actual }
