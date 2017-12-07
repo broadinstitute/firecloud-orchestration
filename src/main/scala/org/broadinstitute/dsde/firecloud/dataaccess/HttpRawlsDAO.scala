@@ -183,7 +183,9 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Unit] = {
-    userAuthedRequest(Get(FireCloudConfig.Rawls.authUrl + s"/billing/$projectId/${role.toString}/$email"), true) map { resp =>
+    val url = FireCloudConfig.Rawls.authUrl + s"/billing/$projectId/${role.toString}/${java.net.URLEncoder.encode(email, "UTF-8")}"
+
+    userAuthedRequest(Put(url), true) map { resp =>
       resp.status match {
         case OK => ()
         case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
