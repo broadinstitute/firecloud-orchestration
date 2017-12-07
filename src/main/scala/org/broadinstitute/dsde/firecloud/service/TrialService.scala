@@ -205,6 +205,16 @@ final class TrialService
     }
   }
 
+  private def handleTermination(trialStatus: UserTrialStatus, managerInfo: WithAccessToken): Future[Boolean] = {
+    val projectName = trialStatus.userId // TODO: use real project name
+    // TODO: do we need to double-check project membership here? Use rawls admin api?
+    // disassociate billing
+    googleDAO.trialBillingManagerRemoveBillingAccount(projectName) map { removed =>
+      !removed // google call returns "false" to indicate project has no billing
+    }
+    // let exceptions bubble up
+  }
+
   private def enrollUser(userInfo: UserInfo): Future[PerRequestMessage] = {
     // get user's trial status, then check the current state
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap {
