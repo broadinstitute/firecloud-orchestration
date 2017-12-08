@@ -1650,6 +1650,8 @@ paths:
         responses:
           204:
             description: Success (No Content)
+          403:
+            description: Forbidden - You must be a campaign manager to call this endpoint.
           500:
             description: Internal Server Error
 
