@@ -17,12 +17,13 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager.StartCreation
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsUserEmail}
 import spray.http.StatusCodes._
 import spray.http.{OAuth2BearerToken, StatusCodes}
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsBillingProjectMember
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,7 +52,8 @@ object TrialService {
 
 // TODO: Remove loggers used for development purposes or lower their level
 final class TrialService
-  (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleDAO: GoogleServicesDAO, projectManager: ActorRef)
+  (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO,
+   val trialDAO: TrialDAO, val googleDAO: GoogleServicesDAO, projectManager: ActorRef)
   (implicit protected val executionContext: ExecutionContext)
   extends Actor with PermissionsSupport with SprayJsonSupport with LazyLogging {
 
@@ -180,34 +182,77 @@ final class TrialService
 
   private def enrollUser(userInfo: UserInfo): Future[PerRequestMessage] = {
     // get user's trial status, then check the current state
-    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { userTrialStatus =>
-      userTrialStatus match {
-        // can't determine the user's trial status; don't enroll
-        case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial."))
-        case Some(status) =>
-          status.state match {
-            // user already enrolled; don't re-enroll
-            case Some(TrialStates.Enrolled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are already enrolled in a free trial."))
-            // user enabled (eligible) for trial, enroll!
-            case Some(TrialStates.Enabled) => {
-              // build the new state that we want to persist to indicate the user is enrolled
-              val now = Instant.now
-              val expirationDate = now.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
-              val enrolledStatus = status.copy(
-                state = Some(TrialStates.Enrolled),
-                enrolledDate = now,
-                expirationDate = expirationDate
-              )
-              thurloeDao.saveTrialStatus(userInfo.id, userInfo, enrolledStatus) map { _ =>
-                // TODO: add user to free-trial billing project / create said project if necessary
-                RequestComplete(NoContent)
+    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap {
+      // can't determine the user's trial status; don't enroll
+      case Some(status) =>
+        status.state match {
+          // user already enrolled; don't re-enroll
+          case Some(TrialStates.Enrolled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are already enrolled in a free trial. (Error 20)"))
+          // user enabled (eligible) for trial, enroll!
+          case Some(TrialStates.Enabled) => enrollUserInternal(userInfo, status)
+          // user in some other state; don't enroll
+          case Some(TrialStates.Disabled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 30)"))
+          case Some(TrialStates.Terminated) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 40)"))
+          case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
+        }
+      case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 55)"))
+    }
+  }
+
+  private def enrollUserInternal(userInfo: UserInfo, status: UserTrialStatus): Future[PerRequestMessage] = {
+
+    val projectId = "fccredits-hafnium-peach-3794" // TODO: Make this status.billingProjectName when GAWB-2911 lands
+    val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
+
+    // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
+    rawlsDAO.getProjectMembers(projectId)(saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
+      if (members.map(_.email.value) != Seq(googleDAO.getTrialBillingManagerEmail)) {
+        // TODO: for resiliency, try running this operation again with a new project
+        logger.warn(s"Cannot add user ${userInfo.userEmail} to billing project $projectId because it already contains members [${members.map(_.email.value).mkString(", ")}]")
+        Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. Please contact support. (Error 60)"))
+      } else {
+        // 2. Add the user as Owner to the assigned Billing Project
+        rawlsDAO.addUserToBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) flatMap { _ =>
+          // 3. Update the user's Thurloe profile to indicate Enrolled status
+          thurloeDao.saveTrialStatus(userInfo.id, userInfo, enrolledStatusFromStatus(status)) flatMap {
+            case Success(_) => Future(RequestComplete(NoContent)) // <- SUCCESS!
+            case Failure(profileUpdateFail) => {
+              // We couldn't update trial status, so clean up
+              rawlsDAO.removeUserFromBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) map { _ =>
+                logger.warn(s"Enrolling user ${userInfo.userEmail} failed at profile update: ${profileUpdateFail.getMessage}. User has been backed out of billing project $projectId.")
+                RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please try again later. (Error 70)")
+              } recover {
+                case bpFail: Throwable => {
+                  logger.warn(s"Enrolling user ${userInfo.userEmail} failed at profile update: ${profileUpdateFail.getMessage}. User is still in billing project $projectId due to cleanup failure: ${bpFail.getMessage}.")
+                  RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please contact support. (Error 80)")
+                }
               }
             }
-            // user in some other state; don't enroll
-            case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial."))
           }
+        } recover {
+          case t: Throwable => {
+            logger.warn(s"Attempt to add user ${userInfo.userEmail} to project $projectId failed: ${t.getMessage}. User profile has not been modified.")
+            RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please try again later. (Error 90)")
+          }
+        }
+      }
+    } recover {
+      case t: Throwable => {
+        logger.warn(s"Failed to list members of project $projectId on behalf of user ${userInfo.userEmail}: ${t.getMessage}")
+        RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. Please try again later. (Error 110)")
       }
     }
+  }
+
+  private def enrolledStatusFromStatus(status: UserTrialStatus): UserTrialStatus = {
+    // build the new state that we want to persist to indicate the user is enrolled
+    val now = Instant.now
+    val expirationDate = now.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
+    status.copy(
+      state = Some(TrialStates.Enrolled),
+      enrolledDate = now,
+      expirationDate = expirationDate
+    )
   }
 
   private def createProjects(count: Int): Future[PerRequestMessage] = {
