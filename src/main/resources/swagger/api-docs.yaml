@@ -1535,7 +1535,7 @@ paths:
       responses:
         204:
           description: Success (No Content)
-        204:
+        403:
           description: Forbidden; user must agree to terms to be enrolled
         500:
           description: Internal Server Error
