@@ -76,6 +76,16 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
               .withBody(profile(user, props).toJson.compactPrint))
     }
+
+    // For testing error scenarios
+    localThurloeServer
+      .when(request()
+        .withMethod("GET")
+        .withHeader(fireCloudHeader.name, fireCloudHeader.value)
+        .withPath(UserApiService.remoteGetAllPath.format(dummy1User)))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(InternalServerError.intValue))
   }
 
   override protected def afterAll(): Unit = {
@@ -86,12 +96,11 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     val userAgreementPath = "/api/profile/trial/userAgreement"
     val allButEnabledUsers = Seq(disabledUser, enrolledUser, terminatedUser)
 
-    // TODO: Uncomment out the test below as part of the exception handling ticket (GAWB-2947)
-//    "Failing due to Thurloe error should return a server error to the user" in {
-//      Put(userAgreementPath) ~> dummyUserIdHeaders(dummy1User) ~> userServiceRoutes ~> check {
-//        status should equal(InternalServerError)
-//      }
-//    }
+    "Failing due to Thurloe error should return a server error to the user" in {
+      Put(userAgreementPath) ~> dummyUserIdHeaders(dummy1User) ~> userServiceRoutes ~> check {
+        status should equal(InternalServerError)
+      }
+    }
 
     allHttpMethodsExcept(PUT) foreach { method =>
       s"should reject ${method.toString} method" in {

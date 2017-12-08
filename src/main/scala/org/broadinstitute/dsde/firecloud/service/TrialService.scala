@@ -263,7 +263,7 @@ final class TrialService
     Future(RequestComplete(OK, trialDAO.projectReport))
 
   private def recordUserAgreement(userInfo: UserInfo): Future[PerRequestMessage] = {
-    // TODO: Handle Thurloe errors
+    // Thurloe errors are handled by the caller of this method
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap {
       case Some(status) =>
         status.state match {
