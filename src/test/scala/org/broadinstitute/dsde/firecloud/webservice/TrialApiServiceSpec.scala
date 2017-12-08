@@ -377,13 +377,12 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     private val groupMap = Map(
       "apples" -> Seq("alice"),
       "bananas" -> Seq("bob"),
-      "trial_managers" -> Seq("manager") // the name "trial_managers" is defined in reference.conf
+      "trial_managers" -> Seq(TrialApiServiceSpec.manager) // the name "trial_managers" is defined in reference.conf
     )
 
     override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
       userInfo.id match {
         case "failme" => Future.failed(new Exception("intentional exception for unit tests"))
-        case TrialApiServiceSpec.manager => Future.successful(true)
         case TrialApiServiceSpec.unauthorizedUser => Future.successful(false)
         case _ => Future.successful(groupMap.getOrElse(groupName, Seq.empty[String]).contains(userInfo.id))
       }
