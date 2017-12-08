@@ -16,13 +16,13 @@ import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
+import spray.http.HttpMethods.{POST, PUT}
+import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import spray.http.HttpMethods.{POST, PUT}
-import spray.http.StatusCodes._
 
 final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with TrialApiService {
   import TrialApiServiceSpec._
@@ -383,6 +383,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
       userInfo.id match {
         case "failme" => Future.failed(new Exception("intentional exception for unit tests"))
+        case "campaignManager" => Future.successful(true)
         case "nonCampaignManager" => Future.successful(false)
         case _ => Future.successful(groupMap.getOrElse(groupName, Seq.empty[String]).contains(userInfo.id))
       }
