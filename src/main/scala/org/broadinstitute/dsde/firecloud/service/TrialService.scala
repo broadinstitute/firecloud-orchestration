@@ -269,7 +269,7 @@ final class TrialService
           case Success(_) => Future(RequestComplete(NoContent))
           case Failure(ex) => Future(RequestComplete(InternalServerError, ex.getMessage))
         }
-        case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not Enabled to agree to terms."))
+        case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial."))
       }
       case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial."))
     }
