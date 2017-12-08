@@ -216,7 +216,11 @@ final class TrialService
 
   private def enrollUserInternal(userInfo: UserInfo, status: UserTrialStatus): Future[PerRequestMessage] = {
 
-    val projectId = "fccredits-hafnium-peach-3794" // TODO: Make this status.billingProjectName when GAWB-2911 lands
+    val projectId = status.billingProjectName match {
+      case Some(name: String) => name
+      case None => throw new FireCloudException("We could not process your enrollment. (Error 55 - no billing project in profile)")
+    }
+
     val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
 
     // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
