@@ -267,21 +267,21 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
       allHttpMethodsExcept(POST) foreach { method =>
         s"should reject ${method.toString} method" in {
-          new RequestBuilder(method)("/trial/manager/report") ~> dummyUserIdHeaders("campaignManager") ~> trialApiServiceRoutes ~> check {
+          new RequestBuilder(method)("/trial/manager/report") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
             assert(!handled)
           }
         }
       }
 
       "should succeed with a create request" in {
-        Post("/trial/manager/report") ~> dummyUserIdHeaders("campaignManager") ~> trialApiServiceRoutes ~> check {
+        Post("/trial/manager/report") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           assert(status.isSuccess)
           assertResult(OK) {status}
         }
       }
 
       "non-campaign manager should fail creating request" in {
-        Post("/trial/manager/report") ~> dummyUserIdHeaders("nonCampaignManager") ~> trialApiServiceRoutes ~> check {
+        Post("/trial/manager/report") ~> dummyUserIdHeaders(unauthorizedUser) ~> trialApiServiceRoutes ~> check {
           assert(status.isFailure)
           assertResult(Forbidden) {status}
         }
@@ -293,21 +293,21 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
       allHttpMethodsExcept(PUT) foreach { method =>
         s"should reject ${method.toString} method" in {
-          new RequestBuilder(method)("/trial/manager/report/12345678") ~> dummyUserIdHeaders("campaignManager") ~> trialApiServiceRoutes ~> check {
+          new RequestBuilder(method)("/trial/manager/report/12345678") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
             assert(!handled)
           }
         }
       }
 
       "should succeed with an update request" in {
-        Put("/trial/manager/report/12345") ~> dummyUserIdHeaders("campaignManager") ~> trialApiServiceRoutes ~> check {
+        Put("/trial/manager/report/12345") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           assert(status.isSuccess)
           assertResult(OK) {status}
         }
       }
 
       "non-campaign manager should fail an update request" in {
-        Put("/trial/manager/report/12345") ~> dummyUserIdHeaders("nonCampaignManager") ~> trialApiServiceRoutes ~> check {
+        Put("/trial/manager/report/12345") ~> dummyUserIdHeaders(unauthorizedUser) ~> trialApiServiceRoutes ~> check {
           assert(status.isFailure)
           assertResult(Forbidden) {status}
         }
@@ -383,8 +383,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
       userInfo.id match {
         case "failme" => Future.failed(new Exception("intentional exception for unit tests"))
-        case "campaignManager" => Future.successful(true)
-        case "nonCampaignManager" => Future.successful(false)
+        case TrialApiServiceSpec.manager => Future.successful(true)
+        case TrialApiServiceSpec.unauthorizedUser => Future.successful(false)
         case _ => Future.successful(groupMap.getOrElse(groupName, Seq.empty[String]).contains(userInfo.id))
       }
     }

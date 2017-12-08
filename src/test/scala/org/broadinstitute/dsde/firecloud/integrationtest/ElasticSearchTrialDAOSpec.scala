@@ -121,7 +121,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
     }
     "projectReport" - {
       "should return an accurate report with all verified/ready projects" in {
-        // unverified/unclaimed projects listed below but commented out for developer clarity
+        // unverified projects listed below but commented out for developer clarity
         val expected = Seq(
           // TrialProject(RawlsBillingProjectName("apple"), verified=false, None),
           TrialProject(RawlsBillingProjectName("banana"), verified=true, Some(WorkbenchUserInfo("123", "alice@example.com")), Some(Ready)),
