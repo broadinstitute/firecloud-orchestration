@@ -1728,7 +1728,10 @@ paths:
       summary: Update a Spreadsheet Report of free trial projects
       parameters:
         - name: spreadsheetId
-          description: the spreadsheet id to update
+          description: |
+            The spreadsheet id to update. The spreadsheet id can be found in the url of the link.
+            For example, in the link "https://docs.google.com/spreadsheets/d/long-random-string/edit",
+            the string "long-random-string" is the "spreadsheetId" value.
           required: true
           in: path
           type: string
