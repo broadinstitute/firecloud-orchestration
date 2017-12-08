@@ -26,7 +26,7 @@ import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 // TODO: Contain userEmail in value class for stronger type safety without incurring performance penalty
@@ -154,7 +154,9 @@ final class TrialService
   private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
                                       statusTransition: (WorkbenchUserInfo, Option[UserTrialStatus]) => UserTrialStatus,
                                       transitionPostProcessing: (Attempt, Option[UserTrialStatus], UserTrialStatus) => Unit): Future[PerRequestMessage] = {
-    val results: Seq[Future[(String, String)]] = userEmails map { userEmail =>
+    var results: Seq[(String,String)] = Seq()
+    userEmails.foreach { userEmail =>
+     val finalStatus =
       getUserSubjectId(userEmail) flatMap { subId =>
         val userInfo = WorkbenchUserInfo(subId, userEmail)
         thurloeDao.getTrialStatus(subId, managerInfo) flatMap { userTrialStatus =>
@@ -164,18 +166,22 @@ final class TrialService
               stateResponse <- updateTrialStatus(managerInfo, userInfo, newStatus)
             } yield {
               transitionPostProcessing(stateResponse, userTrialStatus, newStatus)
-              (userEmail, StatusUpdate.toName(stateResponse))
+              StatusUpdate.toName(stateResponse)
             }
           } else {
             logger.warn(
               s"The user '${userInfo.userEmail}' is already in the trial state of '$newStatus.newState'. " +
                 s"No further action will be taken.")
-            Future.successful((userEmail, StatusUpdate.toName(StatusUpdate.NoChangeRequired)))
+            Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
           }
         }
       }
+      // Use await here so that multiple Futures don't have a conflict when claiming a billing project
+      val result = (Await.result(finalStatus, scala.concurrent.duration.Duration.Inf))
+      results = results ++ Seq((result, userEmail))
     }
-    Future.sequence(results) map { output => RequestComplete(output.toMap) }
+    val sorted = results.groupBy(_._1).map { case (k,v) => (k,v.map(_._2))}
+    Future.successful(RequestComplete(sorted))
   }
 
   private def updateTrialStatus(managerInfo: UserInfo,

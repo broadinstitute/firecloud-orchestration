@@ -80,7 +80,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   // update a project, with a check on its Elasticsearch version
-  def mergeProjectInternal(updatedProject: TrialProject, version: Long) = {
+  def updateProjectInternal(updatedProject: TrialProject, version: Long) = {
     val update = client
       .prepareUpdate(indexName, datatype, updatedProject.name.value)
       .setDoc(updatedProject.toJson.compactPrint, XContentType.JSON)
@@ -157,7 +157,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
       project // noop
     } else {
       val updatedProject = project.copy(verified = verified, status=Some(status))
-      mergeProjectInternal(updatedProject, version) // will throw error if update fails
+      updateProjectInternal(updatedProject, version) // will throw error if update fails
       updatedProject
     }
   }
@@ -194,7 +194,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     assert(project.user.isEmpty)
 
     val updatedProject = project.copy(user = Some(userInfo))
-    mergeProjectInternal(updatedProject, version) // will throw error if update fails
+    updateProjectInternal(updatedProject, version) // will throw error if update fails
     updatedProject
   }
 

@@ -173,14 +173,14 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
 
         // update the project using internal, specifying version 0. This should throw an error.
         val ex1 = intercept[FireCloudException] {
-          esTrialDAO.mergeProjectInternal(project, 1)
+          esTrialDAO.updateProjectInternal(project, 1)
         }
         assert(ex1.getMessage == "ElasticSearch request failed")
         assert(ex1.getCause.getMessage == "[billingproject][jackfruit]: version conflict, current version [2] is different than the one provided [1]")
 
         // update the project using internal, specifying version 3. This should throw an error.
         val ex3 = intercept[FireCloudException] {
-          esTrialDAO.mergeProjectInternal(project, 3)
+          esTrialDAO.updateProjectInternal(project, 3)
         }
         assert(ex3.getMessage == "ElasticSearch request failed")
         assert(ex3.getCause.getMessage == "[billingproject][jackfruit]: version conflict, current version [2] is different than the one provided [3]")

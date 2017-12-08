@@ -182,16 +182,16 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
     "Attempting to enable a previously disabled user should return success" in {
       Post(enablePath, Seq(disabledUser, enabledUser)) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
-        val enableResponse = responseAs[Map[String, String]]
-        assertResult(Map(disabledUser->"Success", enabledUser->"NoChangeRequired")) { enableResponse }
+        val enableResponse = responseAs[Map[String, Seq[String]]]
+        assertResult(Map("Success"->Seq(disabledUser), "NoChangeRequired"->Seq(enabledUser))) { enableResponse }
         assertResult(OK) {status}
       }
     }
 
     "Attempting to enable a previously enabled user should return NoChangeRequired success" in {
       Post(enablePath, Seq(enabledUser)) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
-        val enableResponse = responseAs[Map[String, String]]
-        assertResult(Map(enabledUser->"NoChangeRequired")) { enableResponse }
+        val enableResponse = responseAs[Map[String, Seq[String]]]
+        assertResult(Map("NoChangeRequired"->Seq(enabledUser))) { enableResponse }
         assertResult(OK) {status}
       }
     }
