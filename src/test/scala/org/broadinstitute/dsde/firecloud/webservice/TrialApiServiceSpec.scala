@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO,
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enrolled}
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Enrolled}
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
@@ -16,7 +16,7 @@ import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
-import spray.http.HttpMethods.POST
+import spray.http.HttpMethods.{POST, PUT}
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -60,6 +60,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       (dummy2User, dummy2Props),
       (disabledUser, disabledProps),
       (enabledUser, enabledProps),
+      (enabledButNotAgreedUser, enabledButNotAgreedProps),
       (enrolledUser, enrolledProps),
       (terminatedUser, terminatedProps))
 
@@ -75,10 +76,53 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
               .withBody(profile(user, props).toJson.compactPrint))
     }
+
+    // For testing error scenarios
+    localThurloeServer
+      .when(request()
+        .withMethod("GET")
+        .withHeader(fireCloudHeader.name, fireCloudHeader.value)
+        .withPath(UserApiService.remoteGetAllPath.format(dummy1User)))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(InternalServerError.intValue))
   }
 
   override protected def afterAll(): Unit = {
     localThurloeServer.stop()
+  }
+
+  "User-initiated User Agreement endpoint" - {
+    val userAgreementPath = "/api/profile/trial/userAgreement"
+    val allButEnabledUsers = Seq(disabledUser, enrolledUser, terminatedUser)
+
+    "Failing due to Thurloe error should return a server error to the user" in {
+      Put(userAgreementPath) ~> dummyUserIdHeaders(dummy1User) ~> userServiceRoutes ~> check {
+        status should equal(InternalServerError)
+      }
+    }
+
+    allHttpMethodsExcept(PUT) foreach { method =>
+      s"should reject ${method.toString} method" in {
+        new RequestBuilder(method)(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+          assert(!handled)
+        }
+      }
+    }
+
+    allButEnabledUsers foreach { user =>
+      s"$user should not be able to agree to terms" in {
+        Put(userAgreementPath) ~> dummyUserIdHeaders(user) ~> userServiceRoutes ~> check {
+          status should equal(Forbidden)
+        }
+      }
+    }
+
+    "attempting to agree to terms as enabled user" in {
+      Put(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+        status should equal(NoContent)
+      }
+    }
   }
 
   "Free Trial Enrollment" - {
@@ -102,10 +146,18 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
-    "attempting to enroll as an enabled user" - {
+    "attempting to enroll as an enabled user that agreed to terms" - {
       "should be NoContent success" in {
         Post(enrollPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
           assertResult(NoContent, response.entity.asString) { status }
+        }
+      }
+    }
+
+    "enrolling as an enabled user that DID NOT agree to terms" - {
+      "should be Forbidden" in {
+        Post(enrollPath) ~> dummyUserIdHeaders(enabledButNotAgreedUser) ~> userServiceRoutes ~> check {
+          assertResult(Forbidden, response.entity.asString) { status }
         }
       }
     }
@@ -138,6 +190,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     val dummy2UserEmails = Seq(dummy2User)
     val disabledUserEmails = Seq(disabledUser)
     val enabledUserEmails = Seq(enabledUser)
+    val enabledButNotAgreedUserEmails = Seq(enabledButNotAgreedUser)
     val enrolledUserEmails = Seq(enrolledUser)
     val terminatedUserEmails = Seq(terminatedUser)
 
@@ -277,6 +330,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
             assertResult(0) { trialStatus.terminatedDate.toEpochMilli }
 
             Future.successful(Success(()))
+          case Some(Enabled) =>
+            Future.successful(Success(()))
           case Some(Disabled) =>
             Future.successful(Success(()))
           case _ =>
@@ -321,7 +376,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     private val groupMap = Map(
       "apples" -> Seq("alice"),
       "bananas" -> Seq("bob"),
-      "trial_managers" -> Seq("manager") // the name "trial_managers" is defined in reference.conf
+      "trial_managers" -> Seq(manager) // the name "trial_managers" is defined in reference.conf
     )
 
     override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
@@ -340,6 +395,7 @@ object TrialApiServiceSpec {
   val dummy2User = "dummy2-user"
   val disabledUser = "disabled-user"
   val enabledUser = "enabled-user"
+  val enabledButNotAgreedUser = "enabled-but-not-agreed-user"
   val enrolledUser = "enrolled-user"
   val terminatedUser = "terminated-user"
 
@@ -356,6 +412,12 @@ object TrialApiServiceSpec {
   )
   val enabledProps = Map(
     "trialState" -> "Enabled",
+    "userAgreed" -> "true",
+    "trialEnabledDate" -> "1"
+  )
+  val enabledButNotAgreedProps = Map(
+    "trialState" -> "Enabled",
+    "userAgreed" -> "false",
     "trialEnabledDate" -> "1"
   )
   val enrolledProps = Map(

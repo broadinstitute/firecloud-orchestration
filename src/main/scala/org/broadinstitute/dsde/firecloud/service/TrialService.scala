@@ -26,7 +26,7 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 // TODO: Contain userEmail in value class for stronger type safety without incurring performance penalty
 object TrialService {
@@ -40,6 +40,7 @@ object TrialService {
   case class VerifyProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class CountProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class Report(userInfo:UserInfo) extends TrialServiceMessage
+  case class RecordUserAgreement(userInfo: UserInfo) extends TrialServiceMessage
 
   def props(service: () => TrialService): Props = {
     Props(service())
@@ -68,6 +69,7 @@ final class TrialService
     case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
     case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
     case Report(userInfo) => asTrialCampaignManager {projectReport}(userInfo) pipeTo sender
+    case RecordUserAgreement(userInfo) => recordUserAgreement(userInfo) pipeTo sender
     case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
@@ -79,7 +81,7 @@ final class TrialService
 
     // Define what to overwrite in user's status
     val statusTransition: UserTrialStatus => UserTrialStatus =
-      status => status.copy(state = Some(Enabled), enabledDate = Instant.now)
+      status => status.copy(state = Some(Enabled), userAgreed = false, enabledDate = Instant.now)
 
     updateUserState(managerInfo, userEmail, statusTransition)
   }
@@ -190,17 +192,21 @@ final class TrialService
             case Some(TrialStates.Enrolled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are already enrolled in a free trial."))
             // user enabled (eligible) for trial, enroll!
             case Some(TrialStates.Enabled) => {
-              // build the new state that we want to persist to indicate the user is enrolled
-              val now = Instant.now
-              val expirationDate = now.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
-              val enrolledStatus = status.copy(
-                state = Some(TrialStates.Enrolled),
-                enrolledDate = now,
-                expirationDate = expirationDate
-              )
-              thurloeDao.saveTrialStatus(userInfo.id, userInfo, enrolledStatus) map { _ =>
-                // TODO: add user to free-trial billing project / create said project if necessary
-                RequestComplete(NoContent)
+              if (status.userAgreed) {
+                // build the new state that we want to persist to indicate the user is enrolled
+                val now = Instant.now
+                val expirationDate = now.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
+                val enrolledStatus = status.copy(
+                  state = Some(TrialStates.Enrolled),
+                  enrolledDate = now,
+                  expirationDate = expirationDate
+                )
+                thurloeDao.saveTrialStatus(userInfo.id, userInfo, enrolledStatus) map { _ =>
+                  // TODO: add user to free-trial billing project / create said project if necessary
+                  RequestComplete(NoContent)
+                }
+              } else {
+                Future(RequestCompleteWithErrorReport(Forbidden, "User must agree to terms to be enrolled."))
               }
             }
             // user in some other state; don't enroll
@@ -256,4 +262,19 @@ final class TrialService
   private def projectReport: Future[PerRequestMessage] =
     Future(RequestComplete(OK, trialDAO.projectReport))
 
+  private def recordUserAgreement(userInfo: UserInfo): Future[PerRequestMessage] = {
+    // Thurloe errors are handled by the caller of this method
+    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap {
+      case Some(status) =>
+        status.state match {
+          case Some(TrialStates.Enabled) =>
+            thurloeDao.saveTrialStatus(userInfo.id, userInfo, status.copy(userAgreed = true)) flatMap {
+              case Success(_) => Future(RequestComplete(NoContent))
+              case Failure(ex) => Future(RequestComplete(InternalServerError, ex.getMessage))
+            }
+          case _ => Future(RequestCompleteWithErrorReport(Forbidden, "You are not eligible for a free trial."))
+        }
+      case None => Future(RequestCompleteWithErrorReport(Forbidden, "You are not eligible for a free trial."))
+    }
+  }
 }

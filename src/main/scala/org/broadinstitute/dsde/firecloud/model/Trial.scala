@@ -81,6 +81,7 @@ object Trial {
   case class UserTrialStatus(
       userId: String,
       state: Option[TrialState],
+      userAgreed: Boolean,
       enabledDate: Instant = Instant.ofEpochMilli(0), // timestamp a campaign manager granted the user trial permissions
       enrolledDate: Instant = Instant.ofEpochMilli(0), // timestamp user started their trial
       terminatedDate: Instant = Instant.ofEpochMilli(0), // timestamp user was actually terminated
@@ -89,9 +90,9 @@ object Trial {
 
   object UserTrialStatus {
     // convenience apply method that accepts epoch millisecond times instead of java.time.Instants
-    def apply(userId: String, state: Option[TrialState],
+    def apply(userId: String, state: Option[TrialState], userAgreed: Boolean,
               enabledEpoch: Long, enrolledEpoch: Long, terminatedEpoch: Long, expirationEpoch: Long) = {
-      new UserTrialStatus(userId, state,
+      new UserTrialStatus(userId, state, userAgreed,
         Instant.ofEpochMilli(enabledEpoch),
         Instant.ofEpochMilli(enrolledEpoch),
         Instant.ofEpochMilli(terminatedEpoch),
@@ -116,7 +117,9 @@ object Trial {
 
       val state = mappedKVPs.get("trialState") map TrialStates.withName
 
-      new UserTrialStatus(profileWrapper.userId, state,
+      val userAgreed = Try(mappedKVPs.getOrElse("userAgreed", "false").toBoolean).getOrElse(false)
+
+      new UserTrialStatus(profileWrapper.userId, state, userAgreed,
         enabledDate, enrolledDate, terminatedDate, expirationDate)
     }
 
@@ -130,7 +133,8 @@ object Trial {
         "trialEnabledDate" -> userTrialStatus.enabledDate.toEpochMilli.toString,
         "trialEnrolledDate" -> userTrialStatus.enrolledDate.toEpochMilli.toString,
         "trialTerminatedDate" -> userTrialStatus.terminatedDate.toEpochMilli.toString,
-        "trialExpirationDate" -> userTrialStatus.expirationDate.toEpochMilli.toString
+        "trialExpirationDate" -> userTrialStatus.expirationDate.toEpochMilli.toString,
+        "userAgreed" -> userTrialStatus.userAgreed.toString
       ) ++ stateKV
     }
 
