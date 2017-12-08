@@ -265,16 +265,16 @@ final class TrialService
   private def recordUserAgreement(userInfo: UserInfo): Future[PerRequestMessage] = {
     // TODO: Handle Thurloe errors
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap {
-      case Some(status) => println("11111111111");
+      case Some(status) =>
         status.state match {
-          case Some(TrialStates.Enabled) => println("22222222");
+          case Some(TrialStates.Enabled) =>
             thurloeDao.saveTrialStatus(userInfo.id, userInfo, status.copy(userAgreed = true)) flatMap {
-              case Success(_) => println("33333333"); Future(RequestComplete(NoContent))
-              case Failure(ex) => println("44444444444"); Future(RequestComplete(InternalServerError, ex.getMessage))
+              case Success(_) => Future(RequestComplete(NoContent))
+              case Failure(ex) => Future(RequestComplete(InternalServerError, ex.getMessage))
             }
-          case _ => println("555555555"); Future(RequestCompleteWithErrorReport(Forbidden, "You are not eligible for a free trial."))
+          case _ => Future(RequestCompleteWithErrorReport(Forbidden, "You are not eligible for a free trial."))
         }
-      case None => println("66666666"); Future(RequestCompleteWithErrorReport(Forbidden, "You are not eligible for a free trial."))
+      case None => Future(RequestCompleteWithErrorReport(Forbidden, "You are not eligible for a free trial."))
     }
   }
 }
