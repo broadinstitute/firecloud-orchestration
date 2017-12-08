@@ -184,7 +184,6 @@ final class TrialService
     // get user's trial status, then check the current state
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap {
       // can't determine the user's trial status; don't enroll
-      case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 10)"))
       case Some(status) =>
         status.state match {
           // user already enrolled; don't re-enroll
@@ -196,6 +195,7 @@ final class TrialService
           case Some(TrialStates.Terminated) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 40)"))
           case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
         }
+      case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 51)")) // Shouldn't happen
     }
   }
 
