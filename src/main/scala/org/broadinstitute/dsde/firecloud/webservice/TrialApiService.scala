@@ -21,47 +21,35 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
   val trialServiceConstructor: () => TrialService
 
   val trialApiServiceRoutes: Route = {
-    pathPrefix("trial") {
-      path("userAgreement") {
-        put {
-          requireUserInfo() { userInfo =>
-            requestContext =>
-              perRequest(requestContext,
-                TrialService.props(trialServiceConstructor),
-                TrialService.RecordUserAgreement(userInfo))
-          }
-        }
-      } ~
-      pathPrefix("manager") {
-        // TODO: See if it makes sense to use DELETE for terminate, and perhaps PUT for disable
-        post {
-          path("enable|disable|terminate".r) { (operation: String) =>
-            requireUserInfo() { managerInfo => // We will need the manager's credentials for authentication downstream
-              entity(as[Seq[String]]) { userEmails =>
-                requestContext =>
-                  perRequest(requestContext,
-                    TrialService.props(trialServiceConstructor),
-                    updateUsers(managerInfo, TrialOperations.withName(operation), userEmails))
-              }
+    pathPrefix("trial" / "manager") {
+      // TODO: See if it makes sense to use DELETE for terminate, and perhaps PUT for disable
+      post {
+        path("enable|disable|terminate".r) { (operation: String) =>
+          requireUserInfo() { managerInfo => // We will need the manager's credentials for authentication downstream
+            entity(as[Seq[String]]) { userEmails =>
+              requestContext =>
+                perRequest(requestContext,
+                  TrialService.props(trialServiceConstructor),
+                  updateUsers(managerInfo, TrialOperations.withName(operation), userEmails))
             }
-          } ~
-          path("projects") {
-            parameter("count".as[Int] ? 0) { count =>
-              parameter("operation") { op =>
-                requireUserInfo() { userInfo =>
-                  requestContext =>
-                    val message = op.toLowerCase match {
-                      case "create" => Some(TrialService.CreateProjects(userInfo, count))
-                      case "verify" => Some(TrialService.VerifyProjects(userInfo))
-                      case "count" => Some(TrialService.CountProjects(userInfo))
-                      case "report" => Some(TrialService.Report(userInfo))
-                      case _ => None
-                    }
-                    if (message.nonEmpty)
-                      perRequest(requestContext, TrialService.props(trialServiceConstructor), message.get)
-                    else
-                      requestContext.complete(BadRequest, ErrorReport(s"invalid operation '$op'"))
-                }
+          }
+        } ~
+        path("projects") {
+          parameter("count".as[Int] ? 0) { count =>
+            parameter("operation") { op =>
+              requireUserInfo() { userInfo =>
+                requestContext =>
+                  val message = op.toLowerCase match {
+                    case "create" => Some(TrialService.CreateProjects(userInfo, count))
+                    case "verify" => Some(TrialService.VerifyProjects(userInfo))
+                    case "count" => Some(TrialService.CountProjects(userInfo))
+                    case "report" => Some(TrialService.Report(userInfo))
+                    case _ => None
+                  }
+                  if (message.nonEmpty)
+                    perRequest(requestContext, TrialService.props(trialServiceConstructor), message.get)
+                  else
+                    requestContext.complete(BadRequest, ErrorReport(s"invalid operation '$op'"))
               }
             }
           }
