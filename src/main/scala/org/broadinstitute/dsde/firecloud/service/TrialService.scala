@@ -13,6 +13,7 @@ import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enab
 import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus, _}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, RequestCompleteWithErrorReport, UserInfo, WithAccessToken, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impCreateProjectsResponse, impTrialProject}
+import org.broadinstitute.dsde.firecloud.model.Trial.StatusUpdate.Attempt
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager.StartCreation
@@ -25,7 +26,7 @@ import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 // TODO: Contain userEmail in value class for stronger type safety without incurring performance penalty
@@ -71,110 +72,128 @@ final class TrialService
     case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
-  private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
-    // TODO: Handle multiple users
-    require(userEmails.size == 1, "For the time being, we can only enable one user at a time.")
-
-    val userEmail = userEmails.head
-
-    // Define what to overwrite in user's status
-    val statusTransition: UserTrialStatus => UserTrialStatus =
-      status => status.copy(state = Some(Enabled), enabledDate = Instant.now)
-
-    updateUserState(managerInfo, userEmail, statusTransition)
-  }
-
-  private def disableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
-    // TODO: Handle multiple users
-    require(userEmails.size == 1, "For the time being, we can only disable one user at a time.")
-
-    val userEmail = userEmails.head
-
-    // Define what to overwrite in user's status
-    val statusTransition: UserTrialStatus => UserTrialStatus =
-      status => status.copy(state = Some(Disabled))
-
-    updateUserState(managerInfo, userEmail, statusTransition)
-  }
-
-  private def terminateUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
-    // TODO: Handle multiple users
-    require(userEmails.size == 1, "For the time being, we can only terminate one user at a time.")
-
-    val userEmail = userEmails.head
-
-    // Define what to overwrite in user's status
-    val statusTransition: UserTrialStatus => UserTrialStatus =
-      status => status.copy(state = Some(Terminated), terminatedDate = Instant.now)
-
-    updateUserState(managerInfo, userEmail, statusTransition)
-  }
-
-  private def updateUserState(managerInfo: UserInfo,
-                              userEmail: String,
-                              statusTransition: UserTrialStatus => UserTrialStatus): Future[PerRequestMessage] = {
-    // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
-    // TODO: Handle errors that may come up while querying Sam
-    for {
-      regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(userEmail))
-      userInfo = WorkbenchUserInfo(regInfo.userInfo.userSubjectId, regInfo.userInfo.userEmail)
-      result <- updateTrialStatus(managerInfo, userInfo, statusTransition)
-    } yield result match {
-      case StatusUpdate.Success => RequestComplete(NoContent)
-      case StatusUpdate.Failure => RequestComplete(InternalServerError)
-      case StatusUpdate.ServerError(msg) => RequestComplete(InternalServerError, msg)
+  private def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
+    val needsProject = currentStatus match {
+      case None => true
+      case Some(statusObj) => statusObj.state match {
+        case Some(Disabled) => true
+        case _ => false // either an invalid transition or noop
+      }
+    }
+    if (needsProject) {
+      val trialProject = trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))
+      UserTrialStatus(userId = userInfo.userSubjectId, state = Some(Enabled), enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
+    } else {
+      currentStatus.get.copy(state = Some(Enabled))
     }
   }
 
-  // TODO: Try to refactor this method that got unwieldy
-  private def updateTrialStatus(managerInfo: UserInfo,
-                                userInfo: WorkbenchUserInfo,
-                                statusTransition: UserTrialStatus => UserTrialStatus): Future[StatusUpdate.Attempt] = {
-    // get the status of the "userInfo" user, but authenticating to Thurloe as the "managerInfo" user
-    thurloeDao.getTrialStatus(userInfo.userSubjectId, managerInfo) flatMap {
-      case Some(currentStatus) => {
-        val currentState = currentStatus.state
-        val newStatus = statusTransition(currentStatus)
-        val newState = newStatus.state
+  private def enableUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
+    if (updateStatus != StatusUpdate.Success && newStatus.billingProjectName.isDefined) {
+      logger.info(
+        s"The user '${newStatus.userId}' failed to be enabled, releasing the billing project '${newStatus.billingProjectName.get}' back into the available pool.")
+      trialDAO.releaseProjectRecord(RawlsBillingProjectName(newStatus.billingProjectName.get))
+    }
+  }
 
-        if (currentState == newState) {
-          logger.warn(
-            s"The user '${userInfo.userEmail}' is already in the trial state of '$newState'. " +
-              s"No further action will be taken.")
+  private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
+    executeStateTransitions(managerInfo, userEmails, buildEnableUserStatus, enableUserPostProcessing)
+  }
 
-          Future(StatusUpdate.Success)
-        } else {
-          logger.warn(s"Current trial state of the user '${userInfo.userEmail}' is '$currentState'")
-          logger.warn(s"Checking if we can transition from $currentState to $newState...")
+  private def buildDisableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
+    currentStatus.get.copy(state = Some(Disabled), billingProjectName = None)
+  }
 
-          require(newState.nonEmpty, "Cannot transition to an unspecified state")
+  private def disableUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
+    if (updateStatus == StatusUpdate.Success && prevStatus.isDefined) {
+      prevStatus.get.billingProjectName match {
+        case None => None
+        case Some(name) => trialDAO.releaseProjectRecord(RawlsBillingProjectName(name))
+      }
+    }
+  }
 
-          // TODO: Handle invalid initial trial status by
-          //    -adding another case to Trial.StatusUpdate
-          //    -using that case to return a BadRequest from the parent method (i.e. updateUserState())
-          assert(newState.get.isAllowedFrom(currentState),
-            s"Cannot transition from $currentState to $newState")
+  private def disableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
+    executeStateTransitions(managerInfo, userEmails, buildDisableUserStatus, disableUserPostProcessing)
+  }
 
-          logger.warn(s"Yes, we can! Proceeding...")
+  private def buildTerminateUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
+    require(currentStatus.nonEmpty, "Cannot terminate a user without a status")
+    currentStatus.get.copy(state = Some(Terminated), terminatedDate = Instant.now)
+  }
 
-          // TODO: Test the logic below by adding a mock ThurloeDAO whose saveTrialStatus() returns Failure
-          // Save updates to "userInfo's" trial status, authenticating to Thurloe as "managerInfo" user
-          thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, newStatus) map {
-            case Success(_) =>
-              logger.warn(s"Updated profile saved as $newState; we are done!")
-              StatusUpdate.Success
-            case Failure(ex) =>
-              logger.warn(s"We could not have Thurloe update the new state as $newState; aborting...")
-              StatusUpdate.ServerError(ex.getMessage)
+  private def terminateUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
+    executeStateTransitions(managerInfo, userEmails, buildTerminateUserStatus, (_,_,_) => ())
+  }
+
+  private def requiresStateTransition(currentState: Option[UserTrialStatus], newState: UserTrialStatus): Boolean = {
+    // TODO: Handle invalid initial trial status by
+    //    -adding another case to Trial.StatusUpdate
+    //    -using that case to return a BadRequest from the parent method (i.e. updateUserState())
+    val innerState = currentState match {
+      case None => None
+      case Some(status) => status.state
+    }
+    if (innerState.isEmpty || innerState != newState.state) {
+      require(newState.state.nonEmpty, "Cannot transition to an unspecified state")
+      assert(newState.state.get.isAllowedFrom(innerState), s"Cannot transition from $currentState.get.state to $newState.state")
+      true
+    } else {
+      false
+    }
+  }
+
+  private def getUserSubjectId(userEmail: String): Future[String] = {
+    //    // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
+    //    // TODO: Handle errors that may come up while querying Sam
+    for {
+      regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(userEmail))
+    } yield regInfo.userInfo.userSubjectId
+  }
+
+  private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
+                                      statusTransition: (WorkbenchUserInfo, Option[UserTrialStatus]) => UserTrialStatus,
+                                      transitionPostProcessing: (Attempt, Option[UserTrialStatus], UserTrialStatus) => Unit): Future[PerRequestMessage] = {
+    var results: Seq[(String,String)] = Seq()
+    userEmails.foreach { userEmail =>
+     val finalStatus =
+      getUserSubjectId(userEmail) flatMap { subId =>
+        val userInfo = WorkbenchUserInfo(subId, userEmail)
+        thurloeDao.getTrialStatus(subId, managerInfo) flatMap { userTrialStatus =>
+          val newStatus = statusTransition(userInfo, userTrialStatus)
+          if (requiresStateTransition(userTrialStatus, newStatus)) {
+            for {
+              stateResponse <- updateTrialStatus(managerInfo, userInfo, newStatus)
+            } yield {
+              transitionPostProcessing(stateResponse, userTrialStatus, newStatus)
+              StatusUpdate.toName(stateResponse)
+            }
+          } else {
+            logger.warn(
+              s"The user '${userInfo.userEmail}' is already in the trial state of '$newStatus.newState'. " +
+                s"No further action will be taken.")
+            Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
           }
         }
       }
-      // TODO: Respond with a more user-friendly error
-      case None => {
-        logger.warn(s"Trial status could not be found for ${userInfo.userEmail}")
+      // Use await here so that multiple Futures don't have a conflict when claiming a billing project
+      val result = (Await.result(finalStatus, scala.concurrent.duration.Duration.Inf))
+      results = results ++ Seq((result, userEmail))
+    }
+    val sorted = results.groupBy(_._1).map { case (k,v) => (k,v.map(_._2))}
+    Future.successful(RequestComplete(sorted))
+  }
 
-        Future(StatusUpdate.Failure)
-      }
+  private def updateTrialStatus(managerInfo: UserInfo,
+                                userInfo: WorkbenchUserInfo,
+                                updatedTrialStatus: UserTrialStatus): Future[StatusUpdate.Attempt] = {
+
+    // TODO: Test the logic below by adding a mock ThurloeDAO whose saveTrialStatus() returns Failure
+    thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, updatedTrialStatus) map {
+      case Success(_) =>
+        StatusUpdate.Success
+      case Failure(ex) =>
+        StatusUpdate.ServerError(ex.getMessage)
     }
   }
 

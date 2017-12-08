@@ -15,7 +15,7 @@ class MockSamDAO extends SamDAO {
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = enabledUserInfo
 
-  override def adminGetUserByEmail(email: RawlsUserEmail): Future[RegistrationInfo] = enabledUserInfo
+  override def adminGetUserByEmail(email: RawlsUserEmail): Future[RegistrationInfo] = customUserInfo(email.value)
 
   override def status: Future[SubsystemStatus] = Future.successful(SubsystemStatus(ok = true, messages = None))
 
@@ -23,5 +23,11 @@ class MockSamDAO extends SamDAO {
       RegistrationInfo(
         WorkbenchUserInfo(userSubjectId = "foo", userEmail = "bar"),
         WorkbenchEnabled(google = true, ldap = true, allUsersGroup = true))
+  }
+
+  private def customUserInfo(email: String) = Future.successful {
+    RegistrationInfo(
+      WorkbenchUserInfo(email, email),
+      WorkbenchEnabled(google = true, ldap = true, allUsersGroup = true))
   }
 }

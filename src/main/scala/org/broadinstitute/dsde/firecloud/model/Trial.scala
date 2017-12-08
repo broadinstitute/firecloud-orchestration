@@ -84,18 +84,20 @@ object Trial {
       enabledDate: Instant = Instant.ofEpochMilli(0), // timestamp a campaign manager granted the user trial permissions
       enrolledDate: Instant = Instant.ofEpochMilli(0), // timestamp user started their trial
       terminatedDate: Instant = Instant.ofEpochMilli(0), // timestamp user was actually terminated
-      expirationDate: Instant = Instant.ofEpochMilli(0) // timestamp user is due to face termination
+      expirationDate: Instant = Instant.ofEpochMilli(0), // timestamp user is due to face termination
+      billingProjectName: Option[String] = None
     )
 
   object UserTrialStatus {
     // convenience apply method that accepts epoch millisecond times instead of java.time.Instants
     def apply(userId: String, state: Option[TrialState],
-              enabledEpoch: Long, enrolledEpoch: Long, terminatedEpoch: Long, expirationEpoch: Long) = {
+              enabledEpoch: Long, enrolledEpoch: Long, terminatedEpoch: Long, expirationEpoch: Long, billingProjectName: Option[String]) = {
       new UserTrialStatus(userId, state,
         Instant.ofEpochMilli(enabledEpoch),
         Instant.ofEpochMilli(enrolledEpoch),
         Instant.ofEpochMilli(terminatedEpoch),
-        Instant.ofEpochMilli(expirationEpoch)
+        Instant.ofEpochMilli(expirationEpoch),
+        billingProjectName
       )
     }
     // apply method to create a UserTrialStatus from raw Thurloe KVPs
@@ -115,9 +117,10 @@ object Trial {
       val expirationDate = profileDate("trialExpirationDate", mappedKVPs)
 
       val state = mappedKVPs.get("trialState") map TrialStates.withName
+      val billingProjectName = mappedKVPs.get("trialBillingProjectName")
 
       new UserTrialStatus(profileWrapper.userId, state,
-        enabledDate, enrolledDate, terminatedDate, expirationDate)
+        enabledDate, enrolledDate, terminatedDate, expirationDate, billingProjectName)
     }
 
     // translates a UserTrialStatus to Thurloe KVPs
@@ -126,12 +129,16 @@ object Trial {
         case Some(state) => Map("trialState" -> state.toString)
         case None => Map.empty[String,String]
       }
+      val billingProjectKV:Map[String,String] = userTrialStatus.billingProjectName match {
+        case Some(name) => Map("trialBillingProjectName" -> name)
+        case None => Map.empty[String,String]
+      }
       Map(
         "trialEnabledDate" -> userTrialStatus.enabledDate.toEpochMilli.toString,
         "trialEnrolledDate" -> userTrialStatus.enrolledDate.toEpochMilli.toString,
         "trialTerminatedDate" -> userTrialStatus.terminatedDate.toEpochMilli.toString,
         "trialExpirationDate" -> userTrialStatus.expirationDate.toEpochMilli.toString
-      ) ++ stateKV
+      ) ++ stateKV ++ billingProjectKV
     }
 
   }
@@ -146,7 +153,15 @@ object Trial {
 
     case object Success extends Attempt
     case object Failure extends Attempt
+    case object NoChangeRequired extends Attempt
     case class ServerError(msg: String) extends Attempt
+
+    def toName(status: Attempt): String = status match {
+      case Success => "Success"
+      case Failure => "Failure"
+      case NoChangeRequired => "NoChangeRequired"
+      case ServerError(msg) => "ServerError: " + msg
+    }
   }
 
   case class CreateProjectsResponse(success: Boolean, count: Int, message: Option[String])
