@@ -84,7 +84,7 @@ final class TrialService
       val trialProject = trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))
       UserTrialStatus(userId = userInfo.userSubjectId, state = Some(Enabled), enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
     } else {
-      currentStatus.get
+      currentStatus.get.copy(state = Some(Enabled))
     }
   }
 

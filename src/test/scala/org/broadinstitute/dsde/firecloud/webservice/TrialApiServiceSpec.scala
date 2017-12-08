@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enrolled}
-import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
+import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, TrialProject, TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
@@ -181,7 +181,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
 
     "Attempting to enable a previously disabled user should return success" in {
-      Post(enablePath, Seq(disabledUser, enabledUser)) ~> dummyUserIdHeaders(disabledUser) ~> trialApiServiceRoutes ~> check {
+      Post(enablePath, Seq(disabledUser, enabledUser)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
         val enableResponse = responseAs[Map[String, Seq[String]]]
         assertResult(Map("Success"->Seq(disabledUser), "NoChangeRequired"->Seq(enabledUser))) { enableResponse }
         assertResult(OK) {status}
@@ -189,7 +189,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
 
     "Attempting to enable a previously enabled user should return NoChangeRequired success" in {
-      Post(enablePath, Seq(enabledUser)) ~> dummyUserIdHeaders(enabledUser) ~> trialApiServiceRoutes ~> check {
+      Post(enablePath, Seq(enabledUser)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
         val enableResponse = responseAs[Map[String, Seq[String]]]
         assertResult(Map("NoChangeRequired"->Seq(enabledUser))) { enableResponse }
         assertResult(OK) {status}
@@ -211,7 +211,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       successfulOperationPaths.foreach { successfulOperationPath =>
         s"Attempting $successfulOperationPath on ${targetUsers.head} as $manager should return NoContent success" in {
           Post(successfulOperationPath, targetUsers) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-            assertResult(NoContent, response.entity.asString) { status }
+            assertResult(OK, response.entity.asString) { status }
           }
         }
 
@@ -333,7 +333,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           Future.successful(Success(()))
         }
         case user @ `dummy2User` => { // Mocking Thurloe status saving failures
-          Future.successful(Failure(new InternalError(s"Cannot save trial status for $user")))
+          Future.failed(new InternalError(s"Cannot save trial status for $user"))
         }
         case _ => {
           fail("Should only be updating enabled, disabled or enrolled users")
