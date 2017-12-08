@@ -446,13 +446,13 @@ object TrialApiServiceSpec {
   val enabledProps = Map(
     "trialState" -> "Enabled",
     "userAgreed" -> "true",
-    "trialEnabledDate" -> "1"
+    "trialEnabledDate" -> "1",
     "trialBillingProjectName" -> "testproject"
   )
   val enabledButNotAgreedProps = Map(
     "trialState" -> "Enabled",
     "userAgreed" -> "false",
-    "trialEnabledDate" -> "1"
+    "trialEnabledDate" -> "1",
     "trialBillingProjectName" -> "testproject"
   )
   val enrolledProps = Map(

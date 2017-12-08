@@ -102,7 +102,7 @@ class TrialSpec extends FreeSpec  {
         FireCloudKeyValue(Some("trialTerminatedDate"), Some("56")),
         FireCloudKeyValue(Some("trialExpirationDate"), Some("78")),
         FireCloudKeyValue(Some("trialState"), Some("Enrolled")),
-        FireCloudKeyValue(Some("userAgreed"), Some("true"))
+        FireCloudKeyValue(Some("userAgreed"), Some("true")),
         FireCloudKeyValue(Some("trialBillingProjectName"), Some("testProject"))
       ))
       val actual = UserTrialStatus(profileWrapper)
@@ -119,7 +119,7 @@ class TrialSpec extends FreeSpec  {
       val profileWrapper = ProfileWrapper("userid", List(
         FireCloudKeyValue(Some("trialEnabledDate"), Some("12")),
         FireCloudKeyValue(Some("trialState"), Some("Enabled")),
-        FireCloudKeyValue(Some("userAgreed"), Some("true"))
+        FireCloudKeyValue(Some("userAgreed"), Some("true")),
         FireCloudKeyValue(Some("trialBillingProjectName"), Some("testProject"))
       ))
       val actual = UserTrialStatus(profileWrapper)
