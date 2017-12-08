@@ -1535,6 +1535,8 @@ paths:
       responses:
         204:
           description: Success (No Content)
+        204:
+          description: Forbidden; user must agree to terms to be enrolled
         500:
           description: Internal Server Error
 
@@ -1547,8 +1549,8 @@ paths:
       responses:
         204:
           description: NoContent; userAgreed set to true
-        400:
-          description: BadRequest; user is not eligible for free trial
+        403:
+          description: Forbidden; user is not eligible for free trial
         500:
           description: Internal Server Error
 
@@ -1662,7 +1664,7 @@ paths:
           204:
             description: Success (No Content)
           403:
-            description: Forbidden - You must be a campaign manager to call this endpoint.
+            description: Forbidden; you must be a campaign manager to call this endpoint.
           500:
             description: Internal Server Error
 
