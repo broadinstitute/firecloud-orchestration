@@ -183,7 +183,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
-    val url = FireCloudConfig.Rawls.authUrl + s"/billing/$projectId/${role.toString}/${java.net.URLEncoder.encode(email, "UTF-8")}"
+    val url = editBillingMembershipURL(projectId, role, email)
 
     userAuthedRequest(Put(url), true) map { resp =>
       if (resp.status.isSuccess) {
@@ -192,6 +192,22 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
         throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
       }
     }
+  }
+
+  override def removeUserFromBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
+    val url = editBillingMembershipURL(projectId, role, email)
+
+    userAuthedRequest(Delete(url), true) map { resp =>
+      if (resp.status.isSuccess) {
+        true
+      } else {
+        throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
+      }
+    }
+  }
+
+  private def editBillingMembershipURL(projectId: String, role: ProjectRole, email: String) = {
+    FireCloudConfig.Rawls.authUrl + s"/billing/$projectId/${role.toString}/${java.net.URLEncoder.encode(email, "UTF-8")}"
   }
 
   override def status: Future[SubsystemStatus] = {
