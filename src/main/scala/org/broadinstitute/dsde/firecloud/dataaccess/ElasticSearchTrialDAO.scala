@@ -80,7 +80,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   // update a project, with a check on its Elasticsearch version
-  def updateProjectInternal(updatedProject: TrialProject, version: Long) = {
+  def updateProjectInternal(updatedProject: TrialProject, version: Long): UpdateResponse = {
     val update = client
       .prepareUpdate(indexName, datatype, updatedProject.name.value)
       .setDoc(updatedProject.toJson.compactPrint, XContentType.JSON)
@@ -91,7 +91,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   // update a project, with a check on its Elasticsearch version
-  def indexProjectInternal(updatedProject: TrialProject, version: Long) = {
+  def indexProjectInternal(updatedProject: TrialProject, version: Long): IndexResponse = {
     val update = client
       .prepareIndex(indexName, datatype, updatedProject.name.value)
       .setSource(updatedProject.toJson.compactPrint, XContentType.JSON)
@@ -207,7 +207,6 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   override def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
     val (version, project) = getProjectInternal(projectName)
     project.user match {
-      // TODO should i take user info and verify that it is assigned to the user that is releasing it?
       case Some(_) => {
         val updatedProject = project.copy(user = None)
         indexProjectInternal(project.copy(user = None), version)

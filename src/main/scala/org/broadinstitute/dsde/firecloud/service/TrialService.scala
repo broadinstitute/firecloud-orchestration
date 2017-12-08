@@ -127,14 +127,12 @@ final class TrialService
   }
 
   private def requiresStateTransition(currentState: Option[UserTrialStatus], newState: UserTrialStatus): Boolean = {
-    // TODO: Handle invalid initial trial status by
-    //    -adding another case to Trial.StatusUpdate
-    //    -using that case to return a BadRequest from the parent method (i.e. updateUserState())
     val innerState = currentState match {
       case None => None
       case Some(status) => status.state
     }
     if (innerState.isEmpty || innerState != newState.state) {
+      // TODO throw bad request or invalid state transition exception
       require(newState.state.nonEmpty, "Cannot transition to an unspecified state")
       assert(newState.state.get.isAllowedFrom(innerState), s"Cannot transition from $currentState.get.state to $newState.state")
       true
@@ -144,43 +142,36 @@ final class TrialService
   }
 
   private def getUserSubjectId(userEmail: String): Future[String] = {
-    //    // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
-    //    // TODO: Handle errors that may come up while querying Sam
-    for {
-      regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(userEmail))
-    } yield regInfo.userInfo.userSubjectId
+    // TODO: Handle unregistered users which get 404 from Sam causing adminGetUserByEmail to throw
+    // TODO: Handle errors that may come up while querying Sam
+    samDao.adminGetUserByEmail(RawlsUserEmail(userEmail)).map(_.userInfo.userSubjectId)
   }
 
   private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
                                       statusTransition: (WorkbenchUserInfo, Option[UserTrialStatus]) => UserTrialStatus,
                                       transitionPostProcessing: (Attempt, Option[UserTrialStatus], UserTrialStatus) => Unit): Future[PerRequestMessage] = {
-    var results: Seq[(String,String)] = Seq()
+    var results: Seq[(String, String)] = Seq()
     userEmails.foreach { userEmail =>
-     val finalStatus =
-      getUserSubjectId(userEmail) flatMap { subId =>
+      val finalStatus = getUserSubjectId(userEmail) flatMap { subId =>
         val userInfo = WorkbenchUserInfo(subId, userEmail)
         thurloeDao.getTrialStatus(subId, managerInfo) flatMap { userTrialStatus =>
           val newStatus = statusTransition(userInfo, userTrialStatus)
           if (requiresStateTransition(userTrialStatus, newStatus)) {
-            for {
-              stateResponse <- updateTrialStatus(managerInfo, userInfo, newStatus)
-            } yield {
+            updateTrialStatus(managerInfo, userInfo, newStatus) map { stateResponse =>
               transitionPostProcessing(stateResponse, userTrialStatus, newStatus)
               StatusUpdate.toName(stateResponse)
             }
           } else {
-            logger.warn(
-              s"The user '${userInfo.userEmail}' is already in the trial state of '$newStatus.newState'. " +
-                s"No further action will be taken.")
+            logger.warn(s"The user '${userInfo.userEmail}' is already in the trial state of '$newStatus.newState'. No further action will be taken.")
             Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
           }
         }
       }
       // Use await here so that multiple Futures don't have a conflict when claiming a billing project
-      val result = (Await.result(finalStatus, scala.concurrent.duration.Duration.Inf))
+      val result = Await.result(finalStatus, scala.concurrent.duration.Duration.Inf)
       results = results ++ Seq((result, userEmail))
     }
-    val sorted = results.groupBy(_._1).map { case (k,v) => (k,v.map(_._2))}
+    val sorted = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
     Future.successful(RequestComplete(sorted))
   }
 
@@ -188,12 +179,9 @@ final class TrialService
                                 userInfo: WorkbenchUserInfo,
                                 updatedTrialStatus: UserTrialStatus): Future[StatusUpdate.Attempt] = {
 
-    // TODO: Test the logic below by adding a mock ThurloeDAO whose saveTrialStatus() returns Failure
     thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, updatedTrialStatus) map {
-      case Success(_) =>
-        StatusUpdate.Success
-      case Failure(ex) =>
-        StatusUpdate.ServerError(ex.getMessage)
+      case Success(_) => StatusUpdate.Success
+      case Failure(ex) => StatusUpdate.ServerError(ex.getMessage)
     }
   }
 
