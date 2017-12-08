@@ -195,7 +195,7 @@ final class TrialService
           case Some(TrialStates.Terminated) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 40)"))
           case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
         }
-      case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 51)")) // Shouldn't happen
+      case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 55)"))
     }
   }
 
@@ -207,28 +207,40 @@ final class TrialService
     // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
     rawlsDAO.getProjectMembers(projectId)(saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
       if (members.map(_.email.value) != Seq(googleDAO.getTrialBillingManagerEmail)) {
-        Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. (Error 60 - billing project exists but cannot be used)"))
+        // TODO: for resiliency, try running this operation again with a new project
+        logger.warn(s"Cannot add user ${userInfo.userEmail} to billing project $projectId because it already contains members [${members.map(_.email.value).mkString(", ")}]")
+        Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. Please contact support. (Error 60)"))
       } else {
         // 2. Add the user as Owner to the assigned Billing Project
         rawlsDAO.addUserToBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) flatMap { _ =>
           // 3. Update the user's Thurloe profile to indicate Enrolled status
-          thurloeDao.saveTrialStatus(userInfo.id, userInfo, enrolledStatusFromStatus(status)) map {
-            case Success(_) => RequestComplete(NoContent)
-            case Failure(e) => {
-              // TODO: Remove user from billing project on failure? Is this even likely?
-              RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 70 - ${e.getMessage})")
+          thurloeDao.saveTrialStatus(userInfo.id, userInfo, enrolledStatusFromStatus(status)) flatMap {
+            case Success(_) => Future(RequestComplete(NoContent)) // <- SUCCESS!
+            case Failure(profileUpdateFail) => {
+              // We couldn't update trial status, so clean up
+              rawlsDAO.removeUserFromBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) map { _ =>
+                logger.warn(s"Enrolling user ${userInfo.userEmail} failed at profile update: ${profileUpdateFail.getMessage}. User has been backed out of billing project $projectId.")
+                RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please try again later. (Error 70)")
+              } recover {
+                case bpFail: Throwable => {
+                  logger.warn(s"Enrolling user ${userInfo.userEmail} failed at profile update: ${profileUpdateFail.getMessage}. User is still in billing project $projectId due to cleanup failure: ${bpFail.getMessage}.")
+                  RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please contact support. (Error 80)")
+                }
+              }
             }
           }
         } recover {
-          case e: FireCloudExceptionWithErrorReport =>
-            RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 80 - ${e.errorReport.message})")
-          case t: Throwable => RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 90 - ${t.getMessage})")
+          case t: Throwable => {
+            logger.warn(s"Attempt to add user ${userInfo.userEmail} to project $projectId failed: ${t.getMessage}. User profile has not been modified.")
+            RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please try again later. (Error 90)")
+          }
         }
       }
     } recover {
-      case e: FireCloudExceptionWithErrorReport =>
-        RequestCompleteWithErrorReport(InternalServerError,  s"We could not process your enrollment. (Error 100 - ${e.errorReport.message})")
-      case t: Throwable => RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. (Error 110 - ${t.getMessage})")
+      case t: Throwable => {
+        logger.warn(s"Failed to list members of project $projectId on behalf of user ${userInfo.userEmail}: ${t.getMessage}")
+        RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. Please try again later. (Error 110)")
+      }
     }
   }
 
