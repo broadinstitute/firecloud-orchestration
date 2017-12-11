@@ -20,7 +20,7 @@ case class Application(agoraDAO: AgoraDAO,
                        thurloeDAO: ThurloeDAO,
                        trialDAO: TrialDAO) {
 
-  def healthMonitorChecks: Map[Subsystem, Future[SubsystemStatus]] = Map(
+  def healthMonitorChecks: () => Map[Subsystem, Future[SubsystemStatus]] = () => Map(
     Agora -> agoraDAO.status,
     Consent -> consentDAO.status,
     GoogleBuckets -> googleServicesDAO.status,
