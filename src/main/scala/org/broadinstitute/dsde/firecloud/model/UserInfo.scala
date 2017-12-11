@@ -29,6 +29,9 @@ object UserInfo {
 }
 
 case class AccessToken(accessToken: OAuth2BearerToken) extends WithAccessToken
+object AccessToken{
+  def apply(tokenStr: String) = new AccessToken(OAuth2BearerToken(tokenStr))
+}
 
 // response from Google has other fields, but these are the ones we care about
 case class OAuthUser(sub: String, email: String)

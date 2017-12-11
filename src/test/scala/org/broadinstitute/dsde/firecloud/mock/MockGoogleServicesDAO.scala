@@ -68,8 +68,8 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
                                         |""".stripMargin.parseJson.asJsObject
   final val spreadsheetUpdateJson = """{"spreadsheetId":"randomId","updatedRange":"Sheet1!A1:F45","updatedRows":45,"updatedCells":270,"updatedColumns":6}""".parseJson.asJsObject
 
-  override def getAdminUserAccessToken: String = ""
-  override def getTrialBillingManagerAccessToken: String = ""
+  override def getAdminUserAccessToken: String = "adminUserAccessToken"
+  override def getTrialBillingManagerAccessToken: String = "billingManagerAccessToken"
   override def getTrialBillingManagerEmail: String = "mock-trial-billing-mgr-email"
   override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = {
     objectKey match {

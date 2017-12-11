@@ -229,7 +229,7 @@ final class TrialService
       case Some(name: String) => name
       case None => {
         logger.warn(s"User ${userInfo.userEmail} attempted to enroll in trial but no billing project in profile.")
-        throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 55)")
+        throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 56)")
       }
     }
 
