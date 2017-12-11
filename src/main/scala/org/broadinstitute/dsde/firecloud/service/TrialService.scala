@@ -201,24 +201,24 @@ final class TrialService
   private def enrollUser(userInfo: UserInfo): Future[PerRequestMessage] = {
     // get user's trial status, then check the current state
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap {
-      // can't determine the user's trial status; don't enroll
       case Some(status) =>
-        status.state match {
-          // user already enrolled; don't re-enroll
-          case Some(TrialStates.Enrolled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are already enrolled in a free trial. (Error 20)"))
-          // user enabled (eligible) for trial, enroll!
-          case Some(TrialStates.Enabled) => {
-            if (status.userAgreed) {
-              enrollUserInternal(userInfo, status)
-            } else {
-              Future(RequestCompleteWithErrorReport(Forbidden, "You must agree to the trial terms to enroll. Please try again. (Error 25)"))
-            }
+      status.state match {
+        // user already enrolled; don't re-enroll
+        case Some(TrialStates.Enrolled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are already enrolled in a free trial. (Error 20)"))
+        // user enabled (eligible) for trial, enroll!
+        case Some(TrialStates.Enabled) => {
+          if (status.userAgreed) {
+            enrollUserInternal(userInfo, status)
+          } else {
+            Future(RequestCompleteWithErrorReport(Forbidden, "You must agree to the trial terms to enroll. Please try again. (Error 25)"))
           }
-          // user in some other state; don't enroll
-          case Some(TrialStates.Disabled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 30)"))
-          case Some(TrialStates.Terminated) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 40)"))
-          case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
         }
+        // user in some other state; don't enroll
+        case Some(TrialStates.Disabled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 30)"))
+        case Some(TrialStates.Terminated) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 40)"))
+        case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
+      }
+      // can't determine the user's trial status; don't enroll
       case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 55)"))
     }
   }
