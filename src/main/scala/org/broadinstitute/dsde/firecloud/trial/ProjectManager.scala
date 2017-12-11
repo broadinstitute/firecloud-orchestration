@@ -86,7 +86,7 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleD
       uniqueProjectName map { projectName =>
         logger.debug(s"creating name <$projectName> via rawls ...")
         // create project via rawls, after sudoing to the trial billing manager
-        val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
+        val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken()))
         rawlsDAO.createProject(projectName, billingAcct)(saToken) map { createSuccess =>
           if (createSuccess) {
             logger.debug(s"rawls acknowledged create request for <$projectName>.")
@@ -109,7 +109,7 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleD
     } else {
       logger.debug(s"verifying project <$projectName> ...")
       val rawlsName = RawlsBillingProjectName(projectName)
-      val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
+      val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken()))
       // as the trial billing manager, get the list of all projects I own (no API to get a single project)
       rawlsDAO.getProjects(saToken) map { projects =>
         projects.find(p => p.projectName == rawlsName) match {

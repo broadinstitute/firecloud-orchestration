@@ -107,18 +107,21 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     googleCredential.getAccessToken
   }
 
-  def getTrialBillingManagerCredential: Credential = {
-    new GoogleCredential.Builder()
+  def getTrialBillingManagerCredential(impersonateUser: Option[String] = None): Credential = {
+    val builder = new GoogleCredential.Builder()
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
       .setServiceAccountId(trialBillingPemFileClientId)
       .setServiceAccountScopes(authScopes ++ billingScope)
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(trialBillingPemFile))
-      .build()
+
+    impersonateUser map { user => builder.setServiceAccountUser(user) }
+
+    builder.build()
   }
 
-  def getTrialBillingManagerAccessToken = {
-    val googleCredential = getTrialBillingManagerCredential
+  def getTrialBillingManagerAccessToken(impersonateUser: Option[String] = None) = {
+    val googleCredential = getTrialBillingManagerCredential(impersonateUser)
     googleCredential.refreshToken()
     googleCredential.getAccessToken
   }
@@ -344,9 +347,9 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     response.toString.parseJson.asJsObject
   }
 
-  override def trialBillingManagerRemoveBillingAccount(project: String): Future[Boolean] = {
+  override def trialBillingManagerRemoveBillingAccount(project: String, targetUserEmail: String): Future[Boolean] = {
     val projectName = s"projects/$project" // format needed by Google
-    val billingService = getCloudBillingManager(getTrialBillingManagerCredential)
+    val billingService = getCloudBillingManager(getTrialBillingManagerCredential(Some(targetUserEmail)))
     // get the current billing info to make sure we are removing the right thing
     // TODO: user making the call (SA) must have permission to view the project (see https://developers.google.com/apis-explorer/#p/cloudbilling/v1/)
     // if the user removed the SA from the project, this next call can fail!
@@ -363,13 +366,14 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           // indicates we want to remove the billing account association.
           val noBillingInfo = new ProjectBillingInfo().setBillingAccountName(null)
           // generate the request to send to Google
-          val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential)
+          val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential())
             .projects().updateBillingInfo(projectName, noBillingInfo)
           // send the request, catch exceptions
           Try(executeGoogleRequest[ProjectBillingInfo](noBillingRequest)) match {
             case Success(billingInfo) => Future.successful(billingInfo.getBillingEnabled)
             case Failure(f) => Future.failed(f)
           }
+
         }
     }
   }

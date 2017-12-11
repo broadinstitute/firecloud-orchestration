@@ -22,7 +22,7 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   implicit val errorReportSource = ErrorReportSource(GoogleServicesDAO.serviceName)
 
   def getAdminUserAccessToken: String
-  def getTrialBillingManagerAccessToken: String
+  def getTrialBillingManagerAccessToken(impersonateUser: Option[String] = None): String
   def getTrialBillingManagerEmail: String
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
@@ -36,7 +36,7 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties): JsObject
   def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject
 
-  def trialBillingManagerRemoveBillingAccount(projectName: String): Future[Boolean]
+  def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Future[Boolean]
 
   def status: Future[SubsystemStatus]
   override def serviceName: String = GoogleServicesDAO.serviceName

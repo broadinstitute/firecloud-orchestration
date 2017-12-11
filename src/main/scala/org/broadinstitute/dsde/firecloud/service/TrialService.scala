@@ -204,9 +204,23 @@ final class TrialService
     }
   }
 
-  private def handleTermination(trialStatus: UserTrialStatus, managerInfo: WithAccessToken): Future[Boolean] = {
+  private def handleTermination(trialStatus: UserTrialStatus, managerInfo: WithAccessToken, targetUser: WorkbenchUserInfo): Future[Boolean] = {
     // TODO: Make this status.billingProjectName when GAWB-2911 lands
     val projectId = "fccredits-hafnium-peach-3794"
+
+    // get the user's current project membership
+    val impersonateUserToken = googleDAO.getTrialBillingManagerAccessToken(Some(targetUser.userEmail))
+    rawlsDAO.getProjects(implicitly(AccessToken(OAuth2BearerToken(impersonateUserToken)))) flatMap { projects =>
+      if (projects.exists(p => p.projectName.value == projectId)) {
+        Future.failed(new FireCloudException(s"User ${targetUser.userEmail} is not a member of project $projectId."))
+      } else {
+        // disassociate billing
+        googleDAO.trialBillingManagerRemoveBillingAccount(projectId, targetUser.userEmail) map { removed =>
+          !removed // google call returns "false" to indicate project has no billing
+        }
+      }
+    }
+
 
     /* TODO: do we need to double-check project membership here?
      * This is the last step before we remove the billing account from the project, cutting off compute
@@ -233,10 +247,7 @@ final class TrialService
      */
 
 
-    // disassociate billing
-    googleDAO.trialBillingManagerRemoveBillingAccount(projectId) map { removed =>
-      !removed // google call returns "false" to indicate project has no billing
-    }
+
     // let exceptions bubble up
   }
 
@@ -275,7 +286,7 @@ final class TrialService
       }
     }
 
-    val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
+    val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken()))
 
     // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
     rawlsDAO.getProjectMembers(projectId)(saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
@@ -340,7 +351,7 @@ final class TrialService
 
   private def verifyProjects: Future[PerRequestMessage] = {
 
-    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
+    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken()))
     rawlsDAO.getProjects(saToken) map { projects =>
 
       val projectStatuses:Map[RawlsBillingProjectName, CreationStatus] = projects.map { proj =>

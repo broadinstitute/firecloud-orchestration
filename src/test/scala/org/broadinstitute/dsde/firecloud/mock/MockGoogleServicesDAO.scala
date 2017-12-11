@@ -70,7 +70,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   final val spreadsheetUpdateJson = """{"spreadsheetId":"randomId","updatedRange":"Sheet1!A1:F45","updatedRows":45,"updatedCells":270,"updatedColumns":6}""".parseJson.asJsObject
 
   override def getAdminUserAccessToken: String = "adminUserAccessToken"
-  override def getTrialBillingManagerAccessToken: String = "billingManagerAccessToken"
+  override def getTrialBillingManagerAccessToken(impersonateUser: Option[String] = None): String = "billingManagerAccessToken"
   override def getTrialBillingManagerEmail: String = "mock-trial-billing-mgr-email"
   override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = {
     objectKey match {
@@ -95,7 +95,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject = spreadsheetUpdateJson
 
 
-  override def trialBillingManagerRemoveBillingAccount(projectName: String): Future[Boolean] =
+  override def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Future[Boolean] =
     Future.failed(new FireCloudException("intentional MockGoogleServicesDAO failure"))
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
