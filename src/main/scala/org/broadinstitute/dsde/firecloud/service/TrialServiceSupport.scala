@@ -11,6 +11,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, TrialProject, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WorkbenchUserInfo}
 
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 trait TrialServiceSupport extends LazyLogging {
@@ -29,7 +30,6 @@ trait TrialServiceSupport extends LazyLogging {
 
   def makeSpreadsheetValues(managerInfo: UserInfo, trialDAO: TrialDAO, thurloeDAO: ThurloeDAO, majorDimension: String, range: String)
     (implicit executionContext: ExecutionContext): Future[ValueRange] = {
-    import scala.collection.JavaConverters._
     val projects: Seq[TrialProject] = trialDAO.projectReport
     val trialStatuses = Future.sequence(projects.map { p =>
       if (p.user.isDefined)
