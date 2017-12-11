@@ -2,9 +2,12 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import java.time.temporal.ChronoUnit
 
+import com.google.api.client.googleapis.json.{GoogleJsonError, GoogleJsonResponseException}
+import com.google.api.client.http.{HttpHeaders, HttpResponseException}
+import com.google.api.services.sheets.v4.model.ValueRange
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO, MockRawlsDAO}
-import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.mock.{MockGoogleServicesDAO, MockUtils}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Enrolled}
@@ -21,9 +24,10 @@ import spray.http.HttpMethods.{POST, PUT}
 import spray.http.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+import spray.routing.RequestContext
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with TrialApiService {
   import TrialApiServiceSpec._
@@ -36,6 +40,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   val localSamDao = new TrialApiServiceSpecSamDAO
   val localTrialDao = new TrialApiServiceSpecTrialDAO
   val localRawlsDao = new TrialApiServiceSpecRawlsDAO
+  val localGoogleDao = new TrialApiServiceSpecGoogleDAO
 
   val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
   val trialServiceConstructor:() => TrialService =
@@ -44,7 +49,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         thurloeDAO = localThurloeDao,
         samDAO = localSamDao,
         trialDAO = localTrialDao,
-        rawlsDAO = localRawlsDao),
+        rawlsDAO = localRawlsDao,
+        googleServicesDAO = localGoogleDao),
       trialProjectManager)
 
   var localThurloeServer: ClientAndServer = _
@@ -333,6 +339,70 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
   }
 
+  "Campaign manager report endpoints" - {
+
+    "Create Report endpoint" - {
+
+      allHttpMethodsExcept(POST) foreach { method =>
+        s"should reject ${method.toString} method" in {
+          new RequestBuilder(method)("/trial/manager/report") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+            assert(!handled)
+          }
+        }
+      }
+
+      "should succeed with a create request" in {
+        Post("/trial/manager/report") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+          assert(status.isSuccess)
+          assertResult(OK) {status}
+        }
+      }
+
+      "non-campaign manager should fail creating request" in {
+        Post("/trial/manager/report") ~> dummyUserIdHeaders(unauthorizedUser) ~> trialApiServiceRoutes ~> check {
+          assert(status.isFailure)
+          assertResult(Forbidden) {status}
+        }
+      }
+
+    }
+
+    "Update Report endpoint" - {
+
+      allHttpMethodsExcept(PUT) foreach { method =>
+        s"should reject ${method.toString} method" in {
+          new RequestBuilder(method)("/trial/manager/report/valid") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+            assert(!handled)
+          }
+        }
+      }
+
+      "should succeed with an update request" in {
+        Put("/trial/manager/report/valid") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+          assert(status.isSuccess)
+          assertResult(OK) {status}
+        }
+      }
+
+      "invalid spreadsheet id should fail an update request" in {
+        Put("/trial/manager/report/invalid") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+          println(response)
+          assert(status.isFailure)
+          assertResult(NotFound) {status}
+        }
+      }
+
+      "non-campaign manager should fail an update request" in {
+        Put("/trial/manager/report/valid") ~> dummyUserIdHeaders(unauthorizedUser) ~> trialApiServiceRoutes ~> check {
+          assert(status.isFailure)
+          assertResult(Forbidden) {status}
+        }
+      }
+
+    }
+
+  }
+
   class TrialApiServiceSpecTrialDAO extends ProjectManagerSpecTrialDAO {
     override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject = {
       TrialProject(RawlsBillingProjectName(userInfo.userEmail), true, Some(userInfo), Some(CreationStatuses.Ready))
@@ -414,10 +484,27 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
       userInfo.id match {
         case "failme" => Future.failed(new Exception("intentional exception for unit tests"))
+        case TrialApiServiceSpec.unauthorizedUser => Future.successful(false)
         case _ => Future.successful(groupMap.getOrElse(groupName, Seq.empty[String]).contains(userInfo.id))
       }
     }
   }
+
+  final class TrialApiServiceSpecGoogleDAO extends MockGoogleServicesDAO {
+
+    override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject = {
+      spreadsheetId match {
+        case "invalid" =>
+          // A lot of java overhead to generate the right exception...
+          val headers: HttpHeaders = new HttpHeaders().setAuthorization("Bearer mF_9.B5f-4.1JqM").setContentType("application/json")
+          val builder: HttpResponseException.Builder = new HttpResponseException.Builder(404, "NOT_FOUND", headers)
+          val details: GoogleJsonError = new GoogleJsonError().set("code", 404).set("domain", "global").set("message", "Requested entity was not found.").set("reason", "notFound")
+          throw new GoogleJsonResponseException(builder, details)
+        case _ => spreadsheetUpdateJson
+      }
+    }
+  }
+
 }
 
 object TrialApiServiceSpec {

@@ -1,4 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
+
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impTrialProject
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
@@ -41,6 +42,11 @@ trait TrialQueries {
     .must(termQuery("verified", true))
     .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
     .must(existsQuery("user.userSubjectId.keyword"))
+
+  val Ready:QueryBuilder = boolQuery()
+    .must(termQuery("verified", true))
+    .must(termQuery("status.keyword", CreationStatuses.Ready.toString))
+
 }
 
 /**
@@ -249,13 +255,13 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   /**
-    * Returns a list of project records that have associated users.
-    * @return list of project records that have associated users.
+    * Returns a list of all project records.
+    * @return list of all project records.
     */
   override def projectReport: Seq[TrialProject] = {
     val reportProjectRequest = client
       .prepareSearch(indexName)
-      .setQuery(Claimed)
+      .setQuery(Ready)
       .addSort("name.keyword", SortOrder.ASC)
       .setSize(1000)
 

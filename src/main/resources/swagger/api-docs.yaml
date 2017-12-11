@@ -31,6 +31,9 @@ securityDefinitions:
       openid: open id authorization
       email: email authorization
       profile: profile authorization
+      https://www.googleapis.com/auth/drive: Google Drive Access
+      https://www.googleapis.com/auth/drive.file: Google Drive Files
+      https://www.googleapis.com/auth/spreadsheets: Google Spreadsheets Access
       https://www.googleapis.com/auth/devstorage.full_control: GCS storage
       https://www.googleapis.com/auth/cloud-billing: GCS billing
 
@@ -1711,6 +1714,67 @@ paths:
           description: You must be a campaign manager to call this endpoint.
         500:
           description: Internal Server Error
+
+  /api/trial/manager/report:
+    post:
+      tags:
+        - Trial
+      operationId: createReportTrialProjects
+      summary: Create a Spreadsheet Report of free trial projects
+      responses:
+        200:
+          description: OK; report data spreadsheet is created
+          schema:
+            $ref: '#/definitions/SpreadsheetResponse'
+        403:
+          description: You must be a campaign manager to call this endpoint.
+        500:
+          description: Internal Server Error
+      security:
+        - googleoauth:
+          - openid
+          - email
+          - profile
+          - https://www.googleapis.com/auth/drive
+          - https://www.googleapis.com/auth/drive.file
+          - https://www.googleapis.com/auth/spreadsheets
+          - https://www.googleapis.com/auth/devstorage.full_control
+
+  /api/trial/manager/report/{spreadsheetId}:
+    put:
+      tags:
+        - Trial
+      operationId: updateReportTrialProjects
+      summary: Update a Spreadsheet Report of free trial projects
+      parameters:
+        - name: spreadsheetId
+          description: |
+            The spreadsheet id to update. The spreadsheet id can be found in the url of the link.
+            For example, in the link "https://docs.google.com/spreadsheets/d/long-random-string/edit",
+            the string "long-random-string" is the "spreadsheetId" value.
+          required: true
+          in: path
+          type: string
+      responses:
+        200:
+          description: OK; report data spreadsheet is updated
+          schema:
+            $ref: '#/definitions/SpreadsheetResponse'
+        403:
+          description: You must be a campaign manager to call this endpoint.
+        404:
+          description: The spreadsheet id provided was not found.
+        500:
+          description: Internal Server Error
+      security:
+        - googleoauth:
+          - openid
+          - email
+          - profile
+          - https://www.googleapis.com/auth/drive
+          - https://www.googleapis.com/auth/drive.file
+          - https://www.googleapis.com/auth/spreadsheets
+          - https://www.googleapis.com/auth/devstorage.full_control
 
   /version/executionEngine:
     get:
@@ -5068,6 +5132,14 @@ definitions:
       sortDirection:
         type: string
         description: asc or desc; defaults to asc if not specified
+
+  SpreadsheetResponse:
+    description: ''
+    type: object
+    properties:
+      spreadsheetUrl:
+        type: string
+        description: The url of the created/updated spreadsheet
 
   StackTraceElement:
     description: ''

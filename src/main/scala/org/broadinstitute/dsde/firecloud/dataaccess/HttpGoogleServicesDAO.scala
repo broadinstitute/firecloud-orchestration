@@ -1,18 +1,20 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import akka.actor.{ActorRefFactory, ActorSystem}
+import akka.actor.ActorRefFactory
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.services.sheets.v4.Sheets
+import com.google.api.services.sheets.v4.model.{Spreadsheet, SpreadsheetProperties, ValueRange}
 import com.google.api.services.storage.{Storage, StorageScopes}
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
-import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata}
+import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.slf4j.LoggerFactory
 import spray.client.pipelining._
@@ -25,9 +27,9 @@ import spray.json._
 import spray.routing.RequestContext
 
 import scala.collection.JavaConversions._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -63,7 +65,7 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
-object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding {
+object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging {
 
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
@@ -293,6 +295,40 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
     val pipeline: HttpRequest => Future[GooglePriceList] = sendReceive ~> decode(Gzip) ~> unmarshal[GooglePriceList]
     pipeline(Get(FireCloudConfig.GoogleCloud.priceListUrl))
+  }
+
+  /**
+    * Saves a google drive spreadsheet with the provided SpreadsheetProperties object.
+    * Note that this does not *populate* the spreadsheet, just creates it with the provided properties
+    * Call GoogleServicesDAO#updateSpreadsheet to add data once a spreadsheet is created.
+    *
+    * @param requestContext RequestContext
+    * @param userInfo       UserInfo
+    * @param props          SpreadsheetProperties
+    * @return               JsObject representing the Google Create response
+    */
+  def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties): JsObject = {
+    val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
+    val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
+    val spreadsheet = new Spreadsheet().setProperties(props)
+    val response = service.spreadsheets().create(spreadsheet).execute()
+    response.toString.parseJson.asJsObject
+  }
+
+  /**
+    * Updates an existing google drive spreadsheet with the provided data.
+    *
+    * @param requestContext RequestContext
+    * @param userInfo       UserInfo
+    * @param spreadsheetId  Spreadsheet ID
+    * @param content        ValueRange
+    * @return               JsObject representing the Google Update response
+    */
+  def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject = {
+    val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
+    val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
+    val response = service.spreadsheets().values().update(spreadsheetId, content.getRange, content).setValueInputOption("RAW").execute()
+    response.toString.parseJson.asJsObject
   }
 
   def status: Future[SubsystemStatus] = {
