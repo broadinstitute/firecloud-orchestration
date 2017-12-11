@@ -218,7 +218,10 @@ final class TrialService
 
     val projectId = status.billingProjectName match {
       case Some(name: String) => name
-      case None => throw new FireCloudException("We could not process your enrollment. (Error 55 - no billing project in profile)")
+      case None => {
+        logger.warn(s"User ${userInfo.userEmail} attempted to enroll in trial but no billing project in profile.")
+        throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 55)")
+      }
     }
 
     val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
