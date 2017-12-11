@@ -20,7 +20,7 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService {
   def actorRefFactory = system
 
   val healthMonitorChecks = app.healthMonitorChecks
-  val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks.keySet)( () => healthMonitorChecks ), "health-monitor")
+  val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
   val monitorSchedule = system.scheduler.schedule(Duration.Zero, 1.second, healthMonitor, HealthMonitor.CheckAll)
 
   override def beforeAll = {

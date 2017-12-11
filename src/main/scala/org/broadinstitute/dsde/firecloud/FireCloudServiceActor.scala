@@ -36,7 +36,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with Ga4ghApiService
   with UserApiService
   with TrialApiService
-  {
+{
 
   implicit val system = context.system
 
@@ -60,7 +60,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val materializer: ActorMaterializer = ActorMaterializer()
 
   val healthMonitorChecks = app.healthMonitorChecks
-  val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks.keySet)( () => healthMonitorChecks ), "health-monitor")
+  val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
   system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
 
   val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
