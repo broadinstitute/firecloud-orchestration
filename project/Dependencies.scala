@@ -3,14 +3,14 @@ import sbt._
 object Dependencies {
   val akkaV = "2.4.19"
   val sprayV = "1.3.4"
-  val jacksonV = "2.8.8"
+  val jacksonV = "2.8.10"
      // note that jackson-databind overrides this below! 2.8.8.1 is not released for core or annotations.
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of Jackson libs, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     "com.fasterxml.jackson.core"     % "jackson-annotations" % jacksonV,
-    "com.fasterxml.jackson.core"     % "jackson-databind"    % "2.8.8.1",
+    "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonV,
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
 
     "org.apache.logging.log4j"       % "log4j-api"           % "2.8.2", // elasticsearch requires log4j ...
