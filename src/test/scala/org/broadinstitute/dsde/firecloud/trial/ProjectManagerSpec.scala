@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.{Trial, WithAccessToken, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership, TrialProject}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager._
+import org.broadinstitute.dsde.firecloud.trial.ProjectManagerSpec.ProjectManagerSpecTrialDAO
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 
 import scala.concurrent.Future
@@ -17,6 +18,7 @@ import scala.concurrent.duration._
 
 class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with FreeSpecLike with BeforeAndAfterAll {
 
+  import ProjectManagerSpec._
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)
@@ -38,7 +40,7 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
       - trialDAO.setProjectRecordVerified
    */
 
-  "ProjectManager actor, when creating projects" -{
+  "ProjectManager actor, when creating projects" - {
     "should insert a record" in {
       val (pm, rawlsDAO, trialDAO, googleDAO) = initTestState()
       pm ! StartCreation(1)
@@ -146,7 +148,7 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
                             mockGoogleDAO: ProjectManagerSpecMockGoogleServicesDAO = new ProjectManagerSpecMockGoogleServicesDAO,
                             createDelay: FiniteDuration = Duration.Zero,
                             verifyDelay: FiniteDuration = Duration.Zero):
-    (ActorRef, ProjectManagerSpecRawlsDAO, ProjectManagerSpecTrialDAO, ProjectManagerSpecMockGoogleServicesDAO) = {
+  (ActorRef, ProjectManagerSpecRawlsDAO, ProjectManagerSpecTrialDAO, ProjectManagerSpecMockGoogleServicesDAO) = {
 
     initVars
 
@@ -158,6 +160,10 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
     (pm, mockRawlsDAO, mockTrialDAO, mockGoogleDAO)
   }
 
+}
+
+
+object ProjectManagerSpec {
 
   // ****************************************************
   // mutable shared state variables used by the mock DAOs
@@ -174,43 +180,6 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
     rawlsCreatedProjects = Seq.empty[String]
   }
 
-  /**
-    * Trial DAO with test instrumentation
-    */
-  class ProjectManagerSpecTrialDAO extends MockTrialDAO {
-
-    def insertCount = insertedProjects.size
-    def verifiedCount = verifiedProjects.size
-
-    override def insertProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
-      if (insertedProjects.exists(p => p.name == projectName)) {
-        throw new FireCloudException("ProjectManagerSpecTrialDAO says not unique")
-      } else {
-        val insertedProject = TrialProject(projectName)
-        insertedProjects = insertedProjects :+ insertedProject
-        insertedProject
-      }
-    }
-
-    override def getProjectRecord(projectName: RawlsBillingProjectName): TrialProject = insertedProjects.reverse.head
-
-    override def projectRecordExists(projectName: RawlsBillingProjectName): Boolean = true
-
-    override def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean, status: CreationStatuses.CreationStatus): TrialProject = {
-      val verifiedProject = TrialProject(projectName, verified, None, Some(status))
-      verifiedProjects = verifiedProjects :+ verifiedProject
-      verifiedProject
-    }
-
-    override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject =
-      TrialProject(RawlsBillingProjectName("unittest"))
-
-    override def listUnverifiedProjects: Seq[TrialProject] = Seq.empty[TrialProject]
-
-    override def countProjects: Map[String, Long] = Map.empty[String,Long]
-
-    override def projectReport: Seq[TrialProject] = Seq.empty[TrialProject]
-  }
 
   /**
     * Rawls dao with test instrumentation
@@ -271,9 +240,50 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
 
   class ProjectManagerSpecMockGoogleServicesDAO extends MockGoogleServicesDAO
 
+
+  class ProjectManagerSpecTrialDAO extends MockTrialDAO {
+
+    def insertCount = insertedProjects.size
+
+    def verifiedCount = verifiedProjects.size
+
+    override def insertProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
+      if (insertedProjects.exists(p => p.name == projectName)) {
+        throw new FireCloudException("ProjectManagerSpecTrialDAO says not unique")
+      } else {
+        val insertedProject = TrialProject(projectName)
+        insertedProjects = insertedProjects :+ insertedProject
+        insertedProject
+      }
+    }
+
+    /**
+      * Trial DAO with test instrumentation
+      */
+    override def getProjectRecord(projectName: RawlsBillingProjectName): TrialProject = insertedProjects.reverse.head
+
+    override def projectRecordExists(projectName: RawlsBillingProjectName): Boolean = true
+
+    override def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean, status: CreationStatuses.CreationStatus): TrialProject = {
+      val verifiedProject = TrialProject(projectName, verified, None, Some(status))
+      verifiedProjects = verifiedProjects :+ verifiedProject
+      verifiedProject
+    }
+
+    override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject =
+      TrialProject(RawlsBillingProjectName("unittest"))
+
+    override def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject =
+      TrialProject(projectName)
+
+    override def listUnverifiedProjects: Seq[TrialProject] = Seq.empty[TrialProject]
+
+    override def countProjects: Map[String, Long] = Map.empty[String, Long]
+
+    override def projectReport: Seq[TrialProject] = Seq.empty[TrialProject]
+  }
+
+
 }
-
-
-
 
 

@@ -20,13 +20,14 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
   private implicit val executionContext = actorRefFactory.dispatcher
   val trialServiceConstructor: () => TrialService
 
-  // TODO: See if it makes sense to use DELETE for terminate, and perhaps PUT for disable
   val trialApiServiceRoutes: Route = {
     pathPrefix("trial" / "manager") {
+      // TODO: See if it makes sense to use DELETE for terminate, and perhaps PUT for disable
       post {
         path("enable|disable|terminate".r) { (operation: String) =>
           requireUserInfo() { managerInfo => // We will need the manager's credentials for authentication downstream
-            entity(as[Seq[String]]) { userEmails => requestContext =>
+            entity(as[Seq[String]]) { userEmails =>
+              requestContext =>
                 perRequest(requestContext,
                   TrialService.props(trialServiceConstructor),
                   updateUsers(managerInfo, TrialOperations.withName(operation), userEmails))
@@ -63,5 +64,4 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
     case Disable => TrialService.DisableUsers(managerInfo, userEmails)
     case Terminate => TrialService.TerminateUsers(managerInfo, userEmails)
   }
-
 }

@@ -5,7 +5,7 @@ import java.time.Instant
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.TrialState
-import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsEnumeration}
+import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsEnumeration, RawlsUserEmail}
 
 import scala.util.Try
 
@@ -81,21 +81,24 @@ object Trial {
   case class UserTrialStatus(
       userId: String,
       state: Option[TrialState],
+      userAgreed: Boolean,
       enabledDate: Instant = Instant.ofEpochMilli(0), // timestamp a campaign manager granted the user trial permissions
       enrolledDate: Instant = Instant.ofEpochMilli(0), // timestamp user started their trial
       terminatedDate: Instant = Instant.ofEpochMilli(0), // timestamp user was actually terminated
-      expirationDate: Instant = Instant.ofEpochMilli(0) // timestamp user is due to face termination
+      expirationDate: Instant = Instant.ofEpochMilli(0), // timestamp user is due to face termination
+      billingProjectName: Option[String] = None
     )
 
   object UserTrialStatus {
     // convenience apply method that accepts epoch millisecond times instead of java.time.Instants
-    def apply(userId: String, state: Option[TrialState],
-              enabledEpoch: Long, enrolledEpoch: Long, terminatedEpoch: Long, expirationEpoch: Long) = {
-      new UserTrialStatus(userId, state,
+    def apply(userId: String, state: Option[TrialState], userAgreed: Boolean,
+              enabledEpoch: Long, enrolledEpoch: Long, terminatedEpoch: Long, expirationEpoch: Long, billingProjectName: Option[String]) = {
+      new UserTrialStatus(userId, state, userAgreed,
         Instant.ofEpochMilli(enabledEpoch),
         Instant.ofEpochMilli(enrolledEpoch),
         Instant.ofEpochMilli(terminatedEpoch),
-        Instant.ofEpochMilli(expirationEpoch)
+        Instant.ofEpochMilli(expirationEpoch),
+        billingProjectName
       )
     }
     // apply method to create a UserTrialStatus from raw Thurloe KVPs
@@ -115,9 +118,12 @@ object Trial {
       val expirationDate = profileDate("trialExpirationDate", mappedKVPs)
 
       val state = mappedKVPs.get("trialState") map TrialStates.withName
+      val billingProjectName = mappedKVPs.get("trialBillingProjectName")
 
-      new UserTrialStatus(profileWrapper.userId, state,
-        enabledDate, enrolledDate, terminatedDate, expirationDate)
+      val userAgreed = Try(mappedKVPs.getOrElse("userAgreed", "false").toBoolean).getOrElse(false)
+
+      new UserTrialStatus(profileWrapper.userId, state, userAgreed,
+        enabledDate, enrolledDate, terminatedDate, expirationDate, billingProjectName)
     }
 
     // translates a UserTrialStatus to Thurloe KVPs
@@ -126,12 +132,17 @@ object Trial {
         case Some(state) => Map("trialState" -> state.toString)
         case None => Map.empty[String,String]
       }
+      val billingProjectKV:Map[String,String] = userTrialStatus.billingProjectName match {
+        case Some(name) => Map("trialBillingProjectName" -> name)
+        case None => Map.empty[String,String]
+      }
       Map(
         "trialEnabledDate" -> userTrialStatus.enabledDate.toEpochMilli.toString,
         "trialEnrolledDate" -> userTrialStatus.enrolledDate.toEpochMilli.toString,
         "trialTerminatedDate" -> userTrialStatus.terminatedDate.toEpochMilli.toString,
-        "trialExpirationDate" -> userTrialStatus.expirationDate.toEpochMilli.toString
-      ) ++ stateKV
+        "trialExpirationDate" -> userTrialStatus.expirationDate.toEpochMilli.toString,
+        "userAgreed" -> userTrialStatus.userAgreed.toString
+      ) ++ stateKV ++ billingProjectKV
     }
 
   }
@@ -146,7 +157,15 @@ object Trial {
 
     case object Success extends Attempt
     case object Failure extends Attempt
+    case object NoChangeRequired extends Attempt
     case class ServerError(msg: String) extends Attempt
+
+    def toName(status: Attempt): String = status match {
+      case Success => "Success"
+      case Failure => "Failure"
+      case NoChangeRequired => "NoChangeRequired"
+      case ServerError(msg) => "ServerError: " + msg
+    }
   }
 
   case class CreateProjectsResponse(success: Boolean, count: Int, message: Option[String])
@@ -155,6 +174,8 @@ object Trial {
   case class CreateRawlsBillingProjectFullRequest(projectName: String, billingAccount: String)
 
   case class RawlsBillingProjectMembership(projectName: RawlsBillingProjectName, role: ProjectRoles.ProjectRole, creationStatus: CreationStatuses.CreationStatus, message: Option[String] = None)
+
+  case class RawlsBillingProjectMember(email: RawlsUserEmail, role: ProjectRoles.ProjectRole)
 
   object CreationStatuses {
     sealed trait CreationStatus extends RawlsEnumeration[CreationStatus] {

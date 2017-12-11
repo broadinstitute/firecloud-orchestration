@@ -130,9 +130,17 @@ class MockThurloeDAO extends ThurloeDAO {
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
 
-  override def getTrialStatus(forUserId: String, callerToken: WithAccessToken) = Future.successful(Some(
-    UserTrialStatus(forUserId, Some(TrialStates.Terminated), 0, 0, 0, 0
-  )))
+  override def getTrialStatus(forUserId: String, callerToken: WithAccessToken) = {
+    Future.successful(
+      forUserId match {
+        case "enabled-user" =>
+          Some(UserTrialStatus(forUserId, Some(TrialStates.Enabled), true, 0, 0, 0, 0, Some("date")))
+        case "disabled-user" => None  // TODO return an empty UserTrialStatus - more accurate with actual thurloe call
+        case _ =>
+          Some(UserTrialStatus(forUserId, Some(TrialStates.Terminated), true, 0, 0, 0, 0, None))
+      }
+    )
+  }
 
   override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus): Future[Try[Unit]] =
     Future.successful(Success(()))

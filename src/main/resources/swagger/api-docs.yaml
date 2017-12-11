@@ -1535,6 +1535,22 @@ paths:
       responses:
         204:
           description: Success (No Content)
+        403:
+          description: Forbidden; user must agree to terms to be enrolled
+        500:
+          description: Internal Server Error
+
+  /api/profile/trial/userAgreement:
+    put:
+      tags:
+        - Profile
+      operationId: recordUserAgreement
+      summary: Set userAgreed flag to true
+      responses:
+        204:
+          description: NoContent; userAgreed set to true
+        403:
+          description: Forbidden; user is not eligible for free trial
         500:
           description: Internal Server Error
 
@@ -1645,10 +1661,14 @@ paths:
             schema:
               $ref: '#/definitions/StringArray'
         responses:
+          200:
+            description: Success
+            schema:
+              $ref: '#/definitions/TrialOperationResponse'
           204:
             description: Success (No Content)
           403:
-            description: Forbidden - You must be a campaign manager to call this endpoint.
+            description: Forbidden; you must be a campaign manager to call this endpoint.
           500:
             description: Internal Server Error
 
@@ -5376,6 +5396,35 @@ definitions:
       url:
         type: string
         description: 'Optional url to the tool descriptor used to build this image, should include version information, and can include a git hash (e.g. https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/ea2a5db69bd20a42976838790bc29294df3af02b/delly_docker/Delly.cwl )'
+  TrialOperationResponse:
+    description: The result of the operation for each user, grouped by the status
+    properties:
+      Success:
+        type: array
+        items:
+          type: string
+        example:
+         - "user1@email.com"
+         - "user2@email.com"
+      NoChangeRequired:
+        type: array
+        items:
+          type: string
+        example:
+         - "user2@gmail.com"
+      Failure:
+        type: array
+        items:
+          type: string
+        example:
+          - "name@gmail.com"
+      ServerError:
+        type: array
+        items:
+          type: string
+        example:
+         - "user@gmail.com"
+
   Metadata:
     description: Describes this registry to better allow for mirroring and indexing.
     required:
