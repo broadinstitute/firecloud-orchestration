@@ -286,7 +286,7 @@ final class TrialService
       }
     }
 
-    val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken()))
+    val saToken: WithAccessToken = AccessToken(googleDAO.getTrialBillingManagerAccessToken())
 
     // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
     rawlsDAO.getProjectMembers(projectId)(saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
