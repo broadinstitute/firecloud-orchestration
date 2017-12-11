@@ -60,12 +60,14 @@ trait PermissionsSupport {
 
   def asGroupMember(group: String)(op: => Future[PerRequestMessage])(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     tryIsGroupMember(userInfo, group) flatMap { isGroupMember =>
-      if (isGroupMember) op else Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, "You must be in the appropriate group.")))
+      if (isGroupMember) op else Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.Forbidden, "You must be in the appropriate group.")))
     }
   }
 
   def tryIsGroupMember(userInfo: UserInfo, group: String): Future[Boolean] = {
-    rawlsDAO.isGroupMember(userInfo, group) recoverWith { case t => throw new FireCloudException("Unable to query for group membership status.", t) }
+    rawlsDAO.isGroupMember(userInfo, group) recoverWith {
+      case t: Throwable => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to query for group membership status."))
+    }
   }
 }
 
