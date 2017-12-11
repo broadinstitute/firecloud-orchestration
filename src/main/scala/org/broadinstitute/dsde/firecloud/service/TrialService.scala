@@ -13,7 +13,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDA
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impCreateProjectsResponse, impTrialProject, _}
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.Trial.StatusUpdate.Attempt
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Terminated}
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Enrolled, Terminated}
 import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus, _}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, RequestCompleteWithErrorReport, UserInfo, WithAccessToken, WorkbenchUserInfo, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -132,11 +132,30 @@ final class TrialService
   private def buildTerminateUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
     if (currentStatus.isEmpty)
       throw new FireCloudException("Cannot terminate a user without a status")
+    val trialStatus = currentStatus.get
+
+    if (trialStatus.state.contains(Enrolled)) {
+      if (trialStatus.billingProjectName.isEmpty)
+        throw new FireCloudException(s"billing project empty for user ${userInfo.userEmail} at termination.")
+      val projectId = trialStatus.billingProjectName.get
+
+      // disassociate billing for this project. This will throw an error if disassociation fails
+      googleDAO.trialBillingManagerRemoveBillingAccount(projectId, userInfo.userEmail)
+    }
+
     currentStatus.get.copy(state = Some(Terminated), terminatedDate = Instant.now)
   }
 
+  private def terminateUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
+    if (updateStatus != StatusUpdate.Success) {
+      logger.error(
+        s"The user '${newStatus.userId}' had billing disassociated, but failed to be terminated. This" +
+         "user requires manual intervention from a campaign manager.")
+    }
+  }
+
   private def terminateUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
-    executeStateTransitions(managerInfo, userEmails, buildTerminateUserStatus, (_,_,_) => ())
+    executeStateTransitions(managerInfo, userEmails, buildTerminateUserStatus, terminateUserPostProcessing)
   }
 
   private def requiresStateTransition(currentState: Option[UserTrialStatus], newState: UserTrialStatus): Boolean = {
@@ -202,53 +221,6 @@ final class TrialService
       case Success(_) => StatusUpdate.Success
       case Failure(ex) => StatusUpdate.ServerError(ex.getMessage)
     }
-  }
-
-  private def handleTermination(trialStatus: UserTrialStatus, managerInfo: WithAccessToken, targetUser: WorkbenchUserInfo): Future[Boolean] = {
-    // TODO: Make this status.billingProjectName when GAWB-2911 lands
-    val projectId = "fccredits-hafnium-peach-3794"
-
-    // get the user's current project membership
-    val impersonateUserToken = googleDAO.getTrialBillingManagerAccessToken(Some(targetUser.userEmail))
-    rawlsDAO.getProjects(implicitly(AccessToken(OAuth2BearerToken(impersonateUserToken)))) flatMap { projects =>
-      if (projects.exists(p => p.projectName.value == projectId)) {
-        Future.failed(new FireCloudException(s"User ${targetUser.userEmail} is not a member of project $projectId."))
-      } else {
-        // disassociate billing
-        googleDAO.trialBillingManagerRemoveBillingAccount(projectId, targetUser.userEmail) map { removed =>
-          !removed // google call returns "false" to indicate project has no billing
-        }
-      }
-    }
-
-
-    /* TODO: do we need to double-check project membership here?
-     * This is the last step before we remove the billing account from the project, cutting off compute
-     * and starting a Google clock to delete data in storage. We should be sure we are terminating billing
-     * for the right account. If somehow we reached this point and we have the wrong projectid, we would
-     * be cutting off billing for the WRONG free trial user.
-     *
-     * Things to consider:
-     *   - Read https://developers.google.com/apis-explorer/#p/cloudbilling/v1/ to understand required permissions
-     *   - The call to Google will fail if our service account is not an administrator of the billing account.
-     *   - We could/should add an assert/validation check here to be sure the projectid matches our free trial
-     *     pattern regex "fccredits-[a-z]{7}-[a-z]{7}-[0-9]{4}"
-     *   - Because the user is an owner of the project, the user could have removed the billing SA from the project.
-     *     Thus, we can't be sure that we can query for project membership using the SA.
-     *   - We don't have the user token at this point, so we can't query as the user.
-     *   - Rawls admin endpoints for billing/membership are going away (pls talk to Rawls team to understand details),
-     *     so those aren't safe to use
-     *   - We could potentially use the SA with domain-wide-delegation enabled to make the query as the user.
-     *     See https://developers.google.com/admin-sdk/directory/v1/guides/delegation for example. This will require
-     *     some setup in Google console to enable for the SA.
-     *   - Project team are the experts on billing and projects and they may have advice.
-     *
-     *   - Please remove all of this commentary before committing!
-     */
-
-
-
-    // let exceptions bubble up
   }
 
   private def enrollUser(userInfo: UserInfo): Future[PerRequestMessage] = {

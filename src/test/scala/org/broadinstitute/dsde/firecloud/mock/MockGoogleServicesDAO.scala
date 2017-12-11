@@ -95,8 +95,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject = spreadsheetUpdateJson
 
 
-  override def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Future[Boolean] =
-    Future.failed(new FireCloudException("intentional MockGoogleServicesDAO failure"))
+  override def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Boolean = false
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 

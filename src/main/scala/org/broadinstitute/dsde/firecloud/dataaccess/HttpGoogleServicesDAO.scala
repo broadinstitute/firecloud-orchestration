@@ -347,34 +347,30 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     response.toString.parseJson.asJsObject
   }
 
-  override def trialBillingManagerRemoveBillingAccount(project: String, targetUserEmail: String): Future[Boolean] = {
+  override def trialBillingManagerRemoveBillingAccount(project: String, targetUserEmail: String): Boolean = {
     val projectName = s"projects/$project" // format needed by Google
-    val billingService = getCloudBillingManager(getTrialBillingManagerCredential(Some(targetUserEmail)))
-    // get the current billing info to make sure we are removing the right thing
-    // TODO: user making the call (SA) must have permission to view the project (see https://developers.google.com/apis-explorer/#p/cloudbilling/v1/)
-    // if the user removed the SA from the project, this next call can fail!
-    val readRequest = billingService.projects().getBillingInfo(projectName)
-    Try(executeGoogleRequest[ProjectBillingInfo](readRequest)) match {
-      case Failure(f) => Future.failed(f)
-      case Success(currentBillingInfo) =>
-        if (currentBillingInfo.getBillingAccountName != FireCloudConfig.Trial.billingAccount) {
-          // the project is not linked to the free-tier billing account. Don't change anything.
-          log.warn(s"Free trial project $project has third-party billing account ${currentBillingInfo.getBillingAccountName}; not removing it.")
-          Future.successful(true)
-        } else {
-          // create a ProjectBillingInfo with null account name - that's how Google
-          // indicates we want to remove the billing account association.
-          val noBillingInfo = new ProjectBillingInfo().setBillingAccountName(null)
-          // generate the request to send to Google
-          val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential())
-            .projects().updateBillingInfo(projectName, noBillingInfo)
-          // send the request, catch exceptions
-          Try(executeGoogleRequest[ProjectBillingInfo](noBillingRequest)) match {
-            case Success(billingInfo) => Future.successful(billingInfo.getBillingEnabled)
-            case Failure(f) => Future.failed(f)
-          }
 
-        }
+    // as the user, get the current billing info to make sure we are removing the right thing.
+    // this call will fail if the user doesn't have permissions on the project (this is a doublecheck
+    // that the user is a member of the project)
+    val billingService = getCloudBillingManager(getTrialBillingManagerCredential(Some(targetUserEmail)))
+    val readRequest = billingService.projects().getBillingInfo(projectName)
+    val currentBillingInfo = executeGoogleRequest[ProjectBillingInfo](readRequest)
+    if (currentBillingInfo.getBillingAccountName != FireCloudConfig.Trial.billingAccount) {
+      // the project is not linked to the free-tier billing account. Don't change anything.
+      log.warn(s"Free trial project $project has third-party billing account ${currentBillingInfo.getBillingAccountName}; not removing it.")
+      true
+    } else {
+      // At this point, we know that the user is a member of the project and that the project
+      // is on the free-trial billing account. We've done our due diligence - remove the billing.
+      // We do this by creating a ProjectBillingInfo with null account name - that's how Google
+      // indicates we want to remove the billing account association.
+      val noBillingInfo = new ProjectBillingInfo().setBillingAccountName(null)
+      // generate the request to send to Google
+      val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential())
+        .projects().updateBillingInfo(projectName, noBillingInfo)
+      // send the request
+      executeGoogleRequest[ProjectBillingInfo](noBillingRequest).getBillingEnabled
     }
   }
 
