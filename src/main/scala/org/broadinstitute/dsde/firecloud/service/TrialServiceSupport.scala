@@ -26,7 +26,6 @@ trait TrialServiceSupport extends LazyLogging {
     new SpreadsheetProperties().setTitle(s"$title: $dateString")
   }
 
-  // TODO: Look further into the Onix "User Agreement" field
   def makeSpreadsheetValues(managerInfo: UserInfo, trialDAO: TrialDAO, thurloeDAO: ThurloeDAO, majorDimension: String, range: String)
     (implicit executionContext: ExecutionContext): Future[ValueRange] = {
     import scala.collection.JavaConverters._
