@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.util
 import java.util.Date
 
@@ -57,9 +58,22 @@ trait TrialServiceSupport extends LazyLogging {
       }.flatten
       val (enrollmentDate, terminatedDate, userAgreed) = if (userTrialStatus.isDefined) {
         val trialStaus = userTrialStatus.get
-        (enrollmentFormat.format(Date.from(userTrialStatus.get.enrolledDate)),
-          enrollmentFormat.format(Date.from(userTrialStatus.get.terminatedDate)),
-          if (trialStaus.userAgreed) "Accepted" else "Not Accepted")
+        val zeroDate = Date.from(Instant.ofEpochMilli(0))
+        val enrollDate = Date.from(userTrialStatus.get.enrolledDate)
+        val enrollmentDateString = if (enrollDate.after(zeroDate))
+          enrollmentFormat.format(Date.from(userTrialStatus.get.enrolledDate))
+        else
+          ""
+        val termDate = Date.from(userTrialStatus.get.terminatedDate)
+        val termDateString = if (termDate.after(zeroDate))
+          enrollmentFormat.format(termDate)
+        else
+          ""
+        val userAgreed = if (trialStaus.userAgreed)
+          "Accepted"
+        else
+          "Not Accepted"
+        (enrollmentDateString, termDateString, userAgreed)
       } else {
         ("", "", "")
       }
