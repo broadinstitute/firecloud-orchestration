@@ -15,6 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait TrialServiceSupport extends LazyLogging {
 
   private val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+  private val enrollmentFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss ")
 
   def makeSpreadsheetResponse(spreadsheetId: String): SpreadsheetResponse = {
     SpreadsheetResponse(s"https://docs.google.com/spreadsheets/d/$spreadsheetId")
@@ -39,8 +40,8 @@ trait TrialServiceSupport extends LazyLogging {
     trialStatuses.map { userTrialStatuses =>
       val headers = List("Project Name", "User Subject Id", "User Email", "Enrollment Date", "Terminated Date", "User Agreement").map(_.asInstanceOf[AnyRef]).asJava
       val rows: List[util.List[AnyRef]] = projects.map { trialProject =>
-        val (userSubjectId, userEmail, enrollmentDate, terminatedDate) = getTrialUserInformation(trialProject.user, userTrialStatuses)
-        List(trialProject.name.value, userSubjectId, userEmail, enrollmentDate, terminatedDate, "Accepted").map(_.asInstanceOf[AnyRef]).asJava
+        val (userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed) = getTrialUserInformation(trialProject.user, userTrialStatuses)
+        List(trialProject.name.value, userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed).map(_.asInstanceOf[AnyRef]).asJava
       }.toList
       val values: util.List[util.List[AnyRef]] = (headers :: rows).asJava
       new ValueRange().setMajorDimension(majorDimension).setRange(range).setValues(values)
@@ -48,24 +49,24 @@ trait TrialServiceSupport extends LazyLogging {
   }
 
   // convenience method to pull user information from options
-  private def getTrialUserInformation(user: Option[WorkbenchUserInfo], userTrialStatuses: Seq[Option[UserTrialStatus]]): (String, String, String, String) = {
+  private def getTrialUserInformation(user: Option[WorkbenchUserInfo], userTrialStatuses: Seq[Option[UserTrialStatus]]): (String, String, String, String, String) = {
     if (user.isDefined) {
       val userSubjectId = user.get.userSubjectId
       val userEmail = user.get.userEmail
       val userTrialStatus = userTrialStatuses.find { trialStatus =>
         trialStatus.isDefined && trialStatus.get.userId.equals(userSubjectId)
       }.flatten
-      val enrollmentDate = if (userTrialStatus.isDefined)
-        dateFormat.format(Date.from(userTrialStatus.get.enrolledDate))
-      else
-        ""
-      val terminatedDate = if (userTrialStatus.isDefined)
-        dateFormat.format(Date.from(userTrialStatus.get.terminatedDate))
-      else
-        ""
-      (userSubjectId, userEmail, enrollmentDate, terminatedDate)
+      val (enrollmentDate, terminatedDate, userAgreed) = if (userTrialStatus.isDefined) {
+        val trialStaus = userTrialStatus.get
+        (enrollmentFormat.format(Date.from(userTrialStatus.get.enrolledDate)),
+          enrollmentFormat.format(Date.from(userTrialStatus.get.terminatedDate)),
+          if (trialStaus.userAgreed) "Accepted" else "Not Accepted")
+      } else {
+        ("", "", "")
+      }
+      (userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed)
     } else {
-      ("", "", "", "")
+      ("", "", "", "", "")
     }
   }
 
