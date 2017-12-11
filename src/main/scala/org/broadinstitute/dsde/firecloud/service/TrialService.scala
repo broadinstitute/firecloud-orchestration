@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
+import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.services.sheets.v4.model.SpreadsheetProperties
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO, _}
@@ -365,8 +366,12 @@ final class TrialService
         case Success(updatedSheet) =>
           RequestComplete(OK, makeSpreadsheetResponse(spreadsheetId))
         case Failure(e) =>
-          logger.error(s"Unable to update google spreadsheet for user context [${userInfo.userEmail}]: ${e.getMessage}")
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, e.getMessage))
+          e match {
+            case g: GoogleJsonResponseException =>
+              logger.warn(s"Unable to update spreadsheet for user context [${userInfo.userEmail}]: ${g.getDetails.getMessage}")
+              RequestCompleteWithErrorReport(g.getDetails.getCode, g.getDetails.getMessage)
+            case _ => throw e
+          }
       }
     }.recoverWith {
       case e: Throwable =>

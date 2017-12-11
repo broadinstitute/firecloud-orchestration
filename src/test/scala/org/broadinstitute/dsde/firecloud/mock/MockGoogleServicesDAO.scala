@@ -66,7 +66,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
                                         |  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/randomId/edit"
                                         |}
                                         |""".stripMargin.parseJson.asJsObject
-  private final val spreadsheetUpdateJson = """{"spreadsheetId":"randomId","updatedRange":"Sheet1!A1:F45","updatedRows":45,"updatedCells":270,"updatedColumns":6}""".parseJson.asJsObject
+  final val spreadsheetUpdateJson = """{"spreadsheetId":"randomId","updatedRange":"Sheet1!A1:F45","updatedRows":45,"updatedCells":270,"updatedColumns":6}""".parseJson.asJsObject
 
   override def getAdminUserAccessToken: String = ""
   override def getTrialBillingManagerAccessToken: String = ""

@@ -1762,6 +1762,8 @@ paths:
             $ref: '#/definitions/SpreadsheetResponse'
         403:
           description: You must be a campaign manager to call this endpoint.
+        404:
+          description: The spreadsheet id provided was not found.
         500:
           description: Internal Server Error
       security:
