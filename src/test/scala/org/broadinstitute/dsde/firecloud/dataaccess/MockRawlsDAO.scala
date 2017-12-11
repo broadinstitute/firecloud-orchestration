@@ -9,6 +9,8 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUp
 import org.joda.time.DateTime
 import spray.http.StatusCodes
 import MockRawlsDAO._
+import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
+import org.broadinstitute.dsde.firecloud.model.Trial.{ProjectRoles, RawlsBillingProjectMember}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -366,4 +368,11 @@ class MockRawlsDAO  extends RawlsDAO {
   override def createProject(projectName: String, billingAccount: String)(implicit userToken: WithAccessToken): Future[Boolean] = Future(false)
 
   override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Trial.RawlsBillingProjectMembership]] = Future(Seq.empty[Trial.RawlsBillingProjectMembership])
+
+  override def getProjectMembers(projectId: String)(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMember]] =
+    Future(Seq(Trial.RawlsBillingProjectMember(RawlsUserEmail("mock-trial-billing-mgr-email"), ProjectRoles.Owner)))
+
+  override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = Future(true)
+
+  override def removeUserFromBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = Future(true)
 }

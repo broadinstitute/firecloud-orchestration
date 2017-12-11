@@ -86,7 +86,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   // update a project, with a check on its Elasticsearch version
-  def updateProjectInternal(updatedProject: TrialProject, version: Long) = {
+  def updateProjectInternal(updatedProject: TrialProject, version: Long): UpdateResponse = {
     val update = client
       .prepareUpdate(indexName, datatype, updatedProject.name.value)
       .setDoc(updatedProject.toJson.compactPrint, XContentType.JSON)
@@ -94,6 +94,17 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
       .setRefreshPolicy(refreshMode)
 
     executeESRequest[UpdateRequest, UpdateResponse, UpdateRequestBuilder](update) // will throw error if update fails
+  }
+
+  // update a project, with a check on its Elasticsearch version
+  def indexProjectInternal(updatedProject: TrialProject, version: Long): IndexResponse = {
+    val update = client
+      .prepareIndex(indexName, datatype, updatedProject.name.value)
+      .setSource(updatedProject.toJson.compactPrint, XContentType.JSON)
+      .setVersion(version) // guarantee nobody else has updated in the meantime
+      .setRefreshPolicy(refreshMode)
+
+    executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder](update) // will throw error if update fails
   }
 
   /**
@@ -191,6 +202,24 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     val updatedProject = project.copy(user = Some(userInfo))
     updateProjectInternal(updatedProject, version) // will throw error if update fails
     updatedProject
+  }
+
+  /**
+    * Removes the associated user from the project record, making it available again.
+    * Throws an error if the project record could not be updated.
+    *
+    * @param projectName the name of the project to return to the available pool
+    */
+  override def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
+    val (version, project) = getProjectInternal(projectName)
+    project.user match {
+      case Some(_) => {
+        val updatedProject = project.copy(user = None)
+        indexProjectInternal(project.copy(user = None), version)
+        updatedProject
+      }
+      case None => project
+    }
   }
 
   /**

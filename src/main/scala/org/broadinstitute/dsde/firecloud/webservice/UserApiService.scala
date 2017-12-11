@@ -129,12 +129,23 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
           passthrough(UserApiService.billingAccountsUrl, HttpMethods.GET)
         }
       } ~
-      path("profile" / "trial") {
-        post {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, TrialService.props(trialServiceConstructor),
-              TrialService.EnrollUser(userInfo)
-            )
+      pathPrefix("profile" / "trial") {
+        pathEnd {
+          post {
+            requireUserInfo() { userInfo => requestContext =>
+              perRequest(requestContext, TrialService.props(trialServiceConstructor),
+                TrialService.EnrollUser(userInfo)
+              )
+            }
+          }
+        } ~
+        path("userAgreement") {
+          put {
+            requireUserInfo() { userInfo => requestContext =>
+              perRequest(requestContext,
+                TrialService.props(trialServiceConstructor),
+                TrialService.RecordUserAgreement(userInfo))
+            }
           }
         }
       } ~

@@ -73,6 +73,17 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
       }
 
     }
+    "releaseProject" - {
+      "should release a previously claimed project" in {
+        val user = WorkbenchUserInfo("789", "me")
+        // first claim a project
+        val claimed = trialDAO.claimProjectRecord(user)
+        trialDAO.releaseProjectRecord(claimed.name)
+        val expected = TrialProject(claimed.name, verified=true, user=None, status=Some(Ready))
+        val releaseCheck = trialDAO.getProjectRecord(claimed.name)
+        assertResult(expected) { releaseCheck }
+      }
+    }
     "claimProject" - {
       "should claim the first available project by alphabetical order" in {
         val user = WorkbenchUserInfo("789", "me")

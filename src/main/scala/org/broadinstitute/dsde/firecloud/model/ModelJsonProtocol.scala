@@ -282,6 +282,9 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
       case _ => throw new DeserializationException("could not deserialize project role")
     }
   }
+
+  implicit val impRawlsBillingProjectMember = jsonFormat2(RawlsBillingProjectMember)
+
   // END copy/paste from rawls
 
   implicit val impRawlsBillingProjectMembership = jsonFormat4(RawlsBillingProjectMembership)
