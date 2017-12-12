@@ -46,7 +46,7 @@ class StartupChecks(app: Application, registerSAs: Boolean = true)
 
   private def isTrialBillingSARegistered:Future[Boolean] =
     isServiceAccountRegistered("Free trial billing SA",
-      AccessToken(app.googleServicesDAO.getTrialBillingManagerAccessToken()))
+      AccessToken(app.googleServicesDAO.getTrialBillingManagerAccessToken))
 
 
   private def isServiceAccountRegistered(name: String, token: AccessToken): Future[Boolean] = {

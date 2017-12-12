@@ -33,11 +33,6 @@ import scala.util.Success
 final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with TrialApiService {
   import TrialApiServiceSpec._
 
-  // brute-force logging off for the TrialService class while running this test
-  org.slf4j.LoggerFactory.getLogger("org.broadinstitute.dsde.firecloud.service.TrialService")
-    .asInstanceOf[ch.qos.logback.classic.Logger]
-    .setLevel(ch.qos.logback.classic.Level.OFF)
-
   // The user enrollment endpoint tested in this class lives in UserApiService,
   // but it is tested here since it is used for the trial feature.
 

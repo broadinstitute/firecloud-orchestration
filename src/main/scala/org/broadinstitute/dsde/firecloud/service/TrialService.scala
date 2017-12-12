@@ -258,7 +258,7 @@ final class TrialService
       }
     }
 
-    val saToken: WithAccessToken = AccessToken(googleDAO.getTrialBillingManagerAccessToken())
+    val saToken: WithAccessToken = AccessToken(googleDAO.getTrialBillingManagerAccessToken)
 
     // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
     rawlsDAO.getProjectMembers(projectId)(saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
@@ -323,7 +323,7 @@ final class TrialService
 
   private def verifyProjects: Future[PerRequestMessage] = {
 
-    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken()))
+    val saToken:WithAccessToken = AccessToken(googleDAO.getTrialBillingManagerAccessToken)
     rawlsDAO.getProjects(saToken) map { projects =>
 
       val projectStatuses:Map[RawlsBillingProjectName, CreationStatus] = projects.map { proj =>

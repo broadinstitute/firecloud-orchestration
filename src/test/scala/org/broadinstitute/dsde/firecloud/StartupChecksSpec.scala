@@ -20,7 +20,7 @@ class StartupChecksSpec extends BaseServiceSpec {
   "Startup checks" - {
     val tokens = Map(
       "admin SA" -> app.googleServicesDAO.getAdminUserAccessToken,
-      "billing SA" -> app.googleServicesDAO.getTrialBillingManagerAccessToken()
+      "billing SA" -> app.googleServicesDAO.getTrialBillingManagerAccessToken
     )
 
     "When automatic registration of SAs is disabled" - {

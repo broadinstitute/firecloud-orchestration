@@ -106,7 +106,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     googleCredential.getAccessToken
   }
 
-  def getTrialBillingManagerCredential(impersonateUser: Option[String] = None): Credential = {
+  def getTrialBillingManagerCredential: Credential = {
     val builder = new GoogleCredential.Builder()
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
@@ -114,13 +114,11 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .setServiceAccountScopes(authScopes ++ billingScope)
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(trialBillingPemFile))
 
-    impersonateUser map { user => builder.setServiceAccountUser(user) }
-
     builder.build()
   }
 
-  def getTrialBillingManagerAccessToken(impersonateUser: Option[String] = None) = {
-    val googleCredential = getTrialBillingManagerCredential(impersonateUser)
+  def getTrialBillingManagerAccessToken = {
+    val googleCredential = getTrialBillingManagerCredential
     googleCredential.refreshToken()
     googleCredential.getAccessToken
   }
@@ -351,7 +349,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     // as the service account, get the current billing info to make sure we are removing the right thing.
     // this call will fail if the free-tier billing account has already been removed from the project.
-    val billingService = getCloudBillingManager(getTrialBillingManagerCredential())
+    val billingService = getCloudBillingManager(getTrialBillingManagerCredential)
 
     val readRequest = billingService.projects().getBillingInfo(projectName)
     Try(executeGoogleRequest[ProjectBillingInfo](readRequest)) match {
@@ -372,7 +370,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           // indicates we want to remove the billing account association.
           val noBillingInfo = new ProjectBillingInfo().setBillingAccountName("")
           // generate the request to send to Google
-          val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential())
+          val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential)
             .projects().updateBillingInfo(projectName, noBillingInfo)
           // send the request
           val updatedProject = executeGoogleRequest[ProjectBillingInfo](noBillingRequest)
