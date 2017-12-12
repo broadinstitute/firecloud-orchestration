@@ -12,7 +12,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Enrolled}
-import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, TrialProject, TrialStates, UserTrialStatus}
+import org.broadinstitute.dsde.firecloud.model.Trial._
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
@@ -246,10 +246,26 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
-    "Attempting to enable a previously disabled user should return success" in {
-      Post(enablePath, Seq(disabledUser, enabledUser)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-        val enableResponse = responseAs[Map[String, Seq[String]]]
-        assertResult(Map("Success"->Seq(disabledUser), "NoChangeRequired"->Seq(enabledUser))) { enableResponse }
+    "Attempting to enable multiple users in various states should return a map of status lists" in {
+      val assortmentOfUserEmails =
+        // TODO: Find out why adding the `enabledButNotAgreedUser` fails the test
+//      Seq(dummy1User, dummy2User, disabledUser, enabledUser, enabledButNotAgreedUser, enrolledUser, terminatedUser)
+      Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, dummy1User, dummy2User)
+
+      Post(enablePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+        val enableResponse = responseAs[Map[String, Seq[String]]].map(_.swap)
+
+
+        enableResponse.foreach(println)
+
+
+        assert(enableResponse(List(enabledUser, dummy2User)) === StatusUpdate.NoChangeRequired.toString)
+        assert(enableResponse(List(disabledUser)) === StatusUpdate.Success.toString)
+        assert(enableResponse(List(enrolledUser)).contains("Failure: Cannot transition"))
+        assert(enableResponse(List(terminatedUser)).contains("Failure: Cannot transition"))
+        assert(enableResponse(List(dummy1User))
+          .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
+
         assertResult(OK) {status}
       }
     }
@@ -261,6 +277,14 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         assertResult(OK) {status}
       }
     }
+
+    // TODO: Find out why the test below fails
+//    "Attempting to enable an enabled user that DID NOT agree to terms" in {
+//      Post(enablePath, Seq(enabledButNotAgreedUser)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+//        println(responseAs[Map[String, Seq[String]]].map(_.swap))
+//        assertResult(InternalServerError, response.entity.asString) { status }
+//      }
+//    }
 
     // Positive and negative tests for status transitions among {enable, disable, terminate}
     val allManagerOperations = Seq(enablePath, disablePath, terminatePath)

@@ -166,7 +166,7 @@ final class TrialService
 
     if (innerState.isEmpty || innerState != newState.state) {
       if (newState.state.isEmpty || !newState.state.get.isAllowedFrom(innerState))
-        throw new FireCloudException(s"Cannot transition from ${innerState} to $newState.state.get")
+        throw new FireCloudException(s"Cannot transition from $innerState to ${newState.state}")
       true
     } else {
       false
@@ -190,7 +190,7 @@ final class TrialService
                 StatusUpdate.toName(stateResponse)
               }
             } else {
-              logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '$newStatus.newState'. No further action will be taken.")
+              logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '${newStatus.state}'. No further action will be taken.")
               Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
             }
           } catch {
