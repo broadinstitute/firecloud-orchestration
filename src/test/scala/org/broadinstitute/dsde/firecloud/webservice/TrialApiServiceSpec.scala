@@ -413,7 +413,6 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
 
     override def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
-      println("releasing the project " + projectName.value)
       TrialProject(projectName)
     }
   }

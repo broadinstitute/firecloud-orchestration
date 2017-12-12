@@ -13,7 +13,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDA
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impCreateProjectsResponse, impTrialProject, _}
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
 import org.broadinstitute.dsde.firecloud.model.Trial.StatusUpdate.Attempt
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Terminated}
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Enrolled, Terminated}
 import org.broadinstitute.dsde.firecloud.model.Trial.{StatusUpdate, TrialStates, UserTrialStatus, _}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, RequestCompleteWithErrorReport, UserInfo, WithAccessToken, WorkbenchUserInfo, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -132,11 +132,30 @@ final class TrialService
   private def buildTerminateUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
     if (currentStatus.isEmpty)
       throw new FireCloudException("Cannot terminate a user without a status")
+    val trialStatus = currentStatus.get
+
+    if (trialStatus.state.contains(Enrolled)) {
+      if (trialStatus.billingProjectName.isEmpty)
+        throw new FireCloudException(s"billing project empty for user ${userInfo.userEmail} at termination.")
+      val projectId = trialStatus.billingProjectName.get
+
+      // disassociate billing for this project. This will throw an error if disassociation fails
+      googleDAO.trialBillingManagerRemoveBillingAccount(projectId, userInfo.userEmail)
+    }
+
     currentStatus.get.copy(state = Some(Terminated), terminatedDate = Instant.now)
   }
 
+  private def terminateUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
+    if (updateStatus != StatusUpdate.Success) {
+      logger.error(
+        s"The user '${newStatus.userId}' had billing disassociated, but failed to be terminated. This" +
+         "user requires manual intervention from a campaign manager.")
+    }
+  }
+
   private def terminateUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
-    executeStateTransitions(managerInfo, userEmails, buildTerminateUserStatus, (_,_,_) => ())
+    executeStateTransitions(managerInfo, userEmails, buildTerminateUserStatus, terminateUserPostProcessing)
   }
 
   private def requiresStateTransition(currentState: Option[UserTrialStatus], newState: UserTrialStatus): Boolean = {
@@ -198,7 +217,6 @@ final class TrialService
   private def updateTrialStatus(managerInfo: UserInfo,
                                 userInfo: WorkbenchUserInfo,
                                 updatedTrialStatus: UserTrialStatus): Future[StatusUpdate.Attempt] = {
-
     thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, updatedTrialStatus) map {
       case Success(_) => StatusUpdate.Success
       case Failure(ex) => StatusUpdate.ServerError(ex.getMessage)
@@ -240,7 +258,7 @@ final class TrialService
       }
     }
 
-    val saToken: WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
+    val saToken: WithAccessToken = AccessToken(googleDAO.getTrialBillingManagerAccessToken)
 
     // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
     rawlsDAO.getProjectMembers(projectId)(saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
@@ -305,7 +323,7 @@ final class TrialService
 
   private def verifyProjects: Future[PerRequestMessage] = {
 
-    val saToken:WithAccessToken = AccessToken(OAuth2BearerToken(googleDAO.getTrialBillingManagerAccessToken))
+    val saToken:WithAccessToken = AccessToken(googleDAO.getTrialBillingManagerAccessToken)
     rawlsDAO.getProjects(saToken) map { projects =>
 
       val projectStatuses:Map[RawlsBillingProjectName, CreationStatus] = projects.map { proj =>
