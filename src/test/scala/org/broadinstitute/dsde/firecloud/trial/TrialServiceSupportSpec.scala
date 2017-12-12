@@ -16,6 +16,8 @@ class TrialServiceSupportSpec extends BaseServiceSpec with TrialServiceSupport {
   def specTrialDao: TrialDAO = new TrialServiceSupportSpecTrialDAO
   def specThurloeDao: ThurloeDAO = new MockThurloeDAO
 
+  val trialDAO = specTrialDao // to satisfy the TrialServiceSupport trait
+
   "Trial Service Support" - {
 
     "should generate spreadsheet properties" in {
