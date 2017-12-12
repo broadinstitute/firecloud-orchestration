@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO,
 import org.broadinstitute.dsde.firecloud.mock.{MockGoogleServicesDAO, MockUtils}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
+import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Enrolled}
 import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, TrialProject, TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
@@ -159,6 +160,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       "should be NoContent success" in {
         Post(enrollPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
           assertResult(NoContent, response.entity.asString) { status }
+          assert(localRawlsDao.billingProjectAdds == Map("testproject" -> "random@site.com"))
         }
       }
     }
@@ -475,6 +477,9 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   /** Used to ensure that manager endpoints only serve managers */
   final class TrialApiServiceSpecRawlsDAO extends MockRawlsDAO {
+
+    var billingProjectAdds = Map[String, String]()
+
     private val groupMap = Map(
       "apples" -> Seq("alice"),
       "bananas" -> Seq("bob"),
@@ -487,6 +492,11 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         case TrialApiServiceSpec.unauthorizedUser => Future.successful(false)
         case _ => Future.successful(groupMap.getOrElse(groupName, Seq.empty[String]).contains(userInfo.id))
       }
+    }
+
+    override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
+      billingProjectAdds = billingProjectAdds + (projectId -> email)
+      Future(true)
     }
   }
 
