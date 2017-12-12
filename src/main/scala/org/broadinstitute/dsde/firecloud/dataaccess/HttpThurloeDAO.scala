@@ -88,7 +88,10 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     wrapExceptions {
       userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(forUserId)), false, true)(callerToken) map { response =>
         response.status match {
-          case StatusCodes.OK => Some(UserTrialStatus(unmarshal[ProfileWrapper].apply(response)))
+          case StatusCodes.OK =>
+            val status = UserTrialStatus(unmarshal[ProfileWrapper].apply(response))
+            assert(forUserId == status.userId, "status id does not match!")
+            Some(status)
           case StatusCodes.NotFound => None
           case _ => throw new FireCloudException("Unable to get user trial status")
         }
