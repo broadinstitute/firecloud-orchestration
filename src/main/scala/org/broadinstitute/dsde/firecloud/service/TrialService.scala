@@ -88,7 +88,7 @@ final class TrialService
     val needsProject = currentStatus match {
       case None => true
       case Some(statusObj) => statusObj.state match {
-        case Some(Disabled) => true
+        case None | Some(Disabled) => true
         case _ => false // either an invalid transition or noop
       }
     }
