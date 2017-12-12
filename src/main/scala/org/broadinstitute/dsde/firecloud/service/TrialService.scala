@@ -57,7 +57,6 @@ object TrialService {
     new TrialService(app.samDAO, app.thurloeDAO, app.rawlsDAO, app.trialDAO, app.googleServicesDAO, projectManager)
 }
 
-// TODO: Remove loggers used for development purposes or lower their level
 final class TrialService
   (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO,
    val trialDAO: TrialDAO, val googleDAO: GoogleServicesDAO, projectManager: ActorRef)
@@ -103,7 +102,7 @@ final class TrialService
 
   private def enableUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
     if (updateStatus != StatusUpdate.Success && newStatus.billingProjectName.isDefined) {
-      logger.info(
+      logger.warn(
         s"The user '${newStatus.userId}' failed to be enabled, releasing the billing project '${newStatus.billingProjectName.get}' back into the available pool.")
       trialDAO.releaseProjectRecord(RawlsBillingProjectName(newStatus.billingProjectName.get))
     }
@@ -131,7 +130,8 @@ final class TrialService
   }
 
   private def buildTerminateUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
-    require(currentStatus.nonEmpty, "Cannot terminate a user without a status")
+    if (currentStatus.isEmpty)
+      throw new FireCloudException("Cannot terminate a user without a status")
     currentStatus.get.copy(state = Some(Terminated), terminatedDate = Instant.now)
   }
 
@@ -147,7 +147,7 @@ final class TrialService
 
     if (innerState.isEmpty || innerState != newState.state) {
       if (newState.state.isEmpty || !newState.state.get.isAllowedFrom(innerState))
-        throw new FireCloudException(s"Cannot transition from $currentState.get.state to $newState.state")
+        throw new FireCloudException(s"Cannot transition from ${innerState} to $newState.state.get")
       true
     } else {
       false
@@ -171,7 +171,7 @@ final class TrialService
                 StatusUpdate.toName(stateResponse)
               }
             } else {
-              logger.warn(s"The user '${userInfo.userEmail}' is already in the trial state of '$newStatus.newState'. No further action will be taken.")
+              logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '$newStatus.newState'. No further action will be taken.")
               Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
             }
           } catch {

@@ -27,10 +27,10 @@ class PermissionsSupportSpec extends PermissionsSupport with FreeSpecLike {
       assert( !Await.result(tryIsGroupMember(UserInfo("", "bob"), "apples"), dur) )
     }
     "should catch and wrap source exceptions" in {
-      val ex = intercept[FireCloudException] {
+      val ex = intercept[FireCloudExceptionWithErrorReport] {
         Await.result(tryIsGroupMember(UserInfo("", "failme"), "anygroup"), Duration.Inf)
       }
-      assert(ex.getMessage == "Unable to query for group membership status.")
+      assert(ex.errorReport.message == "Unable to query for group membership status.")
     }
   }
 
