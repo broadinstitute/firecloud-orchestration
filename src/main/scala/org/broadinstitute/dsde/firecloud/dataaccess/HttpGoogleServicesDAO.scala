@@ -9,6 +9,7 @@ import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.cloudbilling.Cloudbilling
 import com.google.api.services.cloudbilling.model.ProjectBillingInfo
+import com.google.api.services.compute.ComputeScopes
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.{Spreadsheet, SpreadsheetProperties, ValueRange}
 import com.google.api.services.storage.{Storage, StorageScopes}
@@ -92,8 +93,6 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val trialBillingPemFile = FireCloudConfig.Auth.trialBillingPemFile
   val trialBillingPemFileClientId = FireCloudConfig.Auth.trialBillingPemFileClientId
 
-  lazy val log = LoggerFactory.getLogger(getClass)
-
   def getAdminUserAccessToken = {
     val googleCredential = new GoogleCredential.Builder()
       .setTransport(httpTransport)
@@ -112,7 +111,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
       .setServiceAccountId(trialBillingPemFileClientId)
-      .setServiceAccountScopes(authScopes ++ billingScope)
+      .setServiceAccountScopes(authScopes ++ billingScope :+ ComputeScopes.CLOUD_PLATFORM)
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(trialBillingPemFile))
 
     impersonateUser map { user => builder.setServiceAccountUser(user) }
@@ -259,7 +258,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                                                     .toOption.getOrElse("-1").toInt
                 // 8MB or under ...
                 if (objSize > 0 && objSize < 8388608) {
-                  log.info(s"$userStr download via proxy allowed for [$objectStr]")
+                  logger.info(s"$userStr download via proxy allowed for [$objectStr]")
                   val gcsApiUrl = getObjectResourceUrl(bucketName, objectKey) + "?alt=media"
                   val extReq = Get(gcsApiUrl)
                   val proxyPipeline = addCredentials(OAuth2BearerToken(userAuthToken)) ~> sendReceive
@@ -277,7 +276,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                     serviceAccountResponse.status match {
                       case OK =>
                         // the service account can read the object too. We are safe to sign a url.
-                        log.info(s"$userStr download via signed URL allowed for [$objectStr]")
+                        logger.info(s"$userStr download via signed URL allowed for [$objectStr]")
                         requestContext.redirect(getSignedUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
                       case _ =>
                         // the service account cannot read the object, even though the user can. We cannot
@@ -286,7 +285,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                         // identity problems if the current user is signed in to multiple google identies in
                         // the same browser profile, but this is the best we can do.
                         // generate direct link per https://cloud.google.com/storage/docs/authentication#cookieauth
-                        log.info(s"$userStr download via direct link allowed for [$objectStr]")
+                        logger.info(s"$userStr download via direct link allowed for [$objectStr]")
                         requestContext.redirect(getDirectDownloadUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
                     }
                   }
@@ -295,13 +294,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
               case _ =>
                 // the user does not have access to the object.
                 val responseStr = objectResponse.entity.asString.replaceAll("\n","")
-                log.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status}): $responseStr")
+                logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status}): $responseStr")
                 requestContext.complete(objectResponse)
             }
           }
         case _ =>
           // Google did not return a profile for this user; abort. Reloading will resolve the issue if it's caused by an expired token.
-          log.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.asString}")
+          logger.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.asString}")
           requestContext.complete(Unauthorized, "There was a problem authorizing your download. Please reload FireCloud and try again.")
       }
     }
@@ -353,24 +352,33 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     // as the user, get the current billing info to make sure we are removing the right thing.
     // this call will fail if the user doesn't have permissions on the project (this is a doublecheck
     // that the user is a member of the project)
-    val billingService = getCloudBillingManager(getTrialBillingManagerCredential(Some(targetUserEmail)))
+    // val billingService = getCloudBillingManager(getTrialBillingManagerCredential(Some(targetUserEmail)))
+
+    // as the service account, get the current billing info to make sure we are removing the right thing.
+    // this call will fail if the SA doesn't have permissions on the project.
+    val billingService = getCloudBillingManager(getTrialBillingManagerCredential())
+
     val readRequest = billingService.projects().getBillingInfo(projectName)
     val currentBillingInfo = executeGoogleRequest[ProjectBillingInfo](readRequest)
     if (currentBillingInfo.getBillingAccountName != FireCloudConfig.Trial.billingAccount) {
       // the project is not linked to the free-tier billing account. Don't change anything.
-      log.warn(s"Free trial project $project has third-party billing account ${currentBillingInfo.getBillingAccountName}; not removing it.")
+      logger.warn(s"Free trial project $project has third-party billing account ${currentBillingInfo.getBillingAccountName}; not removing it.")
       true
     } else {
       // At this point, we know that the user is a member of the project and that the project
       // is on the free-trial billing account. We've done our due diligence - remove the billing.
-      // We do this by creating a ProjectBillingInfo with null account name - that's how Google
+      // We do this by creating a ProjectBillingInfo with an empty account name - that's how Google
       // indicates we want to remove the billing account association.
-      val noBillingInfo = new ProjectBillingInfo().setBillingAccountName(null)
+      val noBillingInfo = new ProjectBillingInfo().setBillingAccountName("")
       // generate the request to send to Google
       val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential())
         .projects().updateBillingInfo(projectName, noBillingInfo)
       // send the request
-      executeGoogleRequest[ProjectBillingInfo](noBillingRequest).getBillingEnabled
+      val updatedProject = executeGoogleRequest[ProjectBillingInfo](noBillingRequest)
+      if (updatedProject.getBillingEnabled == null)
+        false
+      else
+        updatedProject.getBillingEnabled
     }
   }
 
