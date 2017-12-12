@@ -84,22 +84,6 @@ final class TrialService
     case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
-  private def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
-    val needsProject = currentStatus match {
-      case None => true
-      case Some(statusObj) => statusObj.state match {
-        case Some(Disabled) => true
-        case _ => false // either an invalid transition or noop
-      }
-    }
-    if (needsProject) {
-      val trialProject = trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))
-      UserTrialStatus(userId = userInfo.userSubjectId, state = Some(Enabled), userAgreed = false, enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
-    } else {
-      currentStatus.get.copy(state = Some(Enabled))
-    }
-  }
-
   private def enableUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
     if (updateStatus != StatusUpdate.Success && newStatus.billingProjectName.isDefined) {
       logger.warn(
@@ -109,6 +93,7 @@ final class TrialService
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
+    // buildEnableUserStatus is located in TrialServiceSupport
     executeStateTransitions(managerInfo, userEmails, buildEnableUserStatus, enableUserPostProcessing)
   }
 
