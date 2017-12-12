@@ -156,13 +156,13 @@ object Trial {
     sealed trait Attempt
 
     case object Success extends Attempt
-    case object Failure extends Attempt
+    case class Failure(msg: String) extends Attempt
     case object NoChangeRequired extends Attempt
     case class ServerError(msg: String) extends Attempt
 
     def toName(status: Attempt): String = status match {
       case Success => "Success"
-      case Failure => "Failure"
+      case Failure(msg) => "Failure: " + msg
       case NoChangeRequired => "NoChangeRequired"
       case ServerError(msg) => "ServerError: " + msg
     }
