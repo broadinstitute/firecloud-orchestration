@@ -111,7 +111,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
       .setServiceAccountId(trialBillingPemFileClientId)
-      .setServiceAccountScopes(authScopes ++ billingScope :+ ComputeScopes.CLOUD_PLATFORM)
+      .setServiceAccountScopes(authScopes ++ billingScope)
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(trialBillingPemFile))
 
     impersonateUser map { user => builder.setServiceAccountUser(user) }
@@ -348,11 +348,6 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   override def trialBillingManagerRemoveBillingAccount(project: String, targetUserEmail: String): Boolean = {
     val projectName = s"projects/$project" // format needed by Google
-
-    // as the user, get the current billing info to make sure we are removing the right thing.
-    // this call will fail if the user doesn't have permissions on the project (this is a doublecheck
-    // that the user is a member of the project)
-    // val billingService = getCloudBillingManager(getTrialBillingManagerCredential(Some(targetUserEmail)))
 
     // as the service account, get the current billing info to make sure we are removing the right thing.
     // this call will fail if the free-tier billing account has already been removed from the project.
