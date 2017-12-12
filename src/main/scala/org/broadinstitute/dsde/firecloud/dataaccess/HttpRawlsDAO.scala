@@ -46,7 +46,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     userAuthedRequest(Get(RawlsDAO.groupUrl(groupName)))(userInfo) map { response =>
       response.status match {
         case OK => true
-        case Forbidden => false
+        case NotFound => false
         case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }

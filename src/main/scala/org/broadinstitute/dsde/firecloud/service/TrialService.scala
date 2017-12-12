@@ -178,7 +178,6 @@ final class TrialService
             case ex: FireCloudException =>
               Future.successful(StatusUpdate.toName(StatusUpdate.Failure(ex.getMessage)))
             case t: Throwable =>
-              StatusUpdate.ServerError(t.getMessage)
               Future.successful(StatusUpdate.toName(StatusUpdate.ServerError(t.getMessage)))
           }
         }
