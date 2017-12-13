@@ -104,11 +104,13 @@ trait TrialServiceSupport extends LazyLogging {
         Try(trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
           case Success(s) => s
           case Failure(f) =>
-            if (attempt >= numAttempts)
+            if (attempt >= numAttempts) {
               throw new FireCloudException(s"Could not claim a project while enabling user ${userInfo.userSubjectId} " +
                 s"(${userInfo.userEmail}):", f)
-            else
-              claimProject(attempt+1)
+            } else {
+              logger.debug(s"buildEnableUserStatus retrying claim; attempt $attempt")
+              claimProject(attempt + 1)
+            }
         }
       }
       val trialProject = claimProject(1)

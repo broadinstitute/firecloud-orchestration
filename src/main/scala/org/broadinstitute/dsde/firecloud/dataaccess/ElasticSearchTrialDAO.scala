@@ -214,6 +214,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
           if (attempt > attemptLimit) {
             throw f
           } else {
+            logger.debug(s"claimProjectRecord retrying claim; attempt $attempt")
             claimInternal(attempt+1)
           }
       }
