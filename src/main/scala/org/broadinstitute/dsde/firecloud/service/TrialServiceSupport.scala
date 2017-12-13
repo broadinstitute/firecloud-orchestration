@@ -7,6 +7,7 @@ import java.util.Date
 
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess.{ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled}
 import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, TrialProject, UserTrialStatus}
@@ -14,6 +15,7 @@ import org.broadinstitute.dsde.firecloud.model.{UserInfo, WorkbenchUserInfo}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 trait TrialServiceSupport extends LazyLogging {
 
@@ -94,7 +96,24 @@ trait TrialServiceSupport extends LazyLogging {
     }
 
     if (needsProject) {
-      val trialProject = trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))
+      // how many times should we try to find an available project? Retries here help when multiple users are enabled at once
+      val numAttempts = 50
+
+      def claimProject(attempt:Int):TrialProject = {
+        Try(trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
+          case Success(s) => s
+          case Failure(f) =>
+            if (attempt >= numAttempts) {
+              throw new FireCloudException(s"Could not claim a project while enabling user ${userInfo.userSubjectId} " +
+                s"(${userInfo.userEmail}):", f)
+            } else {
+              logger.debug(s"buildEnableUserStatus retrying claim; attempt $attempt")
+              claimProject(attempt + 1)
+            }
+        }
+      }
+      val trialProject = claimProject(1)
+
       logger.info(s"[trialaudit] assigned user ${userInfo.userEmail} (${userInfo.userSubjectId}) to project ${trialProject.name.value}")
       currentStatus.copy(userId = userInfo.userSubjectId, state = Some(Enabled), userAgreed = false, enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
     } else {
