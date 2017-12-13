@@ -168,9 +168,28 @@ final class TrialService
   private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
                                       statusTransition: (WorkbenchUserInfo, Option[UserTrialStatus]) => UserTrialStatus,
                                       transitionPostProcessing: (Attempt, Option[UserTrialStatus], UserTrialStatus) => Unit): Future[PerRequestMessage] = {
-    var results: Seq[(String, String)] = Seq()
-    userEmails.foreach { userEmail =>
-      val finalStatus = samDao.adminGetUserByEmail(RawlsUserEmail(userEmail)) flatMap { regInfo =>
+    val results: Seq[(String, String)] = userEmails map { userEmail =>
+      val finalStatus = executeStateTransition(managerInfo, userEmail, statusTransition, transitionPostProcessing)
+      // Use await here so that multiple Futures don't have a conflict when claiming a billing project
+
+      val result =
+        try {
+          Await.result(finalStatus, 1.minute)
+        } catch {
+          case ex: FireCloudException =>
+            StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage))
+        }
+      (result, userEmail)
+    }
+    val sorted = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
+    Future.successful(RequestComplete(sorted))
+  }
+
+  private def executeStateTransition(managerInfo: UserInfo, userEmail: String,
+                                     statusTransition: (WorkbenchUserInfo, Option[UserTrialStatus]) => UserTrialStatus,
+                                     transitionPostProcessing: (Attempt, Option[UserTrialStatus], UserTrialStatus) => Unit): Future[String] = {
+    try {
+      samDao.adminGetUserByEmail(RawlsUserEmail(userEmail)) flatMap { regInfo =>
         val subId = regInfo.userInfo.userSubjectId
         val userInfo = WorkbenchUserInfo(subId, userEmail)
         thurloeDao.getTrialStatus(subId, managerInfo) flatMap { userTrialStatus =>
@@ -192,18 +211,13 @@ final class TrialService
               Future.successful(StatusUpdate.toName(StatusUpdate.ServerError(t.getMessage)))
           }
         }
-      } recoverWith {
-        case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode.contains(StatusCodes.NotFound) =>
-          Future.successful(StatusUpdate.toName(StatusUpdate.Failure("User not registered")))
-        case ex: Exception =>
-          Future.successful(StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage)))
       }
-      // Use await here so that multiple Futures don't have a conflict when claiming a billing project
-      val result = Await.result(finalStatus, scala.concurrent.duration.Duration.Inf)
-      results = results ++ Seq((result, userEmail))
+    } catch {
+      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode.contains(StatusCodes.NotFound) =>
+        Future.successful(StatusUpdate.toName(StatusUpdate.Failure("User not registered")))
+      case ex: Exception =>
+        Future.successful(StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage)))
     }
-    val sorted = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
-    Future.successful(RequestComplete(sorted))
   }
 
   private def updateTrialStatus(managerInfo: UserInfo,
