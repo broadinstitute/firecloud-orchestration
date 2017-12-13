@@ -458,8 +458,6 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     "when calling /me and sam says fully enabled" - {
       "OK response is returned" in {
 
-        println(UserApiService.samRegisterUserPath)
-
         samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
         samServer
           .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
