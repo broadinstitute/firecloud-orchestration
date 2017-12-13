@@ -275,15 +275,6 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
-    // TODO: Turn back on the test below when Sam errors are handled
-//    "Attempting to enable a previously enabled user that DID NOT agree to terms should return NoChangeRequired success" in {
-//      Post(enablePath, Seq(enabledButNotAgreedUserEmails)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-//        val enableResponse = responseAs[Map[String, Seq[String]]]
-//        assertResult(Map("NoChangeRequired" -> Seq(enabledButNotAgreedUser))) { enableResponse }
-//        assertResult(OK) {status}
-//      }
-//    }
-
     // Positive and negative tests for status transitions among {enable, disable, terminate}
     val allManagerOperations = Seq(enablePath, disablePath, terminatePath)
 
