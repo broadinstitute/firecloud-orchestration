@@ -6,6 +6,8 @@ object Dependencies {
   val jacksonV = "2.8.10"
      // note that jackson-databind overrides this below! 2.8.8.1 is not released for core or annotations.
 
+  def excludeGuavaJDK5(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava-jdk5")
+
   val rootDependencies = Seq(
     // proactively pull in latest versions of Jackson libs, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
@@ -36,11 +38,13 @@ object Dependencies {
 
     "org.elasticsearch.client"       % "transport"           % "5.4.3",
 
-    "com.google.api-client"          % "google-api-client"   % "1.22.0"
-      exclude("com.google.guava", "guava-jdk5"),
-    "com.google.apis"                % "google-api-services-storage" % "v1-rev58-1.21.0",
-    "com.google.apis"                % "google-api-services-compute" % "v1-rev120-1.22.0",
-    "com.google.apis"                % "google-api-services-sheets"  % "v4-rev493-1.23.0",
+    "com.google.guava"               % "guava"               % "19.0",
+
+    excludeGuavaJDK5("com.google.api-client"          % "google-api-client"   % "1.23.0"),
+    excludeGuavaJDK5("com.google.apis"                % "google-api-services-storage" % "v1-rev116-1.23.0"),
+    excludeGuavaJDK5("com.google.apis"                % "google-api-services-compute" % "v1-rev163-1.23.0"),
+    excludeGuavaJDK5("com.google.apis"                % "google-api-services-sheets"  % "v4-rev494-1.23.0"),
+    excludeGuavaJDK5("com.google.apis"                % "google-api-services-cloudbilling" % "v1-rev14-1.23.0"),
 
     "org.webjars"                    % "swagger-ui"          % "2.2.5",
     "com.jason-goodwin"             %% "authentikat-jwt"     % "0.4.1",
