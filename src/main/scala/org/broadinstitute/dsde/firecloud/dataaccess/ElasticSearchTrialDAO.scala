@@ -192,7 +192,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     val nextProjectResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](nextProjectRequest)
 
     if (nextProjectResponse.getHits.totalHits == 0)
-      throw new FireCloudException("no available projects")
+      throw new FireCloudException("Trial has no available projects! Contact a campaign manager to create more.")
 
     val hit = nextProjectResponse.getHits.getAt(0)
     val version = hit.getVersion
