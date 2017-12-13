@@ -96,6 +96,7 @@ trait TrialServiceSupport extends LazyLogging {
     }
     if (needsProject) {
       val trialProject = trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))
+      logger.info(s"[trialaudit] assigned user ${userInfo.userEmail} (${userInfo.userSubjectId}) to project ${trialProject.name.value}")
       UserTrialStatus(userId = userInfo.userSubjectId, state = Some(Enabled), userAgreed = false, enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
     } else {
       currentStatus.get.copy(state = Some(Enabled))
