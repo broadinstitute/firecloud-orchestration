@@ -23,7 +23,7 @@ import spray.json._
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 trait TrialQueries {
 
@@ -175,18 +175,21 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     * record could not be updated.
     *
     * @param userInfo the user (email and subjectid) with which to update the project record.
+    * @param randomizationFactor fuzziness for "next-available" - implementation will pick one of the next
+    *                            randomizationFactor projects.
     * @return the updated project record
     */
-  override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject = {
-    // if we find regular race conditions in which multiple users attempt to claim the "next" project,
-    // we could change this to return N (= ~20) available projects, then choose a random project
-    // from that list. Either way, the caller of this method should retry this method to ensure
-    // a successful claim.
+  override def claimProjectRecord(userInfo: WorkbenchUserInfo, randomizationFactor: Int = 20): TrialProject = {
+    val sliceSize = .5
+
+    // return $randomizationFactor available projects, then choose ($randomizationFactor * $sliceSize) random projects
+    // from that list, and claim the first one we can. Even with this randomization,
+    // the caller of this method should retry this method to ensure a successful claim.
     val nextProjectRequest = client
       .prepareSearch(indexName)
       .setQuery(Available)
       .addSort("name.keyword", SortOrder.ASC)
-      .setSize(1)
+      .setSize(randomizationFactor)
       .setVersion(true)
 
     val nextProjectResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](nextProjectRequest)
@@ -194,14 +197,29 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     if (nextProjectResponse.getHits.totalHits == 0)
       throw new FireCloudException("Trial has no available projects! Contact a campaign manager to create more.")
 
-    val hit = nextProjectResponse.getHits.getAt(0)
-    val version = hit.getVersion
-    val project = nextProjectResponse.getHits.getAt(0).getSourceAsString.parseJson.convertTo[TrialProject]
-    assert(project.user.isEmpty)
+    val actualReturned = nextProjectResponse.getHits.getHits.length
 
-    val updatedProject = project.copy(user = Some(userInfo))
-    updateProjectInternal(updatedProject, version) // will throw error if update fails
-    updatedProject
+    val attemptLimit = Math.ceil(actualReturned * sliceSize)
+
+    def claimInternal(attempt: Int):TrialProject = {
+      val hit = nextProjectResponse.getHits.getAt(Random.nextInt(actualReturned))
+      val version = hit.getVersion
+      val project = hit.getSourceAsString.parseJson.convertTo[TrialProject]
+      assert(project.user.isEmpty)
+
+      val updatedProject = project.copy(user = Some(userInfo))
+      Try(updateProjectInternal(updatedProject, version)) match {
+        case Success(_) => updatedProject
+        case Failure(f) =>
+          if (attempt > attemptLimit) {
+            throw f
+          } else {
+            claimInternal(attempt+1)
+          }
+      }
+    }
+
+    claimInternal(0)
   }
 
   /**

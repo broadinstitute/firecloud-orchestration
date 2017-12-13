@@ -24,7 +24,9 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
       case project if project.verified => trialDAO.setProjectRecordVerified(project.name, verified=project.verified, status=Ready)
     }
     ElasticSearchTrialDAOFixtures.fixtureProjects collect {
-      case project if project.user.nonEmpty => trialDAO.claimProjectRecord(project.user.get)
+      // we specify a randomizationFactor of 1 for claimProjectRecord throughout this test,
+      // to ensure deterministic results.
+      case project if project.user.nonEmpty => trialDAO.claimProjectRecord(project.user.get,1)
     }
     logger.info("... fixtures indexed.")
   }
@@ -77,7 +79,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
       "should release a previously claimed project" in {
         val user = WorkbenchUserInfo("789", "me")
         // first claim a project
-        val claimed = trialDAO.claimProjectRecord(user)
+        val claimed = trialDAO.claimProjectRecord(user,1)
         trialDAO.releaseProjectRecord(claimed.name)
         val expected = TrialProject(claimed.name, verified=true, user=None, status=Some(Ready))
         val releaseCheck = trialDAO.getProjectRecord(claimed.name)
@@ -85,9 +87,9 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
       }
     }
     "claimProject" - {
-      "should claim the first available project by alphabetical order" in {
+      "should claim an available project" in {
         val user = WorkbenchUserInfo("789", "me")
-        val claimed = trialDAO.claimProjectRecord(user)
+        val claimed = trialDAO.claimProjectRecord(user,1)
         val expected = TrialProject(RawlsBillingProjectName("date"), verified=true, user=Some(user), status=Some(Ready))
         assertResult(expected) { claimed }
         val claimCheck = trialDAO.getProjectRecord(RawlsBillingProjectName("date"))
@@ -96,10 +98,10 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
       "should throw an error when no available/verified projects exist" in {
         // this one should succeed - "fennel" is available
         val user = WorkbenchUserInfo("101010", "me2")
-        val claimed = trialDAO.claimProjectRecord(user)
+        val claimed = trialDAO.claimProjectRecord(user,1)
         // this one should fail - nothing left
         val ex = intercept[FireCloudException] {
-          trialDAO.claimProjectRecord(user)
+          trialDAO.claimProjectRecord(user,1)
         }
         assert(ex.getMessage == "Trial has no available projects! Contact a campaign manager to create more.")
       }
