@@ -251,17 +251,10 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
 
     "Attempting to enable multiple users in various states should return a map of status lists" in {
-      val assortmentOfUserEmails =
-        // TODO: Find out why adding the `enabledButNotAgreedUser` fails the test
-//      Seq(dummy1User, dummy2User, disabledUser, enabledUser, enabledButNotAgreedUser, enrolledUser, terminatedUser)
-      Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, dummy1User, dummy2User)
+      val assortmentOfUserEmails = Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, dummy1User, dummy2User)
 
       Post(enablePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
         val enableResponse = responseAs[Map[String, Seq[String]]].map(_.swap)
-
-
-        enableResponse.foreach(println)
-
 
         assert(enableResponse(List(enabledUser, dummy2User)) === StatusUpdate.NoChangeRequired.toString)
         assert(enableResponse(List(disabledUser)) === StatusUpdate.Success.toString)
@@ -282,11 +275,12 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
-    // TODO: Find out why the test below fails
-//    "Attempting to enable an enabled user that DID NOT agree to terms" in {
-//      Post(enablePath, Seq(enabledButNotAgreedUser)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-//        println(responseAs[Map[String, Seq[String]]].map(_.swap))
-//        assertResult(InternalServerError, response.entity.asString) { status }
+    // TODO: Turn back on the test below when Sam errors are handled
+//    "Attempting to enable a previously enabled user that DID NOT agree to terms should return NoChangeRequired success" in {
+//      Post(enablePath, Seq(enabledButNotAgreedUserEmails)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+//        val enableResponse = responseAs[Map[String, Seq[String]]]
+//        assertResult(Map("NoChangeRequired" -> Seq(enabledButNotAgreedUser))) { enableResponse }
+//        assertResult(OK) {status}
 //      }
 //    }
 
