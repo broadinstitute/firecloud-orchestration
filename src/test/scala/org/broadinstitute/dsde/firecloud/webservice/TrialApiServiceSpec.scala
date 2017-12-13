@@ -67,6 +67,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     localThurloeServer = startClientAndServer(thurloeServerPort)
 
     val allUsersAndProps = List(
+      (registeredUser, noTrialProps),
       (dummy2User, dummy2Props),
       (disabledUser, disabledProps),
       (enabledUser, enabledProps),
@@ -203,6 +204,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     val enabledButNotAgreedUserEmails = Seq(enabledButNotAgreedUser)
     val enrolledUserEmails = Seq(enrolledUser)
     val terminatedUserEmails = Seq(terminatedUser)
+    val registeredUserEmails = Seq(registeredUser)
+    val nonRegisteredUserEmails = Seq(unregisteredUser)
 
     "Manager endpoint" - {
       allHttpMethodsExcept(POST) foreach { method =>
@@ -253,10 +256,17 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
 
     "Attempting to enable a previously enabled user should return NoChangeRequired success" in {
-      Post(enablePath, Seq(enabledUser)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+      Post(enablePath, enabledUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
         val enableResponse = responseAs[Map[String, Seq[String]]]
         assertResult(Map("NoChangeRequired"->Seq(enabledUser))) { enableResponse }
         assertResult(OK) {status}
+      }
+    }
+
+    "Attempting to enable a non registered user should fail" in {
+      Post(enablePath, nonRegisteredUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+        assertResult(OK, response.entity.asString) { status }
+        assert(response.entity.asString.contains("Failure: User not registered"))
       }
     }
 
@@ -268,7 +278,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       disabledUserEmails -> Seq(enablePath, disablePath),
       enabledUserEmails -> Seq(enablePath, disablePath),
       enrolledUserEmails -> Seq(terminatePath),
-      terminatedUserEmails -> Seq(terminatePath)
+      terminatedUserEmails -> Seq(terminatePath),
+      registeredUserEmails -> Seq(enablePath, disablePath)
     )
 
     successes.foreach { case (targetUsers: Seq[String], successfulOperationPaths: Seq[String]) =>
@@ -472,7 +483,10 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   final class TrialApiServiceSpecSamDAO extends HttpSamDAO {
     override def adminGetUserByEmail(email: RawlsUserEmail) = {
-      Future.successful(registrationInfoByEmail(email.value))
+      email.value match {
+        case x if registrationInfoByEmail.keySet.contains(x)=> Future.successful(registrationInfoByEmail(email.value))
+        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(NotFound, ""))
+      }
     }
   }
 
@@ -521,6 +535,10 @@ object TrialApiServiceSpec {
   val enabledButNotAgreedUser = "enabled-but-not-agreed-user"
   val enrolledUser = "enrolled-user"
   val terminatedUser = "terminated-user"
+  val registeredUser = "registered-user"
+  val unregisteredUser = "unregistered-user"
+
+  val noTrialProps: Map[String,String] = Map.empty
 
   val dummy1Props = Map(
     "trialState" -> "Enabled"
@@ -568,6 +586,7 @@ object TrialApiServiceSpec {
   val disabledUserEmail = "disabled-user-email"
   val enrolledUserEmail = "enrolled-user-email"
   val terminatedUserEmail = "terminated-user-email"
+  val registeredUserEmail = "registered-user-email"
 
   val dummy1UserInfo = WorkbenchUserInfo(userSubjectId = dummy1User, dummy1UserEmail)
   val dummy2UserInfo = WorkbenchUserInfo(userSubjectId = dummy2User, dummy2UserEmail)
@@ -575,6 +594,7 @@ object TrialApiServiceSpec {
   val disabledUserInfo = WorkbenchUserInfo(userSubjectId = disabledUser, disabledUserEmail)
   val enrolledUserInfo = WorkbenchUserInfo(userSubjectId = enrolledUser, enrolledUserEmail)
   val terminatedUserInfo = WorkbenchUserInfo(userSubjectId = terminatedUser, terminatedUserEmail)
+  val registeredUserInfo = WorkbenchUserInfo(userSubjectId = registeredUser, registeredUserEmail)
 
   val dummy1UserRegInfo = RegistrationInfo(dummy1UserInfo, workbenchEnabled)
   val dummy2UserRegInfo = RegistrationInfo(dummy2UserInfo, workbenchEnabled)
@@ -582,6 +602,7 @@ object TrialApiServiceSpec {
   val disabledUserRegInfo = RegistrationInfo(disabledUserInfo, workbenchEnabled)
   val enrolledUserRegInfo = RegistrationInfo(enrolledUserInfo, workbenchEnabled)
   val terminatedUserRegInfo = RegistrationInfo(terminatedUserInfo, workbenchEnabled)
+  val registeredUserRegInfo = RegistrationInfo(registeredUserInfo, workbenchEnabled)
 
   val registrationInfoByEmail = Map(
     dummy1User -> dummy1UserRegInfo,
@@ -589,5 +610,6 @@ object TrialApiServiceSpec {
     enabledUser -> enabledUserRegInfo,
     disabledUser -> disabledUserRegInfo,
     enrolledUser -> enrolledUserRegInfo,
-    terminatedUser -> terminatedUserRegInfo)
+    terminatedUser -> terminatedUserRegInfo,
+    registeredUser -> registeredUserRegInfo)
 }
