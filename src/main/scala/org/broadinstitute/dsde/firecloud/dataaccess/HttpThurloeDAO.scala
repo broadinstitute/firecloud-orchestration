@@ -84,15 +84,14 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     * @param callerToken the OAuth token of the person making the API call
     * @return the trial status for the specified user, or None if trial status could not be determined.
     */
-  override def getTrialStatus(forUserId: String, callerToken: WithAccessToken): Future[Option[UserTrialStatus]] = {
+  override def getTrialStatus(forUserId: String, callerToken: WithAccessToken): Future[UserTrialStatus] = {
     wrapExceptions {
       userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(forUserId)), false, true)(callerToken) map { response =>
         response.status match {
           case StatusCodes.OK =>
             val status = UserTrialStatus(unmarshal[ProfileWrapper].apply(response))
             assert(forUserId == status.userId, "status id does not match!")
-            Some(status)
-          case StatusCodes.NotFound => None
+            status
           case _ => throw new FireCloudException("Unable to get user trial status")
         }
       }

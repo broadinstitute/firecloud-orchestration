@@ -18,21 +18,17 @@ class TrialServiceSpec extends BaseServiceSpec with BeforeAndAfterEach with Tria
   }
 
   "TrialService.buildEnableUserStatus" - {
-    "should claim a ProjectRecord when starting from None trial status" in {
-      buildEnableUserStatus(userInfo, None)
-      assert(trialDAO.claimCalled)
-    }
     "should claim a ProjectRecord when starting from trial status with None state" in {
-      buildEnableUserStatus(userInfo, Some(UserTrialStatus("userid", None, true, 0,0,0,0,None)))
+      buildEnableUserStatus(userInfo, UserTrialStatus("userid", None, true, 0,0,0,0,None))
       assert(trialDAO.claimCalled)
     }
     "should claim a ProjectRecord when starting from Disabled" in {
-      buildEnableUserStatus(userInfo, Some(UserTrialStatus("userid", Some(Disabled), true, 0,0,0,0,None)))
+      buildEnableUserStatus(userInfo, UserTrialStatus("userid", Some(Disabled), true, 0,0,0,0,None))
       assert(trialDAO.claimCalled)
     }
     Seq(Enabled, Enrolled, Terminated) foreach { state =>
       s"should not claim a ProjectRecord when starting from $state" in {
-        buildEnableUserStatus(userInfo, Some(UserTrialStatus("userid", Some(state), true, 0,0,0,0,None)))
+        buildEnableUserStatus(userInfo, UserTrialStatus("userid", Some(state), true, 0,0,0,0,None))
         assert(!trialDAO.claimCalled)
       }
     }

@@ -49,7 +49,7 @@ trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
     * @param callerToken the OAuth token of the person making the API call
     * @return the trial status for the specified user, or None if trial status could not be determined.
     */
-  def getTrialStatus(forUserId: String, callerToken: WithAccessToken): Future[Option[UserTrialStatus]]
+  def getTrialStatus(forUserId: String, callerToken: WithAccessToken): Future[UserTrialStatus]
 
   /**
     * set the UserTrialStatus for a specific user
