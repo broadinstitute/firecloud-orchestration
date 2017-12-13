@@ -109,6 +109,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     "Failing due to Thurloe error should return a server error to the user" in {
       Put(userAgreementPath) ~> dummyUserIdHeaders(dummy1User) ~> userServiceRoutes ~> check {
         status should equal(InternalServerError)
+        assert(localThurloeDao.agreedUsers == Seq())
       }
     }
 
@@ -116,6 +117,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       s"should reject ${method.toString} method" in {
         new RequestBuilder(method)(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
           assert(!handled)
+          assert(localThurloeDao.agreedUsers == Seq())
         }
       }
     }
@@ -124,6 +126,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       s"$user should not be able to agree to terms" in {
         Put(userAgreementPath) ~> dummyUserIdHeaders(user) ~> userServiceRoutes ~> check {
           status should equal(Forbidden)
+          assert(localThurloeDao.agreedUsers == Seq())
         }
       }
     }
@@ -131,6 +134,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     "attempting to agree to terms as enabled user" in {
       Put(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
         status should equal(NoContent)
+        assert(localThurloeDao.agreedUsers == Seq("enabled-user"))
       }
     }
   }
@@ -418,7 +422,15 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   /** Used by positive and negative tests where `saveTrialStatus` is called */
   final class TrialApiServiceSpecThurloeDAO extends HttpThurloeDAO {
+
+    var agreedUsers = Seq[String]()
+
     override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus) = {
+
+      if (trialStatus.userAgreed) {
+        agreedUsers = agreedUsers :+ forUserId
+      }
+
       // Note: because HttpThurloeDAO catches exceptions, the assertions here will
       // result in InternalServerErrors instead of appearing nicely in unit test output.
       forUserId match {
