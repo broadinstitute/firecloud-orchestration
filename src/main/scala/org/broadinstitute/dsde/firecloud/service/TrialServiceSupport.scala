@@ -8,6 +8,7 @@ import java.util.Date
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{ThurloeDAO, TrialDAO}
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled}
 import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, TrialProject, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WorkbenchUserInfo}
 
@@ -15,6 +16,8 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 trait TrialServiceSupport extends LazyLogging {
+
+  val trialDAO:TrialDAO
 
   private val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private val enrollmentFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss ")
@@ -80,6 +83,23 @@ trait TrialServiceSupport extends LazyLogging {
       (userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed)
     } else {
       ("", "", "", "", "")
+    }
+  }
+
+  def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
+    val needsProject = currentStatus match {
+      case None => true
+      case Some(statusObj) => statusObj.state match {
+        case None | Some(Disabled) => true
+        case _ => false // either an invalid transition or noop
+      }
+    }
+    if (needsProject) {
+      val trialProject = trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))
+      logger.info(s"[trialaudit] assigned user ${userInfo.userEmail} (${userInfo.userSubjectId}) to project ${trialProject.name.value}")
+      UserTrialStatus(userId = userInfo.userSubjectId, state = Some(Enabled), userAgreed = false, enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
+    } else {
+      currentStatus.get.copy(state = Some(Enabled))
     }
   }
 

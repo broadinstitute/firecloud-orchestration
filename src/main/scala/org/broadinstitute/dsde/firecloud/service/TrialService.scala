@@ -84,31 +84,16 @@ final class TrialService
     case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
-  private def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
-    val needsProject = currentStatus match {
-      case None => true
-      case Some(statusObj) => statusObj.state match {
-        case Some(Disabled) => true
-        case _ => false // either an invalid transition or noop
-      }
-    }
-    if (needsProject) {
-      val trialProject = trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))
-      UserTrialStatus(userId = userInfo.userSubjectId, state = Some(Enabled), userAgreed = false, enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
-    } else {
-      currentStatus.get.copy(state = Some(Enabled))
-    }
-  }
-
   private def enableUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
     if (updateStatus != StatusUpdate.Success && newStatus.billingProjectName.isDefined) {
       logger.warn(
-        s"The user '${newStatus.userId}' failed to be enabled, releasing the billing project '${newStatus.billingProjectName.get}' back into the available pool.")
+        s"[trialaudit] The user '${newStatus.userId}' failed to be enabled, releasing the billing project '${newStatus.billingProjectName.get}' back into the available pool.")
       trialDAO.releaseProjectRecord(RawlsBillingProjectName(newStatus.billingProjectName.get))
     }
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
+    // buildEnableUserStatus is located in TrialServiceSupport
     executeStateTransitions(managerInfo, userEmails, buildEnableUserStatus, enableUserPostProcessing)
   }
 
@@ -120,7 +105,10 @@ final class TrialService
     if (updateStatus == StatusUpdate.Success && prevStatus.isDefined) {
       prevStatus.get.billingProjectName match {
         case None => None
-        case Some(name) => trialDAO.releaseProjectRecord(RawlsBillingProjectName(name))
+        case Some(name) =>
+          logger.info(
+            s"[trialaudit] The user '${newStatus.userId}' was disabled, releasing the billing project '$name' back into the available pool.")
+          trialDAO.releaseProjectRecord(RawlsBillingProjectName(name))
       }
     }
   }
@@ -140,7 +128,11 @@ final class TrialService
       val projectId = trialStatus.billingProjectName.get
 
       // disassociate billing for this project. This will throw an error if disassociation fails
-      googleDAO.trialBillingManagerRemoveBillingAccount(projectId, userInfo.userEmail)
+      val removalResult = googleDAO.trialBillingManagerRemoveBillingAccount(projectId, userInfo.userEmail)
+      if (!removalResult)
+        logger.info(s"[trialaudit] for user ${userInfo.userEmail} (${userInfo.userSubjectId}), removed billing from project $projectId")
+      removalResult
+
     }
 
     currentStatus.get.copy(state = Some(Terminated), terminatedDate = Instant.now)
@@ -149,7 +141,7 @@ final class TrialService
   private def terminateUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
     if (updateStatus != StatusUpdate.Success) {
       logger.error(
-        s"The user '${newStatus.userId}' had billing disassociated, but failed to be terminated. This" +
+        s"[trialaudit] The user '${newStatus.userId}' had billing disassociated, but failed to be terminated. This" +
          "user requires manual intervention from a campaign manager.")
     }
   }
@@ -190,7 +182,7 @@ final class TrialService
                 StatusUpdate.toName(stateResponse)
               }
             } else {
-              logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '${newStatus.state}'. No further action will be taken.")
+              logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '${newStatus.state.getOrElse("")}'. No further action will be taken.")
               Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
             }
           } catch {
@@ -218,7 +210,9 @@ final class TrialService
                                 userInfo: WorkbenchUserInfo,
                                 updatedTrialStatus: UserTrialStatus): Future[StatusUpdate.Attempt] = {
     thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, updatedTrialStatus) map {
-      case Success(_) => StatusUpdate.Success
+      case Success(_) =>
+        logger.info(s"[trialaudit] updated user ${userInfo.userEmail} (${userInfo.userSubjectId}) to state ${updatedTrialStatus.state.getOrElse("")}")
+        StatusUpdate.Success
       case Failure(ex) => StatusUpdate.ServerError(ex.getMessage)
     }
   }
@@ -269,9 +263,13 @@ final class TrialService
       } else {
         // 2. Add the user as Owner to the assigned Billing Project
         rawlsDAO.addUserToBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) flatMap { _ =>
+          logger.info(s"[trialaudit] added user ${userInfo.userEmail} (${userInfo.id}) to project $projectId")
           // 3. Update the user's Thurloe profile to indicate Enrolled status
-          thurloeDao.saveTrialStatus(userInfo.id, userInfo, enrolledStatusFromStatus(status)) flatMap {
-            case Success(_) => Future(RequestComplete(NoContent)) // <- SUCCESS!
+          val updatedTrialStatus = enrolledStatusFromStatus(status)
+          thurloeDao.saveTrialStatus(userInfo.id, userInfo, updatedTrialStatus) flatMap {
+            case Success(_) =>
+              logger.info(s"[trialaudit] updated user ${userInfo.userEmail} (${userInfo.id}) to state ${updatedTrialStatus.state.getOrElse("")}")
+              Future(RequestComplete(NoContent)) // <- SUCCESS!
             case Failure(profileUpdateFail) => {
               // We couldn't update trial status, so clean up
               rawlsDAO.removeUserFromBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) map { _ =>

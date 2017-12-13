@@ -101,7 +101,7 @@ class ElasticSearchTrialDAOSpec extends FreeSpec with Matchers with BeforeAndAft
         val ex = intercept[FireCloudException] {
           trialDAO.claimProjectRecord(user)
         }
-        assert(ex.getMessage == "no available projects")
+        assert(ex.getMessage == "Trial has no available projects! Contact a campaign manager to create more.")
       }
     }
     "countProjects" - {
