@@ -168,19 +168,18 @@ final class TrialService
   private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
                                       statusTransition: (WorkbenchUserInfo, Option[UserTrialStatus]) => UserTrialStatus,
                                       transitionPostProcessing: (Attempt, Option[UserTrialStatus], UserTrialStatus) => Unit): Future[PerRequestMessage] = {
-    var results: Seq[(String, String)] = Seq()
-    userEmails.foreach { userEmail =>
+    val results: Seq[(String, String)] = userEmails map { userEmail =>
       val finalStatus = executeStateTransition(managerInfo, userEmail, statusTransition, transitionPostProcessing)
       // Use await here so that multiple Futures don't have a conflict when claiming a billing project
 
       val result =
         try {
-          Await.result(finalStatus, scala.concurrent.duration.Duration.Inf)
+          Await.result(finalStatus, 1.minute)
         } catch {
           case ex: FireCloudException =>
             StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage))
         }
-      results = results ++ Seq((result, userEmail))
+      (result, userEmail)
     }
     val sorted = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
     Future.successful(RequestComplete(sorted))

@@ -256,7 +256,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
 
     "Attempting to enable a previously enabled user should return NoChangeRequired success" in {
-      Post(enablePath, Seq(enabledUser)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+      Post(enablePath, enabledUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
         val enableResponse = responseAs[Map[String, Seq[String]]]
         assertResult(Map("NoChangeRequired"->Seq(enabledUser))) { enableResponse }
         assertResult(OK) {status}
@@ -264,7 +264,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
 
     "Attempting to enable a non registered user should fail" in {
-      Post(enablePath, Seq(unregisteredUser)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+      Post(enablePath, nonRegisteredUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
         assertResult(OK, response.entity.asString) { status }
         assert(response.entity.asString.contains("Failure: User not registered"))
       }
