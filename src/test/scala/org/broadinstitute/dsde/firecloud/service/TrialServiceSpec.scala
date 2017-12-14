@@ -42,7 +42,7 @@ class TrialServiceSpec extends BaseServiceSpec with BeforeAndAfterEach with Tria
 class TrialServiceSpecTrialDao extends MockTrialDAO {
   var claimCalled = false
 
-  override def claimProjectRecord(userInfo: WorkbenchUserInfo): Trial.TrialProject = {
+  override def claimProjectRecord(userInfo: WorkbenchUserInfo, randomizationFactor: Int = 20): Trial.TrialProject = {
     claimCalled = true
     TrialProject(RawlsBillingProjectName("fake"))
   }

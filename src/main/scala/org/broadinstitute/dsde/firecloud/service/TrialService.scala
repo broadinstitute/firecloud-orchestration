@@ -23,14 +23,14 @@ import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsBillingProjectName, RawlsUserEmail}
 import spray.http.StatusCodes._
-import spray.http.{OAuth2BearerToken, StatusCodes}
+import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsString}
 import spray.routing.RequestContext
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 // TODO: Contain userEmail in value class for stronger type safety without incurring performance penalty
@@ -93,8 +93,14 @@ final class TrialService
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
-    // buildEnableUserStatus is located in TrialServiceSupport
-    executeStateTransitions(managerInfo, userEmails, buildEnableUserStatus, enableUserPostProcessing)
+    val numAvailable:Long = trialDAO.countProjects.getOrElse("available", 0L)
+    if (userEmails.size.toLong > numAvailable) {
+      Future(RequestCompleteWithErrorReport(BadRequest, s"You are enabling ${userEmails.size} users, but there are only " +
+        s"$numAvailable projects available. Please create more projects."))
+    } else {
+      // buildEnableUserStatus is located in TrialServiceSupport
+      executeStateTransitions(managerInfo, userEmails, buildEnableUserStatus, enableUserPostProcessing)
+    }
   }
 
   private def buildDisableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
@@ -168,21 +174,19 @@ final class TrialService
   private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
                                       statusTransition: (WorkbenchUserInfo, Option[UserTrialStatus]) => UserTrialStatus,
                                       transitionPostProcessing: (Attempt, Option[UserTrialStatus], UserTrialStatus) => Unit): Future[PerRequestMessage] = {
-    val results: Seq[(String, String)] = userEmails map { userEmail =>
-      val finalStatus = executeStateTransition(managerInfo, userEmail, statusTransition, transitionPostProcessing)
-      // Use await here so that multiple Futures don't have a conflict when claiming a billing project
-
-      val result =
-        try {
-          Await.result(finalStatus, 1.minute)
-        } catch {
-          case ex: FireCloudException =>
-            StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage))
-        }
-      (result, userEmail)
+    val userTransitions = userEmails.map { userEmail =>
+      executeStateTransition(managerInfo, userEmail, statusTransition, transitionPostProcessing) map { finalStatus =>
+        (finalStatus, userEmail)
+      } recover {
+        case ex:Exception =>
+          (StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage)), userEmail)
+      }
     }
-    val sorted = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
-    Future.successful(RequestComplete(sorted))
+
+    Future.sequence(userTransitions) map { results =>
+      val sorted:Map[String,Seq[String]] = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
+      RequestComplete(sorted)
+    }
   }
 
   private def executeStateTransition(managerInfo: UserInfo, userEmail: String,

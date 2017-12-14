@@ -52,9 +52,11 @@ class MockTrialDAO extends TrialDAO {
     * record could not be updated.
     *
     * @param userInfo the user (email and subjectid) with which to update the project record.
+    * @param randomizationFactor fuzziness for "next-available" - implementation will pick one of the next
+    *                            randomizationFactor projects.
     * @return the updated project record
     */
-  override def claimProjectRecord(userInfo: WorkbenchUserInfo): Trial.TrialProject = throw new Exception("unit test intentional exception")
+  override def claimProjectRecord(userInfo: WorkbenchUserInfo, randomizationFactor: Int = 20): Trial.TrialProject = throw new Exception("unit test intentional exception")
 
   /**
   * Removes the associated user from the project record, making it available again.

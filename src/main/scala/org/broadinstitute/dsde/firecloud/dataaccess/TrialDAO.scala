@@ -56,9 +56,11 @@ trait TrialDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * record could not be updated.
     *
     * @param userInfo the user (email and subjectid) with which to update the project record.
+    * @param randomizationFactor fuzziness for "next-available" - implementation will pick one of the next
+    *                            randomizationFactor projects.
     * @return the updated project record
     */
-  def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject
+  def claimProjectRecord(userInfo: WorkbenchUserInfo, randomizationFactor: Int = 20): TrialProject
 
   /**
   * Removes the associated user from the project record, making it available again.

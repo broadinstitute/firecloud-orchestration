@@ -270,7 +270,7 @@ object ProjectManagerSpec {
       verifiedProject
     }
 
-    override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject =
+    override def claimProjectRecord(userInfo: WorkbenchUserInfo, randomizationFactor: Int = 20): TrialProject =
       TrialProject(RawlsBillingProjectName("unittest"))
 
     override def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject =
