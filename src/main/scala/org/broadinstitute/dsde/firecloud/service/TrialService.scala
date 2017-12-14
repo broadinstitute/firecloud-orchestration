@@ -161,56 +161,61 @@ final class TrialService
     }
   }
 
+  private def throwableToStatus(t: Throwable): String = {
+    t match {
+      case exr: FireCloudExceptionWithErrorReport =>
+        if (exr.errorReport.statusCode.contains(StatusCodes.NotFound))
+          StatusUpdate.toName(StatusUpdate.Failure("User not registered"))
+        else StatusUpdate.toName(StatusUpdate.Failure(exr.errorReport.message))
+      case ex: FireCloudException =>
+        StatusUpdate.toName(StatusUpdate.Failure(ex.getMessage))
+      case _: Throwable =>
+        StatusUpdate.toName(StatusUpdate.ServerError(t.getMessage))
+    }
+  }
+
   private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
                                       statusTransition: (WorkbenchUserInfo, UserTrialStatus) => UserTrialStatus,
                                       transitionPostProcessing: (Attempt, UserTrialStatus, UserTrialStatus) => Unit): Future[PerRequestMessage] = {
+
+    def checkAndUpdateState(userInfo: WorkbenchUserInfo, userTrialStatus: UserTrialStatus, newStatus: UserTrialStatus): Future[String] = {
+      Try(requiresStateTransition(userTrialStatus, newStatus)) match {
+        case Success(isRequired) =>
+          if (isRequired) {
+            updateTrialStatus(managerInfo, userInfo, newStatus) map { stateResponse =>
+              transitionPostProcessing(stateResponse, userTrialStatus, newStatus)
+              StatusUpdate.toName(stateResponse)
+            }
+          } else {
+            logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '${newStatus.state.getOrElse("")}'. No further action will be taken.")
+            Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
+          }
+        case Failure(t: Throwable) => Future.successful(throwableToStatus(t))
+      }
+    }
+
     val userTransitions = userEmails.map { userEmail =>
-      executeStateTransition(managerInfo, userEmail, statusTransition, transitionPostProcessing) map { finalStatus =>
-        (finalStatus, userEmail)
-      } recover {
-        case ex:Exception =>
+      val status = Try(for {
+        regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(userEmail))
+        subId = regInfo.userInfo.userSubjectId
+        userInfo = WorkbenchUserInfo(subId, userEmail)
+        userTrialStatus <- thurloeDao.getTrialStatus(subId, managerInfo)
+        newStatus = statusTransition(userInfo, userTrialStatus)
+        result <- checkAndUpdateState(userInfo, userTrialStatus, newStatus)
+      } yield result) match {
+        case Success(s) => s
+        case Failure(t: Throwable) =>
+          Future.successful(throwableToStatus(t))
+      }
+      status map { finalStatus: String => (finalStatus, userEmail) } recover {
+        case ex: Exception =>
           (StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage)), userEmail)
       }
     }
 
     Future.sequence(userTransitions) map { results =>
-      val sorted:Map[String,Seq[String]] = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
+      val sorted: Map[String, Seq[String]] = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
       RequestComplete(sorted)
-    }
-  }
-
-  private def executeStateTransition(managerInfo: UserInfo, userEmail: String,
-                                     statusTransition: (WorkbenchUserInfo, UserTrialStatus) => UserTrialStatus,
-                                     transitionPostProcessing: (Attempt, UserTrialStatus, UserTrialStatus) => Unit): Future[String] = {
-    try {
-      samDao.adminGetUserByEmail(RawlsUserEmail(userEmail)) flatMap { regInfo =>
-        val subId = regInfo.userInfo.userSubjectId
-        val userInfo = WorkbenchUserInfo(subId, userEmail)
-        thurloeDao.getTrialStatus(subId, managerInfo) flatMap { userTrialStatus =>
-          val newStatus = statusTransition(userInfo, userTrialStatus)
-          try {
-            if (requiresStateTransition(userTrialStatus, newStatus)) {
-              updateTrialStatus(managerInfo, userInfo, newStatus) map { stateResponse =>
-                transitionPostProcessing(stateResponse, userTrialStatus, newStatus)
-                StatusUpdate.toName(stateResponse)
-              }
-            } else {
-              logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '${newStatus.state.getOrElse("")}'. No further action will be taken.")
-              Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
-            }
-          } catch {
-            case ex: FireCloudException =>
-              Future.successful(StatusUpdate.toName(StatusUpdate.Failure(ex.getMessage)))
-            case t: Throwable =>
-              Future.successful(StatusUpdate.toName(StatusUpdate.ServerError(t.getMessage)))
-          }
-        }
-      }
-    } catch {
-      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode.contains(StatusCodes.NotFound) =>
-        Future.successful(StatusUpdate.toName(StatusUpdate.Failure("User not registered")))
-      case t: Throwable =>
-        Future.successful(StatusUpdate.toName(StatusUpdate.ServerError(t.getMessage)))
     }
   }
 
