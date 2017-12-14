@@ -37,12 +37,8 @@ trait TrialServiceSupport extends LazyLogging {
     (implicit executionContext: ExecutionContext): Future[ValueRange] = {
     val projects: Seq[TrialProject] = trialDAO.projectReport
     val trialStatuses = Future.sequence(
-      projects.foldLeft(Seq[Future[UserTrialStatus]]())((result, p) => {
-        if (p.user.isDefined)
-          result ++ Seq(thurloeDAO.getTrialStatus(p.user.get.userSubjectId, managerInfo))
-        else
-          result
-      }))
+      projects.filter(p => p.user.isDefined)
+        .map(p => thurloeDAO.getTrialStatus(p.user.get.userSubjectId, managerInfo)))
     trialStatuses.map { userTrialStatuses =>
       val headers = List("Project Name", "User Subject Id", "User Email", "Enrollment Date", "Terminated Date", "User Agreement").map(_.asInstanceOf[AnyRef]).asJava
       val rows: List[util.List[AnyRef]] = projects.map { trialProject =>

@@ -82,7 +82,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     *
     * @param forUserId the subjectid of the user whose trial status to get
     * @param callerToken the OAuth token of the person making the API call
-    * @return the trial status for the specified user, or None if trial status could not be determined.
+    * @return the trial status for the specified user, or a default UserTrialStatus object
     */
   override def getTrialStatus(forUserId: String, callerToken: WithAccessToken): Future[UserTrialStatus] = {
     wrapExceptions {

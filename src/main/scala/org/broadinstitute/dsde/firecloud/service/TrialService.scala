@@ -152,12 +152,14 @@ final class TrialService
   }
 
   private def requiresStateTransition(currentState: UserTrialStatus, newState: UserTrialStatus): Boolean = {
-    if (currentState.state.isEmpty || currentState.state != newState.state) {
+    // this check needs to happen first for idempotent behavior
+    if (currentState.state == newState.state)
+      false
+    else {
+      // make sure the state transition is valid
       if (newState.state.isEmpty || !newState.state.get.isAllowedFrom(currentState.state))
         throw new FireCloudException(s"Cannot transition from ${currentState.state} to $newState.state.get")
-      true
-    } else {
-      false
+      true // indicates transition is required
     }
   }
 
@@ -169,7 +171,7 @@ final class TrialService
         else StatusUpdate.toName(StatusUpdate.Failure(exr.errorReport.message))
       case ex: FireCloudException =>
         StatusUpdate.toName(StatusUpdate.Failure(ex.getMessage))
-      case _: Throwable =>
+      case _ =>
         StatusUpdate.toName(StatusUpdate.ServerError(t.getMessage))
     }
   }
