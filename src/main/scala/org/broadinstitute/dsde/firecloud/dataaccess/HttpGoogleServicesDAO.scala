@@ -374,7 +374,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
             .projects().updateBillingInfo(projectName, noBillingInfo)
           // send the request
           val updatedProject = executeGoogleRequest[ProjectBillingInfo](noBillingRequest)
-          updatedProject != null && updatedProject.getBillingEnabled
+          updatedProject.getBillingEnabled != null && updatedProject.getBillingEnabled
         }
     }
   }
