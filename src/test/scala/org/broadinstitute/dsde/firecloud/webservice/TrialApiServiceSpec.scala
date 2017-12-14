@@ -235,7 +235,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assertResult(OK, response.entity.asString) { status }
           val resp = response.entity.asString
           assert(resp.contains("ServerError:"))
-          assert(resp.contains("Unable to get user trial status"))
+          assert(resp.contains("Unable to get user KVPs from profile service"))
         }
       }
 

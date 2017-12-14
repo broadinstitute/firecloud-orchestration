@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess.{ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled}
 import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, TrialProject, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{UserInfo, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{Profile, ProfileWrapper, UserInfo, WorkbenchUserInfo}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,12 +36,24 @@ trait TrialServiceSupport extends LazyLogging {
   def makeSpreadsheetValues(managerInfo: UserInfo, trialDAO: TrialDAO, thurloeDAO: ThurloeDAO, majorDimension: String, range: String)
     (implicit executionContext: ExecutionContext): Future[ValueRange] = {
     val projects: Seq[TrialProject] = trialDAO.projectReport
-    val trialStatuses = Future.sequence(
-      projects.filter(p => p.user.isDefined)
-        .map(p => thurloeDAO.getTrialStatus(p.user.get.userSubjectId, managerInfo)))
-    trialStatuses.map { userTrialStatuses =>
+    val profileWrappers:Future[Seq[Option[ProfileWrapper]]] = Future.sequence(projects.map { p =>
+      if (p.user.isDefined)
+        thurloeDAO.getAllKVPs(p.user.get.userSubjectId, managerInfo)
+      else
+        Future[Option[ProfileWrapper]](None)
+    })
+
+    profileWrappers.map { optionalWrappers =>
+      val wrappers = optionalWrappers.filter(_.isEmpty).map(_.get)
       val headers = List("Project Name", "User Subject Id", "User Email", "Enrollment Date", "Terminated Date", "User Agreement").map(_.asInstanceOf[AnyRef]).asJava
+
+      val userTrialStatuses = wrappers.map (x => UserTrialStatus(x))
+      val profiles = wrappers map Profile
+
       val rows: List[util.List[AnyRef]] = projects.map { trialProject =>
+        val userTrialStatuses = UserTrialStatus(wrapper)
+        val profile = Profile(wrapper)
+
         val (userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed) = getTrialUserInformation(trialProject.user, userTrialStatuses)
         List(trialProject.name.value, userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed).map(_.asInstanceOf[AnyRef]).asJava
       }.toList
