@@ -90,17 +90,18 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate],inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] =
     authedRequestToObject[WorkspaceACLUpdateResponseList]( Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates) )
 
-  override def getAllLibraryPublishedWorkspaces: Future[Seq[Workspace]] = {
-    val adminToken = HttpGoogleServicesDAO.getAdminUserAccessToken
+  // you must be an admin to execute this method
+  override def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[Workspace]] = {
 
-    val allPublishedPipeline = addCredentials(OAuth2BearerToken(adminToken)) ~> sendReceive
+    val allPublishedPipeline = addCredentials(userToken.accessToken) ~> sendReceive
     allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
       response.entity.as[Seq[Workspace]] match {
         case Right(srw) =>
           logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
           srw
         case Left(error) =>
-          logger.warn("Could not unmarshal: " + error.toString)
+          logger.warn(s"Could not unmarshal: ${error.toString}. Status code: ${response.status}.")
+          logger.info(s"body of reindex error response: ${response.entity}")
           throw new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "Could not unmarshal: " + error.toString))
       }
     }

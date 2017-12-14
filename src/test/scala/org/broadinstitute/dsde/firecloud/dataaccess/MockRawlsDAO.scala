@@ -274,7 +274,7 @@ class MockRawlsDAO  extends RawlsDAO {
     Future.successful((newWorkspace))
   }
 
-  override def getAllLibraryPublishedWorkspaces: Future[Seq[Workspace]] = Future.successful(Seq.empty[Workspace])
+  override def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[Workspace]] = Future.successful(Seq.empty[Workspace])
 
   override def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken) =
     Future.successful(WorkspaceACL(Map.empty[String, AccessEntry]))
