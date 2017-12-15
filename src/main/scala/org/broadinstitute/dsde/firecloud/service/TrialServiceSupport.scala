@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess.{ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled}
 import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, TrialProject, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{Profile, ProfileWrapper, UserInfo, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, Profile, ProfileWrapper, UserInfo, WorkbenchUserInfo}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,7 +22,16 @@ trait TrialServiceSupport extends LazyLogging {
   val trialDAO:TrialDAO
 
   private val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-  private val enrollmentFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss ")
+  private val spreadsheetFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss ")
+  private val zeroDate = Date.from(Instant.ofEpochMilli(0))
+  // spreadsheet headers
+  private val headers = List("Project Name", "User Subject Id", "Login Email", "Contact Email",
+    "Enrollment Date", "Terminated Date", "User Agreement", "User Agreement Date",
+    "First Name", "Last Name", "Organization", "City", "State", "Country").map(_.asInstanceOf[AnyRef]).asJava
+
+  // the default set of values to use if a project has no users
+  private val defaultValues = List.fill(13)("")
+
 
   def makeSpreadsheetResponse(spreadsheetId: String): SpreadsheetResponse = {
     SpreadsheetResponse(s"https://docs.google.com/spreadsheets/d/$spreadsheetId")
@@ -35,73 +44,104 @@ trait TrialServiceSupport extends LazyLogging {
 
   def makeSpreadsheetValues(managerInfo: UserInfo, trialDAO: TrialDAO, thurloeDAO: ThurloeDAO, majorDimension: String, range: String)
     (implicit executionContext: ExecutionContext): Future[ValueRange] = {
+
+    // get the list of projects from ES
     val projects: Seq[TrialProject] = trialDAO.projectReport
-    val profileWrappers:Future[Seq[Option[ProfileWrapper]]] = Future.sequence(projects.map { p =>
-      if (p.user.isDefined)
-        thurloeDAO.getAllKVPs(p.user.get.userSubjectId, managerInfo)
-      else
-        Future[Option[ProfileWrapper]](None)
+    // find the Thurloe KVPs for any users referenced in those projects
+    val profileWrappers:Future[Seq[ProfileWrapper]] = Future.sequence(projects.filter(p => p.user.isDefined).map { p =>
+      thurloeDAO.getAllKVPs(p.user.get.userSubjectId, managerInfo) map { kvpOption =>
+        kvpOption.getOrElse(ProfileWrapper(p.user.get.userSubjectId, List.empty[FireCloudKeyValue]))
+      }
     })
 
-    profileWrappers.map { optionalWrappers =>
-      val wrappers = optionalWrappers.filter(_.isEmpty).map(_.get)
-      val headers = List("Project Name", "User Subject Id", "User Email", "Enrollment Date", "Terminated Date", "User Agreement").map(_.asInstanceOf[AnyRef]).asJava
+    // resolve the Thurloe KVPs future
+    profileWrappers.map { wrappers =>
+      // cache a map of subjectId -> ProfileWrapper for efficient lookups later
+      val userKVPMap: Map[String, ProfileWrapper] = wrappers.map(pw => pw.userId -> pw).toMap
 
-      val userTrialStatuses:Map[String,UserTrialStatus] = wrappers.map (x => x.userId -> UserTrialStatus(x)).toMap
-      val profiles:Map[String,Profile] = wrappers.map (x => x.userId -> Profile(x)).toMap
-
+      // loop over all projects (including those that have no defined user) and build spreadsheet rows
       val rows: List[util.List[AnyRef]] = projects.map { trialProject =>
+        val rowStrings = trialProject.user match {
+          case Some(user) => getTrialUserInformation(user, userKVPMap).toSpreadsheetValues
+          case None => defaultValues
+        }
 
-        val (userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed) = getTrialUserInformation(trialProject.user, userTrialStatuses, profiles)
-        List(trialProject.name.value, userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed).map(_.asInstanceOf[AnyRef]).asJava
+        (List(trialProject.name.value) ++ rowStrings).map(_.asInstanceOf[AnyRef]).asJava
       }.toList
+
       val values: util.List[util.List[AnyRef]] = (headers :: rows).asJava
       new ValueRange().setMajorDimension(majorDimension).setRange(range).setValues(values)
     }
   }
 
   // convenience method to pull user information from options
-  private def getTrialUserInformation(user: Option[WorkbenchUserInfo], userTrialStatuses: Map[String,UserTrialStatus], profiles: Map[String,Profile]): (String, String, String, String, String) = {
-    if (user.isDefined) {
-      val userSubjectId = user.get.userSubjectId
-      val userEmail = user.get.userEmail
+  private def getTrialUserInformation(user: WorkbenchUserInfo, userKVPMap: Map[String,ProfileWrapper]): SpreadsheetRow = {
 
-      val userTrialStatus = userTrialStatuses.get(userSubjectId)
-      val profile = profiles.get(userSubjectId)
+    val userSubjectId = user.userSubjectId
 
-      val (enrollmentDate, terminatedDate, userAgreed) = if (userTrialStatus.isDefined) {
-        val trialStaus = userTrialStatus.get
-        val zeroDate = Date.from(Instant.ofEpochMilli(0))
-        val enrollDate = Date.from(trialStaus.enrolledDate)
-        val enrollmentDateString = if (enrollDate.after(zeroDate))
-          enrollmentFormat.format(Date.from(trialStaus.enrolledDate))
-        else
-          ""
-        val termDate = Date.from(trialStaus.terminatedDate)
-        val termDateString = if (termDate.after(zeroDate))
-          enrollmentFormat.format(termDate)
-        else
-          ""
-        val userAgreed = if (trialStaus.userAgreed)
-          "Accepted"
-        else
-          "Not Accepted"
-        (enrollmentDateString, termDateString, userAgreed)
-      } else {
-        ("", "", "")
-      }
-      (userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed)
-    } else {
-      ("", "", "", "", "")
-    }
+    // guarantee we get KVPs from our cache. We could instead throw an error if subjectid is not found;
+    // we expect to always find the user.
+    val profileWrapper: ProfileWrapper = userKVPMap.getOrElse(userSubjectId,
+      ProfileWrapper(userSubjectId, List.empty[FireCloudKeyValue]))
+    val profile = Profile(profileWrapper)
+    val status = UserTrialStatus(profileWrapper)
+
+    SpreadsheetRow(
+      userSubjectId = status.userId,
+      userEmail = user.userEmail,
+      enrollmentDate = status.enrolledDate,
+      terminatedDate = status.terminatedDate,
+      userAgreed = status.userAgreed,
+      userAgreedDate = status.enrolledDate, // TODO: should be separate date
+      firstName = profile.firstName,
+      lastName = profile.lastName,
+      contactEmail = profile.contactEmail.getOrElse(user.userEmail),
+      institute = profile.institute,
+      programLocationCity = profile.programLocationCity,
+      programLocationState = profile.programLocationState,
+      programLocationCountry = profile.programLocationCountry
+    )
   }
 
   case class SpreadsheetRow(
-                userSubjectId: String = "",
-                userEmail: String = "",
-                enrollmentDate: String = "",
-                terminatedDate: String = "",
-                userAgreed: String = "")
+      userSubjectId: String,
+      userEmail: String, // sign-in email
+      enrollmentDate: Instant,
+      terminatedDate: Instant,
+      userAgreed: Boolean,
+      userAgreedDate: Instant, // time the user signed the eula
+      firstName: String,
+      lastName: String ,
+      contactEmail: String, // preferred contact email
+      institute: String, // organization
+      programLocationCity: String,
+      programLocationState: String,
+      programLocationCountry: String
+  ) {
+    def toSpreadsheetValues: List[String] = {
+      List(
+        userSubjectId,
+        userEmail,
+        contactEmail,
+        instantToSpreadsheetString(enrollmentDate),
+        instantToSpreadsheetString(terminatedDate),
+        if (userAgreed) "Accepted" else "Not Accepted",
+        instantToSpreadsheetString(userAgreedDate),
+        firstName,
+        lastName,
+        institute,
+        programLocationCity,
+        programLocationState,
+        programLocationCountry
+      )
+    }
+  }
+
+  private def instantToSpreadsheetString(instant: Instant): String = {
+    val date = Date.from(instant)
+    if (date.after(zeroDate)) spreadsheetFormat.format(date) else ""
+  }
+
 
   def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: UserTrialStatus): UserTrialStatus = {
     val needsProject = currentStatus.state match {
