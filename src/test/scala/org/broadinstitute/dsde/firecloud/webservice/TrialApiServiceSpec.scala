@@ -119,7 +119,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       s"should reject ${method.toString} method" in {
         new RequestBuilder(method)(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
           assert(!handled)
-          assert(localThurloeDao.agreedUsers == Seq())
+          assert(localThurloeDao.agreedUsers.isEmpty)
         }
       }
     }
@@ -128,7 +128,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       s"$user should not be able to agree to terms" in {
         Put(userAgreementPath) ~> dummyUserIdHeaders(user) ~> userServiceRoutes ~> check {
           status should equal(Forbidden)
-          assert(localThurloeDao.agreedUsers == Seq())
+          assert(localThurloeDao.agreedUsers.isEmpty)
         }
       }
     }
