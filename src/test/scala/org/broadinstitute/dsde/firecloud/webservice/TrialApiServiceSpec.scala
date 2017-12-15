@@ -262,11 +262,9 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           val enableResponse = responseAs[Map[String, Set[String]]].map(_.swap)
 
           assert(enableResponse(Set(enabledUser, dummy2User)) === StatusUpdate.NoChangeRequired.toString)
-          assert(enableResponse(Set(disabledUser)) === StatusUpdate.Success.toString)
+          assert(enableResponse(Set(disabledUser, registeredUser)) === StatusUpdate.Success.toString)
           assert(enableResponse(Set(enrolledUser)).contains("Failure: Cannot transition"))
           assert(enableResponse(Set(terminatedUser)).contains("Failure: Cannot transition"))
-          assert(enableResponse(Set(registeredUser))
-            .contains("ServerError: Should only be updating enabled, disabled or enrolled users"))
           assert(enableResponse(Set(dummy1User))
             .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
 
@@ -537,7 +535,16 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
           Future.successful(Success(()))
         }
-        case user @ `dummy2User` => { // Mocking Thurloe status saving failures
+        case `registeredUser` => {
+          assertResult(Some(TrialStates.Enabled)) { trialStatus.state }
+          assert(trialStatus.enabledDate.toEpochMilli > 0)
+          assert(trialStatus.enrolledDate.toEpochMilli === 0)
+          assert(trialStatus.terminatedDate.toEpochMilli === 0)
+          assert(trialStatus.expirationDate.toEpochMilli === 0)
+
+          Future.successful(Success(()))
+        }
+        case `dummy2User` => { // Mocking Thurloe status saving failures
           Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport.apply(StatusCodes.InternalServerError, new FireCloudException(s"Unable to update user profile"))))
         }
         case _ => {
