@@ -89,7 +89,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
               .withBody(profile(user, props).toJson.compactPrint))
     }
 
-    // For testing error scenarios
+    // For testing Thurloe internal errors
     localThurloeServer
       .when(request()
         .withMethod("GET")
@@ -98,6 +98,17 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(InternalServerError.intValue))
+
+    // For testing Thurloe returning no KVPs
+    localThurloeServer
+      .when(request()
+        .withMethod("GET")
+        .withHeader(fireCloudHeader.name, fireCloudHeader.value)
+        .withPath(UserApiService.remoteGetAllPath.format(userWithNoKVPs)))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          .withBody(profile(userWithNoKVPs, Map.empty[String, String]).toJson.compactPrint))
   }
 
   override protected def afterAll(): Unit = {
@@ -256,7 +267,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     "Multi-User Status Updates" - {
       "Attempting to enable multiple users in various states should return a map of status lists" in {
         val assortmentOfUserEmails =
-          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User)
+          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User, userWithNoKVPs)
 
         Post(enablePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           val enableResponse = responseAs[Map[String, Set[String]]].map(_.swap)
@@ -265,6 +276,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assert(enableResponse(Set(disabledUser, registeredUser)) === StatusUpdate.Success.toString)
           assert(enableResponse(Set(enrolledUser)).contains("Failure: Cannot transition"))
           assert(enableResponse(Set(terminatedUser)).contains("Failure: Cannot transition"))
+          assert(enableResponse(Set(userWithNoKVPs)).contains("Failure: User not registered"))
           assert(enableResponse(Set(dummy1User))
             .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
 
@@ -276,7 +288,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
       "Attempting to disable multiple users in various states should return a map of status lists" in {
         val assortmentOfUserEmails =
-          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User)
+          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User, userWithNoKVPs)
 
         Post(disablePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           val disableResponse = responseAs[Map[String, Set[String]]].map(_.swap)
@@ -286,6 +298,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assert(disableResponse(Set(enrolledUser)).contains("Failure: Cannot transition"))
           assert(disableResponse(Set(terminatedUser)).contains("Failure: Cannot transition"))
           assert(disableResponse(Set(registeredUser)).contains("Failure: Cannot transition"))
+          assert(disableResponse(Set(userWithNoKVPs)).contains("Failure: User not registered"))
           assert(disableResponse(Set(dummy1User))
             .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
           assert(disableResponse(Set(dummy2User))
@@ -299,7 +312,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
       "Attempting to terminate multiple users in various states should return a map of status lists" in {
         val assortmentOfUserEmails =
-          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User)
+          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User, userWithNoKVPs)
 
         Post(terminatePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           val terminateResponse = responseAs[Map[String, Set[String]]].map(_.swap)
@@ -309,6 +322,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assert(terminateResponse(Set(enrolledUser)) === StatusUpdate.Success.toString)
           assert(terminateResponse(Set(terminatedUser)) === StatusUpdate.NoChangeRequired.toString)
           assert(terminateResponse(Set(registeredUser)).contains("Failure: Cannot transition"))
+          assert(terminateResponse(Set(userWithNoKVPs)).contains("Failure: User not registered"))
           assert(terminateResponse(Set(dummy1User))
             .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
 
@@ -618,6 +632,7 @@ object TrialApiServiceSpec {
   val terminatedUser = "terminated-user"
   val registeredUser = "registered-user"
   val unregisteredUser = "unregistered-user"
+  val userWithNoKVPs = "UserWithNoKVPs"
 
   val noTrialProps = Map.empty[String,String]
 
