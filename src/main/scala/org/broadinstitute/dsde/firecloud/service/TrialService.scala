@@ -158,7 +158,7 @@ final class TrialService
 
     if (innerState.isEmpty || innerState != newState.state) {
       if (newState.state.isEmpty || !newState.state.get.isAllowedFrom(innerState))
-        throw new FireCloudException(s"Cannot transition from ${innerState} to $newState.state.get")
+        throw new FireCloudException(s"Cannot transition from $innerState to ${newState.state}")
       true
     } else {
       false
@@ -234,7 +234,6 @@ final class TrialService
   private def enrollUser(userInfo: UserInfo): Future[PerRequestMessage] = {
     // get user's trial status, then check the current state
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap {
-      // can't determine the user's trial status; don't enroll
       case Some(status) =>
         status.state match {
           // user already enrolled; don't re-enroll
@@ -252,6 +251,7 @@ final class TrialService
           case Some(TrialStates.Terminated) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 40)"))
           case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
         }
+      // can't determine the user's trial status; don't enroll
       case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 55)"))
     }
   }

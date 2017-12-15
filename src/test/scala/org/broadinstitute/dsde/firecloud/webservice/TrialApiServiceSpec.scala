@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 import com.google.api.client.googleapis.json.{GoogleJsonError, GoogleJsonResponseException}
@@ -10,8 +11,9 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{HttpSamDAO, HttpThurloeDAO,
 import org.broadinstitute.dsde.firecloud.mock.{MockGoogleServicesDAO, MockUtils}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.thurloeServerPort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impProfileWrapper
+import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Enrolled}
-import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, TrialProject, TrialStates, UserTrialStatus}
+import org.broadinstitute.dsde.firecloud.model.Trial._
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
@@ -88,7 +90,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
               .withBody(profile(user, props).toJson.compactPrint))
     }
 
-    // For testing error scenarios
+    // For testing Thurloe internal errors
     localThurloeServer
       .when(request()
         .withMethod("GET")
@@ -110,6 +112,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     "Failing due to Thurloe error should return a server error to the user" in {
       Put(userAgreementPath) ~> dummyUserIdHeaders(dummy1User) ~> userServiceRoutes ~> check {
         status should equal(InternalServerError)
+        assert(localThurloeDao.agreedUsers.isEmpty)
       }
     }
 
@@ -117,6 +120,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       s"should reject ${method.toString} method" in {
         new RequestBuilder(method)(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
           assert(!handled)
+          assert(localThurloeDao.agreedUsers.isEmpty)
         }
       }
     }
@@ -125,6 +129,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       s"$user should not be able to agree to terms" in {
         Put(userAgreementPath) ~> dummyUserIdHeaders(user) ~> userServiceRoutes ~> check {
           status should equal(Forbidden)
+          assert(localThurloeDao.agreedUsers.isEmpty)
         }
       }
     }
@@ -132,6 +137,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     "attempting to agree to terms as enabled user" in {
       Put(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
         status should equal(NoContent)
+        assert(localThurloeDao.agreedUsers == Seq("enabled-user"))
       }
     }
   }
@@ -161,6 +167,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       "should be NoContent success" in {
         Post(enrollPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
           assertResult(NoContent, response.entity.asString) { status }
+          assert(localRawlsDao.billingProjectAdds == Map("testproject" -> "random@site.com"))
         }
       }
     }
@@ -247,19 +254,69 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
-    "Attempting to enable a previously disabled user should return success" in {
-      Post(enablePath, Seq(disabledUser, enabledUser)) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-        val enableResponse = responseAs[Map[String, Seq[String]]]
-        assertResult(Map("Success"->Seq(disabledUser), "NoChangeRequired"->Seq(enabledUser))) { enableResponse }
-        assertResult(OK) {status}
-      }
-    }
+    "Multi-User Status Updates" - {
+      "Attempting to enable multiple users in various states should return a map of status lists" in {
+        val assortmentOfUserEmails =
+          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User)
 
-    "Attempting to enable a previously enabled user should return NoChangeRequired success" in {
-      Post(enablePath, enabledUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-        val enableResponse = responseAs[Map[String, Seq[String]]]
-        assertResult(Map("NoChangeRequired"->Seq(enabledUser))) { enableResponse }
-        assertResult(OK) {status}
+        Post(enablePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+          val enableResponse = responseAs[Map[String, Set[String]]].map(_.swap)
+
+          assert(enableResponse(Set(enabledUser, dummy2User)) === StatusUpdate.NoChangeRequired.toString)
+          assert(enableResponse(Set(disabledUser, registeredUser)) === StatusUpdate.Success.toString)
+          assert(enableResponse(Set(enrolledUser)).contains("Failure: Cannot transition"))
+          assert(enableResponse(Set(terminatedUser)).contains("Failure: Cannot transition"))
+          assert(enableResponse(Set(dummy1User))
+            .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
+
+          assertResult(OK) {
+            status
+          }
+        }
+      }
+
+      "Attempting to disable multiple users in various states should return a map of status lists" in {
+        val assortmentOfUserEmails =
+          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User)
+
+        Post(disablePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+          val disableResponse = responseAs[Map[String, Set[String]]].map(_.swap)
+
+          assert(disableResponse(Set(enabledUser)) === StatusUpdate.Success.toString)
+          assert(disableResponse(Set(disabledUser)) === StatusUpdate.NoChangeRequired.toString)
+          assert(disableResponse(Set(enrolledUser)).contains("Failure: Cannot transition"))
+          assert(disableResponse(Set(terminatedUser)).contains("Failure: Cannot transition"))
+          assert(disableResponse(Set(registeredUser)).contains("Failure: Cannot transition"))
+          assert(disableResponse(Set(dummy1User))
+            .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
+          assert(disableResponse(Set(dummy2User))
+            .contains("ServerError: ErrorReport(Thurloe,Unable to update user profile,Some(500 Internal Server Error)"))
+
+          assertResult(OK) {
+            status
+          }
+        }
+      }
+
+      "Attempting to terminate multiple users in various states should return a map of status lists" in {
+        val assortmentOfUserEmails =
+          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User)
+
+        Post(terminatePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+          val terminateResponse = responseAs[Map[String, Set[String]]].map(_.swap)
+
+          assert(terminateResponse(Set(enabledUser, dummy2User)).contains("Failure: Cannot transition"))
+          assert(terminateResponse(Set(disabledUser)).contains("Failure: Cannot transition"))
+          assert(terminateResponse(Set(enrolledUser)) === StatusUpdate.Success.toString)
+          assert(terminateResponse(Set(terminatedUser)) === StatusUpdate.NoChangeRequired.toString)
+          assert(terminateResponse(Set(registeredUser)).contains("Failure: Cannot transition"))
+          assert(terminateResponse(Set(dummy1User))
+            .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
+
+          assertResult(OK) {
+            status
+          }
+        }
       }
     }
 
@@ -430,7 +487,14 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   /** Used by positive and negative tests where `saveTrialStatus` is called */
   final class TrialApiServiceSpecThurloeDAO extends HttpThurloeDAO {
+
+    private[webservice] var agreedUsers = Seq.empty[String]
+
     override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus) = {
+      if (trialStatus.userAgreed) {
+        agreedUsers = agreedUsers :+ forUserId
+      }
+
       // Note: because HttpThurloeDAO catches exceptions, the assertions here will
       // result in InternalServerErrors instead of appearing nicely in unit test output.
       forUserId match {
@@ -441,7 +505,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
             assert(trialStatus.enrolledDate.toEpochMilli > 0)
             assert(trialStatus.expirationDate.toEpochMilli > 0)
             assertResult( expectedExpirationDate ) { trialStatus.expirationDate }
-            assertResult(0) { trialStatus.terminatedDate.toEpochMilli }
+            assert(trialStatus.terminatedDate.toEpochMilli === 0)
 
             Future.successful(Success(()))
           case Some(Enabled) =>
@@ -451,7 +515,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           case _ =>
             Future.failed(new IllegalArgumentException(s"Enabled status can only transition to Enrolled or Disabled"))
         }
-        case `disabledUser` => {
+        case `disabledUser` | `registeredUser` => {
           assertResult(Some(TrialStates.Enabled)) {
             trialStatus.state
           }
@@ -471,11 +535,11 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
           Future.successful(Success(()))
         }
-        case user @ `dummy2User` => { // Mocking Thurloe status saving failures
+        case `dummy2User` => { // Mocking Thurloe status saving failures
           Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport.apply(StatusCodes.InternalServerError, new FireCloudException(s"Unable to update user profile"))))
         }
         case _ => {
-          fail("Should only be updating enabled, disabled or enrolled users")
+          fail("Should only be updating registered, enabled, disabled or enrolled users")
         }
       }
     }
@@ -492,6 +556,9 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   /** Used to ensure that manager endpoints only serve managers */
   final class TrialApiServiceSpecRawlsDAO extends MockRawlsDAO {
+
+    private[webservice] var billingProjectAdds = Map.empty[String, String]
+
     private val groupMap = Map(
       "apples" -> Seq("alice"),
       "bananas" -> Seq("bob"),
@@ -504,6 +571,11 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         case TrialApiServiceSpec.unauthorizedUser => Future.successful(false)
         case _ => Future.successful(groupMap.getOrElse(groupName, Seq.empty[String]).contains(userInfo.id))
       }
+    }
+
+    override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
+      billingProjectAdds = billingProjectAdds + (projectId -> email)
+      Future(true)
     }
   }
 
@@ -538,7 +610,7 @@ object TrialApiServiceSpec {
   val registeredUser = "registered-user"
   val unregisteredUser = "unregistered-user"
 
-  val noTrialProps: Map[String,String] = Map.empty
+  val noTrialProps = Map.empty[String,String]
 
   val dummy1Props = Map(
     "trialState" -> "Enabled"
