@@ -47,14 +47,12 @@ trait TrialServiceSupport extends LazyLogging {
       val wrappers = optionalWrappers.filter(_.isEmpty).map(_.get)
       val headers = List("Project Name", "User Subject Id", "User Email", "Enrollment Date", "Terminated Date", "User Agreement").map(_.asInstanceOf[AnyRef]).asJava
 
-      val userTrialStatuses = wrappers.map (x => UserTrialStatus(x))
-      val profiles = wrappers map Profile
+      val userTrialStatuses:Map[String,UserTrialStatus] = wrappers.map (x => x.userId -> UserTrialStatus(x)).toMap
+      val profiles:Map[String,Profile] = wrappers.map (x => x.userId -> Profile(x)).toMap
 
       val rows: List[util.List[AnyRef]] = projects.map { trialProject =>
-        val userTrialStatuses = UserTrialStatus(wrapper)
-        val profile = Profile(wrapper)
 
-        val (userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed) = getTrialUserInformation(trialProject.user, userTrialStatuses)
+        val (userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed) = getTrialUserInformation(trialProject.user, userTrialStatuses, profiles)
         List(trialProject.name.value, userSubjectId, userEmail, enrollmentDate, terminatedDate, userAgreed).map(_.asInstanceOf[AnyRef]).asJava
       }.toList
       val values: util.List[util.List[AnyRef]] = (headers :: rows).asJava
@@ -63,13 +61,14 @@ trait TrialServiceSupport extends LazyLogging {
   }
 
   // convenience method to pull user information from options
-  private def getTrialUserInformation(user: Option[WorkbenchUserInfo], userTrialStatuses: Seq[UserTrialStatus]): (String, String, String, String, String) = {
+  private def getTrialUserInformation(user: Option[WorkbenchUserInfo], userTrialStatuses: Map[String,UserTrialStatus], profiles: Map[String,Profile]): (String, String, String, String, String) = {
     if (user.isDefined) {
       val userSubjectId = user.get.userSubjectId
       val userEmail = user.get.userEmail
-      val userTrialStatus: Option[UserTrialStatus] = userTrialStatuses.find { status =>
-        status.userId.equals(userSubjectId)
-      }
+
+      val userTrialStatus = userTrialStatuses.get(userSubjectId)
+      val profile = profiles.get(userSubjectId)
+
       val (enrollmentDate, terminatedDate, userAgreed) = if (userTrialStatus.isDefined) {
         val trialStaus = userTrialStatus.get
         val zeroDate = Date.from(Instant.ofEpochMilli(0))
@@ -96,6 +95,13 @@ trait TrialServiceSupport extends LazyLogging {
       ("", "", "", "", "")
     }
   }
+
+  case class SpreadsheetRow(
+                userSubjectId: String = "",
+                userEmail: String = "",
+                enrollmentDate: String = "",
+                terminatedDate: String = "",
+                userAgreed: String = "")
 
   def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: UserTrialStatus): UserTrialStatus = {
     val needsProject = currentStatus.state match {
