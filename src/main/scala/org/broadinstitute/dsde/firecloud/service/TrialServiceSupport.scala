@@ -9,7 +9,7 @@ import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRang
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess.{ThurloeDAO, TrialDAO}
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled}
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, TrialState}
 import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, TrialProject, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, Profile, ProfileWrapper, UserInfo, WorkbenchUserInfo}
 
@@ -25,12 +25,12 @@ trait TrialServiceSupport extends LazyLogging {
   private val spreadsheetFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss ")
   private val zeroDate = Date.from(Instant.ofEpochMilli(0))
   // spreadsheet headers
-  private val headers = List("Project Name", "User Subject Id", "Login Email", "Contact Email",
+  private val headers = List("Project Name", "User Subject Id", "Status", "Login Email", "Contact Email",
     "Enrollment Date", "Terminated Date", "User Agreement", "User Agreement Date",
     "First Name", "Last Name", "Organization", "City", "State", "Country").map(_.asInstanceOf[AnyRef]).asJava
 
   // the default set of values to use if a project has no users
-  private val defaultValues = List.fill(13)("")
+  private val defaultValues = List.fill(14)("")
 
 
   def makeSpreadsheetResponse(spreadsheetId: String): SpreadsheetResponse = {
@@ -88,6 +88,7 @@ trait TrialServiceSupport extends LazyLogging {
 
     SpreadsheetRow(
       userSubjectId = status.userId,
+      state = status.state,
       userEmail = user.userEmail,
       enrollmentDate = status.enrolledDate,
       terminatedDate = status.terminatedDate,
@@ -105,6 +106,7 @@ trait TrialServiceSupport extends LazyLogging {
 
   case class SpreadsheetRow(
       userSubjectId: String,
+      state: Option[TrialState],
       userEmail: String, // sign-in email
       enrollmentDate: Instant,
       terminatedDate: Instant,
@@ -121,6 +123,7 @@ trait TrialServiceSupport extends LazyLogging {
     def toSpreadsheetValues: List[String] = {
       List(
         userSubjectId,
+        if (state.isDefined) state.get.toString else "Unknown",
         userEmail,
         contactEmail,
         instantToSpreadsheetString(enrollmentDate),
