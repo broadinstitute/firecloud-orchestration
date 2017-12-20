@@ -7,6 +7,7 @@ import java.util.Date
 
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess.{ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled}
 import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, TrialProject, UserTrialStatus}
@@ -14,6 +15,7 @@ import org.broadinstitute.dsde.firecloud.model.{UserInfo, WorkbenchUserInfo}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 trait TrialServiceSupport extends LazyLogging {
 
@@ -34,12 +36,9 @@ trait TrialServiceSupport extends LazyLogging {
   def makeSpreadsheetValues(managerInfo: UserInfo, trialDAO: TrialDAO, thurloeDAO: ThurloeDAO, majorDimension: String, range: String)
     (implicit executionContext: ExecutionContext): Future[ValueRange] = {
     val projects: Seq[TrialProject] = trialDAO.projectReport
-    val trialStatuses = Future.sequence(projects.map { p =>
-      if (p.user.isDefined)
-        thurloeDAO.getTrialStatus(p.user.get.userSubjectId, managerInfo)
-      else
-        Future[Option[UserTrialStatus]](None)
-    })
+    val trialStatuses = Future.sequence(
+      projects.filter(p => p.user.isDefined)
+        .map(p => thurloeDAO.getTrialStatus(p.user.get.userSubjectId, managerInfo)))
     trialStatuses.map { userTrialStatuses =>
       val headers = List("Project Name", "User Subject Id", "User Email", "Enrollment Date", "Terminated Date", "User Agreement").map(_.asInstanceOf[AnyRef]).asJava
       val rows: List[util.List[AnyRef]] = projects.map { trialProject =>
@@ -52,22 +51,22 @@ trait TrialServiceSupport extends LazyLogging {
   }
 
   // convenience method to pull user information from options
-  private def getTrialUserInformation(user: Option[WorkbenchUserInfo], userTrialStatuses: Seq[Option[UserTrialStatus]]): (String, String, String, String, String) = {
+  private def getTrialUserInformation(user: Option[WorkbenchUserInfo], userTrialStatuses: Seq[UserTrialStatus]): (String, String, String, String, String) = {
     if (user.isDefined) {
       val userSubjectId = user.get.userSubjectId
       val userEmail = user.get.userEmail
-      val userTrialStatus = userTrialStatuses.find { trialStatus =>
-        trialStatus.isDefined && trialStatus.get.userId.equals(userSubjectId)
-      }.flatten
+      val userTrialStatus: Option[UserTrialStatus] = userTrialStatuses.find { status =>
+        status.userId.equals(userSubjectId)
+      }
       val (enrollmentDate, terminatedDate, userAgreed) = if (userTrialStatus.isDefined) {
         val trialStaus = userTrialStatus.get
         val zeroDate = Date.from(Instant.ofEpochMilli(0))
-        val enrollDate = Date.from(userTrialStatus.get.enrolledDate)
+        val enrollDate = Date.from(trialStaus.enrolledDate)
         val enrollmentDateString = if (enrollDate.after(zeroDate))
-          enrollmentFormat.format(Date.from(userTrialStatus.get.enrolledDate))
+          enrollmentFormat.format(Date.from(trialStaus.enrolledDate))
         else
           ""
-        val termDate = Date.from(userTrialStatus.get.terminatedDate)
+        val termDate = Date.from(trialStaus.terminatedDate)
         val termDateString = if (termDate.after(zeroDate))
           enrollmentFormat.format(termDate)
         else
@@ -86,20 +85,35 @@ trait TrialServiceSupport extends LazyLogging {
     }
   }
 
-  def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
-    val needsProject = currentStatus match {
-      case None => true
-      case Some(statusObj) => statusObj.state match {
-        case None | Some(Disabled) => true
-        case _ => false // either an invalid transition or noop
-      }
+  def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: UserTrialStatus): UserTrialStatus = {
+    val needsProject = currentStatus.state match {
+      case None | Some(Disabled) => true
+      case _ => false // either an invalid transition or noop
     }
+
     if (needsProject) {
-      val trialProject = trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))
+      // how many times should we try to find an available project? Retries here help when multiple users are enabled at once
+      val numAttempts = 50
+
+      def claimProject(attempt:Int):TrialProject = {
+        Try(trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
+          case Success(s) => s
+          case Failure(f) =>
+            if (attempt >= numAttempts) {
+              throw new FireCloudException(s"Could not claim a project while enabling user ${userInfo.userSubjectId} " +
+                s"(${userInfo.userEmail}):", f)
+            } else {
+              logger.debug(s"buildEnableUserStatus retrying claim; attempt $attempt")
+              claimProject(attempt + 1)
+            }
+        }
+      }
+      val trialProject = claimProject(1)
+
       logger.info(s"[trialaudit] assigned user ${userInfo.userEmail} (${userInfo.userSubjectId}) to project ${trialProject.name.value}")
-      UserTrialStatus(userId = userInfo.userSubjectId, state = Some(Enabled), userAgreed = false, enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
+      currentStatus.copy(userId = userInfo.userSubjectId, state = Some(Enabled), userAgreed = false, enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
     } else {
-      currentStatus.get.copy(state = Some(Enabled))
+      currentStatus.copy(state = Some(Enabled))
     }
   }
 

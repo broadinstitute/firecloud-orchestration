@@ -23,14 +23,14 @@ import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsBillingProjectName, RawlsUserEmail}
 import spray.http.StatusCodes._
-import spray.http.{OAuth2BearerToken, StatusCodes}
+import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsString}
 import spray.routing.RequestContext
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 // TODO: Contain userEmail in value class for stronger type safety without incurring performance penalty
@@ -84,7 +84,7 @@ final class TrialService
     case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
-  private def enableUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
+  private def enableUserPostProcessing(updateStatus: Attempt, prevStatus: UserTrialStatus, newStatus: UserTrialStatus): Unit = {
     if (updateStatus != StatusUpdate.Success && newStatus.billingProjectName.isDefined) {
       logger.warn(
         s"[trialaudit] The user '${newStatus.userId}' failed to be enabled, releasing the billing project '${newStatus.billingProjectName.get}' back into the available pool.")
@@ -93,17 +93,23 @@ final class TrialService
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
-    // buildEnableUserStatus is located in TrialServiceSupport
-    executeStateTransitions(managerInfo, userEmails, buildEnableUserStatus, enableUserPostProcessing)
+    val numAvailable:Long = trialDAO.countProjects.getOrElse("available", 0L)
+    if (userEmails.size.toLong > numAvailable) {
+      Future(RequestCompleteWithErrorReport(BadRequest, s"You are enabling ${userEmails.size} users, but there are only " +
+        s"$numAvailable projects available. Please create more projects."))
+    } else {
+      // buildEnableUserStatus is located in TrialServiceSupport
+      executeStateTransitions(managerInfo, userEmails, buildEnableUserStatus, enableUserPostProcessing)
+    }
   }
 
-  private def buildDisableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
-    currentStatus.get.copy(state = Some(Disabled), billingProjectName = None)
+  private def buildDisableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: UserTrialStatus): UserTrialStatus = {
+    currentStatus.copy(state = Some(Disabled), billingProjectName = None)
   }
 
-  private def disableUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
-    if (updateStatus == StatusUpdate.Success && prevStatus.isDefined) {
-      prevStatus.get.billingProjectName match {
+  private def disableUserPostProcessing(updateStatus: Attempt, prevStatus: UserTrialStatus, newStatus: UserTrialStatus): Unit = {
+    if (updateStatus == StatusUpdate.Success) {
+      prevStatus.billingProjectName match {
         case None => None
         case Some(name) =>
           logger.info(
@@ -117,28 +123,23 @@ final class TrialService
     executeStateTransitions(managerInfo, userEmails, buildDisableUserStatus, disableUserPostProcessing)
   }
 
-  private def buildTerminateUserStatus(userInfo: WorkbenchUserInfo, currentStatus: Option[UserTrialStatus]): UserTrialStatus = {
-    if (currentStatus.isEmpty)
-      throw new FireCloudException("Cannot terminate a user without a status")
-    val trialStatus = currentStatus.get
-
-    if (trialStatus.state.contains(Enrolled)) {
-      if (trialStatus.billingProjectName.isEmpty)
+  private def buildTerminateUserStatus(userInfo: WorkbenchUserInfo, currentStatus: UserTrialStatus): UserTrialStatus = {
+    if (currentStatus.state.contains(Enrolled)) {
+      if (currentStatus.billingProjectName.isEmpty)
         throw new FireCloudException(s"billing project empty for user ${userInfo.userEmail} at termination.")
-      val projectId = trialStatus.billingProjectName.get
+      val projectId = currentStatus.billingProjectName.get
 
       // disassociate billing for this project. This will throw an error if disassociation fails
       val removalResult = googleDAO.trialBillingManagerRemoveBillingAccount(projectId, userInfo.userEmail)
       if (!removalResult)
         logger.info(s"[trialaudit] for user ${userInfo.userEmail} (${userInfo.userSubjectId}), removed billing from project $projectId")
       removalResult
-
     }
 
-    currentStatus.get.copy(state = Some(Terminated), terminatedDate = Instant.now)
+    currentStatus.copy(state = Some(Terminated), terminatedDate = Instant.now)
   }
 
-  private def terminateUserPostProcessing(updateStatus: Attempt, prevStatus: Option[UserTrialStatus], newStatus: UserTrialStatus): Unit = {
+  private def terminateUserPostProcessing(updateStatus: Attempt, prevStatus: UserTrialStatus, newStatus: UserTrialStatus): Unit = {
     if (updateStatus != StatusUpdate.Success) {
       logger.error(
         s"[trialaudit] The user '${newStatus.userId}' had billing disassociated, but failed to be terminated. This" +
@@ -150,73 +151,73 @@ final class TrialService
     executeStateTransitions(managerInfo, userEmails, buildTerminateUserStatus, terminateUserPostProcessing)
   }
 
-  private def requiresStateTransition(currentState: Option[UserTrialStatus], newState: UserTrialStatus): Boolean = {
-    val innerState = currentState match {
-      case None => None
-      case Some(status) => status.state
-    }
-
-    if (innerState.isEmpty || innerState != newState.state) {
-      if (newState.state.isEmpty || !newState.state.get.isAllowedFrom(innerState))
-        throw new FireCloudException(s"Cannot transition from $innerState to ${newState.state}")
-      true
-    } else {
+  private def requiresStateTransition(currentState: UserTrialStatus, newState: UserTrialStatus): Boolean = {
+    // this check needs to happen first for idempotent behavior
+    if (currentState.state == newState.state)
       false
+    else {
+      // make sure the state transition is valid
+      if (newState.state.isEmpty || !newState.state.get.isAllowedFrom(currentState.state))
+        throw new FireCloudException(s"Cannot transition from ${currentState.state} to $newState.state.get")
+      true // indicates transition is required
+    }
+  }
+
+  private def throwableToStatus(t: Throwable): String = {
+    t match {
+      case exr: FireCloudExceptionWithErrorReport =>
+        if (exr.errorReport.statusCode.contains(StatusCodes.NotFound))
+          StatusUpdate.toName(StatusUpdate.Failure("User not registered"))
+        else StatusUpdate.toName(StatusUpdate.Failure(exr.errorReport.message))
+      case ex: FireCloudException =>
+        StatusUpdate.toName(StatusUpdate.Failure(ex.getMessage))
+      case _ =>
+        StatusUpdate.toName(StatusUpdate.ServerError(t.getMessage))
     }
   }
 
   private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
-                                      statusTransition: (WorkbenchUserInfo, Option[UserTrialStatus]) => UserTrialStatus,
-                                      transitionPostProcessing: (Attempt, Option[UserTrialStatus], UserTrialStatus) => Unit): Future[PerRequestMessage] = {
-    val results: Seq[(String, String)] = userEmails map { userEmail =>
-      val finalStatus = executeStateTransition(managerInfo, userEmail, statusTransition, transitionPostProcessing)
-      // Use await here so that multiple Futures don't have a conflict when claiming a billing project
+                                      statusTransition: (WorkbenchUserInfo, UserTrialStatus) => UserTrialStatus,
+                                      transitionPostProcessing: (Attempt, UserTrialStatus, UserTrialStatus) => Unit): Future[PerRequestMessage] = {
 
-      val result =
-        try {
-          Await.result(finalStatus, 1.minute)
-        } catch {
-          case ex: FireCloudException =>
-            StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage))
-        }
-      (result, userEmail)
-    }
-    val sorted = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
-    Future.successful(RequestComplete(sorted))
-  }
-
-  private def executeStateTransition(managerInfo: UserInfo, userEmail: String,
-                                     statusTransition: (WorkbenchUserInfo, Option[UserTrialStatus]) => UserTrialStatus,
-                                     transitionPostProcessing: (Attempt, Option[UserTrialStatus], UserTrialStatus) => Unit): Future[String] = {
-    try {
-      samDao.adminGetUserByEmail(RawlsUserEmail(userEmail)) flatMap { regInfo =>
-        val subId = regInfo.userInfo.userSubjectId
-        val userInfo = WorkbenchUserInfo(subId, userEmail)
-        thurloeDao.getTrialStatus(subId, managerInfo) flatMap { userTrialStatus =>
-          val newStatus = statusTransition(userInfo, userTrialStatus)
-          try {
-            if (requiresStateTransition(userTrialStatus, newStatus)) {
-              updateTrialStatus(managerInfo, userInfo, newStatus) map { stateResponse =>
-                transitionPostProcessing(stateResponse, userTrialStatus, newStatus)
-                StatusUpdate.toName(stateResponse)
-              }
-            } else {
-              logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '${newStatus.state.getOrElse("")}'. No further action will be taken.")
-              Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
+    def checkAndUpdateState(userInfo: WorkbenchUserInfo, userTrialStatus: UserTrialStatus, newStatus: UserTrialStatus): Future[String] = {
+      Try(requiresStateTransition(userTrialStatus, newStatus)) match {
+        case Success(isRequired) =>
+          if (isRequired) {
+            updateTrialStatus(managerInfo, userInfo, newStatus) map { stateResponse =>
+              transitionPostProcessing(stateResponse, userTrialStatus, newStatus)
+              StatusUpdate.toName(stateResponse)
             }
-          } catch {
-            case ex: FireCloudException =>
-              Future.successful(StatusUpdate.toName(StatusUpdate.Failure(ex.getMessage)))
-            case t: Throwable =>
-              Future.successful(StatusUpdate.toName(StatusUpdate.ServerError(t.getMessage)))
+          } else {
+            logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '${newStatus.state.getOrElse("")}'. No further action will be taken.")
+            Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
           }
-        }
+        case Failure(t: Throwable) => Future.successful(throwableToStatus(t))
       }
-    } catch {
-      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode.contains(StatusCodes.NotFound) =>
-        Future.successful(StatusUpdate.toName(StatusUpdate.Failure("User not registered")))
-      case ex: Exception =>
-        Future.successful(StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage)))
+    }
+
+    val userTransitions = userEmails.map { userEmail =>
+      val status = Try(for {
+        regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(userEmail))
+        subId = regInfo.userInfo.userSubjectId
+        userInfo = WorkbenchUserInfo(subId, userEmail)
+        userTrialStatus <- thurloeDao.getTrialStatus(subId, managerInfo)
+        newStatus = statusTransition(userInfo, userTrialStatus)
+        result <- checkAndUpdateState(userInfo, userTrialStatus, newStatus)
+      } yield result) match {
+        case Success(s) => s
+        case Failure(t: Throwable) =>
+          Future.successful(throwableToStatus(t))
+      }
+      status map { finalStatus: String => (finalStatus, userEmail) } recover {
+        case ex: Exception =>
+          (StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage)), userEmail)
+      }
+    }
+
+    Future.sequence(userTransitions) map { results =>
+      val sorted: Map[String, Seq[String]] = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
+      RequestComplete(sorted)
     }
   }
 
@@ -233,9 +234,9 @@ final class TrialService
 
   private def enrollUser(userInfo: UserInfo): Future[PerRequestMessage] = {
     // get user's trial status, then check the current state
-    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap {
-      case Some(status) =>
-        status.state match {
+    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { status =>
+      // can't determine the user's trial status; don't enroll
+      status.state match {
           // user already enrolled; don't re-enroll
           case Some(TrialStates.Enrolled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are already enrolled in a free trial. (Error 20)"))
           // user enabled (eligible) for trial, enroll!
@@ -251,8 +252,6 @@ final class TrialService
           case Some(TrialStates.Terminated) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 40)"))
           case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
         }
-      // can't determine the user's trial status; don't enroll
-      case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 55)"))
     }
   }
 
@@ -371,8 +370,7 @@ final class TrialService
 
   private def recordUserAgreement(userInfo: UserInfo): Future[PerRequestMessage] = {
     // Thurloe errors are handled by the caller of this method
-    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap {
-      case Some(status) =>
+    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { status =>
         status.state match {
           case Some(TrialStates.Enabled) =>
             thurloeDao.saveTrialStatus(userInfo.id, userInfo, status.copy(userAgreed = true)) flatMap {
@@ -381,7 +379,6 @@ final class TrialService
             }
           case _ => Future(RequestCompleteWithErrorReport(Forbidden, "You are not eligible for a free trial."))
         }
-      case None => Future(RequestCompleteWithErrorReport(Forbidden, "You are not eligible for a free trial."))
     }
   }
 

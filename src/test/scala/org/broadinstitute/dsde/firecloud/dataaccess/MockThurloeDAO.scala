@@ -134,10 +134,10 @@ class MockThurloeDAO extends ThurloeDAO {
     Future.successful(
       forUserId match {
         case "enabled-user" =>
-          Some(UserTrialStatus(forUserId, Some(TrialStates.Enabled), true, 0, 0, 0, 0, Some("date")))
-        case "disabled-user" => None  // TODO return an empty UserTrialStatus - more accurate with actual thurloe call
+          UserTrialStatus(forUserId, Some(TrialStates.Enabled), true, 0, 0, 0, 0, Some("date"))
+        case "disabled-user" => UserTrialStatus(ProfileWrapper(forUserId, List.empty))
         case _ =>
-          Some(UserTrialStatus(forUserId, Some(TrialStates.Terminated), true, 0, 0, 0, 0, None))
+          UserTrialStatus(forUserId, Some(TrialStates.Terminated), true, 0, 0, 0, 0, None)
       }
     )
   }

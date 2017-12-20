@@ -305,7 +305,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         Post(terminatePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           val terminateResponse = responseAs[Map[String, Set[String]]].map(_.swap)
 
-          assert(terminateResponse(Set(enabledUser, dummy2User)).contains("Failure: Cannot transition"))
+          assert(terminateResponse(Set(enabledUser)).contains("Failure: Cannot transition"))
+          assert(terminateResponse(Set(dummy2User)).contains("Failure: Cannot transition"))
           assert(terminateResponse(Set(disabledUser)).contains("Failure: Cannot transition"))
           assert(terminateResponse(Set(enrolledUser)) === StatusUpdate.Success.toString)
           assert(terminateResponse(Set(terminatedUser)) === StatusUpdate.NoChangeRequired.toString)
@@ -363,6 +364,16 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         }
       }
     }
+
+    "attempting to enable more users than available projects should fail" in {
+      Post(enablePath, Seq.fill(101)("foo")) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+        assertResult(BadRequest, response.entity.asString) { status }
+        assert(response.entity.asString.contains("You are enabling 101 users, but there are only 100 projects available. " +
+          "Please create more projects."))
+        // limit of 100 defined in TrialApiServiceSpecTrialDAO
+      }
+    }
+
   }
 
   "Campaign manager project-management endpoint" - {
@@ -476,13 +487,15 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   }
 
   class TrialApiServiceSpecTrialDAO extends ProjectManagerSpecTrialDAO {
-    override def claimProjectRecord(userInfo: WorkbenchUserInfo): TrialProject = {
+    override def claimProjectRecord(userInfo: WorkbenchUserInfo, randomizationFactor: Int = 20): TrialProject = {
       TrialProject(RawlsBillingProjectName(userInfo.userEmail), true, Some(userInfo), Some(CreationStatuses.Ready))
     }
 
     override def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
       TrialProject(projectName)
     }
+
+    override def countProjects: Map[String, Long] = Map("available" -> 100)
   }
 
   /** Used by positive and negative tests where `saveTrialStatus` is called */
