@@ -235,7 +235,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assertResult(OK, response.entity.asString) { status }
           val resp = response.entity.asString
           assert(resp.contains("ServerError:"))
-          assert(resp.contains("Unable to get user trial status"))
+          assert(resp.contains("Unable to get user KVPs from profile service"))
         }
       }
 
@@ -267,7 +267,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assert(enableResponse(Set(enrolledUser)).contains("Failure: Cannot transition"))
           assert(enableResponse(Set(terminatedUser)).contains("Failure: Cannot transition"))
           assert(enableResponse(Set(dummy1User))
-            .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
+            .contains("ServerError: ErrorReport(Thurloe,Unable to get user KVPs from profile service,Some(500 Internal Server Error)"))
 
           assertResult(OK) {
             status
@@ -288,7 +288,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assert(disableResponse(Set(terminatedUser)).contains("Failure: Cannot transition"))
           assert(disableResponse(Set(registeredUser)).contains("Failure: Cannot transition"))
           assert(disableResponse(Set(dummy1User))
-            .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
+            .contains("ServerError: ErrorReport(Thurloe,Unable to get user KVPs from profile service,Some(500 Internal Server Error)"))
           assert(disableResponse(Set(dummy2User))
             .contains("ServerError: ErrorReport(Thurloe,Unable to update user profile,Some(500 Internal Server Error)"))
 
@@ -312,7 +312,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assert(terminateResponse(Set(terminatedUser)) === StatusUpdate.NoChangeRequired.toString)
           assert(terminateResponse(Set(registeredUser)).contains("Failure: Cannot transition"))
           assert(terminateResponse(Set(dummy1User))
-            .contains("ServerError: ErrorReport(Thurloe,Unable to get user trial status,Some(500 Internal Server Error)"))
+            .contains("ServerError: ErrorReport(Thurloe,Unable to get user KVPs from profile service,Some(500 Internal Server Error)"))
 
           assertResult(OK) {
             status

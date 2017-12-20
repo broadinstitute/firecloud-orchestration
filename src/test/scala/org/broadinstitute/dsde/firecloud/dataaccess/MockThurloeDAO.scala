@@ -89,6 +89,10 @@ class MockThurloeDAO extends ThurloeDAO {
       TCGA_AND_TARGET_UNLINKED -> baseProfile
     )
 
+
+  override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] =
+    Future.successful(None)
+
   override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
     val profileWrapper = try {
       Option(Profile(ProfileWrapper(userInfo.id, mockKeyValues(userInfo.id).toList)))

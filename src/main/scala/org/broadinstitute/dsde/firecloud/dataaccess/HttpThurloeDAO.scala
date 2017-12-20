@@ -23,17 +23,23 @@ import scala.util.{Failure, Success, Try}
 class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
   extends ThurloeDAO with RestJsonClient {
 
-  override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
+
+  override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] = {
     wrapExceptions {
-      userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(userInfo.getUniqueId)), false, true)(userInfo) map { response =>
+      val req = userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(forUserId)), useFireCloudHeader = true)(callerToken)
+
+      req map { response =>
         response.status match {
-          case StatusCodes.OK => Some(Profile(unmarshal[ProfileWrapper].apply(response)))
+          case StatusCodes.OK => Some(unmarshal[ProfileWrapper].apply(response))
           case StatusCodes.NotFound => None
-          case _ => throw new FireCloudException("Unable to get user profile")
+          case _ => throw new FireCloudException("Unable to get user KVPs from profile service")
         }
       }
     }
   }
+
+  override def getProfile(userInfo: UserInfo): Future[Option[Profile]] =
+    getAllKVPs(userInfo.id, userInfo) map { optionalWrapper => optionalWrapper map (Profile(_)) }
 
   override def getAllUserValuesForKey(key: String): Future[Map[String, String]] = {
     val queryUri = Uri(UserApiService.remoteGetQueryURL).withQuery(Map("key"->key))
@@ -85,16 +91,13 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     * @return the trial status for the specified user, or a default UserTrialStatus object
     */
   override def getTrialStatus(forUserId: String, callerToken: WithAccessToken): Future[UserTrialStatus] = {
-    wrapExceptions {
-      userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(forUserId)), false, true)(callerToken) map { response =>
-        response.status match {
-          case StatusCodes.OK =>
-            val status = UserTrialStatus(unmarshal[ProfileWrapper].apply(response))
-            assert(forUserId == status.userId, "status id does not match!")
-            status
-          case _ => throw new FireCloudException("Unable to get user trial status")
-        }
-      }
+    getAllKVPs(forUserId, callerToken) map {
+      case Some(wrapper) =>
+        val status = UserTrialStatus(wrapper)
+        assert(forUserId == status.userId, "status id does not match!")
+        status
+      case None =>
+        throw new FireCloudException("Unable to get user trial status")
     }
   }
 
