@@ -305,7 +305,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         Post(terminatePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           val terminateResponse = responseAs[Map[String, Set[String]]].map(_.swap)
 
-          assert(terminateResponse(Set(enabledUser, dummy2User)).contains("Failure: Cannot transition"))
+          assert(terminateResponse(Set(enabledUser)).contains("Failure: Cannot transition"))
+          assert(terminateResponse(Set(dummy2User)).contains("Failure: Cannot transition"))
           assert(terminateResponse(Set(disabledUser)).contains("Failure: Cannot transition"))
           assert(terminateResponse(Set(enrolledUser)) === StatusUpdate.Success.toString)
           assert(terminateResponse(Set(terminatedUser)) === StatusUpdate.NoChangeRequired.toString)
