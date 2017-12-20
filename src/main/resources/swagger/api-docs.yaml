@@ -1644,12 +1644,16 @@ paths:
   /api/trial/manager/{operation}:
       post:
         tags:
-          - Trial
+          - Trial (FireCloud Credits)
         operationId: updateTrialUserStatus
-        summary: Update user status in FireCloud free trial
+        summary: Update user status in the FireCloud Free Credits Program; for managers of the Program only.
+        description: |
+          * **Enable** Add registered user(s) to FireCloud's internal record of users that are allowed to enroll (of their own accord, by clicking the Enroll button in the UI)
+          * **Disable** If a user has not yet enrolled themselves, we can still remove them from the trial. Reverse of the Enable operation.
+          * **Terminate** End the user's trial by removing their billing project from the FireCloud Free Credits Program billing account. The user will no longer be able to create workspaces in that billing project.
         parameters:
           - name: operation
-            description: operation to perform on the specified users
+            description: operation to perform on the specified users.
             required: true
             in: path
             type: string
@@ -1678,9 +1682,9 @@ paths:
   /api/trial/manager/projects:
     post:
       tags:
-        - Trial
+        - Trial (FireCloud Credits)
       operationId: manageTrialProjects
-      summary: Manage free trial projects
+      summary: Manage projects in the FireCloud Free Credits Program; for managers of the Program only.
       parameters:
         - name: operation
           description: |
@@ -1718,9 +1722,9 @@ paths:
   /api/trial/manager/report:
     post:
       tags:
-        - Trial
+        - Trial (FireCloud Credits)
       operationId: createReportTrialProjects
-      summary: Create a Spreadsheet Report of free trial projects
+      summary: Create a Spreadsheet Report of projects in the FireCloud Free Credits Program; for managers of the Program only.
       responses:
         200:
           description: OK; report data spreadsheet is created
@@ -1743,9 +1747,9 @@ paths:
   /api/trial/manager/report/{spreadsheetId}:
     put:
       tags:
-        - Trial
+        - Trial (FireCloud Credits)
       operationId: updateReportTrialProjects
-      summary: Update a Spreadsheet Report of free trial projects
+      summary: Update a Spreadsheet Report of projects in the FireCloud Free Credits Program; for managers of the Program only.
       parameters:
         - name: spreadsheetId
           description: |
