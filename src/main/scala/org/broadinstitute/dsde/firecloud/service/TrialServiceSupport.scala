@@ -26,11 +26,11 @@ trait TrialServiceSupport extends LazyLogging {
   private val zeroDate = Date.from(Instant.ofEpochMilli(0))
   // spreadsheet headers
   private val headers = List("Project Name", "User Subject Id", "Status", "Login Email", "Contact Email",
-    "Enrollment Date", "Terminated Date", "User Agreement", "User Agreement Date",
+    "Enrollment Date", "Terminated Date", "Expiration Date", "User Agreement", "User Agreement Date",
     "First Name", "Last Name", "Organization", "City", "State", "Country").map(_.asInstanceOf[AnyRef]).asJava
 
   // the default set of values to use if a project has no users
-  private val defaultValues = List.fill(14)("")
+  private val defaultValues = List.fill(headers.size() - 1)("")
 
 
   def makeSpreadsheetResponse(spreadsheetId: String): SpreadsheetResponse = {
@@ -92,6 +92,7 @@ trait TrialServiceSupport extends LazyLogging {
       userEmail = user.userEmail,
       enrollmentDate = status.enrolledDate,
       terminatedDate = status.terminatedDate,
+      expiredDate = status.expirationDate,
       userAgreed = status.userAgreed,
       userAgreedDate = status.enrolledDate, // TODO: should be separate date
       firstName = profile.firstName,
@@ -110,6 +111,7 @@ trait TrialServiceSupport extends LazyLogging {
       userEmail: String, // sign-in email
       enrollmentDate: Instant,
       terminatedDate: Instant,
+      expiredDate: Instant,
       userAgreed: Boolean,
       userAgreedDate: Instant, // time the user signed the eula
       firstName: String,
@@ -128,6 +130,7 @@ trait TrialServiceSupport extends LazyLogging {
         contactEmail,
         instantToSpreadsheetString(enrollmentDate),
         instantToSpreadsheetString(terminatedDate),
+        instantToSpreadsheetString(expiredDate),
         if (userAgreed) "Accepted" else "Not Accepted",
         instantToSpreadsheetString(userAgreedDate),
         firstName,
