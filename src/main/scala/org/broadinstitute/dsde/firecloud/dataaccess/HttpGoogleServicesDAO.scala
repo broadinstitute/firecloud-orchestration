@@ -341,16 +341,25 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
     val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
 
-    // 1. Retrieve existing records
+    // Retrieve existing records
     val getExisting: Sheets#Spreadsheets#Values#Get = service.spreadsheets().values.get(spreadsheetId, "Sheet1")
     val existingContent: ValueRange = getExisting.execute()
 
+    // Smart merge existing with new
+    val rows = updatePreservingOrder(newContent, existingContent)
+
+    // Send update
+    val response = service.spreadsheets().values().update(spreadsheetId, newContent.getRange, newContent.setValues(rows)).setValueInputOption("RAW").execute()
+    response.toString.parseJson.asJsObject
+  }
+
+  private def updatePreservingOrder(newContent: ValueRange, existingContent: ValueRange): List[java.util.List[AnyRef]] = {
     val header: java.util.List[AnyRef] = existingContent.getValues.get(0)
     val existingRecords: List[java.util.List[AnyRef]] = existingContent.getValues.drop(1).toList
 
-    // 2. Update existing project records from new data
     val newRecords: List[java.util.List[AnyRef]] = newContent.getValues.drop(1).toList
 
+    // Go through existing records and update them in place
     val existingRecordsUpdated = existingRecords.map { existingRecord =>
       val matchingNewRecord = newRecords.find { newRecordCandidate =>
         newRecordCandidate.get(0) == existingRecord.get(0)
@@ -362,18 +371,14 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       }
     }
 
-    // 3. Create new records for new projects
+    // Create new records for newly-added projects
     val recordsToAppend = newRecords.filter { newRecordCandidate =>
       !existingRecords.exists { existingRecordCandidate =>
         existingRecordCandidate.get(0) == newRecordCandidate.get(0)
       }
     }
 
-    // 4. Put it all together and send the update.
-    val rows = List(header) ++ existingRecordsUpdated ++ recordsToAppend
-
-    val response = service.spreadsheets().values().update(spreadsheetId, newContent.getRange, newContent.setValues(rows)).setValueInputOption("RAW").execute()
-    response.toString.parseJson.asJsObject
+    List(header) ++ existingRecordsUpdated ++ recordsToAppend
   }
 
   override def trialBillingManagerRemoveBillingAccount(project: String, targetUserEmail: String): Boolean = {
