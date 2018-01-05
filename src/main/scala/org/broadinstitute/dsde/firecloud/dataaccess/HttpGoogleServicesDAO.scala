@@ -1,7 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.util
-
 import akka.actor.ActorRefFactory
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
@@ -347,11 +345,11 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val getExisting: Sheets#Spreadsheets#Values#Get = service.spreadsheets().values.get(spreadsheetId, "Sheet1")
     val existingContent: ValueRange = getExisting.execute()
 
-    val header: util.List[AnyRef] = existingContent.getValues.get(0)
-    val existingRecords: List[util.List[AnyRef]] = existingContent.getValues.drop(1).toList
+    val header: java.util.List[AnyRef] = existingContent.getValues.get(0)
+    val existingRecords: List[java.util.List[AnyRef]] = existingContent.getValues.drop(1).toList
 
     // 2. Update existing project records from new data
-    val newRecords: List[util.List[AnyRef]] = newContent.getValues.drop(1).toList
+    val newRecords: List[java.util.List[AnyRef]] = newContent.getValues.drop(1).toList
 
     val existingRecordsUpdated = existingRecords.map { existingRecord =>
       val matchingNewRecord = newRecords.find { newRecordCandidate =>
