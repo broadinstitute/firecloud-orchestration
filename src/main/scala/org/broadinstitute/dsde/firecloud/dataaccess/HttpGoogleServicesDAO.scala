@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import java.util
+
 import akka.actor.ActorRefFactory
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
@@ -334,24 +336,45 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     * @param requestContext RequestContext
     * @param userInfo       UserInfo
     * @param spreadsheetId  Spreadsheet ID
-    * @param content        ValueRange
+    * @param newContent     ValueRange
     * @return               JsObject representing the Google Update response
     */
-  def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject = {
+  def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, newContent: ValueRange): JsObject = {
     val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
     val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
 
-    // 1. Get existing spreadsheet. Turn it into a format that can be round-tripped.
+    // 1. Retrieve existing records
     val getExisting: Sheets#Spreadsheets#Values#Get = service.spreadsheets().values.get(spreadsheetId, "Sheet1")
-    val existingData: ValueRange = getExisting.execute()
+    val existingContent: ValueRange = getExisting.execute()
 
-    // 2. Locate rows that should be overwritten by new data. (Should we delete rows that are in the spreadsheet but not the new report?)
+    val header: util.List[AnyRef] = existingContent.getValues.get(0)
+    val existingRecords: List[util.List[AnyRef]] = existingContent.getValues.drop(1).toList
 
-    // 3. Write new columns 1-14 or whatever based on the new values from ES to the temp data structure
+    // 2. Update existing project records from new data
+    val newRecords: List[util.List[AnyRef]] = newContent.getValues.drop(1).toList
 
-    // 4. Upload using the same mechanism as before (below)
+    val existingRecordsUpdated = existingRecords.map { existingRecord =>
+      val matchingNewRecord = newRecords.find { newRecordCandidate =>
+        newRecordCandidate.get(0) == existingRecord.get(0)
+      }
 
-    val response = service.spreadsheets().values().update(spreadsheetId, content.getRange, content).setValueInputOption("RAW").execute()
+      matchingNewRecord match {
+        case Some(newRecord) => newRecord // Overwrite the entire row in place, adequate unless we want to preserve user-added columns
+        case _ => existingRecord // Don't delete existing records that aren't in the new export
+      }
+    }
+
+    // 3. Create new records for new projects
+    val recordsToAppend = newRecords.filter { newRecordCandidate =>
+      !existingRecords.exists { existingRecordCandidate =>
+        existingRecordCandidate.get(0) == newRecordCandidate.get(0)
+      }
+    }
+
+    // 4. Put it all together and send the update.
+    val rows = List(header) ++ existingRecordsUpdated ++ recordsToAppend
+
+    val response = service.spreadsheets().values().update(spreadsheetId, newContent.getRange, newContent.setValues(rows)).setValueInputOption("RAW").execute()
     response.toString.parseJson.asJsObject
   }
 
