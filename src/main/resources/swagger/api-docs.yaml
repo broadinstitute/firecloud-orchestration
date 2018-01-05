@@ -233,7 +233,7 @@ paths:
           type: string
       tags:
         - Billing
-      summary: grant a google role for a user in the billing project the caller owns
+      summary: grant a google role to a user and their pet in the billing project the caller owns
       operationId: grantGoogleRoleToUser
       security:
         - googleoauth:
@@ -274,7 +274,7 @@ paths:
           type: string
       tags:
         - Billing
-      summary: remove a google role for a user in the billing project the caller owns
+      summary: remove a google role from a user and their pet in the billing project the caller owns
       operationId: removeGoogleRoleFromUser
       security:
         - googleoauth:
