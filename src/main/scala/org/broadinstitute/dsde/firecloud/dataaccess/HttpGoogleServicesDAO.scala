@@ -340,6 +340,17 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject = {
     val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
     val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
+
+    // 1. Get existing spreadsheet. Turn it into a format that can be round-tripped.
+    val getExisting: Sheets#Spreadsheets#Values#Get = service.spreadsheets().values.get(spreadsheetId, "Sheet1")
+    val existingData: ValueRange = getExisting.execute()
+
+    // 2. Locate rows that should be overwritten by new data. (Should we delete rows that are in the spreadsheet but not the new report?)
+
+    // 3. Write new columns 1-14 or whatever based on the new values from ES to the temp data structure
+
+    // 4. Upload using the same mechanism as before (below)
+
     val response = service.spreadsheets().values().update(spreadsheetId, content.getRange, content).setValueInputOption("RAW").execute()
     response.toString.parseJson.asJsObject
   }
