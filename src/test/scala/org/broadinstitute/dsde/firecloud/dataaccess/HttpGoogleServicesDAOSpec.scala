@@ -1,15 +1,17 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
+import com.google.api.services.sheets.v4.model.ValueRange
 import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
 import spray.http._
 import spray.json._
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers {
+class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMethodTester {
 
   val testProject = "broad-dsde-dev"
   implicit val system = ActorSystem("HttpGoogleCloudStorageDAOSpec")
@@ -63,4 +65,32 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers {
     objectMetadata.name should equal("test-composite-object")
     objectMetadata.md5Hash should equal(None)
   }
+
+  {
+    // https://stackoverflow.com/a/24375762/818054
+    val updatePreservingOrder = PrivateMethod('updatePreservingOrder)
+
+    val headers = List[AnyRef]("header 1", "header 2", "header 3").asJava
+
+    val row1 = List[AnyRef]("proj 1", "free", "trial").asJava
+    val row2 = List[AnyRef]("proj 2", "firecloud", "credits").asJava
+    val row3 = List[AnyRef]("proj 3", "test", "data").asJava
+
+    val cells1 = List(headers, row1, row2, row3)
+
+    def check(newContent: List[java.util.List[AnyRef]], existingContent: List[java.util.List[AnyRef]], expectedOutput: List[java.util.List[AnyRef]]): Unit = {
+      assert(expectedOutput == gcsDAO.invokePrivate(
+        updatePreservingOrder(
+          (new ValueRange).setValues(newContent.asJava),
+          (new ValueRange).setValues(existingContent.asJava)
+        )
+      ).asInstanceOf[List[java.util.List[AnyRef]]])
+    }
+
+    it should "have no changes if the data didn't change" in {
+      check(newContent = cells1, existingContent = cells1, expectedOutput = cells1)
+    }
+
+  }
+
 }
