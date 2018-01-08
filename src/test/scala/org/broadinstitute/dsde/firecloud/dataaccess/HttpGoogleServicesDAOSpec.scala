@@ -131,15 +131,24 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       )
     }
 
-    it should "locate a row in existing that moved based on its first column, and replace its remaining columns with new" in {
-
+    {
       val newRow1 = List[AnyRef](row1.get(0), "new data first col!", "new data second col!").asJava
 
-      check(
-        newContent = List(headers, row2, row3, newRow1),
-        existingContent = List(headers, row1, row2, row3),
-        expectedOutput = List(headers, newRow1, row2, row3) // Row 1 is still first, but has the new data
-      )
+      it should "update data in a row" in {
+        check(
+          newContent = List(headers, newRow1, row2, row3),
+          existingContent = List(headers, row1, row2, row3),
+          expectedOutput = List(headers, newRow1, row2, row3)
+        )
+      }
+
+      it should "locate a row in existing that moved based on its first column, and replace its remaining columns with new" in {
+        check(
+          newContent = List(headers, row2, row3, newRow1),
+          existingContent = List(headers, row1, row2, row3),
+          expectedOutput = List(headers, newRow1, row2, row3) // Row 1 is still first, but has the new data
+        )
+      }
     }
 
     it should "preserve order of rows if all the updates are out of order" in {
