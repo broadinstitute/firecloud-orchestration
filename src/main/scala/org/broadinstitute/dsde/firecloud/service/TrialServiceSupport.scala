@@ -29,8 +29,8 @@ trait TrialServiceSupport extends LazyLogging {
     "Enrollment Date", "Terminated Date", "Expiration Date", "User Agreement", "User Agreement Date",
     "First Name", "Last Name", "Organization", "City", "State", "Country").map(_.asInstanceOf[AnyRef]).asJava
 
-  // the default set of values to use if a project has no users
-  private val defaultValues = List.fill(headers.size() - 1)("") // We are placing this beside a project ID, so one fewer than # of columns
+  // the default set of values to use if a project has no users; one fewer than # of columns
+  private val defaultValues = List.fill(headers.size() - 1)("")
 
 
   def makeSpreadsheetResponse(spreadsheetId: String): SpreadsheetResponse = {

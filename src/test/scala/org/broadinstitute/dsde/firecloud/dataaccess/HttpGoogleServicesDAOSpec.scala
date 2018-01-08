@@ -107,7 +107,7 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       )
     }
 
-    it should "output the union of the rows if new is missing a row from existing" in {
+    it should "output the union of the rows if new is missing a row compared to existing" in {
       check(
         newContent = List(headers, row2, row3),
         existingContent = List(headers, row1, row2),
@@ -117,7 +117,7 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
 
     it should "locate a row in existing that moved based on its first column, and replace its remaining columns with new" in {
 
-      val newRow1 = List[AnyRef]("proj 1", "new data first col!", "new data second col!").asJava
+      val newRow1 = List[AnyRef](row1.get(0), "new data first col!", "new data second col!").asJava
 
       check(
         newContent = List(headers, row2, row3, newRow1),
