@@ -78,6 +78,41 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
 
     val cells1 = List(headers, row1, row2, row3)
 
+    it should "have no changes if the data didn't change" in {
+      check(
+        newContent = cells1,
+        existingContent = cells1,
+        expectedOutput = cells1
+      )
+    }
+
+    it should "add a new row without modifying existing ones" in {
+      check(
+        newContent = List(headers, row1, row2, row3),
+        existingContent = List(headers, row1, row2),
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
+    it should "output the union of the rows if new is missing a row from existing" in {
+      check(
+        newContent = List(headers, row2, row3),
+        existingContent = List(headers, row1, row2),
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
+    it should "locate a row in existing that moved based on its first column, and replace its remaining columns with new" in {
+
+      val newRow1 = List[AnyRef]("proj 1", "new data first col!", "new data second col!").asJava
+
+      check(
+        newContent = List(headers, row2, row3, newRow1),
+        existingContent = List(headers, row1, row2, row3),
+        expectedOutput = List(headers, newRow1, row2, row3) // Row 1 is still first, but has the new data
+      )
+    }
+
     def check(newContent: List[java.util.List[AnyRef]], existingContent: List[java.util.List[AnyRef]], expectedOutput: List[java.util.List[AnyRef]]): Unit = {
       assert(expectedOutput == gcsDAO.invokePrivate(
         updatePreservingOrder(
@@ -86,11 +121,6 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
         )
       ).asInstanceOf[List[java.util.List[AnyRef]]])
     }
-
-    it should "have no changes if the data didn't change" in {
-      check(newContent = cells1, existingContent = cells1, expectedOutput = cells1)
-    }
-
   }
 
 }
