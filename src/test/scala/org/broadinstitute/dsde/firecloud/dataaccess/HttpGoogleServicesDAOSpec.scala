@@ -99,6 +99,14 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       )
     }
 
+    it should "add a new row even if existing is empty" in {
+      check(
+        newContent = cells1,
+        existingContent = List(headers),
+        expectedOutput = cells1
+      )
+    }
+
     it should "add a new row without modifying existing ones" in {
       check(
         newContent = List(headers, row1, row2, row3),
@@ -107,9 +115,17 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       )
     }
 
-    it should "output the union of the rows if new is missing a row compared to existing" in {
+    it should "output the union of the rows (overlapping sets)" in {
       check(
         newContent = List(headers, row2, row3),
+        existingContent = List(headers, row1, row2),
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
+    it should "output the union of the rows (disjoint sets)" in {
+      check(
+        newContent = List(headers, row3),
         existingContent = List(headers, row1, row2),
         expectedOutput = List(headers, row1, row2, row3)
       )
