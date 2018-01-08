@@ -67,9 +67,6 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
   }
 
   {
-    // https://stackoverflow.com/a/24375762/818054
-    val updatePreservingOrder = PrivateMethod('updatePreservingOrder)
-
     val headers = List[AnyRef]("header 1", "header 2", "header 3").asJava
 
     val row1 = List[AnyRef]("proj 1", "free", "trial").asJava
@@ -81,6 +78,22 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
     it should "have no changes if the data didn't change" in {
       check(
         newContent = cells1,
+        existingContent = cells1,
+        expectedOutput = cells1
+      )
+    }
+
+    it should "not explode if there is no data (only headers)" in {
+      check(
+        newContent = List(headers),
+        existingContent = List(headers),
+        expectedOutput = List(headers)
+      )
+    }
+
+    it should "not explode or delete data if the update has no data" in {
+      check(
+        newContent = List(headers),
         existingContent = cells1,
         expectedOutput = cells1
       )
@@ -113,7 +126,18 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       )
     }
 
+    it should "preserve order of rows if all the updates are out of order" in {
+      check(
+        newContent = List(headers, row2, row3, row1),
+        existingContent = List(headers, row1, row2, row3),
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
     def check(newContent: List[java.util.List[AnyRef]], existingContent: List[java.util.List[AnyRef]], expectedOutput: List[java.util.List[AnyRef]]): Unit = {
+      // https://stackoverflow.com/a/24375762/818054
+      val updatePreservingOrder = PrivateMethod('updatePreservingOrder)
+
       assert(expectedOutput == gcsDAO.invokePrivate(
         updatePreservingOrder(
           (new ValueRange).setValues(newContent.asJava),
