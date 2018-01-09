@@ -354,11 +354,12 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   private def updatePreservingOrder(newContent: ValueRange, existingContent: ValueRange): List[java.util.List[AnyRef]] = {
-    val existingRecords: List[java.util.List[AnyRef]] =
-      existingContent.getValues match {
-        case rows: Any => rows.drop(1).toList
-        case null => List()
-      }
+    val existingRecords =
+      // getValues may come through as an instantiated list of type null with zero entries due to Scala <> Java stuff
+      if (Try(existingContent.getValues.size()).toOption.getOrElse(0) > 0)
+        existingContent.getValues.tail.toList
+      else
+        List()
 
     val header: java.util.List[AnyRef] = newContent.getValues.head
     val newRecords: List[java.util.List[AnyRef]] = newContent.getValues.drop(1).toList
