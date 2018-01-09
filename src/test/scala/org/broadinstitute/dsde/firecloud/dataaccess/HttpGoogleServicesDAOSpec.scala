@@ -124,9 +124,17 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       )
     }
 
-    it should "output the union of the rows (overlapping sets)" in {
+    it should "output the union of the rows (overlapping sets, ordered)" in {
       check(
         newContent = List(headers, row2, row3),
+        existingContent = List(headers, row1, row2),
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
+    it should "output the union of the rows (overlapping sets, out of order)" in {
+      check(
+        newContent = List(headers, row3, row2),
         existingContent = List(headers, row1, row2),
         expectedOutput = List(headers, row1, row2, row3)
       )
