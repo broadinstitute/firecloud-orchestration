@@ -159,6 +159,17 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       )
     }
 
+    it should "use the header from the new data in the update" in {
+
+      val newHeaders = List[AnyRef]("header 1", "header 2", "header 3", "header 4").asJava
+
+      check(
+        newContent = List(newHeaders, row1, row2, row3),
+        existingContent = List(headers, row1, row2, row3),
+        expectedOutput = List(newHeaders, row1, row2, row3)
+      )
+    }
+
     def check(newContent: List[java.util.List[AnyRef]], existingContent: List[java.util.List[AnyRef]], expectedOutput: List[java.util.List[AnyRef]]): Unit = {
       // https://stackoverflow.com/a/24375762/818054
       val updatePreservingOrder = PrivateMethod('updatePreservingOrder)
