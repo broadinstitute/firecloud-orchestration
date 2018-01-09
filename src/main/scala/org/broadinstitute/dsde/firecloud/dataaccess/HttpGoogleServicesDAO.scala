@@ -354,7 +354,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   private def updatePreservingOrder(newContent: ValueRange, existingContent: ValueRange): List[java.util.List[AnyRef]] = {
-    val header: java.util.List[AnyRef] = existingContent.getValues.get(0)
+    val header: java.util.List[AnyRef] = existingContent.getValues.head
     val existingRecords: List[java.util.List[AnyRef]] = existingContent.getValues.drop(1).toList
 
     val newRecords: List[java.util.List[AnyRef]] = newContent.getValues.drop(1).toList
@@ -362,7 +362,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     // Go through existing records and update them in place
     val existingRecordsUpdated = existingRecords.map { existingRecord =>
       val matchingNewRecord = newRecords.find { newRecordCandidate =>
-        newRecordCandidate.get(0) == existingRecord.get(0)
+        newRecordCandidate.head == existingRecord.head
       }
 
       matchingNewRecord match {
@@ -374,7 +374,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     // Create new records for newly-added projects
     val recordsToAppend = newRecords.filter { newRecordCandidate =>
       !existingRecords.exists { existingRecordCandidate =>
-        existingRecordCandidate.get(0) == newRecordCandidate.get(0)
+        existingRecordCandidate.head == newRecordCandidate.head
       }
     }
 
