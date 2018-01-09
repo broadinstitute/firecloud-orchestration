@@ -91,6 +91,15 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       )
     }
 
+    // This happens when calling updateBillingReport the first time from within createBillingReport
+    it should "not explode if existing content is empty (no headers)" in {
+      check(
+        newContent = List(headers, row1, row2, row3),
+        existingContent = null,
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
     it should "not explode or delete data if the update has no data" in {
       check(
         newContent = List(headers),
