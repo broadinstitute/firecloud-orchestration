@@ -55,7 +55,8 @@ object UserApiService {
   def rawlsGroupRequestAccessPath(group: String) = rawlsGroupPath(group) + "/requestAccess"
   def rawlsGroupRequestAccessUrl(group: String) = FireCloudConfig.Rawls.baseUrl + rawlsGroupRequestAccessPath(group)
 
-  def samUserProxyGroupURL(email: String) = FireCloudConfig.Sam.baseUrl + s"/api/google/user/proxyGroup/$email"
+  def samUserProxyGroupPath(email: String) = s"/api/google/user/proxyGroup/$email"
+  def samUserProxyGroupURL(email: String) = FireCloudConfig.Sam.baseUrl + samUserProxyGroupPath(email)
 }
 
 // TODO: this should use UserInfoDirectives, not StandardUserInfoDirectives. That would require a refactoring
@@ -182,7 +183,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
             }
           }
         }
-      }
+      } ~
       pathPrefix("proxyGroup") {
         path(Segment) { email =>
           passthrough(UserApiService.samUserProxyGroupURL(email), HttpMethods.GET)
