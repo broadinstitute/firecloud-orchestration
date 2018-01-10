@@ -70,8 +70,8 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
     val headers = List[AnyRef]("header 1", "header 2", "header 3").asJava
 
     val row1 = List[AnyRef]("proj 1", "free", "trial").asJava
-    val row2 = List[AnyRef]("proj 2", "firecloud", "credits").asJava
-    val row3 = List[AnyRef]("proj 3", "test", "data").asJava
+    val row2 = List[AnyRef]("proj 2", "firecloud", "").asJava
+    val row3 = List[AnyRef]("proj 3", null, "data").asJava
 
     val cells1 = List(headers, row1, row2, row3)
 
@@ -149,21 +149,22 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
     }
 
     {
-      val newRow1 = List[AnyRef](row1.get(0), "new data first col!", "new data second col!").asJava
+      val newRow1 = List[AnyRef](row1.get(0), "r1 first col!", "r1 second col!").asJava
+      val newRow3 = List[AnyRef](row3.get(0), "r3 first col!", "r3 second col!").asJava
 
       it should "update data in a row" in {
         check(
-          newContent = List(headers, newRow1, row2, row3),
+          newContent = List(headers, newRow1, row2, newRow3),
           existingContent = List(headers, row1, row2, row3),
-          expectedOutput = List(headers, newRow1, row2, row3)
+          expectedOutput = List(headers, newRow1, row2, newRow3)
         )
       }
 
       it should "locate a row in existing that moved based on its first column, and replace its remaining columns with new" in {
         check(
-          newContent = List(headers, row2, row3, newRow1),
+          newContent = List(headers, row2, newRow3, newRow1),
           existingContent = List(headers, row1, row2, row3),
-          expectedOutput = List(headers, newRow1, row2, row3) // Row 1 is still first, but has the new data
+          expectedOutput = List(headers, newRow1, row2, newRow3) // Row 1, 3 retain positions but have new data
         )
       }
     }
