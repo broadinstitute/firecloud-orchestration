@@ -334,14 +334,56 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     * @param requestContext RequestContext
     * @param userInfo       UserInfo
     * @param spreadsheetId  Spreadsheet ID
-    * @param content        ValueRange
+    * @param newContent     ValueRange
     * @return               JsObject representing the Google Update response
     */
-  def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject = {
+  def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, newContent: ValueRange): JsObject = {
     val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
     val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
-    val response = service.spreadsheets().values().update(spreadsheetId, content.getRange, content).setValueInputOption("RAW").execute()
+
+    // Retrieve existing records
+    val getExisting: Sheets#Spreadsheets#Values#Get = service.spreadsheets().values.get(spreadsheetId, "Sheet1")
+    val existingContent: ValueRange = getExisting.execute()
+
+    // Smart merge existing with new
+    val rows = updatePreservingOrder(newContent, existingContent)
+
+    // Send update
+    val response = service.spreadsheets().values().update(spreadsheetId, newContent.getRange, newContent.setValues(rows)).setValueInputOption("RAW").execute()
     response.toString.parseJson.asJsObject
+  }
+
+  private def updatePreservingOrder(newContent: ValueRange, existingContent: ValueRange): List[java.util.List[AnyRef]] = {
+    val existingRecords =
+      // getValues may come through as an instantiated list of type null with zero entries due to Scala <> Java stuff
+      if (Try(existingContent.getValues.size()).toOption.getOrElse(0) > 0)
+        existingContent.getValues.tail.toList
+      else
+        List()
+
+    val header: java.util.List[AnyRef] = newContent.getValues.head
+    val newRecords: List[java.util.List[AnyRef]] = newContent.getValues.drop(1).toList
+
+    // Go through existing records and update them in place
+    val existingRecordsUpdated = existingRecords.map { existingRecord =>
+      val matchingNewRecord = newRecords.find { newRecordCandidate =>
+        newRecordCandidate.head == existingRecord.head
+      }
+
+      matchingNewRecord match {
+        case Some(newRecord) => newRecord // Overwrite the entire row in place, adequate unless we want to preserve user-added columns
+        case _ => existingRecord // Don't delete existing records that aren't in the new export
+      }
+    }
+
+    // Create new records for newly-added projects
+    val recordsToAppend = newRecords.filter { newRecordCandidate =>
+      !existingRecords.exists { existingRecordCandidate =>
+        existingRecordCandidate.head == newRecordCandidate.head
+      }
+    }
+
+    List(header) ++ existingRecordsUpdated ++ recordsToAppend
   }
 
   override def trialBillingManagerRemoveBillingAccount(project: String, targetUserEmail: String): Boolean = {

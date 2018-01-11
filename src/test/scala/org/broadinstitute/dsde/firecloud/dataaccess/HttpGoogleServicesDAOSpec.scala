@@ -1,15 +1,17 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
+import com.google.api.services.sheets.v4.model.ValueRange
 import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
 import spray.http._
 import spray.json._
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers {
+class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMethodTester {
 
   val testProject = "broad-dsde-dev"
   implicit val system = ActorSystem("HttpGoogleCloudStorageDAOSpec")
@@ -63,4 +65,140 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers {
     objectMetadata.name should equal("test-composite-object")
     objectMetadata.md5Hash should equal(None)
   }
+
+  {
+    val headers = List[AnyRef]("header 1", "header 2", "header 3").asJava
+
+    val row1 = List[AnyRef]("proj 1", "free", "trial").asJava
+    val row2 = List[AnyRef]("proj 2", "firecloud", "").asJava
+    val row3 = List[AnyRef]("proj 3", null, "data").asJava
+
+    val cells1 = List(headers, row1, row2, row3)
+
+    it should "have no changes if the data didn't change" in {
+      check(
+        newContent = cells1,
+        existingContent = cells1,
+        expectedOutput = cells1
+      )
+    }
+
+    it should "not explode if there is no data (only headers)" in {
+      check(
+        newContent = List(headers),
+        existingContent = List(headers),
+        expectedOutput = List(headers)
+      )
+    }
+
+    // This happens when calling updateBillingReport the first time from within createBillingReport
+    it should "not explode if existing content is empty (no headers)" in {
+      check(
+        newContent = List(headers, row1, row2, row3),
+        existingContent = null,
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
+    it should "not explode or delete data if the update has no data" in {
+      check(
+        newContent = List(headers),
+        existingContent = cells1,
+        expectedOutput = cells1
+      )
+    }
+
+    it should "add a new row even if existing is empty" in {
+      check(
+        newContent = cells1,
+        existingContent = List(headers),
+        expectedOutput = cells1
+      )
+    }
+
+    it should "add a new row without modifying existing ones" in {
+      check(
+        newContent = List(headers, row1, row2, row3),
+        existingContent = List(headers, row1, row2),
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
+    it should "output the union of the rows (overlapping sets, ordered)" in {
+      check(
+        newContent = List(headers, row2, row3),
+        existingContent = List(headers, row1, row2),
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
+    it should "output the union of the rows (overlapping sets, out of order)" in {
+      check(
+        newContent = List(headers, row3, row2),
+        existingContent = List(headers, row1, row2),
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
+    it should "output the union of the rows (disjoint sets)" in {
+      check(
+        newContent = List(headers, row3),
+        existingContent = List(headers, row1, row2),
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
+    {
+      val newRow1 = List[AnyRef](row1.get(0), "r1 first col!", "r1 second col!").asJava
+      val newRow3 = List[AnyRef](row3.get(0), "r3 first col!", "r3 second col!").asJava
+
+      it should "update data in a row" in {
+        check(
+          newContent = List(headers, newRow1, row2, newRow3),
+          existingContent = List(headers, row1, row2, row3),
+          expectedOutput = List(headers, newRow1, row2, newRow3)
+        )
+      }
+
+      it should "locate a row in existing that moved based on its first column, and replace its remaining columns with new" in {
+        check(
+          newContent = List(headers, row2, newRow3, newRow1),
+          existingContent = List(headers, row1, row2, row3),
+          expectedOutput = List(headers, newRow1, row2, newRow3) // Row 1, 3 retain positions but have new data
+        )
+      }
+    }
+
+    it should "preserve order of rows if all the updates are out of order" in {
+      check(
+        newContent = List(headers, row2, row3, row1),
+        existingContent = List(headers, row1, row2, row3),
+        expectedOutput = List(headers, row1, row2, row3)
+      )
+    }
+
+    it should "use the header from the new data in the update" in {
+
+      val newHeaders = List[AnyRef]("header 1", "header 2", "header 3", "header 4").asJava
+
+      check(
+        newContent = List(newHeaders, row1, row2, row3),
+        existingContent = List(headers, row1, row2, row3),
+        expectedOutput = List(newHeaders, row1, row2, row3)
+      )
+    }
+
+    def check(newContent: List[java.util.List[AnyRef]], existingContent: List[java.util.List[AnyRef]], expectedOutput: List[java.util.List[AnyRef]]): Unit = {
+      // https://stackoverflow.com/a/24375762/818054
+      val updatePreservingOrder = PrivateMethod('updatePreservingOrder)
+
+      assert(expectedOutput == gcsDAO.invokePrivate(
+        updatePreservingOrder(
+          (new ValueRange).setValues(newContent.asJava),
+          (new ValueRange).setValues(existingContent.asJava)
+        )
+      ).asInstanceOf[List[java.util.List[AnyRef]]])
+    }
+  }
+
 }
