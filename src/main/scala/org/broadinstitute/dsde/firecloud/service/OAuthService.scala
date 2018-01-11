@@ -84,10 +84,10 @@ class OAuthService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
         val ageDaysCount = Days.daysBetween(tokenDate, DateTime.now).getDays
         ageDaysCount match {
           case x if x < 90 =>
-            logger.debug(s"User's refresh token is $x days old; all good!")
+            logger.debug(s"User ${userInfo.userEmail}'s refresh token is $x days old; all good!")
             RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> false))
           case x =>
-            logger.info(s"User's refresh token is $x days old; requesting a new one.")
+            logger.info(s"User ${userInfo.userEmail}'s refresh token is $x days old; requesting a new one.")
             RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> true))
         }
       case None =>

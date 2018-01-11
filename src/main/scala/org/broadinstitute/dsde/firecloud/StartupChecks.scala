@@ -63,11 +63,12 @@ class StartupChecks(app: Application, registerSAs: Boolean = true)
 
   private def manageRegistration(name: String, req: Future[RegistrationInfo]): Future[Boolean] = {
     req map { regInfo =>
-      if (regInfo.enabled.ldap)
+      val fullyRegistered = regInfo.enabled.ldap && regInfo.enabled.allUsersGroup && regInfo.enabled.google
+      if (fullyRegistered)
         logger.info(s"$name is properly registered.")
       else
-        logger.error(s"***    $name is registered but not fully enabled!!    ***")
-      regInfo.enabled.ldap
+        logger.error(s"***    $name is registered but not fully enabled: ${regInfo.enabled}!!    ***")
+      fullyRegistered
     } recover {
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
         logger.error(s"***    $name is not registered!!    ***")
