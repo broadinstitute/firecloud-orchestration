@@ -3550,6 +3550,30 @@ paths:
         503:
           description: Service Unavailable. Could not reach underlying services to determine user status.
 
+  /api/proxyGroup/{email}:
+    get:
+      tags:
+        - Profile
+      operationId: getProxyGroup
+      summary: Returns the proxy group email for the current user
+      parameters:
+        - in: path
+          description: User email whose proxy group to retrieve
+          name: email
+          required: true
+          type: string
+      responses:
+        200:
+          description: 'user proxy group'
+          schema:
+            type: string
+        404:
+          description: 'user not found'
+        500:
+          description: Internal Error
+          schema:
+            $ref: '#/definitions/ErrorReport'
+
   /register:
     get:
       tags:
