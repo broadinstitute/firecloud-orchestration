@@ -41,6 +41,7 @@ object TrialService {
   case class DisableUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
   case class EnrollUser(managerInfo: UserInfo) extends TrialServiceMessage
   case class TerminateUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
+  case class FinalizeUser(managerInfo: UserInfo) extends TrialServiceMessage
   case class CreateProjects(userInfo:UserInfo, count:Int) extends TrialServiceMessage
   case class VerifyProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class CountProjects(userInfo:UserInfo) extends TrialServiceMessage
@@ -72,6 +73,8 @@ final class TrialService
       enrollUser(userInfo) pipeTo sender
     case TerminateUsers(managerInfo, userEmails) =>
       asTrialCampaignManager(terminateUsers(managerInfo, userEmails))(managerInfo) pipeTo sender
+    case FinalizeUser(userInfo) =>
+      finalizeUser(userInfo) pipeTo sender
     case CreateProjects(userInfo, count) => asTrialCampaignManager {createProjects(count)}(userInfo) pipeTo sender
     case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
     case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
@@ -320,6 +323,10 @@ final class TrialService
       enrolledDate = now,
       expirationDate = expirationDate
     )
+  }
+
+  private def finalizeUser(userInfo: UserInfo): Future[PerRequestMessage] = {
+    Future(RequestCompleteWithErrorReport(StatusCodes.EnhanceYourCalm, "Finalizing user..."))
   }
 
   private def createProjects(count: Int): Future[PerRequestMessage] = {
