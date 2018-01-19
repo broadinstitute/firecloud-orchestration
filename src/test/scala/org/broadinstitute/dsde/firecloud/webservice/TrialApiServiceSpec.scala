@@ -251,6 +251,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     val enabledButNotAgreedUserEmails = Seq(enabledButNotAgreedUser)
     val enrolledUserEmails = Seq(enrolledUser)
     val terminatedUserEmails = Seq(terminatedUser)
+    val finalizedUserEmails = Seq(finalizedUser)
     val registeredUserEmails = Seq(registeredUser)
     val nonRegisteredUserEmails = Seq(unregisteredUser)
 
@@ -296,8 +297,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
     "Multi-User Status Updates" - {
       "Attempting to enable multiple users in various states should return a map of status lists" in {
-        val assortmentOfUserEmails =
-          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User)
+        val assortmentOfUserEmails = Seq(disabledUser, enabledUser, enrolledUser, terminatedUser,
+            finalizedUser, registeredUser, dummy1User, dummy2User)
 
         Post(enablePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           val enableResponse = responseAs[Map[String, Set[String]]].map(_.swap)
@@ -306,6 +307,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assert(enableResponse(Set(disabledUser, registeredUser)) === StatusUpdate.Success.toString)
           assert(enableResponse(Set(enrolledUser)).contains("Failure: Cannot transition"))
           assert(enableResponse(Set(terminatedUser)).contains("Failure: Cannot transition"))
+          assert(enableResponse(Set(finalizedUser)).contains("Failure: Cannot transition"))
           assert(enableResponse(Set(dummy1User))
             .contains("ServerError: ErrorReport(Thurloe,Unable to get user KVPs from profile service,Some(500 Internal Server Error)"))
 
@@ -316,8 +318,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
 
       "Attempting to disable multiple users in various states should return a map of status lists" in {
-        val assortmentOfUserEmails =
-          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User)
+        val assortmentOfUserEmails = Seq(disabledUser, enabledUser, enrolledUser, terminatedUser,
+            finalizedUser, registeredUser, dummy1User, dummy2User)
 
         Post(disablePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           val disableResponse = responseAs[Map[String, Set[String]]].map(_.swap)
@@ -326,6 +328,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assert(disableResponse(Set(disabledUser)) === StatusUpdate.NoChangeRequired.toString)
           assert(disableResponse(Set(enrolledUser)).contains("Failure: Cannot transition"))
           assert(disableResponse(Set(terminatedUser)).contains("Failure: Cannot transition"))
+          assert(disableResponse(Set(finalizedUser)).contains("Failure: Cannot transition"))
           assert(disableResponse(Set(registeredUser)).contains("Failure: Cannot transition"))
           assert(disableResponse(Set(dummy1User))
             .contains("ServerError: ErrorReport(Thurloe,Unable to get user KVPs from profile service,Some(500 Internal Server Error)"))
@@ -340,7 +343,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
       "Attempting to terminate multiple users in various states should return a map of status lists" in {
         val assortmentOfUserEmails =
-          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser, registeredUser, dummy1User, dummy2User)
+          Seq(disabledUser, enabledUser, enrolledUser, terminatedUser,
+            finalizedUser, registeredUser, dummy1User, dummy2User)
 
         Post(terminatePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
           val terminateResponse = responseAs[Map[String, Set[String]]].map(_.swap)
@@ -348,6 +352,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           assert(terminateResponse(Set(enabledUser)).contains("Failure: Cannot transition"))
           assert(terminateResponse(Set(dummy2User)).contains("Failure: Cannot transition"))
           assert(terminateResponse(Set(disabledUser)).contains("Failure: Cannot transition"))
+          assert(terminateResponse(Set(finalizedUser)).contains("Failure: Cannot transition"))
           assert(terminateResponse(Set(enrolledUser)) === StatusUpdate.Success.toString)
           assert(terminateResponse(Set(terminatedUser)) === StatusUpdate.NoChangeRequired.toString)
           assert(terminateResponse(Set(registeredUser)).contains("Failure: Cannot transition"))
