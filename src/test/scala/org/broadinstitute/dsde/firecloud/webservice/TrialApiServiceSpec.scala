@@ -105,44 +105,44 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     localThurloeServer.stop()
   }
 
-  "User-initiated User Agreement endpoint" - {
-    val userAgreementPath = "/api/profile/trial/userAgreement"
-    val allButEnabledUsers = Seq(disabledUser, enrolledUser, terminatedUser, finalizedUser)
-
-    "Failing due to Thurloe error should return a server error to the user" in {
-      Put(userAgreementPath) ~> dummyUserIdHeaders(dummy1User) ~> userServiceRoutes ~> check {
-        status should equal(InternalServerError)
-        assert(localThurloeDao.agreedUsers.isEmpty)
-      }
-    }
-
-    allHttpMethodsExcept(PUT) foreach { method =>
-      s"should reject ${method.toString} method" in {
-        new RequestBuilder(method)(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
-          assert(!handled)
-          assert(localThurloeDao.agreedUsers.isEmpty)
-        }
-      }
-    }
-
-    allButEnabledUsers foreach { user =>
-      s"$user should not be able to agree to terms" in {
-        Put(userAgreementPath) ~> dummyUserIdHeaders(user) ~> userServiceRoutes ~> check {
-          status should equal(Forbidden)
-          assert(localThurloeDao.agreedUsers.isEmpty)
-        }
-      }
-    }
-
-    "attempting to agree to terms as enabled user" in {
-      Put(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
-        status should equal(NoContent)
-        assert(localThurloeDao.agreedUsers == Seq("enabled-user"))
-      }
-    }
-  }
-
   "User-initiated free trial" - {
+    "service agreement endpoint" - {
+      val userAgreementPath = "/api/profile/trial/userAgreement"
+      val allButEnabledUsers = Seq(disabledUser, enrolledUser, terminatedUser, finalizedUser)
+
+      "failing due to Thurloe error should return a server error to the user" in {
+        Put(userAgreementPath) ~> dummyUserIdHeaders(dummy1User) ~> userServiceRoutes ~> check {
+          status should equal(InternalServerError)
+          assert(localThurloeDao.agreedUsers.isEmpty)
+        }
+      }
+
+      allHttpMethodsExcept(PUT) foreach { method =>
+        s"should reject ${method.toString} method" in {
+          new RequestBuilder(method)(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+            assert(!handled)
+            assert(localThurloeDao.agreedUsers.isEmpty)
+          }
+        }
+      }
+
+      allButEnabledUsers foreach { user =>
+        s"should not allow a $user" in {
+          Put(userAgreementPath) ~> dummyUserIdHeaders(user) ~> userServiceRoutes ~> check {
+            status should equal(Forbidden)
+            assert(localThurloeDao.agreedUsers.isEmpty)
+          }
+        }
+      }
+
+      "attempting to agree to terms as enabled user" in {
+        Put(userAgreementPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+          status should equal(NoContent)
+          assert(localThurloeDao.agreedUsers == Seq("enabled-user"))
+        }
+      }
+    }
+
     val trialPathBase = "/api/profile/trial"
     val enrollPaths = Seq(trialPathBase, s"$trialPathBase?operation=enroll")
     val finalizePath = s"$trialPathBase?operation=finalize"
