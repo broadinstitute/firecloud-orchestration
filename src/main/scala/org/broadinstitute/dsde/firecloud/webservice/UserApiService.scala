@@ -143,9 +143,9 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
                 }
 
                 if (operation.nonEmpty)
-                  perRequest (requestContext, TrialService.props(trialServiceConstructor), operation.get)
+                  perRequest(requestContext, TrialService.props(trialServiceConstructor), operation.get)
                 else
-                  requestContext.complete(BadRequest, ErrorReport(s"invalid operation '$op'"))
+                  requestContext.complete(BadRequest, ErrorReport(s"Invalid operation '$op'"))
               }
             }
           }

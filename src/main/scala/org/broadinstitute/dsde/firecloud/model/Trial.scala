@@ -40,7 +40,7 @@ object Trial {
       def isAllowedFromNone: Boolean = false
     }
 
-    val allStates = Seq(Disabled, Enabled, Enrolled, Terminated)
+    val allStates = Seq(Disabled, Enabled, Enrolled, Terminated, Finalized)
 
     def withName(name: String): TrialState = {
       name match {
@@ -58,6 +58,7 @@ object Trial {
         case Enabled => "Enabled"
         case Enrolled => "Enrolled"
         case Terminated => "Terminated"
+        case Finalized => "Finalized"
         case _ => throw new FireCloudException(s"invalid TrialState [${state.getClass.getName}]")
       }
     }
@@ -74,6 +75,9 @@ object Trial {
     }
     case object Terminated extends TrialState {
       override def isAllowedFromState(previous: TrialState): Boolean = previous == Enrolled
+    }
+    case object Finalized extends TrialState {
+      override def isAllowedFromState(previous: TrialState): Boolean = previous == Terminated
     }
   }
 

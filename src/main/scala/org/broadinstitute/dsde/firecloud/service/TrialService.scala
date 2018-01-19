@@ -253,7 +253,7 @@ final class TrialService
           // user in some other state; don't enroll
           case Some(TrialStates.Disabled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 30)"))
           case Some(TrialStates.Terminated) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 40)"))
-          case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
+          case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
         }
     }
   }
@@ -326,7 +326,24 @@ final class TrialService
   }
 
   private def finalizeUser(userInfo: UserInfo): Future[PerRequestMessage] = {
-    Future(RequestCompleteWithErrorReport(StatusCodes.EnhanceYourCalm, "Finalizing user..."))
+    import TrialStates._
+
+    // get user's trial status, then check the current state
+    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { status =>
+      status.state match {
+        case Some(Finalized) =>
+          Future(RequestCompleteWithErrorReport(BadRequest, "Your free trial was already finalized."))
+        case Some(Terminated) =>
+          thurloeDao.saveTrialStatus(userInfo.id, userInfo, status.copy(state = Some(Finalized))) flatMap {
+            case Success(_) => Future(RequestComplete(NoContent))
+            case Failure(ex) => Future(RequestComplete(InternalServerError, ex.getMessage))
+          }
+        // user in some other state; can't finalize
+        case _ =>
+          val errMsg = "Your free trial should have been terminated to be finalized."
+          Future(RequestCompleteWithErrorReport(BadRequest, errMsg))
+      }
+    }
   }
 
   private def createProjects(count: Int): Future[PerRequestMessage] = {
