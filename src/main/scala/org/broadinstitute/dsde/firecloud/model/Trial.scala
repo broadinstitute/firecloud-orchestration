@@ -48,6 +48,7 @@ object Trial {
         case "Enabled" => Enabled
         case "Enrolled" => Enrolled
         case "Terminated" => Terminated
+        case "Finalized" => Finalized
         case _ => throw new FireCloudException(s"invalid TrialState [$name]")
       }
     }

@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 import com.google.api.client.googleapis.json.{GoogleJsonError, GoogleJsonResponseException}
@@ -75,7 +74,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       (enabledUser, enabledProps),
       (enabledButNotAgreedUser, enabledButNotAgreedProps),
       (enrolledUser, enrolledProps),
-      (terminatedUser, terminatedProps))
+      (terminatedUser, terminatedProps),
+      (finalizedUser, finalizedProps))
 
     allUsersAndProps.foreach {
       case (user, props) =>
@@ -107,7 +107,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   "User-initiated User Agreement endpoint" - {
     val userAgreementPath = "/api/profile/trial/userAgreement"
-    val allButEnabledUsers = Seq(disabledUser, enrolledUser, terminatedUser)
+    val allButEnabledUsers = Seq(disabledUser, enrolledUser, terminatedUser, finalizedUser)
 
     "Failing due to Thurloe error should return a server error to the user" in {
       Put(userAgreementPath) ~> dummyUserIdHeaders(dummy1User) ~> userServiceRoutes ~> check {
@@ -142,12 +142,14 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
   }
 
-  "Free Trial Enrollment" - {
+  "User-initiated free trial" - {
     val trialPathBase = "/api/profile/trial"
     val enrollPaths = Seq(trialPathBase, s"$trialPathBase?operation=enroll")
+    val finalizePath = s"$trialPathBase?operation=finalize"
+    val invalidPaths = Seq(s"$trialPathBase?operation=", s"$trialPathBase?operation=invalid")
 
     enrollPaths foreach { enrollPath =>
-      s"User-initiated enrollment endpoint $enrollPath" - {
+      s"enrollment endpoint $enrollPath" - {
         allHttpMethodsExcept(POST) foreach { method =>
           s"should reject ${method.toString} method" in {
             new RequestBuilder(method)(enrollPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
@@ -157,7 +159,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         }
       }
 
-      s"attempting to enroll as a disabled user via $enrollPath" - {
+      s"enrollment as a disabled user via $enrollPath" - {
         "should be a BadRequest" in {
           Post(enrollPath) ~> dummyUserIdHeaders(disabledUser) ~> userServiceRoutes ~> check {
             status should equal(BadRequest)
@@ -165,7 +167,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         }
       }
 
-      s"attempting to enroll as an enabled user that agreed to terms via $enrollPath" - {
+      s"enrollment as an enabled user that agreed to terms via $enrollPath" - {
         "should be NoContent success" in {
           Post(enrollPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
             assertResult(NoContent, response.entity.asString) {
@@ -176,7 +178,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         }
       }
 
-      s"enrolling as an enabled user that DID NOT agree to terms via $enrollPath" - {
+      s"enrollment as an enabled user that DID NOT agree to terms via $enrollPath" - {
         "should be Forbidden" in {
           Post(enrollPath) ~> dummyUserIdHeaders(enabledButNotAgreedUser) ~> userServiceRoutes ~> check {
             assertResult(Forbidden, response.entity.asString) {
@@ -186,7 +188,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         }
       }
 
-      s"attempting to enroll as an enrolled user via $enrollPath" - {
+      s"enrollment as an enrolled user via $enrollPath" - {
         "should be a BadRequest" in {
           Post(enrollPath) ~> dummyUserIdHeaders(enrolledUser) ~> userServiceRoutes ~> check {
             status should equal(BadRequest)
@@ -194,9 +196,40 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         }
       }
 
-      s"attempting to enroll as a terminated user via $enrollPath" - {
+      s"enrollment as a terminated user via $enrollPath" - {
         "should be a BadRequest" in {
           Post(enrollPath) ~> dummyUserIdHeaders(terminatedUser) ~> userServiceRoutes ~> check {
+            status should equal(BadRequest)
+          }
+        }
+      }
+    }
+
+    s"finalization endpoint $finalizePath" - {
+      allHttpMethodsExcept(POST) foreach { method =>
+        s"should reject ${method.toString} method" in {
+          new RequestBuilder(method)(finalizePath) ~> dummyUserIdHeaders(terminatedUser) ~> userServiceRoutes ~> check {
+            assert(!handled)
+          }
+        }
+      }
+    }
+
+    s"finalization as a terminated user via $finalizePath" - {
+      "should be NoContent success" in {
+        Post(finalizePath) ~> dummyUserIdHeaders(terminatedUser) ~> userServiceRoutes ~> check {
+          assertResult(NoContent, response.entity.asString) {
+            status
+          }
+        }
+      }
+    }
+
+    val usersDisallowedForFinalization = Seq(enabledUser, disabledUser, enrolledUser, finalizedUser)
+    usersDisallowedForFinalization foreach { disallowedUser =>
+      s"finalization as a $disallowedUser via $finalizePath" - {
+        "should be a BadRequest" in {
+          Post(finalizePath) ~> dummyUserIdHeaders(disallowedUser) ~> userServiceRoutes ~> check {
             status should equal(BadRequest)
           }
         }
@@ -555,11 +588,20 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
           Future.successful(Success(()))
         }
+        case `terminatedUser` => {
+          assertResult(Some(TrialStates.Finalized)) { trialStatus.state }
+          assert(trialStatus.enabledDate.toEpochMilli > 0)
+          assert(trialStatus.enrolledDate.toEpochMilli > 0)
+          assert(trialStatus.terminatedDate.toEpochMilli > 0)
+          assert(trialStatus.expirationDate.toEpochMilli > 0)
+
+          Future.successful(Success(()))
+        }
         case `dummy2User` => { // Mocking Thurloe status saving failures
           Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport.apply(StatusCodes.InternalServerError, new FireCloudException(s"Unable to update user profile"))))
         }
         case _ => {
-          fail("Should only be updating registered, enabled, disabled or enrolled users")
+          fail("Should only be updating registered, enabled, disabled, enrolled or terminated users")
         }
       }
     }
@@ -627,6 +669,7 @@ object TrialApiServiceSpec {
   val enabledButNotAgreedUser = "enabled-but-not-agreed-user"
   val enrolledUser = "enrolled-user"
   val terminatedUser = "terminated-user"
+  val finalizedUser = "finalized-user"
   val registeredUser = "registered-user"
   val unregisteredUser = "unregistered-user"
 
@@ -669,6 +712,13 @@ object TrialApiServiceSpec {
     "trialTerminatedDate" -> "333",
     "trialExpirationDate" -> "999"
   )
+  val finalizedProps = Map(
+    "trialState" -> "Finalized",
+    "trialEnabledDate" -> "555",
+    "trialEnrolledDate" -> "666",
+    "trialTerminatedDate" -> "777",
+    "trialExpirationDate" -> "888"
+  )
 
   val workbenchEnabled = WorkbenchEnabled(google = true, ldap = true, allUsersGroup = true)
 
@@ -678,6 +728,7 @@ object TrialApiServiceSpec {
   val disabledUserEmail = "disabled-user-email"
   val enrolledUserEmail = "enrolled-user-email"
   val terminatedUserEmail = "terminated-user-email"
+  val finalizedUserEmail = "finalized-user-email"
   val registeredUserEmail = "registered-user-email"
 
   val dummy1UserInfo = WorkbenchUserInfo(userSubjectId = dummy1User, dummy1UserEmail)
@@ -686,6 +737,7 @@ object TrialApiServiceSpec {
   val disabledUserInfo = WorkbenchUserInfo(userSubjectId = disabledUser, disabledUserEmail)
   val enrolledUserInfo = WorkbenchUserInfo(userSubjectId = enrolledUser, enrolledUserEmail)
   val terminatedUserInfo = WorkbenchUserInfo(userSubjectId = terminatedUser, terminatedUserEmail)
+  val finalizedUserInfo = WorkbenchUserInfo(userSubjectId = finalizedUser, finalizedUserEmail)
   val registeredUserInfo = WorkbenchUserInfo(userSubjectId = registeredUser, registeredUserEmail)
 
   val dummy1UserRegInfo = RegistrationInfo(dummy1UserInfo, workbenchEnabled)
@@ -694,6 +746,7 @@ object TrialApiServiceSpec {
   val disabledUserRegInfo = RegistrationInfo(disabledUserInfo, workbenchEnabled)
   val enrolledUserRegInfo = RegistrationInfo(enrolledUserInfo, workbenchEnabled)
   val terminatedUserRegInfo = RegistrationInfo(terminatedUserInfo, workbenchEnabled)
+  val finalizedUserRegInfo = RegistrationInfo(finalizedUserInfo, workbenchEnabled)
   val registeredUserRegInfo = RegistrationInfo(registeredUserInfo, workbenchEnabled)
 
   val registrationInfoByEmail = Map(
@@ -703,5 +756,6 @@ object TrialApiServiceSpec {
     disabledUser -> disabledUserRegInfo,
     enrolledUser -> enrolledUserRegInfo,
     terminatedUser -> terminatedUserRegInfo,
+    finalizedUser -> finalizedUserRegInfo,
     registeredUser -> registeredUserRegInfo)
 }
