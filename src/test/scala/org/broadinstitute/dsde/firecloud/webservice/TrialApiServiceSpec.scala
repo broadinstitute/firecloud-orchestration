@@ -144,9 +144,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
 
     val trialPathBase = "/api/profile/trial"
+
     val enrollPaths = Seq(trialPathBase, s"$trialPathBase?operation=enroll")
-    val finalizePath = s"$trialPathBase?operation=finalize"
-    val invalidPaths = Seq(s"$trialPathBase?operation=", s"$trialPathBase?operation=invalid")
 
     enrollPaths foreach { enrollPath =>
       s"enrollment endpoint $enrollPath" - {
@@ -205,6 +204,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
+    val finalizePath = s"$trialPathBase?operation=finalize"
+
     s"finalization endpoint $finalizePath" - {
       allHttpMethodsExcept(POST) foreach { method =>
         s"should reject ${method.toString} method" in {
@@ -235,9 +236,18 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         }
       }
     }
+
+    val invalidPaths = Seq(s"$trialPathBase?operation=", s"$trialPathBase?operation=invalid")
+
+    invalidPaths foreach { path =>
+      s"invalid operations via $path should be a BadRequest" in {
+        Post(finalizePath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+          status should equal(BadRequest)
+        }
+      }
+    }
   }
 
-  // TODO: Keep track of and check all users whose statuses are updated when multi-user updates are supported
   "Campaign manager user enable/disable/terminate endpoint" - {
     val enablePath    = "/trial/manager/enable"
     val disablePath   = "/trial/manager/disable"
@@ -248,10 +258,8 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     val dummy2UserEmails = Seq(dummy2User)
     val disabledUserEmails = Seq(disabledUser)
     val enabledUserEmails = Seq(enabledUser)
-    val enabledButNotAgreedUserEmails = Seq(enabledButNotAgreedUser)
     val enrolledUserEmails = Seq(enrolledUser)
     val terminatedUserEmails = Seq(terminatedUser)
-    val finalizedUserEmails = Seq(finalizedUser)
     val registeredUserEmails = Seq(registeredUser)
     val nonRegisteredUserEmails = Seq(unregisteredUser)
 
