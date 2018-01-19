@@ -143,55 +143,62 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   }
 
   "Free Trial Enrollment" - {
-    val enrollPath = "/api/profile/trial"
+    val trialPathBase = "/api/profile/trial"
+    val enrollPaths = Seq(trialPathBase, s"$trialPathBase?operation=enroll")
 
-    "User-initiated enrollment endpoint" - {
-      allHttpMethodsExcept(POST) foreach { method =>
-        s"should reject ${method.toString} method" in {
-          new RequestBuilder(method)(enrollPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
-            assert(!handled)
+    enrollPaths foreach { enrollPath =>
+      s"User-initiated enrollment endpoint $enrollPath" - {
+        allHttpMethodsExcept(POST) foreach { method =>
+          s"should reject ${method.toString} method" in {
+            new RequestBuilder(method)(enrollPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+              assert(!handled)
+            }
           }
         }
       }
-    }
 
-    "attempting to enroll as a disabled user" - {
-      "should be a BadRequest" in {
-        Post(enrollPath) ~> dummyUserIdHeaders(disabledUser) ~> userServiceRoutes ~> check {
-          status should equal(BadRequest)
+      s"attempting to enroll as a disabled user via $enrollPath" - {
+        "should be a BadRequest" in {
+          Post(enrollPath) ~> dummyUserIdHeaders(disabledUser) ~> userServiceRoutes ~> check {
+            status should equal(BadRequest)
+          }
         }
       }
-    }
 
-    "attempting to enroll as an enabled user that agreed to terms" - {
-      "should be NoContent success" in {
-        Post(enrollPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
-          assertResult(NoContent, response.entity.asString) { status }
-          assert(localRawlsDao.billingProjectAdds == Map("testproject" -> "random@site.com"))
+      s"attempting to enroll as an enabled user that agreed to terms via $enrollPath" - {
+        "should be NoContent success" in {
+          Post(enrollPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
+            assertResult(NoContent, response.entity.asString) {
+              status
+            }
+            assert(localRawlsDao.billingProjectAdds == Map("testproject" -> "random@site.com"))
+          }
         }
       }
-    }
 
-    "enrolling as an enabled user that DID NOT agree to terms" - {
-      "should be Forbidden" in {
-        Post(enrollPath) ~> dummyUserIdHeaders(enabledButNotAgreedUser) ~> userServiceRoutes ~> check {
-          assertResult(Forbidden, response.entity.asString) { status }
+      s"enrolling as an enabled user that DID NOT agree to terms via $enrollPath" - {
+        "should be Forbidden" in {
+          Post(enrollPath) ~> dummyUserIdHeaders(enabledButNotAgreedUser) ~> userServiceRoutes ~> check {
+            assertResult(Forbidden, response.entity.asString) {
+              status
+            }
+          }
         }
       }
-    }
 
-    "attempting to enroll as an enrolled user" - {
-      "should be a BadRequest" in {
-        Post(enrollPath) ~> dummyUserIdHeaders(enrolledUser) ~> userServiceRoutes ~> check {
-          status should equal(BadRequest)
+      s"attempting to enroll as an enrolled user via $enrollPath" - {
+        "should be a BadRequest" in {
+          Post(enrollPath) ~> dummyUserIdHeaders(enrolledUser) ~> userServiceRoutes ~> check {
+            status should equal(BadRequest)
+          }
         }
       }
-    }
 
-    "attempting to enroll as a terminated user" - {
-      "should be a BadRequest" in {
-        Post(enrollPath) ~> dummyUserIdHeaders(terminatedUser) ~> userServiceRoutes ~> check {
-          status should equal(BadRequest)
+      s"attempting to enroll as a terminated user via $enrollPath" - {
+        "should be a BadRequest" in {
+          Post(enrollPath) ~> dummyUserIdHeaders(terminatedUser) ~> userServiceRoutes ~> check {
+            status should equal(BadRequest)
+          }
         }
       }
     }
