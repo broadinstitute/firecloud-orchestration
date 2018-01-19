@@ -1619,12 +1619,12 @@ paths:
         - Profile
       operationId: userTrial
       summary: Enroll or Finalize yourself in FireCloud free trial
+      description: |
+        * **Enroll:** starts an enabled user's trial and adds them to a billing project.
+        * **Finalize:** concludes a terminated user's trial progress.
       parameters:
         - name: operation
-          description: |
-            operation to perform on projects.
-            "Enroll" will create projects and verify those projects.
-            "Finalize" will verify all unverified projects in the pool.
+          description: operation user can perform
           required: false
           in: query
           type: string
