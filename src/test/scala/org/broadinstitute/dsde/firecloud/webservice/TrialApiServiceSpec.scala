@@ -166,7 +166,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         }
       }
 
-      s"enrollment as an enabled user that agreed to terms via $enrollPath" - {
+      s"enrollment via $enrollPath as an enabled user that agreed to terms " - {
         "should be NoContent success" in {
           Post(enrollPath) ~> dummyUserIdHeaders(enabledUser) ~> userServiceRoutes ~> check {
             assertResult(NoContent, response.entity.asString) {
