@@ -1,10 +1,12 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates._
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
 import org.scalatest.FreeSpec
 
 class TrialSpec extends FreeSpec  {
+  val allTrialStates = Seq(Disabled, Enabled, Enrolled, Terminated, Finalized)
 
   "TrialStates" - {
     "should create from known strings" in {
@@ -39,7 +41,7 @@ class TrialSpec extends FreeSpec  {
         assert(testState.isAllowedFrom(Some(TrialStates.Enabled)))
       }
       "should disallow from anything other than Enabled" - {
-        (TrialStates.allStates.toSet - TrialStates.Enabled) foreach { state =>
+        (allTrialStates.toSet - TrialStates.Enabled) foreach { state =>
           s"${state.toString}" in {
             assert(!testState.isAllowedFrom(Some(state)))
           }
@@ -55,7 +57,7 @@ class TrialSpec extends FreeSpec  {
         assert(testState.isAllowedFrom(Some(TrialStates.Disabled)))
       }
       "should disallow from anything other than Disabled" - {
-        (TrialStates.allStates.toSet - TrialStates.Disabled) foreach { state =>
+        (allTrialStates.toSet - TrialStates.Disabled) foreach { state =>
           s"${state.toString}" in {
             assert(!testState.isAllowedFrom(Some(state)))
           }
@@ -71,7 +73,7 @@ class TrialSpec extends FreeSpec  {
         assert(testState.isAllowedFrom(Some(TrialStates.Enabled)))
       }
       "should disallow from anything other than Enabled" - {
-        (TrialStates.allStates.toSet - TrialStates.Enabled) foreach { state =>
+        (allTrialStates.toSet - TrialStates.Enabled) foreach { state =>
           s"${state.toString}" in {
             assert(!testState.isAllowedFrom(Some(state)))
           }
@@ -87,7 +89,7 @@ class TrialSpec extends FreeSpec  {
         assert(testState.isAllowedFrom(Some(TrialStates.Enrolled)))
       }
       "should disallow from anything other than Enrolled" - {
-        (TrialStates.allStates.toSet - TrialStates.Enrolled) foreach { state =>
+        (allTrialStates.toSet - TrialStates.Enrolled) foreach { state =>
           s"${state.toString}" in {
             assert(!testState.isAllowedFrom(Some(state)))
           }
@@ -106,7 +108,7 @@ class TrialSpec extends FreeSpec  {
         assert(testState.isAllowedFrom(Some(TrialStates.Finalized)))
       }
       "should disallow from anything other than Terminated or Finalized" - {
-        (TrialStates.allStates.toSet -- Set(TrialStates.Terminated, TrialStates.Finalized)) foreach { state =>
+        (allTrialStates.toSet -- Set(TrialStates.Terminated, TrialStates.Finalized)) foreach { state =>
           s"${state.toString}" in {
             assert(!testState.isAllowedFrom(Some(state)))
           }

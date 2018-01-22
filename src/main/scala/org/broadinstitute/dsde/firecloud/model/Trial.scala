@@ -40,8 +40,6 @@ object Trial {
       def isAllowedFromNone: Boolean = false
     }
 
-    val allStates = Seq(Disabled, Enabled, Enrolled, Terminated, Finalized)
-
     def withName(name: String): TrialState = {
       name match {
         case "Disabled" => Disabled

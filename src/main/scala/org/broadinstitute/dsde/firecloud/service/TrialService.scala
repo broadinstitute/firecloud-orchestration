@@ -330,7 +330,7 @@ final class TrialService
     import TrialStates._
 
     // Get user's trial status, check and update the current state if it's a valid transition
-    // NB: We are being lenient and are not complaining when a user was already terminated previously
+    // NB: We are being lenient and are not complaining when a user was already 'finalized' previously
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { status =>
       if (Finalized.isAllowedFrom(status.state)) {
         thurloeDao.saveTrialStatus (userInfo.id, userInfo, status.copy (state = Some (Finalized) ) ) flatMap {
