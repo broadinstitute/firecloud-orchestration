@@ -216,17 +216,21 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
-    s"finalization as a terminated user via $finalizePath" - {
-      "should be NoContent success" in {
-        Post(finalizePath) ~> dummyUserIdHeaders(terminatedUser) ~> userServiceRoutes ~> check {
-          assertResult(NoContent, response.entity.asString) {
-            status
+    // NB: We are being lenient and are considering it a success if users attempt to re-terminate themselves
+    val usersAllowedForFinalization = Seq(terminatedUser, finalizedUser)
+    usersAllowedForFinalization foreach { user =>
+      s"finalization as a $user via $finalizePath" - {
+        "should be NoContent success" in {
+          Post(finalizePath) ~> dummyUserIdHeaders(terminatedUser) ~> userServiceRoutes ~> check {
+            assertResult(NoContent, response.entity.asString) {
+              status
+            }
           }
         }
       }
     }
 
-    val usersDisallowedForFinalization = Seq(enabledUser, disabledUser, enrolledUser, finalizedUser)
+    val usersDisallowedForFinalization = Seq(enabledUser, disabledUser, enrolledUser)
     usersDisallowedForFinalization foreach { disallowedUser =>
       s"finalization as a $disallowedUser via $finalizePath" - {
         "should be a BadRequest" in {

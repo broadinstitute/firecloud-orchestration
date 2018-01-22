@@ -78,7 +78,7 @@ object Trial {
       override def isAllowedFromState(previous: TrialState): Boolean = previous == Enrolled
     }
     case object Finalized extends TrialState {
-      override def isAllowedFromState(previous: TrialState): Boolean = previous == Terminated
+      override def isAllowedFromState(previous: TrialState): Boolean = previous == Terminated || previous == Finalized
     }
   }
 

@@ -329,20 +329,17 @@ final class TrialService
   private def finalizeUser(userInfo: UserInfo): Future[PerRequestMessage] = {
     import TrialStates._
 
-    // get user's trial status, then check the current state
+    // Get user's trial status, check and update the current state if it's a valid transition
+    // NB: We are being lenient and are not complaining when a user was already terminated previously
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { status =>
-      status.state match {
-        case Some(Finalized) =>
-          Future(RequestCompleteWithErrorReport(BadRequest, "Your free trial was already finalized."))
-        case Some(Terminated) =>
-          thurloeDao.saveTrialStatus(userInfo.id, userInfo, status.copy(state = Some(Finalized))) flatMap {
-            case Success(_) => Future(RequestComplete(NoContent))
-            case Failure(ex) => Future(RequestComplete(InternalServerError, ex.getMessage))
-          }
-        // user in some other state; can't finalize
-        case _ =>
-          val errMsg = "Your free trial should have been terminated first."
-          Future(RequestCompleteWithErrorReport(BadRequest, errMsg))
+      if (Finalized.isAllowedFrom(status.state)) {
+        thurloeDao.saveTrialStatus (userInfo.id, userInfo, status.copy (state = Some (Finalized) ) ) flatMap {
+          case Success (_) => Future (RequestComplete (NoContent) )
+          case Failure (ex) => Future (RequestComplete (InternalServerError, ex.getMessage) )
+        }
+      } else {
+        val errMsg = "Your free trial should have been terminated first."
+        Future(RequestCompleteWithErrorReport(BadRequest, errMsg))
       }
     }
   }
