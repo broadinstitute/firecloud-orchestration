@@ -333,16 +333,14 @@ final class TrialService
     // NB: We are being lenient and are not complaining when a user was already 'finalized' previously
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { status =>
       val state = status.state
-      if (Finalized.isAllowedFrom(state)) { 
-        if (state.contains(Terminated)) {
+      (Finalized.isAllowedFrom(state), state.contains(Terminated)) match {
+        case (true, true) =>
           thurloeDao.saveTrialStatus(userInfo.id, userInfo, status.copy(state = Some(Finalized))) flatMap {
             case Success(_) => Future(RequestComplete(NoContent))
             case Failure(ex) => Future(RequestComplete(InternalServerError, ex.getMessage))
           }
-        } else Future(RequestComplete(NoContent))
-      } else {
-        val errMsg = "Your free trial should have been terminated first."
-        Future(RequestCompleteWithErrorReport(BadRequest, errMsg))
+        case (true, false) => Future(RequestComplete(NoContent))
+        case _ => Future(RequestCompleteWithErrorReport(BadRequest, "Your free trial should have been terminated first."))
       }
     }
   }
