@@ -332,11 +332,14 @@ final class TrialService
     // Get user's trial status, check and update the current state if it's a valid transition
     // NB: We are being lenient and are not complaining when a user was already 'finalized' previously
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { status =>
-      if (Finalized.isAllowedFrom(status.state)) {
-        thurloeDao.saveTrialStatus (userInfo.id, userInfo, status.copy (state = Some (Finalized) ) ) flatMap {
-          case Success (_) => Future (RequestComplete (NoContent) )
-          case Failure (ex) => Future (RequestComplete (InternalServerError, ex.getMessage) )
-        }
+      val state = status.state
+      if (Finalized.isAllowedFrom(state)) { 
+        if (state.contains(Terminated)) {
+          thurloeDao.saveTrialStatus(userInfo.id, userInfo, status.copy(state = Some(Finalized))) flatMap {
+            case Success(_) => Future(RequestComplete(NoContent))
+            case Failure(ex) => Future(RequestComplete(InternalServerError, ex.getMessage))
+          }
+        } else Future(RequestComplete(NoContent))
       } else {
         val errMsg = "Your free trial should have been terminated first."
         Future(RequestCompleteWithErrorReport(BadRequest, errMsg))
