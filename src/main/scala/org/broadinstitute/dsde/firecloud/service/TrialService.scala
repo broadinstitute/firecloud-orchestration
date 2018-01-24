@@ -41,6 +41,7 @@ object TrialService {
   case class DisableUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
   case class EnrollUser(managerInfo: UserInfo) extends TrialServiceMessage
   case class TerminateUsers(managerInfo: UserInfo, userEmails: Seq[String]) extends TrialServiceMessage
+  case class FinalizeUser(managerInfo: UserInfo) extends TrialServiceMessage
   case class CreateProjects(userInfo:UserInfo, count:Int) extends TrialServiceMessage
   case class VerifyProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class CountProjects(userInfo:UserInfo) extends TrialServiceMessage
@@ -72,6 +73,8 @@ final class TrialService
       enrollUser(userInfo) pipeTo sender
     case TerminateUsers(managerInfo, userEmails) =>
       asTrialCampaignManager(terminateUsers(managerInfo, userEmails))(managerInfo) pipeTo sender
+    case FinalizeUser(userInfo) =>
+      finalizeUser(userInfo) pipeTo sender
     case CreateProjects(userInfo, count) => asTrialCampaignManager {createProjects(count)}(userInfo) pipeTo sender
     case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
     case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
@@ -250,7 +253,8 @@ final class TrialService
           // user in some other state; don't enroll
           case Some(TrialStates.Disabled) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 30)"))
           case Some(TrialStates.Terminated) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 40)"))
-          case None => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
+          case Some(TrialStates.Finalized) => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 45)"))
+          case _ => Future(RequestCompleteWithErrorReport(BadRequest, "You are not eligible for a free trial. (Error 50)"))
         }
     }
   }
@@ -320,6 +324,25 @@ final class TrialService
       enrolledDate = now,
       expirationDate = expirationDate
     )
+  }
+
+  private def finalizeUser(userInfo: UserInfo): Future[PerRequestMessage] = {
+    import TrialStates._
+
+    // Get user's trial status, check and update the current state if it's a valid transition
+    // NB: We are being lenient and are not complaining when a user was already 'finalized' previously
+    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { status =>
+      val state = status.state
+      (Finalized.isAllowedFrom(state), state.contains(Terminated)) match {
+        case (true, true) =>
+          thurloeDao.saveTrialStatus(userInfo.id, userInfo, status.copy(state = Some(Finalized))) flatMap {
+            case Success(_) => Future(RequestComplete(NoContent))
+            case Failure(ex) => Future(RequestComplete(InternalServerError, ex.getMessage))
+          }
+        case (true, false) => Future(RequestComplete(NoContent))
+        case _ => Future(RequestCompleteWithErrorReport(BadRequest, "Your free trial should have been terminated first."))
+      }
+    }
   }
 
   private def createProjects(count: Int): Future[PerRequestMessage] = {

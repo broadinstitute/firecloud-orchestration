@@ -1617,11 +1617,26 @@ paths:
     post:
       tags:
         - Profile
-      operationId: enrollTrial
-      summary: Enroll yourself in FireCloud free trial
+      operationId: userTrial
+      summary: Enroll or Finalize yourself in FireCloud free trial
+      description: |
+        * **Enroll:** starts an enabled user's trial and adds them to a billing project.
+        * **Finalize:** concludes a terminated user's trial progress.
+      parameters:
+        - name: operation
+          description: operation user can perform
+          required: false
+          in: query
+          type: string
+          enum:
+            - enroll
+            - finalize
+          default: enroll
       responses:
         204:
           description: Success (No Content)
+        400:
+          description: Bad Request; invalid operation
         403:
           description: Forbidden; user must agree to terms to be enrolled
         500:
