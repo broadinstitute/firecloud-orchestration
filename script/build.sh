@@ -15,7 +15,7 @@ PROJECT=firecloud-orchestration
 function make_jar()
 {
     # Set for versioning the jar
-    GIT_MODEL_HASH=$(git rev-parse --short ${BRANCH})
+    GIT_MODEL_HASH=$(git rev-parse --short origin/${BRANCH})
 
     docker run --rm -e GIT_MODEL_HASH=${GIT_MODEL_HASH} \
         -v $PWD:/working -w /working -v jar-cache:/root/.ivy -v jar-cache:/root/.ivy2 \
