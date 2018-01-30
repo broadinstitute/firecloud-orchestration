@@ -72,13 +72,35 @@ class DuosModelSpec extends FreeSpec with Matchers {
         val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
         duosDataUse.hmbResearch.getOrElse(false) shouldBe true
       }
+      "diseaseRestrictions: [DOID_1]" in {
+        val diseases = JsArray(JsString("DOID_1"))
+        val jsValues: Map[String, JsValue] = Map("diseaseRestrictions" -> diseases)
+        val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
+        val duosDiseases: Seq[String] = duosDataUse.diseaseRestrictions.getOrElse(Seq.empty[String])
+        duosDiseases should not be empty
+        duosDiseases should contain ("DOID_1")
+        duosDiseases.size shouldBe 1
+      }
       "diseaseRestrictions: [DOID_1, DOID_2]" in {
         val diseases = JsArray(JsString("DOID_1"), JsString("DOID_2"))
         val jsValues: Map[String, JsValue] = Map("diseaseRestrictions" -> diseases)
         val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
-        duosDataUse.diseaseRestrictions.getOrElse(Seq.empty[String]) should not be empty
-        duosDataUse.diseaseRestrictions.getOrElse(Seq.empty[String]) should contain ("DOID_1")
-        duosDataUse.diseaseRestrictions.getOrElse(Seq.empty[String]) should contain ("DOID_2")
+        val duosDiseases: Seq[String] = duosDataUse.diseaseRestrictions.getOrElse(Seq.empty[String])
+        duosDiseases should not be empty
+        duosDiseases should contain ("DOID_1")
+        duosDiseases should contain ("DOID_2")
+        duosDiseases.size shouldBe 2
+      }
+      "diseaseRestrictions: [DOID_1, DOID_2, DOID_2]" in {
+        val diseases = JsArray(JsString("DOID_1"), JsString("DOID_2"), JsString("DOID_3"))
+        val jsValues: Map[String, JsValue] = Map("diseaseRestrictions" -> diseases)
+        val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
+        val duosDiseases: Seq[String] = duosDataUse.diseaseRestrictions.getOrElse(Seq.empty[String])
+        duosDiseases should not be empty
+        duosDiseases should contain ("DOID_1")
+        duosDiseases should contain ("DOID_2")
+        duosDiseases should contain ("DOID_3")
+        duosDiseases.size shouldBe 3
       }
       "populationOriginsAncestry: true" in {
         val jsValues: Map[String, JsValue] = Map("populationOriginsAncestry" -> JsBoolean(true))
@@ -124,9 +146,11 @@ class DuosModelSpec extends FreeSpec with Matchers {
         val pops = JsArray(JsString("POP_1"), JsString("POP_2"))
         val jsValues: Map[String, JsValue] = Map("populationRestrictions" -> pops)
         val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
-        duosDataUse.populationRestrictions.getOrElse(Seq.empty[String]) should not be empty
-        duosDataUse.populationRestrictions.getOrElse(Seq.empty[String]) should contain ("POP_1")
-        duosDataUse.populationRestrictions.getOrElse(Seq.empty[String]) should contain ("POP_2")
+        val duosPops: Seq[String] = duosDataUse.populationRestrictions.getOrElse(Seq.empty[String])
+        duosPops should not be empty
+        duosPops should contain ("POP_1")
+        duosPops should contain ("POP_2")
+        duosPops.size shouldBe 2
       }
       "dateRestriction: 1/1/2018" in {
         val jsValues: Map[String, JsValue] = Map("dateRestriction" -> JsString("1/1/2018"))
