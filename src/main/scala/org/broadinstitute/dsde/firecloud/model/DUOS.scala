@@ -35,7 +35,9 @@ object DUOS {
     vulnerablePopulations: Option[Boolean] = None,
     psychologicalTraits: Option[Boolean] = None,
     nonBiomedical: Option[Boolean] = None
-  ) {
+  )
+
+  object DuosDataUse {
     def apply(jsValues: Map[String, JsValue]): DuosDataUse = {
       def getBoolean(f: String): Option[Boolean] = {
         jsValues.get(f) match {
@@ -45,7 +47,8 @@ object DUOS {
       }
       def getSeqString(f: String): Option[Seq[String]] = {
         jsValues.get(f) match {
-          case x if x.isDefined => Some(jsValues(f).convertTo[JsArray].elements.map(_.toString()))
+          case x if x.isDefined =>
+            Some(jsValues(f).convertTo[JsArray].elements.map(_.convertTo[String]))
           case _ => None
         }
       }
@@ -55,7 +58,7 @@ object DUOS {
           case _ => None
         }
       }
-      DuosDataUse(
+      new DuosDataUse(
         generalUse = getBoolean("generalUse"),
         hmbResearch = getBoolean("hmbResearch"),
         diseaseRestrictions = getSeqString("diseaseRestrictions"),

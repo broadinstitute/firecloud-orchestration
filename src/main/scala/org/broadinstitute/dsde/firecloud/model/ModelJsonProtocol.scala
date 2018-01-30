@@ -243,14 +243,18 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
         f.get(ddu) match {
           case Some(x: Boolean) => f.getName -> x.toJson
           case Some(y: String) => f.getName -> y.toJson
-          case Some(head :: tail) => f.getName -> JsArray((head +: tail).map(_.toString.toJson).toVector)
+          case Some(ls: Seq[_]) =>
+            ls.head match {
+              case (a: String) => f.getName -> (a +: ls.tail.map(_.asInstanceOf[String])).toJson
+              case _ => f.getName -> JsNull
+            }
           case _ => f.getName -> JsNull
         }
       }
       JsObject(existingProps.filterNot(_._2 == JsNull).toMap)
     }
     override def read(json: JsValue): DuosDataUse = {
-      DuosDataUse().apply(json.asJsObject.fields)
+      DuosDataUse.apply(json.asJsObject.fields)
     }
   }
   implicit val impDuosConsent = jsonFormat11(Consent)
