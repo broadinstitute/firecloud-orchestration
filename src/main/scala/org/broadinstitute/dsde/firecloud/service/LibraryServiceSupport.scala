@@ -34,16 +34,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
   // TODO: this doesn't have to be a future, leaving it as a Future for compatibility
   def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
-    val nodesSeq:Seq[String] = workspaces.collect {
-        case w if w.attributes.contains(AttributeName.withLibraryNS("diseaseOntologyID")) =>
-          w.attributes(AttributeName.withLibraryNS("diseaseOntologyID"))
-      }.collect {
-        case s:AttributeString => s.value
-      }
-    logger.debug(s"found ${nodesSeq.size} workspaces with ontology nodes assigned")
-
-    val nodes = nodesSeq.toSet
-    logger.debug(s"found ${nodes.size} unique ontology nodes")
+    val nodes = uniqueStrings(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
 
     // query ontology for this set of nodes, save in a map
     val parentCache = nodes map {id => (id, lookupParentNodes(id, ontologyDAO))}
@@ -51,6 +42,19 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     // using the cached parent information, build the indexable documents
     val parentMap = parentCache.toMap.filter(e => e._2.nonEmpty) // remove nodes that have no parent
     logger.debug(s"have parent results for ${parentMap.size} ontology nodes")
+
+    // identify the unique ORSP codes in this list of workspaces
+    val orspIds = uniqueStrings(workspaces, AttributeName.withLibraryNS("orsp"))
+
+    // TODO: query to get the ORSP restrictions for those codes
+    val duCodesCache = orspIds map {orspId => (orspId, None)}
+
+    // TODO: translate ORSP codes to FireCloud DU codes.
+
+    // TODO: overwrite any pre-existing data use attributes on ORSP-controlled workspaces with the ORSP DU codes
+      // delete pre-existing DU codes, using allDurFieldNames
+      // add new DU codes
+
     val docsResult: Seq[Document] = workspaces map {w => indexableDocument(w, parentMap)}
 
     Future(docsResult)
@@ -94,6 +98,22 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
         Document(workspace.workspaceId, parentFields)
       case _ => Document(workspace.workspaceId, fields)
     }
+  }
+
+  // TODO: add unit test for this
+  def uniqueStrings(workspaces: Seq[Workspace], attributeName: AttributeName): Set[String] = {
+    val valueSeq:Seq[String] = workspaces.collect {
+      case w if w.attributes.contains(attributeName) =>
+        w.attributes(attributeName)
+    }.collect {
+      case s:AttributeString => s.value
+    }
+    logger.debug(s"found ${valueSeq.size} workspaces with ${AttributeName.toDelimitedName(attributeName)} string attributes")
+
+    val valueSet = valueSeq.toSet
+    logger.debug(s"found ${valueSet.size} unique ${AttributeName.toDelimitedName(attributeName)} values")
+
+    valueSet
   }
 
   // wraps the ontologyDAO call, handles Nones/nulls, and returns a [Future[Seq].

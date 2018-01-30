@@ -12,4 +12,6 @@ trait ConsentDAO extends ReportsSubsystemStatus {
 
   override def serviceName:String = ConsentDAO.serviceName
 
+  def getRestriction(orspId: String): Unit
+
 }

@@ -12,6 +12,15 @@ class HttpConsentDAO(implicit val system: ActorSystem, implicit val executionCon
 
   private val consentUri = Uri(FireCloudConfig.Duos.baseConsentUrl)
 
+
+  override def getRestriction(orspId: String): Unit = {
+    val consentUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
+    val req = Get(Uri(consentUrl).withQuery(("name", orspId)))
+    // authedRequestToObject[DataUseRestriction](req) // 404 or 200, primitive lives in object.dataUse
+    None
+
+  }
+
   override def status: Future[SubsystemStatus] = {
     getStatusFromDropwizardChecks(unAuthedRequest(Get(consentUri.withPath(Uri.Path("/status")))))
   }

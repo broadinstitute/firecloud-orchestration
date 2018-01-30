@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
@@ -46,14 +46,15 @@ object LibraryService {
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO, app.ontologyDAO)
+    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO, app.ontologyDAO, app.consentDAO)
 }
 
 
 class LibraryService (protected val argUserInfo: UserInfo,
                       val rawlsDAO: RawlsDAO,
                       val searchDAO: SearchDAO,
-                      val ontologyDAO: OntologyDAO)
+                      val ontologyDAO: OntologyDAO,
+                      val consentDAO: ConsentDAO)
                      (implicit protected val executionContext: ExecutionContext) extends Actor
   with LibraryServiceSupport with AttributeSupport with PermissionsSupport with SprayJsonSupport with LazyLogging with WorkspacePublishingSupport {
 

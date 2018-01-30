@@ -700,5 +700,97 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
     }
+    "when finding unique string attributes in a Seq of Workspaces" - {
+
+      def makeWorkspacesWithAttributes(attrMaps: Seq[AttributeMap]): Seq[Workspace] = {
+        val ws = Workspace(
+          "namespace",
+          "name",
+          Set.empty,
+          "workspace_id",
+          "buckety_bucket",
+          DateTime.now(),
+          DateTime.now(),
+          "my_workspace_creator",
+          Map(), //attributes
+          Map(), //acls
+          Map(), //authdomain acls
+          false //locked
+        )
+
+        attrMaps map { attrMap =>
+          ws.copy(attributes = attrMap, workspaceId = UUID.randomUUID().toString)
+        }
+      }
+
+      "should return an empty list when no workspaces" in {
+        val workspaces = Seq.empty[Workspace]
+        assertResult(Set.empty[String]) {
+          uniqueStrings(workspaces, AttributeName.withDefaultNS("description"))
+        }
+      }
+      "should return an empty list when no attributes" in {
+        val workspaces = makeWorkspacesWithAttributes(Seq(Map(), Map(), Map()))
+        assertResult(Set.empty[String]) {
+          uniqueStrings(workspaces, AttributeName.withDefaultNS("description"))
+        }
+      }
+      "should return a list when some attributes" in {
+        val workspaces = makeWorkspacesWithAttributes(Seq(
+          Map(AttributeName.withLibraryNS("something") -> AttributeString("one")),
+          Map(AttributeName.withLibraryNS("something") -> AttributeString("two")),
+          Map(AttributeName.withLibraryNS("something") -> AttributeString("three"))
+        ))
+        assertResult(Set("one","two","three")) {
+          uniqueStrings(workspaces, AttributeName.withLibraryNS("something"))
+        }
+      }
+      "should not return duplicate attributes" in {
+        val workspaces = makeWorkspacesWithAttributes(Seq(
+          Map(AttributeName.withDefaultNS("something") -> AttributeString("one")),
+          Map(AttributeName.withDefaultNS("something") -> AttributeString("two")),
+          Map(AttributeName.withDefaultNS("something") -> AttributeString("two"))
+        ))
+        assertResult(Set("one","two")) {
+          uniqueStrings(workspaces, AttributeName.withDefaultNS("something"))
+        }
+      }
+      "should ignore non-string attributes" in {
+        val workspaces = makeWorkspacesWithAttributes(Seq(
+          Map(AttributeName.withDefaultNS("something") -> AttributeString("one")),
+          Map(AttributeName.withDefaultNS("something") -> AttributeNumber(2)),
+          Map(AttributeName.withDefaultNS("something") -> AttributeValueList(Seq(AttributeString("two"))))
+        ))
+        assertResult(Set("one")) {
+          uniqueStrings(workspaces, AttributeName.withDefaultNS("something"))
+        }
+      }
+      "should ignore attributes beyond our target name" in {
+        val workspaces = makeWorkspacesWithAttributes(Seq(
+          Map(
+            AttributeName.withDefaultNS("something") -> AttributeString("one"),
+            AttributeName.withLibraryNS("something") -> AttributeString("three") // different namespace
+          ),
+          Map(
+            AttributeName.withDefaultNS("something") -> AttributeString("two"),
+            AttributeName.withDefaultNS("hi") -> AttributeString("two") // different name
+          )
+        ))
+        assertResult(Set("one","two")) {
+          uniqueStrings(workspaces, AttributeName.withDefaultNS("something"))
+        }
+      }
+      "should ignore workspaces that don't have our target name" in {
+        val workspaces = makeWorkspacesWithAttributes(Seq(
+          Map(AttributeName.withDefaultNS("something") -> AttributeString("one")),
+          Map(AttributeName.withDefaultNS("somethingElse") -> AttributeString("two")),
+          Map(),
+          Map(AttributeName.withDefaultNS("something") -> AttributeString("four"))
+        ))
+        assertResult(Set("one","four")) {
+          uniqueStrings(workspaces, AttributeName.withDefaultNS("something"))
+        }
+      }
+    }
   }
 }
