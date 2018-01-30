@@ -30,25 +30,14 @@ class OntologyAutocompleteSpec extends FreeSpec {
       val expected = Set(
         // matches in label:
         "acute hemorrhagic leukoencephalitis",
-        "COL4A1-related familial vascular leukoencephalopathy",
         "hypomyelinating leukoencephalopathy",
-        "leukoencephalopathy with vanishing white matter",
         "oral leukoedema",
         "progressive multifocal leukoencephalopathy",
 
         // matches in a synonym:
-        "CADASIL 1",
-        "CADASIL 2",
-        "CADASIL",
-        "hypomyelinating leukodystrophy 7 with or without oligodontia and-or hypogonadotropic hypogonadism", // note label is "leuko" without the "e"
         "Krabbe disease",
         "myelophthisic anemia",
-        "Nasu-Hakola disease",
         "subacute sclerosing panencephalitis"
-
-        // following should not match; consent-ontology service matches in their definitions; orch does not
-        // "hypomyelinating leukodystrophy 4",
-        // "mitochondrial complex I deficiency",
       )
       assertResult(expected) { labels.toSet }
 

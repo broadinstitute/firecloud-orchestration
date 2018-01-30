@@ -23,25 +23,7 @@ class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) exten
     if (!getResult.isExists) {
       List.empty[TermResource]
     } else {
-      val term = getResult.getSourceAsString.parseJson.convertTo[TermResource]
-
-      val annotatedTerm = if (term.parents.nonEmpty && term.parents.get.nonEmpty) {
-        val parents = term.parents.get
-        val ids = parents map (_.id)
-        val query = client.prepareSearch(indexName).setQuery(idsQuery().addIds(ids:_*))
-        val idsResult = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](query)
-        val hitMap = idsResult.getHits.getHits.map { hit =>
-          hit.getId -> hit.getSourceAsString.parseJson.convertTo[TermResource]
-        }.toMap
-        val annotatedParents = parents map { origParent =>
-          val newLabel = hitMap.get(origParent.id) map (_.label)
-          origParent.copy(label = newLabel)
-        }
-        term.copy(parents = Some(annotatedParents))
-      } else {
-        term
-      }
-      List(annotatedTerm)
+      List(getResult.getSourceAsString.parseJson.convertTo[TermResource])
     }
   }
 
