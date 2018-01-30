@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
+import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
@@ -96,7 +96,8 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
     consentServer = startClientAndServer(consentServerPort)
 
     val consentPath = consentUrl.replace(FireCloudConfig.Duos.baseConsentUrl, "")
-    val consent = Consent(consentId = "consent-id-12345", name = "12345", translatedUseRestriction = Some("Translation"))
+    val duosDataUse = DuosDataUse(generalUse = Some(true))
+    val consent = Consent(consentId = "consent-id-12345", name = "12345", translatedUseRestriction = Some("Translation"), dataUse = Some(duosDataUse))
     val consentError = ConsentError(message = "Unapproved", code = BadRequest.intValue)
     val consentNotFound = ConsentError(message = "Not Found", code = NotFound.intValue)
 

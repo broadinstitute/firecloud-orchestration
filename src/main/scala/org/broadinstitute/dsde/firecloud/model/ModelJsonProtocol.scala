@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
+import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial._
-import spray.json._
+import spray.json.{JsNull, _}
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
@@ -236,7 +236,24 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
   implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
 
-  implicit val impDuosConsent = jsonFormat10(Consent)
+  implicit object impDuosDataUse extends RootJsonFormat[DuosDataUse] {
+    override def write(ddu: DuosDataUse): JsValue = {
+      val existingProps: Seq[(String, JsValue)] = ddu.getClass.getDeclaredFields map { f =>
+        f.setAccessible(true)
+        f.get(ddu) match {
+          case Some(x: Boolean) => f.getName -> x.toJson
+          case Some(y: String) => f.getName -> y.toJson
+          case Some(head :: tail) => f.getName -> JsArray((head +: tail).map(_.toString.toJson).toVector)
+          case _ => f.getName -> JsNull
+        }
+      }
+      JsObject(existingProps.filterNot(_._2 == JsNull).toMap)
+    }
+    override def read(json: JsValue): DuosDataUse = {
+      DuosDataUse().apply(json.asJsObject.fields)
+    }
+  }
+  implicit val impDuosConsent = jsonFormat11(Consent)
   implicit val impDuosConsentError = jsonFormat2(ConsentError)
   implicit val impOntologyTermParent = jsonFormat5(TermParent)
   implicit val impOntologyTermResource = jsonFormat7(TermResource)
