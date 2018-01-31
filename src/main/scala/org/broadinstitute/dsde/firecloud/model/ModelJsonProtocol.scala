@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial._
-import spray.json.{JsNull, _}
+import spray.json._
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
@@ -243,11 +243,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
         f.get(ddu) match {
           case Some(x: Boolean) => f.getName -> x.toJson
           case Some(y: String) => f.getName -> y.toJson
-          case Some(ls: Seq[_]) =>
-            ls.head match {
-              case (a: String) => f.getName -> (a +: ls.tail.map(_.asInstanceOf[String])).toJson
-              case _ => f.getName -> JsNull
-            }
+          case Some((h: String) :: tail) => f.getName -> (h +: tail.collect{case z:String => z}).toJson
           case _ => f.getName -> JsNull
         }
       }

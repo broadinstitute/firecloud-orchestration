@@ -43,31 +43,19 @@ object DUOS {
     def apply(jsValues: Map[String, JsValue]): DuosDataUse = {
       def getBoolean(f: String): Option[Boolean] = {
         jsValues.get(f) match {
-          case x if x.isDefined =>
-            Try(jsValues(f).convertTo[Boolean]) match {
-              case Success(booleanVal) => Some(booleanVal)
-              case _ => None
-            }
+          case Some(b: JsBoolean) => Try(b.convertTo[Boolean]).toOption
           case _ => None
         }
       }
       def getSeqString(f: String): Option[Seq[String]] = {
         jsValues.get(f) match {
-          case x if x.isDefined =>
-            Try(jsValues(f).convertTo[JsArray].elements.map(_.convertTo[String])) match {
-              case Success(listVal) => Some(listVal)
-              case _ => None
-            }
+          case Some(l: JsArray) => Try(l.elements.map(_.convertTo[String])).toOption
           case _ => None
         }
       }
       def getString(f: String): Option[String] = {
         jsValues.get(f) match {
-          case x if x.isDefined =>
-            Try(jsValues(f).convertTo[String]) match {
-              case Success(stringVal) => Some(stringVal)
-              case _ => None
-            }
+          case Some(s: JsString) => Try(s.convertTo[String]).toOption
           case _ => None
         }
       }

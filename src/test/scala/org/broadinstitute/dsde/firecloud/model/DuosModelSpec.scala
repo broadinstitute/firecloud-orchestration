@@ -69,8 +69,7 @@ class DuosModelSpec extends FreeSpec with Matchers {
         val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
         val duosDiseases: Seq[String] = duosDataUse.diseaseRestrictions.getOrElse(Seq.empty[String])
         duosDiseases should not be empty
-        duosDiseases should contain ("DOID_1")
-        duosDiseases.size shouldBe 1
+        duosDiseases should contain theSameElementsInOrderAs Seq("DOID_1")
       }
       "diseaseRestrictions: [DOID_1, DOID_2]" in {
         val diseases = JsArray(JsString("DOID_1"), JsString("DOID_2"))
@@ -78,9 +77,7 @@ class DuosModelSpec extends FreeSpec with Matchers {
         val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
         val duosDiseases: Seq[String] = duosDataUse.diseaseRestrictions.getOrElse(Seq.empty[String])
         duosDiseases should not be empty
-        duosDiseases should contain ("DOID_1")
-        duosDiseases should contain ("DOID_2")
-        duosDiseases.size shouldBe 2
+        duosDiseases should contain theSameElementsInOrderAs Seq("DOID_1", "DOID_2")
       }
       "diseaseRestrictions: [DOID_1, DOID_2, DOID_2]" in {
         val diseases = JsArray(JsString("DOID_1"), JsString("DOID_2"), JsString("DOID_3"))
@@ -88,10 +85,7 @@ class DuosModelSpec extends FreeSpec with Matchers {
         val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
         val duosDiseases: Seq[String] = duosDataUse.diseaseRestrictions.getOrElse(Seq.empty[String])
         duosDiseases should not be empty
-        duosDiseases should contain ("DOID_1")
-        duosDiseases should contain ("DOID_2")
-        duosDiseases should contain ("DOID_3")
-        duosDiseases.size shouldBe 3
+        duosDiseases should contain theSameElementsInOrderAs Seq("DOID_1", "DOID_2", "DOID_3")
       }
       "populationOriginsAncestry: true" in {
         val jsValues: Map[String, JsValue] = Map("populationOriginsAncestry" -> JsBoolean(true))
@@ -139,9 +133,7 @@ class DuosModelSpec extends FreeSpec with Matchers {
         val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
         val duosPops: Seq[String] = duosDataUse.populationRestrictions.getOrElse(Seq.empty[String])
         duosPops should not be empty
-        duosPops should contain ("POP_1")
-        duosPops should contain ("POP_2")
-        duosPops.size shouldBe 2
+        duosPops should contain theSameElementsInOrderAs Seq("POP_1", "POP_2")
       }
       "dateRestriction: 1/1/2018" in {
         val jsValues: Map[String, JsValue] = Map("dateRestriction" -> JsString("1/1/2018"))
@@ -232,35 +224,13 @@ class DuosModelSpec extends FreeSpec with Matchers {
   }
 
   private def assertIsUndefined(duosDataUse: DuosDataUse): Unit = {
-    duosDataUse.generalUse.isDefined shouldBe false
-    duosDataUse.hmbResearch.isDefined shouldBe false
-    duosDataUse.diseaseRestrictions.isDefined shouldBe false
-    duosDataUse.populationOriginsAncestry.isDefined shouldBe false
-    duosDataUse.populationStructure.isDefined shouldBe false
-    duosDataUse.commercialUse.isDefined shouldBe false
-    duosDataUse.methodsResearch.isDefined shouldBe false
-    duosDataUse.aggregateResearch.isDefined shouldBe false
-    duosDataUse.controlSetOption.isDefined shouldBe false
-    duosDataUse.gender.isDefined shouldBe false
-    duosDataUse.pediatric.isDefined shouldBe false
-    duosDataUse.populationRestrictions.isDefined shouldBe false
-    duosDataUse.dateRestriction.isDefined shouldBe false
-    duosDataUse.recontactingDataSubjects.isDefined shouldBe false
-    duosDataUse.recontactMay.isDefined shouldBe false
-    duosDataUse.recontactMust.isDefined shouldBe false
-    duosDataUse.genomicPhenotypicData.isDefined shouldBe false
-    duosDataUse.otherRestrictions.isDefined shouldBe false
-    duosDataUse.cloudStorage.isDefined shouldBe false
-    duosDataUse.ethicsApprovalRequired.isDefined shouldBe false
-    duosDataUse.geographicalRestrictions.isDefined shouldBe false
-    duosDataUse.other.isDefined shouldBe false
-    duosDataUse.illegalBehavior.isDefined shouldBe false
-    duosDataUse.addiction.isDefined shouldBe false
-    duosDataUse.sexualDiseases.isDefined shouldBe false
-    duosDataUse.stigmatizeDiseases.isDefined shouldBe false
-    duosDataUse.vulnerablePopulations.isDefined shouldBe false
-    duosDataUse.psychologicalTraits.isDefined shouldBe false
-    duosDataUse.nonBiomedical.isDefined shouldBe false
+    duosDataUse.getClass.getDeclaredFields map { f =>
+      f.setAccessible(true)
+      f.get(duosDataUse) match {
+        case Some(x) => fail(s"Field ${f.getName} should not be defined")
+        case None => // passing cass
+      }
+    }
   }
 
 }
