@@ -43,7 +43,7 @@ object DUOS {
     def apply(jsValues: Map[String, JsValue]): DuosDataUse = {
       def getBoolean(f: String): Option[Boolean] = {
         jsValues.get(f) match {
-          case Some(b: JsBoolean) => Some(b.convertTo[Boolean])
+          case Some(b: JsBoolean) => Some(b.value)
           case _ => None
         }
       }
@@ -55,7 +55,7 @@ object DUOS {
       }
       def getString(f: String): Option[String] = {
         jsValues.get(f) match {
-          case Some(s: JsString) => Some(s.convertTo[String])
+          case Some(s: JsString) => Some(s.value)
           case _ => None
         }
       }
