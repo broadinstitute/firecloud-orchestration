@@ -22,6 +22,25 @@ class DuosModelSpec extends FreeSpec with Matchers {
     }
 
     "Incorrectly formed data use json should parse to an empty object" - {
+
+      "generalUse: FOO" in {
+        val jsValues: Map[String, JsValue] = Map("generalUse" -> JsString("FOO"))
+        val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
+        assertIsUndefined(duosDataUse)
+      }
+
+      "diseaseRestrictions: true" in {
+        val jsValues: Map[String, JsValue] = Map("diseaseRestrictions" -> JsBoolean(true))
+        val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
+        assertIsUndefined(duosDataUse)
+      }
+
+      "aggregateResearch: true" in {
+        val jsValues: Map[String, JsValue] = Map("aggregateResearch" -> JsBoolean(true))
+        val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
+        assertIsUndefined(duosDataUse)
+      }
+
       "fooBar: 7, barBaz: [FOO, BAR]" in {
         val vals = JsArray(JsString("FOO"), JsString("BAR"))
         val jsValues: Map[String, JsValue] = Map(
@@ -29,35 +48,7 @@ class DuosModelSpec extends FreeSpec with Matchers {
           "fooBar" -> JsNumber(7)
         )
         val duosDataUse: DuosDataUse = DuosDataUse.apply(jsValues)
-        duosDataUse.generalUse.isDefined shouldBe false
-        duosDataUse.hmbResearch.isDefined shouldBe false
-        duosDataUse.diseaseRestrictions.isDefined shouldBe false
-        duosDataUse.populationOriginsAncestry.isDefined shouldBe false
-        duosDataUse.populationStructure.isDefined shouldBe false
-        duosDataUse.commercialUse.isDefined shouldBe false
-        duosDataUse.methodsResearch.isDefined shouldBe false
-        duosDataUse.aggregateResearch.isDefined shouldBe false
-        duosDataUse.controlSetOption.isDefined shouldBe false
-        duosDataUse.gender.isDefined shouldBe false
-        duosDataUse.pediatric.isDefined shouldBe false
-        duosDataUse.populationRestrictions.isDefined shouldBe false
-        duosDataUse.dateRestriction.isDefined shouldBe false
-        duosDataUse.recontactingDataSubjects.isDefined shouldBe false
-        duosDataUse.recontactMay.isDefined shouldBe false
-        duosDataUse.recontactMust.isDefined shouldBe false
-        duosDataUse.genomicPhenotypicData.isDefined shouldBe false
-        duosDataUse.otherRestrictions.isDefined shouldBe false
-        duosDataUse.cloudStorage.isDefined shouldBe false
-        duosDataUse.ethicsApprovalRequired.isDefined shouldBe false
-        duosDataUse.geographicalRestrictions.isDefined shouldBe false
-        duosDataUse.other.isDefined shouldBe false
-        duosDataUse.illegalBehavior.isDefined shouldBe false
-        duosDataUse.addiction.isDefined shouldBe false
-        duosDataUse.sexualDiseases.isDefined shouldBe false
-        duosDataUse.stigmatizeDiseases.isDefined shouldBe false
-        duosDataUse.vulnerablePopulations.isDefined shouldBe false
-        duosDataUse.psychologicalTraits.isDefined shouldBe false
-        duosDataUse.nonBiomedical.isDefined shouldBe false
+        assertIsUndefined(duosDataUse)
       }
     }
 
@@ -238,6 +229,38 @@ class DuosModelSpec extends FreeSpec with Matchers {
         duosDataUse.nonBiomedical.getOrElse(false) shouldBe true
       }
     }
+  }
+
+  private def assertIsUndefined(duosDataUse: DuosDataUse): Unit = {
+    duosDataUse.generalUse.isDefined shouldBe false
+    duosDataUse.hmbResearch.isDefined shouldBe false
+    duosDataUse.diseaseRestrictions.isDefined shouldBe false
+    duosDataUse.populationOriginsAncestry.isDefined shouldBe false
+    duosDataUse.populationStructure.isDefined shouldBe false
+    duosDataUse.commercialUse.isDefined shouldBe false
+    duosDataUse.methodsResearch.isDefined shouldBe false
+    duosDataUse.aggregateResearch.isDefined shouldBe false
+    duosDataUse.controlSetOption.isDefined shouldBe false
+    duosDataUse.gender.isDefined shouldBe false
+    duosDataUse.pediatric.isDefined shouldBe false
+    duosDataUse.populationRestrictions.isDefined shouldBe false
+    duosDataUse.dateRestriction.isDefined shouldBe false
+    duosDataUse.recontactingDataSubjects.isDefined shouldBe false
+    duosDataUse.recontactMay.isDefined shouldBe false
+    duosDataUse.recontactMust.isDefined shouldBe false
+    duosDataUse.genomicPhenotypicData.isDefined shouldBe false
+    duosDataUse.otherRestrictions.isDefined shouldBe false
+    duosDataUse.cloudStorage.isDefined shouldBe false
+    duosDataUse.ethicsApprovalRequired.isDefined shouldBe false
+    duosDataUse.geographicalRestrictions.isDefined shouldBe false
+    duosDataUse.other.isDefined shouldBe false
+    duosDataUse.illegalBehavior.isDefined shouldBe false
+    duosDataUse.addiction.isDefined shouldBe false
+    duosDataUse.sexualDiseases.isDefined shouldBe false
+    duosDataUse.stigmatizeDiseases.isDefined shouldBe false
+    duosDataUse.vulnerablePopulations.isDefined shouldBe false
+    duosDataUse.psychologicalTraits.isDefined shouldBe false
+    duosDataUse.nonBiomedical.isDefined shouldBe false
   }
 
 }

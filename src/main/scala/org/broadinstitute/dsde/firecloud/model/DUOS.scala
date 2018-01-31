@@ -3,6 +3,8 @@ package org.broadinstitute.dsde.firecloud.model
 import spray.json.{JsObject, JsValue, _}
 import DefaultJsonProtocol._
 
+import scala.util.{Success, Try}
+
 object DUOS {
 
   case class DuosDataUse(
@@ -41,20 +43,31 @@ object DUOS {
     def apply(jsValues: Map[String, JsValue]): DuosDataUse = {
       def getBoolean(f: String): Option[Boolean] = {
         jsValues.get(f) match {
-          case x if x.isDefined => Some(jsValues(f).convertTo[Boolean])
+          case x if x.isDefined =>
+            Try(jsValues(f).convertTo[Boolean]) match {
+              case Success(booleanVal) => Some(booleanVal)
+              case _ => None
+            }
           case _ => None
         }
       }
       def getSeqString(f: String): Option[Seq[String]] = {
         jsValues.get(f) match {
           case x if x.isDefined =>
-            Some(jsValues(f).convertTo[JsArray].elements.map(_.convertTo[String]))
+            Try(jsValues(f).convertTo[JsArray].elements.map(_.convertTo[String])) match {
+              case Success(listVal) => Some(listVal)
+              case _ => None
+            }
           case _ => None
         }
       }
       def getString(f: String): Option[String] = {
         jsValues.get(f) match {
-          case x if x.isDefined => Some(jsValues(f).convertTo[String])
+          case x if x.isDefined =>
+            Try(jsValues(f).convertTo[String]) match {
+              case Success(stringVal) => Some(stringVal)
+              case _ => None
+            }
           case _ => None
         }
       }
