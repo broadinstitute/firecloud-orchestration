@@ -8,7 +8,7 @@ import scala.concurrent.Future
 class MockConsentDAO extends ConsentDAO {
 
 
-  override def getRestriction(orspId: String): Unit = None
+  override def getRestriction(orspId: String): Future[Option[String]] = Future.successful(None)
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
 

@@ -26,8 +26,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object LibraryService {
-  final val publishedFlag = AttributeName("library","published")
-  final val discoverableWSAttribute = AttributeName("library","discoverableByGroups")
+  final val publishedFlag = AttributeName.withLibraryNS("published")
+  final val discoverableWSAttribute = AttributeName.withLibraryNS("discoverableByGroups")
+  final val orspIdAttribute = AttributeName.withLibraryNS("orsp")
   final val schemaLocation = "library/attribute-definitions.json"
 
   sealed trait LibraryServiceMessage
@@ -201,7 +202,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
         Future(RequestComplete(NoContent))
       else {
         logger.info("reindex: requesting ontology parents for workspaces ...")
-        val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO)
+        val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO, consentDAO)
         toIndex map { documents =>
           logger.info("reindex: resetting index ...")
           searchDAO.recreateIndex()

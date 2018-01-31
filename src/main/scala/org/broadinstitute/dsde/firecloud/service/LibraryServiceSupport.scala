@@ -2,10 +2,11 @@ package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.service.LibraryService.orspIdAttribute
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.rawls.model._
@@ -31,34 +32,59 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  // TODO: this doesn't have to be a future, leaving it as a Future for compatibility
-  def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Seq[Document]] = {
+  def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO, consentDAO: ConsentDAO)(implicit ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
     val nodes = uniqueStrings(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
 
     // query ontology for this set of nodes, save in a map
     val parentCache = nodes map {id => (id, lookupParentNodes(id, ontologyDAO))}
-
-    // using the cached parent information, build the indexable documents
     val parentMap = parentCache.toMap.filter(e => e._2.nonEmpty) // remove nodes that have no parent
     logger.debug(s"have parent results for ${parentMap.size} ontology nodes")
 
     // identify the unique ORSP codes in this list of workspaces
-    val orspIds = uniqueStrings(workspaces, AttributeName.withLibraryNS("orsp"))
+    val orspIds = uniqueStrings(workspaces, orspIdAttribute)
 
-    // TODO: query to get the ORSP restrictions for those codes
-    val duCodesCache = orspIds map {orspId => (orspId, None)}
+    // set up an exception-resilient Future to get the ORSP restrictions for those codes
+    val futureRestrictions:Future[Set[(String, Option[String])]] = Future.sequence(orspIds map {orspId =>
+      consentDAO.getRestriction(orspId) map { restriction =>
+        orspId -> restriction
+      } recover {
+        case e:Exception => orspId -> None
+      }
+    })
 
-    // TODO: translate ORSP codes to FireCloud DU codes.
+    futureRestrictions.map { restrictions =>
+      val restrictionMap:Map[String,AttributeMap] = restrictions.map {
+        case (orspId, dataUseOption) =>
+          val libraryDUAttrs = if (dataUseOption.isEmpty)
+            Map.empty[AttributeName, Attribute]
+          else
+            // TODO: translate ORSP codes to FireCloud DU codes.
+            Map.empty[AttributeName, Attribute]
 
-    // TODO: overwrite any pre-existing data use attributes on ORSP-controlled workspaces with the ORSP DU codes
-      // delete pre-existing DU codes, using allDurFieldNames
-      // add new DU codes
+          orspId -> libraryDUAttrs
+      }.toMap
 
-    val docsResult: Seq[Document] = workspaces map {w => indexableDocument(w, parentMap)}
+      // TODO: overwrite any pre-existing data use attributes on ORSP-controlled workspaces with the ORSP DU codes
+      val annotatedWorkspaces = workspaces map { ws =>
+        // does this workspace have an orsp id?
+        ws.attributes.get(orspIdAttribute) match {
 
-    Future(docsResult)
+          case s:AttributeString =>
+            val orspAttrs = restrictionMap.getOrElse(s.value, Map.empty[AttributeName, Attribute])
+            // delete pre-existing DU codes, then add the DU codes from ORSP
+            // TODO: namespaces on allDurFieldNames??!?!?
+            val newAttrs = (ws.attributes -- allDurFieldNames.map(x => AttributeName.withLibraryNS(x))) ++ orspAttrs
 
+            ws.copy(attributes = newAttrs)
+
+          case _ =>
+            // this workspace does not have an ORSP id; leave it untouched
+            ws
+        }
+      }
+      annotatedWorkspaces map {w => indexableDocument(w, parentMap)}
+    }
   }
 
   private def indexableDocument(workspace: Workspace, parentCache: Map[String,Seq[TermParent]])(implicit ec: ExecutionContext): Document = {

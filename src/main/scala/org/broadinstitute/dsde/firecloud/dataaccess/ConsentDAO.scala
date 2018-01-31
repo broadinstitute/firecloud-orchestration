@@ -2,6 +2,8 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
+import scala.concurrent.Future
+
 object ConsentDAO {
   lazy val serviceName = "Consent"
 }
@@ -12,6 +14,6 @@ trait ConsentDAO extends ReportsSubsystemStatus {
 
   override def serviceName:String = ConsentDAO.serviceName
 
-  def getRestriction(orspId: String): Unit
+  def getRestriction(orspId: String): Future[Option[String]] // TODO: will be DuosDataUse
 
 }
