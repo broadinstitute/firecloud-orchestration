@@ -43,19 +43,19 @@ object DUOS {
     def apply(jsValues: Map[String, JsValue]): DuosDataUse = {
       def getBoolean(f: String): Option[Boolean] = {
         jsValues.get(f) match {
-          case Some(b: JsBoolean) => Try(b.convertTo[Boolean]).toOption
+          case Some(b: JsBoolean) => Some(b.convertTo[Boolean])
           case _ => None
         }
       }
       def getSeqString(f: String): Option[Seq[String]] = {
         jsValues.get(f) match {
-          case Some(l: JsArray) => Try(l.elements.map(_.convertTo[String])).toOption
+          case Some(l: JsArray) => Some(l.elements.collect { case s: JsString => s.value })
           case _ => None
         }
       }
       def getString(f: String): Option[String] = {
         jsValues.get(f) match {
-          case Some(s: JsString) => Try(s.convertTo[String]).toOption
+          case Some(s: JsString) => Some(s.convertTo[String])
           case _ => None
         }
       }
