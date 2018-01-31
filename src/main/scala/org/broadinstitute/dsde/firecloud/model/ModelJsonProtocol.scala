@@ -248,14 +248,14 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
         }
       }) match {
         case Success(props) => props.filterNot(_._2 == JsNull)
-        case Failure(ex) => deserializationError("Error deserializing DuosDataUse object", ex)
+        case Failure(ex) => serializationError(ex.getMessage)
       }
       JsObject(existingProps.toMap)
     }
     override def read(json: JsValue): DuosDataUse = {
       Try(DuosDataUse.apply(json.asJsObject.fields)) match {
         case Success(ddu) => ddu
-        case Failure(ex) => serializationError(ex.getMessage)
+        case Failure(ex) => deserializationError(s"Could not read DuosDataUse value: $json", ex)
       }
     }
   }
