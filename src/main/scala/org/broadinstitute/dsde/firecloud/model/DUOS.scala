@@ -1,9 +1,9 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import spray.json.{JsObject, JsValue, _}
-import DefaultJsonProtocol._
+import spray.json._
+import spray.json.DefaultJsonProtocol._
 
-import scala.util.{Success, Try}
+import scala.util.Try
 
 object DUOS {
 
