@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError}
+import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
@@ -15,7 +15,7 @@ import spray.routing.directives.RouteDirectives.complete
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object ModelJsonProtocol extends WorkspaceJsonSupport {
   import spray.json.DefaultJsonProtocol._
@@ -236,7 +236,30 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
   implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
 
-  implicit val impDuosConsent = jsonFormat10(Consent)
+  implicit object impDuosDataUse extends RootJsonFormat[DuosDataUse] {
+    override def write(ddu: DuosDataUse): JsValue = {
+      val existingProps: Seq[(String, JsValue)] = Try(ddu.getClass.getDeclaredFields.map { f =>
+        f.setAccessible(true)
+        f.get(ddu) match {
+          case Some(x: Boolean) => f.getName -> x.toJson
+          case Some(y: String) => f.getName -> y.toJson
+          case Some((h: String) :: tail) => f.getName -> (h +: tail.collect { case z: String => z }).toJson
+          case _ => f.getName -> JsNull
+        }
+      }) match {
+        case Success(props) => props.filterNot(_._2 == JsNull)
+        case Failure(ex) => serializationError(ex.getMessage)
+      }
+      JsObject(existingProps.toMap)
+    }
+    override def read(json: JsValue): DuosDataUse = {
+      Try(DuosDataUse.apply(json.asJsObject.fields)) match {
+        case Success(ddu) => ddu
+        case Failure(ex) => deserializationError(s"Could not read DuosDataUse value: $json", ex)
+      }
+    }
+  }
+  implicit val impDuosConsent = jsonFormat11(Consent)
   implicit val impDuosConsentError = jsonFormat2(ConsentError)
   implicit val impOntologyTermParent = jsonFormat5(TermParent)
   implicit val impOntologyTermResource = jsonFormat7(TermResource)
