@@ -87,16 +87,31 @@ class StartupChecksSpec extends BaseServiceSpec {
         assert(check)
 
         // TODO: Failures here:
-        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/482/consoleFull
-        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/478/consoleFull
-        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/476/consoleFull
         // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/472/consoleFull
+        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/476/consoleFull
+        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/478/consoleFull
+        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/482/consoleFull
+        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/497/consoleFull
+        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/498/consoleFull
+        // Success:
+        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/499/consoleFull
+
+        /*
+         *
+         * [StartupChecksSpec]: mockDAO.newlyRegisteredUsers value: billingManagerAccessToken
+           [StartupChecksSpec]: tokens.values value: adminUserAccessToken
+           [StartupChecksSpec]: tokens.values value: billingManagerAccessToken
+           [info] DeferredAbortedSuite:
+           [info] Exception encountered when attempting to run a suite with class name: org.scalatest.DeferredAbortedSuite *** ABORTED ***
+           [info]   Exception encountered when attempting to run a suite with class name: org.scalatest.DeferredAbortedSuite (StartupChecksSpec.scala:97)
+         */
+
         mockDAO.newlyRegisteredUsers.map { v => println(s"[StartupChecksSpec]: mockDAO.newlyRegisteredUsers value: $v") }
         tokens.values.map { v => println(s"[StartupChecksSpec]: tokens.values value: $v") }
 
         assertResult(tokens.values.toSet) {mockDAO.newlyRegisteredUsers.toSet}
       }
-      "should pass when only one SA needs to be registered, and succeeds" - {
+      "should pass when only one SA needs to be registered, and succeeds" in {
         val mockDAO = new StartupChecksMockSamDAO(
           notFounds = Seq(tokens.head._2))
         val testApp = app.copy(samDAO = mockDAO)
@@ -104,7 +119,7 @@ class StartupChecksSpec extends BaseServiceSpec {
         assert(check)
         assertResult(Set(tokens.head._2)) {mockDAO.newlyRegisteredUsers.toSet}
       }
-      "should fail if automatic registration fails for the single unregistered SA" - {
+      "should fail if automatic registration fails for the single unregistered SA" in {
         val mockDAO = new StartupChecksMockSamDAO(
           notFounds = Seq(tokens.head._2),
           cantRegister = Seq(tokens.head._2))
@@ -113,7 +128,7 @@ class StartupChecksSpec extends BaseServiceSpec {
         assert(!check)
         assert(mockDAO.newlyRegisteredUsers.isEmpty)
       }
-      "should fail if automatic registration fails for any of the unregistered SAs" - {
+      "should fail if automatic registration fails for any of the unregistered SAs" in {
         val mockDAO = new StartupChecksMockSamDAO(
           notFounds = tokens.values.toSeq,
           cantRegister = Seq(tokens.head._2))
