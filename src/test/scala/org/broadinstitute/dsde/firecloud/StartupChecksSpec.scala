@@ -78,37 +78,13 @@ class StartupChecksSpec extends BaseServiceSpec {
     }
 
     "When automatic registration of SAs is enabled" - {
-      "should pass when all SAs need to be registered, and succeed" - {
+      "should pass when all SAs need to be registered, and succeed" in {
         val mockDAO = new StartupChecksMockSamDAO(
           notFounds = Seq(tokens.head._2),
           unregisteredTokens = tokens.tail.values.toSeq)
         val testApp = app.copy(samDAO = mockDAO)
         val check = Await.result(new StartupChecks(testApp, registerSAs = true).check, 3.minutes)
         assert(check)
-
-        // TODO: Failures here:
-        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/472/consoleFull
-        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/476/consoleFull
-        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/478/consoleFull
-        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/482/consoleFull
-        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/497/consoleFull
-        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/498/consoleFull
-        // Success:
-        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/499/consoleFull
-
-        /*
-         *
-         * [StartupChecksSpec]: mockDAO.newlyRegisteredUsers value: billingManagerAccessToken
-           [StartupChecksSpec]: tokens.values value: adminUserAccessToken
-           [StartupChecksSpec]: tokens.values value: billingManagerAccessToken
-           [info] DeferredAbortedSuite:
-           [info] Exception encountered when attempting to run a suite with class name: org.scalatest.DeferredAbortedSuite *** ABORTED ***
-           [info]   Exception encountered when attempting to run a suite with class name: org.scalatest.DeferredAbortedSuite (StartupChecksSpec.scala:97)
-         */
-
-        mockDAO.newlyRegisteredUsers.map { v => println(s"[StartupChecksSpec]: mockDAO.newlyRegisteredUsers value: $v") }
-        tokens.values.map { v => println(s"[StartupChecksSpec]: tokens.values value: $v") }
-
         assertResult(tokens.values.toSet) {mockDAO.newlyRegisteredUsers.toSet}
       }
       "should pass when only one SA needs to be registered, and succeeds" in {
