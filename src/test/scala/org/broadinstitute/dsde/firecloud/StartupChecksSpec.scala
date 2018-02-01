@@ -85,6 +85,15 @@ class StartupChecksSpec extends BaseServiceSpec {
         val testApp = app.copy(samDAO = mockDAO)
         val check = Await.result(new StartupChecks(testApp, registerSAs = true).check, 3.minutes)
         assert(check)
+
+        // TODO: Failures here:
+        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/482/consoleFull
+        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/478/consoleFull
+        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/476/consoleFull
+        // https://fc-jenkins.dsp-techops.broadinstitute.org/job/firecloud-orchestration-build/472/consoleFull
+        mockDAO.newlyRegisteredUsers.map { v => println(s"[StartupChecksSpec]: mockDAO.newlyRegisteredUsers value: $v") }
+        tokens.values.map { v => println(s"[StartupChecksSpec]: tokens.values value: $v") }
+
         assertResult(tokens.values.toSet) {mockDAO.newlyRegisteredUsers.toSet}
       }
       "should pass when only one SA needs to be registered, and succeeds" - {
