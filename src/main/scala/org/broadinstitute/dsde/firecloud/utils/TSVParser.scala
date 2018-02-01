@@ -18,6 +18,7 @@ object TSVParser {
     val settings = new CsvParserSettings
     // Automatically detect what the line separator is (e.g. \n for Unix, \r\n for Windows).
     settings.setLineSeparatorDetectionEnabled(true)
+    settings.setMaxCharsPerColumn(16384)
     settings.getFormat().setDelimiter('\t')
     new CsvParser(settings)
   }
