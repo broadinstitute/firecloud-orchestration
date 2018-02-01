@@ -1,14 +1,18 @@
 package org.broadinstitute.dsde.firecloud
 
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.pattern.ask
+import akka.util.Timeout
 import org.broadinstitute.dsde.firecloud.dataaccess.MockSamDAO
 import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.broadinstitute.dsde.rawls.model.ErrorReport
-
 import spray.http.StatusCodes.{InternalServerError, NotFound}
 
-import scala.concurrent.{Await, Future}
+import scala.collection.mutable
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
 
 class StartupChecksSpec extends BaseServiceSpec {
 
@@ -80,12 +84,11 @@ class StartupChecksSpec extends BaseServiceSpec {
     "When automatic registration of SAs is enabled" - {
       "should pass when all SAs need to be registered, and succeed" in {
         val mockDAO = new StartupChecksMockSamDAO(
-          notFounds = Seq(tokens.head._2),
-          unregisteredTokens = tokens.tail.values.toSeq)
+            unregisteredTokens = tokens.values.toSeq)
         val testApp = app.copy(samDAO = mockDAO)
         val check = Await.result(new StartupChecks(testApp, registerSAs = true).check, 3.minutes)
         assert(check)
-        assertResult(tokens.values.toSet) {mockDAO.newlyRegisteredUsers.toSet}
+        assertResult(tokens.values.toSet) {mockDAO.listRegisteredUsers().toSet}
       }
       "should pass when only one SA needs to be registered, and succeeds" in {
         val mockDAO = new StartupChecksMockSamDAO(
@@ -93,7 +96,7 @@ class StartupChecksSpec extends BaseServiceSpec {
         val testApp = app.copy(samDAO = mockDAO)
         val check = Await.result(new StartupChecks(testApp, registerSAs = true).check, 3.minutes)
         assert(check)
-        assertResult(Set(tokens.head._2)) {mockDAO.newlyRegisteredUsers.toSet}
+        assertResult(Set(tokens.head._2)) {mockDAO.listRegisteredUsers().toSet}
       }
       "should fail if automatic registration fails for the single unregistered SA" in {
         val mockDAO = new StartupChecksMockSamDAO(
@@ -102,7 +105,7 @@ class StartupChecksSpec extends BaseServiceSpec {
         val testApp = app.copy(samDAO = mockDAO)
         val check = Await.result(new StartupChecks(testApp, registerSAs = true).check, 3.minutes)
         assert(!check)
-        assert(mockDAO.newlyRegisteredUsers.isEmpty)
+        assert(mockDAO.listRegisteredUsers().isEmpty)
       }
       "should fail if automatic registration fails for any of the unregistered SAs" in {
         val mockDAO = new StartupChecksMockSamDAO(
@@ -111,7 +114,7 @@ class StartupChecksSpec extends BaseServiceSpec {
         val testApp = app.copy(samDAO = mockDAO)
         val check = Await.result(new StartupChecks(testApp, registerSAs = true).check, 3.minutes)
         assert(!check)
-        assertResult(tokens.tail.values.toSet) {mockDAO.newlyRegisteredUsers.toSet}
+        assertResult(tokens.tail.values.toSet) {mockDAO.listRegisteredUsers().toSet}
       }
     }
 
@@ -123,7 +126,8 @@ class StartupChecksMockSamDAO(unregisteredTokens:Seq[String] = Seq.empty[String]
                               unexpectedErrors:Seq[String] = Seq.empty[String],
                               cantRegister:Seq[String] = Seq.empty[String]) extends MockSamDAO {
 
-  var newlyRegisteredUsers = Seq.empty[String]
+  val system = ActorSystem("StartupChecksSpec")
+  val registerUserStateActor: ActorRef = system.actorOf(Props[RegisterTokenActor], name = "RegisterTokenActor")
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
     if (notFounds.contains(userInfo.accessToken.token)) {
@@ -144,8 +148,28 @@ class StartupChecksMockSamDAO(unregisteredTokens:Seq[String] = Seq.empty[String]
     if (cantRegister.contains(userInfo.accessToken.token)) {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "unit test intentional registration fail")))
     } else {
-      newlyRegisteredUsers = newlyRegisteredUsers :+ userInfo.accessToken.token
+      registerUserStateActor ! RegisterUserToken(userInfo.accessToken.token)
       super.registerUser
     }
   }
+
+  def listRegisteredUsers(): Seq[String] = {
+    implicit val timeout: Timeout = Timeout(1 minute)
+    val f = ask(registerUserStateActor, ListUserTokens).mapTo[Seq[String]]
+    Await.result(f, timeout.duration)
+  }
+
+}
+
+case class RegisterUserToken(entity: String)
+case object ListUserTokens
+class RegisterTokenActor extends Actor {
+
+  private var entitySet = mutable.Set.empty[String]
+
+  override def receive: Receive = {
+    case RegisterUserToken(entity) => entitySet += entity
+    case ListUserTokens => sender ! entitySet.toSeq
+  }
+
 }
