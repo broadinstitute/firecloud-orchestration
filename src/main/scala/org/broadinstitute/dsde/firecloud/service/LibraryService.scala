@@ -61,7 +61,8 @@ class LibraryService (protected val argUserInfo: UserInfo,
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  implicit val userInfo = argUserInfo
+  implicit val userToken = argUserInfo
+
   // attributes come in as standard json so we can use json schema for validation. Thus,
   // we need to use the plain-array deserialization.
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
@@ -165,7 +166,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
    */
   private def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
       rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>
-      republishDocument(newws, ontologyDAO, searchDAO)
+      republishDocument(newws, ontologyDAO, searchDAO, consentDAO)
       newws
     }
   }
@@ -188,7 +189,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
         Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
       else {
         // user requested a change in published flag, and metadata is valid; make the change.
-        setWorkspacePublishedStatus(workspaceResponse.workspace, publishArg, rawlsDAO, ontologyDAO, searchDAO) map { ws =>
+        setWorkspacePublishedStatus(workspaceResponse.workspace, publishArg, rawlsDAO, ontologyDAO, searchDAO, consentDAO) map { ws =>
           RequestComplete(ws)
         }
       }

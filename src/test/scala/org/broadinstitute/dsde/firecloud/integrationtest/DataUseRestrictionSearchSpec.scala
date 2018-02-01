@@ -1,8 +1,8 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
-import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockConsentDAO, MockOntologyDAO}
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
-import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, LibrarySearchResponse, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures.DataUseRestriction
 import org.broadinstitute.dsde.firecloud.service.{DataUseRestrictionTestFixtures, LibraryServiceSupport}
 import org.broadinstitute.dsde.rawls.model.{AttributeName, Workspace}
@@ -17,13 +17,15 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
 
   val datasets: Seq[Workspace] = DataUseRestrictionTestFixtures.allDatasets
 
+  implicit val userToken: WithAccessToken = AccessToken("DataUseRestrictionSearchSpec")
+
   override def beforeAll: Unit = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
     // time the tests start, leading to test failures.
     logger.info("indexing fixtures ...")
-    val docs = Await.result(indexableDocuments(datasets, new MockOntologyDAO), dur)
+    val docs = Await.result(indexableDocuments(datasets, new MockOntologyDAO, new MockConsentDAO), dur)
     searchDAO.bulkIndex(docs, refresh = true)
     logger.info("... fixtures indexed.")
   }

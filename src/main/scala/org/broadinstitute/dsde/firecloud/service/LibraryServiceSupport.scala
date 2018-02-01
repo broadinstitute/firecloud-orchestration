@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
-import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.LibraryService.orspIdAttribute
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
@@ -27,12 +27,14 @@ import scala.util.{Failure, Success, Try}
   */
 trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
+  implicit val userToken: WithAccessToken
+
   def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
     if (value) Seq(AddUpdateAttribute(LibraryService.publishedFlag, AttributeBoolean(true)))
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO, consentDAO: ConsentDAO)(implicit ec: ExecutionContext): Future[Seq[Document]] = {
+  def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken, ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
     val nodes = uniqueStrings(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
 
@@ -70,7 +72,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
         // does this workspace have an orsp id?
         ws.attributes.get(orspIdAttribute) match {
 
-          case s:AttributeString =>
+          case Some(s:AttributeString) =>
             val orspAttrs = restrictionMap.getOrElse(s.value, Map.empty[AttributeName, Attribute])
             // delete pre-existing DU codes, then add the DU codes from ORSP
             // TODO: namespaces on allDurFieldNames??!?!?

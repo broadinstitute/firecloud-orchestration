@@ -26,6 +26,8 @@ import scala.util.Try
 class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
   def toName(s:String) = AttributeName.fromDelimitedName(s)
 
+  implicit val userToken: WithAccessToken = AccessToken("LibraryServiceSpec")
+
   val libraryAttributePredicate = (k: AttributeName) => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name
 
   val existingLibraryAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "library:keythree"->"valthree", "library:keyfour"->"valfour").toJson.convertTo[AttributeMap]
@@ -237,7 +239,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
         }
       }
     }
@@ -258,7 +260,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
         }
       }
     }
@@ -275,7 +277,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
         }
       }
       "should be the different for attribute operations" in {
@@ -301,7 +303,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
         }
       }
     }
@@ -323,7 +325,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
         }
       }
     }
@@ -344,7 +346,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
         }
       }
     }
@@ -367,7 +369,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
         }
       }
     }
@@ -386,7 +388,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
         }
       }
       "should generate indexable document with no parent info when DOID has no parents" in {
@@ -401,7 +403,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
         }
       }
       "should generate indexable document with no parent info when DOID not valid" in {
@@ -416,7 +418,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
         }
       }
     }
@@ -790,6 +792,31 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         assertResult(Set("one","four")) {
           uniqueStrings(workspaces, AttributeName.withDefaultNS("something"))
         }
+      }
+    }
+    "when translating DUOS restrictions to FireCloud restrictions" - {
+      "should default if DUOS is empty" in {
+        fail("not implemented")
+      }
+      "should translate booleans" in {
+        fail("not implemented")
+      }
+      "should translate disease ontology nodes" in {
+        fail("not implemented")
+      }
+      "should ignore the DUOS keys that FireCloud doesn't implement" in {
+        fail("not implemented")
+      }
+    }
+    "when annotating a workspace with ORSP-based data use" - {
+      "should add attributes when none exist" in {
+        fail("not implemented")
+      }
+      "should overwrite pre-existing attributes" in {
+        fail("not implemented")
+      }
+      "should remove pre-existing attributes" in {
+        fail("not implemented")
       }
     }
   }
