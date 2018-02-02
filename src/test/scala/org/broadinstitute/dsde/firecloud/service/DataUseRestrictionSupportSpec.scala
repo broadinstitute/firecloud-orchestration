@@ -2,8 +2,10 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.lang.reflect.Field
 
+import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
+import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures._
-import org.broadinstitute.dsde.rawls.model.{ManagedGroupRef, Workspace, _}
+import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
@@ -182,6 +184,286 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
       }
 
     }
+
+    "ORSP-based restrictions" - {
+      val ontologyDAO = new MockOntologyDAO
+
+      "when translating DUOS restrictions to FireCloud restrictions" - {
+        "should return no attributes if DUOS is empty" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse, ontologyDAO)
+          assert(attrs.isEmpty)
+        }
+        "should translate boolean TRUEs" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            generalUse = Some(true),
+            hmbResearch = Some(true),
+            commercialUse = Some(true),
+            vulnerablePopulations = Some(true),
+            methodsResearch = Some(true)
+          ), ontologyDAO)
+          val expected = Map(
+            AttributeName.withLibraryNS("GRU") -> AttributeBoolean(true),
+            AttributeName.withLibraryNS("HMB") -> AttributeBoolean(true),
+            AttributeName.withLibraryNS("NCU") -> AttributeBoolean(true),
+            AttributeName.withLibraryNS("RS-PD") -> AttributeBoolean(true),
+            AttributeName.withLibraryNS("NMDS") -> AttributeBoolean(true)
+          )
+          assertResult(expected) {attrs}
+        }
+        "should translate boolean FALSEs" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            generalUse = Some(false),
+            hmbResearch = Some(false),
+            commercialUse = Some(false),
+            vulnerablePopulations = Some(false),
+            methodsResearch = Some(false)
+          ), ontologyDAO)
+          val expected = Map(
+            AttributeName.withLibraryNS("GRU") -> AttributeBoolean(false),
+            AttributeName.withLibraryNS("HMB") -> AttributeBoolean(false),
+            AttributeName.withLibraryNS("NCU") -> AttributeBoolean(false),
+            AttributeName.withLibraryNS("RS-PD") -> AttributeBoolean(false),
+            AttributeName.withLibraryNS("NMDS") -> AttributeBoolean(false)
+          )
+          assertResult(expected) {attrs}
+        }
+        "should translate mixed boolean TRUE/FALSEs" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            generalUse = Some(true),
+            hmbResearch = Some(false),
+            commercialUse = Some(true),
+            vulnerablePopulations = Some(false),
+            methodsResearch = Some(true)
+          ), ontologyDAO)
+          val expected = Map(
+            AttributeName.withLibraryNS("GRU") -> AttributeBoolean(true),
+            AttributeName.withLibraryNS("HMB") -> AttributeBoolean(false),
+            AttributeName.withLibraryNS("NCU") -> AttributeBoolean(true),
+            AttributeName.withLibraryNS("RS-PD") -> AttributeBoolean(false),
+            AttributeName.withLibraryNS("NMDS") -> AttributeBoolean(true)
+          )
+          assertResult(expected) {attrs}
+        }
+        "should handle 'yes' string values from DUOS as boolean TRUEs" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            aggregateResearch = Some("Yes"),
+            controlSetOption = Some("yeS")
+          ), ontologyDAO)
+          val expected = Map(
+            AttributeName.withLibraryNS("NAGR") -> AttributeBoolean(true),
+            AttributeName.withLibraryNS("NCTRL") -> AttributeBoolean(true)
+          )
+          assertResult(expected) {attrs}
+        }
+        "should handle 'no' string values from DUOS as boolean FALSEs" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            aggregateResearch = Some("No"),
+            controlSetOption = Some("NO")
+          ), ontologyDAO)
+          val expected = Map(
+            AttributeName.withLibraryNS("NAGR") -> AttributeBoolean(false),
+            AttributeName.withLibraryNS("NCTRL") -> AttributeBoolean(false)
+          )
+          assertResult(expected) {attrs}
+        }
+        "should handle non-'yes' or 'no' string values from DUOS as invalid (Nones)" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            aggregateResearch = Some("yessir"),
+            controlSetOption = Some("nopers")
+          ), ontologyDAO)
+          assert(attrs.isEmpty)
+        }
+        "should translate disease ontology nodes, including labels" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            diseaseRestrictions = Some(Seq(
+              "http://purl.obolibrary.org/obo/DOID_2531", // hematologic cancer
+              "http://purl.obolibrary.org/obo/DOID_1240", // leukemia 1510
+              "http://purl.obolibrary.org/obo/DOID_4325" // Ebola hemorrhagic fever
+            ))
+          ), ontologyDAO)
+          val expected = Map(
+            AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(Seq(
+              AttributeString("http://purl.obolibrary.org/obo/DOID_2531"),
+              AttributeString("http://purl.obolibrary.org/obo/DOID_1240"),
+              AttributeString("http://purl.obolibrary.org/obo/DOID_4325")
+            )),
+            AttributeName.withLibraryNS("DS") -> AttributeValueList(Seq(
+              AttributeString("hematologic cancer"),
+              AttributeString("leukemia"),
+              AttributeString("Ebola hemorrhagic fever")
+            ))
+          )
+          assertResult(expected) {attrs}
+        }
+        "should translate disease ontology nodes and use node id when label not found" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            diseaseRestrictions = Some(Seq(
+              "http://purl.obolibrary.org/obo/DOID_2531", // hematologic cancer
+              "http://purl.obolibrary.org/obo/DOID_1510", // -- not found in mock dao --
+              "http://purl.obolibrary.org/obo/DOID_4325" // Ebola hemorrhagic fever
+            ))
+          ), ontologyDAO)
+          val expected = Map(
+            AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(Seq(
+              AttributeString("http://purl.obolibrary.org/obo/DOID_2531"),
+              AttributeString("http://purl.obolibrary.org/obo/DOID_1510"),
+              AttributeString("http://purl.obolibrary.org/obo/DOID_4325")
+            )),
+            AttributeName.withLibraryNS("DS") -> AttributeValueList(Seq(
+              AttributeString("hematologic cancer"),
+              AttributeString("http://purl.obolibrary.org/obo/DOID_1510"),
+              AttributeString("Ebola hemorrhagic fever")
+            ))
+          )
+          assertResult(expected) {attrs}
+        }
+        "should handle empty seq of disease ontology nodes" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            diseaseRestrictions = Some(Seq.empty[String])
+          ), ontologyDAO)
+          assert(attrs.isEmpty)
+        }
+        "should ignore the DUOS keys that FireCloud doesn't implement" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+//            generalUse: Option[Boolean] = None,
+//            hmbResearch: Option[Boolean] = None,
+//            diseaseRestrictions: Option[Seq[String]] = None,
+            populationOriginsAncestry = Some(true),
+            populationStructure = Some(true),
+//            commercialUse: Option[Boolean] = None,
+//            methodsResearch: Option[Boolean] = None,
+//            aggregateResearch: Option[String] = None,
+//            controlSetOption: Option[String] = None,
+            gender = Some("Female"),
+            pediatric = Some(true),
+            populationRestrictions = Some(Seq("one","two")),
+            dateRestriction = Some("today"),
+            recontactingDataSubjects = Some(true),
+            recontactMay = Some("sure"),
+            recontactMust = Some("yes"),
+            genomicPhenotypicData = Some("pheno"),
+            otherRestrictions = Some(true),
+            cloudStorage = Some("cloud"),
+            ethicsApprovalRequired = Some(true),
+            geographicalRestrictions = Some("nowhere"),
+            other = Some("other"),
+            illegalBehavior = Some(true),
+            addiction = Some(true),
+            sexualDiseases = Some(true),
+            stigmatizeDiseases = Some(true),
+//            vulnerablePopulations: Option[Boolean] = None,
+            psychologicalTraits = Some(true),
+            nonBiomedical = Some(true)
+          ), ontologyDAO)
+          assert(attrs.isEmpty)
+        }
+      }
+    }
+    "when annotating a workspace with ORSP-based data use" - {
+      val mockDUCodes = Map(
+        AttributeName.withLibraryNS("GRU") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("HMB") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("NCU") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("NPU") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("NMDS") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("NAGR") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("NCTRL") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("RS-PD") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("IRB") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("RS-G") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("RS-FM") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("RS-M") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(Seq(AttributeString("one"),AttributeString("two"))),
+        AttributeName.withLibraryNS("RS-POP") -> AttributeValueList(Seq(AttributeString("three"),AttributeString("four"))),
+        AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(Seq(AttributeString("five"),AttributeString("six"))),
+        AttributeName.withLibraryNS("consentCodes") -> AttributeValueList(Seq(AttributeString("seven"),AttributeString("eight"))),
+        AttributeName.withLibraryNS("structuredUseRestriction") -> AttributeValueRawJson("""{"foo":"bar"}""")
+      )
+
+
+      "should add attributes when no previous attributes exist" in {
+        val existing = Map.empty[AttributeName,Attribute]
+        val preferred = Map(
+          AttributeName.withLibraryNS("GRU") -> AttributeBoolean(true)
+        )
+        val actual = replaceDataUseAttributes(existing, preferred)
+        val expected = Map(
+          AttributeName.withLibraryNS("GRU") -> AttributeBoolean(true)
+        )
+        assertResult(expected) {actual}
+      }
+      "should not add attributes when no new attributes exist" in {
+        val existing = Map.empty[AttributeName,Attribute]
+        val preferred = Map.empty[AttributeName,Attribute]
+        val actual = replaceDataUseAttributes(existing, preferred)
+        val expected = Map.empty[AttributeName,Attribute]
+        assertResult(expected) {actual}
+      }
+      "should preserve pre-existing non-DU attributes" in {
+        val existing = Map(
+          AttributeName.withDefaultNS("description") -> AttributeString("my description"),
+          AttributeName.withLibraryNS("datasetName") -> AttributeString("my dataset")
+        )
+        val preferred = Map(
+          AttributeName.withLibraryNS("GRU") -> AttributeBoolean(true)
+        )
+        val actual = replaceDataUseAttributes(existing, preferred)
+        val expected = Map(
+          AttributeName.withDefaultNS("description") -> AttributeString("my description"),
+          AttributeName.withLibraryNS("datasetName") -> AttributeString("my dataset"),
+          AttributeName.withLibraryNS("GRU") -> AttributeBoolean(true)
+        )
+        assertResult(expected) {actual}
+      }
+      "should overwrite pre-existing DU attributes" in {
+        val existing = Map(
+          AttributeName.withLibraryNS("HMB") -> AttributeBoolean(true)
+        )
+        val preferred = Map(
+          AttributeName.withLibraryNS("HMB") -> AttributeBoolean(false)
+        )
+        val actual = replaceDataUseAttributes(existing, preferred)
+        val expected = Map(
+          AttributeName.withLibraryNS("HMB") -> AttributeBoolean(false)
+        )
+        assertResult(expected) {actual}
+      }
+      "should remove pre-existing DU attributes when adding new" in {
+        val existing = Map(
+          AttributeName.withLibraryNS("HMB") -> AttributeBoolean(true),
+          AttributeName.withLibraryNS("NAGR") -> AttributeBoolean(true)
+        )
+        val preferred = Map(
+          AttributeName.withLibraryNS("HMB") -> AttributeBoolean(false)
+        )
+        val actual = replaceDataUseAttributes(existing, preferred)
+        val expected = Map(
+          AttributeName.withLibraryNS("HMB") -> AttributeBoolean(false)
+        )
+        assertResult(expected) {actual}
+      }
+      "should remove pre-existing DU attributes even when adding nothing" in {
+        val existing = mockDUCodes
+        val preferred = Map.empty[AttributeName,Attribute]
+        val actual = replaceDataUseAttributes(existing, preferred)
+        val expected = Map.empty[AttributeName,Attribute]
+        assertResult(expected) {actual}
+      }
+      /*
+        private val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NMDS", "NAGR", "NCTRL", "RS-PD", "IRB")
+  private val genderCodes: Seq[String] = Seq("RS-G", "RS-FM", "RS-M")
+  private val duRestrictionFieldNames: Seq[String] = booleanCodes ++ genderCodes ++ Seq("DS_URL", "RS-POP")
+  val allDurFieldNames: Seq[String] = duRestrictionFieldNames ++ Seq("DS")
+
+  private val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS("DS")
+  val structuredUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("structuredUseRestriction")
+  val consentCodesAttributeName: AttributeName = AttributeName.withLibraryNS("consentCodes")
+
+       */
+
+    }
+
+
   }
 
 

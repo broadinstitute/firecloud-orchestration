@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
@@ -15,6 +16,6 @@ trait ConsentDAO extends ReportsSubsystemStatus {
 
   override def serviceName:String = ConsentDAO.serviceName
 
-  def getRestriction(orspId: String)(implicit userInfo: WithAccessToken): Future[Option[String]] // TODO: will be DuosDataUse
+  def getRestriction(orspId: String)(implicit userInfo: WithAccessToken): Future[Option[DuosDataUse]]
 
 }

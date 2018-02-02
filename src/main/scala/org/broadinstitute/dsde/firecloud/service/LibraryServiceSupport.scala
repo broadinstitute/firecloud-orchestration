@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo, WithAccessToken}
@@ -47,39 +48,29 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     val orspIds = uniqueStrings(workspaces, orspIdAttribute)
 
     // set up an exception-resilient Future to get the ORSP restrictions for those codes
-    val futureRestrictions:Future[Set[(String, Option[String])]] = Future.sequence(orspIds map {orspId =>
+    val futureRestrictions:Future[Set[(String, Option[DuosDataUse])]] = Future.sequence(orspIds map {orspId =>
       consentDAO.getRestriction(orspId) map { restriction =>
         orspId -> restriction
       } recover {
-        case e:Exception => orspId -> None
+        case e:Exception =>
+          logger.warn(e.getMessage)
+          orspId -> None
       }
     })
 
     futureRestrictions.map { restrictions =>
       val restrictionMap:Map[String,AttributeMap] = restrictions.map {
-        case (orspId, dataUseOption) =>
-          val libraryDUAttrs = if (dataUseOption.isEmpty)
-            Map.empty[AttributeName, Attribute]
-          else
-            // TODO: translate ORSP codes to FireCloud DU codes.
-            Map.empty[AttributeName, Attribute]
-
-          orspId -> libraryDUAttrs
+        case (orspId, None) => orspId -> Map.empty[AttributeName, Attribute]
+        case (orspId, Some(dataUseOption)) => orspId -> generateStructuredUseRestrictionAttribute(dataUseOption, ontologyDAO)
       }.toMap
 
-      // TODO: overwrite any pre-existing data use attributes on ORSP-controlled workspaces with the ORSP DU codes
       val annotatedWorkspaces = workspaces map { ws =>
         // does this workspace have an orsp id?
         ws.attributes.get(orspIdAttribute) match {
-
           case Some(s:AttributeString) =>
             val orspAttrs = restrictionMap.getOrElse(s.value, Map.empty[AttributeName, Attribute])
-            // delete pre-existing DU codes, then add the DU codes from ORSP
-            // TODO: namespaces on allDurFieldNames??!?!?
-            val newAttrs = (ws.attributes -- allDurFieldNames.map(x => AttributeName.withLibraryNS(x))) ++ orspAttrs
-
+            val newAttrs = replaceDataUseAttributes(ws.attributes, orspAttrs)
             ws.copy(attributes = newAttrs)
-
           case _ =>
             // this workspace does not have an ORSP id; leave it untouched
             ws
@@ -128,7 +119,6 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     }
   }
 
-  // TODO: add unit test for this
   def uniqueStrings(workspaces: Seq[Workspace], attributeName: AttributeName): Set[String] = {
     val valueSeq:Seq[String] = workspaces.collect {
       case w if w.attributes.contains(attributeName) =>

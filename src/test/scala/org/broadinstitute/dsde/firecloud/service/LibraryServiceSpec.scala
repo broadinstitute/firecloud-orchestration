@@ -794,30 +794,5 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
     }
-    "when translating DUOS restrictions to FireCloud restrictions" - {
-      "should default if DUOS is empty" in {
-        fail("not implemented")
-      }
-      "should translate booleans" in {
-        fail("not implemented")
-      }
-      "should translate disease ontology nodes" in {
-        fail("not implemented")
-      }
-      "should ignore the DUOS keys that FireCloud doesn't implement" in {
-        fail("not implemented")
-      }
-    }
-    "when annotating a workspace with ORSP-based data use" - {
-      "should add attributes when none exist" in {
-        fail("not implemented")
-      }
-      "should overwrite pre-existing attributes" in {
-        fail("not implemented")
-      }
-      "should remove pre-existing attributes" in {
-        fail("not implemented")
-      }
-    }
   }
 }
