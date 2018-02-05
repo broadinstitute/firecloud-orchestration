@@ -61,7 +61,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     futureRestrictions.map { restrictions =>
       val restrictionMap:Map[String,AttributeMap] = restrictions.map {
         case (orspId, None) => orspId -> Map.empty[AttributeName, Attribute]
-        case (orspId, Some(dataUseOption)) => orspId -> generateStructuredUseRestrictionAttribute(dataUseOption, ontologyDAO)
+        case (orspId, Some(dataUse)) => orspId -> generateStructuredUseRestrictionAttribute(dataUse, ontologyDAO)
       }.toMap
 
       val annotatedWorkspaces = workspaces map { ws =>

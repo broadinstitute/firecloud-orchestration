@@ -324,16 +324,19 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           assert(attrs.isEmpty)
         }
         "should ignore the DUOS keys that FireCloud doesn't implement" in {
+
+          // The properties that are commented out are the ones that FireCloud implements.
           val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
-//            generalUse: Option[Boolean] = None,
-//            hmbResearch: Option[Boolean] = None,
-//            diseaseRestrictions: Option[Seq[String]] = None,
+//            generalUse = None,
+//            hmbResearch = None,
+//            diseaseRestrictions = None,
+//            commercialUse = None,
+//            methodsResearch = None,
+//            aggregateResearch = None,
+//            controlSetOption = None,
+//            vulnerablePopulations = None,
             populationOriginsAncestry = Some(true),
             populationStructure = Some(true),
-//            commercialUse: Option[Boolean] = None,
-//            methodsResearch: Option[Boolean] = None,
-//            aggregateResearch: Option[String] = None,
-//            controlSetOption: Option[String] = None,
             gender = Some("Female"),
             pediatric = Some(true),
             populationRestrictions = Some(Seq("one","two")),
@@ -351,7 +354,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             addiction = Some(true),
             sexualDiseases = Some(true),
             stigmatizeDiseases = Some(true),
-//            vulnerablePopulations: Option[Boolean] = None,
             psychologicalTraits = Some(true),
             nonBiomedical = Some(true)
           ), ontologyDAO)
@@ -449,20 +451,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         val expected = Map.empty[AttributeName,Attribute]
         assertResult(expected) {actual}
       }
-      /*
-        private val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NMDS", "NAGR", "NCTRL", "RS-PD", "IRB")
-  private val genderCodes: Seq[String] = Seq("RS-G", "RS-FM", "RS-M")
-  private val duRestrictionFieldNames: Seq[String] = booleanCodes ++ genderCodes ++ Seq("DS_URL", "RS-POP")
-  val allDurFieldNames: Seq[String] = duRestrictionFieldNames ++ Seq("DS")
-
-  private val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS("DS")
-  val structuredUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("structuredUseRestriction")
-  val consentCodesAttributeName: AttributeName = AttributeName.withLibraryNS("consentCodes")
-
-       */
-
     }
-
 
   }
 
