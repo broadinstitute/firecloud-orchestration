@@ -223,14 +223,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     rawlsServer.stop
   }
 
-  override def beforeEach(): Unit = {
-    this.searchDao.reset
-  }
-
-  override def afterEach(): Unit = {
-    this.searchDao.reset
-  }
-
   "WorkspaceService Passthrough Negative Tests" - {
 
     "Passthrough tests on the /workspaces path" - {
@@ -871,40 +863,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             status should equal(BadRequest)
           }
         }
-
-        "should 200 OK if the payload is ok" in {
-          (Patch(updateAttributesPath,
-            HttpEntity(MediaTypes.`application/json`, """[
-                                                        |  {
-                                                        |    "op": "AddUpdateAttribute",
-                                                        |    "attributeName": "library:dataCategory",
-                                                        |    "addUpdateAttribute": "test-attribute-value"
-                                                        |  }
-                                                        |]""".stripMargin))
-            ~> dummyUserIdHeaders("1234")
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(OK)
-            assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
-          }
-        }
-
-        "should republish if the document is already published" in {
-
-          (Patch(workspacesRoot + "/%s/%s/updateAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace, WorkspaceApiServiceSpec.publishedWorkspace.name),
-            HttpEntity(MediaTypes.`application/json`, """[
-                                                        |  {
-                                                        |    "op": "AddUpdateAttribute",
-                                                        |    "attributeName": "library:dataCategory",
-                                                        |    "addUpdateAttribute": "test-attribute-value"
-                                                        |  }
-                                                        |]""".stripMargin))
-            ~> dummyUserIdHeaders("1234")
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
-          }
-        }
-
       }
     }
 
@@ -926,31 +884,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders("1234")
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
-          }
-        }
-
-        "should 200 OK if the payload is ok" in {
-          (Patch(setAttributesPath,
-            HttpEntity(MediaTypes.`application/json`, """{"description": "something",
-                                                        | "array": [1, 2, 3]
-                                                        | }""".stripMargin))
-            ~> dummyUserIdHeaders("1234")
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(OK)
-            assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
-          }
-        }
-
-        "should republish if the document is already published" in {
-
-          (Patch(workspacesRoot + "/%s/%s/setAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace, WorkspaceApiServiceSpec.publishedWorkspace.name),
-            HttpEntity(MediaTypes.`application/json`, """{"description": "something",
-                                                        | "array": [1, 2, 3]
-                                                        | }""".stripMargin))
-            ~> dummyUserIdHeaders("1234")
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
           }
         }
 
