@@ -1,20 +1,21 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
 import org.broadinstitute.dsde.rawls.model.Workspace
 import org.joda.time.DateTime
-import org.scalatest.{BeforeAndAfterEach, FreeSpec, Matchers}
 import org.scalatest.concurrent.ScalaFutures
-import spray.http.StatusCodes.{BadRequest, MethodNotAllowed, OK}
+import org.scalatest.{BeforeAndAfterEach, FreeSpec, Matchers}
+import spray.http.StatusCodes.OK
 import spray.http._
 import spray.testkit.ScalatestRouteTest
 
 
 class MockApplication(request: HttpRequest) extends BaseServiceSpec with WorkspaceApiService {
 
-  def actorRefFactory = system
+  def actorRefFactory: ActorSystem = system
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
 
@@ -43,7 +44,7 @@ class MutableDAOWorkspaceApiServiceSpec extends FreeSpec with ScalaFutures with 
     Map(), //attributes
     Map(), //acls
     Map(), //authdomain acls
-    false //locked
+    isLocked = false //locked
   )
   private final val workspacesRoot = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   private final val updateAttributesPath = workspacesRoot + "/%s/%s/updateAttributes".format(workspace.namespace, workspace.name)
