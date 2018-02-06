@@ -23,12 +23,14 @@ class MockSearchDAO extends SearchDAO {
   private val indexDocumentInvokedAtomic = new AtomicBoolean(false)
   private val deleteDocumentInvokedAtomic = new AtomicBoolean(false)
   private val findDocumentsInvokedAtomic = new AtomicBoolean(false)
+  private val autocompleteInvokedAtomic = new AtomicBoolean(false)
+  private val populateSuggestInvokedAtomic = new AtomicBoolean(false)
 
-  lazy val indexDocumentInvoked: Boolean = indexDocumentInvokedAtomic.get()
-  lazy val deleteDocumentInvoked: Boolean = deleteDocumentInvokedAtomic.get()
-  lazy val findDocumentsInvoked: Boolean = findDocumentsInvokedAtomic.get()
-  var autocompleteInvoked = false
-  var populateSuggestInvoked = false
+  def indexDocumentInvoked: Boolean = indexDocumentInvokedAtomic.get()
+  def deleteDocumentInvoked: Boolean = deleteDocumentInvokedAtomic.get()
+  def findDocumentsInvoked: Boolean = findDocumentsInvokedAtomic.get()
+  def autocompleteInvoked: Boolean = autocompleteInvokedAtomic.get()
+  def populateSuggestInvoked: Boolean = populateSuggestInvokedAtomic.get()
 
   override def bulkIndex(docs: Seq[Document], refresh:Boolean = false) = LibraryBulkIndexResponse(0, false, Map.empty)
 
@@ -46,12 +48,12 @@ class MockSearchDAO extends SearchDAO {
   }
 
   override def suggestionsFromAll(librarySearchParams: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
-    autocompleteInvoked = true
+    autocompleteInvokedAtomic.set(true)
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
   override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {
-    populateSuggestInvoked = true
+    populateSuggestInvokedAtomic.set(true)
     Future(Seq(field, text))
   }
 
@@ -59,8 +61,8 @@ class MockSearchDAO extends SearchDAO {
     indexDocumentInvokedAtomic.set(false)
     deleteDocumentInvokedAtomic.set(false)
     findDocumentsInvokedAtomic.set(false)
-    autocompleteInvoked = false
-    populateSuggestInvoked = false
+    autocompleteInvokedAtomic.set(false)
+    populateSuggestInvokedAtomic.set(false)
   }
 
   def setDeleteStatus(deleted: Boolean): Unit = {
