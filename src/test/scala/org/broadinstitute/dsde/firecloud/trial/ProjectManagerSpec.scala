@@ -137,7 +137,8 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
       val (pm, rawlsDAO, trialDAO, googleDAO) = initTestState(mockRawlsDAO = new MissingGetProjectsRawlsDAO)
       pm ! StartCreation(3)
       awaitCond(trialDAO.insertCount == 3, testTimeout, testInterval)
-      awaitCond(trialDAO.verifiedCount == 3 && verifiedProjects.forall(p => p.verified && p.status.contains(CreationStatuses.Error)), testTimeout, testInterval)
+      // Takes longer for unknown reason
+      awaitCond(trialDAO.verifiedCount == 3 && verifiedProjects.forall(p => p.verified && p.status.contains(CreationStatuses.Error)), testTimeout * 2, testInterval)
       system.stop(pm)
     }
 

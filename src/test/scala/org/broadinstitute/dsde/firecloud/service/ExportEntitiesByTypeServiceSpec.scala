@@ -34,6 +34,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   // Grab the rest so we can double check the returned content to make sure the ignored ones aren't in the response.
   val missingProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.drop(5).map(_.name)
 
+  // We can't use org.scalatest.Sequential to command sibling top-level suits to execute sequentially because Sequential is a class, not a trait.
+  // What we can do is fake our way there by nesting them in a container suite, letting org.scalatest.SequentialNestedSuiteExecution take effect.
+  // Whether this solves the flakiness is a big ???
   "One big suite" - {
 
     "ExportEntitiesApiService-ExportEntitiesByType" - {
