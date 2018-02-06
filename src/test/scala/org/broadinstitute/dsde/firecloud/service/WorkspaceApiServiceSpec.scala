@@ -1,9 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
+import akka.actor.ActorSystem
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
+import org.broadinstitute.dsde.firecloud.mock.{MockGoogleServicesDAO, MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -13,12 +14,15 @@ import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterEach, FreeSpec, Matchers}
+import org.scalatest.concurrent.ScalaFutures
 import spray.http._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import spray.testkit.ScalatestRouteTest
+import WorkspaceApiServiceSpec._
 
 object WorkspaceApiServiceSpec {
 
@@ -37,12 +41,6 @@ object WorkspaceApiServiceSpec {
     false //locked
   )
 
-}
-
-class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
-
-  def actorRefFactory = system
-
   val workspace = Workspace(
     "namespace",
     "name",
@@ -57,6 +55,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Map(), //authdomain acls
     false //locked
   )
+
+}
+
+class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
+
+  def actorRefFactory = system
 
   val jobId = "testOp"
 
@@ -963,4 +967,94 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
   }
+}
+
+/**
+  * This class represents a version of the application with Workspace APIs that can run a single request.
+  */
+class MockWorkspaceApiServiceApp(val request: HttpRequest) extends MockApplication with WorkspaceApiService {
+  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
+  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
+  def checkRequest: (HttpResponse, StatusCode) = {
+    request ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {(response, status)}
+  }
+}
+
+/**
+  * Tests that require internal state checking need to use this pattern.
+  */
+class StatefulWorkspaceApiServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with BeforeAndAfterEach {
+
+  private final val workspacesRoot = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
+  private final val updateAttributesPath = workspacesRoot + "/%s/%s/updateAttributes".format(workspace.namespace, workspace.name)
+  private final val setAttributesPath = workspacesRoot + "/%s/%s/setAttributes".format(workspace.namespace, workspace.name)
+
+  "Workspace updateAttributes tests" - {
+
+    "when calling PATCH on workspaces/*/*/updateAttributes path" - {
+
+      "should 200 OK if the payload is ok" in {
+        val request = Patch(updateAttributesPath,
+          HttpEntity(MediaTypes.`application/json`, """[
+                                                      |  {
+                                                      |    "op": "AddUpdateAttribute",
+                                                      |    "attributeName": "library:dataCategory",
+                                                      |    "addUpdateAttribute": "test-attribute-value"
+                                                      |  }
+                                                      |]""".stripMargin))
+        val app = new MockWorkspaceApiServiceApp(request)
+        val (response, status) = app.checkRequest
+        status should equal(OK)
+        assert(!app.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
+      }
+
+      "should republish if the document is already published" in {
+
+        val request = Patch(workspacesRoot + "/%s/%s/updateAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace, WorkspaceApiServiceSpec.publishedWorkspace.name),
+          HttpEntity(MediaTypes.`application/json`, """[
+                                                      |  {
+                                                      |    "op": "AddUpdateAttribute",
+                                                      |    "attributeName": "library:dataCategory",
+                                                      |    "addUpdateAttribute": "test-attribute-value"
+                                                      |  }
+                                                      |]""".stripMargin))
+        val app = new MockWorkspaceApiServiceApp(request)
+        val (response, status) = app.checkRequest
+        status should equal(OK)
+        assert(app.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
+      }
+
+    }
+  }
+
+  "Workspace setAttributes tests" - {
+
+    "when calling PATCH on workspaces/*/*/setAttributes path" - {
+
+      "should 200 OK if the payload is ok" in {
+        val request = Patch(setAttributesPath,
+          HttpEntity(MediaTypes.`application/json`, """{"description": "something",
+                                                      | "array": [1, 2, 3]
+                                                      | }""".stripMargin))
+        val app = new MockWorkspaceApiServiceApp(request)
+        val (response, status) = app.checkRequest
+        status should equal(OK)
+        assert(!app.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
+      }
+
+      "should republish if the document is already published" in {
+        val request = Patch(workspacesRoot + "/%s/%s/setAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace, WorkspaceApiServiceSpec.publishedWorkspace.name),
+          HttpEntity(MediaTypes.`application/json`, """{"description": "something",
+                                                      | "array": [1, 2, 3]
+                                                      | }""".stripMargin))
+        val app = new MockWorkspaceApiServiceApp(request)
+        val (response, status) = app.checkRequest
+        status should equal(OK)
+        assert(app.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
+      }
+
+    }
+
+  }
+
 }
