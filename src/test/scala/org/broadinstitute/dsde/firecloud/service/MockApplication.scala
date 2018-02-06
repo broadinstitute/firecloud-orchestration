@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
-import spray.http.{HttpResponse, StatusCode}
 
 abstract class MockApplication extends ServiceSpec {
 
@@ -21,7 +20,5 @@ abstract class MockApplication extends ServiceSpec {
   val trialDao:MockTrialDAO = new MockTrialDAO
 
   val app:Application = Application(agoraDao, googleServicesDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, thurloeDao, trialDao)
-
-  def checkRequest: (HttpResponse, StatusCode)
 
 }
