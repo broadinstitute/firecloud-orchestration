@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
@@ -7,44 +8,45 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.LibraryApiServiceSpec._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.{AttributeFormat, AttributeName, AttributeString, PlainArrayAttributeListSerializer}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterEach, FreeSpec, Matchers}
 import spray.http.StatusCodes._
 import spray.http._
+import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-import spray.httpx.SprayJsonSupport._
+import spray.testkit.ScalatestRouteTest
 
 import scala.collection.JavaConverters._
 
+object LibraryApiServiceSpec {
+  lazy val isCuratorPath = "/api/library/user/role/curator"
+  def publishedPath(ns:String="namespace", name:String="name"): String = "/api/library/%s/%s/published".format(ns, name)
+  def setMetadataPath(ns: String = "republish", name: String = "name"): String = "/api/library/%s/%s/metadata".format(ns, name)
+  def setDiscoverableGroupsPath(ns: String = "discoverableGroups", name: String = "name"): String = "/api/library/%s/%s/discoverableGroups".format(ns, name)
+  val librarySearchPath = "/api/library/search"
+  val librarySuggestPath = "/api/library/suggest"
+  val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
+  val libraryGroupsPath = "/api/library/groups"
+  def duosConsentOrspIdPath(orspId: String): String = "/api/duos/consent/orsp/%s".format(orspId)
+}
 
 class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach {
 
-  def actorRefFactory = system
+  def actorRefFactory: ActorSystem = system
   var consentServer: ClientAndServer = _
-
-  lazy val isCuratorPath = "/api/library/user/role/curator"
-  private def publishedPath(ns:String="namespace", name:String="name") =
-    "/api/library/%s/%s/published".format(ns, name)
-  private def setMetadataPath(ns: String = "republish", name: String = "name") =
-    "/api/library/%s/%s/metadata".format(ns, name)
-  private def setDiscoverableGroupsPath(ns: String = "discoverableGroups", name: String = "name") =
-    "/api/library/%s/%s/discoverableGroups".format(ns, name)
-  private final val librarySearchPath = "/api/library/search"
-  private final val librarySuggestPath = "/api/library/suggest"
-  private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
-  private final val libraryGroupsPath = "/api/library/groups"
-  private def duosConsentOrspIdPath(orspId: String): String = "/api/duos/consent/orsp/%s".format(orspId)
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
 
-  val testLibraryMetadata =
+  val testLibraryMetadata: String =
     """
       |{
       |  "description" : "some description",
@@ -74,7 +76,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
       |}
     """.stripMargin
 
-  val incompleteMetadata =
+  val incompleteMetadata: String =
     """
       |{
       |  "userAttributeOne" : "one",
@@ -116,14 +118,6 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
 
   override def afterAll(): Unit = {
     consentServer.stop()
-  }
-
-  override def beforeEach(): Unit = {
-    searchDao.reset
-  }
-
-  override def afterEach(): Unit = {
-    searchDao.reset
   }
 
   "LibraryService" - {
@@ -238,20 +232,6 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
             status should equal(NoContent)
           }
         }
-        "should return OK and invoke indexDocument for unpublished workspace with valid dataset" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath("libraryValid")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
-            assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
-          }
-        }
-        "should return BadRequest and not invoke indexDocument for unpublished workspace with invalid dataset" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(BadRequest)
-            assert(!this.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
-            assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
-          }
-        }
       }
       "DELETE on " + publishedPath() - {
         "should be No Content for unpublished workspace" in {
@@ -259,60 +239,9 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
             status should equal(NoContent)
           }
         }
-        "as return OK and invoke deleteDocument for published workspace" in {
-          new RequestBuilder(HttpMethods.DELETE)(publishedPath("publishedowner")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-            assert(this.searchDao.deleteDocumentInvoked, "deleteDocument should have been invoked")
-            assert(!this.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
-          }
-        }
       }
     }
     "when retrieving datasets" - {
-      "POST with no searchterm on " + librarySearchPath - {
-        "should retrieve all datasets" in {
-          val content = HttpEntity(ContentTypes.`application/json`, "{}")
-          new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-            assert(this.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
-          }
-        }
-      }
-      "POST on " + librarySearchPath - {
-        "should search for datasets" in {
-          val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
-          new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-            assert(this.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
-            val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
-            assert(respdata.total == 0, "total results should be 0")
-            assert(respdata.results.isEmpty, "results array should be empty")
-          }
-        }
-      }
-      "POST on " + librarySuggestPath - {
-        "should return autcomplete suggestions" in {
-          val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
-          new RequestBuilder(HttpMethods.POST)(librarySuggestPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-            assert(this.searchDao.autocompleteInvoked, "autocompleteInvoked should have been invoked")
-            val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
-            assert(respdata.total == 0, "total results should be 0")
-            assert(respdata.results.isEmpty, "results array should be empty")
-          }
-        }
-      }
-      "GET on " + libraryPopulateSuggestPath - {
-        "should return autcomplete suggestions" in {
-          new RequestBuilder(HttpMethods.GET)(libraryPopulateSuggestPath + "library:datasetOwner?q=aha") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-            assert(this.searchDao.populateSuggestInvoked, "populateSuggestInvoked should have been invoked")
-            val respdata = response.entity.asString
-            assert(respdata.contains("library:datasetOwner"))
-            assert(respdata.contains("aha"))
-          }
-        }
-      }
       "GET on " + libraryGroupsPath - {
         "should return the all broad users group" in {
           new RequestBuilder(HttpMethods.GET)(libraryGroupsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
@@ -365,6 +294,99 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         Get(setDiscoverableGroupsPath("publishedwriter","unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
           assertResult(List.empty[String]) {responseAs[List[String]]}
+        }
+      }
+    }
+  }
+}
+
+/**
+  * This class represents a version of the application with Library APIs that can run a single request.
+  */
+class MockLibraryApiServiceApp(val request: HttpRequest) extends MockApplication with LibraryApiService {
+  val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
+  val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
+  def checkRequest: (HttpResponse, StatusCode) = {
+    request ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {(response, status)}
+  }
+}
+
+/**
+  * Tests that require internal state checking need to use this pattern.
+  */
+class StatefulLibraryApiServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with BeforeAndAfterEach {
+  "LibraryService" - {
+
+    "when calling publish" - {
+      "POST on " + publishedPath() - {
+        "should return OK and invoke indexDocument for unpublished workspace with valid dataset" in {
+          val app = new MockLibraryApiServiceApp(new RequestBuilder(HttpMethods.POST)(publishedPath("libraryValid")))
+          val (response, status) = app.checkRequest
+          status should equal(OK)
+          assert(app.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
+          assert(!app.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
+        }
+        "should return BadRequest and not invoke indexDocument for unpublished workspace with invalid dataset" in {
+          val app = new MockLibraryApiServiceApp(new RequestBuilder(HttpMethods.POST)(publishedPath()))
+          val (response, status) = app.checkRequest
+          status should equal(BadRequest)
+          assert(!app.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
+          assert(!app.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
+        }
+      }
+      "DELETE on " + publishedPath() - {
+        "as return OK and invoke deleteDocument for published workspace" in {
+          val app = new MockLibraryApiServiceApp(new RequestBuilder(HttpMethods.DELETE)(publishedPath("publishedowner")))
+          val (response, status) = app.checkRequest
+          status should equal(OK)
+          assert(app.searchDao.deleteDocumentInvoked, "deleteDocument should have been invoked")
+          assert(!app.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
+        }
+      }
+    }
+    "when retrieving datasets" - {
+      "POST with no searchterm on " + librarySearchPath - {
+        "should retrieve all datasets" in {
+          val content = HttpEntity(ContentTypes.`application/json`, "{}")
+          val app = new MockLibraryApiServiceApp(new RequestBuilder(HttpMethods.POST)(librarySearchPath, content))
+          val (response, status) = app.checkRequest
+          status should equal(OK)
+          assert(app.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
+        }
+      }
+      "POST on " + librarySearchPath - {
+        "should search for datasets" in {
+          val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
+          val app = new MockLibraryApiServiceApp(new RequestBuilder(HttpMethods.POST)(librarySearchPath, content))
+          val (response, status) = app.checkRequest
+          status should equal(OK)
+          assert(app.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
+          val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
+          assert(respdata.total == 0, "total results should be 0")
+          assert(respdata.results.isEmpty, "results array should be empty")
+        }
+      }
+      "POST on " + librarySuggestPath - {
+        "should return autcomplete suggestions" in {
+          val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
+          val app = new MockLibraryApiServiceApp(new RequestBuilder(HttpMethods.POST)(librarySuggestPath, content))
+          val (response, status) = app.checkRequest
+          status should equal(OK)
+          assert(app.searchDao.autocompleteInvoked, "autocompleteInvoked should have been invoked")
+          val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
+          assert(respdata.total == 0, "total results should be 0")
+          assert(respdata.results.isEmpty, "results array should be empty")
+        }
+      }
+      "GET on " + libraryPopulateSuggestPath - {
+        "should return autcomplete suggestions" in {
+          val app = new MockLibraryApiServiceApp(new RequestBuilder(HttpMethods.GET)(libraryPopulateSuggestPath + "library:datasetOwner?q=aha"))
+          val (response, status) = app.checkRequest
+          status should equal(OK)
+          assert(app.searchDao.populateSuggestInvoked, "populateSuggestInvoked should have been invoked")
+          val respdata = response.entity.asString
+          assert(respdata.contains("library:datasetOwner"))
+          assert(respdata.contains("aha"))
         }
       }
     }

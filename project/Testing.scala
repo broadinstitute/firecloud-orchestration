@@ -18,7 +18,7 @@ object Testing {
     javaOptions in Test += "-Des.set.netty.runtime.available.processors=false",
 
     fork in Test := true,
-    parallelExecution in Test := false
+    parallelExecution in Test := true
   )
 
   implicit class ProjectTestSettings(val project: Project) extends AnyVal {
