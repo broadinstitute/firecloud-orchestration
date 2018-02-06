@@ -13,7 +13,7 @@ import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterEach, SequentialNestedSuiteExecution}
 import spray.http._
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
@@ -39,7 +39,7 @@ object WorkspaceApiServiceSpec {
 
 }
 
-class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
+class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SequentialNestedSuiteExecution {
 
   def actorRefFactory = system
 
