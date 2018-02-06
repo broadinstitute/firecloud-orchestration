@@ -25,7 +25,7 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
   }
 
   implicit val askTimeout = Timeout(5.seconds) // timeout for getting a response from the ProjectManager actor
-  val testTimeout = 3.seconds // timeout for a test to succeed or fail when using awaitCond/awaitAssert
+  val testTimeout = 60.seconds // timeout for a test to succeed or fail when using awaitCond/awaitAssert
   val testInterval = 150.millis // interval on which to repeatedly re-check a test when using awaitCond/awaitAssert
 
   val rawlsDAO = new ProjectManagerSpecRawlsDAO
@@ -128,7 +128,7 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
     "should mark projects as error during verification if they failed to create" in {
       val (pm, rawlsDAO, trialDAO, googleDAO) = initTestState(mockRawlsDAO = new BadGetProjectsRawlsDAO)
       pm ! StartCreation(3)
-      awaitCond(trialDAO.insertCount == 3, 60.seconds, testInterval)
+      awaitCond(trialDAO.insertCount == 3, testTimeout, testInterval)
       awaitCond(trialDAO.verifiedCount == 3 && verifiedProjects.forall(p => p.verified && p.status.contains(CreationStatuses.Error)), testTimeout, testInterval)
       system.stop(pm)
     }
