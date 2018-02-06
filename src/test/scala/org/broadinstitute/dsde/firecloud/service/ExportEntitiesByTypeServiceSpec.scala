@@ -5,12 +5,13 @@ import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.{CookieAuthedApiService, ExportEntitiesApiService}
+import org.scalatest.SequentialNestedSuiteExecution
 import spray.http._
 import spray.http.StatusCodes._
 
 import scala.concurrent.duration._
 
-class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService {
+class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService with SequentialNestedSuiteExecution {
 
   // On travis, slow processing causes the route to timeout and complete too quickly for the large content checks.
   override implicit val routeTestTimeout = RouteTestTimeout(30.seconds)
