@@ -128,7 +128,7 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
     "should mark projects as error during verification if they failed to create" in {
       val (pm, rawlsDAO, trialDAO, googleDAO) = initTestState(mockRawlsDAO = new BadGetProjectsRawlsDAO)
       pm ! StartCreation(3)
-      awaitCond(trialDAO.insertCount == 3, testTimeout, testInterval)
+      awaitCond(trialDAO.insertCount == 3, 60.seconds, testInterval)
       awaitCond(trialDAO.verifiedCount == 3 && verifiedProjects.forall(p => p.verified && p.status.contains(CreationStatuses.Error)), testTimeout, testInterval)
       system.stop(pm)
     }
