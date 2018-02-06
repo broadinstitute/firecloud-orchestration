@@ -25,7 +25,7 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
   }
 
   implicit val askTimeout = Timeout(5.seconds) // timeout for getting a response from the ProjectManager actor
-  val testTimeout = 5.minutes // timeout for a test to succeed or fail when using awaitCond/awaitAssert
+  val testTimeout = 3.seconds // timeout for a test to succeed or fail when using awaitCond/awaitAssert
   val testInterval = 150.millis // interval on which to repeatedly re-check a test when using awaitCond/awaitAssert
 
   val rawlsDAO = new ProjectManagerSpecRawlsDAO
