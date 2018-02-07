@@ -6,3 +6,5 @@ addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.0.0")
 
 // latest coveralls (1.0.0) is *only* compatible with scoverage 1.0.4 or less: https://github.com/scoverage/sbt-coveralls/issues/49
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.0.4")
+
+addSbtPlugin("com.github.tkawachi" % "sbt-repeat" % "0.1.0")
