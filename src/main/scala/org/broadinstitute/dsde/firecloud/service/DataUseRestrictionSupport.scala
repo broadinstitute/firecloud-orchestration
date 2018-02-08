@@ -94,6 +94,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     // DUOS has no concept of "IRB review required"
     // val irb = None
 
+    // disease restrictions: DS, DS_URL
     val ds = duosDataUse.diseaseRestrictions match {
       case Some(Seq()) => Map.empty[AttributeName,Attribute]
       case Some(nodeList) =>
@@ -108,7 +109,17 @@ trait DataUseRestrictionSupport extends LazyLogging {
       case _ => Map.empty[AttributeName,Attribute]
     }
 
-    val result = Map.empty[AttributeName, Attribute] ++ gru ++ hmb ++ ncu ++ nmds ++ rspd ++ nagr ++ nctrl ++ ds // ++ npu ++ irb
+    // population restrictions: RS-POP
+    val rspop = duosDataUse.populationRestrictions match {
+      case Some(Seq()) => Map.empty[AttributeName,Attribute]
+      case Some(populations) =>
+        Map(
+          AttributeName.withLibraryNS("RS-PD") -> AttributeValueList(populations.map(AttributeString))
+        )
+      case _ => Map.empty[AttributeName,Attribute]
+    }
+
+    val result = Map.empty[AttributeName, Attribute] ++ gru ++ hmb ++ ncu ++ nmds ++ rspd ++ nagr ++ nctrl ++ ds ++ rspop // ++ npu ++ irb
 
     logger.debug("inbound DuosDataUse: " + duosDataUse)
     logger.debug("outbound attrs: " + result)

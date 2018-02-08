@@ -323,6 +323,28 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           ), ontologyDAO)
           assert(attrs.isEmpty)
         }
+        "should handle populationRestrictions string lists" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            populationRestrictions = Some(Seq(
+              "population 1",
+              "population 2"
+            ))
+          ), ontologyDAO)
+          val expected = Map(
+            AttributeName.withLibraryNS("RS-PD") -> AttributeValueList(Seq(
+              AttributeString("population 1"),
+              AttributeString("population 2")
+            ))
+          )
+          assertResult(expected) {attrs}
+        }
+        "should handle empty populationRestrictions" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            populationRestrictions = Some(Seq.empty[String])
+          ), ontologyDAO)
+
+          assert(attrs.isEmpty)
+        }
         "should ignore the DUOS keys that FireCloud doesn't implement" in {
 
           // The properties that are commented out are the ones that FireCloud implements.
@@ -335,11 +357,11 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 //            aggregateResearch = None,
 //            controlSetOption = None,
 //            pediatric = None,
+//            populationRestrictions = None,
             populationOriginsAncestry = Some(true),
             populationStructure = Some(true),
             gender = Some("Female"),
             vulnerablePopulations = Some(true),
-            populationRestrictions = Some(Seq("one","two")),
             dateRestriction = Some("today"),
             recontactingDataSubjects = Some(true),
             recontactMay = Some("sure"),
