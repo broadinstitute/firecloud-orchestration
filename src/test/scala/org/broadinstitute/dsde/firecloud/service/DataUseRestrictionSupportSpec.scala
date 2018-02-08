@@ -345,6 +345,33 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
           assert(attrs.isEmpty)
         }
+        "should handle gender = Male" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            gender = Some("Male")
+          ), ontologyDAO)
+          val expected = Map(
+            AttributeName.withLibraryNS("RS-G") -> AttributeBoolean(true),
+            AttributeName.withLibraryNS("RS-M") -> AttributeBoolean(true)
+          )
+          assertResult(expected) {attrs}
+        }
+        "should handle gender = Female" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            gender = Some("Female")
+          ), ontologyDAO)
+          val expected = Map(
+            AttributeName.withLibraryNS("RS-G") -> AttributeBoolean(true),
+            AttributeName.withLibraryNS("RS-FM") -> AttributeBoolean(true)
+          )
+          assertResult(expected) {attrs}
+        }
+        "should ignore invalid gender values" in {
+          val attrs = generateStructuredUseRestrictionAttribute(new DuosDataUse(
+            gender = Some("invalid")
+          ), ontologyDAO)
+
+          assert(attrs.isEmpty)
+        }
         "should ignore the DUOS keys that FireCloud doesn't implement" in {
 
           // The properties that are commented out are the ones that FireCloud implements.
@@ -358,9 +385,9 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 //            controlSetOption = None,
 //            pediatric = None,
 //            populationRestrictions = None,
+//            gender = None,
             populationOriginsAncestry = Some(true),
             populationStructure = Some(true),
-            gender = Some("Female"),
             vulnerablePopulations = Some(true),
             dateRestriction = Some("today"),
             recontactingDataSubjects = Some(true),

@@ -119,7 +119,21 @@ trait DataUseRestrictionSupport extends LazyLogging {
       case _ => Map.empty[AttributeName,Attribute]
     }
 
-    val result = Map.empty[AttributeName, Attribute] ++ gru ++ hmb ++ ncu ++ nmds ++ rspd ++ nagr ++ nctrl ++ ds ++ rspop // ++ npu ++ irb
+    // gender restrictions: RS-G, RS-FM, RS-M
+    val rsg = duosDataUse.gender match {
+      case Some(f:String) if "female".equals(f.toLowerCase) => Map(
+        AttributeName.withLibraryNS("RS-G") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("RS-FM") -> AttributeBoolean(true)
+      )
+      case Some(m:String) if "male".equals(m.toLowerCase) => Map(
+        AttributeName.withLibraryNS("RS-G") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("RS-M") -> AttributeBoolean(true)
+      )
+      case _ => Map.empty[AttributeName,Attribute]
+    }
+
+    val result = Map.empty[AttributeName, Attribute] ++ gru ++ hmb ++ ncu ++ nmds ++
+      rspd ++ nagr ++ nctrl ++ ds ++ rspop ++ rsg // ++ npu ++ irb
 
     logger.debug("inbound DuosDataUse: " + duosDataUse)
     logger.debug("outbound attrs: " + result)
