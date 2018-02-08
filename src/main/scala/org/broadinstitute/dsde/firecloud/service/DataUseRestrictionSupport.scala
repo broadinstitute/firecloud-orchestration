@@ -148,10 +148,10 @@ trait DataUseRestrictionSupport extends LazyLogging {
     (existing -
       structuredUseRestrictionAttributeName -
       consentCodesAttributeName --
-      allDurFieldNames.map(x => AttributeName.withLibraryNS(x))) ++ preferred
+      allDurFieldNames.map(AttributeName.withLibraryNS)) ++ preferred
   }
 
-  // TODO: namespaces on allDurFieldNames??!?!?
+  // TODO: this method needs to respect attribute namespaces: see GAWB-3173
   private def getDataUseAttributes(workspace: Workspace): Map[AttributeName, Attribute] = {
 
     // Find all library attributes that contribute to data use restrictions

@@ -37,7 +37,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken, ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
-    val nodes = uniqueStrings(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
+    val nodes = uniqueWorkspaceStringAttributes(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
 
     // query ontology for this set of nodes, save in a map
     val parentCache = nodes map {id => (id, lookupParentNodes(id, ontologyDAO))}
@@ -45,7 +45,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     logger.debug(s"have parent results for ${parentMap.size} ontology nodes")
 
     // identify the unique ORSP codes in this list of workspaces
-    val orspIds = uniqueStrings(workspaces, orspIdAttribute)
+    val orspIds = uniqueWorkspaceStringAttributes(workspaces, orspIdAttribute)
 
     // set up an exception-resilient Future to get the ORSP restrictions for those codes
     val futureRestrictions:Future[Set[(String, Option[DuosDataUse])]] = Future.sequence(orspIds map {orspId =>
@@ -119,7 +119,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     }
   }
 
-  def uniqueStrings(workspaces: Seq[Workspace], attributeName: AttributeName): Set[String] = {
+  def uniqueWorkspaceStringAttributes(workspaces: Seq[Workspace], attributeName: AttributeName): Set[String] = {
     val valueSeq:Seq[String] = workspaces.collect {
       case w if w.attributes.contains(attributeName) =>
         w.attributes(attributeName)

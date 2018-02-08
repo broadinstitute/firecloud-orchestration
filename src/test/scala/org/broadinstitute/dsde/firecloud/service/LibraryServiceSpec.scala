@@ -850,13 +850,13 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       "should return an empty list when no workspaces" in {
         val workspaces = Seq.empty[Workspace]
         assertResult(Set.empty[String]) {
-          uniqueStrings(workspaces, AttributeName.withDefaultNS("description"))
+          uniqueWorkspaceStringAttributes(workspaces, AttributeName.withDefaultNS("description"))
         }
       }
       "should return an empty list when no attributes" in {
         val workspaces = makeWorkspacesWithAttributes(Seq(Map(), Map(), Map()))
         assertResult(Set.empty[String]) {
-          uniqueStrings(workspaces, AttributeName.withDefaultNS("description"))
+          uniqueWorkspaceStringAttributes(workspaces, AttributeName.withDefaultNS("description"))
         }
       }
       "should return a list when some attributes" in {
@@ -866,7 +866,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           Map(AttributeName.withLibraryNS("something") -> AttributeString("three"))
         ))
         assertResult(Set("one","two","three")) {
-          uniqueStrings(workspaces, AttributeName.withLibraryNS("something"))
+          uniqueWorkspaceStringAttributes(workspaces, AttributeName.withLibraryNS("something"))
         }
       }
       "should not return duplicate attributes" in {
@@ -876,7 +876,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           Map(AttributeName.withDefaultNS("something") -> AttributeString("two"))
         ))
         assertResult(Set("one","two")) {
-          uniqueStrings(workspaces, AttributeName.withDefaultNS("something"))
+          uniqueWorkspaceStringAttributes(workspaces, AttributeName.withDefaultNS("something"))
         }
       }
       "should ignore non-string attributes" in {
@@ -886,7 +886,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           Map(AttributeName.withDefaultNS("something") -> AttributeValueList(Seq(AttributeString("two"))))
         ))
         assertResult(Set("one")) {
-          uniqueStrings(workspaces, AttributeName.withDefaultNS("something"))
+          uniqueWorkspaceStringAttributes(workspaces, AttributeName.withDefaultNS("something"))
         }
       }
       "should ignore attributes beyond our target name" in {
@@ -901,7 +901,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           )
         ))
         assertResult(Set("one","two")) {
-          uniqueStrings(workspaces, AttributeName.withDefaultNS("something"))
+          uniqueWorkspaceStringAttributes(workspaces, AttributeName.withDefaultNS("something"))
         }
       }
       "should ignore workspaces that don't have our target name" in {
@@ -912,7 +912,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           Map(AttributeName.withDefaultNS("something") -> AttributeString("four"))
         ))
         assertResult(Set("one","four")) {
-          uniqueStrings(workspaces, AttributeName.withDefaultNS("something"))
+          uniqueWorkspaceStringAttributes(workspaces, AttributeName.withDefaultNS("something"))
         }
       }
     }
