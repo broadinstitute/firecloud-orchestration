@@ -72,7 +72,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     // these are straightforward mappings
     val gru = duosDataUse.generalUse.map ( AttributeName.withLibraryNS("GRU") -> AttributeBoolean(_) )
     val hmb = duosDataUse.hmbResearch.map ( AttributeName.withLibraryNS("HMB") -> AttributeBoolean(_) )
-    val rspd = duosDataUse.vulnerablePopulations.map ( AttributeName.withLibraryNS("RS-PD") -> AttributeBoolean(_) )
+    val rspd = duosDataUse.pediatric.map ( AttributeName.withLibraryNS("RS-PD") -> AttributeBoolean(_) )
     val ncu = duosDataUse.commercialUse.map ( AttributeName.withLibraryNS("NCU") -> AttributeBoolean(_) )
     val nmds = duosDataUse.methodsResearch.map ( AttributeName.withLibraryNS("NMDS") -> AttributeBoolean(_) )
 

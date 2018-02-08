@@ -198,7 +198,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             generalUse = Some(true),
             hmbResearch = Some(true),
             commercialUse = Some(true),
-            vulnerablePopulations = Some(true),
+            pediatric = Some(true),
             methodsResearch = Some(true)
           ), ontologyDAO)
           val expected = Map(
@@ -215,7 +215,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             generalUse = Some(false),
             hmbResearch = Some(false),
             commercialUse = Some(false),
-            vulnerablePopulations = Some(false),
+            pediatric = Some(false),
             methodsResearch = Some(false)
           ), ontologyDAO)
           val expected = Map(
@@ -232,7 +232,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             generalUse = Some(true),
             hmbResearch = Some(false),
             commercialUse = Some(true),
-            vulnerablePopulations = Some(false),
+            pediatric = Some(false),
             methodsResearch = Some(true)
           ), ontologyDAO)
           val expected = Map(
@@ -334,11 +334,11 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 //            methodsResearch = None,
 //            aggregateResearch = None,
 //            controlSetOption = None,
-//            vulnerablePopulations = None,
+//            pediatric = None,
             populationOriginsAncestry = Some(true),
             populationStructure = Some(true),
             gender = Some("Female"),
-            pediatric = Some(true),
+            vulnerablePopulations = Some(true),
             populationRestrictions = Some(Seq("one","two")),
             dateRestriction = Some("today"),
             recontactingDataSubjects = Some(true),
