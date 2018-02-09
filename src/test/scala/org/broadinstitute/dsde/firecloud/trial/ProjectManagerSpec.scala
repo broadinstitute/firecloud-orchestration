@@ -190,7 +190,7 @@ object ProjectManagerSpec {
   }
 
   def increaseRawlsProjectsCallCount(): Unit = {
-    projectStateActor ! IncreaseRawlsProjectCallsCount
+    projectStateActor ! BumpRawlsProjectCallsCount
   }
 
   def rawlsGetProjectsCallCount: Int = {
@@ -206,7 +206,7 @@ object ProjectManagerSpec {
     def createCount: Int = rawlsCreatedProjects.size
 
     override def createProject(projectName: String, billingAccount: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
-      projectStateActor ! AddCreatedProject(projectName)
+      projectStateActor ! RawlsCreatedProjects(projectName)
       Future.successful(true)
     }
 
@@ -308,8 +308,8 @@ object MockDAOData {
   case object Init
   case class InsertProject(p: TrialProject)
   case class VerifiedProject(p: TrialProject)
-  case object IncreaseRawlsProjectCallsCount
-  case class AddCreatedProject(p: String)
+  case object BumpRawlsProjectCallsCount
+  case class RawlsCreatedProjects(p: String)
   case object GetInsertedProjects
   case object GetVerifiedProjects
   case object GetProjectCallsCount
@@ -330,8 +330,8 @@ object MockDAOData {
         rawlsCreatedProjects = Seq.empty[String]
       case InsertProject(project: TrialProject) => insertedProjects = insertedProjects ++ Seq(project)
       case VerifiedProject(project: TrialProject) => verifiedProjects = verifiedProjects ++ Seq(project)
-      case IncreaseRawlsProjectCallsCount => rawlsProjectsCallCount += 1
-      case AddCreatedProject(project: String) => rawlsCreatedProjects = rawlsCreatedProjects ++ Seq(project)
+      case BumpRawlsProjectCallsCount => rawlsProjectsCallCount += 1
+      case RawlsCreatedProjects(project: String) => rawlsCreatedProjects = rawlsCreatedProjects ++ Seq(project)
       case GetInsertedProjects => sender ! insertedProjects
       case GetVerifiedProjects => sender ! verifiedProjects
       case GetProjectCallsCount => sender ! rawlsProjectsCallCount
