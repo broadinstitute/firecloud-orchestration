@@ -1,20 +1,21 @@
 package org.broadinstitute.dsde.firecloud.trial
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.pattern.ask
 import akka.testkit.TestKit
 import akka.util.Timeout
-import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.scalatest.{BeforeAndAfterAll, FreeSpecLike}
 import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
-import org.broadinstitute.dsde.firecloud.model.{Trial, WithAccessToken, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership, TrialProject}
+import org.broadinstitute.dsde.firecloud.model.{Trial, WithAccessToken, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager._
-import org.broadinstitute.dsde.firecloud.trial.ProjectManagerSpec.ProjectManagerSpecTrialDAO
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
+import org.scalatest.{BeforeAndAfterAll, FreeSpecLike}
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
 
 class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with FreeSpecLike with BeforeAndAfterAll {
 
@@ -24,9 +25,9 @@ class ProjectManagerSpec extends TestKit(ActorSystem("ProjectManagerSpec")) with
     TestKit.shutdownActorSystem(system)
   }
 
-  implicit val askTimeout = Timeout(5.seconds) // timeout for getting a response from the ProjectManager actor
-  val testTimeout = 3.seconds // timeout for a test to succeed or fail when using awaitCond/awaitAssert
-  val testInterval = 150.millis // interval on which to repeatedly re-check a test when using awaitCond/awaitAssert
+  implicit val askTimeout: Timeout = Timeout(5.seconds) // timeout for getting a response from the ProjectManager actor
+  val testTimeout: FiniteDuration = 10.seconds // timeout for a test to succeed or fail when using awaitCond/awaitAssert
+  val testInterval: FiniteDuration = 150.millis // interval on which to repeatedly re-check a test when using awaitCond/awaitAssert
 
   val rawlsDAO = new ProjectManagerSpecRawlsDAO
   val trialDAO = new ProjectManagerSpecTrialDAO
@@ -167,34 +168,50 @@ object ProjectManagerSpec {
 
   // ****************************************************
   // mutable shared state variables used by the mock DAOs
-  var insertedProjects = Seq.empty[TrialProject]
-  var verifiedProjects = Seq.empty[TrialProject]
-  var rawlsGetProjectsCallCount = 0
-  var rawlsCreatedProjects = Seq.empty[String]
-  // ****************************************************
+  import MockDAOData._
 
-  private def initVars = {
-    insertedProjects = Seq.empty[TrialProject]
-    verifiedProjects = Seq.empty[TrialProject]
-    rawlsGetProjectsCallCount = 0
-    rawlsCreatedProjects = Seq.empty[String]
+  def initVars(): Unit = {
+    projectStateActor ! Init
   }
 
+  def verifiedProjects: Seq[TrialProject] = {
+    val f = ask(projectStateActor, GetVerifiedProjects).mapTo[Seq[TrialProject]]
+    Await.result(f, timeout.duration)
+  }
+
+  def insertedProjects: Seq[TrialProject] = {
+    val f = ask(projectStateActor, GetInsertedProjects).mapTo[Seq[TrialProject]]
+    Await.result(f, timeout.duration)
+  }
+
+  def rawlsCreatedProjects: Seq[String] = {
+    val f = ask(projectStateActor, GetCreatedProjects).mapTo[Seq[String]]
+    Await.result(f, timeout.duration)
+  }
+
+  def increaseRawlsProjectsCallCount(): Unit = {
+    projectStateActor ! IncreaseRawlsProjectCallsCount
+  }
+
+  def rawlsGetProjectsCallCount: Int = {
+    val f = ask(projectStateActor, GetProjectCallsCount).mapTo[Int]
+    Await.result(f, timeout.duration)
+  }
 
   /**
     * Rawls dao with test instrumentation
     */
   class ProjectManagerSpecRawlsDAO extends MockRawlsDAO {
 
-    def createCount = rawlsCreatedProjects.size
+    def createCount: Int = rawlsCreatedProjects.size
 
     override def createProject(projectName: String, billingAccount: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
-      rawlsCreatedProjects = rawlsCreatedProjects :+ projectName
+      projectStateActor ! AddCreatedProject(projectName)
       Future.successful(true)
     }
 
     override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Trial.RawlsBillingProjectMembership]] = {
-      rawlsGetProjectsCallCount = rawlsGetProjectsCallCount + 1
+      increaseRawlsProjectsCallCount
       val projects = rawlsCreatedProjects map { name =>
         RawlsBillingProjectMembership(RawlsBillingProjectName(name), ProjectRoles.Owner, CreationStatuses.Ready, None)
       }
@@ -207,7 +224,7 @@ object ProjectManagerSpec {
     */
   class MissingGetProjectsRawlsDAO extends ProjectManagerSpecRawlsDAO {
     override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Trial.RawlsBillingProjectMembership]] = {
-      rawlsGetProjectsCallCount = rawlsGetProjectsCallCount + 1
+      increaseRawlsProjectsCallCount
       Future.successful(Seq.empty[RawlsBillingProjectMembership])
     }
   }
@@ -217,7 +234,7 @@ object ProjectManagerSpec {
     */
   class BadGetProjectsRawlsDAO extends ProjectManagerSpecRawlsDAO {
     override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Trial.RawlsBillingProjectMembership]] = {
-      rawlsGetProjectsCallCount = rawlsGetProjectsCallCount + 1
+      increaseRawlsProjectsCallCount
       val projects = rawlsCreatedProjects map { name =>
         RawlsBillingProjectMembership(RawlsBillingProjectName(name), ProjectRoles.Owner, CreationStatuses.Error, Some("unit test creation error"))
       }
@@ -230,7 +247,7 @@ object ProjectManagerSpec {
     */
   class StillCreatingProjectsRawlsDAO extends ProjectManagerSpecRawlsDAO {
     override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Trial.RawlsBillingProjectMembership]] = {
-      rawlsGetProjectsCallCount = rawlsGetProjectsCallCount + 1
+      increaseRawlsProjectsCallCount
       val projects = rawlsCreatedProjects map { name =>
         RawlsBillingProjectMembership(RawlsBillingProjectName(name), ProjectRoles.Owner, CreationStatuses.Creating, None)
       }
@@ -243,30 +260,27 @@ object ProjectManagerSpec {
 
   class ProjectManagerSpecTrialDAO extends MockTrialDAO {
 
-    def insertCount = insertedProjects.size
+    def insertCount(): Int = insertedProjects.size
 
-    def verifiedCount = verifiedProjects.size
+    def verifiedCount: Int = verifiedProjects.size
 
     override def insertProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
       if (insertedProjects.exists(p => p.name == projectName)) {
         throw new FireCloudException("ProjectManagerSpecTrialDAO says not unique")
       } else {
         val insertedProject = TrialProject(projectName)
-        insertedProjects = insertedProjects :+ insertedProject
+        projectStateActor ! InsertProject(insertedProject)
         insertedProject
       }
     }
 
-    /**
-      * Trial DAO with test instrumentation
-      */
     override def getProjectRecord(projectName: RawlsBillingProjectName): TrialProject = insertedProjects.reverse.head
 
     override def projectRecordExists(projectName: RawlsBillingProjectName): Boolean = true
 
     override def setProjectRecordVerified(projectName: RawlsBillingProjectName, verified: Boolean, status: CreationStatuses.CreationStatus): TrialProject = {
       val verifiedProject = TrialProject(projectName, verified, None, Some(status))
-      verifiedProjects = verifiedProjects :+ verifiedProject
+      projectStateActor ! VerifiedProject(verifiedProject)
       verifiedProject
     }
 
@@ -283,6 +297,48 @@ object ProjectManagerSpec {
     override def projectReport: Seq[TrialProject] = Seq.empty[TrialProject]
   }
 
+}
+
+object MockDAOData {
+
+  val system = ActorSystem("MockDAOData")
+  val projectStateActor: ActorRef = system.actorOf(Props[RegisterTrialProjectActor], name = "MockDAOData")
+  implicit val timeout: Timeout = Timeout(3.seconds)
+
+  case object Init
+  case class InsertProject(p: TrialProject)
+  case class VerifiedProject(p: TrialProject)
+  case object IncreaseRawlsProjectCallsCount
+  case class AddCreatedProject(p: String)
+  case object GetInsertedProjects
+  case object GetVerifiedProjects
+  case object GetProjectCallsCount
+  case object GetCreatedProjects
+  //noinspection ActorMutableStateInspection
+  class RegisterTrialProjectActor extends Actor {
+
+    private var insertedProjects = Seq.empty[TrialProject]
+    private var verifiedProjects = Seq.empty[TrialProject]
+    private var rawlsProjectsCallCount = 0
+    private var rawlsCreatedProjects = Seq.empty[String]
+
+    override def receive: Receive = {
+      case Init =>
+        insertedProjects = Seq.empty[TrialProject]
+        verifiedProjects = Seq.empty[TrialProject]
+        rawlsProjectsCallCount = 0
+        rawlsCreatedProjects = Seq.empty[String]
+      case InsertProject(project: TrialProject) => insertedProjects = insertedProjects ++ Seq(project)
+      case VerifiedProject(project: TrialProject) => verifiedProjects = verifiedProjects ++ Seq(project)
+      case IncreaseRawlsProjectCallsCount => rawlsProjectsCallCount += 1
+      case AddCreatedProject(project: String) => rawlsCreatedProjects = rawlsCreatedProjects ++ Seq(project)
+      case GetInsertedProjects => sender ! insertedProjects
+      case GetVerifiedProjects => sender ! verifiedProjects
+      case GetProjectCallsCount => sender ! rawlsProjectsCallCount
+      case GetCreatedProjects => sender ! rawlsCreatedProjects
+    }
+
+  }
 
 }
 
