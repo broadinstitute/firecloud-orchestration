@@ -306,14 +306,19 @@ object MockDAOData {
   implicit val timeout: Timeout = Timeout(3.seconds)
 
   case object Init
+
+  // Setters
   case class InsertProject(p: TrialProject)
   case class VerifiedProject(p: TrialProject)
   case object BumpRawlsProjectCallsCount
   case class RawlsCreatedProjects(p: String)
+
+  // Getters
   case object GetInsertedProjects
   case object GetVerifiedProjects
   case object GetProjectCallsCount
   case object GetCreatedProjects
+
   //noinspection ActorMutableStateInspection
   class RegisterTrialProjectActor extends Actor {
 
