@@ -2,10 +2,12 @@ package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
-import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.service.LibraryService.orspIdAttribute
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.rawls.model._
@@ -26,35 +28,56 @@ import scala.util.{Failure, Success, Try}
   */
 trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
+  implicit val userToken: WithAccessToken
+
   def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
     if (value) Seq(AddUpdateAttribute(LibraryService.publishedFlag, AttributeBoolean(true)))
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  // TODO: this doesn't have to be a future, leaving it as a Future for compatibility
-  def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Future[Seq[Document]] = {
+  def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken, ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
-    val nodesSeq:Seq[String] = workspaces.collect {
-        case w if w.attributes.contains(AttributeName.withLibraryNS("diseaseOntologyID")) =>
-          w.attributes(AttributeName.withLibraryNS("diseaseOntologyID"))
-      }.collect {
-        case s:AttributeString => s.value
-      }
-    logger.debug(s"found ${nodesSeq.size} workspaces with ontology nodes assigned")
-
-    val nodes = nodesSeq.toSet
-    logger.debug(s"found ${nodes.size} unique ontology nodes")
+    val nodes = uniqueWorkspaceStringAttributes(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
 
     // query ontology for this set of nodes, save in a map
     val parentCache = nodes map {id => (id, lookupParentNodes(id, ontologyDAO))}
-
-    // using the cached parent information, build the indexable documents
     val parentMap = parentCache.toMap.filter(e => e._2.nonEmpty) // remove nodes that have no parent
     logger.debug(s"have parent results for ${parentMap.size} ontology nodes")
-    val docsResult: Seq[Document] = workspaces map {w => indexableDocument(w, parentMap)}
 
-    Future(docsResult)
+    // identify the unique ORSP codes in this list of workspaces
+    val orspIds = uniqueWorkspaceStringAttributes(workspaces, orspIdAttribute)
 
+    // set up an exception-resilient Future to get the ORSP restrictions for those codes
+    val futureRestrictions:Future[Set[(String, Option[DuosDataUse])]] = Future.sequence(orspIds map {orspId =>
+      consentDAO.getRestriction(orspId) map { restriction =>
+        orspId -> restriction
+      } recover {
+        case e:Exception =>
+          logger.warn(e.getMessage)
+          orspId -> None
+      }
+    })
+
+    futureRestrictions.map { restrictions =>
+      val restrictionMap:Map[String,AttributeMap] = restrictions.map {
+        case (orspId, None) => orspId -> Map.empty[AttributeName, Attribute]
+        case (orspId, Some(dataUse)) => orspId -> generateStructuredUseRestrictionAttribute(dataUse, ontologyDAO)
+      }.toMap
+
+      val annotatedWorkspaces = workspaces map { ws =>
+        // does this workspace have an orsp id?
+        ws.attributes.get(orspIdAttribute) match {
+          case Some(s:AttributeString) =>
+            val orspAttrs = restrictionMap.getOrElse(s.value, Map.empty[AttributeName, Attribute])
+            val newAttrs = replaceDataUseAttributes(ws.attributes, orspAttrs)
+            ws.copy(attributes = newAttrs)
+          case _ =>
+            // this workspace does not have an ORSP id; leave it untouched
+            ws
+        }
+      }
+      annotatedWorkspaces map {w => indexableDocument(w, parentMap)}
+    }
   }
 
   private def indexableDocument(workspace: Workspace, parentCache: Map[String,Seq[TermParent]])(implicit ec: ExecutionContext): Document = {
@@ -94,6 +117,21 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
         Document(workspace.workspaceId, parentFields)
       case _ => Document(workspace.workspaceId, fields)
     }
+  }
+
+  def uniqueWorkspaceStringAttributes(workspaces: Seq[Workspace], attributeName: AttributeName): Set[String] = {
+    val valueSeq:Seq[String] = workspaces.collect {
+      case w if w.attributes.contains(attributeName) =>
+        w.attributes(attributeName)
+    }.collect {
+      case s:AttributeString => s.value
+    }
+    logger.debug(s"found ${valueSeq.size} workspaces with ${AttributeName.toDelimitedName(attributeName)} string attributes")
+
+    val valueSet = valueSeq.toSet
+    logger.debug(s"found ${valueSet.size} unique ${AttributeName.toDelimitedName(attributeName)} values")
+
+    valueSet
   }
 
   // wraps the ontologyDAO call, handles Nones/nulls, and returns a [Future[Seq].

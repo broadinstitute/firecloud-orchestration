@@ -1,7 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.dataaccess.OntologyDAO
+import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.DataUse.DiseaseOntologyNodeId
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
 import org.broadinstitute.dsde.rawls.model._
 import spray.json.DefaultJsonProtocol._
@@ -59,6 +62,86 @@ trait DataUseRestrictionSupport extends LazyLogging {
   }
 
   /**
+    * Looks at a DuosDataUse object (likely previously retrieved from ORSP) and translates it into a
+    * set of structured Data Use Restriction attributes.
+    *
+    * @param duosDataUse
+    * @return
+    */
+  def generateStructuredUseRestrictionAttribute(duosDataUse: DuosDataUse, ontologyDAO: OntologyDAO): Map[AttributeName, Attribute] = {
+    // these are straightforward mappings
+    val gru = duosDataUse.generalUse.map ( AttributeName.withLibraryNS("GRU") -> AttributeBoolean(_) )
+    val hmb = duosDataUse.hmbResearch.map ( AttributeName.withLibraryNS("HMB") -> AttributeBoolean(_) )
+    val rspd = duosDataUse.pediatric.map ( AttributeName.withLibraryNS("RS-PD") -> AttributeBoolean(_) )
+    val ncu = duosDataUse.commercialUse.map ( AttributeName.withLibraryNS("NCU") -> AttributeBoolean(_) )
+    val nmds = duosDataUse.methodsResearch.map ( AttributeName.withLibraryNS("NMDS") -> AttributeBoolean(_) )
+
+    // FC supports both NCU and NPU; DUOS only supports one (NCU)
+    // val npu = duosDataUse.commercialUse.map ( AttributeName.withLibraryNS("NPU") -> AttributeBoolean(_) )
+
+    // DUOS represents NAGR and NCTRL as strings ("yes"|"no")
+    val nagr = duosDataUse.aggregateResearch match {
+      case Some(s) if "yes".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS("NAGR") -> AttributeBoolean(true))
+      case Some(s) if "no".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS("NAGR") -> AttributeBoolean(false))
+      case _ => None
+    }
+    val nctrl = duosDataUse.controlSetOption match {
+      case Some(s) if "yes".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS("NCTRL") -> AttributeBoolean(true))
+      case Some(s) if "no".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS("NCTRL") -> AttributeBoolean(false))
+      case _ => None
+    }
+
+    // DUOS has no concept of "IRB review required"
+    // val irb = None
+
+    // disease restrictions: DS, DS_URL
+    val ds = duosDataUse.diseaseRestrictions match {
+      case Some(Seq()) => Map.empty[AttributeName,Attribute]
+      case Some(nodeList) =>
+        Map(
+          AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(nodeList.map( AttributeString )),
+          AttributeName.withLibraryNS("DS") -> AttributeValueList(nodeList.map{ nodeid =>
+            ontologyDAO.search(nodeid) match {
+              case termResource :: Nil => AttributeString(termResource.label)
+              case _ => AttributeString(nodeid)
+            }})
+        )
+      case _ => Map.empty[AttributeName,Attribute]
+    }
+
+    // population restrictions: RS-POP
+    val rspop = duosDataUse.populationRestrictions match {
+      case Some(Seq()) => Map.empty[AttributeName,Attribute]
+      case Some(populations) =>
+        Map(
+          AttributeName.withLibraryNS("RS-PD") -> AttributeValueList(populations.map(AttributeString))
+        )
+      case _ => Map.empty[AttributeName,Attribute]
+    }
+
+    // gender restrictions: RS-G, RS-FM, RS-M
+    val rsg = duosDataUse.gender match {
+      case Some(f:String) if "female".equals(f.toLowerCase) => Map(
+        AttributeName.withLibraryNS("RS-G") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("RS-FM") -> AttributeBoolean(true)
+      )
+      case Some(m:String) if "male".equals(m.toLowerCase) => Map(
+        AttributeName.withLibraryNS("RS-G") -> AttributeBoolean(true),
+        AttributeName.withLibraryNS("RS-M") -> AttributeBoolean(true)
+      )
+      case _ => Map.empty[AttributeName,Attribute]
+    }
+
+    val result = Map.empty[AttributeName, Attribute] ++ gru ++ hmb ++ ncu ++ nmds ++
+      rspd ++ nagr ++ nctrl ++ ds ++ rspop ++ rsg // ++ npu ++ irb
+
+    logger.debug("inbound DuosDataUse: " + duosDataUse)
+    logger.debug("outbound attrs: " + result)
+
+    result
+  }
+
+  /**
     * Create a display-friendly version of the structured data use restriction in the form of a
     * list of code strings.
     *
@@ -85,6 +168,15 @@ trait DataUseRestrictionSupport extends LazyLogging {
       Map.empty[AttributeName, Attribute]
   }
 
+  def replaceDataUseAttributes(existing: AttributeMap, preferred: AttributeMap): AttributeMap = {
+    // delete pre-existing DU codes, then add the DU codes from ORSP
+    (existing -
+      structuredUseRestrictionAttributeName -
+      consentCodesAttributeName --
+      allDurFieldNames.map(AttributeName.withLibraryNS)) ++ preferred
+  }
+
+  // TODO: this method needs to respect attribute namespaces: see GAWB-3173
   private def getDataUseAttributes(workspace: Workspace): Map[AttributeName, Attribute] = {
 
     // Find all library attributes that contribute to data use restrictions

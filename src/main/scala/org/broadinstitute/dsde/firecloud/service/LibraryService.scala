@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
@@ -26,8 +26,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object LibraryService {
-  final val publishedFlag = AttributeName("library","published")
-  final val discoverableWSAttribute = AttributeName("library","discoverableByGroups")
+  final val publishedFlag = AttributeName.withLibraryNS("published")
+  final val discoverableWSAttribute = AttributeName.withLibraryNS("discoverableByGroups")
+  final val orspIdAttribute = AttributeName.withLibraryNS("orsp")
   final val schemaLocation = "library/attribute-definitions.json"
 
   sealed trait LibraryServiceMessage
@@ -46,20 +47,22 @@ object LibraryService {
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO, app.ontologyDAO)
+    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO, app.ontologyDAO, app.consentDAO)
 }
 
 
 class LibraryService (protected val argUserInfo: UserInfo,
                       val rawlsDAO: RawlsDAO,
                       val searchDAO: SearchDAO,
-                      val ontologyDAO: OntologyDAO)
+                      val ontologyDAO: OntologyDAO,
+                      val consentDAO: ConsentDAO)
                      (implicit protected val executionContext: ExecutionContext) extends Actor
   with LibraryServiceSupport with AttributeSupport with PermissionsSupport with SprayJsonSupport with LazyLogging with WorkspacePublishingSupport {
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  implicit val userInfo = argUserInfo
+  implicit val userToken = argUserInfo
+
   // attributes come in as standard json so we can use json schema for validation. Thus,
   // we need to use the plain-array deserialization.
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
@@ -163,7 +166,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
    */
   private def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
       rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>
-      republishDocument(newws, ontologyDAO, searchDAO)
+      republishDocument(newws, ontologyDAO, searchDAO, consentDAO)
       newws
     }
   }
@@ -186,7 +189,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
         Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
       else {
         // user requested a change in published flag, and metadata is valid; make the change.
-        setWorkspacePublishedStatus(workspaceResponse.workspace, publishArg, rawlsDAO, ontologyDAO, searchDAO) map { ws =>
+        setWorkspacePublishedStatus(workspaceResponse.workspace, publishArg, rawlsDAO, ontologyDAO, searchDAO, consentDAO) map { ws =>
           RequestComplete(ws)
         }
       }
@@ -200,7 +203,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
         Future(RequestComplete(NoContent))
       else {
         logger.info("reindex: requesting ontology parents for workspaces ...")
-        val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO)
+        val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO, consentDAO)
         toIndex map { documents =>
           logger.info("reindex: resetting index ...")
           searchDAO.recreateIndex()
