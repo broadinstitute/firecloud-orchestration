@@ -333,10 +333,10 @@ object MockDAOData {
         verifiedProjects = Seq.empty[TrialProject]
         rawlsProjectsCallCount = 0
         rawlsCreatedProjects = Seq.empty[String]
-      case InsertProject(project: TrialProject) => insertedProjects = insertedProjects ++ Seq(project)
-      case VerifiedProject(project: TrialProject) => verifiedProjects = verifiedProjects ++ Seq(project)
+      case InsertProject(project: TrialProject) => insertedProjects = insertedProjects :+ project
+      case VerifiedProject(project: TrialProject) => verifiedProjects = verifiedProjects :+ project
       case BumpRawlsProjectCallsCount => rawlsProjectsCallCount += 1
-      case RawlsCreatedProjects(project: String) => rawlsCreatedProjects = rawlsCreatedProjects ++ Seq(project)
+      case RawlsCreatedProjects(project: String) => rawlsCreatedProjects = rawlsCreatedProjects :+ project
       case GetInsertedProjects => sender ! insertedProjects
       case GetVerifiedProjects => sender ! verifiedProjects
       case GetProjectCallsCount => sender ! rawlsProjectsCallCount
@@ -346,5 +346,3 @@ object MockDAOData {
   }
 
 }
-
-
