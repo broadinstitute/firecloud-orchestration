@@ -9,7 +9,6 @@ import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import spray.http.StatusCodes.{InternalServerError, NotFound}
 
-import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
@@ -165,11 +164,10 @@ case class RegisterUserToken(entity: String)
 case object ListUserTokens
 class RegisterTokenActor extends Actor {
 
-  private var entitySet = mutable.Set.empty[String]
-
-  override def receive: Receive = {
-    case RegisterUserToken(entity) => entitySet += entity
-    case ListUserTokens => sender ! entitySet.toSeq
+  def receive: Receive = register(Set.empty[String])
+  def register(entities: Set[String]): Receive = {
+    case RegisterUserToken(entity) => context become register(entities + entity)
+    case ListUserTokens => sender ! entities.toSeq
   }
 
 }
