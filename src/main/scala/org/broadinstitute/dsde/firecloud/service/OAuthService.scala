@@ -54,8 +54,7 @@ class OAuthService(val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO)
     val jsonFactory = JacksonFactory.getDefaultInstance
     val clientSecrets = GoogleClientSecrets.load(
       jsonFactory, new StringReader(FireCloudConfig.Auth.googleSecretJson))
-    var authScopes = Seq("profile", "email")
-    authScopes ++= Seq(StorageScopes.DEVSTORAGE_FULL_CONTROL, ComputeScopes.COMPUTE)
+    val authScopes = Seq("profile", "email", StorageScopes.DEVSTORAGE_FULL_CONTROL, ComputeScopes.COMPUTE)
     val flow = new GoogleAuthorizationCodeFlow.Builder(
       httpTransport, jsonFactory, clientSecrets, authScopes
     ).build
