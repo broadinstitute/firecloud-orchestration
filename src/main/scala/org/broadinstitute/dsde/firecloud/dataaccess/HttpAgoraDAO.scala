@@ -1,17 +1,21 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraEntityType, AgoraPermission, EntityAccessControlAgora, Method}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{AgoraStatus, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
+import org.broadinstitute.dsde.workbench.util.health.{StatusCheckResponse, SubsystemStatus}
+import org.broadinstitute.dsde.workbench.util.health.StatusJsonSupport.{StatusCheckResponseFormat, SubsystemStatusFormat}
+import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
 import spray.http.Uri
 import spray.httpx.SprayJsonSupport._
+import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
   extends AgoraDAO with RestJsonClient {
@@ -35,13 +39,24 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
   }
 
   override def status: Future[SubsystemStatus] = {
-    val agoraStatus = unAuthedRequestToObject[AgoraStatus](Get(Uri(config.baseUrl).withPath(Uri.Path("/status"))))
+    val agoraStatusCheck = unAuthedRequestToObject[StatusCheckResponse](Get(Uri(config.baseUrl).withPath(Uri.Path("/status"))))
 
-    agoraStatus map { agoraStatus =>
-      agoraStatus.status match {
-        case "up" => SubsystemStatus(ok = true, None)
-        case _ => SubsystemStatus(ok = false, if (agoraStatus.message.nonEmpty) Some(agoraStatus.message) else None)
-      }
+    agoraStatusCheck map { agoraStatus =>
+      if (agoraStatus.ok)
+        SubsystemStatus(ok = true, None)
+      else
+        SubsystemStatus(ok = false, Some(agoraStatus.systems.map{
+          case (k:Subsystem, v:SubsystemStatus) => s"""$k : ${SubsystemStatusFormat.write(v).compactPrint}"""
+          case x => x.toString
+        }.toList))
+    } recover {
+      case fcee:FireCloudExceptionWithErrorReport =>
+        // attempt to make the underlying message prettier
+        val parseTry = Try(fcee.errorReport.message.parseJson.compactPrint.replace("\"", "'")).toOption
+        val msg = parseTry.getOrElse(fcee.errorReport.message)
+        SubsystemStatus(ok = false, Some(List(msg)))
+      case e:Exception =>
+        SubsystemStatus(ok = false, Some(List(e.getMessage)))
     }
   }
 
