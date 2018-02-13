@@ -49,7 +49,7 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleD
   val idle = "idle"
   val creating = "creating"
 
-  var currentStatus = idle
+  @volatile private[this] var currentStatus = idle
 
   override def receive: Receive = {
     case StartCreation(count: Int) => sender ! startCreation(count)
