@@ -49,7 +49,7 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleD
   val idle = "idle"
   val creating = "creating"
 
-  var currentStatus = idle
+  @volatile private[this] var currentStatus = idle
 
   override def receive: Receive = {
     case StartCreation(count: Int) => sender ! startCreation(count)
@@ -158,7 +158,7 @@ class ProjectManager(val rawlsDAO: RawlsDAO, val trialDAO: TrialDAO, val googleD
     verifyUniqueProjectName(ProjectNamer.randomName, 1)
   }
 
-  private def setCurrentStatus(status: String) = currentStatus = status
+  private def setCurrentStatus(status: String): Unit = this.synchronized { currentStatus = status }
   private def getCurrentStatus = currentStatus
 
 }
