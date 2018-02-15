@@ -43,10 +43,15 @@ class UserService(rawlsDAO: RawlsDAO, userToken: WithAccessToken)(implicit prote
     val workspaces = rawlsDAO.getWorkspaces
 
     // for-comprehension to extract from the three vals
-    // TODO: is this the right business logic?
+    /* TODO: is this the right business logic? We maybe/probably don't need to check for billing accounts,
+        and instead only check for billing projects. The import flow via the UI allows a user to create
+        a workspace if the user has a project - but it doesn't allow the user to create a project if s/he
+        has a billing account. So, to satisfy that flow, this endpoint could/should only check workspaces
+        and projects, not accounts.
+     */
     val importPerm = for {
       hasAccount <- billingAccounts.map (_.nonEmpty)
-      hasProject <- billingProjects.map (_.nonEmpty)
+      hasProject <- billingProjects.map (_.nonEmpty) // TODO: does this need to check user vs. owner?
       hasWorkspace <- workspaces.map { ws => ws.exists(_.accessLevel.compare(WorkspaceAccessLevels.Write) >= 0)}
     } yield UserImportPermission(
       billingAccount = hasAccount,
