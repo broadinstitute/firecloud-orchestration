@@ -14,7 +14,7 @@ import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, Enrolled}
 import org.broadinstitute.dsde.firecloud.model.Trial._
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
-import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService}
+import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService, UserService}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.firecloud.trial.ProjectManagerSpec.ProjectManagerSpecTrialDAO
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsBillingProjectName, RawlsUserEmail}
@@ -54,6 +54,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         rawlsDAO = localRawlsDao,
         googleServicesDAO = localGoogleDao),
       trialProjectManager)
+  val userServiceConstructor:(WithAccessToken) => UserService = UserService.constructor(app)
 
   var localThurloeServer: ClientAndServer = _
 

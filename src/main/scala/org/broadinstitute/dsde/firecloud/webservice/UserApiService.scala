@@ -4,7 +4,8 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PerRequestCreator, TrialService}
+import org.broadinstitute.dsde.firecloud.service.UserService.ImportPermission
+import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.slf4j.LoggerFactory
@@ -68,6 +69,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
   lazy val log = LoggerFactory.getLogger(getClass)
 
   val trialServiceConstructor: () => TrialService
+  val userServiceConstructor: (WithAccessToken) => UserService
 
   val userServiceRoutes =
     path("me") {
@@ -129,6 +131,13 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       path("profile" / "billingAccounts") {
         get {
           passthrough(UserApiService.billingAccountsUrl, HttpMethods.GET)
+        }
+      } ~
+      path("profile" / "importstatus") {
+        get {
+          requireUserInfo() { userInfo => requestContext =>
+            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), ImportPermission)
+          }
         }
       } ~
       pathPrefix("profile" / "trial") {

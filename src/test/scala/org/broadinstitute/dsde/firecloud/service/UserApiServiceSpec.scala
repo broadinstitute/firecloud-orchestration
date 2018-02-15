@@ -23,6 +23,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app, trialProjectManager)
+  val userServiceConstructor:(WithAccessToken) => UserService = UserService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
   var samServer: ClientAndServer = _
@@ -527,7 +528,66 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
     }
 
+  }
 
+  "UserService /api/profile/importstatus endpoint tests" - {
+
+    val endpoint = "/api/profile/importstatus"
+
+    "should reject all but GET" in {
+      allHttpMethodsExcept(HttpMethods.GET) foreach { method =>
+        checkIfPassedThrough(userServiceRoutes, method, endpoint, toBeHandled = false)
+      }
+    }
+    "should accept GET" in {
+      Get(endpoint) ~> dummyUserIdHeaders("foo") ~> userServiceRoutes ~> check {
+        assert(handled)
+      }
+    }
+    "should return billingProject: true if user has at least one billing project" in {
+      Get(endpoint) ~> dummyUserIdHeaders("foo") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].billingProject shouldBe true
+        fail("not implemented") // TODO: set up appropriate mock responses/DAOs to make this test accurate!
+      }
+    }
+    "should return billingProject: false if user has no billing projects" in {
+      Get(endpoint) ~> dummyUserIdHeaders("foo") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].billingProject shouldBe false
+        fail("not implemented") // TODO: set up appropriate mock responses/DAOs to make this test accurate!
+      }
+    }
+    "should return billingAccount: true if user has a billing account" in {
+      Get(endpoint) ~> dummyUserIdHeaders("foo") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].billingAccount shouldBe true
+        fail("not implemented") // TODO: set up appropriate mock responses/DAOs to make this test accurate!
+      }
+    }
+    "should return billingAccount: false if user has no billing accounts" in {
+      Get(endpoint) ~> dummyUserIdHeaders("foo") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].billingAccount shouldBe false
+        fail("not implemented") // TODO: set up appropriate mock responses/DAOs to make this test accurate!
+      }
+    }
+    "should return writableWorkspace: true if user has a writable workspace" in {
+      Get(endpoint) ~> dummyUserIdHeaders("foo") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].writableWorkspace shouldBe true
+        fail("not implemented") // TODO: set up appropriate mock responses/DAOs to make this test accurate!
+      }
+    }
+    "should return writableWorkspace: false if user has no writable workspaces" in {
+      Get(endpoint) ~> dummyUserIdHeaders("foo") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].writableWorkspace shouldBe false
+        fail("not implemented") // TODO: set up appropriate mock responses/DAOs to make this test accurate!
+      }
+    }
+    // TODO: if service returns non-200 when all values are false, test that here
+    // TODO: add at least one more test that checks all values in the response, not just individual ones
   }
 
 }
