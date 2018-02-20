@@ -1,15 +1,16 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model.{Trial, UserImportPermission, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impUserImportPermission
 import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService, UserService}
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
-import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, WorkspaceAccessLevels, WorkspaceListResponse, WorkspaceSubmissionStats}
+import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.ErrorReportFormat
 import spray.http.HttpMethods
-import spray.http.StatusCodes.OK
+import spray.http.StatusCodes.{InternalServerError, OK}
 import spray.httpx.SprayJsonSupport
 
 import scala.concurrent.Future
@@ -34,7 +35,7 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
       }
     }
     "should accept GET" in {
-      Get(endpoint) ~> dummyUserIdHeaders("foo") ~> userServiceRoutes ~> check {
+      Get(endpoint) ~> dummyUserIdHeaders("foo","noWorkspaces;noProjects") ~> userServiceRoutes ~> check {
         assert(handled)
       }
     }
@@ -90,7 +91,20 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
       }
     }
 
-    // TODO: if service returns non-200 when all values are false, test that here
+    "should propagate an error if the call to get workspaces fails" in {
+      Get(endpoint) ~> dummyUserIdHeaders("userid","thisWillError;hasProjects") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(InternalServerError)
+        val err:ErrorReport = responseAs[ErrorReport]
+        err.message shouldBe "intentional exception for getWorkspaces catchall case"
+      }
+    }
+    "should propagate an error if the call to get billing projects fails" in {
+      Get(endpoint) ~> dummyUserIdHeaders("userid","hasWorkspaces;thisWillError") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(InternalServerError)
+        val err:ErrorReport = responseAs[ErrorReport]
+        err.message shouldBe "intentional exception for getProjects catchall case"
+      }
+    }
   }
 
 }
@@ -132,12 +146,12 @@ class ImportPermissionMockRawlsDAO extends MockRawlsDAO {
     }
   }
 
+  // this is hacky, but the only argument to getProjects and getWorkspaces is the access token. Therefore,
+  // we need to encode our test criteria into a string, and we can do so using a delimeter.
   private def parseTestToken(userInfo: WithAccessToken): (String,String) = {
     val tokenParts = userInfo.accessToken.token.split(";")
-    if (tokenParts.length == 2)
-      (tokenParts(0), tokenParts(1))
-    else
-      ("defaultWorkspaces","defaultProjects")
+    assert(tokenParts.length == 2)
+    (tokenParts(0), tokenParts(1))
   }
 
 }

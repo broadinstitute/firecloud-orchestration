@@ -43,7 +43,7 @@ class UserService(rawlsDAO: RawlsDAO, userToken: WithAccessToken)(implicit prote
 
     // for-comprehension to extract from the two vals
     val importPerm = for {
-      hasProject <- billingProjects.map (_.exists(_.creationStatus == CreationStatuses.Ready)) // TODO: does this need to check user vs. owner?
+      hasProject <- billingProjects.map (_.exists(_.creationStatus == CreationStatuses.Ready))
       hasWorkspace <- workspaces.map { ws => ws.exists(_.accessLevel.compare(WorkspaceAccessLevels.Write) >= 0)} // TODO: also need to check canCompute?
     } yield UserImportPermission(
       billingProject = hasProject,
