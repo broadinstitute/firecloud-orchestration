@@ -1,0 +1,143 @@
+package org.broadinstitute.dsde.firecloud.webservice
+
+import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
+import org.broadinstitute.dsde.firecloud.model.{Trial, UserImportPermission, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impUserImportPermission
+import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership}
+import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService, UserService}
+import org.broadinstitute.dsde.firecloud.trial.ProjectManager
+import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, WorkspaceAccessLevels, WorkspaceListResponse, WorkspaceSubmissionStats}
+import spray.http.HttpMethods
+import spray.http.StatusCodes.OK
+import spray.httpx.SprayJsonSupport
+
+import scala.concurrent.Future
+
+class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService with SprayJsonSupport {
+
+  def actorRefFactory = system
+
+  val testApp = app.copy(rawlsDAO = new ImportPermissionMockRawlsDAO)
+
+  val trialProjectManager = system.actorOf(ProjectManager.props(testApp.rawlsDAO, testApp.trialDAO, testApp.googleServicesDAO), "trial-project-manager")
+  val trialServiceConstructor:() => TrialService = TrialService.constructor(testApp, trialProjectManager)
+  val userServiceConstructor:(WithAccessToken) => UserService = UserService.constructor(testApp)
+
+  "UserService /api/profile/importstatus endpoint tests" - {
+
+    val endpoint = "/api/profile/importstatus"
+
+    "should reject all but GET" in {
+      allHttpMethodsExcept(HttpMethods.GET) foreach { method =>
+        checkIfPassedThrough(userServiceRoutes, method, endpoint, toBeHandled = false)
+      }
+    }
+    "should accept GET" in {
+      Get(endpoint) ~> dummyUserIdHeaders("foo") ~> userServiceRoutes ~> check {
+        assert(handled)
+      }
+    }
+    "should return billingProject: true if user has at least one billing project" in {
+      Get(endpoint) ~> dummyUserIdHeaders("userid","noWorkspaces;hasProjects") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].billingProject shouldBe true
+      }
+    }
+    "should return billingProject: false if user has no billing projects" in {
+      Get(endpoint) ~> dummyUserIdHeaders("userid", "noWorkspaces;noProjects") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].billingProject shouldBe false
+      }
+    }
+    "should return billingProject: false if user has billing projects, but none that are ready" in {
+      Get(endpoint) ~> dummyUserIdHeaders("userid", "noWorkspaces;projectsNotReady") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].billingProject shouldBe false
+      }
+    }
+    "should return writableWorkspace: true if user has a writable workspace" in {
+      Get(endpoint) ~> dummyUserIdHeaders("userid","hasWorkspaces;noProjects") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].writableWorkspace shouldBe true
+      }
+    }
+    "should return writableWorkspace: false if user has no workspaces" in {
+      Get(endpoint) ~> dummyUserIdHeaders("userid","noWorkspaces;noProjects") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].writableWorkspace shouldBe false
+      }
+    }
+    "should return writableWorkspace: false if user has workspaces, but none that are writable" in {
+      Get(endpoint) ~> dummyUserIdHeaders("userid","onlyReadableWorkspaces;noProjects") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].writableWorkspace shouldBe false
+      }
+    }
+
+    "should return both writableWorkspace: true and billingProject: true if both conditions are satisfied" in {
+      Get(endpoint) ~> dummyUserIdHeaders("userid","hasWorkspaces;hasProjects") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].billingProject shouldBe true
+        responseAs[UserImportPermission].writableWorkspace shouldBe true
+      }
+    }
+    "should return both writableWorkspace: false and billingProject: false if both conditions failed" in {
+      Get(endpoint) ~> dummyUserIdHeaders("userid","onlyReadableWorkspaces;projectsNotReady") ~> sealRoute(userServiceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[UserImportPermission].billingProject shouldBe false
+        responseAs[UserImportPermission].writableWorkspace shouldBe false
+      }
+    }
+
+    // TODO: if service returns non-200 when all values are false, test that here
+  }
+
+}
+
+class ImportPermissionMockRawlsDAO extends MockRawlsDAO {
+
+  override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Trial.RawlsBillingProjectMembership]] = {
+    parseTestToken(userToken)._2 match {
+      case "hasProjects" => Future.successful(Seq(
+        RawlsBillingProjectMembership(RawlsBillingProjectName("projectone"), ProjectRoles.User, CreationStatuses.Ready, None),
+        RawlsBillingProjectMembership(RawlsBillingProjectName("projecttwo"), ProjectRoles.Owner, CreationStatuses.Creating, None)
+      ))
+      case "projectsNotReady" => Future.successful(Seq(
+        RawlsBillingProjectMembership(RawlsBillingProjectName("projectone"), ProjectRoles.User, CreationStatuses.Creating, None),
+        RawlsBillingProjectMembership(RawlsBillingProjectName("projecttwo"), ProjectRoles.Owner, CreationStatuses.Creating, None)
+
+      ))
+      case "noProjects" => Future.successful(Seq.empty[RawlsBillingProjectMembership])
+      case _ => Future.failed(new FireCloudException("intentional exception for getProjects catchall case"))
+    }
+  }
+
+  override def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]] = {
+    parseTestToken(userInfo)._1 match {
+      case "hasWorkspaces" => Future.successful(Seq(
+        WorkspaceListResponse(WorkspaceAccessLevels.ProjectOwner, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
+        WorkspaceListResponse(WorkspaceAccessLevels.Owner, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
+        WorkspaceListResponse(WorkspaceAccessLevels.NoAccess, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false))
+      ))
+      case "onlyReadableWorkspaces" => Future.successful(Seq(
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
+        WorkspaceListResponse(WorkspaceAccessLevels.NoAccess, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false))
+      ))
+      case "noWorkspaces" => Future.successful(Seq.empty[WorkspaceListResponse])
+      case _ => Future.failed(new FireCloudException("intentional exception for getWorkspaces catchall case"))
+    }
+  }
+
+  private def parseTestToken(userInfo: WithAccessToken): (String,String) = {
+    val tokenParts = userInfo.accessToken.token.split(";")
+    if (tokenParts.length == 2)
+      (tokenParts(0), tokenParts(1))
+    else
+      ("defaultWorkspaces","defaultProjects")
+  }
+
+}

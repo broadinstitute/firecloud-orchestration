@@ -6,6 +6,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impUserImportPermission
+import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses
 import org.broadinstitute.dsde.firecloud.model.{UserImportPermission, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.UserService.ImportPermission
@@ -36,25 +37,15 @@ class UserService(rawlsDAO: RawlsDAO, userToken: WithAccessToken)(implicit prote
   }
 
   def importPermission(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
-    // start three requests, as vals, to fire off workspace list, billing project list, billing acct list in parallel
-    val billingAccounts = Future(Seq())
-    // val billingAccounts = rawlsDAO.getAccounts // TODO: this doesn't exist yet!
+    // start two requests, in parallel, to fire off workspace list and billing project list
     val billingProjects = rawlsDAO.getProjects
     val workspaces = rawlsDAO.getWorkspaces
 
-    // for-comprehension to extract from the three vals
-    /* TODO: is this the right business logic? We maybe/probably don't need to check for billing accounts,
-        and instead only check for billing projects. The import flow via the UI allows a user to create
-        a workspace if the user has a project - but it doesn't allow the user to create a project if s/he
-        has a billing account. So, to satisfy that flow, this endpoint could/should only check workspaces
-        and projects, not accounts.
-     */
+    // for-comprehension to extract from the two vals
     val importPerm = for {
-      hasAccount <- billingAccounts.map (_.nonEmpty)
-      hasProject <- billingProjects.map (_.nonEmpty) // TODO: does this need to check user vs. owner?
-      hasWorkspace <- workspaces.map { ws => ws.exists(_.accessLevel.compare(WorkspaceAccessLevels.Write) >= 0)}
+      hasProject <- billingProjects.map (_.exists(_.creationStatus == CreationStatuses.Ready)) // TODO: does this need to check user vs. owner?
+      hasWorkspace <- workspaces.map { ws => ws.exists(_.accessLevel.compare(WorkspaceAccessLevels.Write) >= 0)} // TODO: also need to check canCompute?
     } yield UserImportPermission(
-      billingAccount = hasAccount,
       billingProject = hasProject,
       writableWorkspace = hasWorkspace)
 
