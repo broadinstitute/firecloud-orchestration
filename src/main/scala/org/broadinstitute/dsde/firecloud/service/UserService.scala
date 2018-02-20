@@ -49,10 +49,7 @@ class UserService(rawlsDAO: RawlsDAO, userToken: WithAccessToken)(implicit prote
       billingProject = hasProject,
       writableWorkspace = hasWorkspace)
 
-    // TODO: do we need recover/error handling here?
-
     // respond with a UserImportPermission
-    // TODO: if all values are false, should we still return a 200?
     importPerm map { x=> RequestComplete(StatusCodes.OK, x)}
   }
 
