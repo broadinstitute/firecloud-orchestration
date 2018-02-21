@@ -42,9 +42,12 @@ class UserService(rawlsDAO: RawlsDAO, userToken: WithAccessToken)(implicit prote
     val workspaces = rawlsDAO.getWorkspaces
 
     // for-comprehension to extract from the two vals
+    // we intentionally only check write access on the workspace (not canCompute); write access without
+    // canCompute is an edge case that PO does not feel is worth the effort. The workspace list does not return
+    // canCompute, so the effort is somewhat high.
     for {
       hasProject <- billingProjects.map (_.exists(_.creationStatus == CreationStatuses.Ready))
-      hasWorkspace <- workspaces.map { ws => ws.exists(_.accessLevel.compare(WorkspaceAccessLevels.Write) >= 0)} // TODO: also need to check canCompute?
+      hasWorkspace <- workspaces.map { ws => ws.exists(_.accessLevel.compare(WorkspaceAccessLevels.Write) >= 0)}
     } yield
       RequestComplete(StatusCodes.OK, UserImportPermission(
         billingProject = hasProject,
