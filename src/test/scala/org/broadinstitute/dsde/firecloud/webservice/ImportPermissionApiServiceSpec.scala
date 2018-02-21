@@ -147,7 +147,7 @@ class ImportPermissionMockRawlsDAO extends MockRawlsDAO {
   }
 
   // this is hacky, but the only argument to getProjects and getWorkspaces is the access token. Therefore,
-  // we need to encode our test criteria into a string, and we can do so using a delimeter.
+  // we need to encode our test criteria into a string, and we can do so using a delimiter.
   private def parseTestToken(userInfo: WithAccessToken): (String,String) = {
     val tokenParts = userInfo.accessToken.token.split(";")
     assert(tokenParts.length == 2)
