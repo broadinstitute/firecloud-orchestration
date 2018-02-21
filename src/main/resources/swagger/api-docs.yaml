@@ -1594,6 +1594,21 @@ paths:
           - https://www.googleapis.com/auth/devstorage.full_control
           - https://www.googleapis.com/auth/cloud-billing
 
+  /api/profile/importstatus:
+    get:
+      tags:
+        - Profile
+        - Method Configurations
+      operationId: importStatus
+      summary: Check the user's ability to import a method config into a workspace
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/UserImportPermission'
+        500:
+          description: Internal Server Error
+
   /api/profile/preferences:
     post:
       tags:
@@ -5642,6 +5657,17 @@ definitions:
       friendly-name:
         type: string
         description: A friendly name that can be used in addition to the hostname to describe a registry
+
+  UserImportPermission:
+    type: object
+    properties:
+      billingProject:
+        type: boolean
+        description: does the user have at least one ready billing project?
+      writableWorkspace:
+        type: boolean
+        description: does the user have at least one writable workspace?
+
   UserInfo:
     type: object
     properties:
