@@ -23,6 +23,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app, trialProjectManager)
+  val userServiceConstructor:(WithAccessToken) => UserService = UserService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
   var samServer: ClientAndServer = _
@@ -526,7 +527,6 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         }
       }
     }
-
 
   }
 

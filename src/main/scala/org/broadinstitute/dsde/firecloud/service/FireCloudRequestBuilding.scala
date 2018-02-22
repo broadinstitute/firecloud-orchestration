@@ -35,10 +35,10 @@ trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
     addCredentials(OAuth2BearerToken("mF_9.B5f-4.1JqM"))
   }
 
-  def dummyUserIdHeaders(userId: String) = {
+  def dummyUserIdHeaders(userId: String, token: String = "access_token") = {
     addCredentials(OAuth2BearerToken("mF_9.B5f-4.1JqM")) ~>
       addHeader(RawHeader("OIDC_CLAIM_user_id", userId)) ~>
-      addHeader(RawHeader("OIDC_access_token", "access_token")) ~>
+      addHeader(RawHeader("OIDC_access_token", token)) ~>
       addHeader(RawHeader("OIDC_CLAIM_email", "random@site.com")) ~>
       addHeader(RawHeader("OIDC_CLAIM_expires_in", "100000"))
   }
