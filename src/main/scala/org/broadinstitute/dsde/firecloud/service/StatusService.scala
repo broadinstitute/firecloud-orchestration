@@ -37,8 +37,10 @@ class StatusService (val healthMonitor: ActorRef)
 
   def collectStatusInfo(): Future[PerRequestMessage] = {
     (healthMonitor ? GetCurrentStatus).mapTo[StatusCheckResponse].map { statusCheckResponse =>
-      val httpStatus = if (statusCheckResponse.ok) StatusCodes.OK else StatusCodes.InternalServerError
-      RequestComplete(httpStatus, statusCheckResponse)
+      // if we've successfully reached this point, always return a 200, so the load balancers
+      // don't think orchestration is down. the statusCheckResponse will still contain ok: true|false
+      // in its payload, depending on the status of subsystems.
+      RequestComplete(StatusCodes.OK, statusCheckResponse)
     }
   }
 }

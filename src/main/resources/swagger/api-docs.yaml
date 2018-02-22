@@ -3522,14 +3522,14 @@ paths:
       tags:
         - Status
       summary: |
-        An orchestrated status check for underlying systems: Agora, Thurloe, Elasticsearch, Rawls
+        An orchestrated status check that includes a health report of underlying systems
       responses:
         200:
-          description: All systems OK.
+          description: This service is healthy; check payload for subsystem health.
           schema:
             $ref: '#/definitions/SystemStatus'
         500:
-          description: Problem with one or more systems. See response for details.
+          description: This service is not healthy; therefore, payload may be missing or incomplete.
           schema:
             $ref: '#/definitions/SystemStatus'
       security: []
