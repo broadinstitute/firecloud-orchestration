@@ -7,7 +7,7 @@ import java.util.Date
 
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.StatusUpdate.Attempt
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, TrialState}
@@ -157,6 +157,20 @@ trait TrialServiceSupport extends LazyLogging with SprayJsonSupport {
     if (date.after(zeroDate)) spreadsheetFormat.format(date) else ""
   }
 
+  // should only be used to enable the current user during the registration process
+  def enableSelfForFreeCredits(userInfo: UserInfo) = {
+    val numAvailable:Long = trialDAO.countProjects.getOrElse("available", 0L)
+
+    if (numAvailable < 1)
+      throw new FireCloudException(s"There are only $numAvailable free credit projects available. Please retry in a few minutes.")
+
+    // log an error if project pool is running low - warning will be noticed by team, who can take action
+    if (numAvailable < FireCloudConfig.Trial.projectBuferSize)
+      logger.error(s"There are only $numAvailable free credit projects available. Create more immediately!")
+
+    // following functions are located in TrialServiceSupport
+    executeStateTransitions(userInfo, Seq(userInfo.userEmail), buildEnableUserStatus, enableUserPostProcessing)
+  }
 
   def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: UserTrialStatus): UserTrialStatus = {
     val needsProject = currentStatus.state match {
