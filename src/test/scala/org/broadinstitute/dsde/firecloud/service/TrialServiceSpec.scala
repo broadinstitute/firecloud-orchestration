@@ -1,14 +1,17 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.dataaccess.MockTrialDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockSamDAO, MockThurloeDAO, MockTrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates._
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialProject, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{Trial, WorkbenchUserInfo}
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 import org.scalatest.BeforeAndAfterEach
 
+import scala.concurrent.ExecutionContext
+
 class TrialServiceSpec extends BaseServiceSpec with BeforeAndAfterEach with TrialServiceSupport {
 
+  implicit protected val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   val trialDAO = new TrialServiceSpecTrialDao
 
   val userInfo = WorkbenchUserInfo("foo", "bar")

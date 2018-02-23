@@ -55,6 +55,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
         for {
           registrationInfo <- samDao.registerUser(userInfo)
+          // TODO: add call to enable for free trial
           _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
         } yield registrationInfo
       } else Future.successful(isRegistered)
