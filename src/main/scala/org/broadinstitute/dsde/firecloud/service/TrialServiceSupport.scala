@@ -167,15 +167,16 @@ trait TrialServiceSupport extends LazyLogging with SprayJsonSupport {
   def enableSelfForFreeCredits(userInfo: UserInfo): Future[Boolean] = {
     val numAvailable:Long = trialDAO.countProjects.getOrElse("available", 0L)
 
-    if (numAvailable < 1)
-      throw new FireCloudException(s"There are only $numAvailable free credit projects available. Please retry in a few minutes.")
+    if (numAvailable < 1) {
+      Future.failed(new FireCloudException(s"There are only $numAvailable free credit projects available. Please retry in a few minutes."))
+    } else {
+      // log an error if project pool is running low - warning will be noticed by team, who can take action
+      if (numAvailable < FireCloudConfig.Trial.projectBuferSize)
+        logger.error(s"There are only $numAvailable free credit projects available. Create more immediately!")
 
-    // log an error if project pool is running low - warning will be noticed by team, who can take action
-    if (numAvailable < FireCloudConfig.Trial.projectBuferSize)
-      logger.error(s"There are only $numAvailable free credit projects available. Create more immediately!")
-
-    // following functions are located in TrialServiceSupport
-    executeStateTransitions(userInfo, Seq(userInfo.userEmail), buildEnableUserStatus, enableUserPostProcessing).map{ _ => true }
+      // following functions are located in TrialServiceSupport
+      executeStateTransitions(userInfo, Seq(userInfo.userEmail), buildEnableUserStatus, enableUserPostProcessing).map{ _ => true }
+    }
   }
 
   def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: UserTrialStatus): UserTrialStatus = {
