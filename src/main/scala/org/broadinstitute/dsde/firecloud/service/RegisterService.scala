@@ -55,9 +55,12 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
         for {
           registrationInfo <- samDao.registerUser(userInfo)
-          _ <- enableSelfForFreeCredits(userInfo) // enable free credits for newly registered user
+          freeCredits <- enableSelfForFreeCredits(userInfo) recover { case e: Exception => false } // enable free credits for newly registered user
           _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
-        } yield registrationInfo
+        } yield {
+          val message = if (freeCredits) None else Some("error enabling free credits")
+          registrationInfo.copy(message = message)
+        }
       } else Future.successful(isRegistered)
     } yield {
       RequestComplete(StatusCodes.OK, userStatus)

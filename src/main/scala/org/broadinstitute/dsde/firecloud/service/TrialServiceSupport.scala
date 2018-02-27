@@ -157,8 +157,14 @@ trait TrialServiceSupport extends LazyLogging with SprayJsonSupport {
     if (date.after(zeroDate)) spreadsheetFormat.format(date) else ""
   }
 
-  // should only be used to enable the current user during the registration process
-  def enableSelfForFreeCredits(userInfo: UserInfo) = {
+  //
+
+  /**
+    * Enables the current user for free credits. Should only be used during the registration process.
+    * @param userInfo the current user
+    * @return true if enabling succeeded; will throw an exception if failed.
+    */
+  def enableSelfForFreeCredits(userInfo: UserInfo): Future[Boolean] = {
     val numAvailable:Long = trialDAO.countProjects.getOrElse("available", 0L)
 
     if (numAvailable < 1)
@@ -169,7 +175,7 @@ trait TrialServiceSupport extends LazyLogging with SprayJsonSupport {
       logger.error(s"There are only $numAvailable free credit projects available. Create more immediately!")
 
     // following functions are located in TrialServiceSupport
-    executeStateTransitions(userInfo, Seq(userInfo.userEmail), buildEnableUserStatus, enableUserPostProcessing)
+    executeStateTransitions(userInfo, Seq(userInfo.userEmail), buildEnableUserStatus, enableUserPostProcessing).map{ _ => true }
   }
 
   def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: UserTrialStatus): UserTrialStatus = {
@@ -179,29 +185,32 @@ trait TrialServiceSupport extends LazyLogging with SprayJsonSupport {
     }
 
     if (needsProject) {
-      // how many times should we try to find an available project? Retries here help when multiple users are enabled at once
-      val numAttempts = 50
-
-      def claimProject(attempt:Int):TrialProject = {
-        Try(trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
-          case Success(s) => s
-          case Failure(f) =>
-            if (attempt >= numAttempts) {
-              throw new FireCloudException(s"Could not claim a project while enabling user ${userInfo.userSubjectId} " +
-                s"(${userInfo.userEmail}):", f)
-            } else {
-              logger.debug(s"buildEnableUserStatus retrying claim; attempt $attempt")
-              claimProject(attempt + 1)
-            }
-        }
-      }
-      val trialProject = claimProject(1)
-
+      val trialProject = claimProjectWithRetries(userInfo)
       logger.info(s"[trialaudit] assigned user ${userInfo.userEmail} (${userInfo.userSubjectId}) to project ${trialProject.name.value}")
       currentStatus.copy(userId = userInfo.userSubjectId, state = Some(Enabled), userAgreed = false, enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
     } else {
       currentStatus.copy(state = Some(Enabled))
     }
+  }
+
+  def claimProjectWithRetries(userInfo:WorkbenchUserInfo):TrialProject = {
+    // how many times should we try to find an available project? Retries here help when multiple users are enabled at once
+    val numAttempts = 50
+
+    def claimProject(attempt:Int):TrialProject = {
+      Try(trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
+        case Success(s) => s
+        case Failure(f) =>
+          if (attempt >= numAttempts) {
+            throw new FireCloudException(s"Could not claim a project while enabling user ${userInfo.userSubjectId} " +
+              s"(${userInfo.userEmail}):", f)
+          } else {
+            logger.debug(s"buildEnableUserStatus retrying claim; attempt $attempt")
+            claimProject(attempt + 1)
+          }
+      }
+    }
+    claimProject(1)
   }
 
   def enableUserPostProcessing(updateStatus: Attempt, prevStatus: UserTrialStatus, newStatus: UserTrialStatus): Unit = {
