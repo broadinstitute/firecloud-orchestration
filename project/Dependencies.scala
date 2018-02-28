@@ -28,7 +28,6 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.2-0b34b93",
 
     "io.spray"                      %% "spray-can"           % sprayV,
-    "io.spray"                      %% "spray-routing"       % sprayV,
     "io.spray"                      %% "spray-json"          % "1.3.3",
     "io.spray"                      %% "spray-client"        % sprayV,
     "io.spray"                      %% "spray-routing-shapeless23" % sprayV,
