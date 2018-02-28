@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.model
 import javax.mail.internet.InternetAddress
 
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
-import org.broadinstitute.dsde.rawls.model.{MethodConfigurationShort, MethodRepoMethod}
+import org.broadinstitute.dsde.rawls.model.{AgoraMethod, DockstoreMethod, MethodRepoMethod}
 
 import scala.util.Try
 
@@ -51,10 +51,15 @@ object MethodRepository {
   }
 
   object Method {
-    def apply(mrm:MethodRepoMethod) =
-      new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion))
-    def apply(mrm:MethodRepoMethod, managers:Option[Seq[String]], public:Option[Boolean]) =
-      new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion), managers=managers, public=public)
+    def apply(mrm:MethodRepoMethod): Method = apply(mrm, managers = None, public = None)
+    def apply(mrm:MethodRepoMethod, managers:Option[Seq[String]], public:Option[Boolean]): Method = {
+      mrm match {
+        case agoraMethod: AgoraMethod =>
+          new Method(Some(agoraMethod.methodNamespace), Some(agoraMethod.methodName), Some(agoraMethod.methodVersion), managers = managers, public = public)
+        case dockstoreMethod: DockstoreMethod =>
+          throw new Exception("not clear what to do with Dockstore") // TODO
+      }
+    }
   }
 
   // represents a method/config permission as exposed to the user from the orchestration layer

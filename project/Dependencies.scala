@@ -27,14 +27,15 @@ object Dependencies {
       exclude("com.typesafe.scala-logging", "scala-logging_2.11"),
     "org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.2-0b34b93",
 
-    "io.spray"                      %% "spray-can"           % sprayV,
-    "io.spray"                      %% "spray-json"          % "1.3.3",
-    "io.spray"                      %% "spray-client"        % sprayV,
+    "io.spray"                      %% "spray-can"                 % sprayV,
+    "io.spray"                      %% "spray-json"                % "1.3.3",
+    "io.spray"                      %% "spray-client"              % sprayV,
     "io.spray"                      %% "spray-routing-shapeless23" % sprayV,
-    "com.typesafe.akka"             %% "akka-actor"          % akkaV,
-    "com.typesafe.akka"             %% "akka-testkit"        % akkaV     % "test",
-    "com.typesafe.akka"             %% "akka-slf4j"          % akkaV,
-    "com.typesafe.akka"             %% "akka-stream"         % akkaV,
+    "io.spray"                      %% "spray-testkit"             % sprayV   % "test",
+    "com.typesafe.akka"             %% "akka-actor"                % akkaV,
+    "com.typesafe.akka"             %% "akka-testkit"              % akkaV    % "test",
+    "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,
+    "com.typesafe.akka"             %% "akka-stream"               % akkaV,
 
     "org.elasticsearch.client"       % "transport"           % "5.4.3",
 

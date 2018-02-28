@@ -280,7 +280,7 @@ class MockRawlsDAO  extends RawlsDAO {
     Future.successful(WorkspaceACL(Map.empty[String, AccessEntry]))
 
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] = {
-    Future.successful(WorkspaceACLUpdateResponseList(aclUpdates.map(update => WorkspaceACLUpdateResponse(update.email, update.accessLevel)), aclUpdates, aclUpdates, aclUpdates))
+    Future.successful(WorkspaceACLUpdateResponseList(aclUpdates.map(update => WorkspaceACLUpdateResponse("banana", update.email, update.accessLevel)), aclUpdates, aclUpdates, aclUpdates))
   }
 
   override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {

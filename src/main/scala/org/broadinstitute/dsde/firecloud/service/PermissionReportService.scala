@@ -41,6 +41,7 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
       getPermissionReport(workspaceNamespace, workspaceName, reportInput) pipeTo sender
   }
 
+  // TODO: Permission reports do not apply to Dockstore, what should we do?
   def getPermissionReport(workspaceNamespace: String, workspaceName: String, reportInput: PermissionReportRequest) = {
     // start the requests to get workspace users and workspace configs in parallel
     val futureWorkspaceACL = rawlsDAO.getWorkspaceACL(workspaceNamespace, workspaceName) recover {
