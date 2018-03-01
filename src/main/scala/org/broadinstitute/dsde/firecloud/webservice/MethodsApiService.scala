@@ -1,11 +1,12 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.Props
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.core.{AgoraPermissionActor, AgoraPermissionHandler}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, PerRequestCreator}
+import org.broadinstitute.dsde.rawls.model.AgoraMethod
 import spray.http.{HttpMethods, Uri}
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._

@@ -240,7 +240,7 @@ class PermissionReportMockRawlsDAO extends MockRawlsDAO {
     }
   }
 
-  override def getMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Seq[MethodConfigurationShort]] = {
+  override def getAgoraMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Seq[MethodConfigurationShort]] = {
     Future.successful(mockConfigs)
   }
 
