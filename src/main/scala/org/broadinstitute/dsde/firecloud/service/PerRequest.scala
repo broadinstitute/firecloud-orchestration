@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.HttpResponseWithErrorReport
@@ -26,7 +27,7 @@ import scala.concurrent.duration._
  * 1) with just a response object
  * 2) with a RequestComplete message which can specify http status code as well as the response
  */
-trait PerRequest extends Actor {
+trait PerRequest extends Actor with LazyLogging {
   import context._
 
   // JSON Serialization Support
@@ -51,7 +52,7 @@ trait PerRequest extends Actor {
       stop(self)
     case x =>
       val message = "Unsupported response message sent to PerRequest actor: " + Option(x).getOrElse("null").toString
-      system.log.error(message)
+      logger.error(message)
       complete(HttpResponseWithErrorReport(InternalServerError, message))
   }
 
@@ -91,6 +92,7 @@ trait PerRequest extends Actor {
 
   def handleException(e: Throwable): Unit = {
     import spray.httpx.SprayJsonSupport._
+    logger.error(s"error servicing request ${r.request.method} ${r.request.uri}", e)
     e match {
       case e: FireCloudExceptionWithErrorReport =>
         complete((e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport))
