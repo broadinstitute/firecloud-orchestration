@@ -438,6 +438,20 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
         }
       }
+
+      "We should pass through query parameters on the GET" in {
+
+        // Orch should dutifully pass along any value we send it
+        Seq("allRepos" -> "true", "allRepos" -> "false", "allRepos" -> "banana") foreach { query =>
+          stubRawlsService(HttpMethods.GET, methodconfigsPath, OK, None, Some(query))
+
+          Get(Uri(methodconfigsPath).withQuery(query)) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            rawlsServer.verify(request().withPath(methodconfigsPath).withMethod("GET").withQueryStringParameter(query._1, query._2))
+
+            status should equal(OK)
+          }
+        }
+      }
     }
 
     "Passthrough tests on the /workspaces/%s/%s/acl path" - {
