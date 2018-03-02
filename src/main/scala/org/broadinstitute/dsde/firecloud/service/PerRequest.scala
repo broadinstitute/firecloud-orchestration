@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.HttpResponseWithErrorReport
