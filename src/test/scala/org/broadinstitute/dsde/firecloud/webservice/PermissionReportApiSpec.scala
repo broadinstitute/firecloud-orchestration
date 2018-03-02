@@ -227,9 +227,9 @@ class PermissionReportMockRawlsDAO extends MockRawlsDAO {
   ))
 
   val mockConfigs = Seq(
-    MethodConfigurationShort("configname1", "participant", MethodRepoMethod("methodns1", "methodname1", 1), "configns1"),
-    MethodConfigurationShort("configname2", "sample", MethodRepoMethod("methodns2", "methodname2", 2), "configns2"),
-    MethodConfigurationShort("configname3", "participant", MethodRepoMethod("methodns3", "methodname3", 3), "configns3")
+    AgoraConfigurationShort("configname1", "participant", MethodRepoMethod("methodns1", "methodname1", 1), "configns1"),
+    AgoraConfigurationShort("configname2", "sample", MethodRepoMethod("methodns2", "methodname2", 2), "configns2"),
+    AgoraConfigurationShort("configname3", "participant", MethodRepoMethod("methodns3", "methodname3", 3), "configns3")
   )
 
   override def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL] = {
@@ -240,7 +240,7 @@ class PermissionReportMockRawlsDAO extends MockRawlsDAO {
     }
   }
 
-  override def getAgoraMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Seq[MethodConfigurationShort]] = {
+  override def getAgoraMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Seq[AgoraConfigurationShort]] = {
     Future.successful(mockConfigs)
   }
 

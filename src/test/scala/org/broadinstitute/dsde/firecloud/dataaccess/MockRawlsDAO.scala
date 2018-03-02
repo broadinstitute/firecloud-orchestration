@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUp
 import org.joda.time.DateTime
 import spray.http.StatusCodes
 import MockRawlsDAO._
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial.{ProjectRoles, RawlsBillingProjectMember}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -357,7 +358,7 @@ class MockRawlsDAO  extends RawlsDAO {
 
 
   override def getAgoraMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken) =
-    Future.successful(Seq.empty[MethodConfigurationShort])
+    Future.successful(Seq.empty[AgoraConfigurationShort])
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(true, None))
 
