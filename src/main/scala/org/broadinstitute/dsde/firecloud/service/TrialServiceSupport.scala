@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, F
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.StatusUpdate.Attempt
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, TrialState}
-import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, StatusUpdate, TrialProject, UserTrialStatus}
+import org.broadinstitute.dsde.firecloud.model.Trial._
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, Profile, ProfileWrapper, UserInfo, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsUserEmail}
@@ -165,17 +165,22 @@ trait TrialServiceSupport extends LazyLogging with SprayJsonSupport {
     * @return true if enabling succeeded; will throw an exception if failed.
     */
   def enableSelfForFreeCredits(userInfo: UserInfo): Future[Boolean] = {
-    val numAvailable:Long = trialDAO.countProjects.getOrElse("available", 0L)
+    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { existingStatus =>
+      assert(existingStatus.state.isEmpty) // TODO: better error handling
+      thurloeDao.saveTrialStatus(userInfo.id, userInfo, existingStatus.copy(state = Some(TrialStates.Enabled))) flatMap { enabledStatus =>
+        val numAvailable:Long = trialDAO.countProjects.getOrElse("available", 0L)
 
-    if (numAvailable < 1) {
-      Future.failed(new FireCloudException(s"There are only $numAvailable free credit projects available. Please retry in a few minutes."))
-    } else {
-      // log an error if project pool is running low - warning will be noticed by team, who can take action
-      if (numAvailable < FireCloudConfig.Trial.projectBuferSize)
-        logger.error(s"There are only $numAvailable free credit projects available. Create more immediately!")
+        if (numAvailable < 1) {
+          Future.failed(new FireCloudException(s"There are only $numAvailable free credit projects available. Please retry in a few minutes."))
+        } else {
+          // log an error if project pool is running low - warning will be noticed by team, who can take action
+          if (numAvailable < FireCloudConfig.Trial.projectBuferSize)
+            logger.error(s"There are only $numAvailable free credit projects available. Create more immediately!")
 
-      // following functions are located in TrialServiceSupport
-      executeStateTransitions(userInfo, Seq(userInfo.userEmail), buildEnableUserStatus, enableUserPostProcessing).map{ _ => true }
+          // following functions are located in TrialServiceSupport
+          executeStateTransitions(userInfo, Seq(userInfo.userEmail), buildEnableUserStatus, enableUserPostProcessing).map{ _ => true }
+        }
+      }
     }
   }
 
