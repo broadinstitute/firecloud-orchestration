@@ -2857,7 +2857,7 @@ paths:
           description: Workspace does not exist
         500:
           description: Internal Server Error
-      desciption: |
+      description: |
         List method configurations in a workspace. By default, only Agora method configs are returned. To return configs for all repos, specify `allRepos` to be `true`.
 
         #### Expanded discussion on the methodRepoMethod field
