@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud
 
 import akka.actor.ActorSystem
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, RegistrationInfo}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, RegistrationInfo, WorkbenchEnabled}
 import org.broadinstitute.dsde.workbench.util.health.{SubsystemStatus, Subsystems}
 import org.broadinstitute.dsde.workbench.util.health.Subsystems._
 import spray.http.StatusCodes
@@ -20,45 +20,46 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
 
   import HealthChecks._
 
-  def isAdminSARegistered:Future[Boolean] =
-    isServiceAccountRegistered("Admin SA",
+  /**
+    * checks if the admin sa is registered and attempts to register if not
+    * @return Some(message) if there is a problem registering
+    */
+  def maybeRegisterAdminSA:Future[Option[String]] =
+    maybeRegisterServiceAccount("Admin SA",
       AccessToken(app.googleServicesDAO.getAdminUserAccessToken))
 
-  def isTrialBillingSARegistered:Future[Boolean] =
-    isServiceAccountRegistered("Free trial billing SA",
+  /**
+    * checks if the trial billing sa is registered and attempts to register if not
+    * @return Some(message) if there is a problem registering
+    */
+  def maybeRegisterTrialBillingSA:Future[Option[String]] =
+    maybeRegisterServiceAccount("Free trial billing SA",
       AccessToken(app.googleServicesDAO.getTrialBillingManagerAccessToken))
 
 
-  private def isServiceAccountRegistered(name: String, token: AccessToken): Future[Boolean] = {
+  private def maybeRegisterServiceAccount(name: String, token: AccessToken): Future[Option[String]] = {
     val lookup = manageRegistration(name, app.samDAO.getRegistrationStatus(implicitly(token)))
-    lookup flatMap { isRegistered =>
-      if (!isRegistered && registerSAs) {
-        logger.warn(s"attempting to register $name ...")
+    lookup flatMap {
+      case Some(_) if registerSAs =>
+        logger.info(s"attempting to register $name ...")
         manageRegistration(name, app.samDAO.registerUser(implicitly(token)))
-      } else {
-        Future.successful(isRegistered)
-      }
+
+      case registerMessage =>
+        Future.successful(registerMessage)
     }
   }
 
-  private def manageRegistration(name: String, req: Future[RegistrationInfo]): Future[Boolean] = {
-    req map { regInfo =>
-      val fullyRegistered = regInfo.enabled.ldap && regInfo.enabled.allUsersGroup && regInfo.enabled.google
-      if (fullyRegistered)
-        logger.info(s"$name is properly registered.")
-      else
-        logger.error(s"***    $name is registered but not fully enabled: ${regInfo.enabled}!!    ***")
-      fullyRegistered
+  private def manageRegistration(name: String, req: Future[RegistrationInfo]): Future[Option[String]] = {
+    req map {
+      case RegistrationInfo(_, WorkbenchEnabled(true, true, true)) => None
+      case regInfo => Option(s"$name is registered but not fully enabled: ${regInfo.enabled}!")
     } recover {
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
-        logger.error(s"***    $name is not registered!!    ***")
-        false
+        Option(s"$name is not registered!")
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.Conflict) =>
-        logger.error(s"***    $name already exists!!    ***")
-        false
+        Option(s"$name already exists!")
       case e: Exception =>
-        logger.error(s"***    Error on registration status for $name: ${e.getMessage}    ***")
-        false
+        Option(s"Error on registration status for $name: ${e.getMessage}")
     }
   }
 
@@ -72,8 +73,8 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
       Rawls -> app.rawlsDAO.status,
       Sam -> app.samDAO.status,
       Thurloe -> app.thurloeDAO.status,
-      adminSaRegistered -> isAdminSARegistered.map(SubsystemStatus(_, None)),
-      trialBillingSaRegistered -> isTrialBillingSARegistered.map(SubsystemStatus(_, None))
+      adminSaRegistered -> maybeRegisterAdminSA.map(message => SubsystemStatus(message.isEmpty, message.map(List(_)))),
+      trialBillingSaRegistered -> maybeRegisterTrialBillingSA.map(message => SubsystemStatus(message.isEmpty, message.map(List(_))))
       // TODO: add free-trial index as a monitorable healthcheck; requires updates to workbench-libs
     )
   }

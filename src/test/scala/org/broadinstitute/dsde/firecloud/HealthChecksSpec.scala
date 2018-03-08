@@ -23,7 +23,7 @@ class HealthChecksSpec extends BaseServiceSpec with ScalaFutures {
     .setLevel(ch.qos.logback.classic.Level.OFF)
 
   private def doChecks(healthChecks: HealthChecks) = {
-    Future.sequence(Seq(healthChecks.isAdminSARegistered, healthChecks.isTrialBillingSARegistered)).map(_.exists(!_))
+    Future.sequence(Seq(healthChecks.maybeRegisterAdminSA, healthChecks.maybeRegisterTrialBillingSA)).map(_.exists(_.isDefined))
   }
 
 
