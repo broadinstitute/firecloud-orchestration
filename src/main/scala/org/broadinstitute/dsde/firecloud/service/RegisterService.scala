@@ -58,7 +58,13 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
           _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
           freeCredits:Either[Exception,PerRequestMessage] <- enableSelfForFreeCredits(userInfo)
             .map(Right(_)) recover { case e: Exception => Left(e) }
-        } yield registrationInfo
+        } yield {
+          val message = freeCredits match {
+            case Left(ex) => Some(s"Error enabling free credits during registration. ${ex.getMessage}")
+            case Right(_) => None
+          }
+          registrationInfo.copy(message = message)
+        }
       } else Future.successful(isRegistered)
     } yield {
       RequestComplete(StatusCodes.OK, userStatus)
