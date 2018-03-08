@@ -18,18 +18,4 @@ case class Application(agoraDAO: AgoraDAO,
                        samDAO: SamDAO,
                        searchDAO: SearchDAO,
                        thurloeDAO: ThurloeDAO,
-                       trialDAO: TrialDAO) {
-
-  def healthMonitorChecks: () => Map[Subsystem, Future[SubsystemStatus]] = () => Map(
-    Agora -> agoraDAO.status,
-    Consent -> consentDAO.status,
-    GoogleBuckets -> googleServicesDAO.status,
-    LibraryIndex -> searchDAO.status,
-    OntologyIndex -> ontologyDAO.status,
-    Rawls -> rawlsDAO.status,
-    Sam -> samDAO.status,
-    Thurloe -> thurloeDAO.status
-    // TODO: add free-trial index as a monitorable healthcheck; requires updates to workbench-libs
-  )
-
-}
+                       trialDAO: TrialDAO)

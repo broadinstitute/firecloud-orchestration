@@ -3,48 +3,28 @@ package org.broadinstitute.dsde.firecloud
 import akka.actor.ActorSystem
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, RegistrationInfo}
+import org.broadinstitute.dsde.workbench.util.health.{SubsystemStatus, Subsystems}
+import org.broadinstitute.dsde.workbench.util.health.Subsystems._
 import spray.http.StatusCodes
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * Encapsulate bootstrap/startup checks into a single class. Note that individual DAOs may
-  * also make their own startup checks, outside of this class.
-  */
-class StartupChecks(app: Application, registerSAs: Boolean = true)
-                   (implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
+object HealthChecks {
+  val adminSaRegistered = Subsystems.Custom("is_admin_sa_registered")
+  val trialBillingSaRegistered = Subsystems.Custom("is_trial_billing_sa_registered")
+}
+
+class HealthChecks(app: Application, registerSAs: Boolean = true)
+                  (implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
                     extends LazyLogging {
 
-  def check: Future[Boolean] = {
-    val checks = Future.sequence(Seq(
-      isAdminSARegistered,
-      isTrialBillingSARegistered
-    ))
+  import HealthChecks._
 
-    checks map { checkResults =>
-      val hasFailures = checkResults.exists(!_)
-      if (hasFailures) {
-        logger.error(
-          "\n*********************************************************" +
-          "\n*********************************************************" +
-          "\n*********************************************************" +
-          "\n***     BEWARE: AT LEAST ONE STARTUP CHECK FAILED     ***" +
-          "\n***       SEE PREVIOUS LOG MESSAGES FOR DETAILS       ***" +
-          "\n*********************************************************" +
-          "\n*********************************************************" +
-          "\n*********************************************************")
-      } else {
-        logger.info("***    all startup checks succeeded.    ***")
-      }
-      !hasFailures
-    }
-  }
-
-  private def isAdminSARegistered:Future[Boolean] =
+  def isAdminSARegistered:Future[Boolean] =
     isServiceAccountRegistered("Admin SA",
       AccessToken(app.googleServicesDAO.getAdminUserAccessToken))
 
-  private def isTrialBillingSARegistered:Future[Boolean] =
+  def isTrialBillingSARegistered:Future[Boolean] =
     isServiceAccountRegistered("Free trial billing SA",
       AccessToken(app.googleServicesDAO.getTrialBillingManagerAccessToken))
 
@@ -82,5 +62,20 @@ class StartupChecks(app: Application, registerSAs: Boolean = true)
     }
   }
 
+  def healthMonitorChecks: () => Map[Subsystem, Future[SubsystemStatus]] = () => {
+    Map(
+      Agora -> app.agoraDAO.status,
+      Consent -> app.consentDAO.status,
+      GoogleBuckets -> app.googleServicesDAO.status,
+      LibraryIndex -> app.searchDAO.status,
+      OntologyIndex -> app.ontologyDAO.status,
+      Rawls -> app.rawlsDAO.status,
+      Sam -> app.samDAO.status,
+      Thurloe -> app.thurloeDAO.status,
+      adminSaRegistered -> isAdminSARegistered.map(SubsystemStatus(_, None)),
+      trialBillingSaRegistered -> isTrialBillingSARegistered.map(SubsystemStatus(_, None))
+      // TODO: add free-trial index as a monitorable healthcheck; requires updates to workbench-libs
+    )
+  }
 
 }
