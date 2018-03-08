@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import org.broadinstitute.dsde.firecloud.HealthChecks
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, StatusService}
 import org.broadinstitute.dsde.workbench.util.health.StatusJsonSupport.StatusCheckResponseFormat
 import org.broadinstitute.dsde.workbench.util.health.Subsystems._
@@ -19,7 +20,7 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService {
 
   def actorRefFactory = system
 
-  val healthMonitorChecks = app.healthMonitorChecks
+  val healthMonitorChecks = new HealthChecks(app).healthMonitorChecks
   val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
   val monitorSchedule = system.scheduler.schedule(Duration.Zero, 1.second, healthMonitor, HealthMonitor.CheckAll)
 
@@ -57,7 +58,7 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService {
     "should contain all the subsystems we care about" in {
       Get(statusPath) ~> statusRoutes ~> check {
         val statusCheckResponse = responseAs[StatusCheckResponse]
-        val expectedSystems = Set(Agora, Consent, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe)
+        val expectedSystems = Set(Agora, Consent, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe, HealthChecks.adminSaRegistered, HealthChecks.trialBillingSaRegistered)
         assertResult(expectedSystems) { statusCheckResponse.systems.keySet }
       }
     }
