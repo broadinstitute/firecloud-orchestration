@@ -7,7 +7,7 @@ import java.util.Date
 
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.StatusUpdate.Attempt
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, TrialState}
@@ -201,6 +201,11 @@ trait TrialServiceSupport extends LazyLogging with SprayJsonSupport  {
     * @return claimed project
     */
   def claimProjectWithRetries(userInfo: WorkbenchUserInfo, numAttempts: Int = 50): TrialProject = {
+    // log a warning, which should be seen by dev team, if the project pool is running low.
+    val numAvailable:Long = trialDao.countProjects.getOrElse("available", 0L)
+    if (numAvailable < FireCloudConfig.Trial.projectBufferSize)
+      logger.warn(s"There are only $numAvailable free trial projects available; create more as soon as possible!")
+
     def claimProject(attempt:Int):TrialProject = {
       Try(trialDao.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
         case Success(s) => s
