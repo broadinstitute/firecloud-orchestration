@@ -186,29 +186,35 @@ trait TrialServiceSupport extends LazyLogging with SprayJsonSupport  {
     }
 
     if (needsProject) {
-      // how many times should we try to find an available project? Retries here help when multiple users are enabled at once
-      val numAttempts = 50
-
-      def claimProject(attempt:Int):TrialProject = {
-        Try(trialDao.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
-          case Success(s) => s
-          case Failure(f) =>
-            if (attempt >= numAttempts) {
-              throw new FireCloudException(s"Could not claim a project while enabling user ${userInfo.userSubjectId} " +
-                s"(${userInfo.userEmail}):", f)
-            } else {
-              logger.debug(s"buildEnableUserStatus retrying claim; attempt $attempt")
-              claimProject(attempt + 1)
-            }
-        }
-      }
-      val trialProject = claimProject(1)
-
+      val trialProject = claimProjectWithRetries(userInfo)
       logger.info(s"[trialaudit] assigned user ${userInfo.userEmail} (${userInfo.userSubjectId}) to project ${trialProject.name.value}")
       currentStatus.copy(userId = userInfo.userSubjectId, state = Some(Enabled), userAgreed = false, enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
     } else {
       currentStatus.copy(state = Some(Enabled))
     }
+  }
+
+  /**
+    *
+    * @param userInfo user for whom to claim project
+    * @param numAttempts how many times should we try to find an available project? Retries here help when multiple users are enabled at once
+    * @return claimed project
+    */
+  def claimProjectWithRetries(userInfo: WorkbenchUserInfo, numAttempts: Int = 50): TrialProject = {
+    def claimProject(attempt:Int):TrialProject = {
+      Try(trialDao.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
+        case Success(s) => s
+        case Failure(f) =>
+          if (attempt >= numAttempts) {
+            throw new FireCloudException(s"Could not claim a project while enabling user ${userInfo.userSubjectId} " +
+              s"(${userInfo.userEmail}):", f)
+          } else {
+            logger.debug(s"buildEnableUserStatus retrying claim; attempt $attempt")
+            claimProject(attempt + 1)
+          }
+      }
+    }
+    claimProject(1)
   }
 
   private def requiresStateTransition(currentState: UserTrialStatus, newState: UserTrialStatus): Boolean = {

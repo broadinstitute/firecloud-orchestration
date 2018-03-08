@@ -183,8 +183,14 @@ final class TrialService
     val projectId = status.billingProjectName match {
       case Some(name: String) => name
       case None => {
-        logger.warn(s"User ${userInfo.userEmail} attempted to enroll in trial but no billing project in profile.")
-        throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 56)")
+        Try(claimProjectWithRetries(WorkbenchUserInfo(userInfo.id, userInfo.userEmail))) match {
+          case Success(claimed) => claimed.name.value
+          case Failure(ex) =>
+            logger.warn(s"User ${userInfo.userEmail} attempted to enroll in trial but no billing project in profile," +
+              s" and a project could not be claimed: ${ex.getMessage}")
+            throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 56)", ex)
+        }
+
       }
     }
 
