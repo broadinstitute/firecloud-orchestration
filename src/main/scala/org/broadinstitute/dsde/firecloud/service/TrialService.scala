@@ -60,7 +60,7 @@ object TrialService {
 
 final class TrialService
   (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO,
-   val trialDAO: TrialDAO, val googleDAO: GoogleServicesDAO, projectManager: ActorRef)
+   val trialDao: TrialDAO, val googleDAO: GoogleServicesDAO, projectManager: ActorRef)
   (implicit protected val executionContext: ExecutionContext)
   extends Actor with PermissionsSupport with SprayJsonSupport with TrialServiceSupport with LazyLogging {
 
@@ -91,12 +91,12 @@ final class TrialService
     if (updateStatus != StatusUpdate.Success && newStatus.billingProjectName.isDefined) {
       logger.warn(
         s"[trialaudit] The user '${newStatus.userId}' failed to be enabled, releasing the billing project '${newStatus.billingProjectName.get}' back into the available pool.")
-      trialDAO.releaseProjectRecord(RawlsBillingProjectName(newStatus.billingProjectName.get))
+      trialDao.releaseProjectRecord(RawlsBillingProjectName(newStatus.billingProjectName.get))
     }
   }
 
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
-    val numAvailable:Long = trialDAO.countProjects.getOrElse("available", 0L)
+    val numAvailable:Long = trialDao.countProjects.getOrElse("available", 0L)
     if (userEmails.size.toLong > numAvailable) {
       Future(RequestCompleteWithErrorReport(BadRequest, s"You are enabling ${userEmails.size} users, but there are only " +
         s"$numAvailable projects available. Please create more projects."))
@@ -117,7 +117,7 @@ final class TrialService
         case Some(name) =>
           logger.info(
             s"[trialaudit] The user '${newStatus.userId}' was disabled, releasing the billing project '$name' back into the available pool.")
-          trialDAO.releaseProjectRecord(RawlsBillingProjectName(name))
+          trialDao.releaseProjectRecord(RawlsBillingProjectName(name))
       }
     }
   }
@@ -152,87 +152,6 @@ final class TrialService
 
   private def terminateUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
     executeStateTransitions(managerInfo, userEmails, buildTerminateUserStatus, terminateUserPostProcessing)
-  }
-
-  private def requiresStateTransition(currentState: UserTrialStatus, newState: UserTrialStatus): Boolean = {
-    // this check needs to happen first for idempotent behavior
-    if (currentState.state == newState.state)
-      false
-    else {
-      // make sure the state transition is valid
-      if (newState.state.isEmpty || !newState.state.get.isAllowedFrom(currentState.state))
-        throw new FireCloudException(s"Cannot transition from ${currentState.state} to $newState.state.get")
-      true // indicates transition is required
-    }
-  }
-
-  private def throwableToStatus(t: Throwable): String = {
-    t match {
-      case exr: FireCloudExceptionWithErrorReport =>
-        if (exr.errorReport.statusCode.contains(StatusCodes.NotFound))
-          StatusUpdate.toName(StatusUpdate.Failure("User not registered"))
-        else StatusUpdate.toName(StatusUpdate.Failure(exr.errorReport.message))
-      case ex: FireCloudException =>
-        StatusUpdate.toName(StatusUpdate.Failure(ex.getMessage))
-      case _ =>
-        StatusUpdate.toName(StatusUpdate.ServerError(t.getMessage))
-    }
-  }
-
-  private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
-                                      statusTransition: (WorkbenchUserInfo, UserTrialStatus) => UserTrialStatus,
-                                      transitionPostProcessing: (Attempt, UserTrialStatus, UserTrialStatus) => Unit): Future[PerRequestMessage] = {
-
-    def checkAndUpdateState(userInfo: WorkbenchUserInfo, userTrialStatus: UserTrialStatus, newStatus: UserTrialStatus): Future[String] = {
-      Try(requiresStateTransition(userTrialStatus, newStatus)) match {
-        case Success(isRequired) =>
-          if (isRequired) {
-            updateTrialStatus(managerInfo, userInfo, newStatus) map { stateResponse =>
-              transitionPostProcessing(stateResponse, userTrialStatus, newStatus)
-              StatusUpdate.toName(stateResponse)
-            }
-          } else {
-            logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '${newStatus.state.getOrElse("")}'. No further action will be taken.")
-            Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
-          }
-        case Failure(t: Throwable) => Future.successful(throwableToStatus(t))
-      }
-    }
-
-    val userTransitions = userEmails.map { userEmail =>
-      val status = Try(for {
-        regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(userEmail))
-        subId = regInfo.userInfo.userSubjectId
-        userInfo = WorkbenchUserInfo(subId, userEmail)
-        userTrialStatus <- thurloeDao.getTrialStatus(subId, managerInfo)
-        newStatus = statusTransition(userInfo, userTrialStatus)
-        result <- checkAndUpdateState(userInfo, userTrialStatus, newStatus)
-      } yield result) match {
-        case Success(s) => s
-        case Failure(t: Throwable) =>
-          Future.successful(throwableToStatus(t))
-      }
-      status map { finalStatus: String => (finalStatus, userEmail) } recover {
-        case ex: Exception =>
-          (StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage)), userEmail)
-      }
-    }
-
-    Future.sequence(userTransitions) map { results =>
-      val sorted: Map[String, Seq[String]] = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
-      RequestComplete(sorted)
-    }
-  }
-
-  private def updateTrialStatus(managerInfo: UserInfo,
-                                userInfo: WorkbenchUserInfo,
-                                updatedTrialStatus: UserTrialStatus): Future[StatusUpdate.Attempt] = {
-    thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, updatedTrialStatus) map {
-      case Success(_) =>
-        logger.info(s"[trialaudit] updated user ${userInfo.userEmail} (${userInfo.userSubjectId}) to state ${updatedTrialStatus.state.getOrElse("")}")
-        StatusUpdate.Success
-      case Failure(ex) => StatusUpdate.ServerError(ex.getMessage)
-    }
   }
 
   private def enrollUser(userInfo: UserInfo): Future[PerRequestMessage] = {
@@ -365,7 +284,7 @@ final class TrialService
       }.toMap
 
       // get unverified projects from the pool
-      val unverified = trialDAO.listUnverifiedProjects
+      val unverified = trialDao.listUnverifiedProjects
 
       unverified.foreach { unv =>
         // get status from the rawls map
@@ -373,23 +292,23 @@ final class TrialService
           case Some(CreationStatuses.Creating) => // noop
           case Some(CreationStatuses.Error) =>
             logger.warn(s"project ${unv.name.value} errored, so we have to give up on it.")
-            trialDAO.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Error)
+            trialDao.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Error)
           case Some(CreationStatuses.Ready) =>
-            trialDAO.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Ready)
+            trialDao.setProjectRecordVerified(unv.name, verified=true, status = CreationStatuses.Ready)
           case None =>
             logger.warn(s"project ${unv.name.value} exists in pool but not found via Rawls!")
         }
       }
 
-      RequestComplete(OK, trialDAO.countProjects)
+      RequestComplete(OK, trialDao.countProjects)
     }
   }
 
   private def countProjects: Future[PerRequestMessage] =
-    Future(RequestComplete(OK, trialDAO.countProjects))
+    Future(RequestComplete(OK, trialDao.countProjects))
 
   private def projectReport: Future[PerRequestMessage] =
-    Future(RequestComplete(OK, trialDAO.projectReport))
+    Future(RequestComplete(OK, trialDao.projectReport))
 
   private def recordUserAgreement(userInfo: UserInfo): Future[PerRequestMessage] = {
     // Thurloe errors are handled by the caller of this method
@@ -420,7 +339,7 @@ final class TrialService
   private def updateBillingReport(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String): Future[PerRequestMessage] = {
     val majorDimension: String = "ROWS"
     val range: String = "Sheet1!A1"
-    makeSpreadsheetValues(userInfo, trialDAO, thurloeDao, majorDimension, range).map { content =>
+    makeSpreadsheetValues(userInfo, trialDao, thurloeDao, majorDimension, range).map { content =>
       Try (googleDAO.updateSpreadsheet(requestContext, userInfo, spreadsheetId, content)) match {
         case Success(updatedSheet) =>
           RequestComplete(OK, makeSpreadsheetResponse(spreadsheetId))
