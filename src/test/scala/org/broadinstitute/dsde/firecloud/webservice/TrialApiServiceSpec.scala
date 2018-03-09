@@ -74,6 +74,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       (disabledUser, disabledProps),
       (enabledUser, enabledProps),
       (enabledButNotAgreedUser, enabledButNotAgreedProps),
+      (selfEnabledUser, selfEnabledUserProps),
       (enrolledUser, enrolledProps),
       (terminatedUser, terminatedProps),
       (finalizedUser, finalizedProps))
@@ -182,6 +183,16 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         "should be Forbidden" in {
           Post(enrollPath) ~> dummyUserIdHeaders(enabledButNotAgreedUser) ~> userServiceRoutes ~> check {
             assertResult(Forbidden, response.entity.asString) {
+              status
+            }
+          }
+        }
+      }
+
+      s"enrollment as a self-enabled user who agreed to terms via $enrollPath" - {
+        "should claim a project" in {
+          Post(enrollPath) ~> dummyUserIdHeaders(selfEnabledUser) ~> userServiceRoutes ~> check {
+            assertResult(NoContent, response.entity.asString) {
               status
             }
           }
@@ -685,6 +696,7 @@ object TrialApiServiceSpec {
   val disabledUser2 = "disabled-user2"
   val enabledUser = "enabled-user"
   val enabledButNotAgreedUser = "enabled-but-not-agreed-user"
+  val selfEnabledUser = "self-enabled-user"
   val enrolledUser = "enrolled-user"
   val terminatedUser = "terminated-user"
   val finalizedUser = "finalized-user"
@@ -716,6 +728,11 @@ object TrialApiServiceSpec {
     "trialEnabledDate" -> "1",
     "trialBillingProjectName" -> "testproject"
   )
+  val selfEnabledUserProps = Map(
+    "trialState" -> "Enabled",
+    "userAgreed" -> "true",
+    "trialEnabledDate" -> "1"
+  )
   val enrolledProps = Map(
     "trialState" -> "Enrolled",
     "trialEnabledDate" -> "11",
@@ -743,6 +760,7 @@ object TrialApiServiceSpec {
   val dummy1UserEmail = "dummy1-user-email"
   val dummy2UserEmail = "dummy2-user-email"
   val enabledUserEmail = "enabled-user-email"
+  val selfEnabledUserEmail = "self-enabled-user-email"
   val disabledUserEmail = "disabled-user-email"
   val enrolledUserEmail = "enrolled-user-email"
   val terminatedUserEmail = "terminated-user-email"
@@ -752,6 +770,7 @@ object TrialApiServiceSpec {
   val dummy1UserInfo = WorkbenchUserInfo(userSubjectId = dummy1User, dummy1UserEmail)
   val dummy2UserInfo = WorkbenchUserInfo(userSubjectId = dummy2User, dummy2UserEmail)
   val enabledUserInfo = WorkbenchUserInfo(userSubjectId = enabledUser, enabledUserEmail)
+  val selfEnabledUserInfo = WorkbenchUserInfo(userSubjectId = selfEnabledUser, selfEnabledUserEmail)
   val disabledUserInfo = WorkbenchUserInfo(userSubjectId = disabledUser, disabledUserEmail)
   val enrolledUserInfo = WorkbenchUserInfo(userSubjectId = enrolledUser, enrolledUserEmail)
   val terminatedUserInfo = WorkbenchUserInfo(userSubjectId = terminatedUser, terminatedUserEmail)
@@ -761,6 +780,7 @@ object TrialApiServiceSpec {
   val dummy1UserRegInfo = RegistrationInfo(dummy1UserInfo, workbenchEnabled)
   val dummy2UserRegInfo = RegistrationInfo(dummy2UserInfo, workbenchEnabled)
   val enabledUserRegInfo = RegistrationInfo(enabledUserInfo, workbenchEnabled)
+  val selfEnabledUserRegInfo = RegistrationInfo(selfEnabledUserInfo, workbenchEnabled)
   val disabledUserRegInfo = RegistrationInfo(disabledUserInfo, workbenchEnabled)
   val enrolledUserRegInfo = RegistrationInfo(enrolledUserInfo, workbenchEnabled)
   val terminatedUserRegInfo = RegistrationInfo(terminatedUserInfo, workbenchEnabled)
@@ -771,6 +791,7 @@ object TrialApiServiceSpec {
     dummy1User -> dummy1UserRegInfo,
     dummy2User -> dummy2UserRegInfo,
     enabledUser -> enabledUserRegInfo,
+    selfEnabledUser -> selfEnabledUserRegInfo,
     disabledUser -> disabledUserRegInfo,
     enrolledUser -> enrolledUserRegInfo,
     terminatedUser -> terminatedUserRegInfo,

@@ -384,6 +384,24 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
     }
 
+    "When registering a brand new user in sam" - {
+      "should enable for free credits" in {
+        fail("test not implemented")
+      }
+    }
+
+    "When registering a pre-existing but non-enabled user in sam" - {
+      "should enable for free credits" in {
+        fail("test not implemented")
+      }
+    }
+
+    "When registering a brand new user encounters an error in free credits" - {
+      "should complete registration with a message in responses" in {
+        fail("test not implemented")
+      }
+    }
+
   }
 
   "UserService /me endpoint tests" - {
