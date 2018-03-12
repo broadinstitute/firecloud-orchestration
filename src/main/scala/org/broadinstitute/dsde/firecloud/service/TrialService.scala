@@ -87,21 +87,13 @@ final class TrialService
     case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
-  private def enableUserPostProcessing(updateStatus: Attempt, prevStatus: UserTrialStatus, newStatus: UserTrialStatus): Unit = {
-    if (updateStatus != StatusUpdate.Success && newStatus.billingProjectName.isDefined) {
-      logger.warn(
-        s"[trialaudit] The user '${newStatus.userId}' failed to be enabled, releasing the billing project '${newStatus.billingProjectName.get}' back into the available pool.")
-      trialDAO.releaseProjectRecord(RawlsBillingProjectName(newStatus.billingProjectName.get))
-    }
-  }
-
   private def enableUsers(managerInfo: UserInfo, userEmails: Seq[String]): Future[PerRequestMessage] = {
     val numAvailable:Long = trialDAO.countProjects.getOrElse("available", 0L)
     if (userEmails.size.toLong > numAvailable) {
       Future(RequestCompleteWithErrorReport(BadRequest, s"You are enabling ${userEmails.size} users, but there are only " +
         s"$numAvailable projects available. Please create more projects."))
     } else {
-      // buildEnableUserStatus is located in TrialServiceSupport
+      // following functions are located in TrialServiceSupport
       executeStateTransitions(managerInfo, userEmails, buildEnableUserStatus, enableUserPostProcessing)
     }
   }
@@ -154,87 +146,6 @@ final class TrialService
     executeStateTransitions(managerInfo, userEmails, buildTerminateUserStatus, terminateUserPostProcessing)
   }
 
-  private def requiresStateTransition(currentState: UserTrialStatus, newState: UserTrialStatus): Boolean = {
-    // this check needs to happen first for idempotent behavior
-    if (currentState.state == newState.state)
-      false
-    else {
-      // make sure the state transition is valid
-      if (newState.state.isEmpty || !newState.state.get.isAllowedFrom(currentState.state))
-        throw new FireCloudException(s"Cannot transition from ${currentState.state} to $newState.state.get")
-      true // indicates transition is required
-    }
-  }
-
-  private def throwableToStatus(t: Throwable): String = {
-    t match {
-      case exr: FireCloudExceptionWithErrorReport =>
-        if (exr.errorReport.statusCode.contains(StatusCodes.NotFound))
-          StatusUpdate.toName(StatusUpdate.Failure("User not registered"))
-        else StatusUpdate.toName(StatusUpdate.Failure(exr.errorReport.message))
-      case ex: FireCloudException =>
-        StatusUpdate.toName(StatusUpdate.Failure(ex.getMessage))
-      case _ =>
-        StatusUpdate.toName(StatusUpdate.ServerError(t.getMessage))
-    }
-  }
-
-  private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
-                                      statusTransition: (WorkbenchUserInfo, UserTrialStatus) => UserTrialStatus,
-                                      transitionPostProcessing: (Attempt, UserTrialStatus, UserTrialStatus) => Unit): Future[PerRequestMessage] = {
-
-    def checkAndUpdateState(userInfo: WorkbenchUserInfo, userTrialStatus: UserTrialStatus, newStatus: UserTrialStatus): Future[String] = {
-      Try(requiresStateTransition(userTrialStatus, newStatus)) match {
-        case Success(isRequired) =>
-          if (isRequired) {
-            updateTrialStatus(managerInfo, userInfo, newStatus) map { stateResponse =>
-              transitionPostProcessing(stateResponse, userTrialStatus, newStatus)
-              StatusUpdate.toName(stateResponse)
-            }
-          } else {
-            logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '${newStatus.state.getOrElse("")}'. No further action will be taken.")
-            Future.successful(StatusUpdate.toName(StatusUpdate.NoChangeRequired))
-          }
-        case Failure(t: Throwable) => Future.successful(throwableToStatus(t))
-      }
-    }
-
-    val userTransitions = userEmails.map { userEmail =>
-      val status = Try(for {
-        regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(userEmail))
-        subId = regInfo.userInfo.userSubjectId
-        userInfo = WorkbenchUserInfo(subId, userEmail)
-        userTrialStatus <- thurloeDao.getTrialStatus(subId, managerInfo)
-        newStatus = statusTransition(userInfo, userTrialStatus)
-        result <- checkAndUpdateState(userInfo, userTrialStatus, newStatus)
-      } yield result) match {
-        case Success(s) => s
-        case Failure(t: Throwable) =>
-          Future.successful(throwableToStatus(t))
-      }
-      status map { finalStatus: String => (finalStatus, userEmail) } recover {
-        case ex: Exception =>
-          (StatusUpdate.toName(StatusUpdate.ServerError(ex.getMessage)), userEmail)
-      }
-    }
-
-    Future.sequence(userTransitions) map { results =>
-      val sorted: Map[String, Seq[String]] = results.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
-      RequestComplete(sorted)
-    }
-  }
-
-  private def updateTrialStatus(managerInfo: UserInfo,
-                                userInfo: WorkbenchUserInfo,
-                                updatedTrialStatus: UserTrialStatus): Future[StatusUpdate.Attempt] = {
-    thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, updatedTrialStatus) map {
-      case Success(_) =>
-        logger.info(s"[trialaudit] updated user ${userInfo.userEmail} (${userInfo.userSubjectId}) to state ${updatedTrialStatus.state.getOrElse("")}")
-        StatusUpdate.Success
-      case Failure(ex) => StatusUpdate.ServerError(ex.getMessage)
-    }
-  }
-
   private def enrollUser(userInfo: UserInfo): Future[PerRequestMessage] = {
     // get user's trial status, then check the current state
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { status =>
@@ -261,56 +172,67 @@ final class TrialService
 
   private def enrollUserInternal(userInfo: UserInfo, status: UserTrialStatus): Future[PerRequestMessage] = {
 
-    val projectId = status.billingProjectName match {
-      case Some(name: String) => name
+    val projectIdFuture:Future[String] = status.billingProjectName match {
+      case Some(name: String) => Future.successful(name)
       case None => {
-        logger.warn(s"User ${userInfo.userEmail} attempted to enroll in trial but no billing project in profile.")
-        throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 56)")
+        val claimedProjectAttempt = Try(claimProjectWithRetries(WorkbenchUserInfo(userInfo.id, userInfo.userEmail)))
+        claimedProjectAttempt match {
+          case Success(claimedProject) =>
+            val newStatus = status.copy(billingProjectName = Some(claimedProject.name.value))
+            thurloeDao.saveTrialStatus(userInfo.id, userInfo, newStatus) map { _ => claimedProject.name.value }
+          case Failure(t) =>
+            logger.warn(s"User ${userInfo.userEmail} attempted to enroll in trial but no billing project in profile, " +
+              s"and could not claim a project: ${t.getMessage}")
+            throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 56)")
+        }
       }
     }
 
     val saToken: WithAccessToken = AccessToken(googleDAO.getTrialBillingManagerAccessToken)
 
-    // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
-    rawlsDAO.getProjectMembers(projectId)(saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
-      if (members.map(_.email.value) != Seq(googleDAO.getTrialBillingManagerEmail)) {
-        // TODO: for resiliency, try running this operation again with a new project
-        logger.warn(s"Cannot add user ${userInfo.userEmail} to billing project $projectId because it already contains members [${members.map(_.email.value).mkString(", ")}]")
-        Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. Please contact support. (Error 60)"))
-      } else {
-        // 2. Add the user as Owner to the assigned Billing Project
-        rawlsDAO.addUserToBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) flatMap { _ =>
-          logger.info(s"[trialaudit] added user ${userInfo.userEmail} (${userInfo.id}) to project $projectId")
-          // 3. Update the user's Thurloe profile to indicate Enrolled status
-          val updatedTrialStatus = enrolledStatusFromStatus(status)
-          thurloeDao.saveTrialStatus(userInfo.id, userInfo, updatedTrialStatus) flatMap {
-            case Success(_) =>
-              logger.info(s"[trialaudit] updated user ${userInfo.userEmail} (${userInfo.id}) to state ${updatedTrialStatus.state.getOrElse("")}")
-              Future(RequestComplete(NoContent)) // <- SUCCESS!
-            case Failure(profileUpdateFail) => {
-              // We couldn't update trial status, so clean up
-              rawlsDAO.removeUserFromBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) map { _ =>
-                logger.warn(s"Enrolling user ${userInfo.userEmail} failed at profile update: ${profileUpdateFail.getMessage}. User has been backed out of billing project $projectId.")
-                RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please try again later. (Error 70)")
-              } recover {
-                case bpFail: Throwable => {
-                  logger.warn(s"Enrolling user ${userInfo.userEmail} failed at profile update: ${profileUpdateFail.getMessage}. User is still in billing project $projectId due to cleanup failure: ${bpFail.getMessage}.")
-                  RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please contact support. (Error 80)")
+    projectIdFuture.flatMap { projectId =>
+
+      // 1. Check that the assigned Billing Project exists and contains exactly one member, the SA we used to create it
+      rawlsDAO.getProjectMembers(projectId)(saToken) flatMap { members: Seq[RawlsBillingProjectMember] =>
+        if (members.map(_.email.value) != Seq(googleDAO.getTrialBillingManagerEmail)) {
+          // TODO: for resiliency, try running this operation again with a new project
+          logger.warn(s"Cannot add user ${userInfo.userEmail} to billing project $projectId because it already contains members [${members.map(_.email.value).mkString(", ")}]")
+          Future(RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. Please contact support. (Error 60)"))
+        } else {
+          // 2. Add the user as Owner to the assigned Billing Project
+          rawlsDAO.addUserToBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) flatMap { _ =>
+            logger.info(s"[trialaudit] added user ${userInfo.userEmail} (${userInfo.id}) to project $projectId")
+            // 3. Update the user's Thurloe profile to indicate Enrolled status
+            val updatedTrialStatus = enrolledStatusFromStatus(status)
+            thurloeDao.saveTrialStatus(userInfo.id, userInfo, updatedTrialStatus) flatMap {
+              case Success(_) =>
+                logger.info(s"[trialaudit] updated user ${userInfo.userEmail} (${userInfo.id}) to state ${updatedTrialStatus.state.getOrElse("")}")
+                Future(RequestComplete(NoContent)) // <- SUCCESS!
+              case Failure(profileUpdateFail) => {
+                // We couldn't update trial status, so clean up
+                rawlsDAO.removeUserFromBillingProject(projectId, ProjectRoles.Owner, userInfo.userEmail)(userToken = saToken) map { _ =>
+                  logger.warn(s"Enrolling user ${userInfo.userEmail} failed at profile update: ${profileUpdateFail.getMessage}. User has been backed out of billing project $projectId.")
+                  RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please try again later. (Error 70)")
+                } recover {
+                  case bpFail: Throwable => {
+                    logger.warn(s"Enrolling user ${userInfo.userEmail} failed at profile update: ${profileUpdateFail.getMessage}. User is still in billing project $projectId due to cleanup failure: ${bpFail.getMessage}.")
+                    RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please contact support. (Error 80)")
+                  }
                 }
               }
             }
-          }
-        } recover {
-          case t: Throwable => {
-            logger.warn(s"Attempt to add user ${userInfo.userEmail} to project $projectId failed: ${t.getMessage}. User profile has not been modified.")
-            RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please try again later. (Error 90)")
+          } recover {
+            case t: Throwable => {
+              logger.warn(s"Attempt to add user ${userInfo.userEmail} to project $projectId failed: ${t.getMessage}. User profile has not been modified.")
+              RequestCompleteWithErrorReport(InternalServerError, s"We could not process your enrollment. Please try again later. (Error 90)")
+            }
           }
         }
-      }
-    } recover {
-      case t: Throwable => {
-        logger.warn(s"Failed to list members of project $projectId on behalf of user ${userInfo.userEmail}: ${t.getMessage}")
-        RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. Please try again later. (Error 110)")
+      } recover {
+        case t: Throwable => {
+          logger.warn(s"Failed to list members of project $projectId on behalf of user ${userInfo.userEmail}: ${t.getMessage}")
+          RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. Please try again later. (Error 110)")
+        }
       }
     }
   }

@@ -36,7 +36,7 @@ object AccessToken{
 // response from Google has other fields, but these are the ones we care about
 case class OAuthUser(sub: String, email: String)
 
-case class RegistrationInfo(userInfo: WorkbenchUserInfo, enabled: WorkbenchEnabled)
+case class RegistrationInfo(userInfo: WorkbenchUserInfo, enabled: WorkbenchEnabled, message: Option[String] = None)
 
 case class WorkbenchUserInfo(userSubjectId: String, userEmail: String)
 case class WorkbenchEnabled(google: Boolean, ldap: Boolean, allUsersGroup: Boolean)

@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.RegisterService.{CreateUpdateProfile, UpdateProfilePreferences}
@@ -28,12 +28,12 @@ object RegisterService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO)
+    new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.trialDAO)
 }
 
-class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO)
+class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO, val trialDAO: TrialDAO)
   (implicit protected val executionContext: ExecutionContext) extends Actor
-  with LazyLogging {
+  with TrialServiceSupport with LazyLogging {
 
   override def receive = {
     case CreateUpdateProfile(userInfo, basicProfile) =>
@@ -54,9 +54,13 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       }
       userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
         for {
-          registrationInfo <- samDao.registerUser(userInfo)
+          registrationInfo <- samDao.registerUser(userInfo) // register user in Sam
+          freeCredits <- enableSelfForFreeCredits(userInfo) recover { case e: Exception => false } // enable free credits for newly registered user
           _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
-        } yield registrationInfo
+        } yield {
+          val message = if (freeCredits) None else Some("error enabling free credits")
+          registrationInfo.copy(message = message)
+        }
       } else Future.successful(isRegistered)
     } yield {
       RequestComplete(StatusCodes.OK, userStatus)
