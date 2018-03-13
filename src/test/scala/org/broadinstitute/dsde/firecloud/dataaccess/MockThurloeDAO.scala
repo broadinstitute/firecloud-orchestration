@@ -18,6 +18,7 @@ import scala.util.{Failure, Success, Try}
  */
 object MockThurloeDAO {
   val TRIAL_SELF_ENABLED = "trial-self-enabled"
+  val TRIAL_SELF_ENABLED_PREEXISTING = "trial-self-enabled-preexisting"
   val TRIAL_SELF_ENABLED_ERROR = "trial-self-enabled-error"
 }
 
@@ -94,7 +95,8 @@ class MockThurloeDAO extends ThurloeDAO {
       ),
       TCGA_AND_TARGET_UNLINKED -> baseProfile,
       TRIAL_SELF_ENABLED -> baseProfile,
-      TRIAL_SELF_ENABLED_ERROR -> baseProfile
+      TRIAL_SELF_ENABLED_ERROR -> baseProfile,
+      TRIAL_SELF_ENABLED_PREEXISTING -> baseProfile
     )
 
 
