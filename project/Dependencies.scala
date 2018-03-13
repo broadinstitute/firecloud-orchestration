@@ -25,7 +25,7 @@ object Dependencies {
       exclude("io.spray", "spray-routing_2.11"),
     "org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-9316d894-SNAP"
       exclude("com.typesafe.scala-logging", "scala-logging_2.11"),
-    "org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.2-0b34b93",
+    "org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP",
 
     "io.spray"                      %% "spray-can"                 % sprayV,
     "io.spray"                      %% "spray-json"                % "1.3.3",

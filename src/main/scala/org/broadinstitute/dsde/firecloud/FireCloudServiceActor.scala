@@ -61,14 +61,12 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, thurloeDAO, trialDAO)
   val materializer: ActorMaterializer = ActorMaterializer()
 
-  val healthMonitorChecks = app.healthMonitorChecks
+  private val healthChecks = new HealthChecks(app)
+  val healthMonitorChecks = healthChecks.healthMonitorChecks
   val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
   system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
 
   val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
-
-  // perform startup checks
-  new StartupChecks(app).check
 
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
