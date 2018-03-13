@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.util.NoSuchElementException
 
+import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO._
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, Profile, ProfileWrapper, Trial, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
@@ -15,6 +16,11 @@ import scala.util.{Failure, Success, Try}
  * Created by mbemis on 10/25/16.
  *
  */
+object MockThurloeDAO {
+  val TRIAL_SELF_ENABLED = "trial-self-enabled"
+  val TRIAL_SELF_ENABLED_ERROR = "trial-self-enabled-error"
+}
+
 class MockThurloeDAO extends ThurloeDAO {
 
   val NORMAL_USER = "normal-user"
@@ -86,7 +92,9 @@ class MockThurloeDAO extends ThurloeDAO {
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
       ),
-      TCGA_AND_TARGET_UNLINKED -> baseProfile
+      TCGA_AND_TARGET_UNLINKED -> baseProfile,
+      TRIAL_SELF_ENABLED -> baseProfile,
+      TRIAL_SELF_ENABLED_ERROR -> baseProfile
     )
 
 

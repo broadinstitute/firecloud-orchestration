@@ -162,19 +162,14 @@ trait TrialServiceSupport extends LazyLogging with SprayJsonSupport  {
     * @param userInfo the current user
     * @return true if enabling succeeded; will throw an exception if failed.
 \   */
-  def enableSelfForFreeCredits(userInfo: UserInfo) = {
-    executeStateTransitions(userInfo, Seq(userInfo.userEmail), buildSelfEnableUserStatus, selfEnableUserPostProcessing)
-  }
-
-  def buildSelfEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: UserTrialStatus): UserTrialStatus = {
-    currentStatus.copy(state = Some(Enabled))
-  }
-
-  def selfEnableUserPostProcessing(updateStatus: Attempt, prevStatus: UserTrialStatus, newStatus: UserTrialStatus): Unit = {
-    if (updateStatus != StatusUpdate.Success && newStatus.billingProjectName.isDefined) {
-      logger.warn(
-        s"[trialaudit] The user '${newStatus.userId}' failed to be enabled, releasing the billing project '${newStatus.billingProjectName.get}' back into the available pool.")
-      trialDao.releaseProjectRecord(RawlsBillingProjectName(newStatus.billingProjectName.get))
+  def enableSelfForFreeCredits(userInfo: UserInfo): Future[UserTrialStatus] = {
+    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { userTrialStatus =>
+      val doTransition = Enabled.isAllowedFrom(userTrialStatus.state)
+      val newStatus = userTrialStatus.copy(state = Some(Enabled))
+      if (doTransition)
+        thurloeDao.saveTrialStatus(userInfo.id, userInfo, newStatus) map { _ => newStatus }
+      else
+        Future.failed(new FireCloudException(s"User '${userInfo.userEmail} is in state ${userTrialStatus.state} and cannot be enabled."))
     }
   }
 

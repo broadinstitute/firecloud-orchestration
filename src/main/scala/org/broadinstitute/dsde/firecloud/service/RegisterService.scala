@@ -7,6 +7,7 @@ import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErr
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
 import org.broadinstitute.dsde.firecloud.service.RegisterService.{CreateUpdateProfile, UpdateProfilePreferences}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
@@ -56,11 +57,11 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
         for {
           registrationInfo <- samDao.registerUser(userInfo)
           _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
-          freeCredits:Either[Exception,PerRequestMessage] <- enableSelfForFreeCredits(userInfo)
+          freeCredits:Either[Exception,UserTrialStatus] <- enableSelfForFreeCredits(userInfo)
             .map(Right(_)) recover { case e: Exception => Left(e) }
         } yield {
           val message = freeCredits match {
-            case Left(ex) => Some(s"Error enabling free credits during registration. ${ex.getMessage}")
+            case Left(ex) => Some(s"Error enabling free credits during registration. Underlying error: ${ex.getMessage}")
             case Right(_) => None
           }
           registrationInfo.copy(message = message)
