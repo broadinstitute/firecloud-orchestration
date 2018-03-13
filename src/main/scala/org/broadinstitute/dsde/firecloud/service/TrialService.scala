@@ -179,9 +179,9 @@ final class TrialService
     }
   }
 
-  def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
-                              statusTransition: (WorkbenchUserInfo, UserTrialStatus) => UserTrialStatus,
-                              transitionPostProcessing: (Attempt, UserTrialStatus, UserTrialStatus) => Unit): Future[PerRequestMessage] = {
+  private def executeStateTransitions(managerInfo: UserInfo, userEmails: Seq[String],
+                                      statusTransition: (WorkbenchUserInfo, UserTrialStatus) => UserTrialStatus,
+                                      transitionPostProcessing: (Attempt, UserTrialStatus, UserTrialStatus) => Unit): Future[PerRequestMessage] = {
 
     def checkAndUpdateState(userInfo: WorkbenchUserInfo, userTrialStatus: UserTrialStatus, newStatus: UserTrialStatus): Future[String] = {
       Try(requiresStateTransition(userTrialStatus, newStatus)) match {
