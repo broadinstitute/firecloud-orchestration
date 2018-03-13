@@ -174,7 +174,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
             assertResult(NoContent, response.entity.asString) {
               status
             }
-            assert(localRawlsDao.billingProjectAdds == Map("testproject" -> "random@site.com"))
+            assert(localRawlsDao.billingProjectAdds.getOrElse("testproject","n/a") == "random@site.com")
           }
         }
       }
@@ -195,6 +195,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
             assertResult(NoContent, response.entity.asString) {
               status
             }
+            assert(localRawlsDao.billingProjectAdds.getOrElse("projectfor-random@site.com","n/a") == "random@site.com")
           }
         }
       }
@@ -557,7 +558,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   class TrialApiServiceSpecTrialDAO extends ProjectManagerSpecTrialDAO {
     override def claimProjectRecord(userInfo: WorkbenchUserInfo, randomizationFactor: Int = 20): TrialProject = {
-      TrialProject(RawlsBillingProjectName(userInfo.userEmail), true, Some(userInfo), Some(CreationStatuses.Ready))
+      TrialProject(RawlsBillingProjectName("projectfor-" + userInfo.userEmail), true, Some(userInfo), Some(CreationStatuses.Ready))
     }
 
     override def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
@@ -580,7 +581,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       // Note: because HttpThurloeDAO catches exceptions, the assertions here will
       // result in InternalServerErrors instead of appearing nicely in unit test output.
       forUserId match {
-        case `enabledUser` => trialStatus.state match {
+        case `enabledUser` | `selfEnabledUser` => trialStatus.state match {
           case Some(Enrolled) =>
             val expectedExpirationDate = trialStatus.enrolledDate.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
 
@@ -588,6 +589,9 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
             assert(trialStatus.expirationDate.toEpochMilli > 0)
             assertResult( expectedExpirationDate ) { trialStatus.expirationDate }
             assert(trialStatus.terminatedDate.toEpochMilli === 0)
+
+            val expectedProjectName = if (forUserId == enabledUser) "testproject" else "projectfor-random@site.com"
+            assert(trialStatus.billingProjectName.contains(expectedProjectName))
 
             Future.successful(Success(()))
           case Some(Enabled) =>
