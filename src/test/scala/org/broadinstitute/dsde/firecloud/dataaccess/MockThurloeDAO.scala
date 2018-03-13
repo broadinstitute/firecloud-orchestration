@@ -20,11 +20,11 @@ object MockThurloeDAO {
   val TRIAL_SELF_ENABLED = "trial-self-enabled"
   val TRIAL_SELF_ENABLED_PREEXISTING = "trial-self-enabled-preexisting"
   val TRIAL_SELF_ENABLED_ERROR = "trial-self-enabled-error"
+
+  val NORMAL_USER = "normal-user"
 }
 
 class MockThurloeDAO extends ThurloeDAO {
-
-  val NORMAL_USER = "normal-user"
 
   val TCGA_LINKED = "tcga-linked"
   val TCGA_LINKED_NO_EXPIRE_DATE = "tcga-linked-no-expire-date"

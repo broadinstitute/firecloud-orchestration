@@ -47,6 +47,16 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
     nonProfitStatus = randomAlpha()
   )
 
+  "When updating the profile for a pre-existing, registered user" - {
+    "should not read or write trial status" in {
+      Post(registerPath, fullProfile) ~> dummyUserIdHeaders(NORMAL_USER, email = NORMAL_USER) ~> sealRoute(registerRoutes) ~> check {
+        status should equal(OK)
+        val regInfo = responseAs[RegistrationInfo]
+        assert(regInfo.message.isEmpty, "- if this reports a BoxedError it is likely the assert inside UserRegistrationThurloeDAO.getTrialStatus or saveTrialStatus")
+      }
+    }
+  }
+
   "When registering a brand new user in sam" - {
     "should enable for free credits" in {
       Post(registerPath, fullProfile) ~> dummyUserIdHeaders(TRIAL_SELF_ENABLED, email = TRIAL_SELF_ENABLED) ~> sealRoute(registerRoutes) ~> check {
@@ -91,7 +101,8 @@ class UserRegistrationThurloeDAO extends MockThurloeDAO {
     forUserId match {
       case `TRIAL_SELF_ENABLED_ERROR` | `TRIAL_SELF_ENABLED` | `TRIAL_SELF_ENABLED_PREEXISTING` =>
         Future.successful(UserTrialStatus(forUserId, None, userAgreed = true, 0, 0, 0, 0, None))
-      case _ => super.getTrialStatus(forUserId, callerToken)
+      case _ =>
+        Future.failed(new FireCloudException(s"User $forUserId should not be calling getTrialStatus"))
     }
   }
 
@@ -105,7 +116,7 @@ class UserRegistrationThurloeDAO extends MockThurloeDAO {
         assert(trialStatus.state.contains(Enabled))
         super.saveTrialStatus(forUserId, callerToken, trialStatus)
       case _ =>
-        super.saveTrialStatus(forUserId, callerToken, trialStatus)
+        Future.failed(new FireCloudException(s"User $forUserId should not be calling saveTrialStatus"))
     }
   }
 
