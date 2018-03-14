@@ -51,7 +51,7 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
 
   private def manageRegistration(name: String, req: Future[RegistrationInfo]): Future[Option[String]] = {
     req map {
-      case RegistrationInfo(_, WorkbenchEnabled(true, true, true)) => None
+      case RegistrationInfo(_, WorkbenchEnabled(true, true, true), _) => None
       case regInfo => Option(s"$name is registered but not fully enabled: ${regInfo.enabled}!")
     } recover {
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
