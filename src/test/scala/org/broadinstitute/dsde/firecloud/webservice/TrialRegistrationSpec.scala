@@ -52,6 +52,8 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
       Post(registerPath, fullProfile) ~> dummyUserIdHeaders(NORMAL_USER, email = NORMAL_USER) ~> sealRoute(registerRoutes) ~> check {
         status should equal(OK)
         val regInfo = responseAs[RegistrationInfo]
+        // if NORMAL_USER triggers a call to either getTrialStatus or saveTrialStatus, UserRegistrationThurloeDAO will
+        // fail and RegistrationInfo will have a message below.
         assert(regInfo.message.isEmpty, "- if this reports a BoxedError it is likely the assert inside UserRegistrationThurloeDAO.getTrialStatus or saveTrialStatus")
       }
     }

@@ -193,7 +193,7 @@ trait TrialServiceSupport extends LazyLogging {
     // log a warning, which should be seen by dev team, if the project pool is running low.
     val numAvailable:Long = trialDao.countProjects.getOrElse("available", 0L)
     if (numAvailable < FireCloudConfig.Trial.projectBufferSize)
-      logger.warn(s"There are only $numAvailable free trial projects available; create more as soon as possible!")
+      logger.error(s"There are only $numAvailable free trial projects available; create more as soon as possible!")
 
     def claimProject(attempt:Int):TrialProject = {
       Try(trialDao.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
