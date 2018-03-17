@@ -261,25 +261,7 @@ final class TrialService
 
   private def enrollUserInternal(userInfo: UserInfo, enabledStatus: UserTrialStatus): Future[PerRequestMessage] = {
 
-    val statusFuture = enabledStatus.billingProjectName match {
-      case Some(_) => Future.successful(enabledStatus)
-      case None => {
-        Try(claimProjectWithRetries(WorkbenchUserInfo(userInfo.id, userInfo.userEmail))) match {
-          case Success(claimed) =>
-            // persist claimed project name to user's profile
-            val updatedStatus = enabledStatus.copy(billingProjectName = Some(claimed.name.value))
-            thurloeDao.saveTrialStatus(userInfo.id, userInfo, updatedStatus) map {
-              case Success(_) => updatedStatus
-              case Failure(ex) => throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 58)", ex)
-            }
-          case Failure(ex) =>
-            logger.warn(s"User ${userInfo.userEmail} attempted to enroll in trial but no billing project in profile," +
-              s" and a project could not be claimed: ${ex.getMessage}")
-            throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 56)", ex)
-        }
-
-      }
-    }
+    val statusFuture = getOrClaimProject(userInfo, enabledStatus)
 
     val saToken: WithAccessToken = AccessToken(googleDAO.getTrialBillingManagerAccessToken)
 
@@ -331,6 +313,28 @@ final class TrialService
       case t: Throwable => {
         logger.warn(s"Failed to read or claim project on behalf of user ${userInfo.userEmail}: ${t.getMessage}")
         RequestCompleteWithErrorReport(InternalServerError, "We could not process your enrollment. Please try again later. (Error 112)")
+      }
+    }
+  }
+
+  private def getOrClaimProject(userInfo: UserInfo, enabledStatus: UserTrialStatus): Future[UserTrialStatus] = {
+    enabledStatus.billingProjectName match {
+      case Some(_) => Future.successful(enabledStatus)
+      case None => {
+        Try(claimProjectWithRetries(WorkbenchUserInfo(userInfo.id, userInfo.userEmail))) match {
+          case Success(claimed) =>
+            // persist claimed project name to user's profile
+            val updatedStatus = enabledStatus.copy(billingProjectName = Some(claimed.name.value))
+            thurloeDao.saveTrialStatus(userInfo.id, userInfo, updatedStatus) map {
+              case Success(_) => updatedStatus
+              case Failure(ex) => throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 58)", ex)
+            }
+          case Failure(ex) =>
+            logger.warn(s"User ${userInfo.userEmail} attempted to enroll in trial but no billing project in profile," +
+              s" and a project could not be claimed: ${ex.getMessage}")
+            throw new FireCloudException("We could not process your enrollment. Please contact support. (Error 56)", ex)
+        }
+
       }
     }
   }
