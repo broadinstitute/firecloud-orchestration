@@ -154,8 +154,8 @@ trait TrialServiceSupport extends LazyLogging {
   /**
     * Enables the current user for free credits. Should only be used during the registration process.
     * @param userInfo the current user
-    * @return true if enabling succeeded; will throw an exception if failed.
-\   */
+    * @return [[UserTrialStatus]] if enabling succeeded; will throw an exception if failed.
+    */
   def enableSelfForFreeCredits(userInfo: UserInfo): Future[UserTrialStatus] = {
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { userTrialStatus =>
       val doTransition = Enabled.isAllowedFrom(userTrialStatus.state)
