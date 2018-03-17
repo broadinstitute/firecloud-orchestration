@@ -46,30 +46,37 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
       _ <- thurloeDao.saveProfile(userInfo, basicProfile)
-      _ <- thurloeDao.saveKeyValues(
-          userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString)
-        )
-      isRegistered <- samDao.getRegistrationStatus(userInfo) recover {
-        case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
-          RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail), WorkbenchEnabled(false, false, false))
-      }
-      userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
-        for {
-          registrationInfo <- samDao.registerUser(userInfo)
-          _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
-          freeCredits:Either[Exception,UserTrialStatus] <- enableSelfForFreeCredits(userInfo)
-            .map(Right(_)) recover { case e: Exception => Left(e) }
-        } yield {
-          val messages:Option[List[String]] = freeCredits match {
-            case Left(ex) => Some(registrationInfo.messages.getOrElse(List.empty[String]) :+
-              s"Error enabling free credits during registration. Underlying error: ${ex.getMessage}")
-            case Right(_) => registrationInfo.messages
-          }
-          registrationInfo.copy(messages = messages)
-        }
-      } else Future.successful(isRegistered)
+      _ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
+      isRegistered <- isRegistered(userInfo)
+      userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap)
+                      registerUser(userInfo)
+                    else
+                      Future.successful(isRegistered)
     } yield {
       RequestComplete(StatusCodes.OK, userStatus)
+    }
+  }
+
+  private def isRegistered(userInfo: UserInfo): Future[RegistrationInfo] = {
+    samDao.getRegistrationStatus(userInfo) recover {
+      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
+        RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail), WorkbenchEnabled(false, false, false))
+    }
+  }
+
+  private def registerUser(userInfo: UserInfo): Future[RegistrationInfo] = {
+    for {
+      registrationInfo <- samDao.registerUser(userInfo)
+      _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
+      freeCredits:Either[Exception,UserTrialStatus] <- enableSelfForFreeCredits(userInfo)
+        .map(Right(_)) recover { case e: Exception => Left(e) }
+    } yield {
+      val messages:Option[List[String]] = freeCredits match {
+        case Left(ex) => Some(registrationInfo.messages.getOrElse(List.empty[String]) :+
+          s"Error enabling free credits during registration. Underlying error: ${ex.getMessage}")
+        case Right(_) => registrationInfo.messages
+      }
+      registrationInfo.copy(messages = messages)
     }
   }
 
