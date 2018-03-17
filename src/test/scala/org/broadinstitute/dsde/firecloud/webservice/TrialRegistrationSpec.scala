@@ -54,7 +54,7 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
         val regInfo = responseAs[RegistrationInfo]
         // if NORMAL_USER triggers a call to either getTrialStatus or saveTrialStatus, UserRegistrationThurloeDAO will
         // fail and RegistrationInfo will have a message below.
-        assert(regInfo.message.isEmpty, "- if this reports a BoxedError it is likely the assert inside UserRegistrationThurloeDAO.getTrialStatus or saveTrialStatus")
+        assert(regInfo.messages.isEmpty, "- if this reports a BoxedError it is likely the assert inside UserRegistrationThurloeDAO.getTrialStatus or saveTrialStatus")
       }
     }
   }
@@ -65,7 +65,7 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
         // triggers an assert in UserRegistrationThurloeDAO.saveTrialStatus
         status should equal(OK)
         val regInfo = responseAs[RegistrationInfo]
-        assert(regInfo.message.isEmpty, "- if this reports a BoxedError it is likely the assert inside UserRegistrationThurloeDAO.saveTrialStatus")
+        assert(regInfo.messages.isEmpty, "- if this reports a BoxedError it is likely the assert inside UserRegistrationThurloeDAO.saveTrialStatus")
       }
     }
   }
@@ -76,7 +76,7 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
         // triggers an assert in UserRegistrationThurloeDAO.saveTrialStatus
         status should equal(OK)
         val regInfo = responseAs[RegistrationInfo]
-        assert(regInfo.message.isEmpty, "- if this reports a BoxedError it is likely the assert inside UserRegistrationThurloeDAO.saveTrialStatus")
+        assert(regInfo.messages.isEmpty, "- if this reports a BoxedError it is likely the assert inside UserRegistrationThurloeDAO.saveTrialStatus")
       }
 
     }
@@ -87,7 +87,7 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
       Post(registerPath, fullProfile) ~> dummyUserIdHeaders(TRIAL_SELF_ENABLED_ERROR, email = TRIAL_SELF_ENABLED_ERROR) ~> sealRoute(registerRoutes) ~> check {
         status should equal(OK)
         val regInfo = responseAs[RegistrationInfo]
-        assert(regInfo.message.contains("Error enabling free credits during registration. Underlying error: Unit test saveTrialStatus intentional exception"))
+        assert(regInfo.messages.contains(List("Error enabling free credits during registration. Underlying error: Unit test saveTrialStatus intentional exception")))
       }
     }
   }
