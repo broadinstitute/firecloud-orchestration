@@ -262,7 +262,7 @@ final class TrialService
   private def enrollUserInternal(userInfo: UserInfo, enabledStatus: UserTrialStatus): Future[PerRequestMessage] = {
 
     val statusFuture = enabledStatus.billingProjectName match {
-      case Some(name: String) => Future.successful(enabledStatus)
+      case Some(_) => Future.successful(enabledStatus)
       case None => {
         Try(claimProjectWithRetries(WorkbenchUserInfo(userInfo.id, userInfo.userEmail))) match {
           case Success(claimed) =>

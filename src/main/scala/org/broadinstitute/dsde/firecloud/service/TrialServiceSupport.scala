@@ -159,10 +159,10 @@ trait TrialServiceSupport extends LazyLogging {
   def enableSelfForFreeCredits(userInfo: UserInfo): Future[UserTrialStatus] = {
     thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { userTrialStatus =>
       val doTransition = Enabled.isAllowedFrom(userTrialStatus.state)
-      val newStatus = userTrialStatus.copy(state = Some(Enabled))
-      if (doTransition)
+      if (doTransition) {
+        val newStatus = userTrialStatus.copy(state = Some(Enabled))
         thurloeDao.saveTrialStatus(userInfo.id, userInfo, newStatus) map { _ => newStatus }
-      else
+      } else
         Future.failed(new FireCloudException(s"User '${userInfo.userEmail} is in state ${userTrialStatus.state} and cannot be enabled."))
     }
   }

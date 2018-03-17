@@ -48,7 +48,7 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
   )
 
   "When updating the profile for a pre-existing, registered user" - {
-    "should not read or write trial status" in {
+    "the system should not read or write the user's trial status" in {
       Post(registerPath, fullProfile) ~> dummyUserIdHeaders(NORMAL_USER, email = NORMAL_USER) ~> sealRoute(registerRoutes) ~> check {
         status should equal(OK)
         val regInfo = responseAs[RegistrationInfo]
@@ -60,7 +60,7 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
   }
 
   "When registering a brand new user in sam" - {
-    "should enable for free credits" in {
+    "the user should be enabled for free credits" in {
       Post(registerPath, fullProfile) ~> dummyUserIdHeaders(TRIAL_SELF_ENABLED, email = TRIAL_SELF_ENABLED) ~> sealRoute(registerRoutes) ~> check {
         // triggers an assert in UserRegistrationThurloeDAO.saveTrialStatus
         status should equal(OK)
@@ -71,7 +71,7 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
   }
 
   "When registering a pre-existing but non-enabled user in sam" - {
-    "should enable for free credits" in {
+    "the user should be enabled for free credits" in {
       Post(registerPath, fullProfile) ~> dummyUserIdHeaders(TRIAL_SELF_ENABLED_PREEXISTING, email = TRIAL_SELF_ENABLED_PREEXISTING) ~> sealRoute(registerRoutes) ~> check {
         // triggers an assert in UserRegistrationThurloeDAO.saveTrialStatus
         status should equal(OK)
@@ -83,7 +83,7 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
   }
 
   "When registering a brand new user encounters an error saving Enabled trial status for free credits" - {
-    "should complete registration with a message in responses" in {
+    "the user should complete registration but see an error message in the response" in {
       Post(registerPath, fullProfile) ~> dummyUserIdHeaders(TRIAL_SELF_ENABLED_ERROR, email = TRIAL_SELF_ENABLED_ERROR) ~> sealRoute(registerRoutes) ~> check {
         status should equal(OK)
         val regInfo = responseAs[RegistrationInfo]
