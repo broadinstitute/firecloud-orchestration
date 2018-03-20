@@ -83,43 +83,43 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         authorizationHeader match {
           // no Authorization header; the user must be unauthorized
           case None =>
-            respondWithErrorReport(Unauthorized, Unauthorized.defaultMessage, requestContext)
-          // browser sent Authorization header; try to query rawls for user status
+            respondWithErrorReport(Unauthorized, "No authorization header in request.", requestContext)
+          // browser sent Authorization header; try to query Sam for user status
           case Some(c) =>
             val pipeline = authHeaders(requestContext) ~> sendReceive
-            val extReq = Get(UserApiService.samRegisterUserURL)
-            pipeline(extReq) onComplete {
+            val samRequest = Get(UserApiService.samRegisterUserURL)
+            pipeline(samRequest) onComplete {
               case Success(response) =>
                 response.status match {
-                  // rawls rejected our request. User is either invalid or their token timed out; this is truly unauthorized
-                  case Unauthorized => respondWithErrorReport(Unauthorized, Unauthorized.defaultMessage, requestContext)
+                  // Sam rejected our request. User is either invalid or their token timed out; this is truly unauthorized
+                  case Unauthorized => respondWithErrorReport(Unauthorized, "Request rejected by identity service - invalid user or expired token.", requestContext)
                   // rawls 404 means the user is not registered with FireCloud
-                  case NotFound => respondWithErrorReport(NotFound, "FireCloud user registration not found", requestContext)
+                  case NotFound => respondWithErrorReport(NotFound, "FireCloud user registration not found.", requestContext)
                   // rawls error? boo. All we can do is respond with an error.
-                  case InternalServerError => respondWithErrorReport(InternalServerError, InternalServerError.defaultMessage, requestContext)
+                  case InternalServerError => respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again. (Error 10)", requestContext)
                   // rawls found the user; we'll try to parse the response and inspect it
                   case OK =>
                     val respJson = response.entity.as[RegistrationInfo]
                     respJson match {
                       case Right(regInfo) =>
                         if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allUsersGroup) {
-                          // rawls says the user is fully registered and activated!
+                          // Sam says the user is fully registered and activated!
                           requestContext.complete(OK, regInfo)
                         } else {
-                          // rawls knows about the user, but the user isn't activated
-                          respondWithErrorReport(Forbidden, "FireCloud user not activated", requestContext)
+                          // Sam knows about the user, but the user isn't activated
+                          respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
                         }
-                      // we couldn't parse the rawls response. Respond with an error.
+                      // we couldn't parse the Sam response. Respond with an error.
                       case Left(error) =>
-                        respondWithErrorReport(InternalServerError, InternalServerError.defaultMessage, requestContext)
+                        respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again. (Error 20)", requestContext)
                     }
                   case x =>
-                    // if we get any other error from rawls, pass that error on
+                    // if we get any other error from Sam, pass that error on
                     respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
                 }
-              // we couldn't reach rawls (within timeout period). Respond with a Service Unavailable error.
+              // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
               case Failure(error) =>
-                respondWithErrorReport(ServiceUnavailable, ServiceUnavailable.defaultMessage, requestContext)
+                respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", requestContext)
             }
         }
       }
