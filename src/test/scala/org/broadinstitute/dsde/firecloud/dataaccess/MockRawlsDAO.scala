@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUp
 import org.joda.time.DateTime
 import spray.http.StatusCodes
 import MockRawlsDAO._
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial.{ProjectRoles, RawlsBillingProjectMember}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -280,7 +281,7 @@ class MockRawlsDAO  extends RawlsDAO {
     Future.successful(WorkspaceACL(Map.empty[String, AccessEntry]))
 
   override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] = {
-    Future.successful(WorkspaceACLUpdateResponseList(aclUpdates.map(update => WorkspaceACLUpdateResponse(update.email, update.accessLevel)), aclUpdates, aclUpdates, aclUpdates))
+    Future.successful(WorkspaceACLUpdateResponseList(aclUpdates.map(update => WorkspaceACLUpdateResponse("fake-subject-id", update.email, update.accessLevel)), aclUpdates, aclUpdates, aclUpdates))
   }
 
   override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
@@ -356,8 +357,8 @@ class MockRawlsDAO  extends RawlsDAO {
   }
 
 
-  override def getMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken) =
-    Future.successful(Seq.empty[MethodConfigurationShort])
+  override def getAgoraMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken) =
+    Future.successful(Seq.empty[AgoraConfigurationShort])
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(true, None))
 
