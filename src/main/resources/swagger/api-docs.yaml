@@ -5123,6 +5123,8 @@ definitions:
       - outputs
       - prerequisites
       - methodRepoMethod
+      - methodConfigVersion
+      - deleted
 
   NihStatus:
     required:
