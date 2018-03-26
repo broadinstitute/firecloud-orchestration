@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud
 import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
+import org.broadinstitute.dsde.firecloud.metrics.MetricsActor
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
@@ -57,8 +58,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val consentDAO:ConsentDAO = new HttpConsentDAO
   val searchDAO:SearchDAO = new ElasticSearchDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.indexName, ontologyDAO)
   val trialDAO:TrialDAO = new ElasticSearchTrialDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.trialIndexName)
+  val logitDAO:LogitDAO = new HttpLogitDAO
 
-  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, thurloeDAO, trialDAO)
+  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, thurloeDAO, trialDAO, logitDAO)
   val materializer: ActorMaterializer = ActorMaterializer()
 
   private val healthChecks = new HealthChecks(app)
@@ -67,6 +69,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
 
   val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
+
+  val metricsActor = system.actorOf(MetricsActor.props(app), "metrics-actor")
+  system.scheduler.schedule(5.seconds, 10.seconds, metricsActor, MetricsActor.RecordMetrics)
 
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)

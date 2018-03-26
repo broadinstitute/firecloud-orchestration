@@ -26,10 +26,10 @@ class NihApiServiceSpec extends ApiServiceSpec {
   //JWT for NIH username "not-on-whitelist" (don't ever add this to the mock whitelists in MockGoogleServicesDAO.scala)
   val validJwtNotOnWhitelist = JWTWrapper("eyJhbGciOiJIUzI1NiJ9.bm90LW9uLXdoaXRlbGlzdA.DayvfECuGAQsXx-MEwXiuQyq86Eqc3Lmn46_9BGs6t0")
 
-  case class TestApiService(agoraDao: MockAgoraDAO, googleDao: MockGoogleServicesDAO, ontologyDao: MockOntologyDAO, consentDao: MockConsentDAO, rawlsDao: MockRawlsDAO, samDao: MockSamDAO, searchDao: MockSearchDAO, thurloeDao: MockThurloeDAO, trialDao: MockTrialDAO)(implicit val executionContext: ExecutionContext) extends ApiServices
+  case class TestApiService(agoraDao: MockAgoraDAO, googleDao: MockGoogleServicesDAO, ontologyDao: MockOntologyDAO, consentDao: MockConsentDAO, rawlsDao: MockRawlsDAO, samDao: MockSamDAO, searchDao: MockSearchDAO, thurloeDao: MockThurloeDAO, trialDao: MockTrialDAO, logitDao: MockLogitDAO)(implicit val executionContext: ExecutionContext) extends ApiServices
 
   def withDefaultApiServices[T](testCode: TestApiService => T): T = {
-    val apiService = new TestApiService(new MockAgoraDAO, new MockGoogleServicesDAO, new MockOntologyDAO, new MockConsentDAO, new MockRawlsDAO, new MockSamDAO, new MockSearchDAO, new MockThurloeDAO, new MockTrialDAO)
+    val apiService = new TestApiService(new MockAgoraDAO, new MockGoogleServicesDAO, new MockOntologyDAO, new MockConsentDAO, new MockRawlsDAO, new MockSamDAO, new MockSearchDAO, new MockThurloeDAO, new MockTrialDAO, new MockLogitDAO)
     testCode(apiService)
   }
 

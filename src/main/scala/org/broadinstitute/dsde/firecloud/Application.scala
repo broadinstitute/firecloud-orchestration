@@ -18,4 +18,5 @@ case class Application(agoraDAO: AgoraDAO,
                        samDAO: SamDAO,
                        searchDAO: SearchDAO,
                        thurloeDAO: ThurloeDAO,
-                       trialDAO: TrialDAO)
+                       trialDAO: TrialDAO,
+                       logitDAO: LogitDAO)
