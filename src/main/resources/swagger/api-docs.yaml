@@ -5108,6 +5108,13 @@ definitions:
       methodRepoMethod:
         type: object
         description: Method ID - Map
+      methodConfigVersion:
+        type: integer
+        description: 'Version number, incremented on edit'
+      deleted:
+        type: boolean
+        default: false
+        description: 'Is this config marked as deleted?'
     required:
       - namespace
       - name
