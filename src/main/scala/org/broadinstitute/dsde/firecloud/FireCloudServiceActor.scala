@@ -49,7 +49,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
 
   val elasticSearchClient: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
 
-  val logitMetricsEnabled = FireCloudConfig.Metrics.logitUrl.isDefined && FireCloudConfig.Metrics.logitApiKey.isDefined
+  val logitMetricsEnabled = FireCloudConfig.Metrics.logitApiKey.isDefined
 
   val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora)
   val rawlsDAO:RawlsDAO = new HttpRawlsDAO
@@ -61,7 +61,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val searchDAO:SearchDAO = new ElasticSearchDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.indexName, ontologyDAO)
   val trialDAO:TrialDAO = new ElasticSearchTrialDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.trialIndexName)
   val logitDAO:LogitDAO = if (logitMetricsEnabled)
-      new HttpLogitDAO(FireCloudConfig.Metrics.logitUrl.get, FireCloudConfig.Metrics.logitApiKey.get)
+      new HttpLogitDAO(FireCloudConfig.Metrics.logitUrl, FireCloudConfig.Metrics.logitApiKey.get)
     else
       new NoopLogitDAO
 
@@ -82,7 +82,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     val initialDelay = 1 + scala.util.Random.nextInt(10)
     system.scheduler.schedule(initialDelay.minutes, FireCloudConfig.Metrics.logitFrequencyMinutes.minutes, metricsActor, MetricsActor.RecordMetrics)
   } else {
-    logger.info("Logit url or apikey not found in configuration. Logit metrics are disabled for this instance.")
+    logger.info("Logit apikey not found in configuration. Logit metrics are disabled for this instance.")
   }
 
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)

@@ -61,7 +61,7 @@ class MetricsSpec extends BaseServiceSpec {
 
 }
 
-class MetricsSpecMockLogitDAO(numFailures: Int, numSamples: Int) extends MockLogitDAO with Assertions {
+class MetricsSpecMockLogitDAO(numFailures: Int, numSamples: Int) extends MockLogitDAO {
   val q = new java.util.concurrent.ConcurrentLinkedQueue[Int]
 
   override def recordMetric(metric: LogitMetric): Future[LogitMetric] = {

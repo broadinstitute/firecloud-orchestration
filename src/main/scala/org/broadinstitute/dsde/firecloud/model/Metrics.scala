@@ -9,19 +9,20 @@ object Metrics {
   final val LOG_TYPE = "FCMetric"
   final val METRICTYPE_KEY = "metricType"
 
+  // structures returned by Rawls
   case class CurrentEntityStatistics(workspaceNamespace: Option[String], workspaceName: Option[String], entityStats: Map[String, Int])
   case class Statistics(currentEntityStatistics: CurrentEntityStatistics)
   case class AdminStats(startDate: String, endDate: String, statistics: Statistics)
 
+  // structures sent to Logit and otherwise used in *LogitDAO
   abstract class LogitMetric
   case object NoopMetric extends LogitMetric
   case class NumObjects(numSamples: Int) extends LogitMetric
 
 }
 
-// ModelJsonProtocol is getting big and unwieldy, keeping the json formats local to the model as a new paradigm
+// ModelJsonProtocol is getting big and unwieldy, keeping the json formats local to the model
 trait MetricsFormat {
-  // implicit val EntityStatsFormat = jsonFormat6(EntityStats)
   implicit val CurrentEntityStatisticsFormat = jsonFormat3(CurrentEntityStatistics)
   implicit val StatisticsFormat = jsonFormat1(Statistics)
   implicit val AdminStatsFormat = jsonFormat3(AdminStats)

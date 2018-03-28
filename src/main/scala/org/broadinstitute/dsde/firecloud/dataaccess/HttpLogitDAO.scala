@@ -23,7 +23,6 @@ class HttpLogitDAO(logitUrl: String, logitApiKey: String)
       - Content-Type header set as application/json
       - Either POST or PUT to https://api.logit.io/v2
 
-
     curl -i -H "ApiKey: your-api-key" -i -H "Content-Type: application/json" -H "LogType: SampleHttpLog" https://api.logit.io/v2 -d '{"test":"test","example": { "a": 1, "b": 2 } }'
 
     Response

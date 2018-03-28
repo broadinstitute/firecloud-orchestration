@@ -8,5 +8,4 @@ trait LogitDAO {
 
   def recordMetric(metric: LogitMetric): Future[LogitMetric]
 
-
 }

@@ -174,9 +174,9 @@ object FireCloudConfig {
 
   object Metrics {
     private val metrics = config.getConfig("metrics")
-    val logitUrl: Option[String] = if (metrics.hasPath("logitUrl")) Some(metrics.getString("logitUrl")) else None
-    val logitApiKey: Option[String] = if (metrics.hasPath("logitApiKey")) Some(metrics.getString("logitApiKey")) else None
     val logitFrequencyMinutes = metrics.getInt("logitFrequencyMinutes")
+    val logitUrl: String = metrics.getString("logitUrl")
+    val logitApiKey: Option[String] = if (metrics.hasPath("logitApiKey")) Some(metrics.getString("logitApiKey")) else None
     val entityWorkspaceNamespace: Option[String] = if (metrics.hasPath("entityWorkspaceNamespace")) Some(metrics.getString("entityWorkspaceNamespace")) else None
     val entityWorkspaceName: Option[String] = if (metrics.hasPath("entityWorkspaceName")) Some(metrics.getString("entityWorkspaceName")) else None
   }
