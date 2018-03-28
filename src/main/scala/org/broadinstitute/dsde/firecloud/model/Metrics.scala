@@ -1,37 +1,21 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.model.Metrics.{AdminStats, CurrentEntityStatistics, LogitMetric, Statistics}
+import org.broadinstitute.dsde.firecloud.model.Metrics._
 import spray.json.DefaultJsonProtocol._
-import spray.json.JsObject
+import spray.json.{JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
 
 object Metrics {
 
-  /*
+  final val LOG_TYPE = "FCMetric"
+  final val METRICTYPE_KEY = "metricType"
 
-
-    "currentEntityStatistics": {
-      "entityStats": {
-        "pair_set": 32,
-        "participant": 1361235,
-        "sample_set": 370,
-        "participant_set": 5018,
-        "sample": 1620664,
-        "pair": 14151
-      },
-      "workspaceNamespace": "broad-dsde-dev"
-    },
-
-   */
-
-  // we could/should represent EntityStats as a Map[String, Int]
-  // case class EntityStats(sample: Option[Int], pair: Option[Int], participant: Option[Int], sample_set: Option[Int], pair_set: Option[Int], participant_set: Option[Int])
   case class CurrentEntityStatistics(workspaceNamespace: Option[String], workspaceName: Option[String], entityStats: Map[String, Int])
   case class Statistics(currentEntityStatistics: CurrentEntityStatistics)
   case class AdminStats(startDate: String, endDate: String, statistics: Statistics)
 
-
-  // TODO: build out
-  case class LogitMetric(numSamples: Int)
+  abstract class LogitMetric
+  case object NoopMetric extends LogitMetric
+  case class NumObjects(numSamples: Int) extends LogitMetric
 
 }
 
@@ -42,8 +26,14 @@ trait MetricsFormat {
   implicit val StatisticsFormat = jsonFormat1(Statistics)
   implicit val AdminStatsFormat = jsonFormat3(AdminStats)
 
-  implicit val LogitMetricFormat = jsonFormat1(LogitMetric)
+  implicit object LogitMetricFormat extends RootJsonFormat[LogitMetric] {
+    override def write(obj: LogitMetric): JsValue = obj match {
+      case NoopMetric => JsObject()
+      case ns:NumObjects => JsObject(Map(METRICTYPE_KEY -> JsString("NumObjects"), "numSamples" -> JsNumber(ns.numSamples)))
+    }
 
+    override def read(json: JsValue): LogitMetric = ??? // no need for reads
+  }
 }
 
 object MetricsFormat extends MetricsFormat

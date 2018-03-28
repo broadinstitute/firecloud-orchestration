@@ -232,6 +232,9 @@ class MockRawlsDAO  extends RawlsDAO {
     Future.successful(true)
   }
 
+
+  override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[Metrics.AdminStats] = ???
+
   override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] = {
     Future.successful(Seq("TestUserGroup"))
   }

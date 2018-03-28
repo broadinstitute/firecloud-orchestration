@@ -49,6 +49,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
 
   val elasticSearchClient: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
 
+  val logitMetricsEnabled = FireCloudConfig.Metrics.logitUrl.isDefined && FireCloudConfig.Metrics.logitApiKey.isDefined
+
   val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora)
   val rawlsDAO:RawlsDAO = new HttpRawlsDAO
   val samDAO:SamDAO = new HttpSamDAO
@@ -58,7 +60,10 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val consentDAO:ConsentDAO = new HttpConsentDAO
   val searchDAO:SearchDAO = new ElasticSearchDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.indexName, ontologyDAO)
   val trialDAO:TrialDAO = new ElasticSearchTrialDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.trialIndexName)
-  val logitDAO:LogitDAO = new HttpLogitDAO
+  val logitDAO:LogitDAO = if (logitMetricsEnabled)
+      new HttpLogitDAO(FireCloudConfig.Metrics.logitUrl.get, FireCloudConfig.Metrics.logitApiKey.get)
+    else
+      new NoopLogitDAO
 
   val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, thurloeDAO, trialDAO, logitDAO)
   val materializer: ActorMaterializer = ActorMaterializer()
@@ -70,8 +75,15 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
 
   val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
 
-  val metricsActor = system.actorOf(MetricsActor.props(app), "metrics-actor")
-  system.scheduler.schedule(5.seconds, 10.seconds, metricsActor, MetricsActor.RecordMetrics)
+  if (logitMetricsEnabled) {
+    logger.info("Logit metrics are enabled.")
+    val metricsActor = system.actorOf(MetricsActor.props(app), "metrics-actor")
+    // use a randomized startup delay to avoid multiple instances of this app executing on the same cycle
+    val initialDelay = 1 + scala.util.Random.nextInt(10)
+    system.scheduler.schedule(initialDelay.minutes, FireCloudConfig.Metrics.logitFrequencyMinutes.minutes, metricsActor, MetricsActor.RecordMetrics)
+  } else {
+    logger.info("Logit url or apikey not found in configuration. Logit metrics are disabled for this instance.")
+  }
 
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
