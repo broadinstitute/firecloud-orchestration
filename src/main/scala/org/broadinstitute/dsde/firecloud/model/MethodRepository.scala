@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.model
 import javax.mail.internet.InternetAddress
 
 import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
-import org.broadinstitute.dsde.rawls.model.{MethodConfigurationShort, MethodRepoMethod}
+import org.broadinstitute.dsde.rawls.model.{AgoraMethod, DockstoreMethod, MethodConfigurationShort, MethodRepoMethod}
 
 import scala.util.Try
 
@@ -50,10 +50,15 @@ object MethodRepository {
     def toShortString: String = s"Method($namespace,$name,$snapshotId)"
   }
 
+  case class AgoraConfigurationShort(
+    name: String,
+    rootEntityType: String,
+    methodRepoMethod: AgoraMethod,
+    namespace: String)
+
   object Method {
-    def apply(mrm:MethodRepoMethod) =
-      new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion))
-    def apply(mrm:MethodRepoMethod, managers:Option[Seq[String]], public:Option[Boolean]) =
+    def apply(mrm: AgoraMethod): Method = apply(mrm = mrm, managers = None, public = None)
+    def apply(mrm: AgoraMethod, managers:Option[Seq[String]], public:Option[Boolean]): Method =
       new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion), managers=managers, public=public)
   }
 
@@ -81,7 +86,7 @@ object MethodRepository {
 
   case class EntityAccessControlAgora(entity: Method, acls: Seq[AgoraPermission], message: Option[String] = None)
 
-  case class MethodAclPair(method:MethodRepoMethod, acls: Seq[FireCloudPermission], message: Option[String] = None)
+  case class MethodAclPair(method: AgoraMethod, acls: Seq[FireCloudPermission], message: Option[String] = None)
 
   case class EntityAccessControl(method:Option[Method], referencedBy: MethodConfigurationName, acls: Seq[FireCloudPermission], message: Option[String] = None)
 

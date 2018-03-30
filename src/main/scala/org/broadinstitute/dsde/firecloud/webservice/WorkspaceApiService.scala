@@ -93,8 +93,10 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
           } ~
           path("methodconfigs") {
             get {
-              requireUserInfo() { _ =>
-                passthrough(workspacePath + "/methodconfigs", HttpMethods.GET)
+              extract(_.request.uri.query) { query =>
+                requireUserInfo() { _ =>
+                  passthrough(Uri(workspacePath + "/methodconfigs").withQuery(query), HttpMethods.GET)
+                }
               }
             } ~
             post {

@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
@@ -36,6 +37,8 @@ case class MethodConfigurationName(
 
 object MethodConfigurationName {
   def apply(mcs:MethodConfigurationShort) =
+    new MethodConfigurationName(mcs.namespace, mcs.name)
+  def apply(mcs: AgoraConfigurationShort) =
     new MethodConfigurationName(mcs.namespace, mcs.name)
 }
 

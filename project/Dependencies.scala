@@ -21,20 +21,21 @@ object Dependencies {
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.7.2",
 
-    "org.broadinstitute.dsde.vault" %% "vault-common"        % "0.1-19-ca8b927",
-    "org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-aab4976-SNAP"
+    "org.broadinstitute.dsde.vault" %% "vault-common"        % "0.1-19-ca8b927"
+      exclude("io.spray", "spray-routing_2.11"),
+    "org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-9316d894-SNAP"
       exclude("com.typesafe.scala-logging", "scala-logging_2.11"),
     "org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP",
 
-    "io.spray"                      %% "spray-can"           % sprayV,
-    "io.spray"                      %% "spray-routing"       % sprayV,
-    "io.spray"                      %% "spray-json"          % "1.3.3",
-    "io.spray"                      %% "spray-client"        % sprayV,
-    "io.spray"                      %% "spray-testkit"       % sprayV    % "test",
-    "com.typesafe.akka"             %% "akka-actor"          % akkaV,
-    "com.typesafe.akka"             %% "akka-testkit"        % akkaV     % "test",
-    "com.typesafe.akka"             %% "akka-slf4j"          % akkaV,
-    "com.typesafe.akka"             %% "akka-stream"         % akkaV,
+    "io.spray"                      %% "spray-can"                 % sprayV,
+    "io.spray"                      %% "spray-json"                % "1.3.3",
+    "io.spray"                      %% "spray-client"              % sprayV,
+    "io.spray"                      %% "spray-routing-shapeless23" % sprayV,
+    "io.spray"                      %% "spray-testkit"             % sprayV   % "test",
+    "com.typesafe.akka"             %% "akka-actor"                % akkaV,
+    "com.typesafe.akka"             %% "akka-testkit"              % akkaV    % "test",
+    "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,
+    "com.typesafe.akka"             %% "akka-stream"               % akkaV,
 
     "org.elasticsearch.client"       % "transport"           % "5.4.3",
 
