@@ -93,11 +93,11 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
                 response.status match {
                   // Sam rejected our request. User is either invalid or their token timed out; this is truly unauthorized
                   case Unauthorized => respondWithErrorReport(Unauthorized, "Request rejected by identity service - invalid user or expired token.", requestContext)
-                  // rawls 404 means the user is not registered with FireCloud
+                  // Sam 404 means the user is not registered with FireCloud
                   case NotFound => respondWithErrorReport(NotFound, "FireCloud user registration not found.", requestContext)
-                  // rawls error? boo. All we can do is respond with an error.
+                  // Sam error? boo. All we can do is respond with an error.
                   case InternalServerError => respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again. (Error 10)", requestContext)
-                  // rawls found the user; we'll try to parse the response and inspect it
+                  // Sam found the user; we'll try to parse the response and inspect it
                   case OK =>
                     val respJson = response.entity.as[RegistrationInfo]
                     respJson match {
