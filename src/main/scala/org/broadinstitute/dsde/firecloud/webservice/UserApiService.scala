@@ -114,6 +114,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
                         }
                       // we couldn't parse the Sam response. Respond with an error.
                       case Left(_) =>
+                        // TODO: no obvious way to include the JSON parsing error in the ErrorReport. We define `message` below and it does not belong there.
                         respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
                     }
                   case x =>
