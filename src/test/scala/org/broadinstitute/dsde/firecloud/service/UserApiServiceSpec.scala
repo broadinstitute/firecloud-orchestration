@@ -391,6 +391,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     "when calling /me without Authorization header" - {
       "Unauthorized response is returned" in {
         Get(s"/me") ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("No authorization header in request"))
           status should equal(Unauthorized)
         }
       }
@@ -407,6 +408,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
               .withHeaders(MockUtils.header).withStatusCode(Unauthorized.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("Request rejected by identity service"))
           status should equal(Unauthorized)
         }
       }
@@ -423,6 +425,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
               .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("FireCloud user registration not found"))
           status should equal(NotFound)
         }
       }
@@ -439,6 +442,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
               .withHeaders(MockUtils.header).withStatusCode(InternalServerError.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("Identity service encountered an unknown error"))
           status should equal(InternalServerError)
         }
       }
@@ -456,6 +460,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("FireCloud user not activated"))
           status should equal(Forbidden)
         }
       }
@@ -473,6 +478,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("FireCloud user not activated"))
           status should equal(Forbidden)
         }
       }
@@ -507,6 +513,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
               .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
           )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("Received unparseable response from identity service"))
           status should equal(InternalServerError)
         }
       }

@@ -99,7 +99,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
                     respondWithErrorReport(NotFound, "FireCloud user registration not found.", requestContext)
                   // Sam error? boo. All we can do is respond with an error.
                   case InternalServerError =>
-                    respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again. (Error 10)", requestContext)
+                    respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
                   // Sam found the user; we'll try to parse the response and inspect it
                   case OK =>
                     val respJson = response.entity.as[RegistrationInfo]
@@ -113,8 +113,8 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
                           respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
                         }
                       // we couldn't parse the Sam response. Respond with an error.
-                      case Left(error) =>
-                        respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again. (Error 20)", requestContext)
+                      case Left(_) =>
+                        respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
                     }
                   case x =>
                     // if we get any other error from Sam, pass that error on
