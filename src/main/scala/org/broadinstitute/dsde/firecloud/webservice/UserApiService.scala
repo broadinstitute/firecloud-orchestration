@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.HttpHeaders.Authorization
 import spray.http.StatusCodes._
-import spray.http.{HttpCredentials, HttpMethods, StatusCode}
+import spray.http.{HttpCredentials, HttpMethods, HttpResponse, StatusCode}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
@@ -85,11 +85,11 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
           case None =>
             respondWithErrorReport(Unauthorized, "No authorization header in request.", requestContext)
           // browser sent Authorization header; try to query Sam for user status
-          case Some(c) =>
+          case Some(_) =>
             val pipeline = authHeaders(requestContext) ~> sendReceive
             val samRequest = Get(UserApiService.samRegisterUserURL)
             pipeline(samRequest) onComplete {
-              case Success(response) =>
+              case Success(response: HttpResponse) =>
                 response.status match {
                   // Sam rejected our request. User is either invalid or their token timed out; this is truly unauthorized
                   case Unauthorized =>
@@ -122,7 +122,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
                 }
               // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
               case Failure(error) =>
-                respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", requestContext)
+                respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
             }
         }
       }
@@ -234,7 +234,11 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       }
     }
 
-  private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext) = {
+  private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext): Unit = {
     requestContext.complete(statusCode, ErrorReport(statusCode=statusCode, message=message))
+  }
+
+  private def respondWithErrorReport(statusCode: StatusCode, message: String, error: Throwable, requestContext: RequestContext): Unit = {
+    requestContext.complete(statusCode, ErrorReport(statusCode = statusCode, message = message, throwable = error))
   }
 }
