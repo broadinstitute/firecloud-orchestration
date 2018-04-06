@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.HttpHeaders.Authorization
 import spray.http.StatusCodes._
-import spray.http.{HttpCredentials, HttpMethods, StatusCode}
+import spray.http.{HttpCredentials, HttpMethods, HttpResponse, StatusCode}
 import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
@@ -83,43 +83,47 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         authorizationHeader match {
           // no Authorization header; the user must be unauthorized
           case None =>
-            respondWithErrorReport(Unauthorized, Unauthorized.defaultMessage, requestContext)
-          // browser sent Authorization header; try to query rawls for user status
-          case Some(c) =>
+            respondWithErrorReport(Unauthorized, "No authorization header in request.", requestContext)
+          // browser sent Authorization header; try to query Sam for user status
+          case Some(_) =>
             val pipeline = authHeaders(requestContext) ~> sendReceive
-            val extReq = Get(UserApiService.samRegisterUserURL)
-            pipeline(extReq) onComplete {
-              case Success(response) =>
+            val samRequest = Get(UserApiService.samRegisterUserURL)
+            pipeline(samRequest) onComplete {
+              case Success(response: HttpResponse) =>
                 response.status match {
-                  // rawls rejected our request. User is either invalid or their token timed out; this is truly unauthorized
-                  case Unauthorized => respondWithErrorReport(Unauthorized, Unauthorized.defaultMessage, requestContext)
-                  // rawls 404 means the user is not registered with FireCloud
-                  case NotFound => respondWithErrorReport(NotFound, "FireCloud user registration not found", requestContext)
-                  // rawls error? boo. All we can do is respond with an error.
-                  case InternalServerError => respondWithErrorReport(InternalServerError, InternalServerError.defaultMessage, requestContext)
-                  // rawls found the user; we'll try to parse the response and inspect it
+                  // Sam rejected our request. User is either invalid or their token timed out; this is truly unauthorized
+                  case Unauthorized =>
+                    respondWithErrorReport(Unauthorized, "Request rejected by identity service - invalid user or expired token.", requestContext)
+                  // Sam 404 means the user is not registered with FireCloud
+                  case NotFound =>
+                    respondWithErrorReport(NotFound, "FireCloud user registration not found.", requestContext)
+                  // Sam error? boo. All we can do is respond with an error.
+                  case InternalServerError =>
+                    respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
+                  // Sam found the user; we'll try to parse the response and inspect it
                   case OK =>
                     val respJson = response.entity.as[RegistrationInfo]
                     respJson match {
                       case Right(regInfo) =>
                         if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allUsersGroup) {
-                          // rawls says the user is fully registered and activated!
+                          // Sam says the user is fully registered and activated!
                           requestContext.complete(OK, regInfo)
                         } else {
-                          // rawls knows about the user, but the user isn't activated
-                          respondWithErrorReport(Forbidden, "FireCloud user not activated", requestContext)
+                          // Sam knows about the user, but the user isn't activated
+                          respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
                         }
-                      // we couldn't parse the rawls response. Respond with an error.
-                      case Left(error) =>
-                        respondWithErrorReport(InternalServerError, InternalServerError.defaultMessage, requestContext)
+                      // we couldn't parse the Sam response. Respond with an error.
+                      case Left(_) =>
+                        // TODO: no obvious way to include the JSON parsing error in the ErrorReport. We define `message` below and it does not belong there.
+                        respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
                     }
                   case x =>
-                    // if we get any other error from rawls, pass that error on
+                    // if we get any other error from Sam, pass that error on
                     respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
                 }
-              // we couldn't reach rawls (within timeout period). Respond with a Service Unavailable error.
+              // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
               case Failure(error) =>
-                respondWithErrorReport(ServiceUnavailable, ServiceUnavailable.defaultMessage, requestContext)
+                respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
             }
         }
       }
@@ -231,7 +235,11 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       }
     }
 
-  private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext) = {
+  private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext): Unit = {
     requestContext.complete(statusCode, ErrorReport(statusCode=statusCode, message=message))
+  }
+
+  private def respondWithErrorReport(statusCode: StatusCode, message: String, error: Throwable, requestContext: RequestContext): Unit = {
+    requestContext.complete(statusCode, ErrorReport(statusCode = statusCode, message = message, throwable = error))
   }
 }
