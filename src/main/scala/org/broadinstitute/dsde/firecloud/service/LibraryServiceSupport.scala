@@ -53,7 +53,9 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
         orspId -> restriction
       } recover {
         case e:Exception =>
-          logger.warn(e.getMessage)
+          // content owners regularly publish datasets that reference an orspId that has yet to be approved
+          // or even doesn't exist yet. Therefore, this exception case is benign.
+          logger.info(e.getMessage)
           orspId -> None
       }
     })
