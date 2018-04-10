@@ -58,6 +58,22 @@ class ProfileSpec extends FreeSpec with Matchers {
         )
         profile shouldNot be(null)
       }
+      "Profile with contact email containing '+' is valid" in {
+        val profile = Profile(
+          firstName = randomString,
+          lastName = randomString,
+          title = randomString,
+          contactEmail = Some("a-z+a.b-x+y.z@gmail.com"),
+          institute = randomString,
+          institutionalProgram = randomString,
+          programLocationCity = randomString,
+          programLocationState = randomString,
+          programLocationCountry = randomString,
+          pi = randomString,
+          nonProfitStatus = randomString
+        )
+        profile shouldNot be(null)
+      }
     }
 
     "Incorrectly formed profiles" - {

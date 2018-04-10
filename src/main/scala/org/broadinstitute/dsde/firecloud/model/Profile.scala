@@ -110,7 +110,7 @@ case class NihLink(linkedNihUsername: String, linkExpireTime: Long) extends mapp
 }
 
 object ProfileValidator {
-  private val emailRegex = """^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$""".r
+  private val emailRegex = """^([\w-\+]+(?:\.[\w-\+]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$""".r
   def nonEmpty(field: String): Boolean = !field.trim.isEmpty
   def nonEmpty(field: Option[String]): Boolean = !field.getOrElse("").trim.isEmpty
   def emptyOrValidEmail(field: Option[String]): Boolean = field match {
