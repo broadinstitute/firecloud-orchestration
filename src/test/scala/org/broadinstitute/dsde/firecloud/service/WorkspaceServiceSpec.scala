@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 import akka.testkit.TestActorRef
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockSearchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockLogitDAO, MockRawlsDAO, MockSearchDAO}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken, WorkspaceDeleteResponse}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
-  val customApp = Application(agoraDao, googleServicesDao, ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), thurloeDao, trialDao)
+  val customApp = Application(agoraDao, googleServicesDao, ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), thurloeDao, trialDao, new MockLogitDAO)
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(customApp)
 

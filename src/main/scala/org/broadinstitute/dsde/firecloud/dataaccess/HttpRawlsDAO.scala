@@ -3,6 +3,8 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
+import org.broadinstitute.dsde.firecloud.model.MetricsFormat.AdminStatsFormat
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Trial.{CreateRawlsBillingProjectFullRequest, RawlsBillingProjectMember, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.model._
@@ -118,6 +120,19 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName)
 
     adminAuthedRequest(Put(url, memberList)).map(_.status.isSuccess)
+  }
+
+  override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats] = {
+    val queryParams =
+      Map("startDate" -> startDate.toString, "endDate" -> endDate.toString) ++
+        workspaceNamespace.map("workspaceNamespace" -> _) ++
+        workspaceName.map("workspaceName" -> _)
+    val url = Uri(FireCloudConfig.Rawls.authUrl + "/admin/statistics").withQuery(queryParams)
+    adminAuthedRequestToObject[AdminStats](Get(url)) recover {
+      case e:Exception =>
+        logger.error(s"HttpRawlsDAO.adminStats failed with ${e.getMessage}")
+        throw e
+    }
   }
 
   override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[Entity]] = {
