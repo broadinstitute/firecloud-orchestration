@@ -9,14 +9,15 @@ import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialServiceS
 import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 
 import scala.collection.JavaConversions._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class TrialServiceSupportSpec extends BaseServiceSpec with TrialServiceSupport {
 
   def specTrialDao: TrialDAO = new TrialServiceSupportSpecTrialDAO
   def specThurloeDao: ThurloeDAO = new MockThurloeDAO
+  implicit protected val executionContext: ExecutionContext = executor // from RouteTest
 
-  val trialDAO = specTrialDao // to satisfy the TrialServiceSupport trait
+  override val trialDao = new MockTrialDAO // unused; to satisfy the TrialServiceSupport trait
 
   "Trial Service Support" - {
 
@@ -31,7 +32,7 @@ class TrialServiceSupportSpec extends BaseServiceSpec with TrialServiceSupport {
       val managerInfo: UserInfo = UserInfo("token", "subjectId")
       val majorDimension: String = "ROWS"
       val range: String = "Sheet1!A1"
-      val values: Future[ValueRange] = makeSpreadsheetValues(managerInfo, specTrialDao, specThurloeDao, majorDimension, range)
+      val values: Future[ValueRange] = makeSpreadsheetValues(managerInfo, specTrialDao, specThurloeDao, majorDimension, range)(executionContext)
       val numRows: Int = specTrialDao.projectReport.size + 1 // +1 for the added header row
       val numCols: Int = 6
       values.map { vals =>
@@ -39,7 +40,7 @@ class TrialServiceSupportSpec extends BaseServiceSpec with TrialServiceSupport {
         vals.getRange should equal(range)
         vals.getValues should have length numRows
         vals.getValues.map { row => row should have length numCols}
-      }
+      }(executionContext)
     }
 
   }

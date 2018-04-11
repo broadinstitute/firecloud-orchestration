@@ -74,6 +74,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       (disabledUser, disabledProps),
       (enabledUser, enabledProps),
       (enabledButNotAgreedUser, enabledButNotAgreedProps),
+      (selfEnabledUser, selfEnabledUserProps),
       (enrolledUser, enrolledProps),
       (terminatedUser, terminatedProps),
       (finalizedUser, finalizedProps))
@@ -173,7 +174,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
             assertResult(NoContent, response.entity.asString) {
               status
             }
-            assert(localRawlsDao.billingProjectAdds == Map("testproject" -> "random@site.com"))
+            assert(localRawlsDao.billingProjectAdds.getOrElse("testproject","n/a") == "random@site.com")
           }
         }
       }
@@ -184,6 +185,17 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
             assertResult(Forbidden, response.entity.asString) {
               status
             }
+          }
+        }
+      }
+
+      s"enrollment as a self-enabled user who agreed to terms via $enrollPath" - {
+        "should claim a project" in {
+          Post(enrollPath) ~> dummyUserIdHeaders(selfEnabledUser) ~> userServiceRoutes ~> check {
+            assertResult(NoContent, response.entity.asString) {
+              status
+            }
+            assert(localRawlsDao.billingProjectAdds.getOrElse("projectfor-random@site.com","n/a") == "random@site.com")
           }
         }
       }
@@ -546,7 +558,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   class TrialApiServiceSpecTrialDAO extends ProjectManagerSpecTrialDAO {
     override def claimProjectRecord(userInfo: WorkbenchUserInfo, randomizationFactor: Int = 20): TrialProject = {
-      TrialProject(RawlsBillingProjectName(userInfo.userEmail), true, Some(userInfo), Some(CreationStatuses.Ready))
+      TrialProject(RawlsBillingProjectName("projectfor-" + userInfo.userEmail), true, Some(userInfo), Some(CreationStatuses.Ready))
     }
 
     override def releaseProjectRecord(projectName: RawlsBillingProjectName): TrialProject = {
@@ -569,7 +581,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       // Note: because HttpThurloeDAO catches exceptions, the assertions here will
       // result in InternalServerErrors instead of appearing nicely in unit test output.
       forUserId match {
-        case `enabledUser` => trialStatus.state match {
+        case `enabledUser` | `selfEnabledUser` => trialStatus.state match {
           case Some(Enrolled) =>
             val expectedExpirationDate = trialStatus.enrolledDate.plus(FireCloudConfig.Trial.durationDays, ChronoUnit.DAYS)
 
@@ -577,6 +589,9 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
             assert(trialStatus.expirationDate.toEpochMilli > 0)
             assertResult( expectedExpirationDate ) { trialStatus.expirationDate }
             assert(trialStatus.terminatedDate.toEpochMilli === 0)
+
+            val expectedProjectName = if (forUserId == enabledUser) "testproject" else "projectfor-random@site.com"
+            assert(trialStatus.billingProjectName.contains(expectedProjectName))
 
             Future.successful(Success(()))
           case Some(Enabled) =>
@@ -685,6 +700,7 @@ object TrialApiServiceSpec {
   val disabledUser2 = "disabled-user2"
   val enabledUser = "enabled-user"
   val enabledButNotAgreedUser = "enabled-but-not-agreed-user"
+  val selfEnabledUser = "self-enabled-user"
   val enrolledUser = "enrolled-user"
   val terminatedUser = "terminated-user"
   val finalizedUser = "finalized-user"
@@ -716,6 +732,11 @@ object TrialApiServiceSpec {
     "trialEnabledDate" -> "1",
     "trialBillingProjectName" -> "testproject"
   )
+  val selfEnabledUserProps = Map(
+    "trialState" -> "Enabled",
+    "userAgreed" -> "true",
+    "trialEnabledDate" -> "1"
+  )
   val enrolledProps = Map(
     "trialState" -> "Enrolled",
     "trialEnabledDate" -> "11",
@@ -743,6 +764,7 @@ object TrialApiServiceSpec {
   val dummy1UserEmail = "dummy1-user-email"
   val dummy2UserEmail = "dummy2-user-email"
   val enabledUserEmail = "enabled-user-email"
+  val selfEnabledUserEmail = "self-enabled-user-email"
   val disabledUserEmail = "disabled-user-email"
   val enrolledUserEmail = "enrolled-user-email"
   val terminatedUserEmail = "terminated-user-email"
@@ -752,6 +774,7 @@ object TrialApiServiceSpec {
   val dummy1UserInfo = WorkbenchUserInfo(userSubjectId = dummy1User, dummy1UserEmail)
   val dummy2UserInfo = WorkbenchUserInfo(userSubjectId = dummy2User, dummy2UserEmail)
   val enabledUserInfo = WorkbenchUserInfo(userSubjectId = enabledUser, enabledUserEmail)
+  val selfEnabledUserInfo = WorkbenchUserInfo(userSubjectId = selfEnabledUser, selfEnabledUserEmail)
   val disabledUserInfo = WorkbenchUserInfo(userSubjectId = disabledUser, disabledUserEmail)
   val enrolledUserInfo = WorkbenchUserInfo(userSubjectId = enrolledUser, enrolledUserEmail)
   val terminatedUserInfo = WorkbenchUserInfo(userSubjectId = terminatedUser, terminatedUserEmail)
@@ -761,6 +784,7 @@ object TrialApiServiceSpec {
   val dummy1UserRegInfo = RegistrationInfo(dummy1UserInfo, workbenchEnabled)
   val dummy2UserRegInfo = RegistrationInfo(dummy2UserInfo, workbenchEnabled)
   val enabledUserRegInfo = RegistrationInfo(enabledUserInfo, workbenchEnabled)
+  val selfEnabledUserRegInfo = RegistrationInfo(selfEnabledUserInfo, workbenchEnabled)
   val disabledUserRegInfo = RegistrationInfo(disabledUserInfo, workbenchEnabled)
   val enrolledUserRegInfo = RegistrationInfo(enrolledUserInfo, workbenchEnabled)
   val terminatedUserRegInfo = RegistrationInfo(terminatedUserInfo, workbenchEnabled)
@@ -771,6 +795,7 @@ object TrialApiServiceSpec {
     dummy1User -> dummy1UserRegInfo,
     dummy2User -> dummy2UserRegInfo,
     enabledUser -> enabledUserRegInfo,
+    selfEnabledUser -> selfEnabledUserRegInfo,
     disabledUser -> disabledUserRegInfo,
     enrolledUser -> enrolledUserRegInfo,
     terminatedUser -> terminatedUserRegInfo,

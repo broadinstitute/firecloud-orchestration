@@ -7,8 +7,8 @@ import java.util.Date
 
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.FireCloudException
-import org.broadinstitute.dsde.firecloud.dataaccess.{ThurloeDAO, TrialDAO}
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, TrialState}
 import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, TrialProject, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, Profile, ProfileWrapper, UserInfo, WorkbenchUserInfo}
@@ -19,7 +19,10 @@ import scala.util.{Failure, Success, Try}
 
 trait TrialServiceSupport extends LazyLogging {
 
-  val trialDAO:TrialDAO
+  val trialDao:TrialDAO
+  val samDao: SamDAO
+  val thurloeDao: ThurloeDAO
+  implicit protected val executionContext: ExecutionContext
 
   private val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   private val spreadsheetFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss ")
@@ -148,7 +151,23 @@ trait TrialServiceSupport extends LazyLogging {
     if (date.after(zeroDate)) spreadsheetFormat.format(date) else ""
   }
 
+  /**
+    * Enables the current user for free credits. Should only be used during the registration process.
+    * @param userInfo the current user
+    * @return [[UserTrialStatus]] if enabling succeeded; will throw an exception if failed.
+    */
+  def enableSelfForFreeCredits(userInfo: UserInfo): Future[UserTrialStatus] = {
+    thurloeDao.getTrialStatus(userInfo.id, userInfo) flatMap { userTrialStatus =>
+      val doTransition = Enabled.isAllowedFrom(userTrialStatus.state)
+      if (doTransition) {
+        val newStatus = userTrialStatus.copy(state = Some(Enabled))
+        thurloeDao.saveTrialStatus(userInfo.id, userInfo, newStatus) map { _ => newStatus }
+      } else
+        Future.failed(new FireCloudException(s"User '${userInfo.userEmail} is in state ${userTrialStatus.state} and cannot be enabled."))
+    }
+  }
 
+  // used when campaign manager enables an end user
   def buildEnableUserStatus(userInfo: WorkbenchUserInfo, currentStatus: UserTrialStatus): UserTrialStatus = {
     val needsProject = currentStatus.state match {
       case None | Some(Disabled) => true
@@ -156,29 +175,40 @@ trait TrialServiceSupport extends LazyLogging {
     }
 
     if (needsProject) {
-      // how many times should we try to find an available project? Retries here help when multiple users are enabled at once
-      val numAttempts = 50
-
-      def claimProject(attempt:Int):TrialProject = {
-        Try(trialDAO.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
-          case Success(s) => s
-          case Failure(f) =>
-            if (attempt >= numAttempts) {
-              throw new FireCloudException(s"Could not claim a project while enabling user ${userInfo.userSubjectId} " +
-                s"(${userInfo.userEmail}):", f)
-            } else {
-              logger.debug(s"buildEnableUserStatus retrying claim; attempt $attempt")
-              claimProject(attempt + 1)
-            }
-        }
-      }
-      val trialProject = claimProject(1)
-
+      val trialProject = claimProjectWithRetries(userInfo)
       logger.info(s"[trialaudit] assigned user ${userInfo.userEmail} (${userInfo.userSubjectId}) to project ${trialProject.name.value}")
       currentStatus.copy(userId = userInfo.userSubjectId, state = Some(Enabled), userAgreed = false, enabledDate = Instant.now, billingProjectName = Some(trialProject.name.value))
     } else {
       currentStatus.copy(state = Some(Enabled))
     }
+  }
+
+  /**
+    *
+    * @param userInfo user for whom to claim project
+    * @param numAttempts how many times should we try to find an available project? Retries here help when multiple users are enabled at once
+    * @return claimed project
+    */
+  def claimProjectWithRetries(userInfo: WorkbenchUserInfo, numAttempts: Int = 50): TrialProject = {
+    // log a warning, which should be seen by dev team, if the project pool is running low.
+    val numAvailable:Long = trialDao.countProjects.getOrElse("available", 0L)
+    if (numAvailable < FireCloudConfig.Trial.projectBufferSize)
+      logger.error(s"There are only $numAvailable free trial projects available; create more as soon as possible!")
+
+    def claimProject(attempt:Int):TrialProject = {
+      Try(trialDao.claimProjectRecord(WorkbenchUserInfo(userInfo.userSubjectId, userInfo.userEmail))) match {
+        case Success(s) => s
+        case Failure(f) =>
+          if (attempt >= numAttempts) {
+            throw new FireCloudException(s"Could not claim a project while enabling user ${userInfo.userSubjectId} " +
+              s"(${userInfo.userEmail}):", f)
+          } else {
+            logger.debug(s"buildEnableUserStatus retrying claim; attempt $attempt")
+            claimProject(attempt + 1)
+          }
+      }
+    }
+    claimProject(1)
   }
 
 }

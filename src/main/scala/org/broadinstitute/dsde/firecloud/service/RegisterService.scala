@@ -4,9 +4,10 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
 import org.broadinstitute.dsde.firecloud.service.RegisterService.{CreateUpdateProfile, UpdateProfilePreferences}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
@@ -28,12 +29,12 @@ object RegisterService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO)
+    new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.trialDAO)
 }
 
-class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO)
+class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO, val trialDao: TrialDAO)
   (implicit protected val executionContext: ExecutionContext) extends Actor
-  with LazyLogging {
+  with TrialServiceSupport with LazyLogging {
 
   override def receive = {
     case CreateUpdateProfile(userInfo, basicProfile) =>
@@ -45,21 +46,37 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
       _ <- thurloeDao.saveProfile(userInfo, basicProfile)
-      _ <- thurloeDao.saveKeyValues(
-          userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString)
-        )
-      isRegistered <- samDao.getRegistrationStatus(userInfo) recover {
-        case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
-          RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail), WorkbenchEnabled(false, false, false))
-      }
-      userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
-        for {
-          registrationInfo <- samDao.registerUser(userInfo)
-          _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
-        } yield registrationInfo
-      } else Future.successful(isRegistered)
+      _ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
+      isRegistered <- isRegistered(userInfo)
+      userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap)
+                      registerUser(userInfo)
+                    else
+                      Future.successful(isRegistered)
     } yield {
       RequestComplete(StatusCodes.OK, userStatus)
+    }
+  }
+
+  private def isRegistered(userInfo: UserInfo): Future[RegistrationInfo] = {
+    samDao.getRegistrationStatus(userInfo) recover {
+      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
+        RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail), WorkbenchEnabled(false, false, false))
+    }
+  }
+
+  private def registerUser(userInfo: UserInfo): Future[RegistrationInfo] = {
+    for {
+      registrationInfo <- samDao.registerUser(userInfo)
+      _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
+      freeCredits:Either[Exception,UserTrialStatus] <- enableSelfForFreeCredits(userInfo)
+        .map(Right(_)) recover { case e: Exception => Left(e) }
+    } yield {
+      val messages:Option[List[String]] = freeCredits match {
+        case Left(ex) => Some(registrationInfo.messages.getOrElse(List.empty[String]) :+
+          s"Error enabling free credits during registration. Underlying error: ${ex.getMessage}")
+        case Right(_) => registrationInfo.messages
+      }
+      registrationInfo.copy(messages = messages)
     }
   }
 
