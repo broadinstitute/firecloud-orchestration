@@ -171,6 +171,9 @@ object FireCloudConfig {
     val managerGroup = trial.getString("managerGroup")
     val billingAccount = trial.getString("billingAccount")
     val projectBufferSize = trial.getInt("projectBufferSize")
+    val spreadsheet = trial.getConfig("spreadsheet")
+    val spreadsheetId = spreadsheet.getString("id")
+    val spreadsheetUpdateFrequencyMinutes = spreadsheet.getInt("updateFrequencyMinutes")
   }
 
   object Metrics {
