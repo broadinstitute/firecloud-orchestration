@@ -118,7 +118,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   def getTrialBillingManagerAccessToken = {
-    val googleCredential = getTrialBillingManagerCredential(billingScope)
+    val googleCredential = getTrialBillingManagerCredential()
     googleCredential.refreshToken()
     googleCredential.getAccessToken
   }
