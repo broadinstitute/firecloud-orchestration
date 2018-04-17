@@ -442,7 +442,7 @@ final class TrialService
         case Failure(e) =>
           e match {
             case g: GoogleJsonResponseException =>
-              logger.warn(s"Unable to update spreadsheet [$spreadsheetId]: ${g.getDetails.getMessage}")
+              logger.error(s"Unable to update spreadsheet [$spreadsheetId]: ${g.getDetails.getMessage}")
               val code = StatusCodes.getForKey(g.getDetails.getCode).getOrElse(StatusCodes.InternalServerError)
               throw new FireCloudExceptionWithErrorReport(ErrorReport(code, e.getMessage))
             case _ => throw e
