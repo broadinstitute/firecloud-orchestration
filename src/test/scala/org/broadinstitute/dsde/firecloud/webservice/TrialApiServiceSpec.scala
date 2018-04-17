@@ -612,7 +612,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   final class TrialApiServiceSpecGoogleDAO extends MockGoogleServicesDAO {
 
-    override def updateSpreadsheet(userInfo: WithAccessToken, spreadsheetId: String, content: ValueRange): JsObject = {
+    override def updateSpreadsheet(withAccessToken: WithAccessToken, spreadsheetId: String, content: ValueRange): JsObject = {
       spreadsheetId match {
         case "invalid" =>
           // A lot of java overhead to generate the right exception...

@@ -319,13 +319,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   /**
     * Updates an existing google drive spreadsheet with the provided data.
     *
-    * @param userInfo       WithAccessToken
+    * @param withAccessToken       WithAccessToken
     * @param spreadsheetId  Spreadsheet ID
     * @param newContent     ValueRange
     * @return               JsObject representing the Google Update response
     */
-  def updateSpreadsheet(userInfo: WithAccessToken, spreadsheetId: String, newContent: ValueRange): JsObject = {
-    val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
+  def updateSpreadsheet(withAccessToken: WithAccessToken, spreadsheetId: String, newContent: ValueRange): JsObject = {
+    val credential = new GoogleCredential().setAccessToken(withAccessToken.accessToken.token)
     val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
 
     // Retrieve existing records

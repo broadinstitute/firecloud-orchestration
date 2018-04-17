@@ -92,7 +92,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
     Future.successful(GooglePriceList(GooglePrices(UsPriceItem(BigDecimal(0.01)), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
   }
-  override def updateSpreadsheet(userInfo: WithAccessToken, spreadsheetId: String, content: ValueRange): JsObject = spreadsheetUpdateJson
+  override def updateSpreadsheet(withAccessToken: WithAccessToken, spreadsheetId: String, content: ValueRange): JsObject = spreadsheetUpdateJson
 
 
   override def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Boolean = false
