@@ -55,24 +55,6 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
             }
           }
         }
-      } ~
-      path("report") {
-        post {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, TrialService.props(trialServiceConstructor),
-              TrialService.CreateBillingReport(requestContext, userInfo)
-            )
-          }
-        }
-      } ~
-      path("report" / Segment) { (spreadsheetId) =>
-        put {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, TrialService.props(trialServiceConstructor),
-              TrialService.UpdateBillingReport(requestContext, userInfo, spreadsheetId)
-            )
-          }
-        }
       }
     }
   }

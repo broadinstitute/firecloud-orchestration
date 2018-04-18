@@ -47,8 +47,7 @@ object TrialService {
   case class CountProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class Report(userInfo:UserInfo) extends TrialServiceMessage
   case class RecordUserAgreement(userInfo: UserInfo) extends TrialServiceMessage
-  case class CreateBillingReport(requestContext: RequestContext, userInfo: UserInfo) extends TrialServiceMessage
-  case class UpdateBillingReport(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String) extends TrialServiceMessage
+  case class UpdateBillingReport(spreadsheetId: String) extends TrialServiceMessage
 
   def props(service: () => TrialService): Props = {
     Props(service())
@@ -80,10 +79,7 @@ final class TrialService
     case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
     case Report(userInfo) => asTrialCampaignManager {projectReport}(userInfo) pipeTo sender
     case RecordUserAgreement(userInfo) => recordUserAgreement(userInfo) pipeTo sender
-    case CreateBillingReport(requestContext, userInfo) =>
-      asTrialCampaignManager { createBillingReport(requestContext, userInfo) }(userInfo) pipeTo sender
-    case UpdateBillingReport(requestContext, userInfo, spreadsheetId) =>
-      asTrialCampaignManager { updateBillingReport(requestContext, userInfo, spreadsheetId) }(userInfo) pipeTo sender
+    case UpdateBillingReport(spreadsheetId) => updateBillingReport(spreadsheetId) pipeTo sender
     case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
@@ -429,36 +425,32 @@ final class TrialService
     }
   }
 
-  private def createBillingReport(requestContext: RequestContext, userInfo: UserInfo): Future[PerRequestMessage] = {
-    val properties: SpreadsheetProperties = makeSpreadsheetProperties("Trial Billing Project Report")
-    val sheet: JsObject = googleDAO.createSpreadsheet(requestContext, userInfo, properties)
-    Try(sheet.fields.getOrElse("spreadsheetId", JsString("")).asInstanceOf[JsString].value) match {
-      case Success(spreadsheetId) if spreadsheetId.nonEmpty =>
-        updateBillingReport(requestContext, userInfo, spreadsheetId)
-      case Failure(e) =>
-        logger.error(s"Unable to create new google spreadsheet for user context [${userInfo.userEmail}]: ${e.getMessage}")
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, e.getMessage))
-    }
-  }
+  /** This method operates with service account credentials and can thus be invoked by anyone.
+    * As the developer, be careful about when you call this.
+    */
+  private def updateBillingReport(spreadsheetId: String): Future[SpreadsheetResponse] = {
+    // get SA credential
+    val saToken = AccessToken(googleDAO.getTrialSpreadsheetAccessToken)
 
-  private def updateBillingReport(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String): Future[PerRequestMessage] = {
     val majorDimension: String = "ROWS"
     val range: String = "Sheet1!A1"
-    makeSpreadsheetValues(userInfo, trialDao, thurloeDao, majorDimension, range).map { content =>
-      Try (googleDAO.updateSpreadsheet(requestContext, userInfo, spreadsheetId, content)) match {
+    makeSpreadsheetValues(saToken, trialDao, thurloeDao, majorDimension, range).map { content =>
+      Try (googleDAO.updateSpreadsheet(saToken, spreadsheetId, content)) match {
         case Success(updatedSheet) =>
-          RequestComplete(OK, makeSpreadsheetResponse(spreadsheetId))
+          logger.info(s"Successfully updated spreadsheet [$spreadsheetId].")
+          makeSpreadsheetResponse(spreadsheetId)
         case Failure(e) =>
           e match {
             case g: GoogleJsonResponseException =>
-              logger.warn(s"Unable to update spreadsheet for user context [${userInfo.userEmail}]: ${g.getDetails.getMessage}")
-              RequestCompleteWithErrorReport(g.getDetails.getCode, g.getDetails.getMessage)
+              logger.error(s"Unable to update spreadsheet [$spreadsheetId]: ${g.getDetails.getMessage}")
+              val code = StatusCodes.getForKey(g.getDetails.getCode).getOrElse(StatusCodes.InternalServerError)
+              throw new FireCloudExceptionWithErrorReport(ErrorReport(code, e.getMessage))
             case _ => throw e
           }
       }
     }.recoverWith {
       case e: Throwable =>
-        logger.error(s"Unable to update google spreadsheet for user context [${userInfo.userEmail}]: ${e.getMessage}")
+        logger.error(s"Unable to update google spreadsheet [$spreadsheetId]: ${e.getMessage}")
         throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, e.getMessage))
     }
   }

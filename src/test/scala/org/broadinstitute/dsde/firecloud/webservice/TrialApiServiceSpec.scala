@@ -492,70 +492,6 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
     }
   }
 
-  "Campaign manager report endpoints" - {
-
-    "Create Report endpoint" - {
-
-      allHttpMethodsExcept(POST) foreach { method =>
-        s"should reject ${method.toString} method" in {
-          new RequestBuilder(method)("/trial/manager/report") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-            assert(!handled)
-          }
-        }
-      }
-
-      "should succeed with a create request" in {
-        Post("/trial/manager/report") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-          assert(status.isSuccess)
-          assertResult(OK) {status}
-        }
-      }
-
-      "non-campaign manager should fail creating request" in {
-        Post("/trial/manager/report") ~> dummyUserIdHeaders(unauthorizedUser) ~> trialApiServiceRoutes ~> check {
-          assert(status.isFailure)
-          assertResult(Forbidden) {status}
-        }
-      }
-
-    }
-
-    "Update Report endpoint" - {
-
-      allHttpMethodsExcept(PUT) foreach { method =>
-        s"should reject ${method.toString} method" in {
-          new RequestBuilder(method)("/trial/manager/report/valid") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-            assert(!handled)
-          }
-        }
-      }
-
-      "should succeed with an update request" in {
-        Put("/trial/manager/report/valid") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-          assert(status.isSuccess)
-          assertResult(OK) {status}
-        }
-      }
-
-      "invalid spreadsheet id should fail an update request" in {
-        Put("/trial/manager/report/invalid") ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
-          println(response)
-          assert(status.isFailure)
-          assertResult(NotFound) {status}
-        }
-      }
-
-      "non-campaign manager should fail an update request" in {
-        Put("/trial/manager/report/valid") ~> dummyUserIdHeaders(unauthorizedUser) ~> trialApiServiceRoutes ~> check {
-          assert(status.isFailure)
-          assertResult(Forbidden) {status}
-        }
-      }
-
-    }
-
-  }
-
   class TrialApiServiceSpecTrialDAO extends ProjectManagerSpecTrialDAO {
     override def claimProjectRecord(userInfo: WorkbenchUserInfo, randomizationFactor: Int = 20): TrialProject = {
       TrialProject(RawlsBillingProjectName("projectfor-" + userInfo.userEmail), true, Some(userInfo), Some(CreationStatuses.Ready))
@@ -676,7 +612,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
   final class TrialApiServiceSpecGoogleDAO extends MockGoogleServicesDAO {
 
-    override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject = {
+    override def updateSpreadsheet(withAccessToken: WithAccessToken, spreadsheetId: String, content: ValueRange): JsObject = {
       spreadsheetId match {
         case "invalid" =>
           // A lot of java overhead to generate the right exception...

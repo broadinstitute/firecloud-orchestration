@@ -9,18 +9,17 @@ import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.cloudbilling.Cloudbilling
 import com.google.api.services.cloudbilling.model.ProjectBillingInfo
-import com.google.api.services.compute.ComputeScopes
+import com.google.api.services.sheets.v4.SheetsScopes
 import com.google.api.services.sheets.v4.Sheets
-import com.google.api.services.sheets.v4.model.{Spreadsheet, SpreadsheetProperties, ValueRange}
+import com.google.api.services.sheets.v4.model.ValueRange
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
-import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
@@ -80,6 +79,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
   // the scope we want is not defined in CloudbillingScopes, so we hardcode it here
   val billingScope = Seq("https://www.googleapis.com/auth/cloud-billing")
+  val spreadsheetScopes = Seq(SheetsScopes.SPREADSHEETS)
 
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
   val jsonFactory = JacksonFactory.getDefaultInstance
@@ -106,19 +106,25 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     googleCredential.getAccessToken
   }
 
-  def getTrialBillingManagerCredential: Credential = {
+  def getTrialBillingManagerCredential(addlScopes: Seq[String] = billingScope): Credential = {
     val builder = new GoogleCredential.Builder()
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
       .setServiceAccountId(trialBillingPemFileClientId)
-      .setServiceAccountScopes(authScopes ++ billingScope)
+      .setServiceAccountScopes(authScopes ++ addlScopes)
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(trialBillingPemFile))
 
     builder.build()
   }
 
   def getTrialBillingManagerAccessToken = {
-    val googleCredential = getTrialBillingManagerCredential
+    val googleCredential = getTrialBillingManagerCredential()
+    googleCredential.refreshToken()
+    googleCredential.getAccessToken
+  }
+
+  def getTrialSpreadsheetAccessToken = {
+    val googleCredential = getTrialBillingManagerCredential(spreadsheetScopes)
     googleCredential.refreshToken()
     googleCredential.getAccessToken
   }
@@ -311,34 +317,15 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   /**
-    * Saves a google drive spreadsheet with the provided SpreadsheetProperties object.
-    * Note that this does not *populate* the spreadsheet, just creates it with the provided properties
-    * Call GoogleServicesDAO#updateSpreadsheet to add data once a spreadsheet is created.
-    *
-    * @param requestContext RequestContext
-    * @param userInfo       UserInfo
-    * @param props          SpreadsheetProperties
-    * @return               JsObject representing the Google Create response
-    */
-  def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties): JsObject = {
-    val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
-    val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
-    val spreadsheet = new Spreadsheet().setProperties(props)
-    val response = service.spreadsheets().create(spreadsheet).execute()
-    response.toString.parseJson.asJsObject
-  }
-
-  /**
     * Updates an existing google drive spreadsheet with the provided data.
     *
-    * @param requestContext RequestContext
-    * @param userInfo       UserInfo
+    * @param withAccessToken       WithAccessToken
     * @param spreadsheetId  Spreadsheet ID
     * @param newContent     ValueRange
     * @return               JsObject representing the Google Update response
     */
-  def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, newContent: ValueRange): JsObject = {
-    val credential = new GoogleCredential().setAccessToken(userInfo.accessToken.token)
+  def updateSpreadsheet(withAccessToken: WithAccessToken, spreadsheetId: String, newContent: ValueRange): JsObject = {
+    val credential = new GoogleCredential().setAccessToken(withAccessToken.accessToken.token)
     val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
 
     // Retrieve existing records
@@ -391,7 +378,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     // as the service account, get the current billing info to make sure we are removing the right thing.
     // this call will fail if the free-tier billing account has already been removed from the project.
-    val billingService = getCloudBillingManager(getTrialBillingManagerCredential)
+    val billingService = getCloudBillingManager(getTrialBillingManagerCredential())
 
     val readRequest = billingService.projects().getBillingInfo(projectName)
     Try(executeGoogleRequest[ProjectBillingInfo](readRequest)) match {
@@ -412,7 +399,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           // indicates we want to remove the billing account association.
           val noBillingInfo = new ProjectBillingInfo().setBillingAccountName("")
           // generate the request to send to Google
-          val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential)
+          val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential())
             .projects().updateBillingInfo(projectName, noBillingInfo)
           // send the request
           val updatedProject = executeGoogleRequest[ProjectBillingInfo](noBillingRequest)

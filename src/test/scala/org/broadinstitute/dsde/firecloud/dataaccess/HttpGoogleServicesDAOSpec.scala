@@ -91,7 +91,7 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       )
     }
 
-    // This happens when calling updateBillingReport the first time from within createBillingReport
+    // This happens when calling updateBillingReport on an empty/new spreadsheet
     it should "not explode if existing content is empty (no headers)" in {
       check(
         newContent = List(headers, row1, row2, row3),

@@ -6,7 +6,7 @@ import akka.actor.ActorRefFactory
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.http.HttpResponse
 import spray.json.JsObject
@@ -72,6 +72,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getAdminUserAccessToken: String = "adminUserAccessToken"
   override def getTrialBillingManagerAccessToken: String = "billingManagerAccessToken"
   override def getTrialBillingManagerEmail: String = "mock-trial-billing-mgr-email"
+  override def getTrialSpreadsheetAccessToken: String = "trialSpreadsheetAccessToken"
   override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = {
     objectKey match {
       case "target-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntarget-user".getBytes("UTF-8"))
@@ -91,8 +92,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
     Future.successful(GooglePriceList(GooglePrices(UsPriceItem(BigDecimal(0.01)), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
   }
-  override def createSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, props: SpreadsheetProperties): JsObject = spreadsheetJson
-  override def updateSpreadsheet(requestContext: RequestContext, userInfo: UserInfo, spreadsheetId: String, content: ValueRange): JsObject = spreadsheetUpdateJson
+  override def updateSpreadsheet(withAccessToken: WithAccessToken, spreadsheetId: String, content: ValueRange): JsObject = spreadsheetUpdateJson
 
 
   override def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Boolean = false

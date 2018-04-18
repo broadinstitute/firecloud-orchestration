@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.metrics.MetricsActor
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.service.TrialService.UpdateBillingReport
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
@@ -76,11 +77,12 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
 
   if (logitMetricsEnabled) {
-    logger.info("Logit metrics are enabled.")
+    val freq = FireCloudConfig.Metrics.logitFrequencyMinutes
     val metricsActor = system.actorOf(MetricsActor.props(app), "metrics-actor")
     // use a randomized startup delay to avoid multiple instances of this app executing on the same cycle
     val initialDelay = 1 + scala.util.Random.nextInt(10)
-    system.scheduler.schedule(initialDelay.minutes, FireCloudConfig.Metrics.logitFrequencyMinutes.minutes, metricsActor, MetricsActor.RecordMetrics)
+    logger.info(s"Logit metrics are enabled: every $freq minutes, starting $initialDelay minutes from now.")
+    system.scheduler.schedule(initialDelay.minutes, freq.minutes, metricsActor, MetricsActor.RecordMetrics)
   } else {
     logger.info("Logit apikey not found in configuration. Logit metrics are disabled for this instance.")
   }
@@ -98,6 +100,17 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
   val trialServiceConstructor: () => TrialService = TrialService.constructor(app, trialProjectManager)
   val userServiceConstructor: (WithAccessToken) => UserService = UserService.constructor(app)
+
+  if (FireCloudConfig.Trial.spreadsheetId.nonEmpty && FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes > 0) {
+    val freq = FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes
+    val scheduledTrialService = system.actorOf(TrialService.props(trialServiceConstructor), "trial-spreadsheet-actor")
+    // use a randomized startup delay to avoid multiple instances of this app executing on the same cycle
+    val initialDelay = 1 + scala.util.Random.nextInt(freq/2)
+    logger.info(s"Free credits spreadsheet updates are enabled: every $freq minutes, starting $initialDelay minutes from now.")
+    system.scheduler.schedule(initialDelay.minutes, freq.minutes, scheduledTrialService, UpdateBillingReport(FireCloudConfig.Trial.spreadsheetId))
+  } else {
+    logger.info("Free credits spreadsheet id or update frequency not found in configuration. Spreadsheet updates are disabled for this instance.")
+  }
 
   // routes under /api
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
