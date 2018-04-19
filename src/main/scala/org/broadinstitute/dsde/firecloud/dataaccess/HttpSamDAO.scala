@@ -12,6 +12,7 @@ import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.client.pipelining.sendReceive
+import spray.http.HttpRequest
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
@@ -44,17 +45,11 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
   }
 
   override def createGroup(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
-    userAuthedRequest(Post(samManagedGroup(groupName))).map { resp =>
-      if(resp.status.isSuccess) ()
-      else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
-    }
+    userAuthedRequestToUnit(Post(samManagedGroup(groupName)))
   }
 
   override def deleteGroup(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
-    userAuthedRequest(Delete(samManagedGroup(groupName))).map { resp =>
-      if(resp.status.isSuccess) ()
-      else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
-    }
+    userAuthedRequestToUnit(Delete(samManagedGroup(groupName)))
   }
 
   override def listGroups(implicit userInfo: WithAccessToken): Future[List[FireCloudManagedGroupMembership]] = {
@@ -75,35 +70,27 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
   }
 
   override def addGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail)(implicit userInfo: WithAccessToken): Future[Unit] = {
-    userAuthedRequest(Put(samManagedGroupAlterMember(groupName, role, email))).map { resp =>
-      if(resp.status.isSuccess) ()
-      else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
-    }
+    userAuthedRequestToUnit(Put(samManagedGroupAlterMember(groupName, role, email)))
   }
 
   override def removeGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail)(implicit userInfo: WithAccessToken): Future[Unit] = {
-    userAuthedRequest(Delete(samManagedGroupAlterMember(groupName, role, email))).map { resp =>
-      if(resp.status.isSuccess) ()
-      else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
-    }
+    userAuthedRequestToUnit(Delete(samManagedGroupAlterMember(groupName, role, email)))
   }
 
   override def overwriteGroupMembers(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: List[WorkbenchEmail])(implicit userInfo: WithAccessToken): Future[Unit] = {
-    userAuthedRequest(Put(samManagedGroupPolicy(groupName, role), memberList)).map { resp =>
-      if(resp.status.isSuccess) ()
-      else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
-    }
+    userAuthedRequestToUnit(Put(samManagedGroupPolicy(groupName, role), memberList))
   }
 
   override def addPolicyMember(resourceTypeName: String, resourceId: String, policyName: String, email: WorkbenchEmail)(implicit userInfo: WithAccessToken): Future[Unit] = {
-    userAuthedRequest(Put(samResourcePolicyAlterMember(resourceTypeName, resourceId, policyName, email))).map { resp =>
-      if(resp.status.isSuccess) ()
-      else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
-    }
+    userAuthedRequestToUnit(Put(samResourcePolicyAlterMember(resourceTypeName, resourceId, policyName, email)))
   }
 
   override def requestGroupAccess(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
-    userAuthedRequest(Post(samManagedGroupRequestAccess(groupName))).map { resp =>
+    userAuthedRequestToUnit(Post(samManagedGroupRequestAccess(groupName)))
+  }
+
+  private def userAuthedRequestToUnit(request: HttpRequest): Future[Unit] = {
+    userAuthedRequest(request).map { resp =>
       if(resp.status.isSuccess) ()
       else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
     }
