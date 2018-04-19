@@ -14,7 +14,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 class PermissionsSupportSpec extends PermissionsSupport with FreeSpecLike {
   protected val rawlsDAO: RawlsDAO = new MockRawlsDAO
-  protected val samDAO: SamDAO = new PermissionsSupportMockSamDAO
+  protected val samDao: SamDAO = new PermissionsSupportMockSamDAO
   implicit protected val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val dur:Duration = Duration(60, SECONDS)

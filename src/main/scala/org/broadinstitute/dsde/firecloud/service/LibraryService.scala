@@ -53,7 +53,7 @@ object LibraryService {
 
 class LibraryService (protected val argUserInfo: UserInfo,
                       val rawlsDAO: RawlsDAO,
-                      val samDAO: SamDAO,
+                      val samDao: SamDAO,
                       val searchDAO: SearchDAO,
                       val ontologyDAO: OntologyDAO,
                       val consentDAO: ConsentDAO)
@@ -222,7 +222,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    getEffectiveDiscoverGroups(samDAO) flatMap { userGroups =>
+    getEffectiveDiscoverGroups(samDao) flatMap { userGroups =>
       // we want docsFuture and ids to be parallelized - so declare them here, outside
       // of the for-yield.
       val docsFuture = searchDAO.findDocuments(criteria, userGroups)
@@ -239,7 +239,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    getEffectiveDiscoverGroups(samDAO) map {userGroups =>
+    getEffectiveDiscoverGroups(samDao) map { userGroups =>
       searchDAO.suggestionsFromAll(criteria, userGroups)} map (RequestComplete(_))
   }
 

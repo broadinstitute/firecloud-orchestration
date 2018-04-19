@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 trait PermissionsSupport {
   protected val rawlsDAO: RawlsDAO
-  protected val samDAO: SamDAO
+  protected val samDao: SamDAO
   implicit protected val executionContext: ExecutionContext
 
   def tryIsAdmin(userInfo: UserInfo): Future[Boolean] = {
@@ -67,7 +67,7 @@ trait PermissionsSupport {
   }
 
   def tryIsGroupMember(userInfo: UserInfo, group: String): Future[Boolean] = {
-    samDAO.isGroupMember(WorkbenchGroupName(group), userInfo) recoverWith {
+    samDao.isGroupMember(WorkbenchGroupName(group), userInfo) recoverWith {
       case t: Throwable => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to query for group membership status."))
     }
   }
