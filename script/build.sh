@@ -28,10 +28,12 @@ function docker_cmd()
         echo "building docker image..."
         if [ "$ENV" != "dev" ] && [ "$ENV" != "alpha" ] && [ "$ENV" != "staging" ] && [ "$ENV" != "perf" ]; then
             DOCKER_TAG=${BRANCH}
+	    DOCKER_TAG_TESTS=${BRANCH}
         else
             GIT_SHA=$(git rev-parse origin/${BRANCH})
             echo GIT_SHA=$GIT_SHA > env.properties
             DOCKER_TAG=${GIT_SHA:0:12}
+            DOCKER_TAG_TESTS=${GIT_SHA:0:12}
         fi
         docker build -t $REPO:${DOCKER_TAG} .
 
