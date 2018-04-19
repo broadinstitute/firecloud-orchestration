@@ -92,4 +92,6 @@ class MockSamDAO extends SamDAO {
   override def requestGroupAccess(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
     Future.successful(()) //not really a good way to mock this at the moment, TODO
   }
+
+  override def addPolicyMember(resourceTypeName: String, resourceId: String, policyName: String, email: WorkbenchEmail)(implicit userInfo: WithAccessToken) = Future.successful(()) //todo
 }

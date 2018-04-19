@@ -95,6 +95,13 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
     }
   }
 
+  override def addPolicyMember(resourceTypeName: String, resourceId: String, policyName: String, email: WorkbenchEmail)(implicit userInfo: WithAccessToken): Future[Unit] = {
+    userAuthedRequest(Put(samResourcePolicyAlterMember(resourceTypeName, resourceId, policyName, email))).map { resp =>
+      if(resp.status.isSuccess) ()
+      else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
+    }
+  }
+
   override def requestGroupAccess(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
     userAuthedRequest(Post(samManagedGroupRequestAccess(groupName))).map { resp =>
       if(resp.status.isSuccess) ()
