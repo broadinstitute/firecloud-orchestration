@@ -59,7 +59,7 @@ class ManagedGroupService(samDAO: SamDAO, userToken: WithAccessToken)(implicit p
     val membersList = for {
       _ <- samDAO.createGroup(groupName)
       listMembers <- listGroupMembersInternal(groupName)
-      _ <- samDAO.addPolicyMember("managed-group", groupName.value, "admin-notifier", WorkbenchEmail("GROUP_All_Users@dev.test.firecloud.org")) //todo
+      _ <- samDAO.addPolicyMember(samDAO.managedGroupResourceTypeName, groupName.value, ManagedGroupRoles.AdminNotifier.toString, WorkbenchEmail("GROUP_All_Users@dev.test.firecloud.org")) //todo
     } yield listMembers
 
     membersList.map(response => RequestComplete(StatusCodes.Created, response))

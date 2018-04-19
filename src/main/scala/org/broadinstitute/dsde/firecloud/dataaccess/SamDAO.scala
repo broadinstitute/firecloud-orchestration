@@ -22,6 +22,8 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
 
   implicit val errorReportSource = ErrorReportSource(SamDAO.serviceName)
 
+  val managedGroupResourceTypeName = "managed-group"
+
   val samUserRegistrationUrl: String = FireCloudConfig.Sam.baseUrl + "/register/user"
   val samStatusUrl: String = FireCloudConfig.Sam.baseUrl + "/status"
   val samAdminUserByEmail: String = FireCloudConfig.Sam.baseUrl + "/api/admin/user/email/%s"

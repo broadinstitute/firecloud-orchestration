@@ -12,6 +12,7 @@ object ManagedGroupRoles {
       this match {
         case Admin => "admin"
         case Member => "member"
+        case AdminNotifier => "admin-notifier"
         case _ => throw new Exception(s"invalid ManagedGroupRole [$this]")
       }
     }
@@ -24,11 +25,13 @@ object ManagedGroupRoles {
   def withName(name: String): ManagedGroupRole = name.toLowerCase match {
     case role if role matches "(?i)admin(s?$)" => Admin
     case role if role matches "(?i)member(s?$)" => Member
+    case role if role matches "(?i)admin-notifier(s?$)" => AdminNotifier
     case _ => throw new Exception(s"invalid ManagedGroupRole [$name]")
   }
 
   case object Admin extends ManagedGroupRole
   case object Member extends ManagedGroupRole
+  case object AdminNotifier extends ManagedGroupRole
 
   val all: Set[ManagedGroupRole] = Set(Admin, Member)
 }

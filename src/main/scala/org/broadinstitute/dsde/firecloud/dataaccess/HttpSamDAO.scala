@@ -62,7 +62,7 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
 
   override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
     implicit val accessToken = userInfo
-    authedRequestToObject[List[String]](Get(samResourceRoles("managed-group", groupName.value))).map(_.nonEmpty)
+    authedRequestToObject[List[String]](Get(samResourceRoles(managedGroupResourceTypeName, groupName.value))).map(_.nonEmpty)
   }
 
   override def listGroupPolicyEmails(groupName: WorkbenchGroupName, policyName: ManagedGroupRole)(implicit userInfo: WithAccessToken): Future[List[WorkbenchEmail]] = {
@@ -89,7 +89,7 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
     userAuthedRequestToUnit(Post(samManagedGroupRequestAccess(groupName)))
   }
 
-  private def userAuthedRequestToUnit(request: HttpRequest): Future[Unit] = {
+  private def userAuthedRequestToUnit(request: HttpRequest)(implicit userInfo: WithAccessToken): Future[Unit] = {
     userAuthedRequest(request).map { resp =>
       if(resp.status.isSuccess) ()
       else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
