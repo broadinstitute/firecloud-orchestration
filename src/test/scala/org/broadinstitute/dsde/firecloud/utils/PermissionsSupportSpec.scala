@@ -1,9 +1,10 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockSamDAO, RawlsDAO, SamDAO}
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import org.scalatest.FreeSpecLike
 import spray.http.StatusCodes
 
@@ -12,7 +13,8 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 
 class PermissionsSupportSpec extends PermissionsSupport with FreeSpecLike {
-  protected val rawlsDAO: RawlsDAO = new PermissionsSupportMockRawlsDAO
+  protected val rawlsDAO: RawlsDAO = new MockRawlsDAO
+  protected val samDAO: SamDAO = new PermissionsSupportMockSamDAO
   implicit protected val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val dur:Duration = Duration(60, SECONDS)
@@ -71,17 +73,17 @@ class PermissionsSupportSpec extends PermissionsSupport with FreeSpecLike {
   }
 }
 
-class PermissionsSupportMockRawlsDAO extends MockRawlsDAO {
+class PermissionsSupportMockSamDAO extends MockSamDAO {
   private val groupMap = Map(
     "apples" -> Seq("alice"),
     "bananas" -> Seq("bob"),
     "trial_managers" -> Seq("charlie") // the name "trial_managers" is defined in reference.conf
   )
 
-  override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
+  override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
     userInfo.id match {
       case "failme" => Future.failed(new Exception("intentional exception for unit tests"))
-      case _ => Future.successful(groupMap.getOrElse(groupName, Seq.empty[String]).contains(userInfo.id))
+      case _ => Future.successful(groupMap.getOrElse(groupName.value, Seq.empty[String]).contains(userInfo.id))
     }
   }
 

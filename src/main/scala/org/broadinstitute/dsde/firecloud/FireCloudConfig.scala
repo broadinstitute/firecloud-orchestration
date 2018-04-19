@@ -4,6 +4,7 @@ import scala.collection.JavaConverters._
 import com.typesafe.config.{ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.service.NihWhitelist
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
+import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import spray.http.Uri
 import spray.http.Uri.{Authority, Host}
 
@@ -132,7 +133,7 @@ object FireCloudConfig {
         val rawlsGroup = config.getString("rawlsGroup")
         val fileName = config.getString("fileName")
 
-        NihWhitelist(name, rawlsGroup, fileName)
+        NihWhitelist(name, WorkbenchGroupName(rawlsGroup), fileName)
       }
     }.toSet
   }

@@ -58,8 +58,8 @@ object TrialService {
 }
 
 final class TrialService
-  (val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO,
-   val trialDao: TrialDAO, val googleDAO: GoogleServicesDAO, projectManager: ActorRef)
+  (val samDAO: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO,
+   val trialDAO: TrialDAO, val googleDAO: GoogleServicesDAO, projectManager: ActorRef)
   (implicit protected val executionContext: ExecutionContext)
   extends Actor with PermissionsSupport with SprayJsonSupport with TrialServiceSupport with LazyLogging {
 
@@ -197,7 +197,7 @@ final class TrialService
 
     val userTransitions = userEmails.map { userEmail =>
       val status = Try(for {
-        regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(userEmail))
+        regInfo <- samDAO.adminGetUserByEmail(RawlsUserEmail(userEmail))
         subId = regInfo.userInfo.userSubjectId
         userInfo = WorkbenchUserInfo(subId, userEmail)
         userTrialStatus <- thurloeDao.getTrialStatus(subId, managerInfo)

@@ -1,9 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
-import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
 
 case class WorkspaceDeleteResponse(message: Option[String] = None)
@@ -74,11 +71,5 @@ case class SubmissionRequest(
   expression: Option[String],
   useCallCache: Option[Boolean],
   workflowFailureMode: Option[String])
-
-case class RawlsGroupMemberList(
-  userEmails: Option[Seq[String]] = None,
-  subGroupEmails: Option[Seq[String]] = None,
-  userSubjectIds: Option[Seq[String]] = None,
-  subGroupNames: Option[Seq[String]] = None)
 
 case class WorkspaceStorageCostEstimate(estimate: String)

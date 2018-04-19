@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
+import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
@@ -9,11 +10,12 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial._
-import spray.json._
+import spray.json.{JsString, _}
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
+import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 
 import scala.util.{Failure, Success, Try}
 
@@ -217,11 +219,21 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impCurator = jsonFormat1(Curator)
   implicit val impUserImportPermission = jsonFormat2(UserImportPermission)
 
-  implicit val impRawlsGroupMemberList = jsonFormat4(RawlsGroupMemberList)
-
   implicit val impWorkspaceStorageCostEstimate = jsonFormat1(WorkspaceStorageCostEstimate)
 
   implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)
+
+  implicit object impManagedGroupRoleFormat extends RootJsonFormat[ManagedGroupRole] {
+    override def write(obj: ManagedGroupRole): JsValue = JsString(obj.toString)
+
+    override def read(json: JsValue): ManagedGroupRole = json match {
+      case JsString(name) => ManagedGroupRoles.withName(name)
+      case _ => throw new DeserializationException("could not deserialize project role")
+    }
+  }
+
+  implicit val impFireCloudManagedGroup = jsonFormat3(FireCloudManagedGroup)
+  implicit val impFireCloudManagedGroupMembership = jsonFormat3(FireCloudManagedGroupMembership)
 
   implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat5(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)

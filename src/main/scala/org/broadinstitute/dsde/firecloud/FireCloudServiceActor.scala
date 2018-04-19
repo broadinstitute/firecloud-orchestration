@@ -37,6 +37,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with MethodsApiService
   with Ga4ghApiService
   with UserApiService
+  with ManagedGroupApiService
   with TrialApiService
 {
 
@@ -100,6 +101,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
   val trialServiceConstructor: () => TrialService = TrialService.constructor(app, trialProjectManager)
   val userServiceConstructor: (WithAccessToken) => UserService = UserService.constructor(app)
+  val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
 
   if (FireCloudConfig.Trial.spreadsheetId.nonEmpty && FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes > 0) {
     val freq = FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes
@@ -163,6 +165,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         swaggerUiService ~
         syncRoute ~
         userServiceRoutes ~
+        managedGroupServiceRoutes ~
         workspaceRoutes ~
         notificationsRoutes ~
         statusRoutes ~

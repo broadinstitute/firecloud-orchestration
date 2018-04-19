@@ -92,12 +92,7 @@ object MockRawlsDAO {
   * Created by davidan on 9/28/16.
   *
   */
-class MockRawlsDAO  extends RawlsDAO {
-
-  var groups: Map[String, Set[String]] = Map(
-    "TCGA-dbGaP-Authorized" -> Set("tcga-linked", "tcga-linked-no-expire-date", "tcga-linked-expired", "tcga-linked-user-invalid-expire-date", "tcga-and-target-linked", "tcga-and-target-linked-expired"),
-    "TARGET-dbGaP-Authorized" -> Set("target-linked", "target-linked-expired", "tcga-and-target-linked", "tcga-and-target-linked-expired")
-  )
+class MockRawlsDAO extends RawlsDAO {
 
   private val rawlsWorkspaceWithAttributes = Workspace(
     "attributes",
@@ -208,36 +203,13 @@ class MockRawlsDAO  extends RawlsDAO {
   
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future.successful(false)
 
-  override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = Future.successful(true)
-
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = {
     Future.successful(userInfo.id == "curator")
   }
 
   override def registerUser(userInfo: UserInfo): Future[Unit] = Future.successful(())
 
-  override def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
-    val userEmailsToAdd = memberList.userSubjectIds.getOrElse(Seq[String]()).toSet
-    val groupWithNewMembers = (groupName -> ((groups(groupName).filterNot(userEmailsToAdd.contains)) ++ userEmailsToAdd))
-    this.synchronized { groups = groups + groupWithNewMembers }
-
-    Future.successful(true)
-  }
-
-  override def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
-    val userEmailsToAdd = memberList.userSubjectIds.getOrElse(Set[String]()).toSet
-    val groupWithNewMembers = (groupName -> userEmailsToAdd)
-    this.synchronized { groups = groups + groupWithNewMembers }
-
-    Future.successful(true)
-  }
-
-
   override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[Metrics.AdminStats] = ???
-
-  override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] = {
-    Future.successful(Seq("TestUserGroup"))
-  }
 
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] = {
     Future.successful(BucketUsageResponse(BigInt("256000000000")))
