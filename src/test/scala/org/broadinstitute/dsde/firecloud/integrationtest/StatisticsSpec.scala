@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.Document
 import org.broadinstitute.dsde.firecloud.model.Metrics.NumSubjects
@@ -9,7 +10,11 @@ import org.scalatest.{BeforeAndAfterEach, FreeSpec, Matchers}
 
 class StatisticsSpec extends FreeSpec with Matchers with BeforeAndAfterEach with LazyLogging {
 
-  // "library-ns-1" and "library-ns-2" are codified in reference.conf
+  /* Conf file contains one or more workspace namespaces, referenced via FireCloudConfig.Metrics.libraryNamespaces.
+     We filter Library datasets to just those namespaces when calculating metrics.
+     For tests - using reference.conf - we expect to see "library-ns-1" and "library-ns-2" as our
+     target namespaces.
+   */
   private val ignoredTuples:Seq[(String,Int)] = Seq(
     ("should-be-ignored", 944),
     ("some-other-namespace", 777),
@@ -30,9 +35,12 @@ class StatisticsSpec extends FreeSpec with Matchers with BeforeAndAfterEach with
     tuples map {
       case (namespace, numSubjects) =>
         Document(s"$namespace::$numSubjects", Map(
+          // the query in ElasticSearchDAO filters using 'namespace' and sums on 'numSubjects';
+          // these are the only fields that should matter to the query.
           AttributeName.withDefaultNS("namespace") -> AttributeString(namespace),
           AttributeName.withLibraryNS("numSubjects") -> AttributeNumber(numSubjects),
-          // just to see if we can confuse the query
+          // index the following fields - which should be ignored by ElasticSearchDAO -
+          // to make sure that the query is not confused by the existence of these.
           AttributeName.withLibraryNS("dulvn") -> AttributeNumber(-9999999),
           AttributeName.withDefaultNS("name") -> AttributeString("library-ns-1"),
           AttributeName.withLibraryNS("useLimitationOption") -> AttributeString("library-ns-2")
@@ -51,6 +59,12 @@ class StatisticsSpec extends FreeSpec with Matchers with BeforeAndAfterEach with
   }
 
   "SearchDAO.statistics" - {
+
+    "test reference.conf should contain the libraryNamespaces these tests expect" in {
+      assertResult(Set("library-ns-1", "library-ns-2")) {
+        FireCloudConfig.Metrics.libraryNamespaces.toSet
+      }
+    }
 
     "should return 0 when no documents in the index" in {
       assertResult(NumSubjects(0)) {
