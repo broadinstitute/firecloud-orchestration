@@ -39,7 +39,7 @@ class MetricsActor(logitDAO: LogitDAO, rawlsDAO: RawlsDAO, searchDAO: SearchDAO)
 
     // get admin-stats from rawls
     rawlsDAO.adminStats(startDate, endDate, workspaceNamespace, workspaceName) flatMap { stats =>
-      // we only care to log samples right now
+      // out of all the metrics Rawls returns, we only care to extract the number of samples right now
       val numSamples = stats.statistics.currentEntityStatistics.entityStats.getOrElse("sample", 0)
 
       // get sum of samples from Library
