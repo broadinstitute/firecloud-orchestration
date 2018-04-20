@@ -154,21 +154,18 @@ class ElasticSearchDAO(client: TransportClient, indexName: String, ontologyDAO: 
     val statsTry = Try(executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](search))
 
     // extract the sum from the results, safely
-    val safeNumber = statsTry match {
+    val safeNumber: Int = statsTry match {
       case Success(stats) =>
-        val sum = stats.getAggregations.get[Sum](AGGKEY)
-        if (sum != null) {// eww, Java nulls
-          sum.getValue
-        } else {
+        val sumOption = Option(stats.getAggregations.get[Sum](AGGKEY))
+        if (sumOption.isEmpty)
           logger.info(s"statistics query did not find $AGGKEY in aggregation results!")
-          0
-        }
+        sumOption.map(_.getValue.toInt).getOrElse(0)
       case Failure(ex) =>
         logger.warn(s"statistics query failed: ${ex.getMessage}")
         0
     }
 
-    NumSubjects(safeNumber.toInt)
+    NumSubjects(safeNumber)
   }
 
   /* see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html
