@@ -23,11 +23,11 @@ class MetricsSpec extends BaseServiceSpec {
     "should serialize noop metric to empty object" in {
       assertResult(JsObject()) {LogitMetricFormat.write(NoopMetric)}
     }
-    "should serialize NumObjects metric correctly" in {
+    "should serialize NumSamples metric correctly" in {
       List(Integer.MIN_VALUE, -1, 0, 1, 42, 123456789, Integer.MAX_VALUE) foreach { num =>
-        val numObjects = NumSamples(num)
+        val numSamples = NumSamples(num)
         val expected = JsObject(Map("metricType" -> JsString("NumSamples"), "numSamples" -> JsNumber(num)))
-        assertResult(expected) {LogitMetricFormat.write(numObjects)}
+        assertResult(expected) {LogitMetricFormat.write(numSamples)}
       }
     }
     "should serialize NumSubjects metric correctly" in {
