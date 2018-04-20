@@ -25,8 +25,8 @@ class MetricsSpec extends BaseServiceSpec {
     }
     "should serialize NumObjects metric correctly" in {
       List(Integer.MIN_VALUE, -1, 0, 1, 42, 123456789, Integer.MAX_VALUE) foreach { num =>
-        val numObjects = NumObjects(num)
-        val expected = JsObject(Map("metricType" -> JsString("NumObjects"), "numSamples" -> JsNumber(num)))
+        val numObjects = NumSamples(num)
+        val expected = JsObject(Map("metricType" -> JsString("NumSamples"), "numSamples" -> JsNumber(num)))
         assertResult(expected) {LogitMetricFormat.write(numObjects)}
       }
     }
