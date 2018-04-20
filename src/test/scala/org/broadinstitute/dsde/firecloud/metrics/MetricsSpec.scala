@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.metrics
 
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockLogitDAO, MockRawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockLogitDAO, MockRawlsDAO, MockSearchDAO}
 import org.broadinstitute.dsde.firecloud.model.Metrics
 import org.broadinstitute.dsde.firecloud.model.Metrics._
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.LogitMetricFormat
@@ -23,11 +23,28 @@ class MetricsSpec extends BaseServiceSpec {
     "should serialize noop metric to empty object" in {
       assertResult(JsObject()) {LogitMetricFormat.write(NoopMetric)}
     }
-    "should serialize numobjects metric correctly" in {
+    "should serialize NumObjects metric correctly" in {
       List(Integer.MIN_VALUE, -1, 0, 1, 42, 123456789, Integer.MAX_VALUE) foreach { num =>
         val numObjects = NumObjects(num)
         val expected = JsObject(Map("metricType" -> JsString("NumObjects"), "numSamples" -> JsNumber(num)))
         assertResult(expected) {LogitMetricFormat.write(numObjects)}
+      }
+    }
+    "should serialize NumSubjects metric correctly" in {
+      List(Integer.MIN_VALUE, -1, 0, 1, 42, 123456789, Integer.MAX_VALUE) foreach { num =>
+        val numObjects = NumSubjects(num)
+        val expected = JsObject(Map("metricType" -> JsString("NumSubjects"), "numSubjects" -> JsNumber(num)))
+        assertResult(expected) {LogitMetricFormat.write(numObjects)}
+      }
+    }
+    "should serialize SamplesAndSubjects metric correctly" in {
+      val nums = List(Integer.MIN_VALUE, -1, 0, 1, 42, 123456789, Integer.MAX_VALUE)
+      val numPairs = nums zip nums
+      numPairs foreach { case (numSamples:Int, numSubjects:Int) =>
+        val ss = SamplesAndSubjects(numSamples, numSubjects)
+        val expected = JsObject(Map("metricType" -> JsString("SamplesAndSubjects"),
+          "numSamples" -> JsNumber(numSamples), "numSubjects" -> JsNumber(numSubjects)))
+        assertResult(expected) {LogitMetricFormat.write(ss)}
       }
     }
   }
@@ -35,33 +52,56 @@ class MetricsSpec extends BaseServiceSpec {
   "MetricsActor" - {
     "should be resilient to failures retrieving stats from rawls" in {
       val seed = 123+scala.util.Random.nextInt(1000)
-      val testApp = app.copy(rawlsDAO = new MetricsSpecMockRawlsDAO(numFailures=2, numSamples=seed), logitDAO = new MetricsSpecMockLogitDAO(numFailures=0, numSamples=seed))
+      val testApp = app.copy(
+        rawlsDAO = new MetricsSpecMockRawlsDAO(numFailures=2, numSamples=seed),
+        searchDAO = new MetricsSpecMockSearchDAO(numFailures=0, numSubjects=222),
+        logitDAO = new MetricsSpecMockLogitDAO(numFailures=0))
       val metricsActor = system.actorOf(MetricsActor.props(testApp), "metrics-spec-failing-rawls-actor")
       assertResult(NoopMetric) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect failure
       assertResult(NoopMetric) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect failure
-      assertResult(NumObjects(seed)) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect success
+      assertResult(SamplesAndSubjects(seed, 222)) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect success
+    }
+    "should be resilient to failures retrieving stats from elasticsearch" in {
+      val seed = 123+scala.util.Random.nextInt(1000)
+      val testApp = app.copy(
+        rawlsDAO = new MetricsSpecMockRawlsDAO(numFailures=0, numSamples=111),
+        searchDAO = new MetricsSpecMockSearchDAO(numFailures=3, numSubjects=seed),
+        logitDAO = new MetricsSpecMockLogitDAO(numFailures=0))
+      val metricsActor = system.actorOf(MetricsActor.props(testApp), "metrics-spec-failing-search-actor")
+      assertResult(NoopMetric) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect failure
+      assertResult(NoopMetric) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect failure
+      assertResult(NoopMetric) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect failure
+      assertResult(SamplesAndSubjects(111, seed)) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect success
     }
     "should be resilient to failures sending data to logit" in {
       val seed = 123+scala.util.Random.nextInt(1000)
-      val testApp = app.copy(rawlsDAO = new MetricsSpecMockRawlsDAO(numFailures=0, numSamples=seed), logitDAO = new MetricsSpecMockLogitDAO(numFailures=2, numSamples=seed))
+      val testApp = app.copy(
+        rawlsDAO = new MetricsSpecMockRawlsDAO(numFailures=0, numSamples=seed),
+        searchDAO = new MetricsSpecMockSearchDAO(numFailures=0, numSubjects=seed+1),
+        logitDAO = new MetricsSpecMockLogitDAO(numFailures=4))
       val metricsActor = system.actorOf(MetricsActor.props(testApp), "metrics-spec-failing-logit-actor")
       assertResult(NoopMetric) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect failure
       assertResult(NoopMetric) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect failure
-      assertResult(NumObjects(seed)) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect success
+      assertResult(NoopMetric) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect failure
+      assertResult(NoopMetric) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect failure
+      assertResult(SamplesAndSubjects(seed, seed+1)) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) } // expect success
     }
-    "should extract number of samples from rawls and send to logit" in {
+    "should extract number of samples and subject from rawls and elasticsearch and send to logit" in {
       val seed = 123+scala.util.Random.nextInt(1000)
-      val testApp = app.copy(rawlsDAO = new MetricsSpecMockRawlsDAO(numFailures=0, numSamples=seed), logitDAO = new MetricsSpecMockLogitDAO(numFailures=0, numSamples=seed))
+      val testApp = app.copy(
+        rawlsDAO = new MetricsSpecMockRawlsDAO(numFailures=0, numSamples=seed),
+        searchDAO = new MetricsSpecMockSearchDAO(numFailures=0, numSubjects=seed-2),
+        logitDAO = new MetricsSpecMockLogitDAO(numFailures=0))
       val metricsActor = system.actorOf(MetricsActor.props(testApp), "metrics-spec-actor")
-      assertResult(NumObjects(seed)) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) }
-      assertResult(NumObjects(seed)) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) }
+      assertResult(SamplesAndSubjects(seed, seed-2)) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) }
+      assertResult(SamplesAndSubjects(seed, seed-2)) { Await.result(metricsActor ? MetricsActor.RecordMetrics, duration) }
     }
   }
 
 
 }
 
-class MetricsSpecMockLogitDAO(numFailures: Int, numSamples: Int) extends MockLogitDAO {
+class MetricsSpecMockLogitDAO(numFailures: Int) extends MockLogitDAO {
   val q = new java.util.concurrent.ConcurrentLinkedQueue[Int]
 
   override def recordMetric(metric: LogitMetric): Future[LogitMetric] = {
@@ -84,6 +124,19 @@ class MetricsSpecMockRawlsDAO(numFailures: Int, numSamples: Int) extends MockRaw
     } else {
       q.add(q.size())
       Future.failed(new FireCloudException("intentional RawlsDAO exception for MetricsSpec"))
+    }
+  }
+}
+
+class MetricsSpecMockSearchDAO(numFailures: Int, numSubjects: Int) extends MockSearchDAO {
+  val q = new java.util.concurrent.ConcurrentLinkedQueue[Int]
+
+  override def statistics: LogitMetric = {
+    if (q.size() >= numFailures) {
+      NumSubjects(numSubjects)
+    } else {
+      q.add(q.size())
+      throw new FireCloudException("intentional SearchDAO exception for MetricsSpec")
     }
   }
 }

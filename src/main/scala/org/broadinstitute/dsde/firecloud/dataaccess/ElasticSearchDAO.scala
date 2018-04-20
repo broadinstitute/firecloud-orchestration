@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.model.Metrics.{LogitMetric, NumSubjects}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -10,9 +12,13 @@ import org.elasticsearch.action.admin.indices.mapping.put.{PutMappingRequest, Pu
 import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkResponse}
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
+import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.xcontent.XContentType
+import org.elasticsearch.index.query.QueryBuilders.{boolQuery, termQuery}
+import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.aggregations.metrics.sum.Sum
 import org.parboiled.common.FileUtils
 import spray.http.Uri.Authority
 import spray.json._
@@ -20,6 +26,7 @@ import spray.json._
 import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success, Try}
 
 class ElasticSearchDAO(client: TransportClient, indexName: String, ontologyDAO: OntologyDAO) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
@@ -121,6 +128,47 @@ class ElasticSearchDAO(client: TransportClient, indexName: String, ontologyDAO: 
 
   override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {
     populateSuggestions(client, indexName, field, text)
+  }
+
+  override def statistics: LogitMetric = {
+    if (FireCloudConfig.Metrics.libraryNamespaces.isEmpty)
+      throw new FireCloudException("no namespaces defined for ElasticSearchDAO.statistics()")
+
+    val AGGKEY = "sumSamples"
+
+    // build query: any namespace defined in our conf file
+    val namespaceFilter = boolQuery()
+    FireCloudConfig.Metrics.libraryNamespaces.map { ns =>
+      namespaceFilter.should(termQuery("namespace.keyword", ns))
+    }
+    val namespaceQuery = boolQuery().filter(namespaceFilter)
+
+    // build aggregation: sum of the numSubjects field
+    val sum = AggregationBuilders.sum(AGGKEY).field("library:numSubjects")
+
+    // build the search, using query and aggregation. Set size to 0; we don't care about search results, only
+    // the aggregation results.
+    val search = client.prepareSearch(indexName).addAggregation(sum).setQuery(namespaceQuery).setSize(0)
+
+    // execute search
+    val statsTry = Try(executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](search))
+
+    // extract the sum from the results, safely
+    val safeNumber = statsTry match {
+      case Success(stats) =>
+        val sum = stats.getAggregations.get[Sum](AGGKEY)
+        if (sum != null) {// eww, Java nulls
+          sum.getValue
+        } else {
+          logger.info(s"statistics query did not find $AGGKEY in aggregation results!")
+          0
+        }
+      case Failure(ex) =>
+        logger.warn(s"statistics query failed: ${ex.getMessage}")
+        0
+    }
+
+    NumSubjects(safeNumber.toInt)
   }
 
   /* see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html

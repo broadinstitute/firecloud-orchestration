@@ -18,6 +18,8 @@ object Metrics {
   abstract class LogitMetric
   case object NoopMetric extends LogitMetric
   case class NumObjects(numSamples: Int) extends LogitMetric
+  case class NumSubjects(numSubjects: Int) extends LogitMetric
+  case class SamplesAndSubjects(numSamples: Int, numSubjects: Int) extends LogitMetric
 
 }
 
@@ -31,6 +33,12 @@ trait MetricsFormat {
     override def write(obj: LogitMetric): JsValue = obj match {
       case NoopMetric => JsObject()
       case ns:NumObjects => JsObject(Map(METRICTYPE_KEY -> JsString("NumObjects"), "numSamples" -> JsNumber(ns.numSamples)))
+      case ns:NumSubjects => JsObject(Map(METRICTYPE_KEY -> JsString("NumSubjects"), "numSubjects" -> JsNumber(ns.numSubjects)))
+      case ss:SamplesAndSubjects => JsObject(Map(
+        METRICTYPE_KEY -> JsString("SamplesAndSubjects"),
+        "numSamples" -> JsNumber(ss.numSamples),
+        "numSubjects" -> JsNumber(ss.numSubjects)
+      ))
     }
 
     override def read(json: JsValue): LogitMetric = ??? // no need for reads

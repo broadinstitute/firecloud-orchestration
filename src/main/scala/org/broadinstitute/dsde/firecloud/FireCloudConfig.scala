@@ -183,5 +183,6 @@ object FireCloudConfig {
     val logitApiKey: Option[String] = if (metrics.hasPath("logitApiKey")) Some(metrics.getString("logitApiKey")) else None
     val entityWorkspaceNamespace: Option[String] = if (metrics.hasPath("entityWorkspaceNamespace")) Some(metrics.getString("entityWorkspaceNamespace")) else None
     val entityWorkspaceName: Option[String] = if (metrics.hasPath("entityWorkspaceName")) Some(metrics.getString("entityWorkspaceName")) else None
+    val libraryNamespaces: List[String] = metrics.getStringList("libraryWorkspaceNamespace").asScala.toList
   }
 }
