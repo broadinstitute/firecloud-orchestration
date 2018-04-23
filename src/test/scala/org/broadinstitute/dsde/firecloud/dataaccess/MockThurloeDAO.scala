@@ -59,41 +59,55 @@ class MockThurloeDAO extends ThurloeDAO {
       NORMAL_USER -> baseProfile,
       //TCGA users
       TCGA_LINKED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TCGA_LINKED)),
         FireCloudKeyValue(Some("linkedNihUsername"), Some("tcga-user")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
       ),
       TCGA_LINKED_NO_EXPIRE_DATE -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TCGA_LINKED_NO_EXPIRE_DATE)),
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user")))
       ),
       TCGA_LINKED_EXPIRED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TCGA_LINKED_EXPIRED)),
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
       ),
       TCGA_LINKED_INVALID_EXPIRE_DATE -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TCGA_LINKED_INVALID_EXPIRE_DATE)),
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
         FireCloudKeyValue(Some("linkExpireTime"), Some("expiration-dates-cant-be-words!")))
       ),
-      TCGA_UNLINKED -> baseProfile,
+      TCGA_UNLINKED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TCGA_UNLINKED)))
+      ),
       //TARGET users
       TARGET_LINKED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TARGET_LINKED)),
         FireCloudKeyValue(Some("linkedNihUsername"), Some("target-user")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
       ),
       TARGET_LINKED_EXPIRED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TARGET_LINKED_EXPIRED)),
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
       ),
-      TARGET_UNLINKED -> baseProfile,
+      TARGET_UNLINKED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TARGET_UNLINKED)))
+      ),
       //TCGA and TARGET users
       TCGA_AND_TARGET_LINKED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_LINKED)),
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
       ),
       TCGA_AND_TARGET_LINKED_EXPIRED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_LINKED_EXPIRED)),
         FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
         FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
       ),
-      TCGA_AND_TARGET_UNLINKED -> baseProfile,
+      TCGA_AND_TARGET_UNLINKED -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_UNLINKED)))
+      ),
       TRIAL_SELF_ENABLED -> baseProfile,
       TRIAL_SELF_ENABLED_ERROR -> baseProfile,
       TRIAL_SELF_ENABLED_PREEXISTING -> baseProfile

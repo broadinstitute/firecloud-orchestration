@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockAgoraDAO, MockRawlsDAO, MockSearchDAO, MockThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.scalatest.{FlatSpec, Matchers}
@@ -14,8 +14,9 @@ class NihServiceSpec extends FlatSpec with Matchers with NihService {
 
   implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   val rawlsDao = new MockRawlsDAO
-  val thurloeDao = new MockThurloeDAO
-  val googleDao = new MockGoogleServicesDAO
+  val samDAO = new MockSamDAO
+  val thurloeDAO = new MockThurloeDAO
+  val googleDAO = new MockGoogleServicesDAO
 
   val usernames = Map("fcSubjectId1" -> "nihUsername1", "fcSubjectId2" -> "nihUsername2")
 

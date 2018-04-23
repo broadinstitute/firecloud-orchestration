@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
@@ -47,12 +47,13 @@ object LibraryService {
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new LibraryService(userInfo, app.rawlsDAO, app.searchDAO, app.ontologyDAO, app.consentDAO)
+    new LibraryService(userInfo, app.rawlsDAO, app.samDAO, app.searchDAO, app.ontologyDAO, app.consentDAO)
 }
 
 
 class LibraryService (protected val argUserInfo: UserInfo,
                       val rawlsDAO: RawlsDAO,
+                      val samDao: SamDAO,
                       val searchDAO: SearchDAO,
                       val ontologyDAO: OntologyDAO,
                       val consentDAO: ConsentDAO)
@@ -221,7 +222,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    getEffectiveDiscoverGroups(rawlsDAO) flatMap { userGroups =>
+    getEffectiveDiscoverGroups(samDao) flatMap { userGroups =>
       // we want docsFuture and ids to be parallelized - so declare them here, outside
       // of the for-yield.
       val docsFuture = searchDAO.findDocuments(criteria, userGroups)
@@ -238,7 +239,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    getEffectiveDiscoverGroups(rawlsDAO) map {userGroups =>
+    getEffectiveDiscoverGroups(samDao) map { userGroups =>
       searchDAO.suggestionsFromAll(criteria, userGroups)} map (RequestComplete(_))
   }
 

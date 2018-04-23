@@ -45,16 +45,6 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
-  override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
-    userAuthedRequest(Get(RawlsDAO.groupUrl(groupName)))(userInfo) map { response =>
-      response.status match {
-        case OK => true
-        case NotFound => false
-        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
-      }
-    }
-  }
-
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest( Get(rawlsCuratorUrl) )(userInfo) map { response =>
       response.status match {
@@ -68,9 +58,6 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def registerUser(userInfo: UserInfo): Future[Unit] = {
     userAuthedRequest(Post(rawlsUserRegistrationUrl))(userInfo) map { _ => () }
   }
-
-  override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] =
-    authedRequestToObject[Seq[String]]( Get(rawlsGroupsForUserUrl), label=Some("HttpRawlsDAO.getGroupsForUser") )
 
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] =
     authedRequestToObject[BucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
@@ -108,18 +95,6 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
           throw new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "Could not unmarshal: " + error.toString))
       }
     }
-  }
-
-  override def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
-    val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName)
-
-    adminAuthedRequest(Post(url, memberList)).map(_.status.isSuccess)
-  }
-
-  override def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
-    val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName)
-
-    adminAuthedRequest(Put(url, memberList)).map(_.status.isSuccess)
   }
 
   override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats] = {
