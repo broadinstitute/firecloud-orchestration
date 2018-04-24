@@ -12,6 +12,7 @@ import MockRawlsDAO._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial.{ProjectRoles, RawlsBillingProjectMember}
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -379,4 +380,8 @@ class MockRawlsDAO  extends RawlsDAO {
   override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = Future(true)
 
   override def removeUserFromBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = Future(true)
+
+  override def addMemberToGroup(groupName: WorkbenchGroupName, role: String, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit] = ???
+
+  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: String, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit] = ???
 }

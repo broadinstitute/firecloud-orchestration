@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.firecloud.model.Trial.{RawlsBillingProjectMember,
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import org.joda.time.DateTime
 
 import scala.concurrent.Future
@@ -48,6 +49,7 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
+  @deprecated
   def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean]
 
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
@@ -73,9 +75,15 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList]
 
+  @deprecated
   def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
 
+  @deprecated
   def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
+
+  def addMemberToGroup(groupName: WorkbenchGroupName, role: String, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit]
+
+  def overwriteGroupMembership(groupName: WorkbenchGroupName, role: String, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit]
 
   def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats]
 
