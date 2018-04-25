@@ -49,9 +49,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
-  @deprecated
-  def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean]
-
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
 
   def registerUser(userInfo: UserInfo): Future[Unit]
@@ -74,12 +71,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL]
 
   def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList]
-
-  @deprecated
-  def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
-
-  @deprecated
-  def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
 
   def addMemberToGroup(groupName: WorkbenchGroupName, role: String, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit]
 

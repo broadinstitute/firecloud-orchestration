@@ -1,15 +1,16 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 
 import scala.concurrent.Future
 
 /**
   * Created by mbemis on 9/7/17.
   */
-class MockSamDAO extends SamDAO {
+class MockSamDAO extends SamDAO with MockGroupSupport {
 
   override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = enabledUserInfo
 
@@ -29,5 +30,9 @@ class MockSamDAO extends SamDAO {
     RegistrationInfo(
       WorkbenchUserInfo(email, email),
       WorkbenchEnabled(google = true, ldap = true, allUsersGroup = true))
+  }
+
+  override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
+    Future.successful(groups.getOrElse(groupName, Set.empty).contains(WorkbenchEmail(userInfo.userEmail)))
   }
 }
