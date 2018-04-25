@@ -129,7 +129,7 @@ trait NihService extends LazyLogging {
     // The request to rawls to completely overwrite the group
     // with the list of actively linked users on the whitelist
     memberList flatMap { members =>
-      rawlsDao.overwriteGroupMembership(nihWhitelist.groupToSync, "member", members.toSet)(getAdminAccessToken) recoverWith { //todo: hardcoded "member" role name
+      rawlsDao.overwriteGroupMembership(nihWhitelist.groupToSync, ManagedGroupRoles.Member, members.toSet)(getAdminAccessToken) recoverWith {
         case _: Exception => throw new FireCloudException("Error synchronizing NIH whitelist")
       }
     }
@@ -162,7 +162,7 @@ trait NihService extends LazyLogging {
     val whitelistUsers = downloadNihWhitelist(nihWhitelist)
 
     if(whitelistUsers contains linkedNihUserName) {
-      rawlsDao.addMemberToGroup(nihWhitelist.groupToSync, "member", userEmail)(getAdminAccessToken).map(_ => true) //todo: hardcoded "member" role name
+      rawlsDao.addMemberToGroup(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken).map(_ => true)
     } else Future.successful(false)
   }
 

@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
+import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.AdminStatsFormat
@@ -102,8 +103,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
-  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: String, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit] = {
-    val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName.value, role)
+  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit] = {
+    val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName.value, role.value)
 
     userAuthedRequest(Post(url, memberList)) map { resp =>
       if (resp.status.isSuccess) {
@@ -114,8 +115,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
-  override def addMemberToGroup(groupName: WorkbenchGroupName, role: String, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit] = {
-    val url = FireCloudConfig.Rawls.alterGroupMembershipUrlFromGroupName(groupName.value, role, member.value)
+  override def addMemberToGroup(groupName: WorkbenchGroupName, role: ManagedGroupRole, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit] = {
+    val url = FireCloudConfig.Rawls.alterGroupMembershipUrlFromGroupName(groupName.value, role.value, member.value)
 
     userAuthedRequest(Put(url)) map { resp =>
       if (resp.status.isSuccess) {

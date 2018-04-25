@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUp
 import org.joda.time.DateTime
 import spray.http.StatusCodes
 import MockRawlsDAO._
+import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial.{ProjectRoles, RawlsBillingProjectMember}
@@ -357,14 +358,14 @@ class MockRawlsDAO extends RawlsDAO with MockGroupSupport {
 
   override def removeUserFromBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = Future(true)
 
-  override def addMemberToGroup(groupName: WorkbenchGroupName, role: String, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit] = {
+  override def addMemberToGroup(groupName: WorkbenchGroupName, role: ManagedGroupRole, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit] = {
     val groupWithNewMembers = groupName -> (groups(groupName).filterNot(_.equals(member)) ++ Set(member))
     this.synchronized { groups = groups + groupWithNewMembers }
 
     Future.successful(())
   }
 
-  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: String, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit] = {
+  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit] = {
     val groupWithNewMembers = groupName -> memberList.toSet
     this.synchronized { groups = groups + groupWithNewMembers }
 

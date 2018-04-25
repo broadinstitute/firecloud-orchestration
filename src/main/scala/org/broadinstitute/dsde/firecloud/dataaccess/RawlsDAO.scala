@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
@@ -72,9 +73,9 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList]
 
-  def addMemberToGroup(groupName: WorkbenchGroupName, role: String, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit]
+  def addMemberToGroup(groupName: WorkbenchGroupName, role: ManagedGroupRole, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit]
 
-  def overwriteGroupMembership(groupName: WorkbenchGroupName, role: String, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit]
+  def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit]
 
   def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats]
 
