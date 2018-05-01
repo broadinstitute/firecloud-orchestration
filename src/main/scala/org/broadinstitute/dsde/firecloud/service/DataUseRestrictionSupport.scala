@@ -165,53 +165,15 @@ trait DataUseRestrictionSupport extends LazyLogging {
     result
   }
 
-//  { "generalResearchUse": false,
-//    "healthMedicalUseOnly": false,
-//    "diseaseUseOnly": [9351,1287],
-//    "commercialUseProhibited": true,
-//    "forProfitUseProhibited": true,
-//    "methodsResearchProhibited": true,
-//    "aggregateLevelDataProhibited": false,
-//    "controlsUseProhibited": false,
-//    "genderUseOnly": "male",
-//    "pediatricResearchOnly": false,
-//     "IRB": true,
-//    “prefix”: “library:”
-//  }
-//    {“[prefix]consentCodes”:[
-//      "NPU",
-//      "NCU",
-//      "NCTRL",
-//      "NMDS",
-//      "RS-G",
-//      "RS-M",
-//      "IRB",
-//      "DS:diabetes mellitus",
-//      "DS:cardiovascular system disease"
-//      ],
-//      "[prefix]dulvn":1.0,
-//      “[prefix]structuredUseRestriction”: {
-//      "GRU": false,
-//      "HMB": false,
-//      "DS": [9351,1287],
-//      "NCU": true,
-//      "NPU": true,
-//      "NMDS": true,
-//      "NAGR": false,
-//      "NCTRL": false,
-//      "RS-G": true,
-//      "RS-FM": false,
-//      "RS-M": true,
-//      "RS-PD": false,
-//      "RS-POP": []
-//    }
-//   }
 
+  // Takes in any Product (case classes extend Product) and a prefix and creates a map of all the fields and their values
+  // with the prefix prepended to the field
+  private def formatWithPrefix(prefix: String, product: Product): Map[String, Any] = {
+    val values = product.productIterator
+    product.getClass.getDeclaredFields.map( prefix + _.getName -> values.next ).toMap
+  }
 
-  def generateStructuredUseRestrictionAttribute(request: StructuredDataRequest, ontologyDAO: OntologyDAO): JsValue = {
-    // how to affix prefixes???
-    // what about POP and dates?
-
+  def generateStructuredUseRestrictionAttribute(request: StructuredDataRequest, ontologyDAO: OntologyDAO): Map[String, Any] = {
     // get DS diseases (map over array of ints)
     val diseaseCodesArray = request.diseaseUseOnly.map { nodeid =>
       ontologyDAO.search("http://purl.obolibrary.org/obo/DOID_" + nodeid.toString) match {
@@ -242,7 +204,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     val consentCodes = consentMap.filter(_._2.value).map(_._1).toArray ++ diseaseCodesArray
 
     // add the dul version
-    StructuredDataResponse(consentCodes, 1.0, consentMap ++ Map(ConsentCodes.DS -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_)))), request.prefix).formatWithPrefix
+    formatWithPrefix(request.prefix, StructuredDataResponse(consentCodes, 1.0, consentMap ++ Map(ConsentCodes.DS -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_))))))
   }
 
   /**
