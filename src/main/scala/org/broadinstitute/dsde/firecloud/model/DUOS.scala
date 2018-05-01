@@ -160,17 +160,15 @@ object DUOS {
 
   case class StructuredDataResponse(consentCodes: Array[String],
                                     dulvn: Double, //what the heck is this?
-                                    structuredUseRestriction: Map[String, Attribute],
-                                    prefix: String) {
+                                    structuredUseRestriction: Map[String, Attribute])
     // take the structured data response and create a json that looks like the above?
-    def formatWithPrefix(): JsValue = {
-      implicit val impAttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
-      val sur = structuredUseRestriction.toJson
-      Map(prefix + "consentCodes" -> consentCodes.toJson,
-       prefix + "dulvn" -> dulvn.toJson,
-       prefix + "structuredUseRestriction" -> sur).toJson
-    }
-  }
+//    def formatWithPrefix(): JsValue = {
+//      implicit val impAttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
+//      val sur = structuredUseRestriction.toJson
+//      Map(prefix + "consentCodes" -> consentCodes.toJson,
+//       prefix + "dulvn" -> dulvn.toJson,
+//       prefix + "structuredUseRestriction" -> sur).toJson
+//    }
 
   case class Consent(
     consentId: String,

@@ -240,7 +240,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
 
   implicit val impStructuredDataRequest = jsonFormat12(StructuredDataRequest)
-  implicit val impStructuredDataResponse = jsonFormat4(StructuredDataResponse)
+  implicit val impStructuredDataResponse = jsonFormat3(StructuredDataResponse)
 
   implicit object impDuosDataUse extends RootJsonFormat[DuosDataUse] {
     override def write(ddu: DuosDataUse): JsValue = {
