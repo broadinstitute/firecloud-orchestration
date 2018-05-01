@@ -1,7 +1,13 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.rawls.model._
+import spray.json.{JsObject, JsValue}
+import org.broadinstitute.dsde.rawls.model.{AttributeFormat, PlainArrayAttributeListSerializer}
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import spray.json.{JsObject, JsValue}
 
 import scala.util.Try
 
@@ -90,6 +96,79 @@ object DUOS {
         psychologicalTraits = getBoolean("psychologicalTraits"),
         nonBiomedical = getBoolean("nonBiomedical")
       )
+    }
+  }
+
+//  { "generalResearchUse": false,
+//    "healthMedicalUseOnly": false,
+//    "diseaseUseOnly": [9351,1287],
+//    "commercialUseProhibited": true,
+//    "forProfitUseProhibited": true,
+//    "methodsResearchProhibited": true,
+//    "aggregateLevelDataProhibited": false,
+//    "controlsUseProhibited": false,
+//    "genderUseOnly": "male",
+//    "pediatricResearchOnly": false,
+//    "IRB": true,
+//    “prefix”: “library:”
+//  }
+//
+
+  case class StructuredDataRequest(generalResearchUse: Boolean,
+                                   healthMedicalUseOnly: Boolean,
+                                   diseaseUseOnly: Array[Int],
+                                   commercialUseProhibited: Boolean,
+                                   forProfitUseProhibited: Boolean,
+                                   methodsResearchProhibited: Boolean,
+                                   aggregateLevelDataProhibited: Boolean,
+                                   controlsUseProhibited: Boolean,
+                                   genderUseOnly: String,
+                                   pediatricResearchOnly: Boolean,
+                                   IRB: Boolean,
+                                   prefix: String)
+
+//  {“[prefix]consentCodes”:[
+//    "NPU",
+//    "NCU",
+//    "NCTRL",
+//    "NMDS",
+//    "RS-G",
+//    "RS-M",
+//    "IRB",
+//    "DS:diabetes mellitus",
+//    "DS:cardiovascular system disease"
+//    ],
+
+//    "[prefix]dulvn":1.0,
+
+//    “[prefix]structuredUseRestriction”: {
+//    "GRU": false,
+//    "HMB": false,
+//    "DS": [9351,1287],
+//    "NCU": true,
+//    "NPU": true,
+//    "NMDS": true,
+//    "NAGR": false,
+//    "NCTRL": false,
+//    "RS-G": true,
+//    "RS-FM": false,
+//    "RS-M": true,
+//    "RS-PD": false,
+//    "RS-POP": []
+//    }
+//  }
+
+  case class StructuredDataResponse(consentCodes: Array[String],
+                                    dulvn: Double, //what the heck is this?
+                                    structuredUseRestriction: Map[String, Attribute],
+                                    prefix: String) {
+    // take the structured data response and create a json that looks like the above?
+    def formatWithPrefix(): JsValue = {
+      implicit val impAttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
+      val sur = structuredUseRestriction.toJson
+      Map(prefix + "consentCodes" -> consentCodes.toJson,
+       prefix + "dulvn" -> dulvn.toJson,
+       prefix + "structuredUseRestriction" -> sur).toJson
     }
   }
 

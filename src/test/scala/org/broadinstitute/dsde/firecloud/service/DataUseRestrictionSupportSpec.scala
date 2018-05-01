@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import java.lang.reflect.Field
 
 import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
-import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
+import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredDataRequest}
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures._
 import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.{FreeSpec, Matchers}
@@ -27,6 +27,25 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             val dur: DataUseRestriction = makeDurFromWorkspace(ds)
             dur shouldNot be(null)
           }
+        }
+
+        "questionaire request test" in {
+          val ontologyDAO = new MockOntologyDAO
+          val request = StructuredDataRequest(generalResearchUse = true,
+            healthMedicalUseOnly = true,
+            diseaseUseOnly = Array(4325,2531),
+            commercialUseProhibited = true ,
+            forProfitUseProhibited = true,
+            methodsResearchProhibited = true,
+            aggregateLevelDataProhibited = true,
+            controlsUseProhibited = true,
+            genderUseOnly = "female",
+            pediatricResearchOnly = true,
+            IRB = true,
+            prefix = "blah")
+
+          val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
+          result should be (1)
         }
 
         "dur should have appropriate gender codes populated" in {
@@ -125,6 +144,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "valid datasets should have some form of data use display attribute" in {
           validDisplayDatasets.map { ds =>
             val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(ds)
+            attrs should be (1)
             val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
             codes shouldNot be(empty)
           }
@@ -520,8 +540,12 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
   private def makeDurFromWorkspace(ds: Workspace): DataUseRestriction = {
     val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(ds)
+    //logger.info("generateStructuredUseRestrictionAttribute(ds): " + attrs)
     val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
-    durAtt.toJson.convertTo[DataUseRestriction]
+    //logger.info("attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull): " + durAtt)
+    val result = durAtt.toJson.convertTo[DataUseRestriction]
+    //logger.info("durAtt.toJson.convertTo[DataUseRestriction]: " + result)
+    result
   }
 
   private def checkBooleanTrue(dur: DataUseRestriction, fieldName: String): Boolean = {
