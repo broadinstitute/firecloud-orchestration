@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.OntologyDAO
-import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
+import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredDataRequest, StructuredDataResponse}
 import org.broadinstitute.dsde.firecloud.model.DataUse.DiseaseOntologyNodeId
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
@@ -11,6 +11,30 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.util.Try
+
+object ConsentCodes extends Enumeration {
+  val GRU = "GRU"
+  val HMB = "HMB"
+  val NCU = "NCU"
+  val NPU = "NPU"
+  val NMDS = "NMDS"
+  val NAGR = "NAGR"
+  val NCTRL = "NCTRL"
+  val RSPD = "RS-PD"
+  val IRB = "IRB"
+  val RSG = "RS-G"
+  val RSFM = "RS-FM"
+  val RSM = "RS-M"
+  val DSURL = "DS_URL"
+  val RSPOP = "RS-POP"
+  val DS = "DS"
+
+  val booleanCodes = Seq(GRU, HMB, NCU, NPU, NMDS, NAGR, NCTRL, RSPD, IRB)
+  val genderCodes = Seq(RSG, RSFM, RSM)
+  val duRestrictionFieldNames = booleanCodes ++ genderCodes ++ Seq(DSURL, RSPOP)
+  val allDurFieldNames = duRestrictionFieldNames ++ Seq(DS)
+  val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS(DS)
+}
 
 trait DataUseRestrictionSupport extends LazyLogging {
 
@@ -59,7 +83,6 @@ trait DataUseRestrictionSupport extends LazyLogging {
         val allAttrs = existingAttrs ++ booleanAttrs ++ listAttrs
         Map(structuredUseRestrictionAttributeName -> AttributeValueRawJson.apply(allAttrs.toJson.compactPrint))
     }
-
   }
 
   /**
@@ -140,6 +163,86 @@ trait DataUseRestrictionSupport extends LazyLogging {
     logger.debug("outbound attrs: " + result)
 
     result
+  }
+
+//  { "generalResearchUse": false,
+//    "healthMedicalUseOnly": false,
+//    "diseaseUseOnly": [9351,1287],
+//    "commercialUseProhibited": true,
+//    "forProfitUseProhibited": true,
+//    "methodsResearchProhibited": true,
+//    "aggregateLevelDataProhibited": false,
+//    "controlsUseProhibited": false,
+//    "genderUseOnly": "male",
+//    "pediatricResearchOnly": false,
+//     "IRB": true,
+//    “prefix”: “library:”
+//  }
+//    {“[prefix]consentCodes”:[
+//      "NPU",
+//      "NCU",
+//      "NCTRL",
+//      "NMDS",
+//      "RS-G",
+//      "RS-M",
+//      "IRB",
+//      "DS:diabetes mellitus",
+//      "DS:cardiovascular system disease"
+//      ],
+//      "[prefix]dulvn":1.0,
+//      “[prefix]structuredUseRestriction”: {
+//      "GRU": false,
+//      "HMB": false,
+//      "DS": [9351,1287],
+//      "NCU": true,
+//      "NPU": true,
+//      "NMDS": true,
+//      "NAGR": false,
+//      "NCTRL": false,
+//      "RS-G": true,
+//      "RS-FM": false,
+//      "RS-M": true,
+//      "RS-PD": false,
+//      "RS-POP": []
+//    }
+//   }
+
+
+  def generateStructuredUseRestrictionAttribute(request: StructuredDataRequest, ontologyDAO: OntologyDAO): JsValue = {
+    // how to affix prefixes???
+    // what about POP and dates?
+
+    // get DS diseases (map over array of ints)
+    val diseaseCodesArray = request.diseaseUseOnly.map { nodeid =>
+      ontologyDAO.search("http://purl.obolibrary.org/obo/DOID_" + nodeid.toString) match {
+        case termResource :: Nil => "DS:" + termResource.label
+        case _ =>  "" // return an error if the int does not correlate to a disease?
+      }
+    }
+
+    val genderCodeMap = request.genderUseOnly match {
+      case "female" => Map(ConsentCodes.RSG -> AttributeBoolean(true), ConsentCodes.RSFM -> AttributeBoolean(true), ConsentCodes.RSM -> AttributeBoolean(false))
+      case "male" => Map(ConsentCodes.RSG -> AttributeBoolean(true), ConsentCodes.RSFM -> AttributeBoolean(false), ConsentCodes.RSM -> AttributeBoolean(true))
+      case "N/A" => Map(ConsentCodes.RSG -> AttributeBoolean(false), ConsentCodes.RSFM -> AttributeBoolean(false), ConsentCodes.RSM -> AttributeBoolean(false))
+    }
+
+    // create map of correct restrictions
+    val consentMap = Map(
+      ConsentCodes.GRU -> AttributeBoolean(request.generalResearchUse),
+      "HMB" -> AttributeBoolean(request.healthMedicalUseOnly),
+      "NCU" -> AttributeBoolean(request.commercialUseProhibited),
+      "NPU" -> AttributeBoolean(request.forProfitUseProhibited),
+      "NMDS" -> AttributeBoolean(request.methodsResearchProhibited),
+      "NAGR" -> AttributeBoolean(request.aggregateLevelDataProhibited),
+      "NCTRL" -> AttributeBoolean(request.controlsUseProhibited),
+      "RS-PD" -> AttributeBoolean(request.pediatricResearchOnly),
+      "IRB" -> AttributeBoolean(request.IRB)) ++ genderCodeMap
+
+    // convert to array of consent codes
+    val consentCodes = consentMap.filter(_._2.value).map(_._1).toArray ++ diseaseCodesArray
+
+    // add the dul version
+    StructuredDataResponse(consentCodes, 1.0, consentMap ++ Map(ConsentCodes.DS -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_)))), request.prefix).formatWithPrefix
   }
 
   /**

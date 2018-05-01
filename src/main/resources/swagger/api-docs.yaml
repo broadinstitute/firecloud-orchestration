@@ -3507,6 +3507,26 @@ paths:
         500:
           description: Internal Server Error
 
+  /duos/structuredData:
+    post:
+      tags:
+      - Library # Is this tag right or should it be DataUse?
+      operationId: dataIngest
+      summary: Data Use Search ingest
+      description: The ingest API will take the answers to consent questions and return the elasticsearch structure to persist with the data reference.
+      parameters:
+        - in: body
+          description: create project request
+          name: createProjectRequest
+          required: true
+          schema:
+            $ref: '#/definitions/structuredDataRequest'
+      security:
+        - googleoauth:
+          - openid
+          - email
+          - profile
+
   /error:
     get:
       tags:
@@ -4281,6 +4301,48 @@ definitions:
       translatedUseRestriction:
         type: string
         description: The translated use restriction of the consent.
+
+  structuredDataRequest:
+    type: object
+    properties:
+      generalResearchUse:
+        type: boolean
+        description:
+      healthMedicalUseOnly:
+        type: boolean
+        description:
+      diseaseUseOnly:
+        items:
+          type: integer  # or is it string?
+          description:
+      commercialUseProhibited:
+        type: boolean
+        description:
+      forProfitUseProhibited:
+        type: boolean
+        description:
+      methodsResearchProhibited:
+        type: boolean
+        description:
+      aggregateLevelDataProhibited:
+        type: boolean
+        description:
+      controlsUseProhibited:
+        type: boolean
+        description:
+      genderUseOnly:
+        type: string
+        description:
+      pediatricResearchOnly:
+        type: boolean
+        description:
+      IRB:
+        type: boolean
+        description:
+      prefix:
+        type: string
+        description:
+
 
   CopyConfigurationIngest:
     type: object

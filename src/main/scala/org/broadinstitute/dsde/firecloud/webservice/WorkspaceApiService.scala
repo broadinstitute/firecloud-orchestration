@@ -47,8 +47,8 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                         WorkspaceService.props(workspaceServiceConstructor, new AccessToken(OAuth2BearerToken(tokenCookie.content))),
                         WorkspaceService.ExportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename))
                   }
-              }
-        }
+            }
+      }
     } ~
     path("version" / "executionEngine") {
       passthrough(FireCloudConfig.Rawls.executionEngineVersionUrl, HttpMethods.GET)
@@ -130,7 +130,6 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                     WorkspaceService.props(workspaceServiceConstructor, userInfo),
                     WorkspaceService.UpdateWorkspaceAttributes(workspaceNamespace, workspaceName, replacementAttributes)
                   )
-
                 }
               }
             }
