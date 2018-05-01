@@ -29,24 +29,24 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           }
         }
 
-        "questionaire request test" in {
-          val ontologyDAO = new MockOntologyDAO
-          val request = StructuredDataRequest(generalResearchUse = true,
-            healthMedicalUseOnly = true,
-            diseaseUseOnly = Array(4325,2531),
-            commercialUseProhibited = true ,
-            forProfitUseProhibited = true,
-            methodsResearchProhibited = true,
-            aggregateLevelDataProhibited = true,
-            controlsUseProhibited = true,
-            genderUseOnly = "female",
-            pediatricResearchOnly = true,
-            IRB = true,
-            prefix = "blah")
-
-          val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
-          result should be (1)
-        }
+//        "questionaire request test" in {
+//          val ontologyDAO = new MockOntologyDAO
+//          val request = StructuredDataRequest(generalResearchUse = true,
+//            healthMedicalUseOnly = true,
+//            diseaseUseOnly = Array(4325,2531),
+//            commercialUseProhibited = true ,
+//            forProfitUseProhibited = true,
+//            methodsResearchProhibited = true,
+//            aggregateLevelDataProhibited = true,
+//            controlsUseProhibited = true,
+//            genderUseOnly = "female",
+//            pediatricResearchOnly = true,
+//            IRB = true,
+//            prefix = "blah")
+//
+//          val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
+//          result should be (1)
+//        }
 
         "dur should have appropriate gender codes populated" in {
           genderDatasets.map { ds =>
@@ -144,7 +144,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "valid datasets should have some form of data use display attribute" in {
           validDisplayDatasets.map { ds =>
             val attrs: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(ds)
-            attrs should be (1)
             val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
             codes shouldNot be(empty)
           }
