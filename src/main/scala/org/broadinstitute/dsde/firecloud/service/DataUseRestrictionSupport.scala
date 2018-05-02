@@ -191,14 +191,14 @@ trait DataUseRestrictionSupport extends LazyLogging {
     // create map of correct restrictions
     val consentMap = Map(
       ConsentCodes.GRU -> AttributeBoolean(request.generalResearchUse),
-      "HMB" -> AttributeBoolean(request.healthMedicalUseOnly),
-      "NCU" -> AttributeBoolean(request.commercialUseProhibited),
-      "NPU" -> AttributeBoolean(request.forProfitUseProhibited),
-      "NMDS" -> AttributeBoolean(request.methodsResearchProhibited),
-      "NAGR" -> AttributeBoolean(request.aggregateLevelDataProhibited),
-      "NCTRL" -> AttributeBoolean(request.controlsUseProhibited),
-      "RS-PD" -> AttributeBoolean(request.pediatricResearchOnly),
-      "IRB" -> AttributeBoolean(request.IRB)) ++ genderCodeMap
+      ConsentCodes.HMB -> AttributeBoolean(request.healthMedicalUseOnly),
+      ConsentCodes.NCU -> AttributeBoolean(request.commercialUseProhibited),
+      ConsentCodes.NPU -> AttributeBoolean(request.forProfitUseProhibited),
+      ConsentCodes.NMDS -> AttributeBoolean(request.methodsResearchProhibited),
+      ConsentCodes.NAGR -> AttributeBoolean(request.aggregateLevelDataProhibited),
+      ConsentCodes.NCTRL -> AttributeBoolean(request.controlsUseProhibited),
+      ConsentCodes.RSPD -> AttributeBoolean(request.pediatricResearchOnly),
+      ConsentCodes.IRB -> AttributeBoolean(request.IRB)) ++ genderCodeMap
 
     // convert to array of consent codes
     val consentCodes = consentMap.filter(_._2.value).map(_._1).toArray ++ diseaseCodesArray
