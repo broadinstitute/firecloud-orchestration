@@ -4307,41 +4307,41 @@ definitions:
     properties:
       generalResearchUse:
         type: boolean
-        description:
+        description: something something
       healthMedicalUseOnly:
         type: boolean
-        description:
+        description: something something
       diseaseUseOnly:
         items:
-          type: integer  # or is it string?
-          description:
+          type: integer
+        description: something something
       commercialUseProhibited:
         type: boolean
-        description:
+        description: something something
       forProfitUseProhibited:
         type: boolean
-        description:
+        description: something something
       methodsResearchProhibited:
         type: boolean
-        description:
+        description: something something
       aggregateLevelDataProhibited:
         type: boolean
-        description:
+        description: something something
       controlsUseProhibited:
         type: boolean
-        description:
+        description: something something
       genderUseOnly:
         type: string
-        description:
+        description: something something
       pediatricResearchOnly:
         type: boolean
-        description:
+        description: something something
       IRB:
         type: boolean
-        description:
+        description: something something
       prefix:
         type: string
-        description:
+        description: something something
 
 
   CopyConfigurationIngest:
