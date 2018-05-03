@@ -119,7 +119,7 @@ object DUOS {
   case class StructuredDataResponse(consentCodes: Array[String],
                                     dulvn: Double, //what the heck is this?
                                     prefix: String,
-                                    structuredUseRestriction: Map[String, Attribute]) {
+                                    structuredUseRestriction: Map[AttributeName, Attribute]) {
     def formatWithPrefix(): Map[String, JsValue] = {
       implicit val impAttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
       val sur = structuredUseRestriction.toJson

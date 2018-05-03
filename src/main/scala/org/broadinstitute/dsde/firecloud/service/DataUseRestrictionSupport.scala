@@ -189,41 +189,6 @@ trait DataUseRestrictionSupport extends LazyLogging {
 //    product.getClass.getDeclaredFields.map( prefix + _.getName -> values.next.toJson ).toMap
 //  }
 
-  def generateStructuredUseRestrictionAttribute(request: StructuredDataRequest, ontologyDAO: OntologyDAO): Map[String, JsValue] = {
-    // get DS diseases (map over array of ints)
-    val diseaseCodesArray = request.diseaseUseOnly.map { nodeid =>
-      ontologyDAO.search("http://purl.obolibrary.org/obo/DOID_" + nodeid.toString) match {
-        case termResource :: Nil => "DS:" + termResource.label
-        case _ =>  "" // return an error if the int does not correlate to a disease?
-      }
-    }
-
-    val genderCodeMap = request.genderUseOnly match {
-      case "female" => Map(ConsentCodes.RSG -> AttributeBoolean(true), ConsentCodes.RSFM -> AttributeBoolean(true), ConsentCodes.RSM -> AttributeBoolean(false))
-      case "male" => Map(ConsentCodes.RSG -> AttributeBoolean(true), ConsentCodes.RSFM -> AttributeBoolean(false), ConsentCodes.RSM -> AttributeBoolean(true))
-      case "N/A" => Map(ConsentCodes.RSG -> AttributeBoolean(false), ConsentCodes.RSFM -> AttributeBoolean(false), ConsentCodes.RSM -> AttributeBoolean(false))
-    }
-
-    // create map of correct restrictions
-    val consentMap = Map(
-      ConsentCodes.GRU -> AttributeBoolean(request.generalResearchUse),
-      ConsentCodes.HMB -> AttributeBoolean(request.healthMedicalUseOnly),
-      ConsentCodes.NCU -> AttributeBoolean(request.commercialUseProhibited),
-      ConsentCodes.NPU -> AttributeBoolean(request.forProfitUseProhibited),
-      ConsentCodes.NMDS -> AttributeBoolean(request.methodsResearchProhibited),
-      ConsentCodes.NAGR -> AttributeBoolean(request.aggregateLevelDataProhibited),
-      ConsentCodes.NCTRL -> AttributeBoolean(request.controlsUseProhibited),
-      ConsentCodes.RSPD -> AttributeBoolean(request.pediatricResearchOnly),
-      ConsentCodes.IRB -> AttributeBoolean(request.IRB)) ++ genderCodeMap
-
-    // convert to array of consent codes
-    val consentCodes = consentMap.filter(_._2.value).map(_._1).toArray ++ diseaseCodesArray
-
-    // add the dul version
-    //formatWithPrefix(request.prefix, StructuredDataResponse(consentCodes, 1.0, consentMap ++ Map(ConsentCodes.DS -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_))))))
-    StructuredDataResponse(consentCodes, 1.0, request.prefix, consentMap ++ Map(ConsentCodes.DS -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_))))).formatWithPrefix
-  }
-
   /**
     * Create a display-friendly version of the structured data use restriction in the form of a
     * list of code strings.
@@ -259,6 +224,61 @@ trait DataUseRestrictionSupport extends LazyLogging {
       allDurFieldNames.map(AttributeName.withLibraryNS)) ++ preferred
   }
 
+  def generateStructuredUseRestrictionAttribute(request: StructuredDataRequest, ontologyDAO: OntologyDAO): Map[String, JsValue] = {
+    // get DS diseases (map over array of ints)
+    val diseaseCodesArray = getDiseaseNames(request.diseaseUseOnly, ontologyDAO).map("DS:" + _)
+
+    // create map of correct restrictions
+    val consentMap = Map(
+      AttributeName.withDefaultNS(ConsentCodes.GRU) -> AttributeBoolean(request.generalResearchUse),
+      AttributeName.withDefaultNS(ConsentCodes.HMB) -> AttributeBoolean(request.healthMedicalUseOnly),
+      AttributeName.withDefaultNS(ConsentCodes.NCU) -> AttributeBoolean(request.commercialUseProhibited),
+      AttributeName.withDefaultNS(ConsentCodes.NPU) -> AttributeBoolean(request.forProfitUseProhibited),
+      AttributeName.withDefaultNS(ConsentCodes.NMDS) -> AttributeBoolean(request.methodsResearchProhibited),
+      AttributeName.withDefaultNS(ConsentCodes.NAGR) -> AttributeBoolean(request.aggregateLevelDataProhibited),
+      AttributeName.withDefaultNS(ConsentCodes.NCTRL) -> AttributeBoolean(request.controlsUseProhibited),
+      AttributeName.withDefaultNS(ConsentCodes.RSPD) -> AttributeBoolean(request.pediatricResearchOnly),
+      AttributeName.withDefaultNS(ConsentCodes.IRB) -> AttributeBoolean(request.IRB)) ++ getGenderCodeMap(request.genderUseOnly)
+
+    // convert to array of consent codes
+    val consentCodes = consentMap.filter(_._2.value).map(_._1.name).toArray ++ diseaseCodesArray
+
+    // add the dul version
+    //formatWithPrefix(request.prefix, StructuredDataResponse(consentCodes, 1.0, consentMap ++ Map(ConsentCodes.DS -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_))))))
+    StructuredDataResponse(consentCodes, 1.0, request.prefix, consentMap ++ Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_))))).formatWithPrefix
+  }
+
+  private def getDiseaseNames(diseaseCodes: Array[Int], ontologyDAO: OntologyDAO): Array[String] = {
+    getDiseaseNames(diseaseCodes.map("http://purl.obolibrary.org/obo/DOID_" + _.toString), ontologyDAO)
+  }
+
+  private def getDiseaseNames(diseaseCodes: Array[String], ontologyDAO: OntologyDAO): Array[String] = {
+   diseaseCodes.map { nodeid =>
+      ontologyDAO.search(nodeid) match {
+        case termResource :: Nil => termResource.label
+        case _ =>  "" // return an error if the int does not correlate to a disease?
+      }
+    }
+  }
+
+
+  private def getGenderCodeMap(rsg: String): Map[AttributeName, AttributeBoolean] = {
+    rsg.toLowerCase match {
+      case "female" =>
+        Map(AttributeName.withDefaultNS(ConsentCodes.RSG) -> AttributeBoolean(true),
+          AttributeName.withDefaultNS(ConsentCodes.RSFM) -> AttributeBoolean(true),
+          AttributeName.withDefaultNS(ConsentCodes.RSM) -> AttributeBoolean(false))
+      case "male" =>
+        Map(AttributeName.withDefaultNS(ConsentCodes.RSG) -> AttributeBoolean(true),
+          AttributeName.withDefaultNS(ConsentCodes.RSFM) -> AttributeBoolean(false),
+          AttributeName.withDefaultNS(ConsentCodes.RSM) -> AttributeBoolean(true))
+      case _ =>
+        Map(AttributeName.withDefaultNS(ConsentCodes.RSG) -> AttributeBoolean(false),
+          AttributeName.withDefaultNS(ConsentCodes.RSFM) -> AttributeBoolean(false),
+          AttributeName.withDefaultNS(ConsentCodes.RSM) -> AttributeBoolean(false))
+    }
+  }
+
   // TODO: this method needs to respect attribute namespaces: see GAWB-3173
   private def getDataUseAttributes(workspace: Workspace): Map[AttributeName, Attribute] = {
 
@@ -272,26 +292,12 @@ trait DataUseRestrictionSupport extends LazyLogging {
         // Handle the known String->Boolean conversion cases first
         case (attr: AttributeName, value: AttributeString) =>
           attr.name match {
-            case name if name.equalsIgnoreCase("NAGR") =>
+            case name if name.equalsIgnoreCase(ConsentCodes.NAGR) =>
               value.value match {
-                case v if v.equalsIgnoreCase("yes") => Map(AttributeName.withDefaultNS("NAGR") -> AttributeBoolean(true))
-                case _ => Map(AttributeName.withDefaultNS("NAGR") -> AttributeBoolean(false))
+                case v if v.equalsIgnoreCase("yes") => Map(AttributeName.withDefaultNS(ConsentCodes.NAGR) -> AttributeBoolean(true))
+                case _ => Map(AttributeName.withDefaultNS(ConsentCodes.NAGR) -> AttributeBoolean(false))
               }
-            case name if name.equalsIgnoreCase("RS-G") =>
-              value.value match {
-                case v if v.equalsIgnoreCase("female") =>
-                  Map(AttributeName.withDefaultNS("RS-G") -> AttributeBoolean(true),
-                    AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(true),
-                    AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(false))
-                case v if v.equalsIgnoreCase("male") =>
-                  Map(AttributeName.withDefaultNS("RS-G") -> AttributeBoolean(true),
-                    AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(false),
-                    AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(true))
-                case _ =>
-                  Map(AttributeName.withDefaultNS("RS-G") -> AttributeBoolean(false),
-                    AttributeName.withDefaultNS("RS-FM") -> AttributeBoolean(false),
-                    AttributeName.withDefaultNS("RS-M") -> AttributeBoolean(false))
-              }
+            case name if name.equalsIgnoreCase(ConsentCodes.RSG) => getGenderCodeMap(value.value)
             case _ =>
               logger.warn(s"Invalid data use attribute formatted as a string (workspace-id: ${workspace.workspaceId}, attribute name: ${attr.name}, attribute value: ${value.value})")
               Map.empty[AttributeName, Attribute]
