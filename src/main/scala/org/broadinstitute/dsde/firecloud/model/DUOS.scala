@@ -1,49 +1,45 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.rawls.model._
-import spray.json.{JsObject, JsValue}
 import org.broadinstitute.dsde.rawls.model.{AttributeFormat, PlainArrayAttributeListSerializer}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
-import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsValue}
 
-import scala.util.Try
-
 object DUOS {
 
   case class DuosDataUse(
-                          generalUse: Option[Boolean] = None,
-                          hmbResearch: Option[Boolean] = None,
-                          diseaseRestrictions: Option[Seq[String]] = None,
-                          populationOriginsAncestry: Option[Boolean] = None,
-                          populationStructure: Option[Boolean] = None,
-                          commercialUse: Option[Boolean] = None,
-                          methodsResearch: Option[Boolean] = None,
-                          aggregateResearch: Option[String] = None,
-                          controlSetOption: Option[String] = None,
-                          gender: Option[String] = None,
-                          pediatric: Option[Boolean] = None,
-                          populationRestrictions: Option[Seq[String]] = None,
-                          dateRestriction: Option[String] = None,
-                          recontactingDataSubjects: Option[Boolean] = None,
-                          recontactMay: Option[String] = None,
-                          recontactMust: Option[String] = None,
-                          genomicPhenotypicData: Option[String] = None,
-                          otherRestrictions: Option[Boolean] = None,
-                          cloudStorage: Option[String] = None,
-                          ethicsApprovalRequired: Option[Boolean] = None,
-                          geographicalRestrictions: Option[String] = None,
-                          other: Option[String] = None,
-                          illegalBehavior: Option[Boolean] = None,
-                          addiction: Option[Boolean] = None,
-                          sexualDiseases: Option[Boolean] = None,
-                          stigmatizeDiseases: Option[Boolean] = None,
-                          vulnerablePopulations: Option[Boolean] = None,
-                          psychologicalTraits: Option[Boolean] = None,
-                          nonBiomedical: Option[Boolean] = None
-                        )
+    generalUse: Option[Boolean] = None,
+    hmbResearch: Option[Boolean] = None,
+    diseaseRestrictions: Option[Seq[String]] = None,
+    populationOriginsAncestry: Option[Boolean] = None,
+    populationStructure: Option[Boolean] = None,
+    commercialUse: Option[Boolean] = None,
+    methodsResearch: Option[Boolean] = None,
+    aggregateResearch: Option[String] = None,
+    controlSetOption: Option[String] = None,
+    gender: Option[String] = None,
+    pediatric: Option[Boolean] = None,
+    populationRestrictions: Option[Seq[String]] = None,
+    dateRestriction: Option[String] = None,
+    recontactingDataSubjects: Option[Boolean] = None,
+    recontactMay: Option[String] = None,
+    recontactMust: Option[String] = None,
+    genomicPhenotypicData: Option[String] = None,
+    otherRestrictions: Option[Boolean] = None,
+    cloudStorage: Option[String] = None,
+    ethicsApprovalRequired: Option[Boolean] = None,
+    geographicalRestrictions: Option[String] = None,
+    other: Option[String] = None,
+    illegalBehavior: Option[Boolean] = None,
+    addiction: Option[Boolean] = None,
+    sexualDiseases: Option[Boolean] = None,
+    stigmatizeDiseases: Option[Boolean] = None,
+    vulnerablePopulations: Option[Boolean] = None,
+    psychologicalTraits: Option[Boolean] = None,
+    nonBiomedical: Option[Boolean] = None
+  )
 
   object DuosDataUse {
     def apply(jsValues: Map[String, JsValue]): DuosDataUse = {
@@ -53,21 +49,18 @@ object DUOS {
           case _ => None
         }
       }
-
       def getSeqString(f: String): Option[Seq[String]] = {
         jsValues.get(f) match {
           case Some(l: JsArray) => Some(l.elements.collect { case s: JsString => s.value })
           case _ => None
         }
       }
-
       def getString(f: String): Option[String] = {
         jsValues.get(f) match {
           case Some(s: JsString) => Some(s.value)
           case _ => None
         }
       }
-
       new DuosDataUse(
         generalUse = getBoolean("generalUse"),
         hmbResearch = getBoolean("hmbResearch"),
