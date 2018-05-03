@@ -168,12 +168,27 @@ trait DataUseRestrictionSupport extends LazyLogging {
 
   // Takes in any Product (case classes extend Product) and a prefix and creates a map of all the fields and their values
   // with the prefix prepended to the field
-  private def formatWithPrefix(prefix: String, product: Product): Map[String, Any] = {
+  private def formatWithPrefix(prefix: String, product: Product): Map[String, JsValue] = {
+    implicit object AnyJsonFormat extends RootJsonFormat[Any] {
+      def write(x: Any) = x match {
+        case n: Int => JsNumber(n)
+        case s: String => JsString(s)
+        case b: Boolean if b == true => JsTrue
+        case b: Boolean if b == false => JsFalse
+      }
+      def read(value: JsValue) = value match {
+        case JsNumber(n) => n.intValue()
+        case JsString(s) => s
+        case JsTrue => true
+        case JsFalse => false
+      }
+    }
+
     val values = product.productIterator
-    product.getClass.getDeclaredFields.map( prefix + _.getName -> values.next ).toMap
+    product.getClass.getDeclaredFields.map( prefix + _.getName -> values.next.toJson ).toMap
   }
 
-  def generateStructuredUseRestrictionAttribute(request: StructuredDataRequest, ontologyDAO: OntologyDAO): Map[String, Any] = {
+  def generateStructuredUseRestrictionAttribute(request: StructuredDataRequest, ontologyDAO: OntologyDAO): Map[String, JsValue] = {
     // get DS diseases (map over array of ints)
     val diseaseCodesArray = request.diseaseUseOnly.map { nodeid =>
       ontologyDAO.search("http://purl.obolibrary.org/obo/DOID_" + nodeid.toString) match {

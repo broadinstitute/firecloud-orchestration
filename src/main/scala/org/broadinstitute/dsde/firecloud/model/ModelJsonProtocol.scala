@@ -311,6 +311,21 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
     }
   }
 
+  implicit object AnyJsonFormat extends RootJsonFormat[Any] {
+    def write(x: Any) = x match {
+      case n: Int => JsNumber(n)
+      case s: String => JsString(s)
+      case b: Boolean if b == true => JsTrue
+      case b: Boolean if b == false => JsFalse
+    }
+    def read(value: JsValue) = value match {
+      case JsNumber(n) => n.intValue()
+      case JsString(s) => s
+      case JsTrue => true
+      case JsFalse => false
+    }
+  }
+
   implicit val impRawlsBillingProjectMember = jsonFormat2(RawlsBillingProjectMember)
 
   // END copy/paste from rawls
