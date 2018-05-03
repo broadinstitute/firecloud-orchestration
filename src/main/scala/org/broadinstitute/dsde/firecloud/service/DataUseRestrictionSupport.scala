@@ -243,7 +243,6 @@ trait DataUseRestrictionSupport extends LazyLogging {
     // convert to array of consent codes
     val consentCodes = consentMap.filter(_._2.value).map(_._1.name).toArray ++ diseaseCodesArray
 
-    // add the dul version
     //formatWithPrefix(request.prefix, StructuredDataResponse(consentCodes, 1.0, consentMap ++ Map(ConsentCodes.DS -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_))))))
     StructuredDataResponse(consentCodes, 1.0, request.prefix, consentMap ++ Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_))))).formatWithPrefix
   }
