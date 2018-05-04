@@ -231,7 +231,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     // create map of correct restrictions
     val consentMap = Map(
       AttributeName.withDefaultNS(ConsentCodes.GRU) -> AttributeBoolean(request.generalResearchUse),
-      AttributeName.withDefaultNS(ConsentCodes.HMB) -> AttributeBoolean(request.healthMedicalUseOnly),
+      AttributeName.withDefaultNS(ConsentCodes.HMB) -> AttributeBoolean(request.healthMedicalBiomedicalUseOnly),
       AttributeName.withDefaultNS(ConsentCodes.NCU) -> AttributeBoolean(request.commercialUseProhibited),
       AttributeName.withDefaultNS(ConsentCodes.NPU) -> AttributeBoolean(request.forProfitUseProhibited),
       AttributeName.withDefaultNS(ConsentCodes.NMDS) -> AttributeBoolean(request.methodsResearchProhibited),

@@ -23,7 +23,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "and all consent codes are true or filled in" in {
           val ontologyDAO = new MockOntologyDAO
           val request = StructuredDataRequest(generalResearchUse = true,
-            healthMedicalUseOnly = true,
+            healthMedicalBiomedicalUseOnly = true,
             diseaseUseOnly = Array(4325,2531),
             commercialUseProhibited = true ,
             forProfitUseProhibited = true,
@@ -59,7 +59,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "and all consent codes are false or empty" in {
           val ontologyDAO = new MockOntologyDAO
           val request = StructuredDataRequest(generalResearchUse = false,
-            healthMedicalUseOnly = false,
+            healthMedicalBiomedicalUseOnly = false,
             diseaseUseOnly = Array(),
             commercialUseProhibited = false,
             forProfitUseProhibited = false,
@@ -95,7 +95,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "and consent codes are a mixture of true and false" in {
           val ontologyDAO = new MockOntologyDAO
           val request = StructuredDataRequest(generalResearchUse = false,
-            healthMedicalUseOnly = true,
+            healthMedicalBiomedicalUseOnly = true,
             diseaseUseOnly = Array(1240),
             commercialUseProhibited = false,
             forProfitUseProhibited = true,
@@ -633,8 +633,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
   private def makeDurFromWorkspace(ds: Workspace): DataUseRestriction = {
     val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(ds)
     val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
-    val result = durAtt.toJson.convertTo[DataUseRestriction]
-    result
+    durAtt.toJson.convertTo[DataUseRestriction]
   }
 
   private def checkBooleanTrue(dur: DataUseRestriction, fieldName: String): Boolean = {

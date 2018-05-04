@@ -97,7 +97,7 @@ object DUOS {
 
 
   case class StructuredDataRequest(generalResearchUse: Boolean,
-                                   healthMedicalUseOnly: Boolean,
+                                   healthMedicalBiomedicalUseOnly: Boolean,
                                    diseaseUseOnly: Array[Int],
                                    commercialUseProhibited: Boolean,
                                    forProfitUseProhibited: Boolean,
