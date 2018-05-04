@@ -4307,41 +4307,41 @@ definitions:
     properties:
       generalResearchUse:
         type: boolean
-        description: something something
+        description: Is the data available for future general research use?
       healthMedicalUseOnly:
         type: boolean
-        description: something something
+        description: Is future use limited for health/medical/biomedical research?
       diseaseUseOnly:
         items:
           type: integer
-        description: something something
+        description: Future use is limited to research involving the following disease area(s)
       commercialUseProhibited:
         type: boolean
-        description: something something
+        description: Is future commercial use prohibited?
       forProfitUseProhibited:
         type: boolean
-        description: something something
+        description: Is future use by for-profit entities prohibited?
       methodsResearchProhibited:
         type: boolean
-        description: something something
+        description: Is future use for methods research (analytic/software/technology development) outside the bounds of the other specified restrictions prohibited?
       aggregateLevelDataProhibited:
         type: boolean
-        description: something something
+        description: Is future use of aggregate-level data for general research purposes prohibited?
       controlsUseProhibited:
         type: boolean
-        description: something something
+        description: Is future use as a control set for diseases other than those specified prohibited?
       genderUseOnly:
         type: string
-        description: something something
+        description: If future use is limited to research involving a particular gender, specify "male" or "female". Any other value will be read as false.
       pediatricResearchOnly:
         type: boolean
-        description: something something
+        description: Is future use limited to pediatric research?
       IRB:
         type: boolean
-        description: something something
+        description: Should the requester provide documentation of local IRB/REC approval?
       prefix:
         type: string
-        description: something something
+        description: A prefix that is prepended to the field names of the responses. This is purely for the user's personalization.
 
 
   CopyConfigurationIngest:
