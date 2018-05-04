@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredData
 import org.broadinstitute.dsde.firecloud.model.DataUse.DiseaseOntologyNodeId
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
-import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.rawls.model.{Attribute, _}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -143,6 +143,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
       case _ => Map.empty[AttributeName,Attribute]
     }
 
+    // this is inconsistent with our API
     // gender restrictions: RS-G, RS-FM, RS-M
     val rsg = duosDataUse.gender match {
       case Some(f:String) if "female".equals(f.toLowerCase) => Map(
@@ -202,6 +203,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
       case (attr: AttributeName, AttributeBoolean(true)) => attr.name
     }.toSeq
 
+    //this isn't actually calling ontologyDAO?
     val dsLabels:Seq[String] = (workspace.attributes.get(diseaseLabelsAttributeName) collect {
       case value: AttributeValueList => value.list.collect {
         case a: AttributeString => "DS:" + a.value
