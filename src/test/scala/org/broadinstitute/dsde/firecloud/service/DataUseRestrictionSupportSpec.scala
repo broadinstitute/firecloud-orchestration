@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures.
 import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
+import spray.json.DefaultJsonProtocol._
 
 import scala.language.postfixOps
 
@@ -16,6 +17,117 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
   "DataUseRestrictionSupport" - {
 
     "Structured Use Restriction" - {
+
+      "when questionnaire answers are used to populate restriction fields" - {
+
+        "and all consent codes are true or filled in" in {
+          val ontologyDAO = new MockOntologyDAO
+          val request = StructuredDataRequest(generalResearchUse = true,
+            healthMedicalUseOnly = true,
+            diseaseUseOnly = Array(4325,2531),
+            commercialUseProhibited = true ,
+            forProfitUseProhibited = true,
+            methodsResearchProhibited = true,
+            aggregateLevelDataProhibited = true,
+            controlsUseProhibited = true,
+            genderUseOnly = "female",
+            pediatricResearchOnly = true,
+            IRB = true,
+            prefix = "blah")
+
+          val expected = Map("blahconsentCodes" -> Array("NPU","RS-G","NCU","HMB","RS-FM","NCTRL","RS-PD","IRB","NAGR","GRU","NMDS","DS:Ebola hemorrhagic fever","DS:hematologic cancer").toJson,
+            "blahdulvn" -> 1.0.toJson,
+            "blahstructuredUseRestriction" -> Map(
+              "NPU" -> true.toJson,
+              "RS-PD" -> true.toJson,
+              "NCU" -> true.toJson,
+              "RS-G" -> true.toJson,
+              "IRB" -> true.toJson,
+              "NAGR" -> true.toJson,
+              "RS-FM" -> true.toJson,
+              "RS-M" -> false.toJson,
+              "NMDS"-> true.toJson,
+              "NCTRL" -> true.toJson,
+              "GRU" ->true.toJson,
+              "HMB" -> true.toJson,
+              "DS" -> Array(4325,2531).toJson).toJson)
+
+          val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
+          result should be (expected)
+        }
+
+        "and all consent codes are false or empty" in {
+          val ontologyDAO = new MockOntologyDAO
+          val request = StructuredDataRequest(generalResearchUse = false,
+            healthMedicalUseOnly = false,
+            diseaseUseOnly = Array(),
+            commercialUseProhibited = false,
+            forProfitUseProhibited = false,
+            methodsResearchProhibited = false,
+            aggregateLevelDataProhibited = false,
+            controlsUseProhibited = false,
+            genderUseOnly = "",
+            pediatricResearchOnly = false,
+            IRB = false,
+            prefix = "")
+
+          val expected = Map("consentCodes" -> Array.empty[String].toJson,
+            "dulvn" -> 1.0.toJson,
+            "structuredUseRestriction" -> Map(
+              "NPU" -> false.toJson,
+              "RS-PD" -> false.toJson,
+              "NCU" -> false.toJson,
+              "RS-G" -> false.toJson,
+              "IRB" -> false.toJson,
+              "NAGR" -> false.toJson,
+              "RS-FM" -> false.toJson,
+              "RS-M" -> false.toJson,
+              "NMDS"-> false.toJson,
+              "NCTRL" -> false.toJson,
+              "GRU" -> false.toJson,
+              "HMB" -> false.toJson,
+              "DS" -> Array.empty[Int].toJson).toJson)
+
+          val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
+          result should be (expected)
+        }
+
+        "and consent codes are a mixture of true and false" in {
+          val ontologyDAO = new MockOntologyDAO
+          val request = StructuredDataRequest(generalResearchUse = false,
+            healthMedicalUseOnly = true,
+            diseaseUseOnly = Array(1240),
+            commercialUseProhibited = false,
+            forProfitUseProhibited = true,
+            methodsResearchProhibited = false,
+            aggregateLevelDataProhibited = false,
+            controlsUseProhibited = true,
+            genderUseOnly = "male",
+            pediatricResearchOnly = false,
+            IRB = true,
+            prefix = "library")
+
+          val expected = Map("libraryconsentCodes" -> Array("NPU","RS-G","RS-M","HMB","NCTRL","IRB","DS:leukemia").toJson,
+            "librarydulvn" -> 1.0.toJson,
+            "librarystructuredUseRestriction" -> Map(
+              "NPU" -> true.toJson,
+              "RS-PD" -> false.toJson,
+              "NCU" -> false.toJson,
+              "RS-G" -> true.toJson,
+              "IRB" -> true.toJson,
+              "NAGR" -> false.toJson,
+              "RS-FM" -> false.toJson,
+              "RS-M" -> true.toJson,
+              "NMDS"-> false.toJson,
+              "NCTRL" -> true.toJson,
+              "GRU" -> false.toJson,
+              "HMB" -> true.toJson,
+              "DS" -> Array(1240).toJson).toJson)
+
+          val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
+          result should be (expected)
+        }
+      }
 
       "when there are library data use restriction fields" - {
 
@@ -28,25 +140,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             dur shouldNot be(null)
           }
         }
-
-//        "questionaire request test" in {
-//          val ontologyDAO = new MockOntologyDAO
-//          val request = StructuredDataRequest(generalResearchUse = true,
-//            healthMedicalUseOnly = true,
-//            diseaseUseOnly = Array(4325,2531),
-//            commercialUseProhibited = true ,
-//            forProfitUseProhibited = true,
-//            methodsResearchProhibited = true,
-//            aggregateLevelDataProhibited = true,
-//            controlsUseProhibited = true,
-//            genderUseOnly = "female",
-//            pediatricResearchOnly = true,
-//            IRB = true,
-//            prefix = "blah")
-//
-//          val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
-//          result should be (1)
-//        }
 
         "dur should have appropriate gender codes populated" in {
           genderDatasets.map { ds =>
@@ -539,11 +632,8 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
   private def makeDurFromWorkspace(ds: Workspace): DataUseRestriction = {
     val attrs: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(ds)
-    //logger.info("generateStructuredUseRestrictionAttribute(ds): " + attrs)
     val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
-    //logger.info("attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull): " + durAtt)
     val result = durAtt.toJson.convertTo[DataUseRestriction]
-    //logger.info("durAtt.toJson.convertTo[DataUseRestriction]: " + result)
     result
   }
 
