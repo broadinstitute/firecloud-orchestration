@@ -115,10 +115,9 @@ object DUOS {
                                     structuredUseRestriction: Map[AttributeName, Attribute]) {
     def formatWithPrefix(): Map[String, JsValue] = {
       implicit val impAttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
-      val sur = structuredUseRestriction.toJson
       Map(prefix + "consentCodes" -> consentCodes.toJson,
         prefix + "dulvn" -> dulvn.toJson,
-        prefix + "structuredUseRestriction" -> sur)
+        prefix + "structuredUseRestriction" -> structuredUseRestriction.toJson)
     }
   }
 
