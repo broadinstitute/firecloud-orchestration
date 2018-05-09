@@ -59,14 +59,15 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val googleServicesDAO:GoogleServicesDAO = HttpGoogleServicesDAO
   val ontologyDAO:OntologyDAO = new ElasticSearchOntologyDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.ontologyIndexName)
   val consentDAO:ConsentDAO = new HttpConsentDAO
-  val searchDAO:SearchDAO = new ElasticSearchDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.indexName, ontologyDAO)
+  val researchPurposeDAO:ResearchPurposeDAO = new ESResearchPurposeDAO(ontologyDAO)
+  val searchDAO:SearchDAO = new ElasticSearchDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.indexName, researchPurposeDAO)
   val trialDAO:TrialDAO = new ElasticSearchTrialDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.trialIndexName)
   val logitDAO:LogitDAO = if (logitMetricsEnabled)
       new HttpLogitDAO(FireCloudConfig.Metrics.logitUrl, FireCloudConfig.Metrics.logitApiKey.get)
     else
       new NoopLogitDAO
 
-  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, thurloeDAO, trialDAO, logitDAO)
+  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeDAO, thurloeDAO, trialDAO, logitDAO)
   val materializer: ActorMaterializer = ActorMaterializer()
 
   private val healthChecks = new HealthChecks(app)

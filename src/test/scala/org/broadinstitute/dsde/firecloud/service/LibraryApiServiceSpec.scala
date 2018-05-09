@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
+import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurposeRequest
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
@@ -18,6 +19,7 @@ import spray.http.StatusCodes._
 import spray.http._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+import spray.json.lenses.JsonLenses._
 import spray.httpx.SprayJsonSupport._
 
 import scala.collection.JavaConverters._
@@ -40,6 +42,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
   private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
   private final val libraryGroupsPath = "/api/library/groups"
   private def duosConsentOrspIdPath(orspId: String): String = "/api/duos/consent/orsp/%s".format(orspId)
+  private final val duosResearchPurposeQuery = "/duos/researchPurposeQuery"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
@@ -365,6 +368,24 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         Get(setDiscoverableGroupsPath("publishedwriter","unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
           assertResult(List.empty[String]) {responseAs[List[String]]}
+        }
+      }
+    }
+
+    "when querying research purpose" - {
+      "POST with empty research purpose should return OK" in {
+        val request = ResearchPurposeRequest.empty
+        new RequestBuilder(HttpMethods.POST)(duosResearchPurposeQuery, request) ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "POST with disease focus should return OK" in {
+        val request = ResearchPurposeRequest.empty.copy(DS = Some(Seq(1234, 5678)))
+        new RequestBuilder(HttpMethods.POST)(duosResearchPurposeQuery, request) ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
+          val diseaseIds = responseAs[JsObject].extract[Int]('bool / 'should / * / 'term / "structuredUseRestriction.DS" / 'value)
+          diseaseIds should equal(Seq(1234, 5678))
         }
       }
     }

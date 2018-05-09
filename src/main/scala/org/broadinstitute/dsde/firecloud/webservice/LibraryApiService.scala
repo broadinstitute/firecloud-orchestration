@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.model.DataUse.{ResearchPurpose, ResearchPurposeRequest}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{Curator, UserInfo}
@@ -30,11 +31,24 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
   val consentUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
 
   val libraryRoutes: Route =
-    path("duos" / "autocomplete" / Segment) { (searchTerm) =>
-      get { requestContext =>
-        perRequest(requestContext,
-          OntologyService.props(ontologyServiceConstructor),
-          OntologyService.AutocompleteOntology(searchTerm))
+    pathPrefix("duos") {
+      path("autocomplete" / Segment) { (searchTerm) =>
+        get { requestContext =>
+          perRequest(requestContext,
+            OntologyService.props(ontologyServiceConstructor),
+            OntologyService.AutocompleteOntology(searchTerm))
+        }
+      } ~
+      path("researchPurposeQuery") {
+        post {
+          respondWithJSON {
+            entity(as[ResearchPurposeRequest]) { researchPurposeRequest => requestContext =>
+              perRequest(requestContext,
+                OntologyService.props(ontologyServiceConstructor),
+                OntologyService.ResearchPurposeQuery(researchPurposeRequest))
+            }
+          }
+        }
       }
     } ~
     pathPrefix("schemas") {

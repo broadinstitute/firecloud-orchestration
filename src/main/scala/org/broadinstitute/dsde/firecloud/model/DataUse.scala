@@ -17,6 +17,10 @@ object DataUse {
     def default = {
       new ResearchPurpose(Seq.empty[DiseaseOntologyNodeId], NMDS=false, NCTRL=false, NAGR=false, POA=false, NCU=false)
     }
+
+    def apply(request: ResearchPurposeRequest): ResearchPurpose = {
+      requestToResearchPurpose(request)
+    }
   }
 
   case class DiseaseOntologyNodeId(uri: Uri, numericId: Int)
@@ -29,4 +33,30 @@ object DataUse {
     }
   }
 
+  case class ResearchPurposeRequest(
+    DS:     Option[Seq[Int]],
+    NMDS:   Option[Boolean],
+    NCTRL:  Option[Boolean],
+    NAGR:   Option[Boolean],
+    POA:    Option[Boolean],
+    NCU:    Option[Boolean],
+    prefix: Option[String])
+  object ResearchPurposeRequest {
+    def empty: ResearchPurposeRequest = {
+      new ResearchPurposeRequest(DS = None, NMDS = None, NCTRL = None, NAGR = None, POA = None, NCU = None, prefix = None)
+    }
+  }
+
+  def requestToResearchPurpose(r: ResearchPurposeRequest): ResearchPurpose = {
+    ResearchPurpose(
+      DS = r.DS match {
+        case Some(ds) => ds.map(id => DiseaseOntologyNodeId(s"$doid_prefix$id"))
+        case None => Seq.empty[DiseaseOntologyNodeId]
+      },
+      NMDS = r.NMDS.getOrElse(false),
+      NCTRL = r.NCTRL.getOrElse(false),
+      NAGR = r.NAGR.getOrElse(false),
+      POA = r.POA.getOrElse(false),
+      NCU = r.NCU.getOrElse(false))
+  }
 }

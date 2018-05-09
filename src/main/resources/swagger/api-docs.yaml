@@ -3464,6 +3464,23 @@ paths:
           description: Internal Server Error
       security: []
 
+  /duos/researchPurposeQuery:
+    post:
+      tags:
+      - Library
+      operationId: duosResearchPurposeQuery
+      summary: Generates an ElasticSearch clause for filtering by research purpose
+      parameters:
+        - in: body
+          name: body
+          description: Research Purpose Request
+          required: true
+          schema:
+            $ref: '#/definitions/ResearchPurposeRequest'
+      responses:
+        200:
+          description: JSON of ES filter clause
+
   /api/duos/consent/orsp/{orspId}:
     get:
       tags:
@@ -5267,6 +5284,33 @@ definitions:
         type: boolean
         default: false
         description: Commercial purpose/by a commercial entity
+
+  ResearchPurposeRequest:
+    type: object
+    properties:
+      DS:
+        type: array
+        default: []
+        items:
+          type: integer
+      NMDS:
+        type: boolean
+        default: false
+      NCTRL:
+        type: boolean
+        default: false
+      NAGR:
+        type: boolean
+        default: false
+      POA:
+        type: boolean
+        default: false
+      NCU:
+        type: boolean
+        default: false
+      prefix:
+        type: string
+        default: ""
 
   SearchTermRef:
     type: object
