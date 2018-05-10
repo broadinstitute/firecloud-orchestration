@@ -35,11 +35,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       val researchPurpose = ResearchPurpose.default.copy(NAGR = true)
       "should return any dataset where NAGR is false and is (GRU or HMB)" - {
         val expected = Set("one", "two", "six", "seven", "eleven", "twelve")
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -72,11 +72,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       val researchPurpose = ResearchPurpose.default.copy(POA = true)
       "should return any dataset where GRU is true" - {
         val expected = Set("one", "six", "eleven")
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -109,11 +109,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       val researchPurpose = ResearchPurpose.default.copy(NCU = true)
       "should return any dataset where NPU and NCU are both false" - {
         val expected = Set("two", "four", "seven", "nine", "twelve", "fourteen")
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -146,11 +146,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       "should return any dataset where the disease matches exactly" - {
         val researchPurpose = ResearchPurpose.default.copy(DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
         val expected = Set("one", "two", "six", "seven", "eleven", "twelve", "sixteen", "eighteen") // GRU, HMB, and sleep disorder
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -158,11 +158,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       "should return any dataset where the RP's disease is a child of the dataset's disease" - {
         val researchPurpose = ResearchPurpose.default.copy(DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val expected = Set("one", "two", "six", "seven", "eleven", "twelve", "sixteen", "seventeen", "eighteen", "twenty") // GRU, HMB, central sleep apnea, and sleep disorder
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -171,11 +171,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
         // disease search for leukemia, which is not in our test fixtures
         val researchPurpose = ResearchPurpose.default.copy(DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_1240")))
         val expected = Set("one", "two", "six", "seven", "eleven", "twelve")
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -215,11 +215,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
         // NB: this doesn't match fixture "twenty" because even though the NMDS clauses are satisfied, the DS
         // clause is not. In other words, if you made this search without specifying NMDS=true, you wouldn't
         // match on "twenty".
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -227,11 +227,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       "should return any dataset where NMDS is true and the RP's disease is a child of the dataset's disease" - {
         val researchPurpose = ResearchPurpose.default.copy(NMDS=true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val expected = Set("one", "two", "six", "seven", "eleven", "twelve", "sixteen", "seventeen", "eighteen", "twenty")
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -239,11 +239,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       "should return any dataset where NMDS is false" - {
         val researchPurpose = ResearchPurpose.default.copy(NMDS = true)
         val expected = Set("one", "six", "eleven", "sixteen", "twenty")
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -279,11 +279,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       "should return any dataset where the disease matches exactly" - {
         val researchPurpose = ResearchPurpose.default.copy(NCTRL = true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_535")))
         val expected = Set("two", "six", "twelve", "sixteen", "eighteen")
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -291,11 +291,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       "should return any dataset where the RP's disease is a child of the dataset's disease" - {
         val researchPurpose = ResearchPurpose.default.copy(NCTRL = true, DS = Seq(DiseaseOntologyNodeId("http://purl.obolibrary.org/obo/DOID_9220")))
         val expected = Set("two", "six", "twelve", "sixteen", "seventeen", "eighteen", "twenty")
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -303,11 +303,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       "should return any dataset where NCTRL is false and is (GRU or HMB)" - {
         val researchPurpose = ResearchPurpose.default.copy(NCTRL = true)
         val expected = Set("two", "six", "twelve")
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
@@ -344,11 +344,11 @@ class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation wit
       "should intersect each restriction" - {
         val researchPurpose = ResearchPurpose.default.copy(NAGR = true, NCU = true)
         val expected = Set("two", "seven", "twelve")
-        "library search" in {
+        "monolithic search" in {
           val searchResponse = searchWithPurpose(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
-        "research purpose search" in {
+        "external search using researchPurposeQuery" in {
           val searchResponse = searchWithResearchPurposeQuery(researchPurpose)
           validateResultNames(expected, searchResponse)
         }
