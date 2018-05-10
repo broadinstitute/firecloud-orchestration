@@ -27,7 +27,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
   // urls don't have to point to an actual ES instance.
   val client: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
 
-  // create a mock ontology dao
+  // create a mock research purpose dao
   val researchPurposeDAO: ResearchPurposeDAO = new MockResearchPurposeDAO
 
   "ElasticSearchDAOQuerySupport" - {
