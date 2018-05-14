@@ -110,7 +110,7 @@ object DUOS {
                                    prefix: Option[String])
 
   case class StructuredDataResponse(consentCodes: Array[String],
-                                    dulvn: String,
+                                    dulvn: Int,
                                     prefix: String,
                                     structuredUseRestriction: Map[AttributeName, Attribute]) {
     def formatWithPrefix(): Map[String, JsValue] = {

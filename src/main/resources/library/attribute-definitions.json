@@ -359,7 +359,6 @@
     "library:dulvn": {
       "title": "Structured Data Use Limitations  Version Number",
       "description": "Structured Data Use Limitations Version Number",
-      "default": 3,
       "indexable": false,
       "type": "integer"
     },
