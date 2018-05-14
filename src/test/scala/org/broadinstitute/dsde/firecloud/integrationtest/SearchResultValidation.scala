@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
-import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, MockResearchPurposeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, MockResearchPurposeSupport}
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurpose
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
@@ -55,10 +55,10 @@ trait SearchResultValidation {
     * purpose is fetched identically to how a 3rd party would.
     */
   def searchWithResearchPurposeQuery(researchPurpose: ResearchPurpose): SearchResponse = {
-    val boolQuery: BoolQueryBuilder = researchPurposeDAO.researchPurposeFilters(researchPurpose)
+    val boolQuery: BoolQueryBuilder = researchPurposeSupport.researchPurposeFilters(researchPurpose)
 
-    // Use a MockResearchPurposeDAO here to prove that it's using the query created above
-    val elasticSearchDAO = new ElasticSearchDAO(client, itTestIndexName, new MockResearchPurposeDAO)
+    // Use a MockResearchPurposeSupport here to prove that it's using the query created above
+    val elasticSearchDAO = new ElasticSearchDAO(client, itTestIndexName, new MockResearchPurposeSupport)
     val searchRequest = elasticSearchDAO.createESSearchRequest(client, itTestIndexName, boolQuery, 0, 10)
     elasticSearchDAO.executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchRequest)
   }

@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, ResearchPurposeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, ResearchPurposeSupport}
 import org.broadinstitute.dsde.firecloud.model.DataUse.{ResearchPurpose, ResearchPurposeRequest}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOntologyTermResource
 import org.broadinstitute.dsde.firecloud.service.OntologyService.{AutocompleteOntology, ResearchPurposeQuery}
@@ -24,10 +24,10 @@ object OntologyService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new OntologyService(app.ontologyDAO, app.researchPurposeDAO)
+    new OntologyService(app.ontologyDAO, app.researchPurposeSupport)
 }
 
-class OntologyService(val ontologyDAO: OntologyDAO, val researchPurposeDAO: ResearchPurposeDAO)
+class OntologyService(val ontologyDAO: OntologyDAO, val researchPurposeSupport: ResearchPurposeSupport)
                      (implicit protected val executionContext: ExecutionContext)
   extends Actor with SprayJsonSupport with LazyLogging {
 
@@ -42,6 +42,6 @@ class OntologyService(val ontologyDAO: OntologyDAO, val researchPurposeDAO: Rese
 
   def buildResearchPurposeQuery(request: ResearchPurposeRequest): Future[PerRequestMessage] = {
     // TODO: Don't ignore request.prefix!
-    Future(RequestComplete(researchPurposeDAO.researchPurposeFilters(ResearchPurpose(request)).toString))
+    Future(RequestComplete(researchPurposeSupport.researchPurposeFilters(ResearchPurpose(request)).toString))
   }
 }

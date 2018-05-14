@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurpose
 import org.elasticsearch.index.query.BoolQueryBuilder
 import org.elasticsearch.index.query.QueryBuilders.{boolQuery, termQuery}
 
-class MockResearchPurposeDAO extends ResearchPurposeDAO {
+class MockResearchPurposeSupport extends ResearchPurposeSupport {
   def researchPurposeFilters(researchPurpose: ResearchPurpose): BoolQueryBuilder = {
     val query = boolQuery
     researchPurpose.DS.foreach { id =>

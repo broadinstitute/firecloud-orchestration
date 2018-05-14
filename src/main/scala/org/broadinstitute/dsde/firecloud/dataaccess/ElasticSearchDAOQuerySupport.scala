@@ -66,7 +66,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     */
 
 
-  def createQuery(criteria: LibrarySearchParams, groups: Seq[String], researchPurposeDAO: ResearchPurposeDAO, searchField: String = fieldAll, phrase: Boolean = false): QueryBuilder = {
+  def createQuery(criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport, searchField: String = fieldAll, phrase: Boolean = false): QueryBuilder = {
     val query: BoolQueryBuilder = boolQuery // outer query, all subqueries should be added to the must list
     query.must(criteria.searchString match {
       case None => matchAllQuery
@@ -94,7 +94,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       query.must(fieldQuery)
     }
     criteria.researchPurpose map { rp =>
-      query.must(researchPurposeDAO.researchPurposeFilters(rp))
+      query.must(researchPurposeSupport.researchPurposeFilters(rp))
     }
 
     query
@@ -144,8 +144,8 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       .setFetchSource(false).highlighter(hb)
   }
 
-  def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeDAO: ResearchPurposeDAO): SearchRequestBuilder = {
-    val searchQuery = createESSearchRequest(client, indexname, createQuery(criteria, groups, researchPurposeDAO), criteria.from, criteria.size, criteria.sortField, criteria.sortDirection)
+  def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequestBuilder = {
+    val searchQuery = createESSearchRequest(client, indexname, createQuery(criteria, groups, researchPurposeSupport), criteria.from, criteria.size, criteria.sortField, criteria.sortDirection)
     // if we are not collecting aggregation data (in the case of pagination), we can skip adding aggregations
     // if the search criteria contains elements from all of the aggregatable attributes, then we will be making
     // separate queries for each of them. so we can skip adding them in the main search query
@@ -160,15 +160,15 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     searchQuery
   }
 
-  def buildAutocompleteQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeDAO: ResearchPurposeDAO): SearchRequestBuilder = {
-    createESAutocompleteRequest(client, indexname, createQuery(criteria, groups, researchPurposeDAO, searchField=fieldSuggest, phrase=true), 0, criteria.size)
+  def buildAutocompleteQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequestBuilder = {
+    createESAutocompleteRequest(client, indexname, createQuery(criteria, groups, researchPurposeSupport, searchField=fieldSuggest, phrase=true), 0, criteria.size)
   }
 
-  def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeDAO: ResearchPurposeDAO): Seq[SearchRequestBuilder] = {
+  def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Seq[SearchRequestBuilder] = {
     // for aggregations fields that are part of the current search criteria, we need to do a separate
     // aggregate request *without* that term in the search criteria
     (criteria.fieldAggregations.keySet.toSeq intersect criteria.filters.keySet.toSeq) map { field: String =>
-      val query = createQuery(criteria.copy(filters = criteria.filters - field), groups, researchPurposeDAO)
+      val query = createQuery(criteria.copy(filters = criteria.filters - field), groups, researchPurposeSupport)
       // setting size to 0, we will ignore the actual search results
       addAggregationsToQuery(
         createESSearchRequest(client, indexname, query, 0, 0),
@@ -192,9 +192,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeDAO: ResearchPurposeDAO): Future[LibrarySearchResponse] = {
-    val searchQuery = buildSearchQuery(client, indexname, criteria, groups, researchPurposeDAO)
-    val aggregateQueries = buildAggregateQueries(client, indexname, criteria, groups, researchPurposeDAO)
+  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
+    val searchQuery = buildSearchQuery(client, indexname, criteria, groups, researchPurposeSupport)
+    val aggregateQueries = buildAggregateQueries(client, indexname, criteria, groups, researchPurposeSupport)
 
     logger.debug(s"main search query: $searchQuery.toJson")
     // search future will request aggregate data for aggregatable attributes that are not being searched on
@@ -265,9 +265,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeDAO: ResearchPurposeDAO): Future[LibrarySearchResponse] = {
+  def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
 
-    val searchQuery = buildAutocompleteQuery(client, indexname, criteria, groups, researchPurposeDAO)
+    val searchQuery = buildAutocompleteQuery(client, indexname, criteria, groups, researchPurposeSupport)
 
     logger.debug(s"autocomplete search query: $searchQuery.toJson")
     val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchQuery))

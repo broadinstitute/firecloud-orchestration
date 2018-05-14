@@ -28,7 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
 
-class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurposeDAO: ResearchPurposeDAO) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
+class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurposeSupport: ResearchPurposeSupport) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
   private final val datatype = "dataset"
 
@@ -119,11 +119,11 @@ class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurpo
   }
 
   override def findDocuments(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
-    findDocumentsWithAggregateInfo(client, indexName, criteria, groups, researchPurposeDAO)
+    findDocumentsWithAggregateInfo(client, indexName, criteria, groups, researchPurposeSupport)
   }
 
   override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
-    autocompleteSuggestions(client, indexName, criteria, groups, researchPurposeDAO)
+    autocompleteSuggestions(client, indexName, criteria, groups, researchPurposeSupport)
   }
 
   override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {

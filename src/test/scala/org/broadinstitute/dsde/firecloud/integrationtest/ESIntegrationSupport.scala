@@ -37,11 +37,11 @@ object ESIntegrationSupport extends IntegrationTestConfig {
   lazy val client: TransportClient = ElasticUtils.buildClient(ITElasticSearch.servers, ITElasticSearch.clusterName)
 
   lazy val mockOntologyDAO:OntologyDAO = new MockOntologyDAO
-  lazy val researchPurposeDAO:ResearchPurposeDAO = new ESResearchPurposeDAO(mockOntologyDAO)
+  lazy val researchPurposeSupport:ResearchPurposeSupport = new ESResearchPurposeSupport(mockOntologyDAO)
 
   lazy val searchDAO:SearchDAO = {
     // use the temporary index name defined above
-    new ElasticSearchDAO(client, itTestIndexName, researchPurposeDAO)
+    new ElasticSearchDAO(client, itTestIndexName, researchPurposeSupport)
   }
 
   lazy val ontologyDAO:OntologyDAO = {
