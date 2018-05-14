@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.OntologyDAO
 import org.broadinstitute.dsde.firecloud.model.{AttributeDefinition, ConsentCodes, DataUse}
 import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredDataRequest, StructuredDataResponse}
@@ -201,7 +201,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     // convert to array of consent codes
     val consentCodes = consentMap.filter(_._2.value).map(_._1.name).toArray ++ diseaseCodesArray
 
-    StructuredDataResponse(consentCodes, "1.0", request.prefix.getOrElse(""), consentMap ++ Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseOnly.map(AttributeString(_))))).formatWithPrefix
+    StructuredDataResponse(consentCodes, FireCloudConfig.Duos.dulvn, request.prefix.getOrElse(""), consentMap ++ Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseOnly.map(AttributeString(_))))).formatWithPrefix
   }
 
   private def getDiseaseNames(diseaseCodes: Array[String], ontologyDAO: OntologyDAO): Array[String] = {
@@ -212,19 +212,6 @@ trait DataUseRestrictionSupport extends LazyLogging {
       }
     }
   }
-
-  def getDulvn: String = {
-    def defaultSchema: String = FileUtils.readAllTextFromResource(LibraryService.schemaLocation)
-    val jsSeqDulvn = defaultSchema.parseJson.asJsObject.fields.get("properties") //, "library:dulvn", "default").
-
-    if (jsSeqDulvn.size == 1) {
-      jsSeqDulvn.head.toString
-    } else {
-      throw new FireCloudException("Could not obtain dulvn from attribute definitions.")
-    }
-
-  }
-
 
   private def getGenderCodeMap(rsg: String): Map[AttributeName, AttributeBoolean] = {
     rsg.toLowerCase match {
