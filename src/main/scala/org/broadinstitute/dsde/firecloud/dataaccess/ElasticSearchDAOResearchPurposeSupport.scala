@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, R
 import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionSupport
 import org.broadinstitute.dsde.rawls.model.AttributeName
-import org.elasticsearch.index.query.BoolQueryBuilder
+import org.elasticsearch.index.query.{BoolQueryBuilder, TermQueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders.{boolQuery, termQuery}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -23,10 +23,10 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
       dul:     Any dataset where NAGR is false and is (GRU or HMB)
      */
     if (rp.NAGR) {
-      bool.must(code("NAGR", false))
+      bool.must(encode("NAGR", false))
       bool.must(boolQuery()
-        .should(code("GRU", true))
-        .should(code("HMB", true))
+        .should(encode("GRU", true))
+        .should(encode("HMB", true))
       )
     }
 
@@ -35,8 +35,8 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
       dul:     Any dataset where NPU and NCU are both false
      */
     if (rp.NCU) {
-      bool.must(code("NPU", false))
-      bool.must(code("NCU", false))
+      bool.must(encode("NPU", false))
+      bool.must(encode("NCU", false))
     }
 
     /*
@@ -44,7 +44,7 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
       dul:     Any dataset tagged with GRU
     */
     if (rp.POA)
-      bool.must(code("GRU", true))
+      bool.must(encode("GRU", true))
 
 
     /*
@@ -67,11 +67,11 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
      */
     if (rp.NMDS) {
       val nmdsClause = boolQuery()
-      nmdsClause.should(code("NMDS", false))
+      nmdsClause.should(encode("NMDS", false))
       if (rp.DS.nonEmpty) {
         generateDiseaseMatchLogic(rp, ontologyDAO) map { dsClause =>
           nmdsClause.should(boolQuery()
-            .must(code("NMDS", true))
+            .must(encode("NMDS", true))
             .must(dsClause)
           )
         }
@@ -88,10 +88,10 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
     if (rp.NCTRL) {
       val nctrlClause = boolQuery()
       nctrlClause.should(boolQuery()
-        .must(code("NCTRL", false))
+        .must(encode("NCTRL", false))
         .must(boolQuery()
-          .should(code("GRU", true))
-          .should(code("HMB", true))
+          .should(encode("GRU", true))
+          .should(encode("HMB", true))
         )
       )
       if (rp.DS.nonEmpty)
@@ -113,8 +113,8 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
      */
     if (rp.DS.nonEmpty) {
       val dsClause = generateDiseaseQuery(rp.DS, ontologyDAO)
-      dsClause.should(code("GRU", true))
-      dsClause.should(code("HMB", true))
+      dsClause.should(encode("GRU", true))
+      dsClause.should(encode("HMB", true))
       Some(dsClause)
     } else {
       None
@@ -126,7 +126,7 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
 
     val dsClause = boolQuery()
     allnodes foreach { id =>
-      dsClause.should(termQuery(s"$durRoot.DS", id.numericId))
+      dsClause.should(encode("DS", id.numericId))
     }
     dsClause
   }
@@ -146,6 +146,7 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
     }
   }
 
-  private def code(code: String, value: Boolean) = termQuery(s"$durRoot.$code", value)
+  private def encode[T](code: String, value: T): TermQueryBuilder = encode(durRoot, code, value)
+  private def encode[T](prefix: String, code: String, value: T): TermQueryBuilder = termQuery(s"$prefix.$code", value)
 
 }
