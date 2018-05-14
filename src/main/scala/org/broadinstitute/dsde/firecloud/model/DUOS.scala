@@ -98,7 +98,7 @@ object DUOS {
 
   case class StructuredDataRequest(generalResearchUse: Boolean,
                                    healthMedicalBiomedicalUseOnly: Boolean,
-                                   diseaseUseOnly: Array[Int],
+                                   diseaseUseOnly: Array[String],
                                    commercialUseProhibited: Boolean,
                                    forProfitUseProhibited: Boolean,
                                    methodsResearchProhibited: Boolean,
@@ -106,11 +106,11 @@ object DUOS {
                                    controlsUseProhibited: Boolean,
                                    genderUseOnly: String,
                                    pediatricResearchOnly: Boolean,
-                                   IRB: Boolean,
-                                   prefix: String)
+                                   irbRequired: Boolean,
+                                   prefix: Option[String])
 
   case class StructuredDataResponse(consentCodes: Array[String],
-                                    dulvn: Double, //what the heck is this?
+                                    dulvn: String,
                                     prefix: String,
                                     structuredUseRestriction: Map[AttributeName, Attribute]) {
     def formatWithPrefix(): Map[String, JsValue] = {

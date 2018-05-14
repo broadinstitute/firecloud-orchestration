@@ -24,7 +24,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           val ontologyDAO = new MockOntologyDAO
           val request = StructuredDataRequest(generalResearchUse = true,
             healthMedicalBiomedicalUseOnly = true,
-            diseaseUseOnly = Array(4325,2531),
+            diseaseUseOnly = Array("4325","2531"),
             commercialUseProhibited = true ,
             forProfitUseProhibited = true,
             methodsResearchProhibited = true,
@@ -32,11 +32,11 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             controlsUseProhibited = true,
             genderUseOnly = "female",
             pediatricResearchOnly = true,
-            IRB = true,
-            prefix = "blah")
+            irbRequired = true,
+            prefix = Some("blah"))
 
           val expected = Map("blahconsentCodes" -> Array("NPU","RS-G","NCU","HMB","RS-FM","NCTRL","RS-PD","IRB","NAGR","GRU","NMDS","DS:Ebola hemorrhagic fever","DS:hematologic cancer").toJson,
-            "blahdulvn" -> 1.0.toJson,
+            "blahdulvn" -> "1.0".toJson,
             "blahstructuredUseRestriction" -> Map(
               "NPU" -> true.toJson,
               "RS-PD" -> true.toJson,
@@ -50,7 +50,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
               "NCTRL" -> true.toJson,
               "GRU" ->true.toJson,
               "HMB" -> true.toJson,
-              "DS" -> Array(4325,2531).toJson).toJson)
+              "DS" -> Array("4325","2531").toJson).toJson)
 
           val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
           result should be (expected)
@@ -68,11 +68,11 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             controlsUseProhibited = false,
             genderUseOnly = "",
             pediatricResearchOnly = false,
-            IRB = false,
-            prefix = "")
+            irbRequired = false,
+            prefix = None)
 
           val expected = Map("consentCodes" -> Array.empty[String].toJson,
-            "dulvn" -> 1.0.toJson,
+            "dulvn" -> "1.0".toJson,
             "structuredUseRestriction" -> Map(
               "NPU" -> false.toJson,
               "RS-PD" -> false.toJson,
@@ -86,7 +86,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
               "NCTRL" -> false.toJson,
               "GRU" -> false.toJson,
               "HMB" -> false.toJson,
-              "DS" -> Array.empty[Int].toJson).toJson)
+              "DS" -> Array.empty[String].toJson).toJson)
 
           val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
           result should be (expected)
@@ -96,7 +96,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           val ontologyDAO = new MockOntologyDAO
           val request = StructuredDataRequest(generalResearchUse = false,
             healthMedicalBiomedicalUseOnly = true,
-            diseaseUseOnly = Array(1240),
+            diseaseUseOnly = Array("1240"),
             commercialUseProhibited = false,
             forProfitUseProhibited = true,
             methodsResearchProhibited = false,
@@ -104,11 +104,11 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             controlsUseProhibited = true,
             genderUseOnly = "male",
             pediatricResearchOnly = false,
-            IRB = true,
-            prefix = "library")
+            irbRequired = true,
+            prefix = Some("library"))
 
           val expected = Map("libraryconsentCodes" -> Array("NPU","RS-G","RS-M","HMB","NCTRL","IRB","DS:leukemia").toJson,
-            "librarydulvn" -> 1.0.toJson,
+            "librarydulvn" -> "1.0".toJson,
             "librarystructuredUseRestriction" -> Map(
               "NPU" -> true.toJson,
               "RS-PD" -> false.toJson,
@@ -122,7 +122,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
               "NCTRL" -> true.toJson,
               "GRU" -> false.toJson,
               "HMB" -> true.toJson,
-              "DS" -> Array(1240).toJson).toJson)
+              "DS" -> Array("1240").toJson).toJson)
 
           val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
           result should be (expected)

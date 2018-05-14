@@ -1,40 +1,19 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess.OntologyDAO
+import org.broadinstitute.dsde.firecloud.model.{AttributeDefinition, ConsentCodes, DataUse}
 import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredDataRequest, StructuredDataResponse}
 import org.broadinstitute.dsde.firecloud.model.DataUse.DiseaseOntologyNodeId
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
 import org.broadinstitute.dsde.rawls.model.{Attribute, _}
+import org.parboiled.common.FileUtils
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.util.Try
-
-object ConsentCodes extends Enumeration {
-  val GRU = "GRU"
-  val HMB = "HMB"
-  val NCU = "NCU"
-  val NPU = "NPU"
-  val NMDS = "NMDS"
-  val NAGR = "NAGR"
-  val NCTRL = "NCTRL"
-  val RSPD = "RS-PD"
-  val IRB = "IRB"
-  val RSG = "RS-G"
-  val RSFM = "RS-FM"
-  val RSM = "RS-M"
-  val DSURL = "DS_URL"
-  val RSPOP = "RS-POP"
-  val DS = "DS"
-
-  val booleanCodes = Seq(GRU, HMB, NCU, NPU, NMDS, NAGR, NCTRL, RSPD, IRB)
-  val genderCodes = Seq(RSG, RSFM, RSM)
-  val duRestrictionFieldNames = booleanCodes ++ genderCodes ++ Seq(DSURL, RSPOP)
-  val allDurFieldNames = duRestrictionFieldNames ++ Seq(DS)
-  val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS(DS)
-}
 
 trait DataUseRestrictionSupport extends LazyLogging {
 
@@ -71,12 +50,12 @@ trait DataUseRestrictionSupport extends LazyLogging {
         val existingKeyNames = existingAttrs.keys.map(_.name).toSeq
 
         // Missing boolean codes default to false
-        val booleanAttrs: Map[AttributeName, Attribute] = ((booleanCodes ++ genderCodes) diff existingKeyNames).map { code =>
+        val booleanAttrs: Map[AttributeName, Attribute] = ((ConsentCodes.booleanCodes ++ ConsentCodes.genderCodes) diff existingKeyNames).map { code =>
           AttributeName.withDefaultNS(code) -> AttributeBoolean(false)
         }.toMap
 
         // Missing list codes default to empty lists
-        val listAttrs: Map[AttributeName, Attribute] = (Seq("DS", "RS-POP") diff existingKeyNames).map { code =>
+        val listAttrs: Map[AttributeName, Attribute] = (Seq(ConsentCodes.DS, ConsentCodes.RSPOP) diff existingKeyNames).map { code =>
           AttributeName.withDefaultNS(code) -> AttributeValueList(Seq.empty)
         }.toMap
 
@@ -94,24 +73,24 @@ trait DataUseRestrictionSupport extends LazyLogging {
     */
   def generateStructuredUseRestrictionAttribute(duosDataUse: DuosDataUse, ontologyDAO: OntologyDAO): Map[AttributeName, Attribute] = {
     // these are straightforward mappings
-    val gru = duosDataUse.generalUse.map ( AttributeName.withLibraryNS("GRU") -> AttributeBoolean(_) )
-    val hmb = duosDataUse.hmbResearch.map ( AttributeName.withLibraryNS("HMB") -> AttributeBoolean(_) )
-    val rspd = duosDataUse.pediatric.map ( AttributeName.withLibraryNS("RS-PD") -> AttributeBoolean(_) )
-    val ncu = duosDataUse.commercialUse.map ( AttributeName.withLibraryNS("NCU") -> AttributeBoolean(_) )
-    val nmds = duosDataUse.methodsResearch.map ( AttributeName.withLibraryNS("NMDS") -> AttributeBoolean(_) )
+    val gru = duosDataUse.generalUse.map ( AttributeName.withLibraryNS(ConsentCodes.GRU) -> AttributeBoolean(_) )
+    val hmb = duosDataUse.hmbResearch.map ( AttributeName.withLibraryNS(ConsentCodes.HMB) -> AttributeBoolean(_) )
+    val rspd = duosDataUse.pediatric.map ( AttributeName.withLibraryNS(ConsentCodes.RSPD) -> AttributeBoolean(_) )
+    val ncu = duosDataUse.commercialUse.map ( AttributeName.withLibraryNS(ConsentCodes.NCU) -> AttributeBoolean(_) )
+    val nmds = duosDataUse.methodsResearch.map ( AttributeName.withLibraryNS(ConsentCodes.NMDS) -> AttributeBoolean(_) )
 
     // FC supports both NCU and NPU; DUOS only supports one (NCU)
     // val npu = duosDataUse.commercialUse.map ( AttributeName.withLibraryNS("NPU") -> AttributeBoolean(_) )
 
     // DUOS represents NAGR and NCTRL as strings ("yes"|"no")
     val nagr = duosDataUse.aggregateResearch match {
-      case Some(s) if "yes".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS("NAGR") -> AttributeBoolean(true))
-      case Some(s) if "no".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS("NAGR") -> AttributeBoolean(false))
+      case Some(s) if "yes".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS(ConsentCodes.NAGR) -> AttributeBoolean(true))
+      case Some(s) if "no".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS(ConsentCodes.NAGR) -> AttributeBoolean(false))
       case _ => None
     }
     val nctrl = duosDataUse.controlSetOption match {
-      case Some(s) if "yes".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS("NCTRL") -> AttributeBoolean(true))
-      case Some(s) if "no".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS("NCTRL") -> AttributeBoolean(false))
+      case Some(s) if "yes".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS(ConsentCodes.NCTRL) -> AttributeBoolean(true))
+      case Some(s) if "no".equals(s.toLowerCase) => Some(AttributeName.withLibraryNS(ConsentCodes.NCTRL) -> AttributeBoolean(false))
       case _ => None
     }
 
@@ -123,8 +102,8 @@ trait DataUseRestrictionSupport extends LazyLogging {
       case Some(Seq()) => Map.empty[AttributeName,Attribute]
       case Some(nodeList) =>
         Map(
-          AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(nodeList.map( AttributeString )),
-          AttributeName.withLibraryNS("DS") -> AttributeValueList(nodeList.map{ nodeid =>
+          AttributeName.withLibraryNS(ConsentCodes.DSURL) -> AttributeValueList(nodeList.map( AttributeString )),
+          AttributeName.withLibraryNS(ConsentCodes.DS) -> AttributeValueList(nodeList.map{ nodeid =>
             ontologyDAO.search(nodeid) match {
               case termResource :: Nil => AttributeString(termResource.label)
               case _ => AttributeString(nodeid)
@@ -138,7 +117,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
       case Some(Seq()) => Map.empty[AttributeName,Attribute]
       case Some(populations) =>
         Map(
-          AttributeName.withLibraryNS("RS-PD") -> AttributeValueList(populations.map(AttributeString))
+          AttributeName.withLibraryNS(ConsentCodes.RSPD) -> AttributeValueList(populations.map(AttributeString))
         )
       case _ => Map.empty[AttributeName,Attribute]
     }
@@ -166,30 +145,6 @@ trait DataUseRestrictionSupport extends LazyLogging {
     result
   }
 
-
-  // Takes in any Product (case classes extend Product) and a prefix and creates a map of all the fields and their values
-  // with the prefix prepended to the field
-//  private def formatWithPrefix(prefix: String, product: Product): Map[String, JsValue] = {
-//    implicit object AnyJsonFormat extends RootJsonFormat[Any] {
-//      def write(x: Any) = x match {
-//        case n: Int => JsNumber(n)
-//        case s: String => JsString(s)
-//        case b: Boolean if b == true => JsTrue
-//        case b: Boolean if b == false => JsFalse
-//        case a: Array[Any] => a.
-//      }
-//      def read(value: JsValue) = value match {
-//        case JsNumber(n) => n.intValue()
-//        case JsString(s) => s
-//        case JsTrue => true
-//        case JsFalse => false
-//      }
-//    }
-//
-//    val values = product.productIterator
-//    product.getClass.getDeclaredFields.map( prefix + _.getName -> values.next.toJson ).toMap
-//  }
-
   /**
     * Create a display-friendly version of the structured data use restriction in the form of a
     * list of code strings.
@@ -204,9 +159,10 @@ trait DataUseRestrictionSupport extends LazyLogging {
     }.toSeq
 
     //this isn't actually calling ontologyDAO?
-    val dsLabels:Seq[String] = (workspace.attributes.get(diseaseLabelsAttributeName) collect {
+    val dsLabels:Seq[String] = (workspace.attributes.get(ConsentCodes.diseaseLabelsAttributeName) collect {
       case value: AttributeValueList => value.list.collect {
-        case a: AttributeString => "DS:" + a.value
+        case a: AttributeString => ConsentCodes.DS + ":" + a.value
+
       }
     }).getOrElse(Seq.empty[String])
 
@@ -223,12 +179,12 @@ trait DataUseRestrictionSupport extends LazyLogging {
     (existing -
       structuredUseRestrictionAttributeName -
       consentCodesAttributeName --
-      allDurFieldNames.map(AttributeName.withLibraryNS)) ++ preferred
+      ConsentCodes.allDurFieldNames.map(AttributeName.withLibraryNS)) ++ preferred
   }
 
   def generateStructuredUseRestrictionAttribute(request: StructuredDataRequest, ontologyDAO: OntologyDAO): Map[String, JsValue] = {
     // get DS diseases (map over array of ints)
-    val diseaseCodesArray = getDiseaseNames(request.diseaseUseOnly, ontologyDAO).map("DS:" + _)
+    val diseaseCodesArray = getDiseaseNames(request.diseaseUseOnly, ontologyDAO).map(ConsentCodes.DS + ":" + _)
 
     // create map of correct restrictions
     val consentMap = Map(
@@ -240,26 +196,33 @@ trait DataUseRestrictionSupport extends LazyLogging {
       AttributeName.withDefaultNS(ConsentCodes.NAGR) -> AttributeBoolean(request.aggregateLevelDataProhibited),
       AttributeName.withDefaultNS(ConsentCodes.NCTRL) -> AttributeBoolean(request.controlsUseProhibited),
       AttributeName.withDefaultNS(ConsentCodes.RSPD) -> AttributeBoolean(request.pediatricResearchOnly),
-      AttributeName.withDefaultNS(ConsentCodes.IRB) -> AttributeBoolean(request.IRB)) ++ getGenderCodeMap(request.genderUseOnly)
+      AttributeName.withDefaultNS(ConsentCodes.IRB) -> AttributeBoolean(request.irbRequired)) ++ getGenderCodeMap(request.genderUseOnly)
 
     // convert to array of consent codes
     val consentCodes = consentMap.filter(_._2.value).map(_._1.name).toArray ++ diseaseCodesArray
 
-    //formatWithPrefix(request.prefix, StructuredDataResponse(consentCodes, 1.0, consentMap ++ Map(ConsentCodes.DS -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_))))))
-    StructuredDataResponse(consentCodes, 1.0, request.prefix, consentMap ++ Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseOnly.map(AttributeNumber(_))))).formatWithPrefix
-  }
-
-  private def getDiseaseNames(diseaseCodes: Array[Int], ontologyDAO: OntologyDAO): Array[String] = {
-    getDiseaseNames(diseaseCodes.map("http://purl.obolibrary.org/obo/DOID_" + _.toString), ontologyDAO)
+    StructuredDataResponse(consentCodes, "1.0", request.prefix.getOrElse(""), consentMap ++ Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseOnly.map(AttributeString(_))))).formatWithPrefix
   }
 
   private def getDiseaseNames(diseaseCodes: Array[String], ontologyDAO: OntologyDAO): Array[String] = {
    diseaseCodes.map { nodeid =>
-      ontologyDAO.search(nodeid) match {
+      ontologyDAO.search(DataUse.doid_prefix + nodeid) match {
         case termResource :: Nil => termResource.label
-        case _ =>  "" // return an error if the int does not correlate to a disease?
+        case _ =>  throw new FireCloudException(s"DS code $nodeid did not match any diseases.")
       }
     }
+  }
+
+  def getDulvn: String = {
+    def defaultSchema: String = FileUtils.readAllTextFromResource(LibraryService.schemaLocation)
+    val jsSeqDulvn = defaultSchema.parseJson.asJsObject.fields.get("properties") //, "library:dulvn", "default").
+
+    if (jsSeqDulvn.size == 1) {
+      jsSeqDulvn.head.toString
+    } else {
+      throw new FireCloudException("Could not obtain dulvn from attribute definitions.")
+    }
+
   }
 
 
@@ -284,7 +247,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
   private def getDataUseAttributes(workspace: Workspace): Map[AttributeName, Attribute] = {
 
     // Find all library attributes that contribute to data use restrictions
-    val dataUseAttributes = workspace.attributes.filter { case (attr, value) => duRestrictionFieldNames.contains(attr.name) }
+    val dataUseAttributes = workspace.attributes.filter { case (attr, value) => ConsentCodes.duRestrictionFieldNames.contains(attr.name) }
 
     if (dataUseAttributes.isEmpty) {
       Map.empty[AttributeName, Attribute]
@@ -307,15 +270,15 @@ trait DataUseRestrictionSupport extends LazyLogging {
         case (attr: AttributeName, value: AttributeBoolean) => Map(AttributeName.withDefaultNS(attr.name) -> value)
         // Turn DS string ids into numeric IDs for ES indexing
         // Also, in this case, we are generating a "DS" attribute to index, not a "DS_URL" attribute
-        case (attr: AttributeName, value: AttributeValueList) if attr.name.equals("DS_URL") =>
+        case (attr: AttributeName, value: AttributeValueList) if attr.name.equals(ConsentCodes.DSURL) =>
           val diseaseNumericIdValues = value.list.collect {
             case a: AttributeString => Try(DiseaseOntologyNodeId(a.value)).toOption.map(_.numericId)
           }.flatten
           if (diseaseNumericIdValues.nonEmpty)
-            Map(AttributeName.withDefaultNS("DS") -> AttributeValueList(diseaseNumericIdValues.map { n => AttributeNumber(n) }))
+            Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(diseaseNumericIdValues.map { n => AttributeNumber(n) }))
           else
             Map.empty[AttributeName, Attribute]
-        case (attr: AttributeName, value: AttributeValueList) if attr.name.equals("RS-POP") => Map(AttributeName.withDefaultNS(attr.name) -> value)
+        case (attr: AttributeName, value: AttributeValueList) if attr.name.equals(ConsentCodes.RSPOP) => Map(AttributeName.withDefaultNS(attr.name) -> value)
         case unmatched =>
           logger.warn(s"Unexpected library data use attribute type: (workspace-id: ${workspace.workspaceId}, attribute name: ${unmatched._1.name}, attribute value: ${unmatched._2.toString})")
           Map.empty[AttributeName, Attribute]
