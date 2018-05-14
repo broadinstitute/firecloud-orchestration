@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, Ra
 import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
-import org.broadinstitute.dsde.firecloud.model.{Document, ElasticSearch, LibrarySearchResponse, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{ConsentCodes, Document, ElasticSearch, LibrarySearchResponse, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.LibraryService.orspIdAttribute
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
@@ -102,7 +102,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       case None => Map()
     }
 
-    val durAttributeNames = allDurFieldNames.map(AttributeName.withLibraryNS)
+    val durAttributeNames = ConsentCodes.allDurFieldNames.map(AttributeName.withLibraryNS)
     val dur: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(workspace)
     val displayDur: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(workspace)
 

@@ -4303,6 +4303,17 @@ definitions:
         description: The translated use restriction of the consent.
 
   structuredDataRequest:
+    required:
+        - generalResearchUse
+        - healthMedicalUseOnly
+        - commercialUseProhibited
+        - forProfitUseProhibited
+        - methodsResearchProhibited
+        - aggregateLevelDataProhibited
+        - controlsUseProhibited
+        - genderUseOnly
+        - pediatricResearchOnly
+        - irbRequired
     type: object
     properties:
       generalResearchUse:
@@ -4336,7 +4347,7 @@ definitions:
       pediatricResearchOnly:
         type: boolean
         description: Is future use limited to pediatric research?
-      IRB:
+      irbRequired:
         type: boolean
         description: Should the requester provide documentation of local IRB/REC approval?
       prefix:
