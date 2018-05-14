@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.lang.reflect.Field
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
 import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredDataRequest}
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures._
@@ -25,7 +26,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           val request = StructuredDataRequest(generalResearchUse = true,
             healthMedicalBiomedicalUseOnly = true,
             diseaseUseOnly = Array("4325","2531"),
-            commercialUseProhibited = true ,
+            commercialUseProhibited = true,
             forProfitUseProhibited = true,
             methodsResearchProhibited = true,
             aggregateLevelDataProhibited = true,
@@ -36,7 +37,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             prefix = Some("blah"))
 
           val expected = Map("blahconsentCodes" -> Array("NPU","RS-G","NCU","HMB","RS-FM","NCTRL","RS-PD","IRB","NAGR","GRU","NMDS","DS:Ebola hemorrhagic fever","DS:hematologic cancer").toJson,
-            "blahdulvn" -> "1.0".toJson,
+            "blahdulvn" -> FireCloudConfig.Duos.dulvn.toJson,
             "blahstructuredUseRestriction" -> Map(
               "NPU" -> true.toJson,
               "RS-PD" -> true.toJson,
@@ -72,7 +73,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             prefix = None)
 
           val expected = Map("consentCodes" -> Array.empty[String].toJson,
-            "dulvn" -> "1.0".toJson,
+            "dulvn" -> FireCloudConfig.Duos.dulvn.toJson,
             "structuredUseRestriction" -> Map(
               "NPU" -> false.toJson,
               "RS-PD" -> false.toJson,
@@ -108,7 +109,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             prefix = Some("library"))
 
           val expected = Map("libraryconsentCodes" -> Array("NPU","RS-G","RS-M","HMB","NCTRL","IRB","DS:leukemia").toJson,
-            "librarydulvn" -> "1.0".toJson,
+            "librarydulvn" -> FireCloudConfig.Duos.dulvn.toJson,
             "librarystructuredUseRestriction" -> Map(
               "NPU" -> true.toJson,
               "RS-PD" -> false.toJson,
