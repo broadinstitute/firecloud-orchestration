@@ -4,6 +4,7 @@ import org.apache.lucene.search.join.ScoreMode
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.rawls.model.AttributeName
 import org.elasticsearch.search.aggregations.{AggregationBuilders, Aggregations}
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
@@ -94,7 +95,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       query.must(fieldQuery)
     }
     criteria.researchPurpose map { rp =>
-      query.must(researchPurposeSupport.researchPurposeFilters(rp))
+      query.must(researchPurposeSupport.researchPurposeFilters(rp, Some(s"${AttributeName.libraryNamespace}${AttributeName.delimiter}")))
     }
 
     query

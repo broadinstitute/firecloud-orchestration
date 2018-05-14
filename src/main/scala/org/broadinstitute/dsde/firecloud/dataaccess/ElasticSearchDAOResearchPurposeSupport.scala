@@ -12,9 +12,55 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport with LazyLogging {
 
-  val durRoot = AttributeName.toDelimitedName(structuredUseRestrictionAttributeName)
+  def researchPurposeFilters(rp: ResearchPurpose, ontologyDAO: OntologyDAO, attributePrefix: Option[String])(implicit ec: ExecutionContext): BoolQueryBuilder = {
 
-  def researchPurposeFilters(rp: ResearchPurpose, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): BoolQueryBuilder = {
+    val durRoot: String = attributePrefix.getOrElse("") + structuredUseRestrictionName
+
+    def generateDiseaseMatchLogic(rp: ResearchPurpose, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Option[BoolQueryBuilder] = {
+      /*
+        purpose: DS: Disease focused research
+        dul:
+                  Any dataset with GRU=true
+                  Any dataset with HMB=true
+                  Any dataset tagged to this disease exactly
+                  Any dataset tagged to a DOID ontology Parent of disease X
+       */
+      if (rp.DS.nonEmpty) {
+        val dsClause = generateDiseaseQuery(rp.DS, ontologyDAO)
+        dsClause.should(encode("GRU", true))
+        dsClause.should(encode("HMB", true))
+        Some(dsClause)
+      } else {
+        None
+      }
+    }
+
+    def generateDiseaseQuery(nodeids: Seq[DiseaseOntologyNodeId], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): BoolQueryBuilder = {
+      val allnodes = augmentWithDiseaseParents(nodeids, ontologyDAO)
+
+      val dsClause = boolQuery()
+      allnodes foreach { id =>
+        dsClause.should(encode("DS", id.numericId))
+      }
+      dsClause
+    }
+
+    def augmentWithDiseaseParents(nodeids: Seq[DiseaseOntologyNodeId], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Seq[DiseaseOntologyNodeId] = {
+      if (nodeids.isEmpty)
+        nodeids // return unchanged; no ontology nodes to augment
+      else {
+        // for all nodes in the research purpose's DS value, query ontology to get their parent nodes
+        nodeids map (node => ontologyDAO.search(node.uri.toString)) flatMap { allTermResults =>
+          val parentsToAugment:Seq[DiseaseOntologyNodeId] = (allTermResults collect {
+            case termWithParents => termWithParents.parents.getOrElse(List.empty[TermParent]).map(parent => DiseaseOntologyNodeId(parent.id))
+          }).flatten
+          // append the parent node info to the original research purpose
+          nodeids ++ parentsToAugment
+        }
+      }
+    }
+
+    def encode[T](code: String, value: T) = termQuery(s"$durRoot.$code", value)
 
     val bool = boolQuery
 
@@ -101,52 +147,4 @@ trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport w
 
     bool
   }
-
-  private def generateDiseaseMatchLogic(rp: ResearchPurpose, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Option[BoolQueryBuilder] = {
-    /*
-      purpose: DS: Disease focused research
-      dul:
-                Any dataset with GRU=true
-                Any dataset with HMB=true
-                Any dataset tagged to this disease exactly
-                Any dataset tagged to a DOID ontology Parent of disease X
-     */
-    if (rp.DS.nonEmpty) {
-      val dsClause = generateDiseaseQuery(rp.DS, ontologyDAO)
-      dsClause.should(encode("GRU", true))
-      dsClause.should(encode("HMB", true))
-      Some(dsClause)
-    } else {
-      None
-    }
-  }
-
-  private def generateDiseaseQuery(nodeids: Seq[DiseaseOntologyNodeId], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): BoolQueryBuilder = {
-    val allnodes = augmentWithDiseaseParents(nodeids, ontologyDAO)
-
-    val dsClause = boolQuery()
-    allnodes foreach { id =>
-      dsClause.should(encode("DS", id.numericId))
-    }
-    dsClause
-  }
-
-  private def augmentWithDiseaseParents(nodeids: Seq[DiseaseOntologyNodeId], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Seq[DiseaseOntologyNodeId] = {
-    if (nodeids.isEmpty)
-      nodeids // return unchanged; no ontology nodes to augment
-    else {
-      // for all nodes in the research purpose's DS value, query ontology to get their parent nodes
-      nodeids map (node => ontologyDAO.search(node.uri.toString)) flatMap { allTermResults =>
-        val parentsToAugment:Seq[DiseaseOntologyNodeId] = (allTermResults collect {
-          case termWithParents => termWithParents.parents.getOrElse(List.empty[TermParent]).map(parent => DiseaseOntologyNodeId(parent.id))
-        }).flatten
-        // append the parent node info to the original research purpose
-        nodeids ++ parentsToAugment
-      }
-    }
-  }
-
-  private def encode[T](code: String, value: T): TermQueryBuilder = encode(durRoot, code, value)
-  private def encode[T](prefix: String, code: String, value: T): TermQueryBuilder = termQuery(s"$prefix.$code", value)
-
 }

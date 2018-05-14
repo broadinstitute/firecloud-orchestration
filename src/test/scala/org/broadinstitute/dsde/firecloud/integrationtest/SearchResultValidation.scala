@@ -51,11 +51,12 @@ trait SearchResultValidation {
 
   /**
     * Mimics a 3rd party searching against an ElasticSearch instance using a research purpose filter
-    * from us. Our SearchDAO is used to create and execute the search request, but the research
-    * purpose is fetched identically to how a 3rd party would.
+    * from us (coincidentally using the same prefix we use). Our SearchDAO is used to create and
+    * execute the search request, but the research purpose is fetched identically to how a 3rd party
+    * would.
     */
   def searchWithResearchPurposeQuery(researchPurpose: ResearchPurpose): SearchResponse = {
-    val boolQuery: BoolQueryBuilder = researchPurposeSupport.researchPurposeFilters(researchPurpose)
+    val boolQuery: BoolQueryBuilder = researchPurposeSupport.researchPurposeFilters(researchPurpose, Some("library:"))
 
     // Use a MockResearchPurposeSupport here to prove that it's using the query created above
     val elasticSearchDAO = new ElasticSearchDAO(client, itTestIndexName, new MockResearchPurposeSupport)

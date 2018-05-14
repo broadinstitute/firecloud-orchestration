@@ -5,7 +5,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder
 import org.elasticsearch.index.query.QueryBuilders.{boolQuery, termQuery}
 
 class MockResearchPurposeSupport extends ResearchPurposeSupport {
-  def researchPurposeFilters(researchPurpose: ResearchPurpose): BoolQueryBuilder = {
+  def researchPurposeFilters(researchPurpose: ResearchPurpose, attributeNamespace: Option[String]): BoolQueryBuilder = {
     val query = boolQuery
     researchPurpose.DS.foreach { id =>
       query.should(termQuery("structuredUseRestriction.DS", id.numericId))
