@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken, errorReportSource}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsGroupName}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel

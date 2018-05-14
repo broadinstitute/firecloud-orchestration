@@ -266,7 +266,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
       Seq("this","workspace") foreach { prefix =>
         s"Forbidden error is returned for HTTP POST with an output to $prefix.library:" in {
-          val methodConfigs = MethodConfiguration("namespace", "name", "root", Map.empty, Map.empty, Map("value" -> AttributeString(s"$prefix.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
+          val methodConfigs = MethodConfiguration("namespace", "name", Some("root"), Map.empty, Map.empty, Map("value" -> AttributeString(s"$prefix.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
           Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(Forbidden)
           }

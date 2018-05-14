@@ -117,7 +117,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       case _ => ErrorReport(StatusCodes.InternalServerError, s"FireCloudException: Error generating entity download: ${t.getMessage}")
     }
     Future(ctx.complete(HttpResponse(
-      status = errorReport.statusCode.getOrElse(StatusCodes.InternalServerError),
+      status = optAkka2sprayStatus(errorReport.statusCode).getOrElse(StatusCodes.InternalServerError),
       entity = HttpEntity(ContentTypes.`application/json`, errorReport.toJson.compactPrint))))
   }
 
