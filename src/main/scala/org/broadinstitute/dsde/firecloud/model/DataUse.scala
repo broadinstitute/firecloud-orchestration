@@ -34,7 +34,7 @@ object DataUse {
   }
 
   case class ResearchPurposeRequest(
-    DS:     Option[Seq[Int]],
+    DS:     Option[Seq[String]],
     NMDS:   Option[Boolean],
     NCTRL:  Option[Boolean],
     NAGR:   Option[Boolean],
@@ -50,7 +50,7 @@ object DataUse {
   def requestToResearchPurpose(r: ResearchPurposeRequest): ResearchPurpose = {
     ResearchPurpose(
       DS = r.DS match {
-        case Some(ds) => ds.map(id => DiseaseOntologyNodeId(s"$doid_prefix$id"))
+        case Some(ds) => ds.map(DiseaseOntologyNodeId(_))
         case None => Seq.empty[DiseaseOntologyNodeId]
       },
       NMDS = r.NMDS.getOrElse(false),

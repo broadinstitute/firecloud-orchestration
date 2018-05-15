@@ -381,7 +381,8 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
       }
 
       "POST with disease focus should return OK" in {
-        val request = ResearchPurposeRequest.empty.copy(DS = Some(Seq(1234, 5678)))
+        val doidPrefix = "http://purl.obolibrary.org/obo/DOID_"
+        val request = ResearchPurposeRequest.empty.copy(DS = Some(Seq(s"${doidPrefix}1234", s"${doidPrefix}5678")))
         new RequestBuilder(HttpMethods.POST)(duosResearchPurposeQuery, request) ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
           val diseaseIds = responseAs[JsObject].extract[Int]('bool / 'should / * / 'term / "structuredUseRestriction.DS" / 'value)
