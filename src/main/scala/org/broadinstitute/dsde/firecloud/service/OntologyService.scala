@@ -41,6 +41,7 @@ class OntologyService(val ontologyDAO: OntologyDAO, val researchPurposeSupport: 
   }
 
   def buildResearchPurposeQuery(request: ResearchPurposeRequest): Future[PerRequestMessage] = {
-    Future(RequestComplete(researchPurposeSupport.researchPurposeFilters(ResearchPurpose(request), request.prefix).toString))
+    def addPrefix(name: String): String = request.prefix.getOrElse("") + name
+    Future(RequestComplete(researchPurposeSupport.researchPurposeFilters(ResearchPurpose(request), addPrefix).toString))
   }
 }

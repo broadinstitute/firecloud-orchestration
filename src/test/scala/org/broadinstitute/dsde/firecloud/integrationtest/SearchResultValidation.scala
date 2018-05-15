@@ -56,7 +56,7 @@ trait SearchResultValidation {
     * would.
     */
   def searchWithResearchPurposeQuery(researchPurpose: ResearchPurpose): SearchResponse = {
-    val boolQuery: BoolQueryBuilder = researchPurposeSupport.researchPurposeFilters(researchPurpose, Some("library:"))
+    val boolQuery: BoolQueryBuilder = researchPurposeSupport.researchPurposeFilters(researchPurpose, name => "library:" + name)
 
     // Use a MockResearchPurposeSupport here to prove that it's using the query created above
     val elasticSearchDAO = new ElasticSearchDAO(client, itTestIndexName, new MockResearchPurposeSupport)

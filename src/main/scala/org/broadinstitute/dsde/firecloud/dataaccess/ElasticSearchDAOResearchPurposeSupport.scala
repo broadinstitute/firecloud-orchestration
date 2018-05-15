@@ -2,19 +2,18 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
-import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
+import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionSupport
-import org.broadinstitute.dsde.rawls.model.AttributeName
-import org.elasticsearch.index.query.{BoolQueryBuilder, TermQueryBuilder}
+import org.elasticsearch.index.query.BoolQueryBuilder
 import org.elasticsearch.index.query.QueryBuilders.{boolQuery, termQuery}
 
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 trait ElasticSearchDAOResearchPurposeSupport extends DataUseRestrictionSupport with LazyLogging {
 
-  def researchPurposeFilters(rp: ResearchPurpose, ontologyDAO: OntologyDAO, attributePrefix: Option[String])(implicit ec: ExecutionContext): BoolQueryBuilder = {
+  def researchPurposeFilters(rp: ResearchPurpose, ontologyDAO: OntologyDAO, makeAttributeName: String => String)(implicit ec: ExecutionContext): BoolQueryBuilder = {
 
-    val durRoot: String = attributePrefix.getOrElse("") + structuredUseRestrictionName
+    val durRoot = makeAttributeName(structuredUseRestrictionName)
 
     def generateDiseaseMatchLogic(rp: ResearchPurpose, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Option[BoolQueryBuilder] = {
       /*

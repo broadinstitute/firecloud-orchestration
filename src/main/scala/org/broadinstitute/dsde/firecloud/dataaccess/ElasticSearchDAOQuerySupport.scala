@@ -94,8 +94,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       values foreach { value:String => fieldQuery.should(termQuery(field+".keyword", value))}
       query.must(fieldQuery)
     }
-    criteria.researchPurpose map { rp =>
-      query.must(researchPurposeSupport.researchPurposeFilters(rp, Some(s"${AttributeName.libraryNamespace}${AttributeName.delimiter}")))
+    criteria.researchPurpose map {
+      def toLibraryAttributeName(name: String): String = AttributeName.toDelimitedName(AttributeName.withLibraryNS(name))
+      rp => query.must(researchPurposeSupport.researchPurposeFilters(rp, toLibraryAttributeName))
     }
 
     query
