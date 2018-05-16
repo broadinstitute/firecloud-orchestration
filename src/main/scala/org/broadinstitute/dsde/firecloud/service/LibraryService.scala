@@ -123,7 +123,11 @@ class LibraryService (protected val argUserInfo: UserInfo,
     Try(attrsJsonString.parseJson.asJsObject.convertTo[AttributeMap]) match {
       case Failure(ex:ParsingException) => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid json supplied", ex))
       case Failure(e) => Future(RequestCompleteWithErrorReport(BadRequest, BadRequest.defaultMessage, e))
-      case Success(userAttrs) =>
+      case Success(attrs) =>
+        val userAttrs = attrs.get(AttributeName.withLibraryNS("dulvn")) match {
+          case Some(AttributeNull) | None => attrs ++ Map(AttributeName.withLibraryNS("dulvn") -> AttributeNumber(FireCloudConfig.Duos.dulvn))
+          case _ =>  attrs
+        }
         val (invalid, errorMessage): (Boolean, Option[String]) = isInvalid(attrsJsonString)
         rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
           val published = isPublished(workspaceResponse)
