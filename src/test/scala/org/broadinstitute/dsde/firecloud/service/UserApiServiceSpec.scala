@@ -546,11 +546,3 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
   }
 
 }
-
-class UserServiceMockRawlsDAO extends MockRawlsDAO {
-  override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Trial.RawlsBillingProjectMembership]] = {
-    Future.successful(Seq(
-      RawlsBillingProjectMembership(RawlsBillingProjectName("projectone"), ProjectRoles.User, CreationStatuses.Ready, None)
-    ))
-  }
-}
