@@ -325,12 +325,6 @@
       "indexable": false,
       "consentCode": "RS-PD"
     },
-    "library:futureUseDate": {
-      "title": "Future use is limited to data generated from samples collected after the following consent form date",
-      "type": "string",
-      "indexable": false,
-      "renderHint": {"datatype": "date"}
-    },
     "library:IRB": {
       "title": "Requester must provide documentation of local IRB/REC approval",
       "type": "boolean",
@@ -410,7 +404,7 @@
         "questionnaire": {
           "enumerate": true,
           "questions": [{"requireGroup": "library:primaryLimitation", "items": ["library:GRU", "library:HMB", "library:DS"]}, "library:DS_URL", "library:NCU", "library:NPU", "library:NMDS",
-            "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:futureUseDate", "library:IRB"]
+            "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:IRB"]
         },
         "orsp": {
           "questions": ["library:orsp"]

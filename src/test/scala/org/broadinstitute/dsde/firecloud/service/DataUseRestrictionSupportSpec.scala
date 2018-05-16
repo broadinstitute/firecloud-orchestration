@@ -133,101 +133,109 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
       "when there are library data use restriction fields" - {
 
-//        "dataset should have a fully populated data use restriction attribute" in {
-//          allDatasets.map { ds =>
-//            val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(ds).structured
-//            val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
-//            durAtt shouldNot be(AttributeNull)
-//            val dur = makeDurFromWorkspace(ds)
-//            //dur should be (1)
-//            dur shouldNot be(null)
-//          }
-//        }
-//
-//        "dur should have appropriate gender codes populated" in {
-//          genderDatasets.map { ds =>
-//            val dur: DataUseRestriction = makeDurFromWorkspace(ds)
-//            if (ds.name.equalsIgnoreCase("Female")) {
-//              dur.`RS-G` should be(true)
-//              dur.`RS-FM` should be(true)
-//              dur.`RS-M` should be(false)
-//            } else if (ds.name.equalsIgnoreCase("Male")) {
-//              dur.`RS-G` should be(true)
-//              dur.`RS-FM` should be(false)
-//              dur.`RS-M` should be(true)
-//            } else {
-//              dur.`RS-G` should be(false)
-//              dur.`RS-FM` should be(false)
-//              dur.`RS-M` should be(false)
-//            }
-//          }
-//        }
-//
-//        "dur should have appropriate NAGR code populated" in {
-//          nagrDatasets.map { ds =>
-//            val dur: DataUseRestriction = makeDurFromWorkspace(ds)
-//            if (ds.name.equalsIgnoreCase("Yes")) {
-//              dur.NAGR should be(true)
-//            } else {
-//              dur.NAGR should be(false)
-//            }
-//          }
-//        }
-//
-//        "dataset should have a true value for the consent code for which it was specified" in {
-//          val durs: Map[String, DataUseRestriction] = booleanDatasets.flatMap { ds =>
-//            Map(ds.name -> makeDurFromWorkspace(ds))
-//          }.toMap
-//
-//          booleanCodes.map { code =>
-//            val dur: DataUseRestriction = durs(code)
-//            checkBooleanTrue(dur, code) should be(true)
-//          }
-//        }
-//
-//        "dataset should have the correct list values for the consent code for which it was specified" in {
-//          val durs: Map[String, DataUseRestriction] = listDatasets.flatMap { ds =>
-//            Map(ds.name -> makeDurFromWorkspace(ds))
-//          }.toMap
-//
-//          listCodes.foreach { code =>
-//            val dur: DataUseRestriction = durs(code)
-//            checkListValues(dur, code)
-//          }
-//        }
-//
-//        "dataset should have the correct disease values for the consent code for which it was specified" in {
-//          val durs: Map[String, DataUseRestriction] = diseaseDatasets.flatMap { ds =>
-//            Map(ds.name -> makeDurFromWorkspace(ds))
-//          }.toMap
-//
-//          Seq("DS").foreach { code =>
-//            val dur: DataUseRestriction = durs(code)
-//            checkDiseaseValues(dur, code)
-//          }
-//        }
+        "dataset should have a fully populated data use restriction attribute" in {
+          allDatasets.map { ds =>
+            val ontologyDAO = new MockOntologyDAO
+            val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(ds, ontologyDAO).structured
+            val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
+            durAtt shouldNot be(AttributeNull)
+            val dur = makeDurFromWorkspace(ds, ontologyDAO)
+            //dur should be (1)
+            dur shouldNot be(null)
+          }
+        }
+
+        "dur should have appropriate gender codes populated" in {
+          genderDatasets.map { ds =>
+            val ontologyDAO = new MockOntologyDAO
+            val dur: DataUseRestriction = makeDurFromWorkspace(ds, ontologyDAO)
+            if (ds.name.equalsIgnoreCase("Female")) {
+              dur.`RS-G` should be(true)
+              dur.`RS-FM` should be(true)
+              dur.`RS-M` should be(false)
+            } else if (ds.name.equalsIgnoreCase("Male")) {
+              dur.`RS-G` should be(true)
+              dur.`RS-FM` should be(false)
+              dur.`RS-M` should be(true)
+            } else {
+              dur.`RS-G` should be(false)
+              dur.`RS-FM` should be(false)
+              dur.`RS-M` should be(false)
+            }
+          }
+        }
+
+        "dur should have appropriate NAGR code populated" in {
+          nagrDatasets.map { ds =>
+            val ontologyDAO = new MockOntologyDAO
+            val dur: DataUseRestriction = makeDurFromWorkspace(ds, ontologyDAO)
+            if (ds.name.equalsIgnoreCase("Yes")) {
+              dur.NAGR should be(true)
+            } else {
+              dur.NAGR should be(false)
+            }
+          }
+        }
+
+        "dataset should have a true value for the consent code for which it was specified" in {
+          val durs: Map[String, DataUseRestriction] = booleanDatasets.flatMap { ds =>
+            val ontologyDAO = new MockOntologyDAO
+            Map(ds.name -> makeDurFromWorkspace(ds, ontologyDAO))
+          }.toMap
+
+          booleanCodes.map { code =>
+            val dur: DataUseRestriction = durs(code)
+            checkBooleanTrue(dur, code) should be(true)
+          }
+        }
+
+        "dataset should have the correct list values for the consent code for which it was specified" in {
+          val durs: Map[String, DataUseRestriction] = listDatasets.flatMap { ds =>
+            val ontologyDAO = new MockOntologyDAO
+            Map(ds.name -> makeDurFromWorkspace(ds, ontologyDAO))
+          }.toMap
+
+          listCodes.foreach { code =>
+            val dur: DataUseRestriction = durs(code)
+            checkListValues(dur, code)
+          }
+        }
+
+        "dataset should have the correct disease values for the consent code for which it was specified" in {
+          val durs: Map[String, DataUseRestriction] = diseaseDatasets.flatMap { ds =>
+            val ontologyDAO = new MockOntologyDAO
+            Map(ds.name -> makeDurFromWorkspace(ds, ontologyDAO))
+          }.toMap
+
+          Seq("DS").foreach { code =>
+            val dur: DataUseRestriction = durs(code)
+            checkDiseaseValues(dur, code)
+          }
+        }
 
       }
 
       "when there are no library data use restriction fields" - {
 
-//        "dataset should not have any data use restriction for empty attributes" in {
-//          val workspace: Workspace = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
-//          val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace).structured
-//          attrs should be(empty)
-//        }
-//
-//        "dataset should not have any data use restriction for non-library attributes" in {
-//          val nonLibraryAttributes = Map(
-//            AttributeName.withDefaultNS("name") -> AttributeString("one"),
-//            AttributeName.withDefaultNS("namespace") -> AttributeString("two"),
-//            AttributeName.withDefaultNS("workspaceId") -> AttributeString("three"),
-//            AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
-//          )
-//          val workspace: Workspace = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
-//          val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace).structured
-//          attrs should be(empty)
-//        }
+        "dataset should not have any data use restriction for empty attributes" in {
+          val workspace: Workspace = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
+          val ontologyDAO = new MockOntologyDAO
+          val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).structured
+          attrs should be(empty)
+        }
+
+        "dataset should not have any data use restriction for non-library attributes" in {
+          val ontologyDAO = new MockOntologyDAO
+          val nonLibraryAttributes = Map(
+            AttributeName.withDefaultNS("name") -> AttributeString("one"),
+            AttributeName.withDefaultNS("namespace") -> AttributeString("two"),
+            AttributeName.withDefaultNS("workspaceId") -> AttributeString("three"),
+            AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
+          )
+          val workspace: Workspace = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
+          val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).structured
+          attrs should be(empty)
+        }
 
       }
 
@@ -237,22 +245,24 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
       "when there are library data use restriction fields" - {
 
-//        "valid datasets should have some form of data use display attribute" in {
-//          validDisplayDatasets.map { ds =>
-//            val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(ds).display
-//            val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
-//            codes shouldNot be(empty)
-//          }
-//        }
-//
-//        "datasets with single boolean code should have that single display code" in {
-//          booleanDatasets.map { ds =>
-//            val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(ds).display
-//            val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
-//            // Boolean datasets are named with the same code value
-//            codes should contain theSameElementsAs Seq(ds.name)
-//          }
-//        }
+        "valid datasets should have some form of data use display attribute" in {
+          val ontologyDAO = new MockOntologyDAO
+          validDisplayDatasets.map { ds =>
+            val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(ds, ontologyDAO).display
+            val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
+            codes shouldNot be(empty)
+          }
+        }
+
+        "datasets with single boolean code should have that single display code" in {
+          val ontologyDAO = new MockOntologyDAO
+          booleanDatasets.map { ds =>
+            val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(ds, ontologyDAO).display
+            val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
+            // Boolean datasets are named with the same code value
+            codes should contain theSameElementsAs Seq(ds.name)
+          }
+        }
 
         "'EVERYTHING' dataset should have the right codes" in {
           val ontologyDAO = new MockOntologyDAO
