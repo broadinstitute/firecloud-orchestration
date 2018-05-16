@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, RawlsDAO}
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model.{UserInfo, optAkka2sprayStatus}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.scalatest.FreeSpecLike
@@ -47,7 +47,7 @@ class PermissionsSupportSpec extends PermissionsSupport with FreeSpecLike {
       val x = intercept[FireCloudExceptionWithErrorReport] {
         Await.result(command, dur)
       }
-      assertResult(Some(StatusCodes.Forbidden)) { x.errorReport.statusCode }
+      assertResult(Some(StatusCodes.Forbidden)) { optAkka2sprayStatus(x.errorReport.statusCode) }
       assertResult("You must be in the appropriate group.") { x.errorReport.message }
     }
   }
@@ -65,7 +65,7 @@ class PermissionsSupportSpec extends PermissionsSupport with FreeSpecLike {
       val x = intercept[FireCloudExceptionWithErrorReport] {
         Await.result(command, dur)
       }
-      assertResult(Some(StatusCodes.Forbidden)) { x.errorReport.statusCode }
+      assertResult(Some(StatusCodes.Forbidden)) { optAkka2sprayStatus(x.errorReport.statusCode) }
       assertResult("You must be in the appropriate group.") { x.errorReport.message }
     }
   }
