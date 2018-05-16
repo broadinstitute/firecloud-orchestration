@@ -3464,6 +3464,23 @@ paths:
           description: Internal Server Error
       security: []
 
+  /duos/researchPurposeQuery:
+    post:
+      tags:
+      - Library
+      operationId: duosResearchPurposeQuery
+      summary: Generates an ElasticSearch clause for filtering by research purpose
+      parameters:
+        - in: body
+          name: body
+          description: Research Purpose Request
+          required: true
+          schema:
+            $ref: '#/definitions/ResearchPurposeRequest'
+      responses:
+        200:
+          description: JSON of ES filter clause
+
   /api/duos/consent/orsp/{orspId}:
     get:
       tags:
@@ -5267,6 +5284,44 @@ definitions:
         type: boolean
         default: false
         description: Commercial purpose/by a commercial entity
+
+  ResearchPurposeRequest:
+    type: object
+    properties:
+      DS:
+        type: array
+        default: []
+        items:
+          type: string
+          example: "http://purl.obolibrary.org/obo/DOID_4"
+        description: >
+          Disease focused research. Values are DOID ontology node ids in the form
+          http://purl.obolibrary.org/obo/DOID_NNN. Specify an empty array if this
+          is not disease focused research.
+      NMDS:
+        type: boolean
+        default: false
+        description: Methods development/Validation study
+      NCTRL:
+        type: boolean
+        default: false
+        description: Control set
+      NAGR:
+        type: boolean
+        default: false
+        description: Aggregate analysis to understand variation in the general population
+      POA:
+        type: boolean
+        default: false
+        description: Study population origins or ancestry
+      NCU:
+        type: boolean
+        default: false
+        description: Commercial purpose/by a commercial entity
+      prefix:
+        description: Prefix for query properties. Must match prefix used when indexing.
+        type: string
+        default: ""
 
   SearchTermRef:
     type: object
