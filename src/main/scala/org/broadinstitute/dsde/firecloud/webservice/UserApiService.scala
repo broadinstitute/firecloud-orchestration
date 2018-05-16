@@ -4,7 +4,6 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.UserService.BillingProjectMembership
 import org.broadinstitute.dsde.firecloud.service.UserService.ImportPermission
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -38,6 +37,7 @@ object UserApiService {
 
   val billingPath = FireCloudConfig.Rawls.authPrefix + "/user/billing"
   val billingUrl = FireCloudConfig.Rawls.baseUrl + billingPath
+  def billingProjectUrl(project: String) = billingUrl + "/%s".format(project)
 
   val billingAccountsPath = FireCloudConfig.Rawls.authPrefix + "/user/billingAccounts"
   val billingAccountsUrl = FireCloudConfig.Rawls.baseUrl + billingAccountsPath
@@ -132,13 +132,13 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
     pathPrefix("api") {
       pathPrefix("profile" / "billing") {
         pathEnd {
-          passthrough(UserApiService.billingUrl, HttpMethods.GET)
+          get {
+            passthrough(UserApiService.billingUrl, HttpMethods.GET)
+          }
         } ~
         path(Segment) { projectName =>
           get {
-            requireUserInfo() { userInfo => requestContext =>
-              perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), BillingProjectMembership(projectName))
-            }
+            passthrough(UserApiService.billingProjectUrl(projectName), HttpMethods.GET)
           }
         }
       } ~
