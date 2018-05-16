@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO}
-import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
+import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredDataResponse}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.firecloud.model.{ConsentCodes, Document, ElasticSearch, LibrarySearchResponse, UserInfo, WithAccessToken}
@@ -78,11 +78,11 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
             ws
         }
       }
-      annotatedWorkspaces map {w => indexableDocument(w, parentMap)}
+      annotatedWorkspaces map {w => indexableDocument(w, parentMap, ontologyDAO)}
     }
   }
 
-  private def indexableDocument(workspace: Workspace, parentCache: Map[String,Seq[TermParent]])(implicit ec: ExecutionContext): Document = {
+  private def indexableDocument(workspace: Workspace, parentCache: Map[String,Seq[TermParent]], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Document = {
     val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {
@@ -103,8 +103,8 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     }
 
     val durAttributeNames = ConsentCodes.allDurFieldNames.map(AttributeName.withLibraryNS)
-    val dur: Map[AttributeName, Attribute] = generateStructuredUseRestrictionAttribute(workspace)
-    val displayDur: Map[AttributeName, Attribute] = generateUseRestrictionDisplayAttribute(workspace)
+    val structuredAndDisplayAttributes = generateStructuredAndDisplayAttributes(workspace, ontologyDAO)
+    val (dur, displayDur) = (structuredAndDisplayAttributes.structured, structuredAndDisplayAttributes.display)
 
     val fields = (attrfields -- durAttributeNames) ++ idfields ++ tagfields ++ dur ++ displayDur
 

@@ -325,13 +325,6 @@
       "indexable": false,
       "consentCode": "RS-PD"
     },
-    "library:RS-POP": {
-      "title": "Future use is limited to research involving a specific population",
-      "type": "array",
-      "items": { "type": "string" },
-      "indexable": false,
-      "consentCode": "RS-POP"
-    },
     "library:futureUseDate": {
       "title": "Future use is limited to data generated from samples collected after the following consent form date",
       "type": "string",
@@ -382,8 +375,7 @@
     "NAGR": "Use of the data includes aggregate level analysis to address research questions (e.g., determine variant frequencies across the general population) ONLY within the bounds of other specified data use limitations.",
     "NCTRL": "Data can be used as a control set ONLY within the bounds of other specified data use limitations (e.g. only for cancer studies).",
     "RS-G": "Use of the data is limited to studies of particular gender.",
-    "RS-PD": "Use of the data is limited to pediatric research.",
-    "RS-POP": "Use of the data is limited to studies of particular population."
+    "RS-PD": "Use of the data is limited to pediatric research."
   },
   "display": {
     "primary": ["library:diseaseOntologyLabel", "library:numSubjects", "library:dataCategory", "library:datatype", "library:dataUseRestriction"],
@@ -392,7 +384,7 @@
       "library:projectName", "library:reference", "library:dataFileFormats", "library:technology", "library:profilingProtocol",
       "library:coverage", "library:studyDesign", "library:cellType", "library:ethnicity", "library:cohortCountry", "library:requiresExternalApproval",
       "library:lmsvn", "library:dulvn"],
-    "consentCodes": ["GRU", "HMB", "DS", "NCU", "NPU", "NMDS", "NAGR", "NCTRL", "RS-G", "RS-PD", "RS-POP"]
+    "consentCodes": ["GRU", "HMB", "DS", "NCU", "NPU", "NMDS", "NAGR", "NCTRL", "RS-G", "RS-PD"]
   },
   "wizard":
   [
@@ -418,7 +410,7 @@
         "questionnaire": {
           "enumerate": true,
           "questions": [{"requireGroup": "library:primaryLimitation", "items": ["library:GRU", "library:HMB", "library:DS"]}, "library:DS_URL", "library:NCU", "library:NPU", "library:NMDS",
-            "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:RS-POP", "library:futureUseDate", "library:IRB"]
+            "library:NAGR", "library:NCTRL", "library:RS-G", "library:RS-PD", "library:futureUseDate", "library:IRB"]
         },
         "orsp": {
           "questions": ["library:orsp"]
@@ -427,7 +419,6 @@
     }
   ],
   "versions": [
-    "library:dulvn",
     "library:lmsvn"
   ],
   "requireGroups": {
