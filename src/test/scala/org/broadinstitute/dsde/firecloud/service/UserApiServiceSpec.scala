@@ -1,12 +1,14 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.firecloud.webservice.{RegisterApiService, UserApiService}
+import org.broadinstitute.dsde.rawls.model.RawlsBillingProjectName
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
@@ -14,6 +16,8 @@ import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
+
+import scala.concurrent.Future
 
 class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService {
 
@@ -23,7 +27,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app, trialProjectManager)
-  val userServiceConstructor:(WithAccessToken) => UserService = UserService.constructor(app)
+  val userServiceConstructor:(WithAccessToken) => UserService = UserService.constructor(app.copy(rawlsDAO = new UserServiceMockRawlsDAO))
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
   var samServer: ClientAndServer = _
@@ -217,6 +221,23 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         Get("/api/profile/billing") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           log.debug("/api/profile/billing: " + status)
           status shouldNot equal(MethodNotAllowed)
+        }
+      }
+    }
+
+    "When calling GET for a valid user billing project" - {
+      "OK response is returned" in {
+        Get("/api/profile/billing/projectone") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
+          status should equal(OK)
+          responseAs[RawlsBillingProjectMembership].projectName should equal (RawlsBillingProjectName("projectone"))
+        }
+      }
+    }
+
+    "When calling GET for an invalid user billing project" - {
+      "OK response is returned" in {
+        Get("/api/profile/billing/invalid") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
+          status should equal(NotFound)
         }
       }
     }
@@ -537,4 +558,12 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
   }
 
+}
+
+class UserServiceMockRawlsDAO extends MockRawlsDAO {
+  override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Trial.RawlsBillingProjectMembership]] = {
+    Future.successful(Seq(
+      RawlsBillingProjectMembership(RawlsBillingProjectName("projectone"), ProjectRoles.User, CreationStatuses.Ready, None)
+    ))
+  }
 }

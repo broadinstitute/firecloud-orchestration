@@ -1564,6 +1564,28 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/profile/billing/{projectName}:
+    get:
+      tags:
+        - Profile
+      operationId: billingProject
+      parameters:
+        - name: projectName
+          description: Name of the billing project
+          required: true
+          type: string
+          in: path
+      summary: Named billing project for a user
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/BillingProjectMembership'
+        404:
+          description: Project Not Found
+        500:
+          description: Internal Server Error
+
   /api/profile/billingAccounts:
     get:
       tags:

@@ -4,6 +4,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.UserService.BillingProjectMembership
 import org.broadinstitute.dsde.firecloud.service.UserService.ImportPermission
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -129,8 +130,17 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       }
     } ~
     pathPrefix("api") {
-      path("profile" / "billing") {
-        passthrough(UserApiService.billingUrl, HttpMethods.GET)
+      pathPrefix("profile" / "billing") {
+        pathEnd {
+          passthrough(UserApiService.billingUrl, HttpMethods.GET)
+        } ~
+        path(Segment) { projectName =>
+          get {
+            requireUserInfo() { userInfo => requestContext =>
+              perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), BillingProjectMembership(projectName))
+            }
+          }
+        }
       } ~
       path("profile" / "billingAccounts") {
         get {
