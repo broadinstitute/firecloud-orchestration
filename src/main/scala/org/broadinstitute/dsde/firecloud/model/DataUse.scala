@@ -76,12 +76,11 @@ object ConsentCodes extends Enumeration {
   val RSFM = "RS-FM"
   val RSM = "RS-M"
   val DSURL = "DS_URL"
-  val RSPOP = "RS-POP"
   val DS = "DS"
 
   val booleanCodes = Seq(GRU, HMB, NCU, NPU, NMDS, NAGR, NCTRL, RSPD, IRB)
   val genderCodes = Seq(RSG, RSFM, RSM)
-  val duRestrictionFieldNames = booleanCodes ++ genderCodes ++ Seq(DSURL, RSPOP)
+  val duRestrictionFieldNames = booleanCodes ++ genderCodes ++ Seq(DSURL/*, RSPOP*/)
   val allDurFieldNames = duRestrictionFieldNames ++ Seq(DS)
   val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS(DS)
 }
