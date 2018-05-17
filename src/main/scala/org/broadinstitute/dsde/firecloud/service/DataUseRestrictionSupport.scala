@@ -69,7 +69,6 @@ trait DataUseRestrictionSupport extends LazyLogging {
     getDataUseAttributes(workspace)  match {
       case None => UseRestriction(Map.empty[AttributeName, Attribute],Map.empty[AttributeName, Attribute])
       case Some(request) => {
-        println("request" + request)
         val consentMap = generateUseRestrictionBooleanMap(request)
         val structuredAttribute =  if (workspace.attributes.isEmpty) Map.empty[AttributeName, Attribute] else transformStructuredUseRestrictionAttribute(consentMap ++ generateUseRestrictionDSStructuredMap(request))
         val displayAttribute = transformUseRestrictionDisplayAttribute(consentMap ++ generateUseRestrictionDSDisplayMap(request), ontologyDAO)
@@ -268,7 +267,6 @@ trait DataUseRestrictionSupport extends LazyLogging {
     def getDiseaseArray: Array[String] = {
       dataUseAttributes.get(ConsentCodes.DSURL) match {
         case Some(attList: AttributeValueList) => {
-          println("list " + attList)
           attList.list.collect {
             case a: AttributeString => Try(DiseaseOntologyNodeId(a.value)).toOption.map(_.uri.toString)
           }.flatten.toArray

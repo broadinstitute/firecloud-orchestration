@@ -4324,8 +4324,8 @@ definitions:
         description: Is future use limited for health/medical/biomedical research?
       diseaseUseOnly:
         items:
-          type: integer
-        description: Future use is limited to research involving the following disease area(s)
+          type: string
+        description: Future use is limited to research involving the following disease area(s). These values must be urls such as "http://purl.obolibrary.org/obo/DOID_12345".
       commercialUseProhibited:
         type: boolean
         description: Is future commercial use prohibited?
@@ -4343,7 +4343,7 @@ definitions:
         description: Is future use as a control set for diseases other than those specified prohibited?
       genderUseOnly:
         type: string
-        description: If future use is limited to research involving a particular gender, specify "male" or "female". Any other value will be read as false.
+        description: If future use is limited to research involving a particular gender, specify "male" or "female". Any other value will be read as false. This value is case-insensitive.
       pediatricResearchOnly:
         type: boolean
         description: Is future use limited to pediatric research?
