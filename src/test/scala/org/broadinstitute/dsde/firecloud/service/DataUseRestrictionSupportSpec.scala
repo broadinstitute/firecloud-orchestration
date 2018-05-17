@@ -203,6 +203,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
         "dataset should have the correct disease values for the consent code for which it was specified" in {
           val durs: Map[String, DataUseRestriction] = diseaseDatasets.flatMap { ds =>
+            println("ds " + ds)
             val ontologyDAO = new MockOntologyDAO
             Map(ds.name -> makeDurFromWorkspace(ds, ontologyDAO))
           }.toMap
