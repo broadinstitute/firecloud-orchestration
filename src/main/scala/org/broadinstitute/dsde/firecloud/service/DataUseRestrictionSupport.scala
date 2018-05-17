@@ -223,7 +223,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     (existing -
       structuredUseRestrictionAttributeName -
       consentCodesAttributeName --
-      ConsentCodes.allDurFieldNames.map(AttributeName.withLibraryNS)) ++ preferred
+      ConsentCodes.allPreviousDurFieldNames.map(AttributeName.withLibraryNS)) ++ preferred
   }
 
   private def getDiseaseNames(diseaseCodes: Array[String], ontologyDAO: OntologyDAO): Array[String] = {
