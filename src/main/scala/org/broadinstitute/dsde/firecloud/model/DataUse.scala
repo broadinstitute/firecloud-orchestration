@@ -27,6 +27,10 @@ object DataUse {
   case class DiseaseOntologyNodeId(uri: Uri, numericId: Int)
   object DiseaseOntologyNodeId {
     def apply(stringid:String) = {
+      println("id " + stringid)
+      println("pre " + doid_prefix)
+      println("result " + stringid.startsWith(doid_prefix))
+
       require(stringid.startsWith(doid_prefix), s"Disease Ontology node id must be in the form '${doid_prefix}NNN'")
       val uri = Uri(stringid)
       val numericId = stringid.stripPrefix(doid_prefix).toInt

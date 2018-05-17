@@ -69,9 +69,10 @@ trait DataUseRestrictionSupport extends LazyLogging {
     getDataUseAttributes(workspace)  match {
       case None => UseRestriction(Map.empty[AttributeName, Attribute],Map.empty[AttributeName, Attribute])
       case Some(request) => {
-        val consentMap = generateUseRestrictionBooleanMap(request) ++ generateUseRestrictionDSMap(request)
-        val structuredAttribute =  if (workspace.attributes.isEmpty) Map.empty[AttributeName, Attribute] else transformStructuredUseRestrictionAttribute(consentMap)
-        val displayAttribute = transformUseRestrictionDisplayAttribute(consentMap, ontologyDAO)
+        println("request" + request)
+        val consentMap = generateUseRestrictionBooleanMap(request)
+        val structuredAttribute =  if (workspace.attributes.isEmpty) Map.empty[AttributeName, Attribute] else transformStructuredUseRestrictionAttribute(consentMap ++ generateUseRestrictionDSStructuredMap(request))
+        val displayAttribute = transformUseRestrictionDisplayAttribute(consentMap ++ generateUseRestrictionDSDisplayMap(request), ontologyDAO)
         UseRestriction(structured = structuredAttribute, display = displayAttribute)
       }
     }
@@ -87,7 +88,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
 
     val booleanConsentMap = generateUseRestrictionBooleanMap(request)
 
-    val diseaseSpecificMap = generateUseRestrictionDSMap(request)
+    val diseaseSpecificMap = generateUseRestrictionDSStructuredMap(request)
     // convert to array of consent codes
     val consentCodes = booleanConsentMap.filter(_._2.value).map(_._1.name).toArray ++ diseaseCodesArray
 
@@ -108,8 +109,12 @@ trait DataUseRestrictionSupport extends LazyLogging {
       AttributeName.withDefaultNS(ConsentCodes.IRB) -> AttributeBoolean(request.irbRequired)) ++ getGenderCodeMap(request.genderUseOnly)
   }
 
-  def generateUseRestrictionDSMap(request: StructuredDataRequest): Map[AttributeName, Attribute] = {
-    Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseOnly.map(AttributeString(_))))
+  def generateUseRestrictionDSStructuredMap(request: StructuredDataRequest): Map[AttributeName, Attribute] = {
+    Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseOnly.map(DiseaseOntologyNodeId(_).numericId).map(AttributeNumber(_))))
+  }
+
+  def generateUseRestrictionDSDisplayMap(request: StructuredDataRequest): Map[AttributeName, Attribute] = {
+    Map(AttributeName.withDefaultNS(ConsentCodes.DSURL) -> AttributeValueList(request.diseaseUseOnly.map(AttributeString(_))))
   }
 
 
@@ -161,17 +166,6 @@ trait DataUseRestrictionSupport extends LazyLogging {
       case _ => Map.empty[AttributeName,Attribute]
     }
 
-    // population restrictions: RS-POP
-//    val rspop = duosDataUse.populationRestrictions match {
-//      case Some(Seq()) => Map.empty[AttributeName,Attribute]
-//      case Some(populations) =>
-//        Map(
-//          AttributeName.withLibraryNS(ConsentCodes.RSPOP) -> AttributeValueList(populations.map(AttributeString))
-//        )
-//      case _ => Map.empty[AttributeName,Attribute]
-//    }
-
-    // this is inconsistent with our API
     // gender restrictions: RS-G, RS-FM, RS-M
     val rsg = duosDataUse.gender match {
       case Some(f:String) if "female".equals(f.toLowerCase) => Map(
@@ -234,7 +228,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
 
   private def getDiseaseNames(diseaseCodes: Array[String], ontologyDAO: OntologyDAO): Array[String] = {
    diseaseCodes.map { nodeid =>
-      ontologyDAO.search(DataUse.doid_prefix + nodeid) match {
+      ontologyDAO.search(nodeid) match {
         case termResource :: Nil => ConsentCodes.DS + ":" + termResource.label
         case _ =>  throw new FireCloudException(s"DS code $nodeid did not match any diseases.")
       }
@@ -274,13 +268,10 @@ trait DataUseRestrictionSupport extends LazyLogging {
     def getDiseaseArray: Array[String] = {
       dataUseAttributes.get(ConsentCodes.DSURL) match {
         case Some(attList: AttributeValueList) => {
+          println("list " + attList)
           attList.list.collect {
-            case a: AttributeString => Try(DiseaseOntologyNodeId(a.value)).toOption.map(_.numericId)
-          }.flatten.toArray.map(_.toString)
-//          if (diseaseNumericIdValues.nonEmpty)
-//            Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(diseaseNumericIdValues.map { n => AttributeString(n) }))
-//          else
-//            Map.empty[AttributeName, Attribute]
+            case a: AttributeString => Try(DiseaseOntologyNodeId(a.value)).toOption.map(_.uri.toString)
+          }.flatten.toArray
         }
         case _ => Array.empty
       }
