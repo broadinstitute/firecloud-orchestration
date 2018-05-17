@@ -26,7 +26,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           val ontologyDAO = new MockOntologyDAO
           val request = StructuredDataRequest(generalResearchUse = true,
             healthMedicalBiomedicalUseOnly = true,
-            diseaseUseOnly = Array("4325","2531"),
+            diseaseUseOnly = Array("http://purl.obolibrary.org/obo/DOID_4325","http://purl.obolibrary.org/obo/DOID_2531"),
             commercialUseProhibited = true,
             forProfitUseProhibited = true,
             methodsResearchProhibited = true,
@@ -52,7 +52,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
               "NCTRL" -> true.toJson,
               "GRU" ->true.toJson,
               "HMB" -> true.toJson,
-              "DS" -> Array("4325","2531").toJson).toJson)
+              "DS" -> Array(4325,2531).toJson).toJson)
 
           val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
           result should be (expected)
@@ -98,7 +98,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           val ontologyDAO = new MockOntologyDAO
           val request = StructuredDataRequest(generalResearchUse = false,
             healthMedicalBiomedicalUseOnly = true,
-            diseaseUseOnly = Array("1240"),
+            diseaseUseOnly = Array("http://purl.obolibrary.org/obo/DOID_1240"),
             commercialUseProhibited = false,
             forProfitUseProhibited = true,
             methodsResearchProhibited = false,
@@ -124,7 +124,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
               "NCTRL" -> true.toJson,
               "GRU" -> false.toJson,
               "HMB" -> true.toJson,
-              "DS" -> Array("1240").toJson).toJson)
+              "DS" -> Array(1240).toJson).toJson)
 
           val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
           result should be (expected)
@@ -647,6 +647,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
     val attrs = generateStructuredAndDisplayAttributes(ds, ontologyDAO).structured
 
     val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
+    println(durAtt)
     durAtt.toJson.convertTo[DataUseRestriction]
   }
 
