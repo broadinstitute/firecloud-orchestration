@@ -85,6 +85,8 @@ object ConsentCodes extends Enumeration {
   val booleanCodes = Seq(GRU, HMB, NCU, NPU, NMDS, NAGR, NCTRL, RSPD, IRB)
   val genderCodes = Seq(RSG, RSFM, RSM)
   val duRestrictionFieldNames = booleanCodes ++ genderCodes ++ Seq(DSURL/*, RSPOP*/)
-  val allDurFieldNames = duRestrictionFieldNames ++ Seq(DS)
+  // the following value will be used to remove these items from the document so that
+  // we can use our duos APIs to generate the datause document fields
+  val allPreviousDurFieldNames = duRestrictionFieldNames ++ Seq(DS, "RS-POP", "futureUseDate")
   val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS(DS)
 }

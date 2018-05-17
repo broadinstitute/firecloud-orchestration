@@ -102,7 +102,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       case None => Map()
     }
 
-    val durAttributeNames = ConsentCodes.allDurFieldNames.map(AttributeName.withLibraryNS)
+    val durAttributeNames = ConsentCodes.allPreviousDurFieldNames.map(AttributeName.withLibraryNS)
     val structuredAndDisplayAttributes = generateStructuredAndDisplayAttributes(workspace, ontologyDAO)
     val (dur, displayDur) = (structuredAndDisplayAttributes.structured, structuredAndDisplayAttributes.display)
 
