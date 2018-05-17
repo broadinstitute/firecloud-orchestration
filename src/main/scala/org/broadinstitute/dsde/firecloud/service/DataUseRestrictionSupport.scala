@@ -208,7 +208,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     }.toSeq
 
 
-    val dsLabels:Seq[String] = (attributes.get(AttributeName.withDefaultNS(DSURL)) collect {
+    val dsLabels:Seq[String] = (attributes.get(AttributeName.withDefaultNS(ConsentCodes.DSURL)) collect {
       case value: AttributeValueList => value.list.collect {
         case a: AttributeString => a.value
       }
