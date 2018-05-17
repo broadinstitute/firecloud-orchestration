@@ -18,6 +18,7 @@ import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService,
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.firecloud.trial.ProjectManagerSpec.ProjectManagerSpecTrialDAO
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsBillingProjectName, RawlsUserEmail}
+import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
@@ -583,12 +584,6 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(NotFound, ""))
       }
     }
-  }
-
-  /** Used to ensure that manager endpoints only serve managers */
-  final class TrialApiServiceSpecRawlsDAO extends MockRawlsDAO {
-
-    private[webservice] var billingProjectAdds = Map.empty[String, String]
 
     private val groupMap = Map(
       "apples" -> Seq("alice"),
@@ -596,13 +591,19 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       "trial_managers" -> Seq(manager) // the name "trial_managers" is defined in reference.conf
     )
 
-    override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
+    override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
       userInfo.id match {
         case "failme" => Future.failed(new Exception("intentional exception for unit tests"))
         case TrialApiServiceSpec.unauthorizedUser => Future.successful(false)
-        case _ => Future.successful(groupMap.getOrElse(groupName, Seq.empty[String]).contains(userInfo.id))
+        case _ => Future.successful(groupMap.getOrElse(groupName.value, Seq.empty[String]).contains(userInfo.id))
       }
     }
+  }
+
+  /** Used to ensure that manager endpoints only serve managers */
+  final class TrialApiServiceSpecRawlsDAO extends MockRawlsDAO {
+
+    private[webservice] var billingProjectAdds = Map.empty[String, String]
 
     override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
       billingProjectAdds = billingProjectAdds + (projectId -> email)

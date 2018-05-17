@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
@@ -9,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.model.Trial.{RawlsBillingProjectMember,
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import org.joda.time.DateTime
 
 import scala.concurrent.Future
@@ -48,8 +50,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
-  def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean]
-
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
 
   def registerUser(userInfo: UserInfo): Future[Unit]
@@ -73,9 +73,9 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList]
 
-  def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
+  def addMemberToGroup(groupName: WorkbenchGroupName, role: ManagedGroupRole, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit]
 
-  def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean]
+  def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit]
 
   def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats]
 
