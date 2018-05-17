@@ -69,6 +69,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     getDataUseAttributes(workspace)  match {
       case None => UseRestriction(Map.empty[AttributeName, Attribute],Map.empty[AttributeName, Attribute])
       case Some(request) => {
+        println("request" + request)
         val consentMap = generateUseRestrictionBooleanMap(request)
         val structuredAttribute =  if (workspace.attributes.isEmpty) Map.empty[AttributeName, Attribute] else transformStructuredUseRestrictionAttribute(consentMap ++ generateUseRestrictionDSStructuredMap(request))
         val displayAttribute = transformUseRestrictionDisplayAttribute(consentMap ++ generateUseRestrictionDSDisplayMap(request), ontologyDAO)
@@ -165,17 +166,6 @@ trait DataUseRestrictionSupport extends LazyLogging {
       case _ => Map.empty[AttributeName,Attribute]
     }
 
-    // population restrictions: RS-POP
-//    val rspop = duosDataUse.populationRestrictions match {
-//      case Some(Seq()) => Map.empty[AttributeName,Attribute]
-//      case Some(populations) =>
-//        Map(
-//          AttributeName.withLibraryNS(ConsentCodes.RSPOP) -> AttributeValueList(populations.map(AttributeString))
-//        )
-//      case _ => Map.empty[AttributeName,Attribute]
-//    }
-
-    // this is inconsistent with our API
     // gender restrictions: RS-G, RS-FM, RS-M
     val rsg = duosDataUse.gender match {
       case Some(f:String) if "female".equals(f.toLowerCase) => Map(
@@ -278,13 +268,10 @@ trait DataUseRestrictionSupport extends LazyLogging {
     def getDiseaseArray: Array[String] = {
       dataUseAttributes.get(ConsentCodes.DSURL) match {
         case Some(attList: AttributeValueList) => {
+          println("list " + attList)
           attList.list.collect {
-            case a: AttributeString => Try(DiseaseOntologyNodeId(a.value)).toOption.map(_.numericId)
-          }.flatten.toArray.map(_.toString)
-//          if (diseaseNumericIdValues.nonEmpty)
-//            Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(diseaseNumericIdValues.map { n => AttributeString(n) }))
-//          else
-//            Map.empty[AttributeName, Attribute]
+            case a: AttributeString => Try(DiseaseOntologyNodeId(a.value)).toOption.map(_.uri.toString)
+          }.flatten.toArray
         }
         case _ => Array.empty
       }
