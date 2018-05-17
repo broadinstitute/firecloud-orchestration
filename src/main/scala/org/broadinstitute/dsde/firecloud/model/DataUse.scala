@@ -5,7 +5,7 @@ import spray.http.Uri
 
 object DataUse {
 
-  final val doid_prefix = "http://purl.obolibrary.org/obo/DOID_"
+  private final val doid_prefix = "http://purl.obolibrary.org/obo/DOID_"
 
   case class ResearchPurpose(
     DS:    Seq[DiseaseOntologyNodeId],
@@ -27,10 +27,6 @@ object DataUse {
   case class DiseaseOntologyNodeId(uri: Uri, numericId: Int)
   object DiseaseOntologyNodeId {
     def apply(stringid:String) = {
-      println("id " + stringid)
-      println("pre " + doid_prefix)
-      println("result " + stringid.startsWith(doid_prefix))
-
       require(stringid.startsWith(doid_prefix), s"Disease Ontology node id must be in the form '${doid_prefix}NNN'")
       val uri = Uri(stringid)
       val numericId = stringid.stripPrefix(doid_prefix).toInt
@@ -84,7 +80,7 @@ object ConsentCodes extends Enumeration {
 
   val booleanCodes = Seq(GRU, HMB, NCU, NPU, NMDS, NAGR, NCTRL, RSPD, IRB)
   val genderCodes = Seq(RSG, RSFM, RSM)
-  val duRestrictionFieldNames = booleanCodes ++ genderCodes ++ Seq(DSURL/*, RSPOP*/)
+  val duRestrictionFieldNames = booleanCodes ++ genderCodes ++ Seq(DSURL)
   // the following value will be used to remove these items from the document so that
   // we can use our duos APIs to generate the datause document fields
   val allPreviousDurFieldNames = duRestrictionFieldNames ++ Seq(DS, "RS-POP", "futureUseDate")
