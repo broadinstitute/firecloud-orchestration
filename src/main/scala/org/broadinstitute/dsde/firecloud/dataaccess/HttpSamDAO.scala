@@ -34,7 +34,7 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
   override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
     implicit val accessToken = userInfo
     authedRequestToObject[List[String]](Get(samResourceRoles(managedGroupResourceTypeName, groupName.value))).map { allRoles =>
-      allRoles.map(ManagedGroupRoles.withName).toSet.subsetOf(ManagedGroupRoles.membershipRoles)
+      allRoles.map(ManagedGroupRoles.withName).toSet.intersect(ManagedGroupRoles.membershipRoles).nonEmpty
     }
   }
 
