@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.firecloud.service
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.OntologyDAO
-import org.broadinstitute.dsde.firecloud.model.ConsentCodes.DS
 import org.broadinstitute.dsde.firecloud.model.{ConsentCodes, DataUse}
 import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredDataRequest, StructuredDataResponse}
 import org.broadinstitute.dsde.firecloud.model.DataUse.DiseaseOntologyNodeId
@@ -209,7 +208,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     }.toSeq
 
 
-    val dsLabels:Seq[String] = (attributes.get(AttributeName.withDefaultNS(DS)) collect {
+    val dsLabels:Seq[String] = (attributes.get(AttributeName.withDefaultNS(DSURL)) collect {
       case value: AttributeValueList => value.list.collect {
         case a: AttributeString => a.value
       }
