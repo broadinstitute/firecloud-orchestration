@@ -152,14 +152,14 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   override def getEntityTypes(workspaceNamespace: String, workspaceName: String)(implicit userToken: UserInfo): Future[Map[String, EntityTypeMetadata]] = {
-    val url = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
+    val url = encodeUri(FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName))
     authedRequestToObject[Map[String, EntityTypeMetadata]](Get(url), compressed = true)
   }
 
-  private def getWorkspaceUrl(ns: String, name: String) = encodeUri(FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s".format(ns, name))
+  private def getWorkspaceUrl(ns: String, name: String) = encodeUri(FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name")
   private def getWorkspaceAclUrl(ns: String, name: String) = encodeUri(rawlsWorkspaceACLUrl(ns, name))
   private def patchWorkspaceAclUrl(ns: String, name: String, inviteUsersNotFound: Boolean) = rawlsWorkspaceACLUrl(ns, name) + rawlsWorkspaceACLQuerystring.format(inviteUsersNotFound)
-  private def workspaceCatalogUrl(ns: String, name: String) = encodeUri(FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/%s/%s/catalog".format(ns, name))
+  private def workspaceCatalogUrl(ns: String, name: String) = encodeUri(FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name/catalog")
 
   override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
     userAuthedRequest(Get(RawlsDAO.refreshTokenDateUrl), label=Some("HttpRawlsDAO.getRefreshTokenStatus"))(userInfo) map { response =>
@@ -263,7 +263,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
-    authedRequestToObject[WorkspaceDeleteResponse]( Delete(encodeUri(s"${FireCloudConfig.Rawls.authUrl}/workspaces/$workspaceNamespace/$workspaceName")) )
+    authedRequestToObject[WorkspaceDeleteResponse]( Delete(getWorkspaceUrl(workspaceNamespace, workspaceName)) )
   }
 
 }
