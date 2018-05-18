@@ -3,7 +3,8 @@ package org.broadinstitute.dsde.firecloud.service
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO}
-import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredDataResponse}
+import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
+import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.firecloud.model.{ConsentCodes, Document, ElasticSearch, LibrarySearchResponse, UserInfo, WithAccessToken}

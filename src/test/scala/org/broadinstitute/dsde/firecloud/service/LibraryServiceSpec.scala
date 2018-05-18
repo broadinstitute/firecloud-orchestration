@@ -439,7 +439,6 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         "NCTRL" -> JsBoolean(false),
         "GRU" -> JsBoolean(false),
         "HMB" -> JsBoolean(false),
-        //"RS-POP" -> JsArray(),
         "DS" -> JsArray()
       )
 

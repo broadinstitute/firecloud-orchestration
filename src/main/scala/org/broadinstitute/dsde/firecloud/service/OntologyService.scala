@@ -5,8 +5,7 @@ import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, ResearchPurposeSupport}
-import org.broadinstitute.dsde.firecloud.model.DUOS.StructuredDataRequest
-import org.broadinstitute.dsde.firecloud.model.DataUse.{ResearchPurpose, ResearchPurposeRequest}
+import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOntologyTermResource
 import org.broadinstitute.dsde.firecloud.service.OntologyService.{AutocompleteOntology, DataUseLimitation, ResearchPurposeQuery}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}

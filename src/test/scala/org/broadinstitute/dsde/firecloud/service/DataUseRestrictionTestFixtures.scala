@@ -23,7 +23,6 @@ object DataUseRestrictionTestFixtures {
     `RS-G`: Boolean = false,
     `RS-FM`: Boolean = false,
     `RS-M`: Boolean = false,
-    //`RS-POP`: Seq[String] = Seq.empty[String],
     IRB: Boolean = false
   )
 
@@ -37,7 +36,7 @@ object DataUseRestrictionTestFixtures {
     mkWorkspace(attributes, code, s"{${code.replace("-","")}}-unique")
   }
 
-  val listCodes: Seq[String] = Seq(/*"RS-POP"*/)
+  val listCodes: Seq[String] = Seq()
   val listValues: Seq[String] = Seq("TERM-1", "TERM-2")
   val listDatasets: Seq[Workspace] = listCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeValueList(listValues.map(AttributeString)))

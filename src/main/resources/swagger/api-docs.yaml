@@ -3481,6 +3481,26 @@ paths:
         200:
           description: JSON of ES filter clause
 
+  /duos/structuredData:
+    post:
+      tags:
+      - Library
+      operationId: dataIngest
+      summary: Data Use Search ingest
+      description: The ingest API will take the answers to consent questions and return the elasticsearch structure to persist with the data reference.
+      parameters:
+        - in: body
+          description: Structured Data Request
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/structuredDataRequest'
+      security:
+        - googleoauth:
+          - openid
+          - email
+          - profile
+
   /api/duos/consent/orsp/{orspId}:
     get:
       tags:
@@ -3506,26 +3526,6 @@ paths:
           description: The consent associated with the provided name could not be found.
         500:
           description: Internal Server Error
-
-  /duos/structuredData:
-    post:
-      tags:
-      - Library # Is this tag right or should it be DataUse?
-      operationId: dataIngest
-      summary: Data Use Search ingest
-      description: The ingest API will take the answers to consent questions and return the elasticsearch structure to persist with the data reference.
-      parameters:
-        - in: body
-          description: create project request
-          name: createProjectRequest
-          required: true
-          schema:
-            $ref: '#/definitions/structuredDataRequest'
-      security:
-        - googleoauth:
-          - openid
-          - email
-          - profile
 
   /error:
     get:
@@ -4343,7 +4343,7 @@ definitions:
         description: Is future use as a control set for diseases other than those specified prohibited?
       genderUseOnly:
         type: string
-        description: If future use is limited to research involving a particular gender, specify "male" or "female". Any other value will be read as false. This value is case-insensitive.
+        description: If future use is limited to research involving a particular gender, specify "male" or "female". Any other value will be read as false. This field is case-insensitive.
       pediatricResearchOnly:
         type: boolean
         description: Is future use limited to pediatric research?
@@ -4352,7 +4352,7 @@ definitions:
         description: Should the requester provide documentation of local IRB/REC approval?
       prefix:
         type: string
-        description: A prefix that is prepended to the field names of the responses. This is purely for the user's personalization.
+        description: Optional. A prefix that is prepended to the field names of the responses. This is purely for personalization.
 
 
   CopyConfigurationIngest:

@@ -2,10 +2,10 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.lang.reflect.Field
 
-import com.google.api.client.json.Json
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
-import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredDataRequest}
+import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
+import org.broadinstitute.dsde.firecloud.model.DataUse.StructuredDataRequest
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures._
 import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.{FreeSpec, Matchers}
@@ -140,7 +140,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
             durAtt shouldNot be(AttributeNull)
             val dur = makeDurFromWorkspace(ds, ontologyDAO)
-            //dur should be (1)
             dur shouldNot be(null)
           }
         }
@@ -267,7 +266,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "'EVERYTHING' dataset should have the right codes" in {
           val ontologyDAO = new MockOntologyDAO
           val attrs = generateStructuredAndDisplayAttributes(everythingDataset.head, ontologyDAO).display
-          //attrs should be (1)
           val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
           val expected = booleanCodes ++ Seq("RS-G", "RS-FM", "NAGR") ++ diseaseValuesLabels.map(s => s"DS:$s")
           codes should contain theSameElementsAs expected
@@ -550,7 +548,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         AttributeName.withLibraryNS("RS-FM") -> AttributeBoolean(true),
         AttributeName.withLibraryNS("RS-M") -> AttributeBoolean(true),
         AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(Seq(AttributeString("one"),AttributeString("two"))),
-       // AttributeName.withLibraryNS("RS-POP") -> AttributeValueList(Seq(AttributeString("three"),AttributeString("four"))),
         AttributeName.withLibraryNS("DS_URL") -> AttributeValueList(Seq(AttributeString("five"),AttributeString("six"))),
         AttributeName.withLibraryNS("consentCodes") -> AttributeValueList(Seq(AttributeString("seven"),AttributeString("eight"))),
         AttributeName.withLibraryNS("structuredUseRestriction") -> AttributeValueRawJson("""{"foo":"bar"}""")
@@ -643,11 +640,9 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
     }).getOrElse(Seq.empty[String])
   }
 
-  private def makeDurFromWorkspace(ds: Workspace, ontologyDAO: MockOntologyDAO) = {
+  private def makeDurFromWorkspace(ds: Workspace, ontologyDAO: MockOntologyDAO): DataUseRestriction = {
     val attrs = generateStructuredAndDisplayAttributes(ds, ontologyDAO).structured
-
     val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
-    println(durAtt)
     durAtt.toJson.convertTo[DataUseRestriction]
   }
 

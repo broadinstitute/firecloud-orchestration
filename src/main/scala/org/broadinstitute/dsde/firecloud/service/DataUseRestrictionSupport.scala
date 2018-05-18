@@ -3,12 +3,12 @@ package org.broadinstitute.dsde.firecloud.service
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.OntologyDAO
-import org.broadinstitute.dsde.firecloud.model.{ConsentCodes, DataUse}
-import org.broadinstitute.dsde.firecloud.model.DUOS.{DuosDataUse, StructuredDataRequest, StructuredDataResponse}
-import org.broadinstitute.dsde.firecloud.model.DataUse.DiseaseOntologyNodeId
+import org.broadinstitute.dsde.firecloud.model.{ConsentCodes}
+import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
+import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
-import org.broadinstitute.dsde.rawls.model.{Attribute, _}
+import org.broadinstitute.dsde.rawls.model._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -84,9 +84,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
 
   def generateStructuredDataResponse(request: StructuredDataRequest, ontologyDAO: OntologyDAO): StructuredDataResponse = {
     val diseaseCodesArray = getDiseaseNames(request.diseaseUseOnly, ontologyDAO)
-
     val booleanConsentMap = generateUseRestrictionBooleanMap(request)
-
     val diseaseSpecificMap = generateUseRestrictionDSStructuredMap(request)
     // convert to array of consent codes
     val consentCodes = booleanConsentMap.filter(_._2.value).map(_._1.name).toArray ++ diseaseCodesArray

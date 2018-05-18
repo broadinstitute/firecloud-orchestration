@@ -1,10 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.rawls.model.{AttributeFormat, PlainArrayAttributeListSerializer}
-import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
 import spray.json._
-import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsValue}
 
 object DUOS {
@@ -92,32 +88,6 @@ object DUOS {
         psychologicalTraits = getBoolean("psychologicalTraits"),
         nonBiomedical = getBoolean("nonBiomedical")
       )
-    }
-  }
-
-
-  case class StructuredDataRequest(generalResearchUse: Boolean,
-                                   healthMedicalBiomedicalUseOnly: Boolean,
-                                   diseaseUseOnly: Array[String],
-                                   commercialUseProhibited: Boolean,
-                                   forProfitUseProhibited: Boolean,
-                                   methodsResearchProhibited: Boolean,
-                                   aggregateLevelDataProhibited: Boolean,
-                                   controlsUseProhibited: Boolean,
-                                   genderUseOnly: String,
-                                   pediatricResearchOnly: Boolean,
-                                   irbRequired: Boolean,
-                                   prefix: Option[String])
-
-  case class StructuredDataResponse(consentCodes: Array[String],
-                                    dulvn: Int,
-                                    prefix: String,
-                                    structuredUseRestriction: Map[AttributeName, Attribute]) {
-    def formatWithPrefix(): Map[String, JsValue] = {
-      implicit val impAttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
-      Map(prefix + "consentCodes" -> consentCodes.toJson,
-        prefix + "dulvn" -> dulvn.toJson,
-        prefix + "structuredUseRestriction" -> structuredUseRestriction.toJson)
     }
   }
 
