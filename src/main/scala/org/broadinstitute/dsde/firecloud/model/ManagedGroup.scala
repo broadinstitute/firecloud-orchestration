@@ -33,7 +33,7 @@ object ManagedGroupRoles {
   case object Member extends ManagedGroupRole
   case object AdminNotifier extends ManagedGroupRole
 
-  val all: Set[ManagedGroupRole] = Set(Admin, Member)
+  val membershipRoles: Set[ManagedGroupRole] = Set(Admin, Member)
 }
 
 case class FireCloudManagedGroup(adminsEmails: List[WorkbenchEmail], membersEmails: List[WorkbenchEmail], groupEmail: WorkbenchEmail)

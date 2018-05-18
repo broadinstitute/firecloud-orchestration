@@ -2,10 +2,10 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{ManagedGroupRoles, RegistrationInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
+import org.broadinstitute.dsde.rawls.model.{ManagedRoles, RawlsUserEmail}
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import spray.client.pipelining.{Get, sendReceive}
 import spray.httpx.SprayJsonSupport._
@@ -33,7 +33,9 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
 
   override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
     implicit val accessToken = userInfo
-    authedRequestToObject[List[String]](Get(samResourceRoles(managedGroupResourceTypeName, groupName.value))).map(_.nonEmpty)
+    authedRequestToObject[List[String]](Get(samResourceRoles(managedGroupResourceTypeName, groupName.value))).map { allRoles =>
+      allRoles.map(ManagedGroupRoles.withName).toSet.intersect(ManagedGroupRoles.membershipRoles).nonEmpty
+    }
   }
 
   override def status: Future[SubsystemStatus] = {
