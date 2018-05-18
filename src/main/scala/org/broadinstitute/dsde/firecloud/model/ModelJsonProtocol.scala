@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
-import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
+import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose, ResearchPurposeRequest}
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
@@ -63,6 +63,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
     }
   }
   implicit val impResearchPurpose = jsonFormat6(ResearchPurpose.apply)
+  implicit val impResearchPurposeRequest = jsonFormat7(ResearchPurposeRequest.apply)
 
   implicit object impLibrarySearchParams extends RootJsonFormat[LibrarySearchParams] {
     val SEARCH_STRING = "searchString"

@@ -1,11 +1,12 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO}
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsGroupName}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
+import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import spray.http.{HttpRequest, StatusCodes}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,6 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 trait PermissionsSupport {
   protected val rawlsDAO: RawlsDAO
+  protected val samDao: SamDAO
   implicit protected val executionContext: ExecutionContext
 
   def tryIsAdmin(userInfo: UserInfo): Future[Boolean] = {
@@ -65,7 +67,7 @@ trait PermissionsSupport {
   }
 
   def tryIsGroupMember(userInfo: UserInfo, group: String): Future[Boolean] = {
-    rawlsDAO.isGroupMember(userInfo, group) recoverWith {
+    samDao.isGroupMember(WorkbenchGroupName(group), userInfo) recoverWith {
       case t: Throwable => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to query for group membership status."))
     }
   }

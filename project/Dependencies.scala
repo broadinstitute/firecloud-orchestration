@@ -32,6 +32,7 @@ object Dependencies {
     "io.spray"                      %% "spray-client"              % sprayV,
     "io.spray"                      %% "spray-routing-shapeless23" % sprayV,
     "io.spray"                      %% "spray-testkit"             % sprayV   % "test",
+    "net.virtual-void"              %% "json-lenses"               % "0.6.2"  % "test",
     "com.typesafe.akka"             %% "akka-actor"                % akkaV,
     "com.typesafe.akka"             %% "akka-testkit"              % akkaV    % "test",
     "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,

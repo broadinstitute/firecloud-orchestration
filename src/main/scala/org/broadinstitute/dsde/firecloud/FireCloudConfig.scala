@@ -4,6 +4,7 @@ import scala.collection.JavaConverters._
 import com.typesafe.config.{ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.service.NihWhitelist
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
+import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import spray.http.Uri
 import spray.http.Uri.{Authority, Host}
 
@@ -59,6 +60,7 @@ object FireCloudConfig {
     val submissionsWorkflowIdPath = workspace.getString("submissionsWorkflowIdPath")
     val submissionsWorkflowIdOutputsPath = workspace.getString("submissionsWorkflowIdOutputsPath")
     val overwriteGroupMembershipPath = workspace.getString("overwriteGroupMembershipPath")
+    val alterGroupMembershipPath = workspace.getString("alterGroupMembershipPath")
     val submissionQueueStatusPath = workspace.getString("submissionQueueStatusPath")
     val submissionQueueStatusUrl = authUrl + submissionQueueStatusPath
     val executionEngineVersionPath = workspace.getString("executionEngineVersionPath")
@@ -70,7 +72,8 @@ object FireCloudConfig {
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
     def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
-    def overwriteGroupMembershipUrlFromGroupName(groupName: String) = authUrl + overwriteGroupMembershipPath.format(groupName)
+    def overwriteGroupMembershipUrlFromGroupName(groupName: String, role: String) = authUrl + overwriteGroupMembershipPath.format(groupName, role)
+    def alterGroupMembershipUrlFromGroupName(groupName: String, role: String, email: String) = authUrl + alterGroupMembershipPath.format(groupName, role, email)
     def entityQueryUriFromWorkspaceAndQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: Option[EntityQuery] = None): Uri = {
       val baseEntityQueryUri = Uri(s"${entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType")
       query match {
@@ -132,7 +135,7 @@ object FireCloudConfig {
         val rawlsGroup = config.getString("rawlsGroup")
         val fileName = config.getString("fileName")
 
-        NihWhitelist(name, rawlsGroup, fileName)
+        NihWhitelist(name, WorkbenchGroupName(rawlsGroup), fileName)
       }
     }.toSet
   }

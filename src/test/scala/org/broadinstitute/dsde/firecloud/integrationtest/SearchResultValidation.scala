@@ -1,10 +1,13 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
-import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.{emptyCriteria, searchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, MockResearchPurposeSupport}
+import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurpose
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
+import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
+import org.elasticsearch.index.query.BoolQueryBuilder
 import org.scalatest.Assertions._
-import spray.json.JsValue
+import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.Await
@@ -46,6 +49,21 @@ trait SearchResultValidation {
     Await.result(searchDAO.suggestionsFromAll(criteria.copy(size=100), Seq.empty[String]), dur)
   }
 
+  /**
+    * Mimics a 3rd party searching against an ElasticSearch instance using a research purpose filter
+    * from us (coincidentally using the same prefix we use). Our SearchDAO is used to create and
+    * execute the search request, but the research purpose is fetched identically to how a 3rd party
+    * would.
+    */
+  def searchWithResearchPurposeQuery(researchPurpose: ResearchPurpose): SearchResponse = {
+    val boolQuery: BoolQueryBuilder = researchPurposeSupport.researchPurposeFilters(researchPurpose, name => "library:" + name)
+
+    // Use a MockResearchPurposeSupport here to prove that it's using the query created above
+    val elasticSearchDAO = new ElasticSearchDAO(client, itTestIndexName, new MockResearchPurposeSupport)
+    val searchRequest = elasticSearchDAO.createESSearchRequest(client, itTestIndexName, boolQuery, 0, 10)
+    elasticSearchDAO.executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchRequest)
+  }
+
   def validateResultNames(expectedNames:Set[String], response:LibrarySearchResponse) = {
     validateResultField("library:datasetName", expectedNames, response)
   }
@@ -63,10 +81,21 @@ trait SearchResultValidation {
     assertResult(expectedValues) {actualValues}
   }
 
+  def validateResultNames(expectedNames: Set[String], response: SearchResponse): Unit = {
+    val results: List[JsValue] = response.getHits.getHits.toList map {
+      _.getSourceAsString.parseJson
+    }
+    val names = getResultField("library:datasetName", results)
+    assertResult(expectedNames) {names}
+  }
+
   def getResultField(attrName:String, response:LibrarySearchResponse):Set[String] = {
-    (response.results map {jsval:JsValue =>
+    getResultField(attrName, response.results)
+  }
+
+  def getResultField(attrName: String, results: Seq[JsValue]) = {
+    (results map {jsval:JsValue =>
       jsval.asJsObject.fields(attrName).convertTo[String]
     }).toSet
   }
-
 }

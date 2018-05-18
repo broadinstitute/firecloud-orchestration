@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
+import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.AdminStatsFormat
@@ -14,6 +15,7 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
 import org.broadinstitute.dsde.rawls.model.StatusJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
+import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.joda.time.DateTime
 import spray.client.pipelining._
@@ -24,6 +26,7 @@ import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsBillingProjectMember
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -37,16 +40,6 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest( Get(rawlsAdminUrl) )(userInfo) map { response =>
-      response.status match {
-        case OK => true
-        case NotFound => false
-        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
-      }
-    }
-  }
-
-  override def isGroupMember(userInfo: UserInfo, groupName: String): Future[Boolean] = {
-    userAuthedRequest(Get(RawlsDAO.groupUrl(groupName)))(userInfo) map { response =>
       response.status match {
         case OK => true
         case NotFound => false
@@ -110,17 +103,30 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
-  override def adminAddMemberToGroup(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
-    val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName)
+  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit] = {
+    val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName.value, role.toString)
 
-    adminAuthedRequest(Post(url, memberList)).map(_.status.isSuccess)
+    userAuthedRequest(Post(url, memberList)) map { resp =>
+      if (resp.status.isSuccess) {
+        ()
+      } else {
+        throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
+      }
+    }
   }
 
-  override def adminOverwriteGroupMembership(groupName: String, memberList: RawlsGroupMemberList): Future[Boolean] = {
-    val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName)
+  override def addMemberToGroup(groupName: WorkbenchGroupName, role: ManagedGroupRole, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit] = {
+    val url = FireCloudConfig.Rawls.alterGroupMembershipUrlFromGroupName(groupName.value, role.toString, member.value)
 
-    adminAuthedRequest(Put(url, memberList)).map(_.status.isSuccess)
+    userAuthedRequest(Put(url)) map { resp =>
+      if (resp.status.isSuccess) {
+        ()
+      } else {
+        throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
+      }
+    }
   }
+
 
   override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats] = {
     val queryParams =

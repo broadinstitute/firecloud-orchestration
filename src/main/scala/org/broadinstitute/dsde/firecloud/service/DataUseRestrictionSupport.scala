@@ -20,7 +20,8 @@ trait DataUseRestrictionSupport extends LazyLogging {
   val allDurFieldNames: Seq[String] = duRestrictionFieldNames ++ Seq("DS")
 
   private val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS("DS")
-  val structuredUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS("structuredUseRestriction")
+  val structuredUseRestrictionName = "structuredUseRestriction"
+  val structuredUseRestrictionAttributeName: AttributeName = AttributeName.withLibraryNS(structuredUseRestrictionName)
   val consentCodesAttributeName: AttributeName = AttributeName.withLibraryNS("consentCodes")
 
   /**
