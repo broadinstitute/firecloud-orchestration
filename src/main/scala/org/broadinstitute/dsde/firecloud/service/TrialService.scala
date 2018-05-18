@@ -165,7 +165,7 @@ final class TrialService
   private def throwableToStatus(t: Throwable): String = {
     t match {
       case exr: FireCloudExceptionWithErrorReport =>
-        if (exr.errorReport.statusCode.contains(StatusCodes.NotFound))
+        if (exr.errorReport.statusCode.contains(spray2akkaStatus(StatusCodes.NotFound)))
           StatusUpdate.toName(StatusUpdate.Failure("User not registered"))
         else StatusUpdate.toName(StatusUpdate.Failure(exr.errorReport.message))
       case ex: FireCloudException =>
@@ -186,6 +186,7 @@ final class TrialService
             updateTrialStatus(managerInfo, userInfo, newStatus) map { stateResponse =>
               transitionPostProcessing(stateResponse, userTrialStatus, newStatus)
               StatusUpdate.toName(stateResponse)
+
             }
           } else {
             logger.info(s"The user '${userInfo.userEmail}' is already in the trial state of '${newStatus.state.getOrElse("")}'. No further action will be taken.")

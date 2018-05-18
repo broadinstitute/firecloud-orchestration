@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.broadinstitute.dsde.firecloud.dataaccess.MockSamDAO
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.scalatest.concurrent.ScalaFutures

@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{MethodConfigurationName, PermissionReport, PermissionReportRequest, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{MethodConfigurationName, PermissionReport, PermissionReportRequest, UserInfo, spray2akkaStatus}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.rawls.model.{AccessEntry, WorkspaceACL}
 import spray.http.StatusCodes.{OK, Forbidden}
@@ -46,7 +46,7 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
     val futureWorkspaceACL = rawlsDAO.getWorkspaceACL(workspaceNamespace, workspaceName) recover {
       // User is forbidden from listing ACLs for this workspace, but may still be able to read
       // the configs/methods. Continue with empty workspace ACLs.
-      case fcex:FireCloudExceptionWithErrorReport if fcex.errorReport.statusCode.contains(Forbidden) =>
+      case fcex:FireCloudExceptionWithErrorReport if fcex.errorReport.statusCode.contains(spray2akkaStatus(Forbidden)) =>
         WorkspaceACL(Map.empty[String, AccessEntry])
       // all other exceptions are considered fatal
     }

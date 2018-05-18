@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud
 
 import akka.actor.ActorSystem
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, RegistrationInfo, WorkbenchEnabled}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, RegistrationInfo, WorkbenchEnabled, spray2akkaStatus}
 import org.broadinstitute.dsde.workbench.util.health.{SubsystemStatus, Subsystems}
 import org.broadinstitute.dsde.workbench.util.health.Subsystems._
 import spray.http.StatusCodes
@@ -54,9 +54,9 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
       case RegistrationInfo(_, WorkbenchEnabled(true, true, true), _) => None
       case regInfo => Option(s"$name is registered but not fully enabled: ${regInfo.enabled}!")
     } recover {
-      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
+      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(spray2akkaStatus(StatusCodes.NotFound)) =>
         Option(s"$name is not registered!")
-      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.Conflict) =>
+      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(spray2akkaStatus(StatusCodes.Conflict)) =>
         Option(s"$name already exists!")
       case e: Exception =>
         Option(s"Error on registration status for $name: ${e.getMessage}")

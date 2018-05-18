@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.firecloud.model._
 import org.mockserver.model.Header
 import spray.http.StatusCode
 

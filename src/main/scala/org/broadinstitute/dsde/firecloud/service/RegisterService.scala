@@ -59,7 +59,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
 
   private def isRegistered(userInfo: UserInfo): Future[RegistrationInfo] = {
     samDao.getRegistrationStatus(userInfo) recover {
-      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
+      case e: FireCloudExceptionWithErrorReport if optAkka2sprayStatus(e.errorReport.statusCode) == Option(StatusCodes.NotFound) =>
         RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail), WorkbenchEnabled(false, false, false))
     }
   }

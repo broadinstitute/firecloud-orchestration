@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.HttpResponseWithErrorReport
-import org.broadinstitute.dsde.firecloud.model.errorReportSource
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest._
 import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, HttpClient}
 import spray.http.StatusCodes._
@@ -80,7 +80,7 @@ trait PerRequest extends Actor with LazyLogging {
     OneForOneStrategy() {
 
       case e: FireCloudExceptionWithErrorReport =>
-        r.complete((e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport))
+        r.complete((optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), e.errorReport))
         Stop
       case e: RequestProcessingException =>
         r.complete(HttpResponseWithErrorReport(InternalServerError, e))
@@ -95,7 +95,7 @@ trait PerRequest extends Actor with LazyLogging {
     logger.error(s"error servicing request ${r.request.method} ${r.request.uri}", e)
     e match {
       case e: FireCloudExceptionWithErrorReport =>
-        complete((e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport))
+        complete((optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), e.errorReport))
       case _ => complete((InternalServerError, ErrorReport(InternalServerError, e)))
     }
   }

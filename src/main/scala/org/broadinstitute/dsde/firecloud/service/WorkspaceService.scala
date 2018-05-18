@@ -231,7 +231,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
           RequestComplete(wsResponse.copy(message = Some(wsResponse.message.getOrElse("") + unPublishSuccessMessage(ns, name))))
         }
       } recover {
-        case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
+        case e: FireCloudExceptionWithErrorReport => RequestComplete(optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
         case e: Throwable => RequestComplete(InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
       }
     }

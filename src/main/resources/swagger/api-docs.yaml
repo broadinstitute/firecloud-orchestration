@@ -4784,7 +4784,6 @@ definitions:
     required:
       - namespace
       - name
-      - rootEntityType
       - inputs
       - methodRepoMethod
     type: object
@@ -4797,7 +4796,7 @@ definitions:
         description: The name of the method configuration
       rootEntityType:
         type: string
-        description: The root entity type that the method will be running on
+        description: 'The root entity type that the method will be running on. Optional if this method config doesn''t run on an entity (i.e. uses only workspace attributes and literal inputs).'
       prerequisites:
         type: object
         description: Map[String, String]
@@ -5383,12 +5382,10 @@ definitions:
       - bar
 
   SubmissionRequest:
-    description: ''
+    description: If the referenced method configuration takes no root entity, do not define `entityType`, `entityName` and `expression`.
     required:
       - methodConfigurationNamespace
       - methodConfigurationName
-      - entityType
-      - entityName
       - useCallCache
     type: object
     properties:
@@ -5400,13 +5397,13 @@ definitions:
         description: Name of the method configuration to execute.
       entityType:
         type: string
-        description: Type of root entity for expression.
+        description: Type of root entity for expression. Optional if the method configuration has no root entity.
       entityName:
         type: string
-        description: Name of root entity for expression.
+        description: Name of root entity for expression. Optional if the method configuration has no root entity.
       expression:
         type: string
-        description: Expression that resolves to one or more entities matching the entity type in the method configuration.
+        description: Expression that resolves to one or more entities matching the entity type in the method configuration. Optional if the method configuration has no root entity.
       useCallCache:
         type: boolean
         description: Whether or not to read from cache for this submission.
