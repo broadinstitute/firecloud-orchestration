@@ -49,7 +49,7 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def rawlsWorkspaceMethodConfigsUrl(workspaceNamespace: String, workspaceName: String): String = encodeUri(FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/methodconfigs")
   def rawlsBucketUsageUrl(workspaceNamespace: String, workspaceName: String): String = encodeUri(FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/bucketUsage")
 
-  def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String): String = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType"
+  def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String): String = encodeUri(FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType")
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
