@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud
 
 import scala.collection.JavaConverters._
 import com.typesafe.config.{ConfigFactory, ConfigObject}
-import org.broadinstitute.dsde.firecloud.service.NihWhitelist
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihWhitelist}
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import spray.http.Uri
@@ -75,7 +75,7 @@ object FireCloudConfig {
     def overwriteGroupMembershipUrlFromGroupName(groupName: String, role: String) = authUrl + overwriteGroupMembershipPath.format(groupName, role)
     def alterGroupMembershipUrlFromGroupName(groupName: String, role: String, email: String) = authUrl + alterGroupMembershipPath.format(groupName, role, email)
     def entityQueryUriFromWorkspaceAndQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: Option[EntityQuery] = None): Uri = {
-      val baseEntityQueryUri = Uri(s"${entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType")
+      val baseEntityQueryUri = Uri(FireCloudDirectiveUtils.encodeUri(s"${entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType"))
       query match {
         case Some(q) =>
           val qMap: Map[String, String] = Map(
