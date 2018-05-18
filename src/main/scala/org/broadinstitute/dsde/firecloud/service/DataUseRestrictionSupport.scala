@@ -83,7 +83,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
   }
 
   def generateStructuredDataResponse(request: StructuredDataRequest, ontologyDAO: OntologyDAO): StructuredDataResponse = {
-    val diseaseCodesArray = getDiseaseNames(request.diseaseUseOnly, ontologyDAO)
+    val diseaseCodesArray = getDiseaseNames(request.diseaseUseRequired, ontologyDAO)
     val booleanConsentMap = generateUseRestrictionBooleanMap(request)
     val diseaseSpecificMap = generateUseRestrictionDSStructuredMap(request)
     // convert to array of consent codes
@@ -96,22 +96,22 @@ trait DataUseRestrictionSupport extends LazyLogging {
   def generateUseRestrictionBooleanMap(request: StructuredDataRequest): Map[AttributeName, AttributeBoolean] = {
     Map(
       AttributeName.withDefaultNS(ConsentCodes.GRU) -> AttributeBoolean(request.generalResearchUse),
-      AttributeName.withDefaultNS(ConsentCodes.HMB) -> AttributeBoolean(request.healthMedicalBiomedicalUseOnly),
+      AttributeName.withDefaultNS(ConsentCodes.HMB) -> AttributeBoolean(request.healthMedicalBiomedicalUseRequired),
       AttributeName.withDefaultNS(ConsentCodes.NCU) -> AttributeBoolean(request.commercialUseProhibited),
       AttributeName.withDefaultNS(ConsentCodes.NPU) -> AttributeBoolean(request.forProfitUseProhibited),
       AttributeName.withDefaultNS(ConsentCodes.NMDS) -> AttributeBoolean(request.methodsResearchProhibited),
       AttributeName.withDefaultNS(ConsentCodes.NAGR) -> AttributeBoolean(request.aggregateLevelDataProhibited),
       AttributeName.withDefaultNS(ConsentCodes.NCTRL) -> AttributeBoolean(request.controlsUseProhibited),
-      AttributeName.withDefaultNS(ConsentCodes.RSPD) -> AttributeBoolean(request.pediatricResearchOnly),
-      AttributeName.withDefaultNS(ConsentCodes.IRB) -> AttributeBoolean(request.irbRequired)) ++ getGenderCodeMap(request.genderUseOnly)
+      AttributeName.withDefaultNS(ConsentCodes.RSPD) -> AttributeBoolean(request.pediatricResearchRequired),
+      AttributeName.withDefaultNS(ConsentCodes.IRB) -> AttributeBoolean(request.irbRequired)) ++ getGenderCodeMap(request.genderUseRequired)
   }
 
   def generateUseRestrictionDSStructuredMap(request: StructuredDataRequest): Map[AttributeName, Attribute] = {
-    Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseOnly.map(DiseaseOntologyNodeId(_).numericId).map(AttributeNumber(_))))
+    Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseRequired.map(DiseaseOntologyNodeId(_).numericId).map(AttributeNumber(_))))
   }
 
   def generateUseRestrictionDSDisplayMap(request: StructuredDataRequest): Map[AttributeName, Attribute] = {
-    Map(AttributeName.withDefaultNS(ConsentCodes.DSURL) -> AttributeValueList(request.diseaseUseOnly.map(AttributeString(_))))
+    Map(AttributeName.withDefaultNS(ConsentCodes.DSURL) -> AttributeValueList(request.diseaseUseRequired.map(AttributeString(_))))
   }
 
 
@@ -293,15 +293,15 @@ trait DataUseRestrictionSupport extends LazyLogging {
     else
       Some(StructuredDataRequest(
       generalResearchUse = getBooleanPayloadValues(ConsentCodes.GRU),
-      healthMedicalBiomedicalUseOnly = getBooleanPayloadValues(ConsentCodes.HMB),
-      diseaseUseOnly = getDiseaseArray,
+      healthMedicalBiomedicalUseRequired = getBooleanPayloadValues(ConsentCodes.HMB),
+      diseaseUseRequired = getDiseaseArray,
       commercialUseProhibited = getBooleanPayloadValues(ConsentCodes.NCU),
       forProfitUseProhibited = getBooleanPayloadValues(ConsentCodes.NPU),
       methodsResearchProhibited = getBooleanPayloadValues(ConsentCodes.NMDS),
       aggregateLevelDataProhibited = getNagr,
       controlsUseProhibited = getBooleanPayloadValues(ConsentCodes.NCTRL),
-      genderUseOnly = getGenderString,
-      pediatricResearchOnly = getBooleanPayloadValues(ConsentCodes.RSPD),
+      genderUseRequired = getGenderString,
+      pediatricResearchRequired = getBooleanPayloadValues(ConsentCodes.RSPD),
       irbRequired = getBooleanPayloadValues(ConsentCodes.IRB),
       prefix = Some(AttributeName.libraryNamespace + AttributeName.delimiter)))
   }

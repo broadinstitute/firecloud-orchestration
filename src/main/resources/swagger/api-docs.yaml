@@ -4305,24 +4305,25 @@ definitions:
   structuredDataRequest:
     required:
         - generalResearchUse
-        - healthMedicalUseOnly
+        - healthMedicalUseRequired
+        - diseaseUseRequired
         - commercialUseProhibited
         - forProfitUseProhibited
         - methodsResearchProhibited
         - aggregateLevelDataProhibited
         - controlsUseProhibited
-        - genderUseOnly
-        - pediatricResearchOnly
+        - genderUseRequired
+        - pediatricResearchRequired
         - irbRequired
     type: object
     properties:
       generalResearchUse:
         type: boolean
         description: Is the data available for future general research use?
-      healthMedicalUseOnly:
+      healthMedicalUseRequired:
         type: boolean
         description: Is future use limited for health/medical/biomedical research?
-      diseaseUseOnly:
+      diseaseUseRequired:
         items:
           type: string
         description: Future use is limited to research involving the following disease area(s). These values must be urls such as "http://purl.obolibrary.org/obo/DOID_12345".
@@ -4341,10 +4342,10 @@ definitions:
       controlsUseProhibited:
         type: boolean
         description: Is future use as a control set for diseases other than those specified prohibited?
-      genderUseOnly:
+      genderUseRequired:
         type: string
         description: If future use is limited to research involving a particular gender, specify "male" or "female". Any other value will be read as false. This field is case-insensitive.
-      pediatricResearchOnly:
+      pediatricResearchRequired:
         type: boolean
         description: Is future use limited to pediatric research?
       irbRequired:

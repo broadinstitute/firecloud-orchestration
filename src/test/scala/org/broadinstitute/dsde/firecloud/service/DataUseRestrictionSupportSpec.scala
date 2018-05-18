@@ -25,15 +25,15 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "and all consent codes are true or filled in" in {
           val ontologyDAO = new MockOntologyDAO
           val request = StructuredDataRequest(generalResearchUse = true,
-            healthMedicalBiomedicalUseOnly = true,
-            diseaseUseOnly = Array("http://purl.obolibrary.org/obo/DOID_4325","http://purl.obolibrary.org/obo/DOID_2531"),
+            healthMedicalBiomedicalUseRequired = true,
+            diseaseUseRequired = Array("http://purl.obolibrary.org/obo/DOID_4325","http://purl.obolibrary.org/obo/DOID_2531"),
             commercialUseProhibited = true,
             forProfitUseProhibited = true,
             methodsResearchProhibited = true,
             aggregateLevelDataProhibited = true,
             controlsUseProhibited = true,
-            genderUseOnly = "female",
-            pediatricResearchOnly = true,
+            genderUseRequired = "female",
+            pediatricResearchRequired = true,
             irbRequired = true,
             prefix = Some("blah"))
 
@@ -61,15 +61,15 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "and all consent codes are false or empty" in {
           val ontologyDAO = new MockOntologyDAO
           val request = StructuredDataRequest(generalResearchUse = false,
-            healthMedicalBiomedicalUseOnly = false,
-            diseaseUseOnly = Array(),
+            healthMedicalBiomedicalUseRequired = false,
+            diseaseUseRequired = Array(),
             commercialUseProhibited = false,
             forProfitUseProhibited = false,
             methodsResearchProhibited = false,
             aggregateLevelDataProhibited = false,
             controlsUseProhibited = false,
-            genderUseOnly = "",
-            pediatricResearchOnly = false,
+            genderUseRequired = "",
+            pediatricResearchRequired = false,
             irbRequired = false,
             prefix = None)
 
@@ -97,15 +97,15 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
         "and consent codes are a mixture of true and false" in {
           val ontologyDAO = new MockOntologyDAO
           val request = StructuredDataRequest(generalResearchUse = false,
-            healthMedicalBiomedicalUseOnly = true,
-            diseaseUseOnly = Array("http://purl.obolibrary.org/obo/DOID_1240"),
+            healthMedicalBiomedicalUseRequired = true,
+            diseaseUseRequired = Array("http://purl.obolibrary.org/obo/DOID_1240"),
             commercialUseProhibited = false,
             forProfitUseProhibited = true,
             methodsResearchProhibited = false,
             aggregateLevelDataProhibited = false,
             controlsUseProhibited = true,
-            genderUseOnly = "male",
-            pediatricResearchOnly = false,
+            genderUseRequired = "Male",
+            pediatricResearchRequired = false,
             irbRequired = true,
             prefix = Some("library"))
 

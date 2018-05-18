@@ -66,15 +66,15 @@ object DataUse {
   }
 
   case class StructuredDataRequest(generalResearchUse: Boolean,
-                                   healthMedicalBiomedicalUseOnly: Boolean,
-                                   diseaseUseOnly: Array[String],
+                                   healthMedicalBiomedicalUseRequired: Boolean,
+                                   diseaseUseRequired: Array[String],
                                    commercialUseProhibited: Boolean,
                                    forProfitUseProhibited: Boolean,
                                    methodsResearchProhibited: Boolean,
                                    aggregateLevelDataProhibited: Boolean,
                                    controlsUseProhibited: Boolean,
-                                   genderUseOnly: String,
-                                   pediatricResearchOnly: Boolean,
+                                   genderUseRequired: String,
+                                   pediatricResearchRequired: Boolean,
                                    irbRequired: Boolean,
                                    prefix: Option[String])
 
