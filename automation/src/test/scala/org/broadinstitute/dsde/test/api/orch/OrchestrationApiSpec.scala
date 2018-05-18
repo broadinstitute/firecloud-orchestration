@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.StatusCodes
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.services.bigquery.model.{GetQueryResultsResponse, JobReference}
 import org.broadinstitute.dsde.workbench.auth.AuthToken
-import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
+import org.broadinstitute.dsde.workbench.config.{Config, Credentials, UserPool}
 import org.broadinstitute.dsde.workbench.dao.Google.googleBigQueryDAO
 import org.broadinstitute.dsde.workbench.fixture.BillingFixtures
 import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
@@ -151,5 +151,32 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       removeEx.getMessage should include(errorMsg)
       removeEx.getMessage should include(StatusCodes.Forbidden.intValue.toString)
     }
+
+    "should link an eRA Commons account with access to TARGET closed-access data" in {
+      Orchestration.NIH.addUserInNIH(Config.Users.targetJsonWebTokenKey)
+
+      //Orchestration.NIH.getUserNihStatus should be TCGA = false, TARGET = true
+    }
+
+    "should link an eRA Commons account with access to TCGA closed-access data" in {
+      Orchestration.NIH.addUserInNIH(Config.Users.tcgaJsonWebTokenKey)
+
+      //Orchestration.NIH.getUserNihStatus should be TCGA = true, TARGET = false
+    }
+
+    "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" in {
+      Orchestration.NIH.addUserInNIH(Config.Users.targetAndTcgaJsonWebTokenKey)
+
+      //Orchestration.NIH.getUserNihStatus should be TCGA = true, TARGET = true
+
+      Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
+
+      //Orchestration.NIH.getUserNihStatus should be TCGA = true, TARGET = true
+
+      //Orchestration.NIH.syncWhitelistFull
+
+      //Orchestration.NIH.getUserNihStatus should be TCGA = false, TARGET = false
+    }
+
   }
 }
