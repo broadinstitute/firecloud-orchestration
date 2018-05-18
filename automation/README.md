@@ -36,7 +36,7 @@ Render configs:
 Set `LOCAL_UI=true` before calling `render-local-env.sh`.   When starting your UI, run:
 
 ```bash
-FIAB=true ./config/docker-rsync-local-ui.sh
+LOCAL_UI=true ./config/docker-rsync-local-ui.sh
 ```
 	
 ### Run tests
