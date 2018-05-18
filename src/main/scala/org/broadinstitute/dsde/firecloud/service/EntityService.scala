@@ -50,7 +50,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                             destinationWorkspace = WorkspaceName(workspaceNamespace, workspaceName),
                             entityType = copyRequest.entityType,
                             entityNames = copyRequest.entityNames)
-                          val extReq = Post(encodeUri(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl(linkExistingEntitiesBool)), copyMethodConfig)
+                          val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl(linkExistingEntitiesBool), copyMethodConfig)
                           externalHttpPerRequest(requestContext, extReq)
                       }
                     }
