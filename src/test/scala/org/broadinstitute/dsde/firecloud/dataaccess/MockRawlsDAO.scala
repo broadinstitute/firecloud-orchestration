@@ -365,8 +365,8 @@ class MockRawlsDAO extends RawlsDAO with MockGroupSupport {
     Future.successful(())
   }
 
-  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit] = {
-    val groupWithNewMembers = groupName -> memberList.toSet
+  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: RawlsGroupMemberList)(implicit userToken: WithAccessToken): Future[Unit] = {
+    val groupWithNewMembers = groupName -> memberList.userEmails.getOrElse(Seq.empty).map(WorkbenchEmail).toSet
     this.synchronized { groups = groups + groupWithNewMembers }
 
     Future.successful(())
