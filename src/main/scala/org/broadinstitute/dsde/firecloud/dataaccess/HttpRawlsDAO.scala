@@ -103,10 +103,10 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
-  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: Set[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[Unit] = {
+  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: RawlsGroupMemberList)(implicit userToken: WithAccessToken): Future[Unit] = {
     val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName.value, role.toString)
 
-    userAuthedRequest(Post(url, memberList)) map { resp =>
+    userAuthedRequest(Put(url, memberList)) map { resp =>
       if (resp.status.isSuccess) {
         ()
       } else {
