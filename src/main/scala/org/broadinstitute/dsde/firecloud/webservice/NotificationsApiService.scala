@@ -16,10 +16,10 @@ trait NotificationsApiService extends HttpService with PerRequestCreator with Fi
     get {
       pathPrefix(separateOnSlashes(ApiPrefix)) {
         path(General) {
-          passthrough(s"$RawlsNotifications/$General", GET)
+          passthrough(encodeUri(s"$RawlsNotifications/$General"), GET)
         } ~
         path(Workspace / Segment / Segment) { (namespace, name) =>
-          passthrough(s"$RawlsNotifications/$Workspace/$namespace/$name", GET)
+          passthrough(encodeUri(s"$RawlsNotifications/$Workspace/$namespace/$name"), GET)
         }
       }
     }
