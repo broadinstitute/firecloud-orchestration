@@ -36,12 +36,7 @@ object DataUseRestrictionTestFixtures {
     mkWorkspace(attributes, code, s"{${code.replace("-","")}}-unique")
   }
 
-  val listCodes: Seq[String] = Seq()
   val listValues: Seq[String] = Seq("TERM-1", "TERM-2")
-  val listDatasets: Seq[Workspace] = listCodes.map { code =>
-    val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeValueList(listValues.map(AttributeString)))
-    mkWorkspace(attributes, code, code)
-  }
 
   val diseaseCodes: Seq[String] = Seq("DS_URL")
   val diseaseURLs: Seq[String] = Seq("http://purl.obolibrary.org/obo/DOID_9220", "http://purl.obolibrary.org/obo/DOID_535")
@@ -71,7 +66,6 @@ object DataUseRestrictionTestFixtures {
 
   val everythingDataset = Seq(mkWorkspace(
     booleanCodes.map(AttributeName.withLibraryNS(_) -> AttributeBoolean(true)).toMap ++
-      listCodes.map(AttributeName.withLibraryNS(_) -> AttributeValueList(listValues.map(AttributeString))).toMap ++
       diseaseCodes.map(AttributeName.withLibraryNS(_) -> AttributeValueList(diseaseURLs.map(AttributeString))).toMap ++
       Map(AttributeName.withLibraryNS("DS") -> AttributeValueList(diseaseValuesLabels.map(AttributeString))) ++
       Map(AttributeName.withLibraryNS("NAGR") -> AttributeString("Yes")) ++
@@ -88,7 +82,7 @@ object DataUseRestrictionTestFixtures {
     "TOP_THREE")
   )
 
-  val allDatasets: Seq[Workspace] = booleanDatasets ++ listDatasets ++ diseaseDatasets ++ genderDatasets ++ nagrDatasets ++ everythingDataset ++ topThreeDataset
+  val allDatasets: Seq[Workspace] = booleanDatasets ++ diseaseDatasets ++ genderDatasets ++ nagrDatasets ++ everythingDataset ++ topThreeDataset
 
   val validDisplayDatasets: Seq[Workspace] = booleanDatasets ++ everythingDataset ++ topThreeDataset
 

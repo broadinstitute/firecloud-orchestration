@@ -188,18 +188,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           }
         }
 
-        "dataset should have the correct list values for the consent code for which it was specified" in {
-          val durs: Map[String, DataUseRestriction] = listDatasets.flatMap { ds =>
-            val ontologyDAO = new MockOntologyDAO
-            Map(ds.name -> makeDurFromWorkspace(ds, ontologyDAO))
-          }.toMap
-
-          listCodes.foreach { code =>
-            val dur: DataUseRestriction = durs(code)
-            checkListValues(dur, code)
-          }
-        }
-
         "dataset should have the correct disease values for the consent code for which it was specified" in {
           val durs: Map[String, DataUseRestriction] = diseaseDatasets.flatMap { ds =>
             val ontologyDAO = new MockOntologyDAO
@@ -300,14 +288,6 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
           val workspace: Workspace = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
           val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).display
           attrs should be(empty)
-        }
-
-        "dataset should not have any data use display codes for missing/not-found disease terms" in {
-          val ontologyDAO = new MockOntologyDAO
-          listDatasets.map { ds =>
-            val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(ds, ontologyDAO).display
-            attrs should be(empty)
-          }
         }
 
       }
