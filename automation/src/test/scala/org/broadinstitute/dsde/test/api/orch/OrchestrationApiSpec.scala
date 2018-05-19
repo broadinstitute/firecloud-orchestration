@@ -14,6 +14,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
+import org.broadinstitute.dsde.workbench.service.Orchestration.NIH.NihDatasetPermission
 
 class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with Eventually
   with BillingFixtures {
@@ -155,27 +156,27 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
     "should link an eRA Commons account with access to TARGET closed-access data" in {
       Orchestration.NIH.addUserInNIH(Config.Users.targetJsonWebTokenKey)
 
-      //Orchestration.NIH.getUserNihStatus should be TCGA = false, TARGET = true
+      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true))
     }
 
     "should link an eRA Commons account with access to TCGA closed-access data" in {
       Orchestration.NIH.addUserInNIH(Config.Users.tcgaJsonWebTokenKey)
 
-      //Orchestration.NIH.getUserNihStatus should be TCGA = true, TARGET = false
+      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false))
     }
 
     "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" in {
       Orchestration.NIH.addUserInNIH(Config.Users.targetAndTcgaJsonWebTokenKey)
 
-      //Orchestration.NIH.getUserNihStatus should be TCGA = true, TARGET = true
+      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
 
       Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
 
-      //Orchestration.NIH.getUserNihStatus should be TCGA = true, TARGET = true
+      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
 
-      //Orchestration.NIH.syncWhitelistFull
+      Orchestration.NIH.syncWhitelistFull
 
-      //Orchestration.NIH.getUserNihStatus should be TCGA = false, TARGET = false
+      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
     }
 
   }
