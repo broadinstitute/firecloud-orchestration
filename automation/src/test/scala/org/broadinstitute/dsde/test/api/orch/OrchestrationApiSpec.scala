@@ -154,18 +154,27 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
     }
 
     "should link an eRA Commons account with access to TARGET closed-access data" in {
+      val user = UserPool.chooseAuthDomainUser
+      val userToken: AuthToken = user.makeAuthToken()
+
       Orchestration.NIH.addUserInNIH(Config.Users.targetJsonWebTokenKey)
 
       Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true))
     }
 
     "should link an eRA Commons account with access to TCGA closed-access data" in {
+      val user = UserPool.chooseAuthDomainUser
+      val userToken: AuthToken = user.makeAuthToken()
+
       Orchestration.NIH.addUserInNIH(Config.Users.tcgaJsonWebTokenKey)
 
       Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false))
     }
 
     "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" in {
+      val user = UserPool.chooseAuthDomainUser
+      val userToken: AuthToken = user.makeAuthToken()
+      
       Orchestration.NIH.addUserInNIH(Config.Users.targetAndTcgaJsonWebTokenKey)
 
       Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
