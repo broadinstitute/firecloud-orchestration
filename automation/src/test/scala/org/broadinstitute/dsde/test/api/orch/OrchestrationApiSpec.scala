@@ -153,7 +153,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       removeEx.getMessage should include(StatusCodes.Forbidden.intValue.toString)
     }
 
-    "should link an eRA Commons account with access to TARGET closed-access data" in {
+    "should link an eRA Commons account with access to the TARGET closed-access dataset" in {
       val user = UserPool.chooseAuthDomainUser
       implicit val userToken: AuthToken = user.makeAuthToken()
 
@@ -162,13 +162,22 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true))
     }
 
-    "should link an eRA Commons account with access to TCGA closed-access data" in {
+    "should link an eRA Commons account with access to the TCGA closed-access dataset" in {
       val user = UserPool.chooseAuthDomainUser
       implicit val userToken: AuthToken = user.makeAuthToken()
 
       Orchestration.NIH.addUserInNIH(Config.Users.tcgaJsonWebTokenKey)
 
       Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false))
+    }
+
+    "should link an eRA Commons account with access to none of the support closed-access datasets" in {
+      val user = UserPool.chooseAuthDomainUser
+      implicit val userToken: AuthToken = user.makeAuthToken()
+
+      Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
+
+      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
     }
 
     "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" in {
