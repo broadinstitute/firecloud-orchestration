@@ -13,7 +13,7 @@ object Dependencies {
   val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll excludeWorkbenchModel
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google_2.11")
 
-  val workbenchServiceTestV = "0.7-847c3ff"
+  val workbenchServiceTestV = "0.9-e97a335-SNAP"
   val workbenchServiceTest: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-service-test" % workbenchServiceTestV % "test" classifier "tests" excludeAll (excludeWorkbenchGoogle, excludeWorkbenchModel)
 
   val rootDependencies = Seq(
@@ -23,6 +23,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
     "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % jacksonV,
+    "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
     "com.google.apis" % "google-api-services-oauth2" % "v1-rev112-1.20.0" excludeAll (
       ExclusionRule("com.google.guava", "guava-jdk5"),

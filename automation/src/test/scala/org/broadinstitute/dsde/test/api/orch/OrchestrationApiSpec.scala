@@ -1,4 +1,4 @@
-package org.broadinstitute.dsde.firecloud.test.api.orch
+package org.broadinstitute.dsde.test.api.orch
 
 import java.time.Instant
 
