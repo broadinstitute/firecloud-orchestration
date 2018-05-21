@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
-import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose, ResearchPurposeRequest}
+import org.broadinstitute.dsde.firecloud.model.DUOS._
+import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.rawls.model._
 import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
@@ -238,6 +238,9 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impLibraryAggregationResponse = jsonFormat2(LibraryAggregationResponse)
   implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
   implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
+
+  implicit val impStructuredDataRequest = jsonFormat12(StructuredDataRequest)
+  implicit val impStructuredDataResponse = jsonFormat4(StructuredDataResponse)
 
   implicit object impDuosDataUse extends RootJsonFormat[DuosDataUse] {
     override def write(ddu: DuosDataUse): JsValue = {

@@ -3481,6 +3481,26 @@ paths:
         200:
           description: JSON of ES filter clause
 
+  /duos/structuredData:
+    post:
+      tags:
+      - Library
+      operationId: dataIngest
+      summary: Data Use Search ingest
+      description: The ingest API will take the answers to consent questions and return the elasticsearch structure to persist with the data reference.
+      parameters:
+        - in: body
+          description: Structured Data Request
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/structuredDataRequest'
+      security:
+        - googleoauth:
+          - openid
+          - email
+          - profile
+
   /api/duos/consent/orsp/{orspId}:
     get:
       tags:
@@ -4281,6 +4301,60 @@ definitions:
       translatedUseRestriction:
         type: string
         description: The translated use restriction of the consent.
+
+  structuredDataRequest:
+    required:
+        - generalResearchUse
+        - healthMedicalUseRequired
+        - diseaseUseRequired
+        - commercialUseProhibited
+        - forProfitUseProhibited
+        - methodsResearchProhibited
+        - aggregateLevelDataProhibited
+        - controlsUseProhibited
+        - genderUseRequired
+        - pediatricResearchRequired
+        - irbRequired
+    type: object
+    properties:
+      generalResearchUse:
+        type: boolean
+        description: Is the data available for future general research use?
+      healthMedicalUseRequired:
+        type: boolean
+        description: Is future use limited for health/medical/biomedical research?
+      diseaseUseRequired:
+        items:
+          type: string
+        description: Future use is limited to research involving the following disease area(s). These values must be urls such as "http://purl.obolibrary.org/obo/DOID_12345".
+      commercialUseProhibited:
+        type: boolean
+        description: Is future commercial use prohibited?
+      forProfitUseProhibited:
+        type: boolean
+        description: Is future use by for-profit entities prohibited?
+      methodsResearchProhibited:
+        type: boolean
+        description: Is future use for methods research (analytic/software/technology development) outside the bounds of the other specified restrictions prohibited?
+      aggregateLevelDataProhibited:
+        type: boolean
+        description: Is future use of aggregate-level data for general research purposes prohibited?
+      controlsUseProhibited:
+        type: boolean
+        description: Is future use as a control set for diseases other than those specified prohibited?
+      genderUseRequired:
+        type: string
+        description: If future use is limited to research involving a particular gender, specify "male" or "female". Any other value will be read as false. This field is case-insensitive.
+      pediatricResearchRequired:
+        type: boolean
+        description: Is future use limited to pediatric research?
+      irbRequired:
+        type: boolean
+        description: Should the requester provide documentation of local IRB/REC approval?
+      prefix:
+        type: string
+        description: Optional. A prefix that is prepended to the field names of the responses. This is purely for personalization.
+
 
   CopyConfigurationIngest:
     type: object

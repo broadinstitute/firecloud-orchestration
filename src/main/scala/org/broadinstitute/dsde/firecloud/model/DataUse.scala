@@ -1,6 +1,11 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.rawls.model.{Attribute, AttributeName, AttributeFormat, PlainArrayAttributeListSerializer}
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
 import spray.http.Uri
+import spray.json._
+import spray.json.DefaultJsonProtocol._
+import spray.json.JsValue
 
 object DataUse {
 
@@ -59,4 +64,55 @@ object DataUse {
       POA = r.POA.getOrElse(false),
       NCU = r.NCU.getOrElse(false))
   }
+
+  case class StructuredDataRequest(generalResearchUse: Boolean,
+                                   healthMedicalBiomedicalUseRequired: Boolean,
+                                   diseaseUseRequired: Array[String],
+                                   commercialUseProhibited: Boolean,
+                                   forProfitUseProhibited: Boolean,
+                                   methodsResearchProhibited: Boolean,
+                                   aggregateLevelDataProhibited: Boolean,
+                                   controlsUseProhibited: Boolean,
+                                   genderUseRequired: String,
+                                   pediatricResearchRequired: Boolean,
+                                   irbRequired: Boolean,
+                                   prefix: Option[String])
+
+  case class StructuredDataResponse(consentCodes: Array[String],
+                                    dulvn: Int,
+                                    prefix: String,
+                                    structuredUseRestriction: Map[AttributeName, Attribute]) {
+    def formatWithPrefix(): Map[String, JsValue] = {
+      implicit val impAttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
+      Map(prefix + "consentCodes" -> consentCodes.toJson,
+        prefix + "dulvn" -> dulvn.toJson,
+        prefix + "structuredUseRestriction" -> structuredUseRestriction.toJson)
+    }
+  }
 }
+
+object ConsentCodes extends Enumeration {
+  val GRU = "GRU"
+  val HMB = "HMB"
+  val NCU = "NCU"
+  val NPU = "NPU"
+  val NMDS = "NMDS"
+  val NAGR = "NAGR"
+  val NCTRL = "NCTRL"
+  val RSPD = "RS-PD"
+  val IRB = "IRB"
+  val RSG = "RS-G"
+  val RSFM = "RS-FM"
+  val RSM = "RS-M"
+  val DSURL = "DS_URL"
+  val DS = "DS"
+
+  val booleanCodes = Seq(GRU, HMB, NCU, NPU, NMDS, NAGR, NCTRL, RSPD, IRB)
+  val genderCodes = Seq(RSG, RSFM, RSM)
+  val duRestrictionFieldNames = booleanCodes ++ genderCodes ++ Seq(DSURL)
+  // the following value will be used to remove these items from the document so that
+  // we can use our duos APIs to generate the datause document fields
+  val allPreviousDurFieldNames = duRestrictionFieldNames ++ Seq(DS, "RS-POP", "futureUseDate")
+  val diseaseLabelsAttributeName: AttributeName = AttributeName.withLibraryNS(DS)
+}
+

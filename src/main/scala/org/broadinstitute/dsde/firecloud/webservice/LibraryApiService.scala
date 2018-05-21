@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.DataUse.{ResearchPurpose, ResearchPurposeRequest}
+import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{Curator, UserInfo}
@@ -46,6 +46,17 @@ trait LibraryApiService extends HttpService with FireCloudRequestBuilding
               perRequest(requestContext,
                 OntologyService.props(ontologyServiceConstructor),
                 OntologyService.ResearchPurposeQuery(researchPurposeRequest))
+            }
+          }
+        }
+      } ~
+      path("structuredData") {
+        post {
+          respondWithJSON {
+            entity(as[StructuredDataRequest]) { request => requestContext =>
+              perRequest(requestContext,
+                OntologyService.props(ontologyServiceConstructor),
+                OntologyService.DataUseLimitation(request))
             }
           }
         }
