@@ -2505,6 +2505,7 @@ paths:
           schema:
             required:
               - bagitURL
+              - format
             properties:
               - bagitURL
                 type: string
