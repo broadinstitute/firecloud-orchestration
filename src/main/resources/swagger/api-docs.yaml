@@ -3127,7 +3127,27 @@ paths:
         200:
           description: Get workflow outputs
         404:
-          description: Submission or Workflow not found
+          description: Workspace, Submission or Workflow not found
+        500:
+          description: Internal Error
+
+  '/api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/cost':
+    get:
+      tags:
+      - Submissions
+      operationId: workflowCostInSubmission
+      summary: |
+        Retrieve workflow cost, if available.
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/submissionIdParam'
+        - $ref: '#/parameters/workflowIdParam'
+      responses:
+        200:
+          description: Successful Request
+        404:
+          description: Workspace, Submission or Workflow not found
         500:
           description: Internal Error
 
