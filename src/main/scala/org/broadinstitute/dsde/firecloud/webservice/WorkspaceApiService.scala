@@ -121,6 +121,18 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                 }
               }
             }
+          }
+          path("importBagit"){
+            post {
+              requireUserInfo() { userInfo =>
+                entity(as[BagitImportRequest]) { bagitRq => requestContext =>
+                  perRequest(requestContext,
+                    WorkspaceService.props(workspaceServiceConstructor, userInfo),
+                    WorkspaceService.ImportBagit(workspaceNamespace, workspaceName, bagitRq))
+
+                }
+              }
+            }
           } ~
           path("updateAttributes") {
             patch {
