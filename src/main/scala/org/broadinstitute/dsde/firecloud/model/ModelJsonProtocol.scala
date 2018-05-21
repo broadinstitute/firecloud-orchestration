@@ -174,6 +174,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impEntityCopyWithoutDestinationDefinition = jsonFormat3(EntityCopyWithoutDestinationDefinition)
   implicit val impEntityId = jsonFormat2(EntityId)
 
+  implicit val impBagitImportRequest = jsonFormat2(BagitImportRequest)
+
   implicit val impDestination = jsonFormat3(MethodConfigurationId)
   implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)
   implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)

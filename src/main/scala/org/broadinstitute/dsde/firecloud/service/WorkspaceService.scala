@@ -1,5 +1,9 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.io.{File, FileOutputStream, InputStream}
+import java.net.URL
+import java.util.zip.{ZipEntry, ZipFile, ZipInputStream}
+
 import akka.actor._
 import akka.pattern.pipe
 import akka.event.Logging
@@ -8,6 +12,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
+import org.broadinstitute.dsde.firecloud.service.WorkspaceService.WorkspaceServiceMessage
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
@@ -19,8 +24,10 @@ import spray.http.{HttpHeaders, StatusCodes}
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
+import sys.process._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import scala.collection.JavaConverters._
 
 /**
  * Created by mbemis on 10/19/16.
@@ -35,6 +42,7 @@ object WorkspaceService {
   case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) extends WorkspaceServiceMessage
   case class ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
   case class ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) extends WorkspaceServiceMessage
+  case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) extends WorkspaceServiceMessage
   case class GetTags(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
   case class PutTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
   case class PatchTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
@@ -78,6 +86,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, filename) pipeTo sender
     case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString) pipeTo sender
+    case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
+      importBagit(workspaceNamespace, workspaceName, bagitRq)
     case GetTags(workspaceNamespace: String, workspaceName: String) =>
       getTags(workspaceNamespace, workspaceName) pipeTo sender
     case PutTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) =>
@@ -174,6 +184,46 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
         }
       }
     }
+  }
+
+  def importBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest): Future[PerRequestMessage] = {
+    if(bagitRq.format != "TSV") {
+      Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid format; for now, you must place the string \"TSV\" here"))
+    }
+
+    val (participants, samples) = zip2TSVs(bagitRq.bagitURL)
+
+    for {
+      _ <- participants.map( ps => importAttributesFromTSV(workspaceNamespace, workspaceName, ps) ).getOrElse(Future.successful())
+      _ <- samples.map( ss => importAttributesFromTSV(workspaceNamespace, workspaceName, ss) ).getOrElse(Future.successful())
+    } yield RequestComplete(StatusCodes.OK)
+  }
+
+  def zip2TSVs(zipURL: String): (Option[String], Option[String]) = {
+    //TODO: unique-ify bagit.zip
+    new URL(zipURL) #> new File("/tmp/bagit.zip") !!
+
+    val zip = new ZipFile("/tmp/bagit.zhip")
+    val zsc = zip.entries.asScala
+
+    zsc.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
+      //TODO: eww
+      if(!ent.isDirectory && ent.getName.contains("participants.tsv")) {
+        unpackZip(zip.getInputStream(ent), "/tmp/participants.tsv")
+        (Some("/tmp/participants.tsv"), acc._2)
+      } else if(!ent.isDirectory && ent.getName.contains("samples.tsv")) {
+        unpackZip(zip.getInputStream(ent), "/tmp/samples.tsv")
+        (acc._1, Some("/tmp/samples.tsv"))
+      } else {
+        acc
+      }
+    }
+  }
+
+  private def unpackZip(zis: InputStream, fileTarget: String): Unit = {
+    val fout = new FileOutputStream(fileTarget)
+    val buffer = new Array[Byte](1024)
+    Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
   }
 
   def getTags(workspaceNamespace: String, workspaceName: String): Future[PerRequestMessage] = {
