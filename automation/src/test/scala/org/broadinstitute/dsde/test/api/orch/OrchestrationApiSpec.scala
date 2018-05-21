@@ -154,48 +154,73 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
     }
 
     "should link an eRA Commons account with access to the TARGET closed-access dataset" in {
-      val user = UserPool.chooseAuthDomainUser
-      implicit val userToken: AuthToken = user.makeAuthToken()
+      withCleanUp {
+        val user = UserPool.chooseAuthDomainUser
+        implicit val userToken: AuthToken = user.makeAuthToken()
 
-      Orchestration.NIH.addUserInNIH(Config.Users.targetJsonWebTokenKey)
+        register cleanUp resetNihLinkToInactive
 
-      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true))
+        Orchestration.NIH.addUserInNIH(Config.Users.targetJsonWebTokenKey)
+
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true))
+      }
     }
 
     "should link an eRA Commons account with access to the TCGA closed-access dataset" in {
-      val user = UserPool.chooseAuthDomainUser
-      implicit val userToken: AuthToken = user.makeAuthToken()
+      withCleanUp {
+        val user = UserPool.chooseAuthDomainUser
+        implicit val userToken: AuthToken = user.makeAuthToken()
 
-      Orchestration.NIH.addUserInNIH(Config.Users.tcgaJsonWebTokenKey)
+        register cleanUp resetNihLinkToInactive
 
-      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false))
+        Orchestration.NIH.addUserInNIH(Config.Users.tcgaJsonWebTokenKey)
+
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false))
+      }
     }
 
-    "should link an eRA Commons account with access to none of the support closed-access datasets" in {
-      val user = UserPool.chooseAuthDomainUser
-      implicit val userToken: AuthToken = user.makeAuthToken()
+    "should link an eRA Commons account with access to none of the supported closed-access datasets" in {
+      withCleanUp {
+        val user = UserPool.chooseAuthDomainUser
+        implicit val userToken: AuthToken = user.makeAuthToken()
 
-      Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
+        register cleanUp resetNihLinkToInactive
 
-      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+        Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
+
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+      }
     }
 
     "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" in {
-      val user = UserPool.chooseAuthDomainUser
-      implicit val userToken: AuthToken = user.makeAuthToken()
+      withCleanUp {
+        val user = UserPool.chooseAuthDomainUser
+        implicit val userToken: AuthToken = user.makeAuthToken()
 
-      Orchestration.NIH.addUserInNIH(Config.Users.targetAndTcgaJsonWebTokenKey)
+        register cleanUp resetNihLinkToInactive
 
-      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
+        Orchestration.NIH.addUserInNIH(Config.Users.targetAndTcgaJsonWebTokenKey)
 
-      Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
 
-      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
+        Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
 
-      Orchestration.NIH.syncWhitelistFull
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
 
-      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+        Orchestration.NIH.syncWhitelistFull
+
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+      }
     }
+  }
 
+  //We need to reset the user's link to a state where it doesn't have access to any of the datasets
+  //To do so, we will link with a JWT that doesn't have access to any datasets and then sync both whitelists
+  private def resetNihLinkToInactive()(implicit authToken: AuthToken) = {
+    Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
+
+    Orchestration.NIH.syncWhitelistFull
+
+    Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
   }
 }
