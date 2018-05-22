@@ -1,6 +1,9 @@
 package org.broadinstitute.dsde.firecloud
 
+import java.io.{File, FileOutputStream, InputStream}
+import java.net.URL
 import java.text.SimpleDateFormat
+import java.util.zip.{ZipEntry, ZipFile}
 
 import akka.actor.{Actor, Props}
 import akka.pattern.pipe
@@ -12,6 +15,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding, TSVFileSupport, TsvTypes}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.firecloud.service.WorkspaceService.WorkspaceServiceMessage
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -22,12 +26,17 @@ import spray.routing.RequestContext
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import scala.collection.JavaConverters._
+import scala.io.Source
+import sys.process._
 
 object EntityClient {
 
   case class ImportEntitiesFromTSV(workspaceNamespace: String,
                                    workspaceName: String,
                                    tsvString: String)
+
+  case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
 
   def props(requestContext: RequestContext)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext))
 
@@ -51,6 +60,32 @@ object EntityClient {
     }
   }
 
+  //returns (contents of participants.tsv, contents of samples.tsv)
+  def unzipTSVs(zipFile: ZipFile): (Option[String], Option[String]) = {
+    val zipEntries = zipFile.entries.asScala
+
+    val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
+      //TODO: eww
+      if(!ent.isDirectory && ent.getName.contains("participants.tsv")) {
+        unzipSingleFile(zipFile.getInputStream(ent), "/tmp/participants.tsv")
+        (Some("/tmp/participants.tsv"), acc._2)
+      } else if(!ent.isDirectory && ent.getName.contains("samples.tsv")) {
+        unzipSingleFile(zipFile.getInputStream(ent), "/tmp/samples.tsv")
+        (acc._1, Some("/tmp/samples.tsv"))
+      } else {
+        acc
+      }
+    }
+
+    ( unzippedFiles._1.map(f => Source.fromFile(f).mkString), unzippedFiles._2.map(f => Source.fromFile(f).mkString) )
+  }
+
+  private def unzipSingleFile(zis: InputStream, fileTarget: String): Unit = {
+    val fout = new FileOutputStream(fileTarget)
+    val buffer = new Array[Byte](1024)
+    Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
+  }
+
 }
 
 class EntityClient (requestContext: RequestContext)(implicit protected val executionContext: ExecutionContext)
@@ -62,6 +97,9 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
     case ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
       importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo sender
+    case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
+      val pipeline = authHeaders(requestContext) ~> sendReceive
+      importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
   }
 
 
@@ -209,5 +247,31 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
           Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
       }
     }
+  }
+
+  def importBagit(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]], workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest): Future[PerRequestMessage] = {
+    if(bagitRq.format != "TSV") {
+      Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid format; for now, you must place the string \"TSV\" here"))
+    }
+
+    val rand = java.util.UUID.randomUUID.toString.take(8)
+    val localZipPath = s"/tmp/$rand-bagit.zip"
+    //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
+    new URL(bagitRq.bagitURL) #> new File(localZipPath) !!
+
+    //make two big strings containing the participants and samples TSVs
+    //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
+    val (participantsStr, samplesStr) = unzipTSVs(new ZipFile(localZipPath))
+
+    (participantsStr, samplesStr) match {
+      case (None, None) =>
+        Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
+      case _ =>
+        for {
+          _ <- participantsStr.map( ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps) ).getOrElse(Future.successful())
+          _ <- samplesStr.map( ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss) ).getOrElse(Future.successful())
+        } yield RequestComplete(StatusCodes.OK)
+    }
+
   }
 }

@@ -83,7 +83,6 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     }
 
   }
-
 }
 
 /*
