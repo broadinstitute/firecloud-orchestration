@@ -4305,7 +4305,7 @@ definitions:
   structuredDataRequest:
     required:
         - generalResearchUse
-        - healthMedicalUseRequired
+        - healthMedicalBiomedicalUseRequired
         - diseaseUseRequired
         - commercialUseProhibited
         - forProfitUseProhibited
@@ -4320,12 +4320,15 @@ definitions:
       generalResearchUse:
         type: boolean
         description: Is the data available for future general research use?
-      healthMedicalUseRequired:
+      healthMedicalBiomedicalUseRequired:
         type: boolean
         description: Is future use limited for health/medical/biomedical research?
       diseaseUseRequired:
+        type: array
+        default: []
         items:
           type: string
+          example: "http://purl.obolibrary.org/obo/DOID_4"
         description: Future use is limited to research involving the following disease area(s). These values must be urls such as "http://purl.obolibrary.org/obo/DOID_12345".
       commercialUseProhibited:
         type: boolean
