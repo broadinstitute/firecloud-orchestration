@@ -20,6 +20,7 @@ security:
     - openid
     - email
     - profile
+    - https://www.googleapis.com/auth/devstorage.full_control
 
 securityDefinitions:
   googleoauth:
@@ -30,6 +31,7 @@ securityDefinitions:
       openid: open id authorization
       email: email authorization
       profile: profile authorization
+      https://www.googleapis.com/auth/devstorage.full_control: GCS storage
       https://www.googleapis.com/auth/cloud-billing: GCS billing
 
 ##########################################################################################
@@ -1586,6 +1588,7 @@ paths:
           - openid
           - email
           - profile
+          - https://www.googleapis.com/auth/devstorage.full_control
           - https://www.googleapis.com/auth/cloud-billing
 
   /api/profile/importstatus:
