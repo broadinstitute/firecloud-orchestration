@@ -21,6 +21,8 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
 
   val storageServiceConstructor: UserInfo => StorageService
 
+  private def dummyUserInfo(tokenStr: String) = UserInfo("dummy", OAuth2BearerToken(tokenStr), -1, "dummy")
+
   val cookieAuthedRoutes: Route =
 
     // download "proxy" for TSV files
@@ -30,7 +32,7 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
         formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) =>
           post { requestContext =>
             val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
-            val userInfo = UserInfo("dummy", OAuth2BearerToken(tokenValue), -1, "dummy")
+            val userInfo = dummyUserInfo(tokenValue)
             val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
             val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
             actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
@@ -39,12 +41,13 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
     } ~
     path( "cookie-authed" / "download" / "b" / Segment / "o" / RestPath ) { (bucket, obj) =>
       cookie("FCtoken") { tokenCookie => requestContext =>
-        // TODO: use a different WithAccessToken that doesn't require mocking out unknown values
-        val userInfoFromCookie = UserInfo(tokenCookie.content, "")
+        val userInfo = dummyUserInfo(tokenCookie.content)
 
         perRequest(requestContext,
-          StorageService.props(storageServiceConstructor, userInfoFromCookie),
+          StorageService.props(storageServiceConstructor, userInfo),
           StorageService.GetDownload(bucket, obj.toString))
       }
     }
+
+
 }
