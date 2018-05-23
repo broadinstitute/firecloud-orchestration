@@ -44,7 +44,7 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
 
         perRequest(requestContext,
           StorageService.props(storageServiceConstructor, userInfoFromCookie),
-          StorageService.GetObjectStats(bucket, obj.toString))
+          StorageService.GetDownload(bucket, obj.toString))
       }
     }
 }
