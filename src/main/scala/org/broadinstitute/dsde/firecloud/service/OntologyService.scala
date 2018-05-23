@@ -39,8 +39,8 @@ class OntologyService(val ontologyDAO: OntologyDAO, val researchPurposeSupport: 
     case DataUseLimitation(dataUseLimitation: StructuredDataRequest) => buildStructuredUseRestrictionAttribute(dataUseLimitation) pipeTo sender
   }
 
-  def buildStructuredUseRestrictionAttribute(request: StructuredDataRequest): Future[Map[String, JsValue]] = {
-    Future(generateStructuredUseRestrictionAttribute(request, ontologyDAO))
+  def buildStructuredUseRestrictionAttribute(request: StructuredDataRequest): Future[PerRequestMessage] = {
+    Future(RequestComplete(generateStructuredUseRestrictionAttribute(request, ontologyDAO)))
   }
 
   def autocompleteOntology(term: String): Future[PerRequestMessage] = {
