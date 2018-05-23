@@ -13,11 +13,13 @@ import scala.language.postfixOps
 /**
  * Created by dvoet on 11/16/16.
  */
-trait CookieAuthedApiService extends HttpService with FireCloudDirectives with FireCloudRequestBuilding with LazyLogging {
+trait CookieAuthedApiService extends HttpService with PerRequestCreator with FireCloudDirectives with FireCloudRequestBuilding with LazyLogging {
 
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
 
   private implicit val executionContext = actorRefFactory.dispatcher
+
+  val storageServiceConstructor: UserInfo => StorageService
 
   val cookieAuthedRoutes: Route =
 
@@ -36,10 +38,13 @@ trait CookieAuthedApiService extends HttpService with FireCloudDirectives with F
         }
     } ~
     path( "cookie-authed" / "download" / "b" / Segment / "o" / RestPath ) { (bucket, obj) =>
-      cookie("FCtoken") { tokenCookie =>
-        mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
-          HttpGoogleServicesDAO.getDownload(requestContext, bucket, obj.toString, tokenCookie.content)
-        }
+      cookie("FCtoken") { tokenCookie => requestContext =>
+        // TODO: use a different WithAccessToken that doesn't require mocking out unknown values
+        val userInfoFromCookie = UserInfo(tokenCookie.content, "")
+
+        perRequest(requestContext,
+          StorageService.props(storageServiceConstructor, userInfoFromCookie),
+          StorageService.GetObjectStats(bucket, obj.toString))
       }
     }
 }

@@ -12,6 +12,8 @@ import scala.concurrent.duration._
 
 class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService {
 
+  override val storageServiceConstructor: UserInfo => StorageService = StorageService.constructor(app)
+
   // On travis, slow processing causes the route to timeout and complete too quickly for the large content checks.
   override implicit val routeTestTimeout = RouteTestTimeout(30.seconds)
 

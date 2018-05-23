@@ -5,6 +5,7 @@ import java.io.InputStream
 import akka.actor.ActorRefFactory
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.http.HttpResponse
@@ -27,10 +28,10 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def getTrialSpreadsheetAccessToken: String
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
-  def getUserProfile(requestContext: RequestContext)
+  def getUserProfile(accessToken: WithAccessToken)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse]
-  def getDownload(requestContext: RequestContext, bucketName: String, objectKey: String, userAuthToken: String)
-                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Unit
+  def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
+                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[PerRequestMessage]
   def getObjectMetadata(bucketName: String, objectKey: String, userAuthToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata]
   def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList]

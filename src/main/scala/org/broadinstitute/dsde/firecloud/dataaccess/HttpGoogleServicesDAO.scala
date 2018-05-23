@@ -16,8 +16,9 @@ import com.google.api.services.storage.{Storage, StorageScopes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
-import org.broadinstitute.dsde.firecloud.model.{OAuthUser, ObjectMetadata, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
+import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.client.pipelining._
@@ -164,6 +165,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program
+  // TODO: should we sign as the user's pet??
   def getSignedUrl(bucketName: String, objectKey: String) = {
 
     // generate the string-to-be-signed
@@ -212,17 +214,17 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
   }
 
-  def objectAccessCheck(bucketName: String, objectKey: String, authToken: String)
+  def objectAccessCheck(bucketName: String, objectKey: String, authToken: WithAccessToken)
                        (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
     val accessRequest = Get( HttpGoogleServicesDAO.getObjectResourceUrl(bucketName, objectKey) )
-    val accessPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
+    val accessPipeline = addCredentials(authToken.accessToken) ~> sendReceive
     accessPipeline{accessRequest}
   }
 
-  def getUserProfile(requestContext: RequestContext)
+  def getUserProfile(accessToken: WithAccessToken)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
     val profileRequest = Get( "https://www.googleapis.com/oauth2/v3/userinfo" )
-    val profilePipeline = authHeaders(requestContext) ~> sendReceive
+    val profilePipeline = authHeaders(accessToken) ~> sendReceive
 
     profilePipeline{profileRequest}
   }
@@ -238,12 +240,12 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   //        redirect to a signed url that guarantees the user's identity
   //      else
   //        redirect to a direct download in GCS
-  def getDownload(requestContext: RequestContext, bucketName: String, objectKey: String, userAuthToken: String)
-                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext) = {
+  def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
+                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[PerRequestMessage] = {
 
     val objectStr = s"gs://$bucketName/$objectKey" // for logging
     // can we determine the current user's identity with Google?
-    getUserProfile(requestContext) map { userResponse =>
+    getUserProfile(userAuthToken) flatMap { userResponse =>
       userResponse.status match {
         case OK =>
           // user is known to Google. Extract the user's email and SID from the response, for logging
@@ -252,7 +254,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           val oauthUser:Try[OAuthUser] = Try(userResponse.entity.asString.parseJson.convertTo[OAuthUser])
           val userStr = (oauthUser getOrElse userResponse.entity).toString
           // Does the user have access to the target file?
-          objectAccessCheck(bucketName, objectKey, userAuthToken) map { objectResponse =>
+          objectAccessCheck(bucketName, objectKey, userAuthToken) flatMap { objectResponse =>
             objectResponse.status match {
               case OK =>
                 // user has access to the object.
@@ -265,23 +267,27 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                   logger.info(s"$userStr download via proxy allowed for [$objectStr]")
                   val gcsApiUrl = getObjectResourceUrl(bucketName, objectKey) + "?alt=media"
                   val extReq = Get(gcsApiUrl)
-                  val proxyPipeline = addCredentials(OAuth2BearerToken(userAuthToken)) ~> sendReceive
+                  val proxyPipeline = addCredentials(userAuthToken.accessToken) ~> sendReceive
                   // ensure we set the content-type correctly when proxying
-                  proxyPipeline(extReq) map { proxyResponse =>
+                  proxyPipeline(extReq) map { proxyResponse:HttpResponse =>
                       proxyResponse.header[HttpHeaders.`Content-Type`] match {
-                      case Some(ct) =>requestContext.withHttpResponseEntityMapped(e => HttpEntity(ct.contentType, e.data)).complete(proxyResponse.status, proxyResponse.entity)
-                      case None => requestContext.complete(proxyResponse.status, proxyResponse.entity)
+                      case Some(ct) =>
+                        RequestCompleteWithHeaders((proxyResponse.status, proxyResponse.entity),
+                          HttpHeaders.`Content-Type`(ct.contentType)
+                        )
+                      case None => RequestComplete((proxyResponse.status, proxyResponse.entity))
                     }
                   }
                 } else {
                   // object is too large to proxy; try to make a signed url.
                   // now make a final request to see if our service account has access, so it can sign a URL
-                  objectAccessCheck(bucketName, objectKey, getRawlsServiceAccountAccessToken) map { serviceAccountResponse =>
+                  objectAccessCheck(bucketName, objectKey, AccessToken(getRawlsServiceAccountAccessToken)) map { serviceAccountResponse =>
                     serviceAccountResponse.status match {
                       case OK =>
                         // the service account can read the object too. We are safe to sign a url.
                         logger.info(s"$userStr download via signed URL allowed for [$objectStr]")
-                        requestContext.redirect(getSignedUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
+                        val redirectUrl = getSignedUrl(bucketName, objectKey)
+                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, HttpHeaders.Location(Uri(redirectUrl)))
                       case _ =>
                         // the service account cannot read the object, even though the user can. We cannot
                         // make a signed url, because the service account won't have permission to sign it.
@@ -290,7 +296,9 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                         // the same browser profile, but this is the best we can do.
                         // generate direct link per https://cloud.google.com/storage/docs/authentication#cookieauth
                         logger.info(s"$userStr download via direct link allowed for [$objectStr]")
-                        requestContext.redirect(getDirectDownloadUrl(bucketName, objectKey), StatusCodes.TemporaryRedirect)
+                        val redirectUrl = getDirectDownloadUrl(bucketName, objectKey)
+                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, HttpHeaders.Location(Uri(redirectUrl)))
+
                     }
                   }
                 }
@@ -299,13 +307,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                 // the user does not have access to the object.
                 val responseStr = objectResponse.entity.asString.replaceAll("\n","")
                 logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status}): $responseStr")
-                requestContext.complete(objectResponse)
+                Future(RequestComplete(objectResponse))
             }
           }
         case _ =>
           // Google did not return a profile for this user; abort. Reloading will resolve the issue if it's caused by an expired token.
           logger.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.asString}")
-          requestContext.complete(Unauthorized, "There was a problem authorizing your download. Please reload FireCloud and try again.")
+          Future(RequestComplete((Unauthorized, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
       }
     }
   }

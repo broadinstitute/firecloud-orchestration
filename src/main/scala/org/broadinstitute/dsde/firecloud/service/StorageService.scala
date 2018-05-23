@@ -12,7 +12,8 @@ import spray.http.StatusCodes
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import scala.concurrent.ExecutionContext
+
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 /**
@@ -21,6 +22,7 @@ import scala.util.Try
 object StorageService {
   sealed trait StorageServiceMessage
   case class GetObjectStats(bucketName: String, objectName: String) extends StorageServiceMessage
+  case class GetDownload(bucketName: String, objectName: String) extends StorageServiceMessage
 
   def props(storageServiceConstructor: UserInfo => StorageService, userInfo: UserInfo): Props = {
     Props(storageServiceConstructor(userInfo))
@@ -38,9 +40,11 @@ class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO:
 
   override def receive: Receive = {
     case GetObjectStats(bucketName: String, objectName: String) => getObjectStats(bucketName, objectName) pipeTo sender
+    case GetDownload(bucketName: String, objectName: String) => getDownload(bucketName, objectName) pipeTo sender
   }
 
   def getObjectStats(bucketName: String, objectName: String) = {
+    // TODO: get pet for user; get token for pet; use pet's token instead of user's
     googleServicesDAO.getObjectMetadata(bucketName, objectName, userInfo.accessToken.token).zip(googleServicesDAO.fetchPriceList) map { case (objectMetadata, googlePrices) =>
       Try(objectMetadata.size.toLong).toOption match {
         case None => RequestComplete(StatusCodes.OK, objectMetadata)
@@ -54,4 +58,10 @@ class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO:
       }
     }
   }
+
+  def getDownload(bucketName: String, objectName: String): Future[PerRequestMessage] = {
+    // TODO: get pet for user; get token for pet; use pet's token instead of user's
+    googleServicesDAO.getDownload(bucketName, objectName, userInfo)
+  }
+
 }
