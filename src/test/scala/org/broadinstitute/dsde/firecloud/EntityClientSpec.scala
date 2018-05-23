@@ -28,8 +28,5 @@ class EntityClientSpec extends BaseServiceSpec with BeforeAndAfterEach {
       participants shouldBe None
       samples shouldBe None
     }
-
-
-
   }
 }

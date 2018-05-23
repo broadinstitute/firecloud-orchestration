@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.apache.commons.io.IOUtils
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
@@ -77,6 +78,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace, workspace.name)
   private final val bucketPath = workspacesRoot + "/%s/%s/checkBucketReadAccess".format(workspace.namespace, workspace.name)
   private final val tsvImportPath = workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace, workspace.name)
+  private final val bagitImportPath = workspacesRoot + "/%s/%s/importBagit".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
   private final val tagAutocompletePath = s"$workspacesRoot/tags"
@@ -141,6 +143,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, nonAuthDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
 
   var rawlsServer: ClientAndServer = _
+  var bagitServer: ClientAndServer = _
 
   /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
     *
@@ -215,12 +218,33 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       )
   }
 
+  def bagitService() = {
+    val bothBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/testbag.zip"))
+    val neitherBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/nothingbag.zip"))
+
+    bagitServer
+      .when(request().withMethod("GET").withPath("/both.zip"))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withStatusCode(200)
+          .withBody(org.mockserver.model.BinaryBody.binary(bothBytes)))
+
+    bagitServer
+      .when(request().withMethod("GET").withPath("/neither.zip"))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withStatusCode(200)
+          .withBody(org.mockserver.model.BinaryBody.binary(neitherBytes)))
+  }
+
   override def beforeAll(): Unit = {
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
+    bagitServer = startClientAndServer(MockUtils.bagitServerPort)
   }
 
   override def afterAll(): Unit = {
     rawlsServer.stop
+    bagitServer.stop
   }
 
   override def beforeEach(): Unit = {
@@ -861,6 +885,38 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
               status should equal(OK)
             }
           }
+        }
+      }
+    }
+
+    "WorkspaceService BagIt Tests" - {
+      "should unbundle a bagit containing both participants and samples" in {
+        bagitService()
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
+        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"http://localhost:$bagitServerPort/both.zip", "format":"TSV" }"""))
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(OK)
+        }
+      }
+
+      "should 400 if a bagit doesn't have either participants or samples" in {
+        bagitService()
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
+        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"http://localhost:$bagitServerPort/neither.zip", "format":"TSV" }"""))
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(BadRequest)
+        }
+      }
+
+      "should 400 if a bagit request has an invalid format" in {
+        bagitService()
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
+        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"http://localhost:$bagitServerPort/both.zip", "format":"garbage" }"""))
+          ~> dummyUserIdHeaders("1234")
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(BadRequest)
         }
       }
     }

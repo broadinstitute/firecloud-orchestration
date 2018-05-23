@@ -64,14 +64,17 @@ object EntityClient {
   def unzipTSVs(zipFile: ZipFile): (Option[String], Option[String]) = {
     val zipEntries = zipFile.entries.asScala
 
+    val rand = java.util.UUID.randomUUID.toString.take(8)
+    val participantsFn = s"/tmp/$rand-participants.tsv"
+    val samplesFn = s"/tmp/$rand-samples.tsv"
+
     val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
-      //TODO: eww
       if(!ent.isDirectory && ent.getName.contains("participants.tsv")) {
-        unzipSingleFile(zipFile.getInputStream(ent), "/tmp/participants.tsv")
-        (Some("/tmp/participants.tsv"), acc._2)
+        unzipSingleFile(zipFile.getInputStream(ent), participantsFn)
+        (Some(participantsFn), acc._2)
       } else if(!ent.isDirectory && ent.getName.contains("samples.tsv")) {
-        unzipSingleFile(zipFile.getInputStream(ent), "/tmp/samples.tsv")
-        (acc._1, Some("/tmp/samples.tsv"))
+        unzipSingleFile(zipFile.getInputStream(ent), samplesFn)
+        (acc._1, Some(samplesFn))
       } else {
         acc
       }
@@ -252,26 +255,29 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
   def importBagit(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]], workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest): Future[PerRequestMessage] = {
     if(bagitRq.format != "TSV") {
       Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid format; for now, you must place the string \"TSV\" here"))
+    } else {
+      val rand = java.util.UUID.randomUUID.toString.take(8)
+      val localZipPath = s"/tmp/$rand-bagit.zip"
+      //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
+      new URL(bagitRq.bagitURL) #> new File(localZipPath) !!
+
+      //FIXME: bagitURL is extremely vulnerable!!!
+      //handle java.io.FileNotFoundException (i.e. 404)
+      //sanitize bad things, like local file paths
+
+      //make two big strings containing the participants and samples TSVs
+      //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
+      val (participantsStr, samplesStr) = unzipTSVs(new ZipFile(localZipPath))
+
+      (participantsStr, samplesStr) match {
+        case (None, None) =>
+          Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
+        case _ =>
+          for {
+            _ <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).getOrElse(Future.successful())
+            _ <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).getOrElse(Future.successful())
+          } yield RequestComplete(StatusCodes.OK)
+      }
     }
-
-    val rand = java.util.UUID.randomUUID.toString.take(8)
-    val localZipPath = s"/tmp/$rand-bagit.zip"
-    //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
-    new URL(bagitRq.bagitURL) #> new File(localZipPath) !!
-
-    //make two big strings containing the participants and samples TSVs
-    //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
-    val (participantsStr, samplesStr) = unzipTSVs(new ZipFile(localZipPath))
-
-    (participantsStr, samplesStr) match {
-      case (None, None) =>
-        Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
-      case _ =>
-        for {
-          _ <- participantsStr.map( ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps) ).getOrElse(Future.successful())
-          _ <- samplesStr.map( ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss) ).getOrElse(Future.successful())
-        } yield RequestComplete(StatusCodes.OK)
-    }
-
   }
 }
