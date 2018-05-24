@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial.{RawlsBillingProjectMember, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
@@ -32,6 +33,8 @@ object RawlsDAO {
 
 trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
+  def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
+
   implicit val errorReportSource = ErrorReportSource(RawlsDAO.serviceName)
 
   lazy val rawlsUserRegistrationUrl = FireCloudConfig.Rawls.baseUrl + "/register/user"
@@ -41,12 +44,12 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   lazy val rawlsGroupsForUserUrl = FireCloudConfig.Rawls.authUrl + "/user/groups"
   lazy val rawlsWorkpacesUrl = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminWorkspaces = FireCloudConfig.Rawls.authUrl + "/admin/workspaces?attributeName=library:published&valueBoolean=true"
-  lazy val rawlsWorkspaceACLUrl = FireCloudConfig.Rawls.workspacesUrl + "/%s/%s/acl"
+  def rawlsWorkspaceACLUrl(workspaceNamespace: String, workspaceName: String): String = encodeUri(FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/acl")
   lazy val rawlsWorkspaceACLQuerystring = "?inviteUsersNotFound=%s"
-  lazy val rawlsWorkspaceMethodConfigsUrl = FireCloudConfig.Rawls.workspacesUrl + "/%s/%s/methodconfigs"
-  def rawlsBucketUsageUrl(workspaceNamespace: String, workspaceName: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/bucketUsage"
+  def rawlsWorkspaceMethodConfigsUrl(workspaceNamespace: String, workspaceName: String): String = encodeUri(FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/methodconfigs")
+  def rawlsBucketUsageUrl(workspaceNamespace: String, workspaceName: String): String = encodeUri(FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/bucketUsage")
 
-  def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String) = FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType"
+  def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String): String = encodeUri(FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType")
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 

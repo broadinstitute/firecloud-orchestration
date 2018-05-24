@@ -95,15 +95,15 @@ trait MethodConfigurationService extends HttpService with PerRequestCreator with
         } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>
           pathEnd {
             passthrough(
-              MethodConfigurationService.remoteMethodConfigUrl(workspaceNamespace, workspaceName, configNamespace, configName),
+              encodeUri(MethodConfigurationService.remoteMethodConfigUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
               HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE)
           } ~
           path("rename") {
-            passthrough(MethodConfigurationService.remoteMethodConfigRenameUrl(workspaceNamespace, workspaceName, configNamespace, configName),
+            passthrough(encodeUri(MethodConfigurationService.remoteMethodConfigRenameUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
               HttpMethods.POST)
           } ~
           path("validate") {
-            passthrough(MethodConfigurationService.remoteMethodConfigValidateUrl(workspaceNamespace, workspaceName, configNamespace, configName),
+            passthrough(encodeUri(MethodConfigurationService.remoteMethodConfigValidateUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
               HttpMethods.GET)
           }
         }
