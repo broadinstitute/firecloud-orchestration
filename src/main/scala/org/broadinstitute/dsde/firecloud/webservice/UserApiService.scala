@@ -218,8 +218,10 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
           passthrough(UserApiService.samRegisterUserURL, HttpMethods.GET)
         }
       } ~
-      path("userinfo") { requestContext =>
-        requestContext.complete(HttpGoogleServicesDAO.getUserProfile(requestContext))
+      path("userinfo") {
+        requireUserInfo() { userInfo => requestContext =>
+          requestContext.complete(HttpGoogleServicesDAO.getUserProfile(userInfo))
+        }
       } ~
       pathPrefix("profile") {
         // GET /profile - get all keys for current user

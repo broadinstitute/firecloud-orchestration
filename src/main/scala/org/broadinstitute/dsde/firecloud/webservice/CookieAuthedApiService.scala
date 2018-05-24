@@ -13,11 +13,15 @@ import scala.language.postfixOps
 /**
  * Created by dvoet on 11/16/16.
  */
-trait CookieAuthedApiService extends HttpService with FireCloudDirectives with FireCloudRequestBuilding with LazyLogging {
+trait CookieAuthedApiService extends HttpService with PerRequestCreator with FireCloudDirectives with FireCloudRequestBuilding with LazyLogging {
 
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
 
   private implicit val executionContext = actorRefFactory.dispatcher
+
+  val storageServiceConstructor: UserInfo => StorageService
+
+  private def dummyUserInfo(tokenStr: String) = UserInfo("dummy", OAuth2BearerToken(tokenStr), -1, "dummy")
 
   val cookieAuthedRoutes: Route =
 
@@ -28,7 +32,7 @@ trait CookieAuthedApiService extends HttpService with FireCloudDirectives with F
         formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) =>
           post { requestContext =>
             val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
-            val userInfo = UserInfo("dummy", OAuth2BearerToken(tokenValue), -1, "dummy")
+            val userInfo = dummyUserInfo(tokenValue)
             val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
             val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
             actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
@@ -36,10 +40,14 @@ trait CookieAuthedApiService extends HttpService with FireCloudDirectives with F
         }
     } ~
     path( "cookie-authed" / "download" / "b" / Segment / "o" / RestPath ) { (bucket, obj) =>
-      cookie("FCtoken") { tokenCookie =>
-        mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.content)).apply(r)) { requestContext =>
-          HttpGoogleServicesDAO.getDownload(requestContext, bucket, obj.toString, tokenCookie.content)
-        }
+      cookie("FCtoken") { tokenCookie => requestContext =>
+        val userInfo = dummyUserInfo(tokenCookie.content)
+
+        perRequest(requestContext,
+          StorageService.props(storageServiceConstructor, userInfo),
+          StorageService.GetDownload(bucket, obj.toString))
       }
     }
+
+
 }
