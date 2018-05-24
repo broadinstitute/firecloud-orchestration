@@ -1568,19 +1568,20 @@ paths:
     get:
       tags:
         - Profile
-      operationId: billingProject
+      operationId: billingProjectStatus
       parameters:
         - name: projectName
           description: Name of the billing project
           required: true
           type: string
           in: path
-      summary: Named billing project for a user
+      description: billing project status
+      summary: billing project status
       responses:
         200:
           description: OK
           schema:
-            $ref: '#/definitions/BillingProjectMembership'
+            $ref: '#/definitions/BillingProjectStatus'
         404:
           description: Project Not Found
         500:
@@ -4048,6 +4049,20 @@ definitions:
       role:
         type: string
         description: the role of the user in the project
+
+  BillingProjectStatus:
+    description: a billing project status
+    required:
+      - projectName
+      - creationStatus
+    type: object
+    properties:
+      projectName:
+        type: string
+        description: the name of the billing project
+      creationStatus:
+        type: string
+        enum: ["Creating", "Ready", "Error"]
 
   BillingProjectMembership:
     description: ''
