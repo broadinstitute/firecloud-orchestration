@@ -37,6 +37,7 @@ object UserApiService {
 
   val billingPath = FireCloudConfig.Rawls.authPrefix + "/user/billing"
   val billingUrl = FireCloudConfig.Rawls.baseUrl + billingPath
+  def billingProjectUrl(project: String) = billingUrl + "/%s".format(project)
 
   val billingAccountsPath = FireCloudConfig.Rawls.authPrefix + "/user/billingAccounts"
   val billingAccountsUrl = FireCloudConfig.Rawls.baseUrl + billingAccountsPath
@@ -129,8 +130,17 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       }
     } ~
     pathPrefix("api") {
-      path("profile" / "billing") {
-        passthrough(UserApiService.billingUrl, HttpMethods.GET)
+      pathPrefix("profile" / "billing") {
+        pathEnd {
+          get {
+            passthrough(UserApiService.billingUrl, HttpMethods.GET)
+          }
+        } ~
+        path(Segment) { projectName =>
+          get {
+            passthrough(UserApiService.billingProjectUrl(projectName), HttpMethods.GET)
+          }
+        }
       } ~
       path("profile" / "billingAccounts") {
         get {

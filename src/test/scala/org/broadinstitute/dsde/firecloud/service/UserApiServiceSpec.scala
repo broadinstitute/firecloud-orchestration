@@ -221,6 +221,14 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
     }
 
+    "When calling GET for a valid user billing project" - {
+      "MethodNotAllowed response is not returned" in {
+        Get("/api/profile/billing/random-project-name") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
+          status shouldNot equal(MethodNotAllowed)
+        }
+      }
+    }
+
     "when calling GET for user refresh token date service" - {
       "MethodNotAllowed response is not returned" in {
         Get("/api/profile/refreshTokenDate") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
