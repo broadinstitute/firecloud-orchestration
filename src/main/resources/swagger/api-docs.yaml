@@ -2503,18 +2503,7 @@ paths:
           name: bagitImportRequest
           required: true
           schema:
-            required:
-              - bagitURL
-              - format
-            properties:
-              - bagitURL
-                type: string
-                description: link to publically accessible zipped BagIt directory
-              - format
-                type: string
-                enum:
-                  - TSV
-                description: the type of the files inside the bagit. Currently this must be the string "TSV".
+            $ref: '#/definitions/BagitRequest'
       responses:
         200:
           description: Successful Request
@@ -4192,6 +4181,22 @@ definitions:
       shardIndex:
         type: integer
         description: call index within a scatter block, as reported by execution service
+
+
+  BagitRequest:
+    type: object
+    properties:
+      bagitURL:
+        type: string
+        description: link to publically accessible zipped BagIt directory
+      format:
+        type: string
+        enum:
+          - TSV
+        description: the type of the files inside the bagit. Currently this must be the string "TSV".
+    required:
+      - bagitURL
+      - format
 
   ConfigurationIngest:
     type: object
