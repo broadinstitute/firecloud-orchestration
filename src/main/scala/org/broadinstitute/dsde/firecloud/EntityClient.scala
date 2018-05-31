@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud
 
-import java.io.{File, FileOutputStream, InputStream}
+import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.zip.{ZipEntry, ZipFile}
@@ -61,29 +61,46 @@ object EntityClient {
   }
 
   //returns (contents of participants.tsv, contents of samples.tsv)
-  def unzipTSVs(zipFile: ZipFile): (Option[String], Option[String]) = {
+  def unzipTSVs(bagName: String, zipFile: ZipFile)(op: (Option[String], Option[String]) => Future[PerRequestMessage]): Future[PerRequestMessage] = {
     val zipEntries = zipFile.entries.asScala
 
     val rand = java.util.UUID.randomUUID.toString.take(8)
-    val participantsFn = s"/tmp/$rand-participants.tsv"
-    val samplesFn = s"/tmp/$rand-samples.tsv"
+    val participantsTmp = File.createTempFile(s"$rand-participants", ".tsv")
+    val samplesTmp = File.createTempFile(s"$rand-samples", ".tsv")
 
     val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
       if(!ent.isDirectory && ent.getName.contains("participants.tsv")) {
-        unzipSingleFile(zipFile.getInputStream(ent), participantsFn)
-        (Some(participantsFn), acc._2)
+        acc._1 match {
+          case Some(x) => throw new FireCloudException(s"More than one participants.tsv file found in BDBag $bagName")
+          case None => {
+            unzipSingleFile(zipFile.getInputStream(ent), participantsTmp)
+            (Some(participantsTmp.getPath), acc._2)
+          }
+        }
       } else if(!ent.isDirectory && ent.getName.contains("samples.tsv")) {
-        unzipSingleFile(zipFile.getInputStream(ent), samplesFn)
-        (acc._1, Some(samplesFn))
+        acc._2 match {
+          case Some(x) => throw new FireCloudException(s"More than one samples.tsv file found in BDBag $bagName")
+          case None => {
+              unzipSingleFile (zipFile.getInputStream (ent), samplesTmp)
+              (acc._1, Some (samplesTmp.getPath) )
+            }
+        }
       } else {
         acc
       }
     }
 
-    ( unzippedFiles._1.map(f => Source.fromFile(f).mkString), unzippedFiles._2.map(f => Source.fromFile(f).mkString) )
+    try {
+      op(unzippedFiles._1.map(f => Source.fromFile(f).mkString), unzippedFiles._2.map(f => Source.fromFile(f).mkString))
+    } catch {
+      case e: Exception => throw e
+    } finally {
+      participantsTmp.delete
+      samplesTmp.delete
+    }
   }
 
-  private def unzipSingleFile(zis: InputStream, fileTarget: String): Unit = {
+  private def unzipSingleFile(zis: InputStream, fileTarget: File): Unit = {
     val fout = new FileOutputStream(fileTarget)
     val buffer = new Array[Byte](1024)
     Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
@@ -267,24 +284,35 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
 
         val rand = java.util.UUID.randomUUID.toString.take(8)
         val localZipPath = s"/tmp/$rand-bagit.zip"
+        val bagItFile = new File(localZipPath)
 
-        //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
-        bagitURL #> new File(localZipPath) !!
+        //use Try instead
+        try {
+          //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
+          val length = bagitURL.openConnection().getContentLength
+          logger.info("BAGIT FILE LENGTH: " + length.toString)
+          //how big is this supposed to be
+          bagitURL #> bagItFile !!
 
-        //TODO: handle java.io.FileNotFoundException (i.e. 404)
-
-        //make two big strings containing the participants and samples TSVs
-        //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
-        val (participantsStr, samplesStr) = unzipTSVs(new ZipFile(localZipPath))
-
-        (participantsStr, samplesStr) match {
-          case (None, None) =>
-            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
-          case _ =>
-            for {
-              _ <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).getOrElse(Future.successful())
-              _ <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).getOrElse(Future.successful())
-            } yield RequestComplete(StatusCodes.OK)
+          //make two big strings containing the participants and samples TSVs
+          //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
+          unzipTSVs(bagitRq.bagitURL, new ZipFile(localZipPath)) { (participantsStr, samplesStr) =>
+            (participantsStr, samplesStr) match {
+              case (None, None) =>
+                Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
+              case _ =>
+                for {
+                  _ <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).getOrElse(Future.successful())
+                  _ <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).getOrElse(Future.successful())
+                } yield RequestComplete(StatusCodes.OK)
+            }
+          }
+        } catch {
+          //would anything else through a FileNotFoundException in this try block?
+          case e: FileNotFoundException => Future.successful(RequestCompleteWithErrorReport(StatusCodes.NotFound, s"BDBag ${bagitRq.bagitURL} was not found."))
+          case e: Exception => throw e
+        } finally {
+          bagItFile.delete()
         }
       }
     }
