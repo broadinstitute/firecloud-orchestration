@@ -2492,7 +2492,7 @@ paths:
       tags:
         - Entities
       operationId: importBagit
-      summary: Import entity TSVs from a zipped [BagIt](https://tools.ietf.org/html/draft-kunze-bagit-14) directory, whose payload contains two files: participants.tsv and samples.tsv
+      summary: Import entity TSVs from a zipped [BagIt](https://tools.ietf.org/html/draft-kunze-bagit-14) directory, whose payload contains two files - participants.tsv and samples.tsv
       produces:
         - application/json
       parameters:
