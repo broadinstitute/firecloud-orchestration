@@ -228,6 +228,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
     }
 
     "querying for an individual billing project status" - {
+
       "should get the user's billing project" in {
         val ownerUser: Credentials = UserPool.chooseProjectOwner
         val ownerToken: AuthToken = ownerUser.makeAuthToken()
@@ -257,7 +258,6 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
         val ownerUser: Credentials = UserPool.chooseProjectOwner
         val user: Credentials = UserPool.chooseStudent
         val userToken: AuthToken = user.makeAuthToken()
-
         withCleanBillingProject(ownerUser) { projectName =>
           nowPrint(s"Querying for (student) user profile billing project status: $projectName")
           val getException = intercept[RestException] {
