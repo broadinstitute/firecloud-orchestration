@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.test.api.orch
 
 import java.time.Instant
+import java.util.UUID
 
 import akka.http.scaladsl.model.StatusCodes
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
@@ -210,6 +211,60 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
         Orchestration.NIH.syncWhitelistFull
 
         Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+      }
+    }
+
+    "should get the user's billing projects" in {
+      val ownerUser: Credentials = UserPool.chooseProjectOwner
+      val ownerToken: AuthToken = ownerUser.makeAuthToken()
+      withCleanBillingProject(ownerUser) { projectName =>
+        nowPrint(s"Querying for (owner) user profile billing projects, with project: $projectName")
+        // Returns a list of maps, one map per billing project the user has access to.
+        // Each map has a key for the projectName, role, status, and an optional message
+        val projectList: List[Map[String, String]] = Orchestration.profile.getUserBillingProjects()(ownerToken)
+        val projectNames: List[String] = projectList.map(_.getOrElse("projectName", ""))
+        projectNames should (contain(projectName) and not contain "")
+      }
+    }
+
+    "querying for an individual billing project status" - {
+      "should get the user's billing project" in {
+        val ownerUser: Credentials = UserPool.chooseProjectOwner
+        val ownerToken: AuthToken = ownerUser.makeAuthToken()
+        withCleanBillingProject(ownerUser) { projectName =>
+          nowPrint(s"Querying for (owner) user profile billing project status: $projectName")
+          // Returns a map of projectName and creationStatus for the project specified
+          val statusMap: Map[String, String] = Orchestration.profile.getUserBillingProjectStatus(projectName)(ownerToken)
+          statusMap should contain ("projectName" -> projectName)
+          statusMap should contain ("creationStatus" -> Orchestration.billing.BillingProjectStatus.Ready.toString)
+        }
+      }
+
+      "should not find a non-existent billing project" in {
+        val ownerUser: Credentials = UserPool.chooseProjectOwner
+        val ownerToken: AuthToken = ownerUser.makeAuthToken()
+        withCleanBillingProject(ownerUser) { projectName =>
+          val random: String = UUID.randomUUID().toString
+          nowPrint(s"Querying for (owner) user profile billing project status: $random")
+          val getException = intercept[RestException] {
+            Orchestration.profile.getUserBillingProjectStatus(random)(ownerToken)
+          }
+          getException.message should include(StatusCodes.NotFound.defaultMessage)
+        }
+      }
+
+      "should not find a billing project for user without billing project access" in {
+        val ownerUser: Credentials = UserPool.chooseProjectOwner
+        val user: Credentials = UserPool.chooseStudent
+        val userToken: AuthToken = user.makeAuthToken()
+
+        withCleanBillingProject(ownerUser) { projectName =>
+          nowPrint(s"Querying for (student) user profile billing project status: $projectName")
+          val getException = intercept[RestException] {
+            Orchestration.profile.getUserBillingProjectStatus(projectName)(userToken)
+          }
+          getException.message should include(StatusCodes.NotFound.defaultMessage)
+        }
       }
     }
   }
