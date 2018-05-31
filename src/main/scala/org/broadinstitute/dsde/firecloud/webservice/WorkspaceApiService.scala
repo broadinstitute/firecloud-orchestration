@@ -121,7 +121,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                 }
               }
             }
-          }
+          } ~
           path("importBagit"){
             post {
               requireUserInfo() { userInfo =>

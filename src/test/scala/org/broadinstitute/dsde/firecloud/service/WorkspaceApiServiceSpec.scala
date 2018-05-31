@@ -892,6 +892,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "WorkspaceService BagIt Tests" - {
       "should unbundle a bagit containing both participants and samples" in {
         bagitService()
+        //maybe don't stub out rawls service?
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"http://localhost:$bagitServerPort/both.zip", "format":"TSV" }"""))
           ~> dummyUserIdHeaders("1234")
