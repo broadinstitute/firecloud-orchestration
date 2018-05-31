@@ -32,7 +32,7 @@ class StorageApiSpec extends FreeSpec with Matchers {
   case class StorageObject(bucketName: String, objectKey: String)
 
   val publicUrl = StorageObject("fixtures-for-tests", "public/small-text-file.txt")
-  val largeFile = StorageObject("fixtures-for-tests", "public/ninemegabytes.file")
+  val largeFile = StorageObject("fixtures-for-tests", "student-and-SA/ninemegabytes.file")
   val pngFile   = StorageObject("fixtures-for-tests", "public/broad_logo.png")
   val overriddenContentType = StorageObject("fixtures-for-tests", "public/content-type-override.txt")
   val nonExistent = StorageObject("fixtures-for-tests", "thisdoesntexist/now/or/inthefuture.nope")
