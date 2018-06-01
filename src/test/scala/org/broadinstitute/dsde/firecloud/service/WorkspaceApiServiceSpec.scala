@@ -221,7 +221,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def bagitService() = {
     val bothBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/testbag.zip"))
     val neitherBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/nothingbag.zip"))
-
+    println("WE'RE HERE")
     bagitServer
       .when(request().withMethod("GET").withPath("/both.zip"))
       .respond(
@@ -891,11 +891,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
 //    "WorkspaceService BagIt Tests" - {
 //      "should unbundle a bagit containing both participants and samples" in {
-//        bagitService()
+//       // bagitService()
 //        //maybe don't stub out rawls service?
 //        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
-//        val content = HttpEntity(ContentTypes.`application/json`, s"""[{"bagitURL":"http://localhost:$bagitServerPort/both.zip", "format":"TSV" }]""")
-//        (Post(bagitImportPath, content)
+//        val content = HttpEntity(MediaTypes.`application/json`, "{\"bagitURL\":\"http://localhost:9393/both.zip\",\"format\":\"TSV\"}")
+//        (Post(bagitImportPath, BagitImportRequest("http://localhost:9393/both.zip","TSV"))
 //          ~> dummyUserIdHeaders("1234")
 //          ~> sealRoute(workspaceRoutes)) ~> check {
 //          status should equal(OK)
