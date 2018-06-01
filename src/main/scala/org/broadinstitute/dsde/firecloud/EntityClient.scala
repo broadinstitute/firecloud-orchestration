@@ -69,15 +69,17 @@ object EntityClient {
     val samplesTmp = File.createTempFile(s"$rand-samples", ".tsv")
 
     val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
-      if(!ent.isDirectory && ent.getName.contains("participant.tsv")) {
+      if(!ent.isDirectory && (ent.getName.contains("/participants.tsv") || ent.getName.equals("participants.tsv"))) {
         acc._1 match {
-          case Some(x) => throw new FireCloudException(s"More than one participants.tsv file found in BDBag $bagName")
+          case Some(x) => {
+            throw new FireCloudException(s"More than one participants.tsv file found in BDBag $bagName")
+          }
           case None => {
             unzipSingleFile(zipFile.getInputStream(ent), participantsTmp)
             (Some(participantsTmp.getPath), acc._2)
           }
         }
-      } else if(!ent.isDirectory && ent.getName.contains("sample.tsv")) {
+      } else if(!ent.isDirectory && (ent.getName.contains("/samples.tsv") || ent.getName.equals("samples.tsv"))) {
         acc._2 match {
           case Some(x) => throw new FireCloudException(s"More than one samples.tsv file found in BDBag $bagName")
           case None => {
@@ -288,7 +290,8 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
 
         try {
           //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
-          val length = bagitURL.openConnection().getContentLength
+          val conn = bagitURL.openConnection()
+          val length = conn.getContentLength
           logger.info("BAGIT FILE LENGTH: " + length.toString)
           //how big is this supposed to be
           bagitURL #> bagItFile !!
@@ -301,6 +304,7 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
                 Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
               case _ =>
                 for {
+                  // This should toss back errors from rawls.
                   _ <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).getOrElse(Future.successful())
                   _ <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).getOrElse(Future.successful())
                 } yield RequestComplete(StatusCodes.OK)
