@@ -69,7 +69,7 @@ object EntityClient {
     val samplesTmp = File.createTempFile(s"$rand-samples", ".tsv")
 
     val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
-      if(!ent.isDirectory && ent.getName.contains("participants.tsv")) {
+      if(!ent.isDirectory && ent.getName.contains("participant.tsv")) {
         acc._1 match {
           case Some(x) => throw new FireCloudException(s"More than one participants.tsv file found in BDBag $bagName")
           case None => {
@@ -77,7 +77,7 @@ object EntityClient {
             (Some(participantsTmp.getPath), acc._2)
           }
         }
-      } else if(!ent.isDirectory && ent.getName.contains("samples.tsv")) {
+      } else if(!ent.isDirectory && ent.getName.contains("sample.tsv")) {
         acc._2 match {
           case Some(x) => throw new FireCloudException(s"More than one samples.tsv file found in BDBag $bagName")
           case None => {
@@ -286,7 +286,6 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
         val localZipPath = s"/tmp/$rand-bagit.zip"
         val bagItFile = new File(localZipPath)
 
-        //use Try instead
         try {
           //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
           val length = bagitURL.openConnection().getContentLength
@@ -308,7 +307,6 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
             }
           }
         } catch {
-          //would anything else through a FileNotFoundException in this try block?
           case e: FileNotFoundException => Future.successful(RequestCompleteWithErrorReport(StatusCodes.NotFound, s"BDBag ${bagitRq.bagitURL} was not found."))
           case e: Exception => throw e
         } finally {
