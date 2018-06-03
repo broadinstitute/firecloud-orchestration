@@ -286,28 +286,36 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
 
         val rand = java.util.UUID.randomUUID.toString.take(8)
         val localZipPath = s"/tmp/$rand-bagit.zip"
-        val bagItFile = new File(localZipPath)
+        val bagItFile = File.createTempFile(s"$rand-samples", ".tsv")
 
         try {
-          //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
           val conn = bagitURL.openConnection()
           val length = conn.getContentLength
           logger.info("BAGIT FILE LENGTH: " + length.toString)
-          //how big is this supposed to be
-          bagitURL #> bagItFile !!
 
-          //make two big strings containing the participants and samples TSVs
-          //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
-          unzipTSVs(bagitRq.bagitURL, new ZipFile(localZipPath)) { (participantsStr, samplesStr) =>
-            (participantsStr, samplesStr) match {
-              case (None, None) =>
-                Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
-              case _ =>
-                for {
-                  // This should toss back errors from rawls.
-                  _ <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).getOrElse(Future.successful())
-                  _ <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).getOrElse(Future.successful())
-                } yield RequestComplete(StatusCodes.OK)
+          //how big is this supposed to be
+          if (length > 1000000) {
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBAg size is too large."))
+          } else {
+            //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
+            bagitURL #> bagItFile !!
+
+            //make two big strings containing the participants and samples TSVs
+            //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
+            unzipTSVs(bagitRq.bagitURL, new ZipFile(bagItFile.getAbsolutePath)) { (participantsStr, samplesStr) =>
+              (participantsStr, samplesStr) match {
+                case (None, None) =>
+                  Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
+                case _ =>
+                  for {
+                    // This should toss back errors from rawls.
+                    participantResult <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).get
+                    sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).get
+                  } yield {
+                    participantResult
+                    RequestComplete(StatusCodes.OK)
+                  }
+              }
             }
           }
         } catch {

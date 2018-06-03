@@ -907,7 +907,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "should 400 if a bagit doesn't have either participants or samples" in {
         bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
-        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"http://localhost:$bagitServerPort/neither.zip", "format":"TSV" }"""))
+        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/neither.zip", "format":"TSV" }"""))
           ~> dummyUserIdHeaders("1234")
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
@@ -917,7 +917,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "should 400 if a bagit request has an invalid format" in {
         bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
-        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"http://localhost:$bagitServerPort/both.zip", "format":"garbage" }"""))
+        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"garbage" }"""))
           ~> dummyUserIdHeaders("1234")
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
