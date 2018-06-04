@@ -54,7 +54,7 @@ trait StorageApiSpecSupport extends ScalaFutures with LazyLogging {
       testCode(destPath)
     } finally {
       logger.debug(s"cleaning up $destPath ...")
-      // googleStorageDAO.removeObject(destPath.bucketName, destPath.objectName)
+       googleStorageDAO.removeObject(destPath.bucketName, destPath.objectName)
     }
   }
 
