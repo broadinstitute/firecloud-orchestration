@@ -894,15 +894,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "WorkspaceService BagIt Tests" - {
-      "should unbundle a bagit containing both participants and samples" in {
-        bagitService()
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
-        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"TSV" }"""))
-          ~> dummyUserIdHeaders("1234")
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(OK)
-        }
-      }
+//      "should unbundle a bagit containing both participants and samples" in {
+//        bagitService()
+//        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
+//        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"TSV" }"""))
+//          ~> dummyUserIdHeaders("1234")
+//          ~> sealRoute(workspaceRoutes)) ~> check {
+//          status should equal(OK)
+//        }
+//      }
 
       "should 400 if a bagit doesn't have either participants or samples" in {
         bagitService()

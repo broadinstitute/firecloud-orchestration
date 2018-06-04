@@ -71,21 +71,17 @@ object EntityClient {
     val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
       if(!ent.isDirectory && (ent.getName.contains("/participants.tsv") || ent.getName.equals("participants.tsv"))) {
         acc._1 match {
-          case Some(x) => {
-            throw new FireCloudException(s"More than one participants.tsv file found in BDBag $bagName")
-          }
-          case None => {
+          case Some(x) => throw new FireCloudException(s"More than one participants.tsv file found in BDBag $bagName")
+          case None =>
             unzipSingleFile(zipFile.getInputStream(ent), participantsTmp)
             (Some(participantsTmp.getPath), acc._2)
-          }
         }
       } else if(!ent.isDirectory && (ent.getName.contains("/samples.tsv") || ent.getName.equals("samples.tsv"))) {
         acc._2 match {
           case Some(x) => throw new FireCloudException(s"More than one samples.tsv file found in BDBag $bagName")
-          case None => {
+          case None =>
               unzipSingleFile (zipFile.getInputStream (ent), samplesTmp)
               (acc._1, Some (samplesTmp.getPath) )
-            }
         }
       } else {
         acc
@@ -285,7 +281,6 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
       } else {
 
         val rand = java.util.UUID.randomUUID.toString.take(8)
-        val localZipPath = s"/tmp/$rand-bagit.zip"
         val bagItFile = File.createTempFile(s"$rand-samples", ".tsv")
 
         try {
@@ -312,8 +307,10 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
                     participantResult <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).get
                     sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).get
                   } yield {
-                    participantResult
-                    RequestComplete(StatusCodes.OK)
+                    participantResult match {
+                      case RequestComplete(OK) => sampleResult
+                      case _ => participantResult
+                    }
                   }
               }
             }
