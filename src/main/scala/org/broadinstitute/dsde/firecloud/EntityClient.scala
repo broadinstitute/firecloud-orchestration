@@ -308,8 +308,14 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
                     sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).get
                   } yield {
                     participantResult match {
-                      case RequestComplete(OK) => sampleResult
-                      case _ => participantResult
+                      case RequestComplete(OK) =>
+                        println("participant was OK")
+                        sampleResult
+                      case _ =>
+                        println(participantResult.toString)
+                        println("participant was NOT OK")
+                        participantResult
+
                     }
                   }
               }
