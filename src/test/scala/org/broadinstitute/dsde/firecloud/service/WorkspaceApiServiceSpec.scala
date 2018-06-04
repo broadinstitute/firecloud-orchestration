@@ -221,7 +221,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   def bagitService() = {
-    val bothBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/testbag1.zip"))
+    val bothBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/testbag.zip"))
     val neitherBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/nothingbag.zip"))
 
     HttpsURLConnection.setDefaultSSLSocketFactory(SSLFactory.getInstance().sslContext().getSocketFactory())
@@ -894,9 +894,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "WorkspaceService BagIt Tests" - {
-      "should unbundle a bagit containing both participants and samples" ignore {
+      "should unbundle a bagit containing both participants and samples" in {
         bagitService()
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"TSV" }"""))
           ~> dummyUserIdHeaders("1234")
           ~> sealRoute(workspaceRoutes)) ~> check {
@@ -906,7 +906,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "should 400 if a bagit doesn't have either participants or samples" in {
         bagitService()
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/neither.zip", "format":"TSV" }"""))
           ~> dummyUserIdHeaders("1234")
           ~> sealRoute(workspaceRoutes)) ~> check {
@@ -916,7 +916,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "should 400 if a bagit request has an invalid format" in {
         bagitService()
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"garbage" }"""))
           ~> dummyUserIdHeaders("1234")
           ~> sealRoute(workspaceRoutes)) ~> check {
