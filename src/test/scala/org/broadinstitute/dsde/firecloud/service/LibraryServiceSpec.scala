@@ -549,16 +549,15 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         val jsonVal:Try[JsValue] = Try(fileContents.parseJson)
         assert(jsonVal.isSuccess, "Schema should be valid json")
       }
-      "has valid JSON Schema" ignore {
-        val schemaStream = new URL("http://json-schema.org/draft-04/schema").openStream()
-        val schemaStr = FileUtils.readAllText(schemaStream)
+      "has valid JSON Schema" in {
+        /*
+          src/test/resources/json-schema-draft-04.json is a stashed copy of http://json-schema.org/draft-04/schema.
+          We've seen the json-schema.org domain go down twice, so we use a stashed copy here in this test
+          instead of reading directly from json-schema.org.
+         */
+        val schemaContents = FileUtils.readAllTextFromResource("json-schema-draft-04.json")
         val fileContents = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-
-        try {
-          validateJsonSchema(fileContents, schemaStr)
-        } finally {
-          schemaStream.close()
-        }
+        validateJsonSchema(fileContents, schemaContents)
       }
     }
     "when validating JSON Schema" - {
