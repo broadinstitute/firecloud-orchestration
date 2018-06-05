@@ -72,3 +72,4 @@ crashlytics-build.properties
 *.pid
 .DS_Store
 
+automation/src/test/resources
