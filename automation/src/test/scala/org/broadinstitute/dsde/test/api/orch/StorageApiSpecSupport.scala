@@ -18,7 +18,7 @@ import scala.util.{Failure, Success, Try}
 
 trait StorageApiSpecSupport extends ScalaFutures with LazyLogging {
 
-  implicit val storagePatience: PatienceConfig = PatienceConfig(timeout = scaled(Span(1, Minutes)), interval = scaled(Span(1, Seconds)))
+  implicit val storagePatience: PatienceConfig = PatienceConfig(timeout = scaled(Span(4, Minutes)), interval = scaled(Span(2, Seconds)))
 
   // these are hardcoded and should never change. They refer to a static pre-created bucket in broad-dsde-qa.
   final val fixtureBucket: GcsBucketName = GcsBucketName("fixtures-for-tests")
