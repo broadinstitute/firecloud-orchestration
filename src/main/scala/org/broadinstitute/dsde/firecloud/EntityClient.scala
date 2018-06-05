@@ -15,7 +15,6 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding, TSVFileSupport, TsvTypes}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.service.WorkspaceService.WorkspaceServiceMessage
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -24,11 +23,12 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.routing.RequestContext
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
 import scala.io.Source
 import sys.process._
+import scala.util.{Failure, Success, Try}
 
 object EntityClient {
 
