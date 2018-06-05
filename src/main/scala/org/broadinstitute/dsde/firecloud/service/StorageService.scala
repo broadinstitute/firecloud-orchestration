@@ -29,14 +29,16 @@ object StorageService {
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new StorageService(userInfo, app.googleServicesDAO)
+    new StorageService(userInfo, app.googleServicesDAO, app.samDAO)
 }
 
-class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO: GoogleServicesDAO)(implicit val executionContext: ExecutionContext) extends Actor with StorageServiceSupport {
+class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO: GoogleServicesDAO, val samDAO: SamDAO)(implicit val executionContext: ExecutionContext) extends Actor with StorageServiceSupport {
   implicit val system = context.system
   val log = Logging(system, getClass)
   implicit val userInfo = argUserInfo
   import StorageService._
+
+  val storageScopes: Seq[String] = HttpGoogleServicesDAO.authScopes ++ HttpGoogleServicesDAO.storageReadOnly
 
   override def receive: Receive = {
     case GetObjectStats(bucketName: String, objectName: String) => getObjectStats(bucketName, objectName) pipeTo sender
@@ -44,24 +46,26 @@ class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO:
   }
 
   def getObjectStats(bucketName: String, objectName: String) = {
-    // TODO: get pet for user; get token for pet; use pet's token instead of user's
-    googleServicesDAO.getObjectMetadata(bucketName, objectName, userInfo.accessToken.token).zip(googleServicesDAO.fetchPriceList) map { case (objectMetadata, googlePrices) =>
-      Try(objectMetadata.size.toLong).toOption match {
-        case None => RequestComplete(StatusCodes.OK, objectMetadata)
-        case Some(size) => {
-          //size is in bytes, must convert to gigabytes
-          val fileSizeGB = BigDecimal(size) / Math.pow(1000, 3)
-          val googlePricesList = googlePrices.prices.cpComputeengineInternetEgressNA.tiers.toList
-          val egressPrice = getEgressCost(googlePricesList, fileSizeGB, 0)
-          RequestComplete(StatusCodes.OK, (objectMetadata.copy(estimatedCostUSD = egressPrice)))
+    samDAO.getPetServiceAccountTokenForUser(userInfo, storageScopes) flatMap { petToken =>
+      googleServicesDAO.getObjectMetadata(bucketName, objectName, petToken.accessToken.token).zip(googleServicesDAO.fetchPriceList) map { case (objectMetadata, googlePrices) =>
+        Try(objectMetadata.size.toLong).toOption match {
+          case None => RequestComplete(StatusCodes.OK, objectMetadata)
+          case Some(size) => {
+            //size is in bytes, must convert to gigabytes
+            val fileSizeGB = BigDecimal(size) / Math.pow(1000, 3)
+            val googlePricesList = googlePrices.prices.cpComputeengineInternetEgressNA.tiers.toList
+            val egressPrice = getEgressCost(googlePricesList, fileSizeGB, 0)
+            RequestComplete(StatusCodes.OK, (objectMetadata.copy(estimatedCostUSD = egressPrice)))
+          }
         }
       }
     }
   }
 
   def getDownload(bucketName: String, objectName: String): Future[PerRequestMessage] = {
-    // TODO: get pet for user; get token for pet; use pet's token instead of user's
-    googleServicesDAO.getDownload(bucketName, objectName, userInfo)
+    samDAO.getPetServiceAccountTokenForUser(userInfo, storageScopes) flatMap { petToken =>
+      googleServicesDAO.getDownload(bucketName, objectName, petToken)
+    }
   }
 
 }

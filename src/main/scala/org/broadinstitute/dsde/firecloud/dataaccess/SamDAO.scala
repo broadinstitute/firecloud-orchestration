@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.{RegistrationInfo, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, RegistrationInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, RawlsUserEmail}
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 
@@ -26,6 +26,7 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   val samUserRegistrationUrl = FireCloudConfig.Sam.baseUrl + "/register/user"
   val samStatusUrl = FireCloudConfig.Sam.baseUrl + "/status"
   val samAdminUserByEmail = FireCloudConfig.Sam.baseUrl + "/api/admin/user/email/%s"
+  val samArbitraryPetTokenUrl = FireCloudConfig.Sam.baseUrl + "/api/google/v1/user/petServiceAccount/token"
 
   val samResourceBase: String = FireCloudConfig.Sam.baseUrl + s"/api/resource"
   def samResource(resourceTypeName: String, resourceId: String): String = samResourceBase + s"/$resourceTypeName/$resourceId"
@@ -37,6 +38,8 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   def adminGetUserByEmail(email: RawlsUserEmail): Future[RegistrationInfo]
 
   def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean]
+
+  def getPetServiceAccountTokenForUser(user: WithAccessToken, scopes: Seq[String]): Future[AccessToken]
 
   val serviceName = SamDAO.serviceName
 }

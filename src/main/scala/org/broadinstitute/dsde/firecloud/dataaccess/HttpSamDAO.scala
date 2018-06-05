@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{ManagedGroupRoles, RegistrationInfo, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, ManagedGroupRoles, RegistrationInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.{ManagedRoles, RawlsUserEmail}
@@ -36,6 +36,11 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
     authedRequestToObject[List[String]](Get(samResourceRoles(managedGroupResourceTypeName, groupName.value))).map { allRoles =>
       allRoles.map(ManagedGroupRoles.withName).toSet.intersect(ManagedGroupRoles.membershipRoles).nonEmpty
     }
+  }
+
+  override def getPetServiceAccountTokenForUser(user: WithAccessToken, scopes: Seq[String]): Future[AccessToken] = {
+    implicit val accessToken = user
+    authedRequestToObject[String](Post(samArbitraryPetTokenUrl, scopes)).map(AccessToken.apply)
   }
 
   override def status: Future[SubsystemStatus] = {
