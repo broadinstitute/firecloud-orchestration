@@ -58,7 +58,7 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
             } ~
             pathPrefix("cost") {
               get {
-                passthrough(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId/cost", GET)
+                passthrough(encodeUri(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId/cost"), GET)
               }
             }
           }
