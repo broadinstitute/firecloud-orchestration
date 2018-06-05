@@ -286,11 +286,9 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
         try {
           val conn = bagitURL.openConnection()
           val length = conn.getContentLength
-          logger.info("BAGIT FILE LENGTH: " + length.toString)
 
-          //how big is this supposed to be
           if (length > 1000000) {
-            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBAg size is too large."))
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag size is too large."))
           } else {
             //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
             bagitURL #> bagItFile !!
