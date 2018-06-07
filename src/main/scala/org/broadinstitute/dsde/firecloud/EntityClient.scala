@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud
 
 import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
-import java.net.URL
+import java.net.{HttpURLConnection, URL}
 import java.text.SimpleDateFormat
 import java.util.zip.{ZipEntry, ZipFile}
 
@@ -71,7 +71,7 @@ object EntityClient {
     val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
       if(!ent.isDirectory && (ent.getName.contains("/participants.tsv") || ent.getName.equals("participants.tsv"))) {
         acc._1 match {
-          case Some(x) => throw new FireCloudException(s"More than one participants.tsv file found in BDBag $bagName")
+          case Some(x) => throw new FireCloudException(s"More than one participants.tsv file found in bagit $bagName")
           case None =>
             unzipSingleFile(zipFile.getInputStream(ent), participantsTmp)
             (Some(participantsTmp.getPath), acc._2)
@@ -286,8 +286,9 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
         try {
           val conn = bagitURL.openConnection()
           val length = conn.getContentLength
+          conn.asInstanceOf[HttpURLConnection].disconnect()
 
-          if (length > 1000000) {
+          if (length > Rawls.entityBagitMaximumSize) {
             Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag size is too large."))
           } else {
             //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
@@ -301,7 +302,7 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
                   Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
                 case _ =>
                   for {
-                    // This should toss back errors from rawls.
+                    // This should vomit back errors from rawls.
                     participantResult <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).get
                     sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).get
                   } yield {
