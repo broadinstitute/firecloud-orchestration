@@ -76,23 +76,23 @@ class EntityClientSpec extends BaseServiceSpec with BeforeAndAfterEach {
     "with multiple participants in a zip with a flat file structure" in {
       val zip = new ZipFile("src/test/resources/testfiles/bagit/duplicate_participants_nested_testbag.zip")
 
-      val ex = intercept[FireCloudException] {
+      val ex = intercept[FireCloudExceptionWithErrorReport] {
         EntityClient.unzipTSVs("duplicate_participants_nested_testbag", zip) { (participants, samples) =>
           Future.successful(RequestComplete(StatusCodes.OK))
         }
       }
-      ex.getMessage shouldEqual "More than one participants.tsv file found in bagit duplicate_participants_nested_testbag"
+      ex.errorReport.message shouldEqual "More than one participants.tsv file found in bagit duplicate_participants_nested_testbag"
     }
 
     "with multiple samples in a zip with a flat file structure" in {
       val zip = new ZipFile("src/test/resources/testfiles/bagit/duplicate_samples_nested_testbag.zip")
 
-      val ex = intercept[FireCloudException] {
+      val ex = intercept[FireCloudExceptionWithErrorReport] {
         EntityClient.unzipTSVs("duplicate_samples_nested_testbag", zip) { (participants, samples) =>
           Future.successful(RequestComplete(StatusCodes.OK))
         }
       }
-      ex.getMessage shouldEqual "More than one samples.tsv file found in BDBag duplicate_samples_nested_testbag"
+      ex.errorReport.message shouldEqual "More than one samples.tsv file found in bagit duplicate_samples_nested_testbag"
     }
   }
 }

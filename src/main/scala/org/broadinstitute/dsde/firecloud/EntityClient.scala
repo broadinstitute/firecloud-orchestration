@@ -71,14 +71,14 @@ object EntityClient {
     val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
       if(!ent.isDirectory && (ent.getName.contains("/participants.tsv") || ent.getName.equals("participants.tsv"))) {
         acc._1 match {
-          case Some(x) => throw new FireCloudException(s"More than one participants.tsv file found in bagit $bagName")
+          case Some(x) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, s"More than one participants.tsv file found in bagit $bagName"))
           case None =>
             unzipSingleFile(zipFile.getInputStream(ent), participantsTmp)
             (Some(participantsTmp.getPath), acc._2)
         }
       } else if(!ent.isDirectory && (ent.getName.contains("/samples.tsv") || ent.getName.equals("samples.tsv"))) {
         acc._2 match {
-          case Some(x) => throw new FireCloudException(s"More than one samples.tsv file found in BDBag $bagName")
+          case Some(x) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, s"More than one samples.tsv file found in bagit $bagName"))
           case None =>
               unzipSingleFile (zipFile.getInputStream (ent), samplesTmp)
               (acc._1, Some (samplesTmp.getPath) )
