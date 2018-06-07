@@ -40,7 +40,14 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
 
   override def getPetServiceAccountTokenForUser(user: WithAccessToken, scopes: Seq[String]): Future[AccessToken] = {
     implicit val accessToken = user
-    authedRequestToObject[String](Post(samArbitraryPetTokenUrl, scopes)).map(AccessToken.apply)
+    authedRequestToObject[String](Post(samArbitraryPetTokenUrl, scopes)).map { quotedToken =>
+      // Sam returns a quoted string. We need the token without the quotes.
+      val token = if (quotedToken.startsWith("\"") && quotedToken.endsWith("\"") )
+        quotedToken.substring(1,quotedToken.length-1)
+      else
+        quotedToken
+      AccessToken.apply(token)
+    }
   }
 
   override def status: Future[SubsystemStatus] = {

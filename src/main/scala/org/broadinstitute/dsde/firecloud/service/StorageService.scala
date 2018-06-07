@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor._
 import akka.pattern._
-import akka.event.Logging
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model._
@@ -32,9 +32,9 @@ object StorageService {
     new StorageService(userInfo, app.googleServicesDAO, app.samDAO)
 }
 
-class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO: GoogleServicesDAO, val samDAO: SamDAO)(implicit val executionContext: ExecutionContext) extends Actor with StorageServiceSupport {
+class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO: GoogleServicesDAO, val samDAO: SamDAO)
+                    (implicit val executionContext: ExecutionContext) extends Actor with StorageServiceSupport with LazyLogging {
   implicit val system = context.system
-  val log = Logging(system, getClass)
   implicit val userInfo = argUserInfo
   import StorageService._
 
