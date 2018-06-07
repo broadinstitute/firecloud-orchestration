@@ -81,7 +81,7 @@ class EntityClientSpec extends BaseServiceSpec with BeforeAndAfterEach {
           Future.successful(RequestComplete(StatusCodes.OK))
         }
       }
-      ex.getMessage shouldEqual "More than one participants.tsv file found in BDBag duplicate_participants_nested_testbag"
+      ex.getMessage shouldEqual "More than one participants.tsv file found in bagit duplicate_participants_nested_testbag"
     }
 
     "with multiple samples in a zip with a flat file structure" in {
