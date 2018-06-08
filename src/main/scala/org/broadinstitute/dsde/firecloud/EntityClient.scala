@@ -303,13 +303,12 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
                 case _ =>
                   for {
                     // This should vomit back errors from rawls.
-                    participantResult <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).get
-                    sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).get
+                    participantResult <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).getOrElse(Future.successful(RequestComplete(OK)))
+                    sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).getOrElse(Future.successful(RequestComplete(OK)))
                   } yield {
                     participantResult match {
                       case RequestComplete((OK, _)) => sampleResult
                       case _ => participantResult
-
                     }
                   }
               }
