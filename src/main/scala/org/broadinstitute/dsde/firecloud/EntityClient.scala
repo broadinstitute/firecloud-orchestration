@@ -1,6 +1,9 @@
 package org.broadinstitute.dsde.firecloud
 
+import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
+import java.net.{HttpURLConnection, URL}
 import java.text.SimpleDateFormat
+import java.util.zip.{ZipEntry, ZipFile}
 
 import akka.actor.{Actor, Props}
 import akka.pattern.pipe
@@ -20,7 +23,11 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.routing.RequestContext
 
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
+import scala.io.Source
+import sys.process._
 import scala.util.{Failure, Success, Try}
 
 object EntityClient {
@@ -28,6 +35,8 @@ object EntityClient {
   case class ImportEntitiesFromTSV(workspaceNamespace: String,
                                    workspaceName: String,
                                    tsvString: String)
+
+  case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
 
   def props(requestContext: RequestContext)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext))
 
@@ -51,6 +60,50 @@ object EntityClient {
     }
   }
 
+  //returns (contents of participants.tsv, contents of samples.tsv)
+  def unzipTSVs(bagName: String, zipFile: ZipFile)(op: (Option[String], Option[String]) => Future[PerRequestMessage]): Future[PerRequestMessage] = {
+    val zipEntries = zipFile.entries.asScala
+
+    val rand = java.util.UUID.randomUUID.toString.take(8)
+    val participantsTmp = File.createTempFile(s"$rand-participants", ".tsv")
+    val samplesTmp = File.createTempFile(s"$rand-samples", ".tsv")
+
+    val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
+      if(!ent.isDirectory && (ent.getName.contains("/participants.tsv") || ent.getName.equals("participants.tsv"))) {
+        acc._1 match {
+          case Some(x) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, s"More than one participants.tsv file found in bagit $bagName"))
+          case None =>
+            unzipSingleFile(zipFile.getInputStream(ent), participantsTmp)
+            (Some(participantsTmp.getPath), acc._2)
+        }
+      } else if(!ent.isDirectory && (ent.getName.contains("/samples.tsv") || ent.getName.equals("samples.tsv"))) {
+        acc._2 match {
+          case Some(x) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, s"More than one samples.tsv file found in bagit $bagName"))
+          case None =>
+              unzipSingleFile (zipFile.getInputStream (ent), samplesTmp)
+              (acc._1, Some (samplesTmp.getPath) )
+        }
+      } else {
+        acc
+      }
+    }
+
+    try {
+      op(unzippedFiles._1.map(f => Source.fromFile(f).mkString), unzippedFiles._2.map(f => Source.fromFile(f).mkString))
+    } catch {
+      case e: Exception => throw e
+    } finally {
+      participantsTmp.delete
+      samplesTmp.delete
+    }
+  }
+
+  private def unzipSingleFile(zis: InputStream, fileTarget: File): Unit = {
+    val fout = new FileOutputStream(fileTarget)
+    val buffer = new Array[Byte](1024)
+    Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
+  }
+
 }
 
 class EntityClient (requestContext: RequestContext)(implicit protected val executionContext: ExecutionContext)
@@ -62,6 +115,9 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
     case ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
       importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo sender
+    case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
+      val pipeline = authHeaders(requestContext) ~> sendReceive
+      importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
   }
 
 
@@ -207,6 +263,63 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
           }
         case _ =>
           Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
+      }
+    }
+  }
+
+  def importBagit(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]], workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest): Future[PerRequestMessage] = {
+    if(bagitRq.format != "TSV") {
+      Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid format; for now, you must place the string \"TSV\" here"))
+    } else {
+
+      //Java URL handles http, https, ftp, file, and jar protocols.
+      //We're only OK with https to avoid MITM attacks.
+      val bagitURL = new URL(bagitRq.bagitURL)
+      val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
+      if (!acceptableProtocols.contains(bagitURL.getProtocol)) {
+        Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid bagitURL protocol: must be https only"))
+      } else {
+
+        val rand = java.util.UUID.randomUUID.toString.take(8)
+        val bagItFile = File.createTempFile(s"$rand-samples", ".tsv")
+
+        try {
+          val conn = bagitURL.openConnection()
+          val length = conn.getContentLength
+          conn.asInstanceOf[HttpURLConnection].disconnect()
+
+          if (length > Rawls.entityBagitMaximumSize) {
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag size is too large."))
+          } else {
+            //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
+            bagitURL #> bagItFile !!
+
+            //make two big strings containing the participants and samples TSVs
+            //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
+            unzipTSVs(bagitRq.bagitURL, new ZipFile(bagItFile.getAbsolutePath)) { (participantsStr, samplesStr) =>
+              (participantsStr, samplesStr) match {
+                case (None, None) =>
+                  Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
+                case _ =>
+                  for {
+                    // This should vomit back errors from rawls.
+                    participantResult <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).getOrElse(Future.successful(RequestComplete(OK)))
+                    sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).getOrElse(Future.successful(RequestComplete(OK)))
+                  } yield {
+                    participantResult match {
+                      case RequestComplete((OK, _)) => sampleResult
+                      case _ => participantResult
+                    }
+                  }
+              }
+            }
+          }
+        } catch {
+          case e: FileNotFoundException => Future.successful(RequestCompleteWithErrorReport(StatusCodes.NotFound, s"BDBag ${bagitRq.bagitURL} was not found."))
+          case e: Exception => throw e
+        } finally {
+          bagItFile.delete()
+        }
       }
     }
   }

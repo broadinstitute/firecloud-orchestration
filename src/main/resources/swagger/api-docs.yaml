@@ -2487,6 +2487,33 @@ paths:
         500:
           description: Internal Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importBagit:
+    post:
+      tags:
+        - Entities
+      operationId: importBagit
+      summary: Import entity TSVs from a zipped [BagIt](https://tools.ietf.org/html/draft-kunze-bagit-14) directory, whose payload contains two files - participants.tsv and samples.tsv
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: body
+          description: JSON object containing bagit URL
+          name: bagitImportRequest
+          required: true
+          schema:
+            $ref: '#/definitions/BagitRequest'
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Bad Request
+        404:
+          description: Source Workspace not found
+        500:
+          description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importEntities:
     post:
       tags:
@@ -4154,6 +4181,22 @@ definitions:
       shardIndex:
         type: integer
         description: call index within a scatter block, as reported by execution service
+
+
+  BagitRequest:
+    type: object
+    properties:
+      bagitURL:
+        type: string
+        description: link to publically accessible zipped BagIt directory
+      format:
+        type: string
+        enum:
+          - TSV
+        description: the type of the files inside the bagit. Currently this must be the string "TSV".
+    required:
+      - bagitURL
+      - format
 
   ConfigurationIngest:
     type: object
