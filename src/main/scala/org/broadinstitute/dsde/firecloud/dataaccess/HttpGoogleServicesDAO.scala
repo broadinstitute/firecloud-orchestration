@@ -199,6 +199,19 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
+
+    // xml api implementation
+    val metadataRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
+    val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
+    metadataPipeline{metadataRequest} map { resp: HttpResponse =>
+      xmlApiResponseToObject(resp, bucketName, objectKey)
+    } recover {
+      case t: UnsuccessfulResponseException =>
+        throw new FireCloudExceptionWithErrorReport(FCErrorReport(t.response))
+    }
+
+    /*
+    // json api implementation
     val metadataRequest = Get( getObjectResourceUrl(bucketName, objectKey) )
     val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive ~> unmarshal[ObjectMetadata]
     val request = metadataPipeline{metadataRequest}
@@ -207,6 +220,59 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       case t: UnsuccessfulResponseException =>
         throw new FireCloudExceptionWithErrorReport(FCErrorReport(t.response))
     }
+    */
+  }
+
+  def getXmlApiMetadataUrl(bucketName: String, objectKey: String) = {
+    val gcsStatUrl = "https://storage.googleapis.com/%s/%s"
+    gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
+  }
+
+  // TODO: move to an ObjectMetadata.apply method?
+  // TODO: verify correctness of all fields below
+  // TODO: are the missing mediaLink and timeCreated fields breaking changes?
+  def xmlApiResponseToObject(response: HttpResponse, bucketName: String, objectKey: String): ObjectMetadata = {
+    // crc32c and md5hash are both in x-goog-hash, which exists multiple times in the response headers.
+    val crc32c:String = response.headers
+      .find{h => h.lowercaseName.equals("x-goog-hash") && h.value.startsWith("crc32c=")}
+      .map(_.value.replaceFirst("crc32c=",""))
+        .getOrElse("")
+    val md5Hash: Option[String] = response.headers
+      .find{h => h.lowercaseName.equals("x-goog-hash") && h.value.startsWith("md5=")}
+      .map(_.value.replaceFirst("md5=",""))
+
+    val headerMap: Map[String, String] = response.headers.map { h =>
+      h.lowercaseName -> h.value
+    }.toMap
+
+    // exists in xml api, same value as json api
+    val generation: String = headerMap("x-goog-generation") // x-goog-generation
+    val size: String = headerMap("x-goog-stored-content-length") // TODO: x-goog-stored-content-length vs. content-length
+    val storageClass: String = headerMap("x-goog-storage-class") // x-goog-storage-class
+    val updated: String = headerMap("last-modified") // last-modified
+    val contentType: Option[String] = headerMap.get("content-type") // content-type
+
+    // different value in json and xml apis
+    val etag: String = headerMap("etag") // TODO: xml api returns a quoted string. Unquote?
+
+    // not in response headers but can be calculated from request
+    val bucket: String = bucketName
+    val name: String = objectKey
+    val id: String = s"$bucket/$name/$generation"
+
+    // not present xml api, does exist in json api
+    val mediaLink: String = "TODO" // TODO
+    val timeCreated: String = "TODO" // TODO
+
+    val contentDisposition: Option[String] = headerMap.get("content-disposition")
+    val contentEncoding: Option[String] = headerMap.get("content-encoding") // TODO: x-goog-stored-content-encoding vs. content-encoding
+
+    val estimatedCostUSD: Option[BigDecimal] = None // hardcoded to None; not part of the Google response
+
+    ObjectMetadata(bucket,crc32c,etag,generation,id,md5Hash,mediaLink,name,size,storageClass,
+          timeCreated,updated,contentDisposition,contentEncoding,contentType,estimatedCostUSD)
+
+
   }
 
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
@@ -216,7 +282,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def objectAccessCheck(bucketName: String, objectKey: String, authToken: WithAccessToken)
                        (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
-    val accessRequest = Get( HttpGoogleServicesDAO.getObjectResourceUrl(bucketName, objectKey) )
+    val accessRequest = Head( HttpGoogleServicesDAO.getXmlApiMetadataUrl(bucketName, objectKey) )
     val accessPipeline = addCredentials(authToken.accessToken) ~> sendReceive
     accessPipeline{accessRequest}
   }
@@ -257,15 +323,16 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           objectAccessCheck(bucketName, objectKey, userAuthToken) flatMap { objectResponse =>
             objectResponse.status match {
               case OK =>
+                val objMetadata: ObjectMetadata = xmlApiResponseToObject(objectResponse, bucketName, objectKey)
+
                 // user has access to the object.
                 // switch solutions based on the size of the target object. If the target object is small enough,
                 // proxy it through orchestration; this allows embedded images inside HTML reports to render correctly.
-                val objSize:Int = Try(objectResponse.entity.asString.parseJson.convertTo[ObjectMetadata].size)
-                                                    .toOption.getOrElse("-1").toInt
+                val objSize:Int = objMetadata.size.toInt
                 // 8MB or under ...
                 if (objSize > 0 && objSize < 8388608) {
                   logger.info(s"$userStr download via proxy allowed for [$objectStr]")
-                  val gcsApiUrl = getObjectResourceUrl(bucketName, objectKey) + "?alt=media"
+                  val gcsApiUrl = getXmlApiMetadataUrl(bucketName, objectKey)
                   val extReq = Get(gcsApiUrl)
                   val proxyPipeline = addCredentials(userAuthToken.accessToken) ~> sendReceive
                   // ensure we set the content-type correctly when proxying
