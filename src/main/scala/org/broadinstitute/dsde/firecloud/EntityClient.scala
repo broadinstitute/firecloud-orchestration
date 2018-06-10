@@ -248,21 +248,24 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
       // 1. The type of the tsv import file (membership, entity, or update)
       // 2. The entity type we're trying to import or update, which is magically verified in the withFoo functions below.
       tsv.firstColumnHeader.split(":") match {
-        case Array( tsvType, entityHeader ) =>
-          val entityType = entityHeader.stripSuffix("_id")
-          if( entityType == entityHeader ) {
+        case h: Array[String] if h.length == 1 || h.length == 2 =>
+          val entityType = h.last.stripSuffix("_id")
+          if (entityType == h.last) {
             Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, entity type should end in _id"))
           } else {
             val strippedTsv = backwardsCompatStripIdSuffixes(tsv, entityType)
-            Try(TsvTypes.withName(tsvType)) match {
-              case Success(TsvTypes.MEMBERSHIP) => importMembershipTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-              case Success(TsvTypes.ENTITY) => importEntityTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-              case Success(TsvTypes.UPDATE) => importUpdateTSV (pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-              case Failure(err) => Future(RequestCompleteWithErrorReport(BadRequest, err.toString))
+            if (h.length == 1) {
+              importEntityTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+            } else {
+              Try(TsvTypes.withName(h.head)) match {
+                case Success(TsvTypes.MEMBERSHIP) => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+                case Success(TsvTypes.ENTITY) => importEntityTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+                case Success(TsvTypes.UPDATE) => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
+                case Failure(err) => Future(RequestCompleteWithErrorReport(BadRequest, err.toString))
+              }
             }
           }
-        case _ =>
-          Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
+        case _ => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
       }
     }
   }

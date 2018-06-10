@@ -890,6 +890,41 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             }
           }
         }
+
+//        "a default-type TSV" - {
+//          "that follows the same format as an entity-type TSV" - {
+//            "should 200 OK if there's no data" in {
+//              stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
+//              (Post(tsvImportPath, MockTSVFormData.defaultHasNoRows)
+//                ~> dummyUserIdHeaders("1234")
+//                ~> sealRoute(workspaceRoutes)) ~> check {
+//                status should equal(OK)
+//              }
+//            }
+//
+//            "should 200 OK if it has the full set of required attribute headers" in {
+//              stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
+//              (Post(tsvImportPath, MockTSVFormData.defaultUpdateWithRequiredAttrs)
+//                ~> dummyUserIdHeaders("1234")
+//                ~> sealRoute(workspaceRoutes)) ~> check {
+//                status should equal(OK)
+//              }
+//            }
+//
+//            "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
+//              stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
+//              (Post(tsvImportPath, MockTSVFormData.defaultUpdateWithRequiredAndOptionalAttrs)
+//                ~> dummyUserIdHeaders("1234")
+//                ~> sealRoute(workspaceRoutes)) ~> check {
+//                status should equal(OK)
+//              }
+//            }
+//          }
+//
+//          "that follows the same format as a membership-type TSV" - {
+//
+//          }
+//        }
       }
     }
 
