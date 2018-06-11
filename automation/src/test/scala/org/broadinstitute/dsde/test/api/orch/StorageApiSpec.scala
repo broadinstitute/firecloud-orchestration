@@ -127,7 +127,7 @@ class StorageApiSpec extends FreeSpec with StorageApiSpecSupport with Matchers w
       }
     }
 
-    "should redirect to a signed url for large (>8MB) files" in {
+    "should redirect to a signed url for large (>8MB) files" ignore {
       implicit val authToken: AuthToken = student.makeAuthToken()
       withLargeFile { largeFile =>
         setStudentAndSA(largeFile, student)
@@ -145,7 +145,7 @@ class StorageApiSpec extends FreeSpec with StorageApiSpecSupport with Matchers w
       }
     }
 
-    "should redirect to a direct-download url when SA doesn't have signing permissions for large (>8MB) files " in {
+    "should redirect to a direct-download url when SA doesn't have signing permissions for large (>8MB) files " ignore {
       implicit val authToken: AuthToken = student.makeAuthToken()
       withLargeFile { largeFile =>
         setStudentOnly(largeFile, student)
