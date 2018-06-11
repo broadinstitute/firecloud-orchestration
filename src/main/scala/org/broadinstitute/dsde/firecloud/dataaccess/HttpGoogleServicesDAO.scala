@@ -20,6 +20,7 @@ import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMe
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -204,7 +205,16 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val metadataRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
     val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
     metadataPipeline{metadataRequest} map { resp: HttpResponse =>
-      xmlApiResponseToObject(resp, bucketName, objectKey)
+      resp.status match {
+        case OK => xmlApiResponseToObject(resp, bucketName, objectKey)
+        case _ =>
+          // TODO: how to get error messaging equivalent to json api?
+          // hacky: translate spray status code to akka-http status code
+          val code = akka.http.scaladsl.model.StatusCodes.getForKey(resp.status.intValue).getOrElse(
+            akka.http.scaladsl.model.StatusCodes.custom(resp.status.intValue, resp.status.defaultMessage)
+          )
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(code, code.defaultMessage))
+      }
     } recover {
       case t: UnsuccessfulResponseException =>
         throw new FireCloudExceptionWithErrorReport(FCErrorReport(t.response))
