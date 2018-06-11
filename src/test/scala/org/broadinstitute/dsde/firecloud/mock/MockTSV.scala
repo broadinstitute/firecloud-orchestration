@@ -101,6 +101,11 @@ object MockTSVStrings {
     List("sset_01", "sample_01").tabbed,
     List("sset_01", "sample_02").tabbed).newlineSeparated
 
+  val defaultMembershipValid = List(
+    List("sample_set_id", "sample").tabbed,
+    List("sset_01", "sample_01").tabbed,
+    List("sset_01", "sample_02").tabbed).newlineSeparated
+
   //entity TSVs
   val entityUnknownFirstColumnHeader = List(
     List("entity:sampel_id", "bar", "baz").tabbed,
@@ -121,6 +126,10 @@ object MockTSVStrings {
     List("entity:sample_set_id", "sample").tabbed
   ).newlineSeparated
 
+  val defaultEntityHasNoRows = List(
+    List("sample_set_id", "sample").tabbed
+  ).newlineSeparated
+
   val entityUpdateMissingRequiredAttrs = List( //missing participant
     List("entity:sample_id", "some_attribute").tabbed,
     List("sample_01", "de").tabbed,
@@ -131,8 +140,18 @@ object MockTSVStrings {
     List("sample_01", "part_01").tabbed,
     List("sample_02", "part_02").tabbed).newlineSeparated
 
+  val defaultUpdateWithRequiredAttrs = List(
+    List("sample_id", "participant").tabbed,
+    List("sample_01", "part_01").tabbed,
+    List("sample_02", "part_02").tabbed).newlineSeparated
+
   val entityUpdateWithRequiredAndOptionalAttrs = List(
     List("entity:sample_id", "participant", "some_attribute").tabbed,
+    List("sample_01", "part_01", "foo").tabbed,
+    List("sample_02", "part_02", "bar").tabbed).newlineSeparated
+
+  val defaultUpdateWithRequiredAndOptionalAttrs = List(
+    List("sample_id", "participant", "some_attribute").tabbed,
     List("sample_01", "part_01", "foo").tabbed,
     List("sample_02", "part_02", "bar").tabbed).newlineSeparated
 
@@ -280,9 +299,10 @@ object MockTSVFormData {
   val updateWithRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAttrs)
   val updateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.updateWithRequiredAndOptionalAttrs)
 
-  val defaultHasNoRows = wrapInMultipart("", MockTSVStrings.entityHasNoRows)
-  val defaultUpdateWithRequiredAttrs = wrapInMultipart("", MockTSVStrings.entityUpdateWithRequiredAttrs)
-  val defaultUpdateWithRequiredAndOptionalAttrs = wrapInMultipart("", MockTSVStrings.entityUpdateWithRequiredAndOptionalAttrs)
+  val defaultHasNoRows = wrapInMultipart("entities", MockTSVStrings.defaultEntityHasNoRows)
+  val defaultUpdateWithRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.defaultUpdateWithRequiredAttrs)
+  val defaultUpdateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.defaultUpdateWithRequiredAndOptionalAttrs)
+  val defaultMembershipValid = wrapInMultipart("entities", MockTSVStrings.defaultMembershipValid)
 
   val addNewWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.addNewWorkspaceAttributes)
   val duplicateKeysWorkspaceAttributes = wrapInMultipart("attributes", MockTSVStrings.duplicateKeysWorkspaceAttributes)
