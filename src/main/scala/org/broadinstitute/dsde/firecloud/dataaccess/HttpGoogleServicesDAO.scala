@@ -201,15 +201,15 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
 
-    // xml api implementation
+    // explicitly use the Google Cloud Storage xml api here. The json api requires that storage apis are enabled in the
+    // project in which a pet service account is created. The XML api does not have this limitation.
     val metadataRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
     val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
     metadataPipeline{metadataRequest} map { resp: HttpResponse =>
       resp.status match {
         case OK => xmlApiResponseToObject(resp, bucketName, objectKey)
         case _ =>
-          // TODO: how to get error messaging equivalent to json api?
-          // hacky: translate spray status code to akka-http status code
+          // translate spray status code to akka-http status code
           val code = akka.http.scaladsl.model.StatusCodes.getForKey(resp.status.intValue).getOrElse(
             akka.http.scaladsl.model.StatusCodes.custom(resp.status.intValue, resp.status.defaultMessage)
           )
@@ -219,26 +219,15 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       case t: UnsuccessfulResponseException =>
         throw new FireCloudExceptionWithErrorReport(FCErrorReport(t.response))
     }
-
-    /*
-    // json api implementation
-    val metadataRequest = Get( getObjectResourceUrl(bucketName, objectKey) )
-    val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive ~> unmarshal[ObjectMetadata]
-    val request = metadataPipeline{metadataRequest}
-
-    request.recover {
-      case t: UnsuccessfulResponseException =>
-        throw new FireCloudExceptionWithErrorReport(FCErrorReport(t.response))
-    }
-    */
   }
 
   def getXmlApiMetadataUrl(bucketName: String, objectKey: String) = {
+    // explicitly use the Google Cloud Storage xml api here. The json api requires that storage apis are enabled in the
+    // project in which a pet service account is created. The XML api does not have this limitation.
     val gcsStatUrl = "https://storage.googleapis.com/%s/%s"
     gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
   }
 
-  // TODO: move to an ObjectMetadata.apply method?
   // TODO: verify correctness of all fields below
   // TODO: are the missing mediaLink and timeCreated fields breaking changes?
   def xmlApiResponseToObject(response: HttpResponse, bucketName: String, objectKey: String): ObjectMetadata = {
@@ -256,11 +245,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     }.toMap
 
     // exists in xml api, same value as json api
-    val generation: String = headerMap("x-goog-generation") // x-goog-generation
-    val size: String = headerMap("x-goog-stored-content-length") // TODO: x-goog-stored-content-length vs. content-length
-    val storageClass: String = headerMap("x-goog-storage-class") // x-goog-storage-class
-    val updated: String = headerMap("last-modified") // last-modified
-    val contentType: Option[String] = headerMap.get("content-type") // content-type
+    val generation: String = headerMap("x-goog-generation")
+    val size: String = headerMap("x-goog-stored-content-length") // present in x-goog-stored-content-length vs. content-length
+    val storageClass: String = headerMap("x-goog-storage-class")
+    val updated: String = headerMap("last-modified")
+    val contentType: Option[String] = headerMap.get("content-type")
+    val contentDisposition: Option[String] = headerMap.get("content-disposition")
+    val contentEncoding: Option[String] = headerMap.get("content-encoding") // present in x-goog-stored-content-encoding vs. content-encoding
 
     // different value in json and xml apis
     val etag: String = headerMap("etag") // TODO: xml api returns a quoted string. Unquote?
@@ -274,15 +265,11 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val mediaLink: String = "TODO" // TODO
     val timeCreated: String = "TODO" // TODO
 
-    val contentDisposition: Option[String] = headerMap.get("content-disposition")
-    val contentEncoding: Option[String] = headerMap.get("content-encoding") // TODO: x-goog-stored-content-encoding vs. content-encoding
 
     val estimatedCostUSD: Option[BigDecimal] = None // hardcoded to None; not part of the Google response
 
     ObjectMetadata(bucket,crc32c,etag,generation,id,md5Hash,mediaLink,name,size,storageClass,
           timeCreated,updated,contentDisposition,contentEncoding,contentType,estimatedCostUSD)
-
-
   }
 
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
