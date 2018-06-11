@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.test.api.orch
 
-import java.util.Calendar
+import java.util.{Calendar, UUID}
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.workbench.auth.AuthToken
@@ -59,14 +59,16 @@ trait StorageApiSpecSupport extends ScalaFutures with LazyLogging {
   }
 
   def withSmallFile(testCode: GcsPath => Any): Unit = {
+    val uuid = UUID.randomUUID().toString
     val srcPath = smallFileFixture
-    val destPath = GcsPath(fixtureBucket, GcsObjectName(s"$testDir/$smallFileName"))
+    val destPath = GcsPath(fixtureBucket, GcsObjectName(s"$testDir/$uuid/$smallFileName"))
     withFile(srcPath, destPath, testCode)
   }
 
   def withLargeFile(testCode: GcsPath => Any): Unit = {
+    val uuid = UUID.randomUUID().toString
     val srcPath = largeFileFixture
-    val destPath = GcsPath(fixtureBucket, GcsObjectName(s"$testDir/$largeFileName"))
+    val destPath = GcsPath(fixtureBucket, GcsObjectName(s"$testDir/$uuid/$largeFileName"))
     withFile(srcPath, destPath, testCode)
   }
 
