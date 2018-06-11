@@ -213,7 +213,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           val code = akka.http.scaladsl.model.StatusCodes.getForKey(resp.status.intValue).getOrElse(
             akka.http.scaladsl.model.StatusCodes.custom(resp.status.intValue, resp.status.defaultMessage)
           )
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(code, code.defaultMessage))
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(code, code.reason))
       }
     } recover {
       case t: UnsuccessfulResponseException =>
