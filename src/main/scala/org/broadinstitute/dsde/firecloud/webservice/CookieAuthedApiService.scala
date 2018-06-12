@@ -29,23 +29,25 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
     // Note that this endpoint works in the same way as ExportEntitiesApiService tsv download.
     path( "cookie-authed" / "workspaces" / Segment / Segment/ "entities" / Segment / "tsv" ) {
       (workspaceNamespace, workspaceName, entityType) =>
-        formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) =>
-          post { requestContext =>
-            val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
-            val userInfo = dummyUserInfo(tokenValue)
-            val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
-            val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
-            actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
-          }
+      post {
+        formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) => requestContext =>
+          val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+          val userInfo = dummyUserInfo(tokenValue)
+          val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
+          val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
+          actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
         }
+      }
     } ~
     path( "cookie-authed" / "download" / "b" / Segment / "o" / RestPath ) { (bucket, obj) =>
-      cookie("FCtoken") { tokenCookie => requestContext =>
-        val userInfo = dummyUserInfo(tokenCookie.content)
+      get {
+        cookie("FCtoken") { tokenCookie => requestContext =>
+          val userInfo = dummyUserInfo(tokenCookie.content)
 
-        perRequest(requestContext,
-          StorageService.props(storageServiceConstructor, userInfo),
-          StorageService.GetDownload(bucket, obj.toString))
+          perRequest(requestContext,
+            StorageService.props(storageServiceConstructor, userInfo),
+            StorageService.GetDownload(bucket, obj.toString))
+        }
       }
     }
 

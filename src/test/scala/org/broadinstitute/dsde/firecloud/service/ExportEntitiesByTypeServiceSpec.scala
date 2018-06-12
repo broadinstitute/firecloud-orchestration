@@ -143,17 +143,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
-    "when calling POST, PUT, PATCH, DELETE on export path" - {
-      "MethodNotAllowed response is returned" in {
-        List(HttpMethods.POST, HttpMethods.PUT, HttpMethods.DELETE, HttpMethods.PATCH) map { method =>
-          new RequestBuilder(method)(invalidFireCloudEntitiesParticipantSetTSVPath) ~> sealRoute(exportEntitiesRoutes) ~> check {
-            handled should be(true)
-            status shouldNot equal(MethodNotAllowed)
-          }
-        }
-      }
-    }
-
   }
 
   val validCookieFireCloudEntitiesLargeSampleTSVPath = "/cookie-authed/workspaces/broad-dsde-dev/large/entities/sample/tsv"
@@ -187,7 +176,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
-    "when calling GET on exporting a valid entity type with filtered attributes" - {
+    "when calling POST on exporting a valid entity type with filtered attributes" - {
       "OK response is returned and attributes are filtered" in {
         Post(validCookieFireCloudEntitiesLargeSampleTSVPath, FormData(Seq("FCtoken"->"token", "attributeNames"->filterProps.mkString(",")))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
@@ -262,7 +251,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE, HttpMethods.PATCH) map { method =>
           new RequestBuilder(method)(invalidCookieFireCloudEntitiesParticipantSetTSVPath) ~> sealRoute(cookieAuthedRoutes) ~> check {
             handled should be(true)
-            status shouldNot equal(MethodNotAllowed)
+            withClue(s"Method $method:") {
+              status should equal(MethodNotAllowed)
+            }
           }
         }
       }
