@@ -15,6 +15,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding, TSVFileSupport, TsvTypes}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -238,35 +239,44 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
     }
   }
 
+  private def importEntitiesFromTSVLoadFile(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
+                        workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, tsvType: TsvType, entityType: String): Future[PerRequestMessage] = {
+    tsvType match {
+      case TsvTypes.MEMBERSHIP => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
+      case TsvTypes.ENTITY => importEntityTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
+      case TsvTypes.UPDATE => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
+      case _ => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid TSV type.")) //We should never get to this case
+    }
+  }
+
   /**
    * Determines the TSV type from the first column header and routes it to the correct import function. */
-  def importEntitiesFromTSV(
-    pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
+  def importEntitiesFromTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
+
+    def stripEntityType(entityTypeString: String): String = {
+      val entityType = entityTypeString.stripSuffix("_id")
+      if (entityType == entityTypeString)
+        throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, "Invalid first column header, entity type should end in _id"))
+      entityType
+    }
+
     withTSVFile(tsvString) { tsv =>
-      //the first column header of the tsv defines:
-      // 1. The type of the tsv import file (membership, entity, or update)
-      // 2. The entity type we're trying to import or update, which is magically verified in the withFoo functions below.
-      tsv.firstColumnHeader.split(":") match {
-        case h: Array[String] if h.length == 1 || h.length == 2 =>
-          val entityType = h.last.stripSuffix("_id")
-          if (entityType == h.last) {
-            Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, entity type should end in _id"))
-          } else {
-            val strippedTsv = backwardsCompatStripIdSuffixes(tsv, entityType)
-            if (h.length == 1) {
-              importEntityTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-            } else {
-              Try(TsvTypes.withName(h.head)) match {
-                case Success(TsvTypes.MEMBERSHIP) => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-                case Success(TsvTypes.ENTITY) => importEntityTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-                case Success(TsvTypes.UPDATE) => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, strippedTsv, entityType)
-                case Failure(err) => Future(RequestCompleteWithErrorReport(BadRequest, err.toString))
-              }
-            }
+      val (tsvType, entityType) = tsv.firstColumnHeader.split(":") match {
+        case Array(entityTypeString) => (TsvTypes.ENTITY, stripEntityType(entityTypeString))
+        case Array(tsvTypeString, entityTypeString) => {
+          Try(TsvTypes.withName(tsvTypeString)).recoverWith {case err: FireCloudException => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, err.getMessage))}
+
+          val tsvType = Try(TsvTypes.withName(tsvTypeString)) match {
+            case Success(t) => t
+            case Failure(err) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, err.toString))
           }
-        case _ => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
+          (tsvType, stripEntityType(entityTypeString))
+        }
+        case _ => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
       }
+      val strippedTsv = backwardsCompatStripIdSuffixes(tsv, entityType)
+      importEntitiesFromTSVLoadFile(pipeline, workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType)
     }
   }
 
