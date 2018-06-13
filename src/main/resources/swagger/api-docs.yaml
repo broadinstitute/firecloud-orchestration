@@ -5626,6 +5626,7 @@ definitions:
       name:
         type: string
         description: submission status
+        enum: ["Accepted", "Evaluating", "Submitting", "Submitted", "Aborting", "Aborted", "Done"]
 
   SubmissionRequest:
     description: If the referenced method configuration takes no root entity, do not define `entityType`, `entityName` and `expression`.
@@ -6060,8 +6061,10 @@ definitions:
 
   WorkflowStatus:
     properties:
-      done:
-        type: boolean
+      name:
+        type: string
+        description: workflow status
+        enum: ["Queued", "Launching", "Submitted", "Running", "Failed", "Succeeded", "Aborting", "Aborted", "Unknown"]
 
   WorkflowQueueStatusResponse:
     description: Information about the status of workflows and the workflow queue
