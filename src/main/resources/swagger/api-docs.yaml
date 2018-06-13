@@ -5620,13 +5620,23 @@ definitions:
         default: NoNewCalls
         enum: ["NoNewCalls", "ContinueWhilePossible"]
 
-  SubmissionStatus:
-    description: ''
+  SubmissionsCountResponse:
+    type: object
     properties:
-      name:
-        type: string
-        description: submission status
-        enum: ["Accepted", "Evaluating", "Submitting", "Submitted", "Aborting", "Aborted", "Done"]
+      Accepted:
+        type: integer
+      Evaluating:
+        type: integer
+      Submitting:
+        type: integer
+      Submitted:
+        type: integer
+      Aborting:
+        type: integer
+      Aborted:
+        type: integer
+      Done:
+        type: integer
 
   SubmissionRequest:
     description: If the referenced method configuration takes no root entity, do not define `entityType`, `entityName` and `expression`.
@@ -5660,23 +5670,10 @@ definitions:
         default: NoNewCalls
         enum: ["NoNewCalls", "ContinueWhilePossible"]
 
-  SubmissionsCountResponse:
-      type: object
-      properties:
-        Accepted:
-          type: integer
-        Evaluating:
-          type: integer
-        Submitting:
-          type: integer
-        Submitted:
-          type: integer
-        Aborting:
-          type: integer
-        Aborted:
-          type: integer
-        Done:
-          type: integer
+  SubmissionStatus:
+    type: string
+    description: submission status
+    enum: ["Accepted", "Evaluating", "Submitting", "Submitted", "Aborting", "Aborted", "Done"]
 
   SubmissionValidationEntityInputs:
     description: the results of parsing each of the inputs for one entity
@@ -6018,16 +6015,6 @@ definitions:
       methodConfiguration:
         $ref: '#/definitions/MethodConfiguration'
 
-  WorkflowCost:
-    description: The cost of a workflow, if available
-    properties:
-      cost:
-        type: number
-        description: Workflow cost
-      workflowId:
-        type: string
-        description: The id of this workflow
-
   Workflow:
     description: ''
     properties:
@@ -6059,12 +6046,20 @@ definitions:
         format: float
         description: The run cost of this workflow
 
-  WorkflowStatus:
+  WorkflowCost:
+    description: The cost of a workflow, if available
     properties:
-      name:
+      cost:
+        type: number
+        description: Workflow cost
+      workflowId:
         type: string
-        description: workflow status
-        enum: ["Queued", "Launching", "Submitted", "Running", "Failed", "Succeeded", "Aborting", "Aborted", "Unknown"]
+        description: The id of this workflow
+
+  WorkflowStatus:
+    type: string
+    description: workflow status
+    enum: ["Queued", "Launching", "Submitted", "Running", "Failed", "Succeeded", "Aborting", "Aborted", "Unknown"]
 
   WorkflowQueueStatusResponse:
     description: Information about the status of workflows and the workflow queue
