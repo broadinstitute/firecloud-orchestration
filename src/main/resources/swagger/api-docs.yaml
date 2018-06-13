@@ -6056,11 +6056,6 @@ definitions:
         type: string
         description: The id of this workflow
 
-  WorkflowStatus:
-    type: string
-    description: workflow status
-    enum: ["Queued", "Launching", "Submitted", "Running", "Failed", "Succeeded", "Aborting", "Aborted", "Unknown"]
-
   WorkflowQueueStatusResponse:
     description: Information about the status of workflows and the workflow queue
     required:
@@ -6078,6 +6073,11 @@ definitions:
       workflowCountsByStatus:
         type: object
         description: Map[String,Int]
+
+  WorkflowStatus:
+    type: string
+    description: workflow status
+    enum: ["Queued", "Launching", "Submitted", "Running", "Failed", "Succeeded", "Aborting", "Aborted", "Unknown"]
 
   Workspace:
     description: ''
