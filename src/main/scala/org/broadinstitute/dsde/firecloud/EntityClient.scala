@@ -265,8 +265,6 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
       val (tsvType, entityType) = tsv.firstColumnHeader.split(":") match {
         case Array(entityTypeString) => (TsvTypes.ENTITY, stripEntityType(entityTypeString))
         case Array(tsvTypeString, entityTypeString) => {
-          Try(TsvTypes.withName(tsvTypeString)).recoverWith {case err: FireCloudException => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, err.getMessage))}
-
           val tsvType = Try(TsvTypes.withName(tsvTypeString)) match {
             case Success(t) => t
             case Failure(err) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, err.toString))
