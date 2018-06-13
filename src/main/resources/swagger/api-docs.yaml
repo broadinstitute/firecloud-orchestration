@@ -6038,14 +6038,15 @@ definitions:
         description: User's email
 
   ValidatedMethodConfiguration:
-    description: ''
+    description: 'Information about the validity of a method configuration''s expressions relative to the method itself'
     required:
       - methodConfiguration
       - validInputs
       - invalidInputs
+      - missingInputs
+      - extraInputs
       - validOutputs
       - invalidOutputs
-    type: object
     properties:
       validInputs:
         type: array
@@ -6053,14 +6054,20 @@ definitions:
           type: string
       invalidInputs:
         type: object
-        description: Map[String, String]
+      missingInputs:
+        type: array
+        items:
+          type: string
+      extraInputs:
+        type: array
+        items:
+          type: string
       validOutputs:
         type: array
         items:
           type: string
       invalidOutputs:
         type: object
-        description: Map[String, String]
       methodConfiguration:
         $ref: '#/definitions/MethodConfiguration'
 
