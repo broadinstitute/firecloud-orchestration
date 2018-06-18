@@ -6,8 +6,9 @@ import java.util.UUID
 import akka.http.scaladsl.model.StatusCodes
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.services.bigquery.model.{GetQueryResultsResponse, JobReference}
+import org.broadinstitute.dsde.test.OrchConfig
 import org.broadinstitute.dsde.workbench.auth.AuthToken
-import org.broadinstitute.dsde.workbench.config.{Config, Credentials, UserPool}
+import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
 import org.broadinstitute.dsde.workbench.dao.Google.googleBigQueryDAO
 import org.broadinstitute.dsde.workbench.fixture.BillingFixtures
 import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
@@ -161,7 +162,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         register cleanUp resetNihLinkToInactive
 
-        Orchestration.NIH.addUserInNIH(Config.Users.targetJsonWebTokenKey)
+        Orchestration.NIH.addUserInNIH(OrchConfig.Users.targetJsonWebTokenKey)
 
         Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true))
       }
@@ -174,7 +175,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         register cleanUp resetNihLinkToInactive
 
-        Orchestration.NIH.addUserInNIH(Config.Users.tcgaJsonWebTokenKey)
+        Orchestration.NIH.addUserInNIH(OrchConfig.Users.tcgaJsonWebTokenKey)
 
         Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false))
       }
@@ -187,7 +188,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         register cleanUp resetNihLinkToInactive
 
-        Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
+        Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
         Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
       }
@@ -200,11 +201,11 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         register cleanUp resetNihLinkToInactive
 
-        Orchestration.NIH.addUserInNIH(Config.Users.targetAndTcgaJsonWebTokenKey)
+        Orchestration.NIH.addUserInNIH(OrchConfig.Users.targetAndTcgaJsonWebTokenKey)
 
         Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
 
-        Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
+        Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
         Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
 
@@ -272,7 +273,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
   //We need to reset the user's link to a state where it doesn't have access to any of the datasets
   //To do so, we will link with a JWT that doesn't have access to any datasets and then sync both whitelists
   private def resetNihLinkToInactive()(implicit authToken: AuthToken) = {
-    Orchestration.NIH.addUserInNIH(Config.Users.genericJsonWebTokenKey)
+    Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
     Orchestration.NIH.syncWhitelistFull
 
