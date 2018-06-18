@@ -84,7 +84,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getObjectResourceUrl(bucketName: String, objectKey: String): String = ""
   override def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
-    Future.successful(ObjectMetadata("foo", "bar", "baz", "bla", "blah", None, "blahh", "blahh", "blahh", "blahh", "blahh", "blahh", Option("blahh"), Option("blahh"), Option("blahh"), None))
+    Future.successful(ObjectMetadata("foo", "bar", "baz", "bla", "blah", None, Some("blahh"), "blahh", "blahh", "blahh", Some("blahh"), "blahh", Option("blahh"), Option("blahh"), Option("blahh"), None))
   }
   override def getUserProfile(accessToken: WithAccessToken)
                              (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)

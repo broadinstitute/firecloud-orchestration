@@ -228,8 +228,6 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
   }
 
-  // TODO: verify correctness of all fields below
-  // TODO: are the missing mediaLink and timeCreated fields breaking changes?
   def xmlApiResponseToObject(response: HttpResponse, bucketName: String, objectKey: String): ObjectMetadata = {
     // crc32c and md5hash are both in x-goog-hash, which exists multiple times in the response headers.
     val crc32c:String = response.headers
@@ -254,16 +252,21 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val contentEncoding: Option[String] = headerMap.get("content-encoding") // present in x-goog-stored-content-encoding vs. content-encoding
 
     // different value in json and xml apis
-    val etag: String = headerMap("etag") // TODO: xml api returns a quoted string. Unquote?
+    val quotedEtag: String = headerMap("etag") //  xml api returns a quoted string. Unquote.
+    val etag:String = if (quotedEtag.startsWith(""""""") && quotedEtag.endsWith("""""""))
+      quotedEtag.substring(1, quotedEtag.length-1)
+    else
+      quotedEtag
+
 
     // not in response headers but can be calculated from request
     val bucket: String = bucketName
     val name: String = objectKey
     val id: String = s"$bucket/$name/$generation"
 
-    // not present xml api, does exist in json api
-    val mediaLink: String = "TODO" // TODO
-    val timeCreated: String = "TODO" // TODO
+    // not present in xml api, does exist in json api. Leaving in the model for compatibility.
+    val mediaLink: Option[String] = None
+    val timeCreated: Option[String] = None
 
 
     val estimatedCostUSD: Option[BigDecimal] = None // hardcoded to None; not part of the Google response
