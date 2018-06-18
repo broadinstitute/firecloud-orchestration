@@ -59,8 +59,6 @@ object UserApiService {
 
   def samUserProxyGroupPath(email: String) = s"/api/google/user/proxyGroup/$email"
   def samUserProxyGroupURL(email: String) = FireCloudConfig.Sam.baseUrl + samUserProxyGroupPath(email)
-
-  def samArbitraryPetTokenURL = FireCloudConfig.Sam.baseUrl + "/api/google/v1/user/petServiceAccount/token"
 }
 
 // TODO: this should use UserInfoDirectives, not StandardUserInfoDirectives. That would require a refactoring
@@ -221,11 +219,6 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       pathPrefix("proxyGroup") {
         path(Segment) { email =>
           passthrough(UserApiService.samUserProxyGroupURL(email), HttpMethods.GET)
-        }
-      } ~
-      path("petServiceAccount" / "token") {
-        post {
-          passthrough(UserApiService.samArbitraryPetTokenURL, HttpMethods.POST)
         }
       }
     } ~
