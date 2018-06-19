@@ -285,7 +285,7 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
 
       //Java URL handles http, https, ftp, file, and jar protocols.
       //We're only OK with https to avoid MITM attacks.
-      val bagitURL = new URL(bagitRq.bagitURL)
+      val bagitURL = new URL(bagitRq.bagitURL.replace(" ", "%20"))
       val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
       if (!acceptableProtocols.contains(bagitURL.getProtocol)) {
         Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid bagitURL protocol: must be https only"))
