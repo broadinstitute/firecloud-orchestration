@@ -45,6 +45,8 @@ object TrialService {
   case class CreateProjects(userInfo:UserInfo, count:Int) extends TrialServiceMessage
   case class VerifyProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class CountProjects(userInfo:UserInfo) extends TrialServiceMessage
+  case class AdoptProject(userInfo: UserInfo, projectName: String) extends TrialServiceMessage
+  case class ScratchProject(userInfo: UserInfo, projectName: String) extends TrialServiceMessage
   case class Report(userInfo:UserInfo) extends TrialServiceMessage
   case class RecordUserAgreement(userInfo: UserInfo) extends TrialServiceMessage
   case class UpdateBillingReport(spreadsheetId: String) extends TrialServiceMessage
@@ -77,6 +79,8 @@ final class TrialService
     case CreateProjects(userInfo, count) => asTrialCampaignManager {createProjects(count)}(userInfo) pipeTo sender
     case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
     case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
+    case AdoptProject(userInfo, projectName) => asTrialCampaignManager {adoptProject(projectName)}(userInfo) pipeTo sender
+    case ScratchProject(userInfo, projectName) => asTrialCampaignManager {scratchProject(projectName)}(userInfo) pipeTo sender
     case Report(userInfo) => asTrialCampaignManager {projectReport}(userInfo) pipeTo sender
     case RecordUserAgreement(userInfo) => recordUserAgreement(userInfo) pipeTo sender
     case UpdateBillingReport(spreadsheetId) => updateBillingReport(spreadsheetId) pipeTo sender
@@ -408,6 +412,36 @@ final class TrialService
 
   private def countProjects: Future[PerRequestMessage] =
     Future(RequestComplete(OK, trialDao.countProjects))
+
+  private def adoptProject(projectName: String): Future[PerRequestMessage] = {
+    val project = RawlsBillingProjectName(projectName)
+    val record = Try(trialDao.getProjectRecord(project)) match {
+      case Success(p) => p // project exists!
+      case Failure(ex) =>
+        if (ex.getMessage.contains("not found")) {
+          trialDao.insertProjectRecord(project)
+          trialDao.getProjectRecord(project)
+        } else {
+          throw ex
+        }
+    }
+    // set project verified
+    trialDao.setProjectRecordVerified(record.name, true, Trial.CreationStatuses.Ready)
+    Future(RequestComplete(OK, trialDao.getProjectRecord(record.name)))
+  }
+
+  private def scratchProject(projectName: String): Future[PerRequestMessage] = {
+    val project = RawlsBillingProjectName(projectName)
+    Try(trialDao.getProjectRecord(project)) match {
+      case Success(p) =>
+        // project exists; set it to error state
+        trialDao.setProjectRecordVerified(project, true, Trial.CreationStatuses.Error)
+        Future(RequestComplete(OK, trialDao.getProjectRecord(project)))
+      case Failure(ex) =>
+        // project doesn't exist or there is some other error querying the pool.
+        Future(RequestCompleteWithErrorReport(InternalServerError, s"error scratching project '$projectName'", ex))
+    }
+  }
 
   private def projectReport: Future[PerRequestMessage] =
     Future(RequestComplete(OK, trialDao.projectReport))

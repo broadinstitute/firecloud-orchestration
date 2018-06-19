@@ -1826,6 +1826,7 @@ paths:
             "Create" will create projects and verify those projects.
             "Verify" will verify all unverified projects in the pool.
             "Count" will return the number of projects in various statuses.
+            "Adopt" will enter a previously-created project into the pool without verifying it.
             "Report" will return a report of all claimed projects.
           required: true
           in: query
@@ -1834,6 +1835,8 @@ paths:
             - create
             - verify
             - count
+            - adopt
+            - scratch
             - report
           default: count
         - name: count
@@ -1841,6 +1844,11 @@ paths:
           required: false
           in: query
           type: number
+        - name: project
+          description: name of project to adopt or scratch; only used for adopt and scratch operations
+          required: false
+          in: query
+          type: string
       responses:
         200:
           description: OK; used for verify operation

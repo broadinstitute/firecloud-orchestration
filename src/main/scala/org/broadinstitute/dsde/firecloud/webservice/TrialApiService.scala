@@ -38,19 +38,24 @@ trait TrialApiService extends HttpService with PerRequestCreator with FireCloudD
         } ~
         path("projects") {
           parameter("count".as[Int] ? 0) { count =>
-            parameter("operation") { op =>
-              requireUserInfo() { userInfo => requestContext =>
-                val message = op.toLowerCase match {
-                  case "create" => Some(TrialService.CreateProjects(userInfo, count))
-                  case "verify" => Some(TrialService.VerifyProjects(userInfo))
-                  case "count" => Some(TrialService.CountProjects(userInfo))
-                  case "report" => Some(TrialService.Report(userInfo))
-                  case _ => None
+            parameter("project".as[String] ? "") { projectName =>
+              parameter("operation") { op =>
+                requireUserInfo() { userInfo =>
+                  requestContext =>
+                    val message = op.toLowerCase match {
+                      case "create" => Some(TrialService.CreateProjects(userInfo, count))
+                      case "verify" => Some(TrialService.VerifyProjects(userInfo))
+                      case "count" => Some(TrialService.CountProjects(userInfo))
+                      case "adopt" => Some(TrialService.AdoptProject(userInfo, projectName))
+                      case "scratch" => Some(TrialService.ScratchProject(userInfo, projectName))
+                      case "report" => Some(TrialService.Report(userInfo))
+                      case _ => None
+                    }
+                    if (message.nonEmpty)
+                      perRequest(requestContext, TrialService.props(trialServiceConstructor), message.get)
+                    else
+                      requestContext.complete(BadRequest, ErrorReport(s"invalid operation '$op'"))
                 }
-                if (message.nonEmpty)
-                  perRequest(requestContext, TrialService.props(trialServiceConstructor), message.get)
-                else
-                  requestContext.complete(BadRequest, ErrorReport(s"invalid operation '$op'"))
               }
             }
           }
