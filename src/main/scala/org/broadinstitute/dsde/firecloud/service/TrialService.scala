@@ -425,9 +425,14 @@ final class TrialService
           throw ex
         }
     }
-    // set project verified
-    trialDao.setProjectRecordVerified(record.name, true, Trial.CreationStatuses.Ready)
-    Future(RequestComplete(OK, trialDao.getProjectRecord(record.name)))
+    if (record.user.isDefined) {
+      Future(RequestCompleteWithErrorReport(BadRequest,
+        s"adopted project '$projectName' is already claimed by user '${record.user.get}'!"))
+    } else {
+      // set project verified
+      trialDao.setProjectRecordVerified(record.name, true, Trial.CreationStatuses.Ready)
+      Future(RequestComplete(OK, trialDao.getProjectRecord(record.name)))
+    }
   }
 
   private def scratchProject(projectName: String): Future[PerRequestMessage] = {
@@ -436,6 +441,8 @@ final class TrialService
       case Success(p) =>
         // project exists; set it to error state
         trialDao.setProjectRecordVerified(project, true, Trial.CreationStatuses.Error)
+        // ensure project is released
+        trialDao.releaseProjectRecord(project)
         Future(RequestComplete(OK, trialDao.getProjectRecord(project)))
       case Failure(ex) =>
         // project doesn't exist or there is some other error querying the pool.
