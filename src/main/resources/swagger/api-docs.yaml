@@ -1827,6 +1827,7 @@ paths:
             "Verify" will verify all unverified projects in the pool.
             "Count" will return the number of projects in various statuses.
             "Adopt" will enter a previously-created project into the pool without verifying it.
+            "Scratch" will mark a pool project as unavailable/errored and disassociate it from any user that claimed it.
             "Report" will return a report of all claimed projects.
           required: true
           in: query
