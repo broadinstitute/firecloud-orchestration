@@ -14,7 +14,7 @@ import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by mbemis on 11/28/16.
@@ -48,14 +48,14 @@ class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO:
   def getObjectStats(bucketName: String, objectName: String) = {
     samDAO.getPetServiceAccountTokenForUser(userInfo, storageScopes) flatMap { petToken =>
       googleServicesDAO.getObjectMetadata(bucketName, objectName, petToken.accessToken.token).zip(googleServicesDAO.fetchPriceList) map { case (objectMetadata, googlePrices) =>
-        Try(objectMetadata.size.toLong).toOption match {
-          case None => RequestComplete(StatusCodes.OK, objectMetadata)
-          case Some(size) => {
+        Try(objectMetadata.size.toLong) match {
+          case Failure(_) => RequestComplete(StatusCodes.OK, objectMetadata)
+          case Success(size) => {
             //size is in bytes, must convert to gigabytes
             val fileSizeGB = BigDecimal(size) / Math.pow(1000, 3)
             val googlePricesList = googlePrices.prices.cpComputeengineInternetEgressNA.tiers.toList
             val egressPrice = getEgressCost(googlePricesList, fileSizeGB, 0)
-            RequestComplete(StatusCodes.OK, (objectMetadata.copy(estimatedCostUSD = egressPrice)))
+            RequestComplete(StatusCodes.OK, objectMetadata.copy(estimatedCostUSD = egressPrice))
           }
         }
       }
