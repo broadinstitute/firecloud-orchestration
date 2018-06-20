@@ -20,6 +20,7 @@ import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMe
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.client.pipelining._
 import spray.http.StatusCodes._
@@ -199,14 +200,79 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
-    val metadataRequest = Get( getObjectResourceUrl(bucketName, objectKey) )
-    val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive ~> unmarshal[ObjectMetadata]
-    val request = metadataPipeline{metadataRequest}
 
-    request.recover {
+    // explicitly use the Google Cloud Storage xml api here. The json api requires that storage apis are enabled in the
+    // project in which a pet service account is created. The XML api does not have this limitation.
+    val metadataRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
+    val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
+    metadataPipeline{metadataRequest} map { resp: HttpResponse =>
+      resp.status match {
+        case OK => xmlApiResponseToObject(resp, bucketName, objectKey)
+        case _ =>
+          // translate spray status code to akka-http status code
+          val code = akka.http.scaladsl.model.StatusCodes.getForKey(resp.status.intValue).getOrElse(
+            akka.http.scaladsl.model.StatusCodes.custom(resp.status.intValue, resp.status.defaultMessage)
+          )
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(code, code.reason))
+      }
+    } recover {
       case t: UnsuccessfulResponseException =>
         throw new FireCloudExceptionWithErrorReport(FCErrorReport(t.response))
     }
+  }
+
+  def getXmlApiMetadataUrl(bucketName: String, objectKey: String) = {
+    // explicitly use the Google Cloud Storage xml api here. The json api requires that storage apis are enabled in the
+    // project in which a pet service account is created. The XML api does not have this limitation.
+    val gcsStatUrl = "https://storage.googleapis.com/%s/%s"
+    gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
+  }
+
+  def xmlApiResponseToObject(response: HttpResponse, bucketName: String, objectKey: String): ObjectMetadata = {
+    // crc32c and md5hash are both in x-goog-hash, which exists multiple times in the response headers.
+    val crc32c:String = response.headers
+      .find{h => h.lowercaseName.equals("x-goog-hash") && h.value.startsWith("crc32c=")}
+      .map(_.value.replaceFirst("crc32c=",""))
+        .getOrElse("")
+    val md5Hash: Option[String] = response.headers
+      .find{h => h.lowercaseName.equals("x-goog-hash") && h.value.startsWith("md5=")}
+      .map(_.value.replaceFirst("md5=",""))
+
+    val headerMap: Map[String, String] = response.headers.map { h =>
+      h.lowercaseName -> h.value
+    }.toMap
+
+    // exists in xml api, same value as json api
+    val generation: String = headerMap("x-goog-generation")
+    val size: String = headerMap("x-goog-stored-content-length") // present in x-goog-stored-content-length vs. content-length
+    val storageClass: String = headerMap("x-goog-storage-class")
+    val updated: String = headerMap("last-modified")
+    val contentType: Option[String] = headerMap.get("content-type")
+    val contentDisposition: Option[String] = headerMap.get("content-disposition")
+    val contentEncoding: Option[String] = headerMap.get("content-encoding") // present in x-goog-stored-content-encoding vs. content-encoding
+
+    // different value in json and xml apis
+    val quotedEtag: String = headerMap("etag") //  xml api returns a quoted string. Unquote.
+    val etag:String = if (quotedEtag.startsWith(""""""") && quotedEtag.endsWith("""""""))
+      quotedEtag.substring(1, quotedEtag.length-1)
+    else
+      quotedEtag
+
+
+    // not in response headers but can be calculated from request
+    val bucket: String = bucketName
+    val name: String = objectKey
+    val id: String = s"$bucket/$name/$generation"
+
+    // not present in xml api, does exist in json api. Leaving in the model for compatibility.
+    val mediaLink: Option[String] = None
+    val timeCreated: Option[String] = None
+
+
+    val estimatedCostUSD: Option[BigDecimal] = None // hardcoded to None; not part of the Google response
+
+    ObjectMetadata(bucket,crc32c,etag,generation,id,md5Hash,mediaLink,name,size,storageClass,
+          timeCreated,updated,contentDisposition,contentEncoding,contentType,estimatedCostUSD)
   }
 
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
@@ -216,7 +282,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def objectAccessCheck(bucketName: String, objectKey: String, authToken: WithAccessToken)
                        (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
-    val accessRequest = Get( HttpGoogleServicesDAO.getObjectResourceUrl(bucketName, objectKey) )
+    val accessRequest = Head( HttpGoogleServicesDAO.getXmlApiMetadataUrl(bucketName, objectKey) )
     val accessPipeline = addCredentials(authToken.accessToken) ~> sendReceive
     accessPipeline{accessRequest}
   }
@@ -257,15 +323,16 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           objectAccessCheck(bucketName, objectKey, userAuthToken) flatMap { objectResponse =>
             objectResponse.status match {
               case OK =>
+                val objMetadata: ObjectMetadata = xmlApiResponseToObject(objectResponse, bucketName, objectKey)
+
                 // user has access to the object.
                 // switch solutions based on the size of the target object. If the target object is small enough,
                 // proxy it through orchestration; this allows embedded images inside HTML reports to render correctly.
-                val objSize:Int = Try(objectResponse.entity.asString.parseJson.convertTo[ObjectMetadata].size)
-                                                    .toOption.getOrElse("-1").toInt
+                val objSize:Int = objMetadata.size.toInt
                 // 8MB or under ...
                 if (objSize > 0 && objSize < 8388608) {
                   logger.info(s"$userStr download via proxy allowed for [$objectStr]")
-                  val gcsApiUrl = getObjectResourceUrl(bucketName, objectKey) + "?alt=media"
+                  val gcsApiUrl = getXmlApiMetadataUrl(bucketName, objectKey)
                   val extReq = Get(gcsApiUrl)
                   val proxyPipeline = addCredentials(userAuthToken.accessToken) ~> sendReceive
                   // ensure we set the content-type correctly when proxying

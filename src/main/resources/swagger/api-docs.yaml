@@ -20,7 +20,6 @@ security:
     - openid
     - email
     - profile
-    - https://www.googleapis.com/auth/devstorage.full_control
 
 securityDefinitions:
   googleoauth:
@@ -31,7 +30,6 @@ securityDefinitions:
       openid: open id authorization
       email: email authorization
       profile: profile authorization
-      https://www.googleapis.com/auth/devstorage.full_control: GCS storage
       https://www.googleapis.com/auth/cloud-billing: GCS billing
 
 ##########################################################################################
@@ -1611,7 +1609,6 @@ paths:
           - openid
           - email
           - profile
-          - https://www.googleapis.com/auth/devstorage.full_control
           - https://www.googleapis.com/auth/cloud-billing
 
   /api/profile/importstatus:
@@ -1715,7 +1712,9 @@ paths:
       summary: |
         Get metadata about an object stored in GCS.
       description: |
-        Mirror of Google's Cloud Storage json API. See https://cloud.google.com/storage/docs/json_api/v1/objects/get Also includes estimated egress charge to NA
+        Returns a subset of the metadata available from Google's Cloud Storage JSON API, as well as the estimated egress
+        charge to North America. If you need the full metadata, we recommend you use Google's API directly; see
+        https://cloud.google.com/storage/docs/json_api/v1/objects/get.
       parameters:
         - name: bucket
           description: Name of the bucket in which the object resides.
