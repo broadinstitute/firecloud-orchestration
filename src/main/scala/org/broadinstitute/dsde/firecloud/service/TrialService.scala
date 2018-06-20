@@ -45,6 +45,8 @@ object TrialService {
   case class CreateProjects(userInfo:UserInfo, count:Int) extends TrialServiceMessage
   case class VerifyProjects(userInfo:UserInfo) extends TrialServiceMessage
   case class CountProjects(userInfo:UserInfo) extends TrialServiceMessage
+  case class AdoptProject(userInfo: UserInfo, projectName: String) extends TrialServiceMessage
+  case class ScratchProject(userInfo: UserInfo, projectName: String) extends TrialServiceMessage
   case class Report(userInfo:UserInfo) extends TrialServiceMessage
   case class RecordUserAgreement(userInfo: UserInfo) extends TrialServiceMessage
   case class UpdateBillingReport(spreadsheetId: String) extends TrialServiceMessage
@@ -77,6 +79,8 @@ final class TrialService
     case CreateProjects(userInfo, count) => asTrialCampaignManager {createProjects(count)}(userInfo) pipeTo sender
     case VerifyProjects(userInfo) => asTrialCampaignManager {verifyProjects}(userInfo) pipeTo sender
     case CountProjects(userInfo) => asTrialCampaignManager {countProjects}(userInfo) pipeTo sender
+    case AdoptProject(userInfo, projectName) => asTrialCampaignManager {adoptProject(projectName)}(userInfo) pipeTo sender
+    case ScratchProject(userInfo, projectName) => asTrialCampaignManager {scratchProject(projectName)}(userInfo) pipeTo sender
     case Report(userInfo) => asTrialCampaignManager {projectReport}(userInfo) pipeTo sender
     case RecordUserAgreement(userInfo) => recordUserAgreement(userInfo) pipeTo sender
     case UpdateBillingReport(spreadsheetId) => updateBillingReport(spreadsheetId) pipeTo sender
@@ -408,6 +412,65 @@ final class TrialService
 
   private def countProjects: Future[PerRequestMessage] =
     Future(RequestComplete(OK, trialDao.countProjects))
+
+  /**
+    * When supplied with a project name, enter a record that references that project into our pool. This method
+    * assumes that the project-being-referenced exists (we don't verify that) and is in good working order (we
+    * don't verify that either). If you supply a project name that already exists in the pool, we check to see
+    * if the project record is already claimed by a free-tier user. We'll respond with an error if the project
+    * is claimed; if it isn't, we'll mark the project as verified (i.e. available for use), even if it was
+    * previously not verified.
+    *
+    * @param projectName project to be adopted
+    * @return PerRequestMessage wrapping either the upserted project record or an ErrorReport
+    */
+  private def adoptProject(projectName: String): Future[PerRequestMessage] = {
+    val project = RawlsBillingProjectName(projectName)
+    val record = Try(trialDao.getProjectRecord(project)) match {
+      case Success(p) => p // project exists!
+      case Failure(ex) =>
+        if (ex.getMessage.contains("not found")) {
+          trialDao.insertProjectRecord(project)
+          trialDao.getProjectRecord(project)
+        } else {
+          throw ex
+        }
+    }
+    if (record.user.isDefined) {
+      Future(RequestCompleteWithErrorReport(BadRequest,
+        s"adopted project '$projectName' is already claimed by user '${record.user.get}'!"))
+    } else {
+      // set project verified
+      trialDao.setProjectRecordVerified(record.name, true, Trial.CreationStatuses.Ready)
+      Future(RequestComplete(OK, trialDao.getProjectRecord(record.name)))
+    }
+  }
+
+  /**
+    * When supplied with a project that has a record in the pool, mark that project as being in error. This results
+    * in the project being unavailable for users to claim for their free trial. This scratch method also
+    * disassociates the project with any user that had previously claimed it. THIS DISASSOCIATION IS A DESTRUCTIVE
+    * AND IRREVERSIBLE OPERATION, so do not use it without being sure that's exactly what you want to do.
+    *
+    * Will respond with an error if the project-to-be-scratched does not exist in the pool.
+    *
+    * @param projectName project to be scratched
+    * @return PerRequestMessage wrapping either the updated project record or an ErrorReport
+    */
+  private def scratchProject(projectName: String): Future[PerRequestMessage] = {
+    val project = RawlsBillingProjectName(projectName)
+    Try(trialDao.getProjectRecord(project)) match {
+      case Success(p) =>
+        // project exists; set it to error state
+        trialDao.setProjectRecordVerified(project, true, Trial.CreationStatuses.Error)
+        // ensure project is released
+        trialDao.releaseProjectRecord(project)
+        Future(RequestComplete(OK, trialDao.getProjectRecord(project)))
+      case Failure(ex) =>
+        // project doesn't exist or there is some other error querying the pool.
+        Future(RequestCompleteWithErrorReport(InternalServerError, s"error scratching project '$projectName'", ex))
+    }
+  }
 
   private def projectReport: Future[PerRequestMessage] =
     Future(RequestComplete(OK, trialDao.projectReport))
