@@ -2408,6 +2408,10 @@ paths:
             type: file
         404:
           description: Workspace or entity type does not exist
+        414:
+          description: |
+           URI length exceeds the configured limit of 2048 characters.
+           Please use the POST endpoint when it's necessary to supply a large number of attribute names.
         500:
           description: Internal Server Error
 
@@ -3561,6 +3565,10 @@ paths:
             type: file
         404:
           description: Workspace or entity type does not exist
+        414:
+          description: |
+           URI length exceeds the configured limit of 2048 characters.
+           Please use the POST endpoint when it's necessary to supply a large number of attribute names.
         500:
           description: Internal Server Error
       security: []
