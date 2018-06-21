@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.Props
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service._
 import spray.http._
@@ -24,11 +23,11 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
   private def dummyUserInfo(tokenStr: String) = UserInfo("dummy", OAuth2BearerToken(tokenStr), -1, "dummy")
 
   val cookieAuthedRoutes: Route =
-
-    // download "proxy" for TSV files
-    // Note that this endpoint works in the same way as ExportEntitiesApiService tsv download.
-    path( "cookie-authed" / "workspaces" / Segment / Segment/ "entities" / Segment / "tsv" ) {
-      (workspaceNamespace, workspaceName, entityType) =>
+    // download "proxies" for TSV files
+    // Note that these endpoints work in the same way as ExportEntitiesApiService tsv download.
+    path( "cookie-authed" / "workspaces" / Segment / Segment/ "entities" / Segment / "tsv" ) { (workspaceNamespace, workspaceName, entityType) =>
+      // this endpoint allows an arbitrary number of attribute names in the POST body (GAWB-1435)
+      // but the URL cannot be saved for later use (firecloud-app#80)
       post {
         formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) => requestContext =>
           val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
@@ -36,6 +35,20 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
           val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
           val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
           actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
+        }
+      } ~
+      // this endpoint allows saving the URL for later use (firecloud-app#80)
+      // but it's possible to exceed the maximum URI length by specifying too many attributes (GAWB-1435)
+      get {
+        cookie("FCtoken") { tokenCookie =>
+          parameters('attributeNames.?) { attributeNamesString =>
+            requestContext =>
+              val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+              val userInfo = dummyUserInfo(tokenCookie.content)
+              val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
+              val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
+              actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
+            }
         }
       }
     } ~

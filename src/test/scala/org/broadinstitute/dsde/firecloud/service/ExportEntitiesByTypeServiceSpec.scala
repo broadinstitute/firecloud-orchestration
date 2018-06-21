@@ -1,5 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets.UTF_8
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
@@ -246,9 +249,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
-    "when calling GET, PUT, PATCH, DELETE on export path" - {
+    "when calling PUT, PATCH, DELETE on export path" - {
       "MethodNotAllowed response is returned" in {
-        List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE, HttpMethods.PATCH) map { method =>
+        List(HttpMethods.PUT, HttpMethods.DELETE, HttpMethods.PATCH) map { method =>
           new RequestBuilder(method)(invalidCookieFireCloudEntitiesParticipantSetTSVPath) ~> sealRoute(cookieAuthedRoutes) ~> check {
             handled should be(true)
             withClue(s"Method $method:") {
@@ -259,6 +262,23 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
       }
     }
 
+    "when calling GET on exporting a valid entity type with filtered attributes" - {
+      "OK response is returned and attributes are filtered" in {
+        Get(s"$validCookieFireCloudEntitiesLargeSampleTSVPath?attributeNames=${filterProps.mkString(",")}") ~>
+          dummyUserIdHeaders("1234") ~>
+          dummyCookieAuthHeaders ~>
+          sealRoute(cookieAuthedRoutes) ~> check {
+            handled should be(true)
+            status should be(OK)
+            entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
+            chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
+            headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+            headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+            validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
+            validateProps(entity)
+          }
+      }
+    }
   }
 
   private def validateLineCount(chunks: List[MessageChunk], count: Int): Unit = {

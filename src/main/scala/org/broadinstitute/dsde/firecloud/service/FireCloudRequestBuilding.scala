@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
-import spray.http.HttpHeaders.{Authorization, RawHeader}
+import spray.http.HttpHeaders.Authorization
 import spray.http._
 import spray.routing.RequestContext
 
@@ -14,7 +14,7 @@ trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
 
   // TODO: would be much better to make requestContext implicit, so callers don't have to always pass it in
   // TODO: this could probably be rewritten more tersely in idiomatic scala - for instance, don't create
-    // the OAuth2BearerToken if we're not going to use it. I'm leaving all this longhand for better comprehension.
+  // the OAuth2BearerToken if we're not going to use it. I'm leaving all this longhand for better comprehension.
   def authHeaders(credentials:Option[HttpCredentials]): HttpRequest => HttpRequest = {
     credentials match {
       // if we have authorization credentials, apply them to the outgoing request
@@ -35,18 +35,6 @@ trait FireCloudRequestBuilding extends spray.httpx.RequestBuilding {
 
   def authHeaders(accessToken: WithAccessToken): HttpRequest => HttpRequest = {
     authHeaders(Some(accessToken.accessToken))
-  }
-
-  def dummyAuthHeaders = {
-    addCredentials(OAuth2BearerToken("mF_9.B5f-4.1JqM"))
-  }
-
-  def dummyUserIdHeaders(userId: String, token: String = "access_token", email: String = "random@site.com") = {
-    addCredentials(OAuth2BearerToken("mF_9.B5f-4.1JqM")) ~>
-      addHeader(RawHeader("OIDC_CLAIM_user_id", userId)) ~>
-      addHeader(RawHeader("OIDC_access_token", token)) ~>
-      addHeader(RawHeader("OIDC_CLAIM_email", email)) ~>
-      addHeader(RawHeader("OIDC_CLAIM_expires_in", "100000"))
   }
 
   // with great power comes great responsibility!

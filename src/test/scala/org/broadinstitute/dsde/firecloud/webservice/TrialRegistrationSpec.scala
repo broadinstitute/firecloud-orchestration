@@ -9,8 +9,7 @@ import org.broadinstitute.dsde.firecloud.model.{BasicProfile, RegistrationInfo, 
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impBasicProfile, impRegistrationInfo}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates._
 import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
-import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, FireCloudRequestBuilding, RegisterService}
-import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
+import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, RegisterService}
 import spray.http.HttpResponse
 import spray.http.StatusCodes.{NotFound, OK}
 import spray.httpx.SprayJsonSupport
@@ -19,8 +18,7 @@ import spray.json.DefaultJsonProtocol
 import scala.concurrent.Future
 import scala.util.Try
 
-class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with FireCloudRequestBuilding
-  with SprayJsonSupport with DefaultJsonProtocol {
+class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with SprayJsonSupport with DefaultJsonProtocol {
 
   def actorRefFactory = system
 

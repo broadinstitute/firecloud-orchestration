@@ -2417,6 +2417,10 @@ paths:
             type: file
         404:
           description: Workspace or entity type does not exist
+        414:
+          description: |
+           URI length exceeds the configured limit of 2048 characters.
+           Please use the POST endpoint when it's necessary to supply a large number of attribute names.
         500:
           description: Internal Server Error
 
@@ -3540,6 +3544,40 @@ paths:
             type: file
         404:
           description: Workspace or entity type does not exist
+        500:
+          description: Internal Server Error
+      security: []
+    get:
+      tags:
+      - Entities
+      operationId: browserDownloadEntitiesTSVGet
+      summary: |
+        TSV file containing workspace entities of the specified type
+      description: |
+        swagger-ui seems to not handle file downloads, so this endpoint won't function through the ui.
+        It is here for documentation purposes only.
+      produces:
+        - text/plain
+        - application/octet-stream
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - $ref: '#/parameters/entityTypeParam'
+        - name: attributeNames
+          description: comma separated list of ordered attribute names to be in downloaded tsv
+          type: string
+          in: query
+      responses:
+        200:
+          description: Workspace entities of specified type in TSV format
+          schema:
+            type: file
+        404:
+          description: Workspace or entity type does not exist
+        414:
+          description: |
+           URI length exceeds the configured limit of 2048 characters.
+           Please use the POST endpoint when it's necessary to supply a large number of attribute names.
         500:
           description: Internal Server Error
       security: []
