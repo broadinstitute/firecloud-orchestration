@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import java.time.Instant
 import org.broadinstitute.dsde.firecloud.model.DUOS._
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.rawls.model._
@@ -326,6 +327,35 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impCreateRawlsBillingProjectFullRequestFormat = jsonFormat2(CreateRawlsBillingProjectFullRequest)
   implicit val impSpreadsheetResponse = jsonFormat1(SpreadsheetResponse)
 
-  implicit val impShare = jsonFormat4(Share.fromTimestamp)
+  implicit object ShareFormat extends RootJsonFormat[Share] {
+    override def write(obj: Share): JsValue = JsObject(Map(
+      "userId" -> JsString(obj.userId),
+      "sharee" -> JsString(obj.sharee),
+      "shareType" -> JsString(obj.shareType),
+      "timestamp" -> JsNumber(obj.timestamp.toEpochMilli) // not sure if this is the right conversion!
+    ))
 
+    override def read(json: JsValue): Share = json match {
+      case JsObject(jso) =>
+        val userId: String = jso.get("userId") match {
+          case Some(JsString(s)) => s
+          case _ => throw new DeserializationException("could not deserialize Share")
+        }
+        val sharee: String = jso.get("sharee") match {
+          case Some(JsString(s)) => s
+          case _ => throw new DeserializationException("could not deserialize Share")
+        }
+        val shareType: String = jso.get("shareType") match {
+          case Some(JsString(s)) => s
+          case _ => throw new DeserializationException("could not deserialize Share")
+        }
+        val timestamp: Instant = jso.get("timestamp") match {
+          case Some(JsNumber(n)) => Instant.ofEpochMilli(n.toLongExact)
+          case _ => throw new DeserializationException("could not deserialize Share")
+        }
+        Share(userId, sharee, shareType, timestamp)
+
+      case _ => throw new DeserializationException("could not deserialize Share")
+    }
+  }
 }
