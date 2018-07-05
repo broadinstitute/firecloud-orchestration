@@ -7,6 +7,7 @@ import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
+import org.broadinstitute.dsde.firecloud.model.ShareLog._
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial._
 import spray.json._
@@ -324,5 +325,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impCreateRawlsBillingProjectFullRequestFormat = jsonFormat2(CreateRawlsBillingProjectFullRequest)
   implicit val impSpreadsheetResponse = jsonFormat1(SpreadsheetResponse)
+
+  implicit val impShare = jsonFormat4(Share)
 
 }
