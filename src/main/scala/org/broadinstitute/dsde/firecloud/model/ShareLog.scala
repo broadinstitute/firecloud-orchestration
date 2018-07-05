@@ -8,7 +8,7 @@ object ShareLog {
   final val METHOD = "method"
   case class Share(userId: String, sharee: String, shareType: String, timestamp: Instant)
   object Share {
-    def apply(userId: String, sharee: String, shareType: String, timestamp: Long): Share =
+    def fromTimestamp(userId: String, sharee: String, shareType: String, timestamp: Long): Share =
       new Share(userId, sharee, shareType, Instant.ofEpochMilli(timestamp))
   }
 }

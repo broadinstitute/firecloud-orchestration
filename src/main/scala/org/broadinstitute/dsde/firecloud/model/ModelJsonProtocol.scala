@@ -326,6 +326,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impCreateRawlsBillingProjectFullRequestFormat = jsonFormat2(CreateRawlsBillingProjectFullRequest)
   implicit val impSpreadsheetResponse = jsonFormat1(SpreadsheetResponse)
 
-  implicit val impShare = jsonFormat4(Share)
+  implicit val impShare = jsonFormat4(Share.fromTimestamp)
 
 }

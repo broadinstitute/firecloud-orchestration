@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.time.Instant
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impShare
 import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
@@ -13,6 +14,7 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.xcontent.XContentType
 import spray.json._
+import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}

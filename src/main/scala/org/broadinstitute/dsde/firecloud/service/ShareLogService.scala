@@ -9,6 +9,8 @@ import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.ShareLogService.{Autocomplete, GetShares, LogShare}
 import org.broadinstitute.dsde.rawls.model.{AttributeFormat, PlainArrayAttributeListSerializer}
+import spray.httpx.SprayJsonSupport
+import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -27,7 +29,7 @@ object ShareLogService {
 }
 
 class ShareLogService(protected val userInfo: UserInfo, val shareDAO: ShareLogDAO)
-                     (implicit protected val executionContext: ExecutionContext) extends Actor {
+                     (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
 
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
