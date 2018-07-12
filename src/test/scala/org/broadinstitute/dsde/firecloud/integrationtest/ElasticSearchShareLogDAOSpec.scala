@@ -10,8 +10,7 @@ import scala.util.Try
 
 class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
   override def beforeAll = {
-    // using the delete from search dao, because we don't have recreate in sharelog dao
-    // this comment is a copy pasta - todo need to verify this
+    // using the recreate from search dao because we don't have recreate in sharelog dao
     searchDAO.recreateIndex()
     ElasticSearchShareLogDAOSpecFixtures.fixtureShares map { share =>
       shareLogDAO.logShare(share.userId, share.sharee, share.shareType)
@@ -20,7 +19,6 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
 
   override def afterAll = {
     // using the delete from search dao because we don't have recreate in sharelog dao
-    // todo need to confirm this
     searchDAO.deleteIndex()
   }
 
@@ -38,7 +36,6 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
         assert(check.isSuccess)
       }
     }
-    // todo `setSize` in `getShares` is causing transient failures
     "getShares" - {
       "should get shares of all types for a user" in {
         val expected = ElasticSearchShareLogDAOSpecFixtures.fixtureShares
@@ -55,6 +52,7 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
           .filter(s => s.shareType.equals(ShareLog.GROUP))
           .sortBy(s => (s.sharee, s.shareType))
         val check = shareLogDAO.getShares("fake1", Some(ShareLog.GROUP)).sortBy(s => (s.sharee, s.shareType))
+
         assertResult(expected.size) { check.size }
         assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) { check.map(s => (s.userId, s.sharee, s.shareType)) }
       }

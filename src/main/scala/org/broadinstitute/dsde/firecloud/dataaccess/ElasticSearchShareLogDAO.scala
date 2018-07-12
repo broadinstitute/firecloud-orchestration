@@ -65,6 +65,7 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     val insert = client
       .prepareIndex(indexName, datatype, id)
       .setSource(share.toJson.compactPrint, XContentType.JSON)
+      .setRefreshPolicy(refreshMode)
 
     executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder](insert)
     share
@@ -98,7 +99,7 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     val getSharesRequest = client
       .prepareSearch(indexName)
       .setQuery(userSharesOfType(userId, shareType))
-      .setSize(512)
+      .setSize(100)
 
     val getSharesResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](getSharesRequest)
 
