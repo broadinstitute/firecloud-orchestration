@@ -188,7 +188,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   entity(as[List[WorkspaceACLUpdate]]) { aclUpdates => requestContext =>
                     perRequest(requestContext,
                       WorkspaceService.props(workspaceServiceConstructor, userInfo),
-                      WorkspaceService.UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail, inviteUsersNotFound.getOrElse("false").toBoolean))
+                      WorkspaceService.UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail, userInfo.id, inviteUsersNotFound.getOrElse("false").toBoolean))
                   }
                 }
               }

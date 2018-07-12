@@ -33,7 +33,7 @@ object WorkspaceService {
   case class GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
   case class UpdateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) extends WorkspaceServiceMessage
   case class SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) extends WorkspaceServiceMessage
-  case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) extends WorkspaceServiceMessage
+  case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean) extends WorkspaceServiceMessage
   case class ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
   case class ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) extends WorkspaceServiceMessage
   case class GetTags(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
@@ -47,10 +47,10 @@ object WorkspaceService {
   }
 
   def constructor(app: Application)(userToken: WithAccessToken)(implicit executionContext: ExecutionContext) =
-    new WorkspaceService(userToken, app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO, app.ontologyDAO, app.searchDAO, app.consentDAO)
+    new WorkspaceService(userToken, app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO, app.ontologyDAO, app.searchDAO, app.consentDAO, app.shareLogDAO)
 }
 
-class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO, val ontologyDAO: OntologyDAO, val searchDAO: SearchDAO, val consentDAO: ConsentDAO)
+class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO, val ontologyDAO: OntologyDAO, val searchDAO: SearchDAO, val consentDAO: ConsentDAO, val shareLogDAO: ShareLogDAO)
                       (implicit protected val executionContext: ExecutionContext) extends Actor with AttributeSupport with TSVFileSupport with PermissionsSupport with WorkspacePublishingSupport {
 
   implicit val system = context.system
@@ -73,8 +73,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       updateWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson) pipeTo sender
     case SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =>
       setWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes) pipeTo sender
-    case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) =>
-      updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail, inviteUsersNotFound) pipeTo sender
+    case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean) =>
+      updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail, originId, inviteUsersNotFound) pipeTo sender
     case ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) =>
       exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, filename) pipeTo sender
     case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
@@ -133,12 +133,11 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     }
   }
 
-  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) = {
+  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean): Future[RequestComplete[WorkspaceACLUpdateResponseList]] = {
     def logTheShares(aclUpdateList: WorkspaceACLUpdateResponseList) = {
-      val emailsInvited = aclUpdateList.invitesSent.map(_.email)
-      val updatedInvites = aclUpdateList.invitesUpdated.map(_.email)
-      val emailsUpdated = aclUpdateList.usersUpdated.map(_.email)
-      val usersInvited = aclUpdateList.usersNotFound.map(_.email)
+      aclUpdateList.usersUpdated.map(_.email) map { sharee =>
+        shareLogDAO.logShare(originId, sharee, ShareLog.WORKSPACE)
+      }
     }
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
 
