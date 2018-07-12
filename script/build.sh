@@ -46,6 +46,7 @@ function docker_cmd()
             echo "pushing $PROJECT-tests docker image..."
             docker push $TESTS_REPO:${HASH_TAG}
             docker tag $TESTS_REPO:${HASH_TAG} $TESTS_REPO:${BRANCH}
+            docker push $TESTS_REPO:${BRANCH}
         fi
     else
         echo "Not a valid docker option!  Choose either build or push (which includes build)"
