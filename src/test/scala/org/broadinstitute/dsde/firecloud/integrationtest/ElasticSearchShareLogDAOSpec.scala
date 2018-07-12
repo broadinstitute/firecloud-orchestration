@@ -27,7 +27,7 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
   "ElasticSearchShareLogDAO" - {
     "logShare" - {
       "should log a share and get it back successfully using the generated MD5 hash" in {
-        val share = Share("fake2", "fake1@gmail.com", ShareLog.WORKSPACE)
+        val share = Share("roger", "syd@gmail.com", ShareLog.WORKSPACE)
         val loggedShare = shareLogDAO.logShare(share.userId, share.sharee, share.shareType)
         val check = shareLogDAO.getShare(share)
         assertResult(loggedShare) { check }
@@ -39,12 +39,14 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
       }
     }
     // todo `setSize` in `getShares` is causing transient failures
-    "getShares" in {
+    "getShares" - {
       "should get shares of all types for a user" in {
         val expected = ElasticSearchShareLogDAOSpecFixtures.fixtureShares
           .filter(s => s.userId.equals("fake1"))
           .sortBy(s => (s.sharee, s.shareType))
         val check = shareLogDAO.getShares("fake1").sortBy(s => (s.sharee, s.shareType))
+
+        assertResult(expected.size) { check.size }
         assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) { check.map(s => (s.userId, s.sharee, s.shareType)) }
       }
       "should get shares of a specific type and none others" in {
@@ -53,6 +55,7 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
           .filter(s => s.shareType.equals(ShareLog.GROUP))
           .sortBy(s => (s.sharee, s.shareType))
         val check = shareLogDAO.getShares("fake1", Some(ShareLog.GROUP)).sortBy(s => (s.sharee, s.shareType))
+        assertResult(expected.size) { check.size }
         assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) { check.map(s => (s.userId, s.sharee, s.shareType)) }
       }
     }

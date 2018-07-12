@@ -1710,9 +1710,9 @@ paths:
       - ShareLog
       operationId: getSharees
       summary: |
-        Get a list of users with whom current user has shared a Workspace, Group, or Method.
+        Get a list of users with whom current user has shared a Workspace.
       description: |
-        Get a list of users with whom current user has shared a Workspace, Group, or Method.
+        Get a list of users with whom current user has shared a Workspace.
       parameters:
         - name: shareType
           required: false

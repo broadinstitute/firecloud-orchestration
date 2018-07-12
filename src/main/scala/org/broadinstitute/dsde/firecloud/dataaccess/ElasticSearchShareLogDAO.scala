@@ -11,6 +11,7 @@ import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsReque
 import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
+import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.QueryBuilder
@@ -43,7 +44,7 @@ trait ShareQueries {
   * @param client      The ElasticSearch client
   * @param indexName   The name of the target share log index in ElasticSearch
   */
-class ElasticSearchShareLogDAO(client: TransportClient, indexName: String)
+class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refreshMode: RefreshPolicy = RefreshPolicy.NONE)
   extends ShareLogDAO with ElasticSearchDAOSupport with ShareQueries {
 
   lazy private final val datatype = "sharelog"
@@ -97,7 +98,7 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String)
     val getSharesRequest = client
       .prepareSearch(indexName)
       .setQuery(userSharesOfType(userId, shareType))
-      .setSize(1000)
+      .setSize(512)
 
     val getSharesResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](getSharesRequest)
 

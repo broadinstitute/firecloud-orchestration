@@ -55,7 +55,7 @@ object ESIntegrationSupport extends IntegrationTestConfig {
   }
 
   lazy val shareLogDAO:ShareLogDAO = {
-    new ElasticSearchShareLogDAO(client, itTestIndexName)
+    new ElasticSearchShareLogDAO(client, itTestIndexName, RefreshPolicy.IMMEDIATE)
   }
 
   lazy val emptyCriteria = LibrarySearchParams(None,Map.empty[String,Seq[String]],None,Map.empty[String,Int],None,None,None,None)

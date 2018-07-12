@@ -134,8 +134,16 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   }
 
   def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, inviteUsersNotFound: Boolean) = {
+    def logTheShares(aclUpdateList: WorkspaceACLUpdateResponseList) = {
+      val emailsInvited = aclUpdateList.invitesSent.map(_.email)
+      val updatedInvites = aclUpdateList.invitesUpdated.map(_.email)
+      val emailsUpdated = aclUpdateList.usersUpdated.map(_.email)
+      val usersInvited = aclUpdateList.usersNotFound.map(_.email)
+    }
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
+
     aclUpdate map { actualUpdates =>
+      logTheShares(actualUpdates)
       RequestComplete(actualUpdates)
     }
   }
