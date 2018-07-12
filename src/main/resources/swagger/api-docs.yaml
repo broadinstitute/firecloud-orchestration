@@ -1719,13 +1719,15 @@ paths:
           description: |
            The type of share - Workspace, Group, or Method. If left empty, all types are returned.
           type: string
+          enum:
+            - workspace
+            - group
+            - method
       responses:
         200:
           description: Success
           schema:
             $ref: '#/definitions/StringArray'
-        404:
-          description: Not Found
         500:
           description: Internal Error
 

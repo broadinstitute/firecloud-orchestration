@@ -13,7 +13,7 @@ class MockShareLogDAO extends ShareLogDAO {
 
   override def logShare(userId: String, sharee: String, shareType: String): Share = throw new Exception("unit test exception: override in a class specific to test")
 
-  override def getShare(id: String): Share = throw new Exception("unit test exception: override in a class specific to test")
+  override def getShare(share: Share): Share = throw new Exception("unit test exception: override in a class specific to test")
 
   override def getShares(userId: String, shareType: Option[String] = None): Seq[Share] = throw new Exception("unit test exception: override in a class specific to test")
 

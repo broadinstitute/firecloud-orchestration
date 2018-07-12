@@ -11,7 +11,6 @@ import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsReque
 import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
-import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.QueryBuilder
@@ -27,8 +26,9 @@ import scala.util.{Failure, Success, Try}
 trait ShareQueries {
   def userShares(userId: String): QueryBuilder = termQuery("userId", userId)
   def userSharesOfType(userId: String, shareType: String) = boolQuery()
-    .must(termQuery("userId", userId))
-    .must(termQuery("shareType", shareType))
+    .filter(boolQuery()
+      .must(userShares(userId))
+      .must(termQuery("shareType", shareType)))
 }
 
 /**
@@ -36,11 +36,8 @@ trait ShareQueries {
   *
   * @param client      The ElasticSearch client
   * @param indexName   The name of the target share log index in ElasticSearch
-  * @param refreshMode Using IMMEDIATE - the default - is a performance hit but ensures transactionality
-  *                    of updates across multiple users.
-  *                    TODO would NONE be a better option here?
   */
-class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refreshMode: RefreshPolicy = RefreshPolicy.IMMEDIATE)
+class ElasticSearchShareLogDAO(client: TransportClient, indexName: String)
   extends ShareLogDAO with ElasticSearchDAOSupport with ShareQueries {
 
   lazy private final val datatype = "sharelog"
@@ -56,13 +53,11 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     * @return           The record of the share
     */
   override def logShare(userId: String, sharee: String, shareType: String): Share = {
-    val share = Share(userId, sharee, shareType, Instant.now)
+    val share = Share(userId, sharee, shareType, Some(Instant.now))
     val id = MurmurHash3.stringHash(userId + sharee + shareType).toString
     val insert = client
       .prepareIndex(indexName, datatype, id)
       .setSource(share.toJson.compactPrint, XContentType.JSON)
-      .setCreate(true) // fail the request if the logged share already exists
-      .setRefreshPolicy(refreshMode)
 
     executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder](insert)
     share
@@ -71,15 +66,16 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
   /**
     * Gets a share by the ID, a `MurmurHash3` of `userId` + `sharee` + `shareType`
     *
-    * @param id The ID of the share
+    * @param share The share to get
     * @return A record of the share
     */
-  override def getShare(id: String): Share = {
+  override def getShare(share: Share): Share = {
+    val id = generateId(share)
     val getSharesQuery = client.prepareGet(indexName, datatype, id)
     Try(executeESRequest[GetRequest, GetResponse, GetRequestBuilder](getSharesQuery)) match {
       case Success(get) if get.isExists => get.getSourceAsString.parseJson.convertTo[Share]
-      case Success(_) => throw new FireCloudException(s"share for $id not found")
-      case Failure(f) => throw new FireCloudException(s"error receiving share for $id: ${f.getMessage}")
+      case Success(_) => throw new FireCloudException(s"share not found")
+      case Failure(f) => throw new FireCloudException(s"error getting share for $share: ${f.getMessage}")
     }
   }
 
@@ -98,9 +94,8 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
         if (shareType.isDefined)
           userSharesOfType(userId, shareType.get)
         else
-          userShares(userId)
-      )
-      // possibly sort and limit size
+          userShares(userId))
+      .setSize(100)
 
     val getSharesResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](getSharesRequest)
 
@@ -129,5 +124,10 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
       if (!indexExists)
       throw new FireCloudException(s"index $indexName does not exist!")
     }
+  }
+
+  def generateId(share: Share): String = {
+    val rawId = Seq(share.userId, share.sharee, share.shareType).mkString
+    MurmurHash3.stringHash(rawId).toString
   }
 }

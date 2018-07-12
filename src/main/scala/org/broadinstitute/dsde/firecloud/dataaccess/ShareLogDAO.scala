@@ -26,10 +26,10 @@ trait ShareLogDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
   /**
     * Gets a share by the ID.
     *
-    * @param id The ID of the share
+    * @param share The share to get
     * @return A record of the share
     */
-  def getShare(id: String): Share
+  def getShare(share: Share): Share
 
   /**
     * Gets all shares that have been logged for a workbench user which fall under the

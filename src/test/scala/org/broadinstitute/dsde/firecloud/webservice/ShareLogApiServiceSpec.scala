@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.ActorRefFactory
 import org.broadinstitute.dsde.firecloud.dataaccess.MockShareLogDAO
-import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOFixtures
+import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
 import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
 import org.broadinstitute.dsde.firecloud.model.{ShareLog, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, ShareLogService}
@@ -41,6 +41,6 @@ final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiServi
 class ShareLogApiServiceSpecDao extends MockShareLogDAO {
 
   override def getShares(userId: String, shareType: Option[String]): Seq[Share] = {
-    ElasticSearchShareLogDAOFixtures.fixtureShares
+    ElasticSearchShareLogDAOSpecFixtures.fixtureShares
   }
 }
