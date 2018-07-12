@@ -25,10 +25,16 @@ import scala.util.{Failure, Success, Try}
 
 trait ShareQueries {
   def userShares(userId: String): QueryBuilder = termQuery("userId", userId)
-  def userSharesOfType(userId: String, shareType: String) = boolQuery()
-    .filter(boolQuery()
-      .must(userShares(userId))
-      .must(termQuery("shareType", shareType)))
+  def userSharesOfType(userId: String, shareType: Option[String]) = {
+    if (shareType.isDefined)
+      boolQuery().filter(
+        boolQuery()
+          .must(userShares(userId))
+          .must(termQuery("shareType", shareType.get)))
+    else
+      userShares(userId)
+  }
+
 }
 
 /**
@@ -90,12 +96,8 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String)
   override def getShares(userId: String, shareType: Option[String] = None): Seq[Share] = {
     val getSharesRequest = client
       .prepareSearch(indexName)
-      .setQuery(
-        if (shareType.isDefined)
-          userSharesOfType(userId, shareType.get)
-        else
-          userShares(userId))
-      .setSize(100)
+      .setQuery(userSharesOfType(userId, shareType))
+      .setSize(1000)
 
     val getSharesResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](getSharesRequest)
 
