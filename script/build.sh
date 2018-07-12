@@ -26,27 +26,26 @@ function docker_cmd()
 {
     if [ $DOCKER_CMD = "build" ] || [ $DOCKER_CMD = "push" ]; then
         echo "building docker image..."
-        if [ "$ENV" != "dev" ] && [ "$ENV" != "alpha" ] && [ "$ENV" != "staging" ] && [ "$ENV" != "perf" ]; then
-            DOCKER_TAG=${BRANCH}
-	    DOCKER_TAG_TESTS=${BRANCH}
-        else
-            GIT_SHA=$(git rev-parse origin/${BRANCH})
-            echo GIT_SHA=$GIT_SHA > env.properties
-            DOCKER_TAG=${GIT_SHA:0:12}
-            DOCKER_TAG_TESTS=${GIT_SHA:0:12}
-        fi
-        docker build -t $REPO:${DOCKER_TAG} .
+        GIT_SHA=$(git rev-parse origin/${BRANCH})
+        echo GIT_SHA=$GIT_SHA > env.properties
+        HASH_TAG=${GIT_SHA:0:12}
+        
+	docker build -t $REPO:${HASH_TAG} .
 
         echo "building $PROJECT-tests docker image..."
         cd automation
-        docker build -f Dockerfile-tests -t $TESTS_REPO:${DOCKER_TAG_TESTS} .
+        docker build -f Dockerfile-tests -t $TESTS_REPO:${HASH_TAG} .
         cd ..
 
         if [ $DOCKER_CMD="push" ]; then
             echo "pushing docker image..."
-            docker push $REPO:${DOCKER_TAG}
+            docker push $REPO:${HASH_TAG}
+            docker tag $REPO:${HASH_TAG} $REPO:${BRANCH}
+            docker push $REPO:${BRANCH}
+
             echo "pushing $PROJECT-tests docker image..."
-            docker push $TESTS_REPO:${DOCKER_TAG_TESTS}
+            docker push $TESTS_REPO:${HASH_TAG}
+            docker tag $TESTS_REPO:${HASH_TAG} $TESTS_REPO:${BRANCH}
         fi
     else
         echo "Not a valid docker option!  Choose either build or push (which includes build)"
