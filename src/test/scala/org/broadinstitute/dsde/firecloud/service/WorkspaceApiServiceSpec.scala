@@ -22,6 +22,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
+import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
 
 object WorkspaceApiServiceSpec {
 
@@ -607,6 +608,28 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "OK status is returned from PATCH on /workspaces/%s/%s/acl" in {
       Patch(aclPath, List(WorkspaceACLUpdate("dummy@test.org", WorkspaceAccessLevels.NoAccess, Some(false)))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
+      }
+    }
+
+    "OK status and logged shares returned from PATCH on /workspaces/%s/%s/acl" in {
+      val aclUpdates = List(
+        WorkspaceACLUpdate("roger.w@test.org", WorkspaceAccessLevels.Owner, Some(false)),
+        WorkspaceACLUpdate("syd.b@test.org", WorkspaceAccessLevels.NoAccess, Some(false)),
+        WorkspaceACLUpdate("david.g@test.org", WorkspaceAccessLevels.Write, Some(false)),
+        WorkspaceACLUpdate("nick.m@test.org", WorkspaceAccessLevels.Owner, Some(false)),
+        WorkspaceACLUpdate("richard.w@test.org", WorkspaceAccessLevels.Owner, Some(false))
+      )
+
+      Patch(aclPath, aclUpdates) ~> dummyUserIdHeaders("floyd") ~> sealRoute(workspaceRoutes) ~> check {
+        status should equal(OK)
+        responseAs[(WorkspaceACLUpdateResponseList, Seq[Share])] match {
+          case (_, shares) =>
+            val expected = aclUpdates.map(_.email).sorted
+            val check = shares.map(_.sharee).sorted
+            assertResult(List("floyd")) { shares.map(_.userId).distinct }
+            assertResult(List(ShareLog.WORKSPACE)) { shares.map(_.shareType).distinct }
+            assertResult(expected) { check }
+        }
       }
     }
 

@@ -6,6 +6,7 @@ import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.service.WorkspaceService.WorkspaceServiceMessage
@@ -133,7 +134,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     }
   }
 
-  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean): Future[RequestComplete[WorkspaceACLUpdateResponseList]] = {
+  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean): Future[RequestComplete[(WorkspaceACLUpdateResponseList, Seq[Share])]] = {
     def logShares(aclUpdateList: WorkspaceACLUpdateResponseList) = {
       // this will log a share every time a workspace is shared with a user
       // it will also log a share every time a workspace permission is changed
@@ -146,8 +147,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
 
     aclUpdate map { actualUpdates =>
-      logShares(actualUpdates)
-      RequestComplete(actualUpdates)
+      val shares = logShares(actualUpdates)
+      RequestComplete((actualUpdates, shares))
     }
   }
 
