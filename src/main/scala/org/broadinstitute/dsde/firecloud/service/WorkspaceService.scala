@@ -134,8 +134,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   }
 
   def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean): Future[RequestComplete[WorkspaceACLUpdateResponseList]] = {
-    def logTheShares(aclUpdateList: WorkspaceACLUpdateResponseList) = {
-      // TODO verify that this is the right approach
+    def logShares(aclUpdateList: WorkspaceACLUpdateResponseList) = {
       // this will log a share every time a workspace is shared with a user
       // it will also log a share every time a workspace permission is changed
       // i.e. READER to WRITER, etc
@@ -147,7 +146,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
 
     aclUpdate map { actualUpdates =>
-      logTheShares(actualUpdates)
+      logShares(actualUpdates)
       RequestComplete(actualUpdates)
     }
   }

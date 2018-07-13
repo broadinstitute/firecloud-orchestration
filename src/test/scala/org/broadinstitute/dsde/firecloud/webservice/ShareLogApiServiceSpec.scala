@@ -1,9 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.ActorRefFactory
-import org.broadinstitute.dsde.firecloud.dataaccess.MockShareLogDAO
-import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
-import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
+import org.broadinstitute.dsde.firecloud.dataaccess.ShareLogApiServiceSpecShareLogDAO
 import org.broadinstitute.dsde.firecloud.model.{ShareLog, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, ShareLogService}
 import spray.http.OAuth2BearerToken
@@ -18,7 +16,7 @@ final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiServi
 
   private def makeGetShareesPath(shareType: String) = s"$getShareesPath?shareType=$shareType"
 
-  val localShareLogDao = new ShareLogApiServiceSpecDao
+  val localShareLogDao = new ShareLogApiServiceSpecShareLogDAO
 
   override val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app.copy(shareLogDAO = localShareLogDao))(sharingUser)
 
@@ -38,9 +36,3 @@ final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiServi
   }
 }
 
-class ShareLogApiServiceSpecDao extends MockShareLogDAO {
-
-  override def getShares(userId: String, shareType: Option[String]): Seq[Share] = {
-    ElasticSearchShareLogDAOSpecFixtures.fixtureShares
-  }
-}
