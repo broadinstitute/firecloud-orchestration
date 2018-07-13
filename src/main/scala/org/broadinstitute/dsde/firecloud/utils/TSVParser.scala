@@ -11,7 +11,7 @@ case class TSVLoadFile(
 )
 
 object TSVParser {
-  private lazy val parser: CsvParser = {
+  private def makeParser = {
     // Note we're using a CsvParser with a tab delimiter rather a TsvParser.
     // This is because the CSV formatter handles quotations correctly while the TSV formatter doesn't.
     // See https://github.com/uniVocity/univocity-parsers#csv-format
@@ -31,7 +31,7 @@ object TSVParser {
   }
 
   def parse(tsvString: String): TSVLoadFile = {
-    val allRows = parser.parseAll(new StringReader(tsvString)).asScala
+    val allRows = makeParser.parseAll(new StringReader(tsvString)).asScala
       // The CsvParser returns null for missing fields, however the application expects the
       // empty string. This replaces all nulls with the empty string.
       .map(_.map(s => Option(s).getOrElse("")))
