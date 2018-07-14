@@ -139,15 +139,15 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       // this will log a share every time a workspace is shared with a user
       // it will also log a share every time a workspace permission is changed
       // i.e. READER to WRITER, etc
-      aclUpdateList.usersUpdated.map(_.email) map { sharee =>
-        shareLogDAO.logShare(originId, sharee, ShareLog.WORKSPACE)
-      }
+      val sharees = aclUpdateList.usersUpdated.map(_.email)
+      shareLogDAO.logShares(originId, sharees, ShareLog.WORKSPACE)
     }
 
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
 
     aclUpdate map { actualUpdates =>
       val shares = logShares(actualUpdates)
+      // todo swagger 2.0 doesn't support arrays of mixed types. will need to revisit
       RequestComplete((actualUpdates, shares))
     }
   }

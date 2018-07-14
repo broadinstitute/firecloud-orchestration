@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogD
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
@@ -22,7 +23,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
-import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
+import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
 
 object WorkspaceApiServiceSpec {
 
@@ -97,6 +98,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
 
   val nihProtectedAuthDomain = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
+
+  val dummyUserId = "1234"
 
   val protectedRawlsWorkspace = Workspace(
     "attributes",
@@ -268,7 +271,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, DELETE methods" in {
         List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
           method =>
-          new RequestBuilder(method)("/api/workspaces") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -279,7 +282,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, POST methods" in {
         List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.POST) map {
           method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/namespace/name") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -290,7 +293,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, DELETE methods" in {
         List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
           method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/methodconfigs") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/namespace/name/methodconfigs") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -298,7 +301,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       Seq("this","workspace") foreach { prefix =>
         s"Forbidden error is returned for HTTP POST with an output to $prefix.library:" in {
           val methodConfigs = MethodConfiguration("namespace", "name", Some("root"), Map.empty, Map.empty, Map("value" -> AttributeString(s"$prefix.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
-          Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(Forbidden)
           }
         }
@@ -309,7 +312,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, POST, DELETE methods" in {
         List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map {
           method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/acl") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/namespace/name/acl") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -320,7 +323,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, GET, DELETE methods" in {
         List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
           method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/clone") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/namespace/name/clone") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -331,7 +334,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP POST, PATCH, GET, DELETE methods" in {
         List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
           method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/lock") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/namespace/name/lock") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -342,7 +345,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP POST, PATCH, GET, DELETE methods" in {
         List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
           method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/unlock") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/namespace/name/unlock") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -353,7 +356,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP POST, PATCH, PUT, DELETE methods" in {
         List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
           method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/checkBucketReadAccess") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/namespace/name/checkBucketReadAccess") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -364,7 +367,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP GET, PATCH, PUT, DELETE methods" in {
         List(HttpMethods.GET, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
           method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/sendChangeNotification") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/namespace/name/sendChangeNotification") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -375,7 +378,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "MethodNotAllowed error is returned for HTTP POST, PATCH, PUT, DELETE methods" in {
         List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
           method =>
-            new RequestBuilder(method)("/api/workspaces/namespace/name/accessInstructions") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+            new RequestBuilder(method)("/api/workspaces/namespace/name/accessInstructions") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(MethodNotAllowed)
             }
         }
@@ -385,7 +388,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/segment/segment/bucketUsage path" - {
       List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
         s"MethodNotAllowed error is returned for $method" in {
-          new RequestBuilder(method)("/api/workspaces/namespace/name/bucketUsage") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/namespace/name/bucketUsage") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -395,7 +398,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/tags path" - {
       List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
         s"MethodNotAllowed error is returned for $method" in {
-          new RequestBuilder(method)("/api/workspaces/tags") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/tags") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -405,7 +408,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/%s/%s/genomics/operations/%s path" - {
       List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
         s"MethodNotAllowed error is returned for $method" in {
-          new RequestBuilder(method)(genomicsOperationsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)(genomicsOperationsPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -422,7 +425,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           val rwr = dao.rawlsWorkspaceResponseWithAttributes.copy(canShare=false)
           val lrwr = Seq.fill(2){rwr}
           stubRawlsService(method, workspacesRoot, OK, Some(lrwr.toJson.compactPrint))
-          new RequestBuilder(method)(workspacesRoot) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)(workspacesRoot) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
           }
         }
@@ -432,7 +435,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the GET /workspaces/%s/%s path" - {
       s"OK status is returned for HTTP GET (workspace in authdomain)" in {
         stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(authDomainRawlsWorkspaceResponse.toJson.compactPrint))
-        Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Get(workspacesPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
@@ -443,7 +446,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       s"OK status is returned for HTTP GET (non-realmed workspace)" in {
         stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(nonAuthDomainRawlsWorkspaceResponse.toJson.compactPrint))
-        Get(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Get(workspacesPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
@@ -454,7 +457,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       s"OK status is returned for HTTP DELETE" in {
         stubRawlsService(HttpMethods.DELETE, workspacesPath, OK)
-        new RequestBuilder(HttpMethods.DELETE)(workspacesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        new RequestBuilder(HttpMethods.DELETE)(workspacesPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -464,7 +467,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       List(HttpMethods.GET) foreach { method =>
         s"OK status is returned for HTTP $method" in {
           stubRawlsService(method, methodconfigsPath, OK)
-          new RequestBuilder(method)(methodconfigsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)(methodconfigsPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
           }
         }
@@ -476,7 +479,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         Seq("allRepos" -> "true", "allRepos" -> "false", "allRepos" -> "banana") foreach { query =>
           stubRawlsService(HttpMethods.GET, methodconfigsPath, OK, None, Some(query))
 
-          Get(Uri(methodconfigsPath).withQuery(query)) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          Get(Uri(methodconfigsPath).withQuery(query)) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             rawlsServer.verify(request().withPath(methodconfigsPath).withMethod("GET").withQueryStringParameter(query._1, query._2))
 
             status should equal(OK)
@@ -488,7 +491,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/%s/%s/acl path" - {
       "OK status is returned for HTTP GET" in {
         stubRawlsService(HttpMethods.GET, aclPath, OK)
-        Get(aclPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Get(aclPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -497,7 +500,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/%s/%s/sendChangeNotification path" - {
       "OK status is returned for POST" in {
         stubRawlsService(HttpMethods.POST, sendChangeNotificationPath, OK)
-        Post(sendChangeNotificationPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Post(sendChangeNotificationPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -506,7 +509,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/%s/%s/accessInstructions path" - {
       "OK status is returned for GET" in {
         stubRawlsService(HttpMethods.GET, accessInstructionsPath, OK)
-        Get(accessInstructionsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Get(accessInstructionsPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -515,7 +518,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/%s/%s/lock path" - {
       "OK status is returned for PUT" in {
         stubRawlsService(HttpMethods.PUT, lockPath, OK)
-        Put(lockPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Put(lockPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -525,7 +528,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/%s/%s/unlock path" - {
       "OK status is returned for PUT" in {
         stubRawlsService(HttpMethods.PUT, unlockPath, OK)
-        Put(unlockPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Put(unlockPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -535,7 +538,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/%s/%s/checkBucketReadAccess path" - {
       "OK status is returned for GET" in {
         stubRawlsService(HttpMethods.GET, bucketPath, OK)
-        Get(bucketPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Get(bucketPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -544,7 +547,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/%s/%s/bucketUsage path" - {
       "OK status is returned for GET" in {
         stubRawlsService(HttpMethods.GET, bucketUsagePath, OK)
-        Get(bucketUsagePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Get(bucketUsagePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -553,7 +556,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /version/executionEngine path" - {
         "OK status is returned for GET" in {
           stubRawlsService(HttpMethods.GET, executionEngineVersionPath, OK)
-          Get(executionEngineVersionPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          Get(executionEngineVersionPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
           }
         }
@@ -564,7 +567,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         val tagJsonString = """{ "tag": "tagtest", "count": 3 }"""
         stubRawlsService(HttpMethods.GET, tagAutocompletePath, OK, Some(tagJsonString), Some("q", "tag"))
         Get("/api/workspaces/tags", ("q", "tag"))
-        new RequestBuilder(HttpMethods.GET)("/api/workspaces/tags?q=tag") ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        new RequestBuilder(HttpMethods.GET)("/api/workspaces/tags?q=tag") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           rawlsServer.verify(request().withPath(tagAutocompletePath).withMethod("GET").withQueryStringParameter("q", "tag"))
           status should equal(OK)
           responseAs[String] should equal(tagJsonString)
@@ -575,7 +578,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/%s/%s/genomics/operations/%s path" - {
       "OK status is returned for GET" in {
         stubRawlsService(HttpMethods.GET, genomicsOperationsPath, OK)
-        Get(genomicsOperationsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+        Get(genomicsOperationsPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal (OK)
         }
       }
@@ -587,7 +590,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       val (rawlsRequest, rawlsResponse) = stubRawlsCreateWorkspace("namespace", "name")
 
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map())
-      Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+      Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
         responseAs[Workspace] should equal(rawlsResponse)
@@ -598,7 +601,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       val (rawlsRequest, rawlsResponse) = stubRawlsCreateWorkspace("namespace", "name", authDomain = Set(nihProtectedAuthDomain))
 
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
-      Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+      Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
         responseAs[Workspace] should equal(rawlsResponse)
@@ -606,27 +609,23 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "OK status is returned from PATCH on /workspaces/%s/%s/acl" in {
-      Patch(aclPath, List(WorkspaceACLUpdate("dummy@test.org", WorkspaceAccessLevels.NoAccess, Some(false)))) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+      Patch(aclPath, List(WorkspaceACLUpdate("dummy@test.org", WorkspaceAccessLevels.NoAccess, Some(false)))) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
       }
     }
 
     "OK status and logged shares returned from PATCH on /workspaces/%s/%s/acl" in {
-      val aclUpdates = List(
-        WorkspaceACLUpdate("roger.w@test.org", WorkspaceAccessLevels.Owner, Some(false)),
-        WorkspaceACLUpdate("syd.b@test.org", WorkspaceAccessLevels.NoAccess, Some(false)),
-        WorkspaceACLUpdate("david.g@test.org", WorkspaceAccessLevels.Write, Some(false)),
-        WorkspaceACLUpdate("nick.m@test.org", WorkspaceAccessLevels.Owner, Some(false)),
-        WorkspaceACLUpdate("richard.w@test.org", WorkspaceAccessLevels.Owner, Some(false))
-      )
+      val aclUpdates = ElasticSearchShareLogDAOSpecFixtures.fixtureShares map { share =>
+        WorkspaceACLUpdate(share.sharee, WorkspaceAccessLevels.Read, Some(false))
+      }
 
-      Patch(aclPath, aclUpdates) ~> dummyUserIdHeaders("floyd") ~> sealRoute(workspaceRoutes) ~> check {
+      Patch(aclPath, aclUpdates) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
         responseAs[(WorkspaceACLUpdateResponseList, Seq[Share])] match {
           case (_, shares) =>
             val expected = aclUpdates.map(_.email).sorted
             val check = shares.map(_.sharee).sorted
-            assertResult(List("floyd")) { shares.map(_.userId).distinct }
+            assertResult(List(dummyUserId)) { shares.map(_.userId).distinct }
             assertResult(List(ShareLog.WORKSPACE)) { shares.map(_.shareType).distinct }
             assertResult(expected) { check }
         }
@@ -637,7 +636,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name")
 
       val orchestrationRequest: WorkspaceRequest = WorkspaceRequest("namespace", "name", Map())
-      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
         responseAs[Workspace] should equal(rawlsResponse)
@@ -648,7 +647,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name", authDomain = Set(nihProtectedAuthDomain))
 
       val orchestrationRequest: WorkspaceRequest = WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
-      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
         responseAs[Workspace] should equal(rawlsResponse)
@@ -662,7 +661,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       val published = AttributeName("library", "published") -> AttributeBoolean(true)
       val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(published, discoverable))
-      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
         responseAs[Workspace] should equal(rawlsResponse)
@@ -673,19 +672,19 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "when calling PATCH" - {
         "should be Forbidden as reader" in {
           val content = HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath("reader"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(HttpMethods.PATCH)(catalogPath("reader"), content) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(Forbidden)
           }
         }
         "should be Forbidden as writer" in {
           val content = HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(HttpMethods.PATCH)(catalogPath("unpublishedwriter"), content) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(Forbidden)
           }
         }
         "should be OK as owner" in {
           val content = HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath(), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(HttpMethods.PATCH)(catalogPath(), content) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
             val expected = WorkspaceCatalogUpdateResponseList(Seq(WorkspaceCatalogResponse("userid", true)),Seq.empty)
             responseAs[WorkspaceCatalogUpdateResponseList] should equal (expected)
@@ -695,12 +694,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
       "when calling GET" - {
         "should be OK as reader" in {
-          new RequestBuilder(HttpMethods.GET)(catalogPath("reader")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(HttpMethods.GET)(catalogPath("reader")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
           }
         }
         "should be OK as writer" in {
-          new RequestBuilder(HttpMethods.GET)(catalogPath("unpublishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(HttpMethods.GET)(catalogPath("unpublishedwriter")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
           }
         }
@@ -713,7 +712,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should receive a MethodNotAllowed error" in {
           List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(tsvImportPath, MockTSVFormData.membershipValid) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+              new RequestBuilder(method)(tsvImportPath, MockTSVFormData.membershipValid) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
                 status should equal(MethodNotAllowed)
               }
           }
@@ -723,7 +722,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "when calling POST on the workspaces/*/*/importEntities path" - {
         "should 400 Bad Request if the TSV type is missing" in {
           (Post(tsvImportPath, MockTSVFormData.missingTSVType)
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
@@ -732,7 +731,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         "should 400 Bad Request if the TSV type is nonsense" in {
           (Post(tsvImportPath, MockTSVFormData.nonexistentTSVType)
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
@@ -741,7 +740,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         "should 400 Bad Request if the TSV entity type doesn't end in _id" in {
           (Post(tsvImportPath, MockTSVFormData.malformedEntityType)
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
@@ -751,7 +750,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "a membership-type TSV" - {
           "should 400 Bad Request if the entity type is unknown" in {
             (Post(tsvImportPath, MockTSVFormData.membershipUnknownFirstColumnHeader)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -760,7 +759,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
           "should 400 Bad Request if the entity type is not a collection type" in {
             (Post(tsvImportPath, MockTSVFormData.membershipNotCollectionType)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -769,7 +768,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
           "should 400 Bad Request if the collection members header is missing" in {
             (Post(tsvImportPath, MockTSVFormData.membershipMissingMembersHeader)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -778,7 +777,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
           "should 400 Bad Request if it contains other headers than its collection members" in {
             (Post(tsvImportPath, MockTSVFormData.membershipExtraAttributes)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -788,7 +787,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           "should 200 OK if it has the correct headers and valid internals" in {
             stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
             (Post(tsvImportPath, MockTSVFormData.membershipValid)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)
             }
@@ -798,7 +797,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "an entity-type TSV" - {
           "should 400 Bad Request if the entity type is unknown" in {
             (Post(tsvImportPath, MockTSVFormData.entityUnknownFirstColumnHeader)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -807,7 +806,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
           "should 400 Bad Request if it contains duplicated entities to update" in {
             (Post(tsvImportPath, MockTSVFormData.entityHasDupes)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -816,7 +815,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
           "should 400 Bad Request if it contains collection member headers" in {
             (Post(tsvImportPath, MockTSVFormData.entityHasCollectionMembers)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -825,7 +824,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
           "should 400 Bad Request if it is missing required attribute headers" in {
             (Post(tsvImportPath, MockTSVFormData.entityUpdateMissingRequiredAttrs)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -835,7 +834,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           "should 200 OK if there's no data" in {
             stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
             (Post(tsvImportPath, MockTSVFormData.entityHasNoRows)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)
             }
@@ -844,7 +843,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           "should 200 OK if it has the full set of required attribute headers" in {
             stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
             (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAttrs)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)
             }
@@ -853,7 +852,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
             stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
             (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAndOptionalAttrs)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)
             }
@@ -863,7 +862,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "an update-type TSV" - {
           "should 400 Bad Request if the entity type is unknown" in {
             (Post(tsvImportPath, MockTSVFormData.updateUnknownFirstColumnHeader)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -872,7 +871,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
           "should 400 Bad Request if it contains duplicated entities to update" in {
             (Post(tsvImportPath, MockTSVFormData.updateHasDupes)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -881,7 +880,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
           "should 400 Bad Request if it contains collection member headers" in {
             (Post(tsvImportPath, MockTSVFormData.updateHasCollectionMembers)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
@@ -891,7 +890,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           "should 200 OK even if it is missing required attribute headers" in {
             stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
             (Post(tsvImportPath, MockTSVFormData.updateMissingRequiredAttrs)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)
             }
@@ -900,7 +899,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           "should 200 OK if it has the full set of required attribute headers" in {
             stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
             (Post(tsvImportPath, MockTSVFormData.updateWithRequiredAttrs)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)
             }
@@ -909,7 +908,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
             stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
             (Post(tsvImportPath, MockTSVFormData.updateWithRequiredAndOptionalAttrs)
-              ~> dummyUserIdHeaders("1234")
+              ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)
             }
@@ -921,7 +920,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             "should 200 OK if there's no data" in {
               stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
               (Post(tsvImportPath, MockTSVFormData.defaultHasNoRows)
-                ~> dummyUserIdHeaders("1234")
+                ~> dummyUserIdHeaders(dummyUserId)
                 ~> sealRoute(workspaceRoutes)) ~> check {
                 status should equal(OK)
               }
@@ -930,7 +929,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             "should 200 OK if it has the full set of required attribute headers" in {
               stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
               (Post(tsvImportPath, MockTSVFormData.defaultUpdateWithRequiredAttrs)
-                ~> dummyUserIdHeaders("1234")
+                ~> dummyUserIdHeaders(dummyUserId)
                 ~> sealRoute(workspaceRoutes)) ~> check {
                 status should equal(OK)
               }
@@ -939,7 +938,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             "should 200 OK if it has the full set of required attribute headers, plus optionals" in {
               stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
               (Post(tsvImportPath, MockTSVFormData.defaultUpdateWithRequiredAndOptionalAttrs)
-                ~> dummyUserIdHeaders("1234")
+                ~> dummyUserIdHeaders(dummyUserId)
                 ~> sealRoute(workspaceRoutes)) ~> check {
                 status should equal(OK)
               }
@@ -950,7 +949,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             "should 400 Bad Request even if it has the correct headers and valid internals" in {
               stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
               (Post(tsvImportPath, MockTSVFormData.defaultMembershipValid)
-                ~> dummyUserIdHeaders("1234")
+                ~> dummyUserIdHeaders(dummyUserId)
                 ~> sealRoute(workspaceRoutes)) ~> check {
                 status should equal(BadRequest)
                 errorReportCheck("FireCloud", BadRequest)
@@ -966,7 +965,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"TSV" }"""))
-          ~> dummyUserIdHeaders("1234")
+          ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
         }
@@ -976,7 +975,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/neither.zip", "format":"TSV" }"""))
-          ~> dummyUserIdHeaders("1234")
+          ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
         }
@@ -986,7 +985,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"garbage" }"""))
-          ~> dummyUserIdHeaders("1234")
+          ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
         }
@@ -998,7 +997,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should receive a MethodNotAllowed error" in {
           List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{}")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+              new RequestBuilder(method)(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{}")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
                 status should equal(MethodNotAllowed)
               }
           }
@@ -1008,7 +1007,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "when calling PATCH on workspaces/*/*/updateAttributes path" - {
         "should 400 Bad Request if the payload is malformed" in {
           (Patch(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{{{"))
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
           }
@@ -1023,7 +1022,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
                                                         |    "addUpdateAttribute": "test-attribute-value"
                                                         |  }
                                                         |]""".stripMargin))
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
             assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
@@ -1040,7 +1039,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
                                                         |    "addUpdateAttribute": "test-attribute-value"
                                                         |  }
                                                         |]""".stripMargin))
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
             assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
@@ -1055,7 +1054,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should receive a MethodNotAllowed error" in {
           List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(setAttributesPath, HttpEntity(MediaTypes.`application/json`, "{}")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+              new RequestBuilder(method)(setAttributesPath, HttpEntity(MediaTypes.`application/json`, "{}")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
                 status should equal(MethodNotAllowed)
               }
           }
@@ -1065,7 +1064,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "when calling PATCH on workspaces/*/*/setAttributes path" - {
         "should 400 Bad Request if the payload is malformed" in {
           (Patch(setAttributesPath, HttpEntity(MediaTypes.`application/json`, "{{{"))
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
           }
@@ -1076,7 +1075,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             HttpEntity(MediaTypes.`application/json`, """{"description": "something",
                                                         | "array": [1, 2, 3]
                                                         | }""".stripMargin))
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
             assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
@@ -1089,7 +1088,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             HttpEntity(MediaTypes.`application/json`, """{"description": "something",
                                                         | "array": [1, 2, 3]
                                                         | }""".stripMargin))
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
             assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
@@ -1101,7 +1100,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "when calling POST on the workspaces/*/*/importAttributesTSV path" - {
         "should 200 OK if it has the correct headers and valid internals" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.addNewWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
           })
@@ -1109,7 +1108,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         "should 400 Bad Request if first row does not start with \"workspace\"" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.wrongHeaderWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(BadRequest)
           })
@@ -1117,7 +1116,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         "should 400 Bad Request if there are more names than values" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.tooManyNamesWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(BadRequest)
           })
@@ -1125,7 +1124,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         "should 400 Bad Request if there are more values than names" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.tooManyValuesWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(BadRequest)
           })
@@ -1133,7 +1132,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         "should 400 Bad Request if there are more than 2 rows" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.tooManyRowsWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(BadRequest)
           })
@@ -1141,7 +1140,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         "should 400 Bad Request if there are fewer than 2 rows" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.tooFewRowsWorkspaceAttributes)
-            ~> dummyUserIdHeaders("1234")
+            ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(BadRequest)
           })
@@ -1155,7 +1154,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should return 405 Method Not Allowed for anything other than GET" in {
           List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.PATCH, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(storageCostEstimatePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+              new RequestBuilder(method)(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
                 status should be (MethodNotAllowed)
               }
           }
@@ -1164,7 +1163,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
         "should return 200 with result for good request" in {
-          Get(storageCostEstimatePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+          Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should be (OK)
             responseAs[WorkspaceStorageCostEstimate].estimate should be ("$2.56")
           }

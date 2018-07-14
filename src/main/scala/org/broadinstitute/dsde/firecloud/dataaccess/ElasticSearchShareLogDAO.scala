@@ -72,6 +72,19 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
   }
 
   /**
+    * Logs records of a user sharing a workspace, group, or method with users.
+    *
+    * @param userId The workbench user id
+    * @param sharees The emails of the users being shared with
+    * @param shareType The type (workspace, group, or method) see `ShareLog`
+    * @return The records of the shares - see `ShareLog.Share`
+    */
+  override def logShares(userId: String, sharees: Seq[String], shareType: String): Seq[Share] = {
+    // todo how do i make this a batch query?
+    sharees map { sharee => logShare(userId, sharee, shareType) }
+  }
+
+  /**
     * Gets a share by the ID, a `MurmurHash3` of `userId` + `sharee` + `shareType`
     *
     * @param share The share to get
@@ -130,6 +143,13 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     }
   }
 
+  /**
+    * Uses MurmerHash3 for quick hashing -
+    * @see [[https://github.com/aappleby/smhasher]]
+    *
+    * @param share the share to create the hash from
+    * @return the hash
+    */
   def generateId(share: Share): String = {
     val rawId = Seq(share.userId, share.sharee, share.shareType).mkString
     MurmurHash3.stringHash(rawId).toString

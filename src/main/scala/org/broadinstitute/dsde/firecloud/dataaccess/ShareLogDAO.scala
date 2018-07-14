@@ -19,9 +19,20 @@ trait ShareLogDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param userId The workbench user id
     * @param sharee The email of the user being shared with
     * @param shareType The type (workspace, group, or method) see `ShareLog`
-    * @return The record of the share
+    * @return The record of the share - see `ShareLog.Share`
     */
   def logShare(userId: String, sharee: String, shareType: String): Share
+
+
+  /**
+    * Logs records of a user sharing a workspace, group, or method with users.
+    *
+    * @param userId The workbench user id
+    * @param sharees The emails of the users being shared with
+    * @param shareType The type (workspace, group, or method) see `ShareLog`
+    * @return The records of the shares - see `ShareLog.Share`
+    */
+  def logShares(userId: String, sharees: Seq[String], shareType: String): Seq[Share]
 
   /**
     * Gets a share by the ID.

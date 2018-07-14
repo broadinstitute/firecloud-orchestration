@@ -36,6 +36,18 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
         assert(check.isSuccess)
       }
     }
+    "logShares" - {
+      "should log multiple shares for a single user and share type" in {
+        val userId = "fake2"
+        val shareType = ShareLog.GROUP
+        val expected = ElasticSearchShareLogDAOSpecFixtures.fixtureShares.filter(_.userId == userId).filter(_.shareType == shareType)
+        val sharees = expected.map(_.sharee)
+        val check = shareLogDAO.logShares(userId, sharees, shareType)
+        assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) {
+          check.map(s => (s.userId, s.sharee, s.shareType))
+        }
+      }
+    }
     "getShares" - {
       "should get shares of all types for a user" in {
         val expected = ElasticSearchShareLogDAOSpecFixtures.fixtureShares

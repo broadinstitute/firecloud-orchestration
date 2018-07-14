@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.time.Instant
 import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
 import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -12,6 +11,8 @@ class MockShareLogDAO extends ShareLogDAO {
   val exception = "unit test exception: override in a class specific to test"
 
   override def logShare(userId: String, sharee: String, shareType: String): Share = throw new Exception("unit test exception: override in a class specific to test")
+
+  override def logShares(userId: String, sharees: Seq[String], shareType: String): Seq[Share] = throw new Exception("unit test exception: override in a class specific to test")
 
   override def getShare(share: Share): Share = throw new Exception("unit test exception: override in a class specific to test")
 
@@ -28,7 +29,8 @@ class ShareLogApiServiceSpecShareLogDAO extends MockShareLogDAO {
 }
 
 class WorkspaceApiServiceSpecShareLogDAO extends MockShareLogDAO {
-  override def logShare(userId: String, sharee: String, shareType: String): Share = {
-    Share(userId, sharee, shareType, Some(Instant.now))
+
+  override def logShares(userId: String, sharees: Seq[String], shareType: String): Seq[Share] = {
+    sharees map{ sharee => Share(userId, sharee, shareType)}
   }
 }
