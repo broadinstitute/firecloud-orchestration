@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
+import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
 object ShareLogDAO {
@@ -21,7 +21,7 @@ trait ShareLogDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param shareType The type (workspace, group, or method) see `ShareLog`
     * @return The record of the share - see `ShareLog.Share`
     */
-  def logShare(userId: String, sharee: String, shareType: String): Share
+  def logShare(userId: String, sharee: String, shareType: ShareType.Value): Share
 
 
   /**
@@ -32,7 +32,7 @@ trait ShareLogDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param shareType The type (workspace, group, or method) see `ShareLog`
     * @return The records of the shares - see `ShareLog.Share`
     */
-  def logShares(userId: String, sharees: Seq[String], shareType: String): Seq[Share]
+  def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share]
 
   /**
     * Gets a share by the ID.
@@ -50,9 +50,5 @@ trait ShareLogDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param shareType  The type (workspace, group, or method)
     * @return A list of `ShareLog.Share`s
     */
-  def getShares(userId: String, shareType: Option[String] = None): Seq[Share]
-
-//  todo
-//  def autocomplete(userId: String, term: String): List[String]
-
+  def getShares(userId: String, shareType: Option[ShareType.Value] = None): Seq[Share]
 }

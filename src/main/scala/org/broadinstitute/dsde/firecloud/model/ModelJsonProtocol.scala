@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import java.time.Instant
 import org.broadinstitute.dsde.firecloud.model.DUOS._
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.rawls.model._
@@ -8,7 +7,7 @@ import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
-import org.broadinstitute.dsde.firecloud.model.ShareLog._
+import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial._
 import spray.json._
@@ -16,6 +15,7 @@ import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
+import org.broadinstitute.dsde.workbench.model.google.GoogleModelJsonSupport.InstantFormat
 
 import scala.util.{Failure, Success, Try}
 
@@ -327,36 +327,15 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impCreateRawlsBillingProjectFullRequestFormat = jsonFormat2(CreateRawlsBillingProjectFullRequest)
   implicit val impSpreadsheetResponse = jsonFormat1(SpreadsheetResponse)
 
-  implicit object ShareFormat extends RootJsonFormat[Share] {
-    override def write(obj: Share): JsValue = JsObject(Map(
-      "userId" -> JsString(obj.userId),
-      "sharee" -> JsString(obj.sharee),
-      "shareType" -> JsString(obj.shareType),
-      "timestamp" -> JsNumber(obj.timestamp.getOrElse(Instant.now).toEpochMilli)
-    ))
 
-    override def read(json: JsValue): Share = json match {
-      case JsObject(map) =>
-        val userId = getValue(map, "userId")
-        val sharee = getValue(map, "sharee")
-        val shareType = getValue(map, "shareType")
-        val timestamp: Instant = {
-          map.get("timestamp") match {
-            case Some(JsNumber(n)) => Instant.ofEpochMilli(n.toLongExact)
-            case _ => throw DeserializationException("could not deserialize Share")
-          }
-        }
-        Share(userId, sharee, shareType, Some(timestamp))
+  implicit object ShareTypeFormat extends RootJsonFormat[ShareType.Value] {
+    override def write(obj: ShareType.Value): JsValue = JsString(obj.toString)
 
-      case _ => throw DeserializationException("could not deserialize Share")
+    override def read(json: JsValue): ShareType.Value = json match {
+      case JsString(name) => ShareType.withName(name)
+      case _ => throw DeserializationException("could not deserialize share type")
     }
-
-    def getValue(map: Map[String, JsValue], key: String): String = {
-      map.get(key) match {
-        case Some(JsString(s)) => s
-        case _ => throw DeserializationException("could not deserialize Share")
-      }
-    }
-
   }
+
+  implicit val impShareFormat = jsonFormat4(Share)
 }

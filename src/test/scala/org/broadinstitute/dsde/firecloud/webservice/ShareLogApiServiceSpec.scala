@@ -2,7 +2,8 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.ActorRefFactory
 import org.broadinstitute.dsde.firecloud.dataaccess.ShareLogApiServiceSpecShareLogDAO
-import org.broadinstitute.dsde.firecloud.model.{ShareLog, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, ShareLogService}
 import spray.http.OAuth2BearerToken
 import spray.http.StatusCodes._
@@ -14,7 +15,7 @@ final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiServi
 
   private val getShareesPath = "/sharelog/sharees"
 
-  private def makeGetShareesPath(shareType: String) = s"$getShareesPath?shareType=$shareType"
+  private def makeGetShareesPath(shareType: ShareType.Value) = s"$getShareesPath?shareType=${shareType.toString}"
 
   val localShareLogDao = new ShareLogApiServiceSpecShareLogDAO
 
@@ -29,7 +30,7 @@ final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiServi
       }
     }
     "when getting workspace sharees" in {
-      Get(makeGetShareesPath(ShareLog.WORKSPACE)) ~> getUserHeaders("fake1", "fake1@gmail.com") ~> sealRoute(shareLogServiceRoutes) ~> check {
+      Get(makeGetShareesPath(ShareType.WORKSPACE)) ~> getUserHeaders("fake1", "fake1@gmail.com") ~> sealRoute(shareLogServiceRoutes) ~> check {
         assertResult(OK) { status }
       }
     }

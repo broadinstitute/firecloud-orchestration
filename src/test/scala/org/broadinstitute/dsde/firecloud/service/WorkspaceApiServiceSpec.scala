@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogD
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
+import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
@@ -626,7 +626,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             val expected = aclUpdates.map(_.email).sorted
             val check = shares.map(_.sharee).sorted
             assertResult(List(dummyUserId)) { shares.map(_.userId).distinct }
-            assertResult(List(ShareLog.WORKSPACE)) { shares.map(_.shareType).distinct }
+            assertResult(List(ShareType.WORKSPACE)) { shares.map(_.shareType).distinct }
             assertResult(expected) { check }
         }
       }

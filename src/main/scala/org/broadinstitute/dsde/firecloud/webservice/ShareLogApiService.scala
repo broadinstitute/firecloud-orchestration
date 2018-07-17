@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PerRequestCreator, ShareLogService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.httpx.SprayJsonSupport
@@ -19,9 +20,17 @@ trait ShareLogApiService extends HttpService with PerRequestCreator with FireClo
         get {
           parameter("shareType".?) { shareType =>
             requireUserInfo() { userInfo => requestContext =>
-              perRequest(requestContext,
-                ShareLogService.props(shareLogServiceConstructor),
-                ShareLogService.GetSharees(userInfo.id, shareType))
+              shareType match {
+                case Some(typeOfShare) =>
+                  perRequest(requestContext,
+                    ShareLogService.props(shareLogServiceConstructor),
+                    ShareLogService.GetSharees(userInfo.id, Some(ShareType.withName(typeOfShare))))
+                case None =>
+                  perRequest(requestContext,
+                    ShareLogService.props(shareLogServiceConstructor),
+                    ShareLogService.GetSharees(userInfo.id))
+              }
+
             }
           }
         }

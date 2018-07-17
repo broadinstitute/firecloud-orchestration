@@ -3,8 +3,8 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.time.Instant
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.ShareFormat
-import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impShareFormat
+import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
@@ -26,14 +26,15 @@ import scala.util.{Failure, Success, Try}
 
 trait ShareQueries {
   def userShares(userId: String): QueryBuilder = termQuery("userId", userId)
-  def userSharesOfType(userId: String, shareType: Option[String]) = {
-    if (shareType.isDefined)
-      boolQuery().filter(
-        boolQuery()
-          .must(userShares(userId))
-          .must(termQuery("shareType", shareType.get)))
-    else
-      userShares(userId)
+  def userSharesOfType(userId: String, shareType: Option[ShareType.Value]): QueryBuilder = {
+    shareType match {
+      case Some(typeOfShare) =>
+        boolQuery().filter(
+          boolQuery()
+            .must(userShares(userId))
+            .must(termQuery("shareType", typeOfShare.toString)))
+      case _ => userShares(userId)
+    }
   }
 
 }
@@ -59,9 +60,9 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     * @param shareType  The type (workspace, group, or method) see `ShareLog`
     * @return           The record of the share
     */
-  override def logShare(userId: String, sharee: String, shareType: String): Share = {
+  override def logShare(userId: String, sharee: String, shareType: ShareType.Value): Share = {
     val share = Share(userId, sharee, shareType, Some(Instant.now))
-    val id = MurmurHash3.stringHash(userId + sharee + shareType).toString
+    val id = generateId(share)
     val insert = client
       .prepareIndex(indexName, datatype, id)
       .setSource(share.toJson.compactPrint, XContentType.JSON)
@@ -73,14 +74,14 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
 
   /**
     * Logs records of a user sharing a workspace, group, or method with users.
+    * todo could be a batch query
     *
     * @param userId The workbench user id
     * @param sharees The emails of the users being shared with
     * @param shareType The type (workspace, group, or method) see `ShareLog`
     * @return The records of the shares - see `ShareLog.Share`
     */
-  override def logShares(userId: String, sharees: Seq[String], shareType: String): Seq[Share] = {
-    // todo how do i make this a batch query?
+  override def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share] = {
     sharees map { sharee => logShare(userId, sharee, shareType) }
   }
 
@@ -108,7 +109,7 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     * @param shareType  The type (workspace, group, or method) - if left blank returns all shares
     * @return A list of `ShareLog.Share`s
     */
-  override def getShares(userId: String, shareType: Option[String] = None): Seq[Share] = {
+  override def getShares(userId: String, shareType: Option[ShareType.Value] = None): Seq[Share] = {
     val getSharesRequest = client
       .prepareSearch(indexName)
       .setQuery(userSharesOfType(userId, shareType))
@@ -122,7 +123,12 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
       getSharesResponse.getHits.getHits.toList map (_.getSourceAsString.parseJson.convertTo[Share])
   }
 
-//  todo
+//  todo Leveraging ElasticSearch's autocomplete functionality will likely be useful
+//       as we iterate and the number of shares increases to such a size that the list of
+//       shares returned by `getShares` is too large for HTML autocomplete to efficiently handle.
+//       Rather than limit the number of values returned, it ought to be beneficial to let
+//       ElasticSearch handle the autocompletion.
+//
 //  override def autocomplete(userId: String, term: String): List[String] = ???
 
   private def indexExists: Boolean = {
@@ -151,7 +157,7 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     * @return the hash
     */
   def generateId(share: Share): String = {
-    val rawId = Seq(share.userId, share.sharee, share.shareType).mkString
+    val rawId = Seq(share.userId, share.sharee, share.shareType).mkString("|")
     MurmurHash3.stringHash(rawId).toString
   }
 }

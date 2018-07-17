@@ -6,7 +6,7 @@ import akka.event.Logging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ShareLog.Share
+import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.service.WorkspaceService.WorkspaceServiceMessage
@@ -140,7 +140,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       // it will also log a share every time a workspace permission is changed
       // i.e. READER to WRITER, etc
       val sharees = aclUpdateList.usersUpdated.filterNot(_.accessLevel == WorkspaceAccessLevels.NoAccess).map(_.email)
-      shareLogDAO.logShares(originId, sharees, ShareLog.WORKSPACE)
+      shareLogDAO.logShares(originId, sharees, ShareType.WORKSPACE)
     }
 
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
