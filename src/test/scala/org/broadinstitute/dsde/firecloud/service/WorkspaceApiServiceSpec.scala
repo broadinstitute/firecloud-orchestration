@@ -621,30 +621,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       Patch(aclPath, aclUpdates) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
-        responseAs[(WorkspaceACLUpdateResponseList, Seq[Share])] match {
-          case (_, shares) =>
-            val expected = aclUpdates.map(_.email).sorted
-            val check = shares.map(_.sharee).sorted
-            assertResult(List(dummyUserId)) { shares.map(_.userId).distinct }
-            assertResult(List(ShareType.WORKSPACE)) { shares.map(_.shareType).distinct }
-            assertResult(expected) { check }
-        }
-      }
-    }
-
-    "OK status and no logged shares returned from PATCH with WorkspaceAccessLevels.NoAccess on /workspaces/%s/%s/acl" in {
-      val aclUpdates = ElasticSearchShareLogDAOSpecFixtures.fixtureShares map { share =>
-        WorkspaceACLUpdate(share.sharee, WorkspaceAccessLevels.NoAccess, Some(false))
-      }
-
-      Patch(aclPath, aclUpdates) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(OK)
-        responseAs[(WorkspaceACLUpdateResponseList, Seq[Share])] match {
-          case (_, shares) =>
-            val expected = Seq()
-            val check = shares.map(_.sharee)
-            assertResult(expected) { check }
-        }
       }
     }
 

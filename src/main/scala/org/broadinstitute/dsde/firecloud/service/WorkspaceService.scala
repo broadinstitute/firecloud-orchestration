@@ -134,7 +134,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     }
   }
 
-  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean): Future[RequestComplete[(WorkspaceACLUpdateResponseList, Seq[Share])]] = {
+  def updateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean): Future[RequestComplete[WorkspaceACLUpdateResponseList]] = {
     def logShares(aclUpdateList: WorkspaceACLUpdateResponseList) = {
       // this will log a share every time a workspace is shared with a user
       // it will also log a share every time a workspace permission is changed
@@ -146,9 +146,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
 
     aclUpdate map { actualUpdates =>
-      val shares = logShares(actualUpdates)
-      // todo swagger 2.0 doesn't support arrays of mixed types. will need to revisit
-      RequestComplete((actualUpdates, shares))
+      logShares(actualUpdates)
+      RequestComplete(actualUpdates)
     }
   }
 

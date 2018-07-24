@@ -25,15 +25,14 @@ import scala.util.hashing.MurmurHash3
 import scala.util.{Failure, Success, Try}
 
 trait ShareQueries {
-  def userShares(userId: String): QueryBuilder = termQuery("userId", userId)
-  def userSharesOfType(userId: String, shareType: Option[ShareType.Value]): QueryBuilder = {
+  def userShares(userId: String, shareType: Option[ShareType.Value] = None): QueryBuilder = {
     shareType match {
       case Some(typeOfShare) =>
         boolQuery().filter(
           boolQuery()
-            .must(userShares(userId))
+            .must(termQuery("userId", userId))
             .must(termQuery("shareType", typeOfShare.toString)))
-      case _ => userShares(userId)
+      case _ => termQuery("userId", userId)
     }
   }
 
@@ -102,8 +101,9 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
   }
 
   /**
-    * Gets all shares that have been logged for a workbench user which fall under the
+    * Gets up to 100 shares that have been logged for a workbench user which fall under the
     * given type of share (workspace, method, group).
+    * Todo when 100 shares have been reached it's probably time to implement autocomplete.
     *
     * @param userId     The workbench user ID
     * @param shareType  The type (workspace, group, or method) - if left blank returns all shares
@@ -112,15 +112,18 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
   override def getShares(userId: String, shareType: Option[ShareType.Value] = None): Seq[Share] = {
     val getSharesRequest = client
       .prepareSearch(indexName)
-      .setQuery(userSharesOfType(userId, shareType))
+      .setQuery(userShares(userId, shareType))
       .setSize(100)
 
     val getSharesResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](getSharesRequest)
-
-    if (getSharesResponse.getHits.totalHits == 0)
-      Seq.empty[Share]
-    else
-      getSharesResponse.getHits.getHits.toList map (_.getSourceAsString.parseJson.convertTo[Share])
+    getSharesResponse.getHits match {
+      case hits =>
+        if (hits.totalHits == 0)
+          Seq.empty[Share]
+        else
+          if (hits.totalHits >= 100) logger.warn(s"Number of shares for user $userId has reached or exceeded 100.")
+          getSharesResponse.getHits.getHits.toList map (_.getSourceAsString.parseJson.convertTo[Share])
+    }
   }
 
 //  todo Leveraging ElasticSearch's autocomplete functionality will likely be useful

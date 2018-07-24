@@ -22,6 +22,29 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
   }
 
   "ElasticSearchShareLogDAO" - {
+    "getShares" - {
+      "should get shares of all types that were logged in init" in {
+        val expected = ElasticSearchShareLogDAOSpecFixtures.fixtureShares.sortBy(s => (s.userId, s.sharee, s.shareType))
+        val checkFake1 = shareLogDAO.getShares("fake1")
+        val checkFake2 = shareLogDAO.getShares("fake2")
+        val check = checkFake1 ++ checkFake2
+
+        assertResult(expected.size) { check.size }
+        assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) {
+          check.sortBy(s => (s.userId, s.sharee, s.shareType)).map(s => (s.userId, s.sharee, s.shareType))
+        }
+      }
+      "should get shares of a specific type and none others" in {
+        val expected = ElasticSearchShareLogDAOSpecFixtures.fixtureShares
+          .filter(s => s.userId.equals("fake1"))
+          .filter(s => s.shareType.equals(ShareType.GROUP))
+          .sortBy(_.sharee)
+        val check = shareLogDAO.getShares("fake1", Some(ShareType.GROUP)).sortBy(_.sharee)
+
+        assertResult(expected.size) { check.size }
+        assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) { check.map(s => (s.userId, s.sharee, s.shareType)) }
+      }
+    }
     "logShare" - {
       "should log a share and get it back successfully using the generated MD5 hash" in {
         val share = Share("roger", "syd@gmail.com", ShareType.WORKSPACE)
@@ -29,43 +52,10 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
         val check = shareLogDAO.getShare(share)
         assertResult(loggedShare) { check }
       }
-      "should successfully log a duplicate share" in {
+      "should successfully log a record of a user sharing a workspace with the same user twice" in {
         val loggedShare = shareLogDAO.logShare("fake4", "fake3@gmail.com", ShareType.WORKSPACE)
         val check = Try(shareLogDAO.logShare(loggedShare.userId, loggedShare.sharee, loggedShare.shareType))
         assert(check.isSuccess)
-      }
-    }
-    "logShares" - {
-      "should log multiple shares for a single user and share type" in {
-        val userId = "fake2"
-        val shareType = ShareType.GROUP
-        val expected = ElasticSearchShareLogDAOSpecFixtures.fixtureShares.filter(_.userId == userId).filter(_.shareType == shareType)
-        val sharees = expected.map(_.sharee)
-        val check = shareLogDAO.logShares(userId, sharees, ShareType.GROUP)
-        assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) {
-          check.map(s => (s.userId, s.sharee, s.shareType))
-        }
-      }
-    }
-    "getShares" - {
-      "should get shares of all types for a user" in {
-        val expected = ElasticSearchShareLogDAOSpecFixtures.fixtureShares
-          .filter(s => s.userId.equals("fake1"))
-          .sortBy(s => (s.sharee, s.shareType))
-        val check = shareLogDAO.getShares("fake1").sortBy(s => (s.sharee, s.shareType))
-
-        assertResult(expected.size) { check.size }
-        assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) { check.map(s => (s.userId, s.sharee, s.shareType)) }
-      }
-      "should get shares of a specific type and none others" in {
-        val expected = ElasticSearchShareLogDAOSpecFixtures.fixtureShares
-          .filter(s => s.userId.equals("fake1"))
-          .filter(s => s.shareType.equals(ShareType.GROUP))
-          .sortBy(s => (s.sharee, s.shareType))
-        val check = shareLogDAO.getShares("fake1", Some(ShareType.GROUP)).sortBy(s => (s.sharee, s.shareType))
-
-        assertResult(expected.size) { check.size }
-        assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) { check.map(s => (s.userId, s.sharee, s.shareType)) }
       }
     }
   }

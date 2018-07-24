@@ -20,17 +20,9 @@ trait ShareLogApiService extends HttpService with PerRequestCreator with FireClo
         get {
           parameter("shareType".?) { shareType =>
             requireUserInfo() { userInfo => requestContext =>
-              shareType match {
-                case Some(typeOfShare) =>
-                  perRequest(requestContext,
-                    ShareLogService.props(shareLogServiceConstructor),
-                    ShareLogService.GetSharees(userInfo.id, Some(ShareType.withName(typeOfShare))))
-                case None =>
-                  perRequest(requestContext,
-                    ShareLogService.props(shareLogServiceConstructor),
-                    ShareLogService.GetSharees(userInfo.id))
-              }
-
+              perRequest(requestContext,
+                ShareLogService.props(shareLogServiceConstructor),
+                ShareLogService.GetSharees(userInfo.id, shareType.map(ShareType.withName)))
             }
           }
         }
