@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.pattern.pipe
 import akka.actor.{Actor, Props}
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impShareFormat
 import org.broadinstitute.dsde.firecloud.dataaccess.ShareLogDAO
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
@@ -27,14 +27,15 @@ object ShareLogService {
     () => new ShareLogService(userInfo, app.shareLogDAO)
 }
 
-class ShareLogService(protected val userInfo: UserInfo, val shareDAO: ShareLogDAO)
+class ShareLogService(protected val userInfo: UserInfo, val shareLogDAO: ShareLogDAO)
                      (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
 
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
   override def receive = {
     case GetSharees(userId: String, shareType: Option[ShareType.Value]) => getSharees(userId, shareType) pipeTo sender
+    case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
-  def getSharees(userId: String, shareType: Option[ShareType.Value] = None) = Future(RequestComplete(shareDAO.getShares(userId, shareType).flatMap(_.sharee)))
+  def getSharees(userId: String, shareType: Option[ShareType.Value] = None) = Future(RequestComplete(shareLogDAO.getShares(userId, shareType).flatMap(_.sharee)))
 }

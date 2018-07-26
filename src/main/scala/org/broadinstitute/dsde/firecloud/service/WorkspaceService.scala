@@ -140,7 +140,9 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       // it will also log a share every time a workspace permission is changed
       // i.e. READER to WRITER, etc
       val sharees = aclUpdateList.usersUpdated.filterNot(_.accessLevel == WorkspaceAccessLevels.NoAccess).map(_.email)
-      shareLogDAO.logShares(originId, sharees, ShareType.WORKSPACE)
+      val invitesUpdated = aclUpdateList.invitesUpdated.filterNot(_.accessLevel == WorkspaceAccessLevels.NoAccess).map(_.email)
+      val invitesSent = aclUpdateList.invitesSent.map(_.email)
+      shareLogDAO.logShares(originId, sharees ++ invitesSent ++ invitesUpdated, ShareType.WORKSPACE)
     }
 
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
