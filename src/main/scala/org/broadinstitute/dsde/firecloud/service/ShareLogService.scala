@@ -23,12 +23,11 @@ object ShareLogService {
     Props(constructor())
   }
 
-  def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    () => new ShareLogService(userInfo, app.shareLogDAO)
+  def constructor(app: Application)(implicit executionContext: ExecutionContext) =
+    () => new ShareLogService(app.shareLogDAO)
 }
 
-class ShareLogService(protected val userInfo: UserInfo, val shareLogDAO: ShareLogDAO)
-                     (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
+class ShareLogService(val shareLogDAO: ShareLogDAO)(implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
 
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
@@ -37,5 +36,5 @@ class ShareLogService(protected val userInfo: UserInfo, val shareLogDAO: ShareLo
     case x => throw new FireCloudException("unrecognized message: " + x.toString)
   }
 
-  def getSharees(userId: String, shareType: Option[ShareType.Value] = None) = Future(RequestComplete(shareLogDAO.getShares(userId, shareType).flatMap(_.sharee)))
+  def getSharees(userId: String, shareType: Option[ShareType.Value] = None) = Future(RequestComplete(shareLogDAO.getShares(userId, shareType).map(_.sharee)))
 }

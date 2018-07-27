@@ -1716,6 +1716,7 @@ paths:
       parameters:
         - name: shareType
           required: false
+          in: query
           description: |
            The type of share - Workspace, Group, or Method. If left empty, all types are returned.
           type: string

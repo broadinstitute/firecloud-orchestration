@@ -19,7 +19,7 @@ final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiServi
 
   val localShareLogDao = new ShareLogApiServiceSpecShareLogDAO
 
-  override val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app.copy(shareLogDAO = localShareLogDao))(sharingUser)
+  override val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app.copy(shareLogDAO = localShareLogDao))
 
   override def actorRefFactory: ActorRefFactory = system
 
