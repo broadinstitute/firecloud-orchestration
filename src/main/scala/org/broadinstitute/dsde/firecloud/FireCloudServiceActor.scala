@@ -14,7 +14,6 @@ import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.firecloud.webservice._
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
-import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.transport.TransportClient
 
 import scala.concurrent.duration._

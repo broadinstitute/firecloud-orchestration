@@ -21,6 +21,8 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
     searchDAO.deleteIndex()
   }
 
+  private def scrubShares(in: Seq[Share]) = in.map(_.copy(timestamp = None))
+
   "ElasticSearchShareLogDAO" - {
     "getShares" - {
       "should get shares of all types that were logged in init" in {
@@ -30,9 +32,7 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
         val check = checkFake1 ++ checkFake2
 
         assertResult(expected.size) { check.size }
-        assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) {
-          check.sortBy(s => (s.userId, s.sharee, s.shareType)).map(s => (s.userId, s.sharee, s.shareType))
-        }
+        scrubShares(check) should contain theSameElementsAs scrubShares(expected)
       }
       "should get shares of a specific type and none others" in {
         val expected = ElasticSearchShareLogDAOSpecFixtures.fixtureShares
@@ -42,7 +42,7 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
         val check = shareLogDAO.getShares("fake1", Some(ShareType.GROUP)).sortBy(_.sharee)
 
         assertResult(expected.size) { check.size }
-        assertResult(expected.map(s => (s.userId, s.sharee, s.shareType))) { check.map(s => (s.userId, s.sharee, s.shareType)) }
+        scrubShares(check) should contain theSameElementsAs scrubShares(expected)
       }
     }
     "logShare" - {

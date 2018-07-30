@@ -25,15 +25,18 @@ import scala.util.hashing.MurmurHash3
 import scala.util.{Failure, Success, Try}
 
 trait ShareQueries {
+  /**
+    * Makes an ElasticSearch query builder to get user shares
+    * @param userId     ID of user whose shares to get
+    * @param shareType  Optional type of share, if left empty will get all types
+    * @return           The search query
+    */
   def userShares(userId: String, shareType: Option[ShareType.Value] = None): QueryBuilder = {
-    shareType match {
-      case Some(typeOfShare) =>
-        boolQuery().filter(
-          boolQuery()
-            .must(termQuery("userId", userId))
-            .must(termQuery("shareType", typeOfShare.toString)))
-      case _ => termQuery("userId", userId)
-    }
+    // always include the sharer in query criteria
+    val userIdQuery = boolQuery().must(termQuery("userId", userId))
+    // if a shareType was specified, include that also
+    shareType map { typeOfShare => userIdQuery.must(termQuery("shareType", typeOfShare.toString)) }
+    userIdQuery
   }
 
 }
@@ -153,7 +156,7 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
   }
 
   /**
-    * Uses MurmerHash3 for quick hashing -
+    * Uses MurmurHash3 for quick hashing -
     * @see [[https://github.com/aappleby/smhasher]]
     *
     * @param share the share to create the hash from

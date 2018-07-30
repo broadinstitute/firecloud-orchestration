@@ -6,7 +6,6 @@ import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impShareFormat
 import org.broadinstitute.dsde.firecloud.dataaccess.ShareLogDAO
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
-import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.ShareLogService._
 import org.broadinstitute.dsde.rawls.model.{AttributeFormat, PlainArrayAttributeListSerializer}
