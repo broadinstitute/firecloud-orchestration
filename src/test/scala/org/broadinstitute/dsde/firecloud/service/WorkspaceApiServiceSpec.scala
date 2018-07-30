@@ -613,16 +613,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-    "OK status and logged shares returned from PATCH on /workspaces/%s/%s/acl" in {
-      val aclUpdates = ElasticSearchShareLogDAOSpecFixtures.fixtureShares map { share =>
-        WorkspaceACLUpdate(share.sharee, WorkspaceAccessLevels.Read, Some(false))
-      }
-
-      Patch(aclPath, aclUpdates) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(OK)
-      }
-    }
-
     "POST on /workspaces/.../.../clone for 'not protected' workspace sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
       val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name")
 
