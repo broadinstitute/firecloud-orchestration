@@ -36,11 +36,12 @@ trait ApiServiceSpec extends FlatSpec with Matchers with HttpService with Scalat
     val thurloeDao: MockThurloeDAO
     val trialDao: MockTrialDAO
     val logitDao: LogitDAO
+    val shareLogDao: MockShareLogDAO
 
     def actorRefFactory = system
 
     val nihServiceConstructor = NihService.constructor(
-      new Application(agoraDao, googleDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, trialDao, logitDao)
+      new Application(agoraDao, googleDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, trialDao, logitDao, shareLogDao)
     )_
 
   }

@@ -151,6 +151,7 @@ object FireCloudConfig {
     val ontologyIndexName = elasticsearch.getString("ontologyIndex")
     val trialIndexName = elasticsearch.getString("trialIndex")
     val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
+    val shareLogIndexName: String = elasticsearch.getString("shareLogIndex")
   }
 
   def parseESServers(confString: String): Seq[Authority] = {

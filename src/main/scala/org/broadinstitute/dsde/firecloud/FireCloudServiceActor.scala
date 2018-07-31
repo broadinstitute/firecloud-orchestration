@@ -38,6 +38,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with Ga4ghApiService
   with UserApiService
   with TrialApiService
+  with ShareLogApiService
 {
 
   override lazy val log = LoggerFactory.getLogger(getClass)
@@ -66,8 +67,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
       new HttpLogitDAO(FireCloudConfig.Metrics.logitUrl, FireCloudConfig.Metrics.logitApiKey.get)
     else
       new NoopLogitDAO
+  val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
 
-  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, trialDAO, logitDAO)
+  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, trialDAO, logitDAO, shareLogDAO)
   val materializer: ActorMaterializer = ActorMaterializer()
 
   private val healthChecks = new HealthChecks(app)
@@ -101,6 +103,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
   val trialServiceConstructor: () => TrialService = TrialService.constructor(app, trialProjectManager)
   val userServiceConstructor: (WithAccessToken) => UserService = UserService.constructor(app)
+  val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
 
   if (FireCloudConfig.Trial.spreadsheetId.nonEmpty && FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes > 0) {
     val freq = FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes
@@ -119,7 +122,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val billingService = new BillingService with ActorRefFactoryContext
   val apiRoutes = methodsApiServiceRoutes ~ profileRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    nihRoutes ~ billingService.routes ~ trialApiServiceRoutes
+    nihRoutes ~ billingService.routes ~ trialApiServiceRoutes ~ shareLogServiceRoutes
 
   val healthService = new HealthService with ActorRefFactoryContext
 

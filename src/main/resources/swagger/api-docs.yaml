@@ -1704,6 +1704,23 @@ paths:
               requiresRefresh:
                 type: boolean
 
+  /api/sharelog/sharees:
+    get:
+      tags:
+      - ShareLog
+      operationId: getSharees
+      summary: |
+        Get a list of users with whom current user has shared a Workspace.
+      description: |
+        Get a list of users with whom current user has shared a Workspace.
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/StringArray'
+        500:
+          description: Internal Error
+
   /api/storage/{bucket}/{object}:
     get:
       tags:

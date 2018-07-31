@@ -7,6 +7,7 @@ import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
+import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial._
 import spray.json._
@@ -14,6 +15,7 @@ import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
+import org.broadinstitute.dsde.workbench.model.google.GoogleModelJsonSupport.InstantFormat
 
 import scala.util.{Failure, Success, Try}
 
@@ -325,4 +327,15 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impCreateRawlsBillingProjectFullRequestFormat = jsonFormat2(CreateRawlsBillingProjectFullRequest)
   implicit val impSpreadsheetResponse = jsonFormat1(SpreadsheetResponse)
 
+
+  implicit object ShareTypeFormat extends RootJsonFormat[ShareType.Value] {
+    override def write(obj: ShareType.Value): JsValue = JsString(obj.toString)
+
+    override def read(json: JsValue): ShareType.Value = json match {
+      case JsString(name) => ShareType.withName(name)
+      case _ => throw DeserializationException("could not deserialize share type")
+    }
+  }
+
+  implicit val impShareFormat = jsonFormat4(Share)
 }
