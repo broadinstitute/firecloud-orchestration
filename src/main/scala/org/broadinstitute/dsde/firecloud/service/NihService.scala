@@ -113,26 +113,26 @@ trait NihService extends LazyLogging {
   def syncNihWhitelistAllUsers(nihWhitelist: NihWhitelist): Future[Unit] = {
     val whitelistUsers = downloadNihWhitelist(nihWhitelist)
 
-    // The list of users that, according to Thurloe, have active links and are
-    // on the specified whitelist
-    val nihEnabledFireCloudUsers = getCurrentNihUsernameMap(thurloeDao) map { mapping =>
-      mapping.collect { case (fcUser, nihUser) if whitelistUsers contains nihUser => fcUser }.toSeq
-    }
+    for {
+      // The list of users that, according to Thurloe, have active links and are
+      // on the specified whitelist
+      subjectIds <- getCurrentNihUsernameMap(thurloeDao) map { mapping =>
+        mapping.collect { case (fcUser, nihUser) if whitelistUsers contains nihUser => fcUser }.toSeq
+      }
 
-    //Sam APIs don't consume subject IDs like Rawls did. Now we must look up the emails in Thurloe...
-    val memberList = nihEnabledFireCloudUsers flatMap { subjectIds => {
-      thurloeDao.getAllUserValuesForKey("email").map { keyValues =>
+      //Sam APIs don't consume subject IDs. Now we must look up the emails in Thurloe...
+      members <- thurloeDao.getAllUserValuesForKey("email").map { keyValues =>
         keyValues.filterKeys(subjectId => subjectIds.contains(subjectId)).values.map(WorkbenchEmail).toList
       }
-    }}
 
-    // The request to rawls to completely overwrite the group
-    // with the list of actively linked users on the whitelist
-    memberList flatMap { members =>
-      rawlsDao.overwriteGroupMembership(nihWhitelist.groupToSync, ManagedGroupRoles.Member, RawlsGroupMemberList(Option(members.map(_.value)), None, None, None))(getAdminAccessToken) recoverWith {
+      _ <- ensureWhitelistGroupExists(nihWhitelist.groupToSync)
+
+      // The request to rawls to completely overwrite the group
+      // with the list of actively linked users on the whitelist
+      _ <- rawlsDao.overwriteGroupMembership(nihWhitelist.groupToSync, ManagedGroupRoles.Member, RawlsGroupMemberList(Option(members.map(_.value)), None, None, None))(getAdminAccessToken) recoverWith {
         case _: Exception => throw new FireCloudException("Error synchronizing NIH whitelist")
       }
-    }
+    } yield ()
   }
 
   private def linkNihAccount(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] = {
@@ -162,8 +162,18 @@ trait NihService extends LazyLogging {
     val whitelistUsers = downloadNihWhitelist(nihWhitelist)
 
     if(whitelistUsers contains linkedNihUserName) {
-      rawlsDao.addMemberToGroup(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken).map(_ => true)
+      for {
+        _ <- rawlsDao.createGroup(nihWhitelist.groupToSync)(getAdminAccessToken)
+        _ <- rawlsDao.addMemberToGroup(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
+      } yield true
     } else Future.successful(false)
+  }
+
+  private def ensureWhitelistGroupExists(groupName: WorkbenchGroupName): Future[Unit] = {
+    rawlsDao.getGroupsForUser(getAdminAccessToken).flatMap {
+      case groups if groups.contains(groupName.value) => Future.successful(())
+      case _ => rawlsDao.createGroup(groupName)(getAdminAccessToken)
+    }
   }
 
   def filterForCurrentUsers(usernames: Map[String, String], expirations: Map[String, String]): Map[String, String] = {

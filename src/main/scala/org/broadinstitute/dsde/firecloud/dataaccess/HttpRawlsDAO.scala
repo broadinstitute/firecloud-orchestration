@@ -128,6 +128,17 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
+  override def createGroup(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[Unit] = {
+    val url = FireCloudConfig.Rawls.createGroup(groupName.value)
+
+    userAuthedRequest(Post(url)) map { resp =>
+      if (resp.status.isSuccess) {
+        ()
+      } else {
+        throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
+      }
+    }
+  }
 
   override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats] = {
     val queryParams =

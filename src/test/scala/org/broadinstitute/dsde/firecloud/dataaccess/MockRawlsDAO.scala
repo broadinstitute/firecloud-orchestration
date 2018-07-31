@@ -371,4 +371,9 @@ class MockRawlsDAO extends RawlsDAO with MockGroupSupport {
 
     Future.successful(())
   }
+
+  override def createGroup(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[Unit] = {
+    // uses the token in place of the email since we can't get it here
+    overwriteGroupMembership(groupName, ManagedGroupRoles.Admin, RawlsGroupMemberList(userEmails = Option(Seq(userToken.accessToken.token))))
+  }
 }
