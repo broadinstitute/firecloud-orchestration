@@ -163,7 +163,7 @@ trait NihService extends LazyLogging {
 
     if(whitelistUsers contains linkedNihUserName) {
       for {
-        _ <- rawlsDao.createGroup(nihWhitelist.groupToSync)(getAdminAccessToken)
+        _ <- ensureWhitelistGroupExists(nihWhitelist.groupToSync)
         _ <- rawlsDao.addMemberToGroup(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
       } yield true
     } else Future.successful(false)
