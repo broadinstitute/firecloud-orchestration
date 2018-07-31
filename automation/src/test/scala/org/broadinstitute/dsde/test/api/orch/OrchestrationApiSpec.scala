@@ -164,7 +164,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.targetJsonWebTokenKey)
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true))
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true))
       }
     }
 
@@ -177,7 +177,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.tcgaJsonWebTokenKey)
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false))
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false))
       }
     }
 
@@ -190,7 +190,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
       }
     }
 
@@ -203,15 +203,15 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.targetAndTcgaJsonWebTokenKey)
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
 
         Orchestration.NIH.syncWhitelistFull
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
       }
     }
 
