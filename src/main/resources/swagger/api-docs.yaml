@@ -1713,17 +1713,6 @@ paths:
         Get a list of users with whom current user has shared a Workspace.
       description: |
         Get a list of users with whom current user has shared a Workspace.
-      parameters:
-        - name: shareType
-          required: false
-          in: query
-          description: |
-           The type of share - Workspace, Group, or Method. If left empty, all types are returned.
-          type: string
-          enum:
-            - workspace
-            - group
-            - method
       responses:
         200:
           description: Success
