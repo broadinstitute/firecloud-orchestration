@@ -78,6 +78,8 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def addMemberToGroup(groupName: WorkbenchGroupName, role: ManagedGroupRole, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit]
 
+  def createGroup(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[Unit]
+
   def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: RawlsGroupMemberList)(implicit userToken: WithAccessToken): Future[Unit]
 
   def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats]

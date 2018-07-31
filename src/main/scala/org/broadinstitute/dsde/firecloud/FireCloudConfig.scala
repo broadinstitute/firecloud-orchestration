@@ -62,6 +62,7 @@ object FireCloudConfig {
     val submissionsWorkflowIdOutputsPath = workspace.getString("submissionsWorkflowIdOutputsPath")
     val overwriteGroupMembershipPath = workspace.getString("overwriteGroupMembershipPath")
     val alterGroupMembershipPath = workspace.getString("alterGroupMembershipPath")
+    val createGroupPath = workspace.getString("createGroup")
     val submissionQueueStatusPath = workspace.getString("submissionQueueStatusPath")
     val submissionQueueStatusUrl = authUrl + submissionQueueStatusPath
     val executionEngineVersionPath = workspace.getString("executionEngineVersionPath")
@@ -75,6 +76,7 @@ object FireCloudConfig {
     def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
     def overwriteGroupMembershipUrlFromGroupName(groupName: String, role: String) = authUrl + overwriteGroupMembershipPath.format(groupName, role)
     def alterGroupMembershipUrlFromGroupName(groupName: String, role: String, email: String) = authUrl + alterGroupMembershipPath.format(groupName, role, email)
+    def createGroup(groupName: String) = authUrl + createGroupPath.format(groupName)
     def entityQueryUriFromWorkspaceAndQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: Option[EntityQuery] = None): Uri = {
       val baseEntityQueryUri = Uri(FireCloudDirectiveUtils.encodeUri(s"${entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType"))
       query match {
