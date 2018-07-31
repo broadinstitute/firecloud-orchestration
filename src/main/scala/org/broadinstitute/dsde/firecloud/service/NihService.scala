@@ -171,7 +171,7 @@ trait NihService extends LazyLogging {
 
   private def ensureWhitelistGroupExists(groupName: WorkbenchGroupName): Future[Unit] = {
     rawlsDao.getGroupsForUser(getAdminAccessToken).flatMap {
-      case groups if groups.contains(groupName.value) => Future.successful(())
+      case groups if groups.map(_.toLowerCase).contains(groupName.value.toLowerCase) => Future.successful(())
       case _ => rawlsDao.createGroup(groupName)(getAdminAccessToken)
     }
   }
