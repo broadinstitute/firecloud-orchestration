@@ -277,6 +277,6 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
     Orchestration.NIH.syncWhitelistFull
 
-    Orchestration.NIH.getUserNihStatus.datasetPermissions should contain theSameElementsAs Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+    Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
   }
 }
