@@ -543,6 +543,130 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
     }
 
+    "when calling /me?userDetailsOnly=true and sam says ldap is enabled" - {
+      "OK response is returned" in {
+
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
+        samServer
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"userSubjectId": "1111111111", "userEmail": "no@nope.org", "enabled": true}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when calling /me?userDetailsOnly=true and sam says ldap is not enabled" - {
+      "Forbidden response is returned" in {
+
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
+        samServer
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"userSubjectId": "1111111111", "userEmail": "no@nope.org", "enabled": false}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("FireCloud user not activated"))
+          status should equal(Forbidden)
+        }
+      }
+    }
+
+    "when calling /me?userDetailsOnly=true and sam returns ugly JSON" - {
+      "InternalServerError response is returned" in {
+
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
+        samServer
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"userInfo": "whaaaaaaat??"}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("Received unparseable response from identity service"))
+          status should equal(InternalServerError)
+        }
+      }
+    }
+
+    "when calling /me?userDetailsOnly=false and sam says not-google-enabled" - {
+      "Forbidden response is returned" in {
+
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
+        samServer
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"enabled": {"google": false, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("FireCloud user not activated"))
+          status should equal(Forbidden)
+        }
+      }
+    }
+
+    "when calling /me?userDetailsOnly=false and sam says not-ldap-enabled" - {
+      "Forbidden response is returned" in {
+
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
+        samServer
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"enabled": {"google": true, "ldap": false, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("FireCloud user not activated"))
+          status should equal(Forbidden)
+        }
+      }
+    }
+
+    "when calling /me?userDetailsOnly=false and sam says fully enabled" - {
+      "OK response is returned" in {
+
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
+        samServer
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"enabled": {"google": true, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when calling /me?userDetailsOnly=false and sam returns ugly json" - {
+      "InternalServerError response is returned" in {
+
+        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
+        samServer
+          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
+          .respond(
+            org.mockserver.model.HttpResponse.response()
+              .withBody("""{"userInfo": "whaaaaaaat??"}""")
+              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+          )
+        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+          assert(response.entity.asString.contains("Received unparseable response from identity service"))
+          status should equal(InternalServerError)
+        }
+      }
+    }
+
   }
 
 }

@@ -77,7 +77,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
 
   val userServiceRoutes =
     path("me") {
-      parameter("V2".?) { V2 =>
+      parameter("userDetailsOnly".?) { userDetailsOnly =>
         get { requestContext =>
 
           // inspect headers for a pre-existing Authorization: header
@@ -92,7 +92,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
             // browser sent Authorization header; try to query Sam for user status
             case Some(_) =>
               val pipeline = authHeaders(requestContext) ~> sendReceive
-              val version2 = V2.exists(_.equalsIgnoreCase("true"))
+              val version2 = userDetailsOnly.exists(_.equalsIgnoreCase("true"))
               val samRequest = if (version2) Get(UserApiService.samRegisterUserV2URL) else Get(UserApiService.samRegisterUserURL)
               pipeline(samRequest) onComplete {
                 case Success(response: HttpResponse) =>
