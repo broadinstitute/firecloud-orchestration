@@ -77,8 +77,9 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
 
   val userServiceRoutes =
     path("me") {
-      get { requestContext =>
-        parameter("V2".?) { V2 =>
+      parameter("V2".?) { V2 =>
+        get { requestContext =>
+
           // inspect headers for a pre-existing Authorization: header
           val authorizationHeader: Option[HttpCredentials] = (requestContext.request.headers collect {
             case Authorization(h) => h
