@@ -37,6 +37,7 @@ object AccessToken{
 case class OAuthUser(sub: String, email: String)
 
 case class RegistrationInfo(userInfo: WorkbenchUserInfo, enabled: WorkbenchEnabled, messages:Option[List[String]] = None)
+case class RegistrationInfoV2(userSubjectId: String, userEmail: String, enabled: Boolean)
 
 case class WorkbenchUserInfo(userSubjectId: String, userEmail: String)
 case class WorkbenchEnabled(google: Boolean, ldap: Boolean, allUsersGroup: Boolean)
