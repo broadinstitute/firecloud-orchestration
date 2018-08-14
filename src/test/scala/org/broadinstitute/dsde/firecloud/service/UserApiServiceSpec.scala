@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.javadsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
@@ -59,6 +60,14 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
                      |    "ldap": true
                      |  }
                      |}""".stripMargin
+
+  val enabledV1UserBody = """{"enabled": {"google": true, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}"""
+  val noLdapV1UserBody = """{"enabled": {"google": true, "ldap": false, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}"""
+  val noGoogleV1UserBody = """{"enabled": {"google": false, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}"""
+  val enabledV2UserBody = """{"userSubjectId": "1111111111", "userEmail": "no@nope.org", "enabled": true}"""
+  val noLdapV2UserBody = """{"userSubjectId": "1111111111", "userEmail": "no@nope.org", "enabled": false}"""
+  val uglyJsonBody = """{"userInfo": "whaaaaaaat??"}"""
+
 
   override def beforeAll(): Unit = {
 
@@ -407,14 +416,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me and sam returns 401" - {
       "Unauthorized response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, "", Unauthorized.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(Unauthorized.intValue)
-          )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("Request rejected by identity service"))
           status should equal(Unauthorized)
@@ -424,14 +427,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me and sam returns 404" - {
       "NotFound response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, "", NotFound.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
-          )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("FireCloud user registration not found"))
           status should equal(NotFound)
@@ -441,14 +438,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me and sam returns 500" - {
       "InternalServerError response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, "", InternalServerError.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(InternalServerError.intValue)
-          )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("Identity service encountered an unknown error"))
           status should equal(InternalServerError)
@@ -458,15 +449,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me and sam says not-google-enabled" - {
       "Forbidden response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, noGoogleV1UserBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"enabled": {"google": false, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("FireCloud user not activated"))
           status should equal(Forbidden)
@@ -476,15 +460,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me and sam says not-ldap-enabled" - {
       "Forbidden response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, noLdapV1UserBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"enabled": {"google": true, "ldap": false, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("FireCloud user not activated"))
           status should equal(Forbidden)
@@ -494,15 +471,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me and sam says fully enabled" - {
       "OK response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, enabledV1UserBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"enabled": {"google": true, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(OK)
         }
@@ -511,15 +481,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me and sam returns ugly json" - {
       "InternalServerError response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, uglyJsonBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"userInfo": "whaaaaaaat??"}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("Received unparseable response from identity service"))
           status should equal(InternalServerError)
@@ -529,14 +492,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me and sam returns an unexpected HTTP response code" - {
       "echo the error code from sam" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, "", EnhanceYourCalm.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(EnhanceYourCalm.intValue)
-          )
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(EnhanceYourCalm)
         }
@@ -545,15 +502,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me?userDetailsOnly=true and sam says ldap is enabled" - {
       "OK response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserV2Path, enabledV2UserBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"userSubjectId": "1111111111", "userEmail": "no@nope.org", "enabled": true}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(OK)
         }
@@ -562,15 +512,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me?userDetailsOnly=true and sam says ldap is not enabled" - {
       "Forbidden response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserV2Path, noLdapV2UserBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"userSubjectId": "1111111111", "userEmail": "no@nope.org", "enabled": false}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("FireCloud user not activated"))
           status should equal(Forbidden)
@@ -580,15 +523,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me?userDetailsOnly=true and sam returns ugly JSON" - {
       "InternalServerError response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserV2Path, uglyJsonBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserV2Path))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"userInfo": "whaaaaaaat??"}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("Received unparseable response from identity service"))
           status should equal(InternalServerError)
@@ -598,15 +534,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me?userDetailsOnly=false and sam says not-google-enabled" - {
       "Forbidden response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, noGoogleV1UserBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"enabled": {"google": false, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("FireCloud user not activated"))
           status should equal(Forbidden)
@@ -616,15 +545,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me?userDetailsOnly=false and sam says not-ldap-enabled" - {
       "Forbidden response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, noLdapV1UserBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"enabled": {"google": true, "ldap": false, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("FireCloud user not activated"))
           status should equal(Forbidden)
@@ -634,15 +556,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me?userDetailsOnly=false and sam says fully enabled" - {
       "OK response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, enabledV1UserBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"enabled": {"google": true, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(OK)
         }
@@ -651,15 +566,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
     "when calling /me?userDetailsOnly=false and sam returns ugly json" - {
       "InternalServerError response is returned" in {
+        mockServerGetResponse(UserApiService.samRegisterUserPath, uglyJsonBody, OK.intValue)
 
-        samServer.clear(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-        samServer
-          .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withBody("""{"userInfo": "whaaaaaaat??"}""")
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
         Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("Received unparseable response from identity service"))
           status should equal(InternalServerError)
@@ -667,5 +575,16 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
     }
 
+  }
+
+  private def mockServerGetResponse(path: String, body: String, statusCode: Int): Unit = {
+    samServer.clear(request.withMethod("GET").withPath(path))
+    samServer
+      .when(request.withMethod("GET").withPath(path))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withBody(body)
+          .withHeaders(MockUtils.header).withStatusCode(statusCode)
+      )
   }
 }
