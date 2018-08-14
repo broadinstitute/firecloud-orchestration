@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.http.javadsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
