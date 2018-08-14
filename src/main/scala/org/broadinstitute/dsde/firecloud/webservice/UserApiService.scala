@@ -96,51 +96,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
               val samRequest = if (version2) Get(UserApiService.samRegisterUserV2URL) else Get(UserApiService.samRegisterUserURL)
               pipeline(samRequest) onComplete {
                 case Success(response: HttpResponse) =>
-                  response.status match {
-                    // Sam rejected our request. User is either invalid or their token timed out; this is truly unauthorized
-                    case Unauthorized =>
-                      respondWithErrorReport(Unauthorized, "Request rejected by identity service - invalid user or expired token.", requestContext)
-                    // Sam 404 means the user is not registered with FireCloud
-                    case NotFound =>
-                      respondWithErrorReport(NotFound, "FireCloud user registration not found.", requestContext)
-                    // Sam error? boo. All we can do is respond with an error.
-                    case InternalServerError =>
-                      respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
-                    // Sam found the user; we'll try to parse the response and inspect it
-                    case OK =>
-                      if (version2) {
-                        val respJson = response.entity.as[RegistrationInfoV2]
-                        respJson match {
-                          case Right(regInfo) =>
-                            if (regInfo.enabled) {
-                              requestContext.complete(OK,regInfo)
-                            } else {
-                              respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
-                            }
-                          case Left(_) =>
-                            respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
-                        }
-                      } else {
-                        val respJson = response.entity.as[RegistrationInfo]
-                        respJson match {
-                          case Right(regInfo) =>
-                            if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allUsersGroup) {
-                              // Sam says the user is fully registered and activated!
-                              requestContext.complete(OK, regInfo)
-                            } else {
-                              // Sam knows about the user, but the user isn't activated
-                              respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
-                            }
-                          // we couldn't parse the Sam response. Respond with an error.
-                          case Left(_) =>
-                            // TODO: no obvious way to include the JSON parsing error in the ErrorReport. We define `message` below and it does not belong there.
-                            respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
-                        }
-                      }
-                    case x =>
-                      // if we get any other error from Sam, pass that error on
-                      respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
-                  }
+                  handleSamResponse(response, requestContext, version2)
                 // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
                 case Failure(error) =>
                   respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
@@ -273,5 +229,55 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
 
   private def respondWithErrorReport(statusCode: StatusCode, message: String, error: Throwable, requestContext: RequestContext): Unit = {
     requestContext.complete(statusCode, ErrorReport(statusCode = statusCode, message = message, throwable = error))
+  }
+
+  private def handleSamResponse(response: HttpResponse, requestContext: RequestContext, version2: Boolean): Unit = {
+    response.status match {
+      // Sam rejected our request. User is either invalid or their token timed out; this is truly unauthorized
+      case Unauthorized =>
+        respondWithErrorReport(Unauthorized, "Request rejected by identity service - invalid user or expired token.", requestContext)
+      // Sam 404 means the user is not registered with FireCloud
+      case NotFound =>
+        respondWithErrorReport(NotFound, "FireCloud user registration not found.", requestContext)
+      // Sam error? boo. All we can do is respond with an error.
+      case InternalServerError =>
+        respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
+      // Sam found the user; we'll try to parse the response and inspect it
+      case OK =>
+        val respJson: Either[Deserialized[RegistrationInfoV2], Deserialized[RegistrationInfo]] =
+          if (version2) Left(response.entity.as[RegistrationInfoV2]) else Right(response.entity.as[RegistrationInfo])
+        handleOkResponse(respJson, requestContext, version2)
+      case x =>
+        // if we get any other error from Sam, pass that error on
+        respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
+    }
+  }
+
+  private def handleOkResponse(respJson: Either[Deserialized[RegistrationInfoV2], Deserialized[RegistrationInfo]], requestContext: RequestContext, version2: Boolean): Unit = {
+    respJson match {
+      // RegistrationInfo
+      case Right(deserializedRegInfo) => deserializedRegInfo match {
+        case Right(regInfo) =>
+          if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allUsersGroup) {
+            requestContext.complete(OK, regInfo)
+          } else {
+            respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
+          }
+        case Left(_) =>
+          respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
+      }
+
+      // RegistrationInfoV2
+      case Left(deserializedRegInfo) => deserializedRegInfo match {
+        case Right(regInfo) =>
+          if (regInfo.enabled) {
+            requestContext.complete(OK,regInfo)
+          } else {
+            respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
+          }
+        case Left(_) =>
+          respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
+      }
+    }
   }
 }

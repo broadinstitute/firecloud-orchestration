@@ -668,5 +668,4 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     }
 
   }
-
 }
