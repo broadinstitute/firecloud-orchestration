@@ -503,7 +503,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       "OK response is returned" in {
         mockServerGetResponse(UserApiService.samRegisterUserV2Path, enabledV2UserBody, OK.intValue)
 
-        Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+        Get(s"/me/v2") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -513,7 +513,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       "Forbidden response is returned" in {
         mockServerGetResponse(UserApiService.samRegisterUserV2Path, noLdapV2UserBody, OK.intValue)
 
-        Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+        Get(s"/me/v2") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("FireCloud user not activated"))
           status should equal(Forbidden)
         }
@@ -524,55 +524,55 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       "InternalServerError response is returned" in {
         mockServerGetResponse(UserApiService.samRegisterUserV2Path, uglyJsonBody, OK.intValue)
 
-        Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+        Get(s"/me/v2") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
           assert(response.entity.asString.contains("Received unparseable response from identity service"))
           status should equal(InternalServerError)
         }
       }
     }
-
-    "when calling /me?userDetailsOnly=false and sam says not-google-enabled" - {
-      "Forbidden response is returned" in {
-        mockServerGetResponse(UserApiService.samRegisterUserPath, noGoogleV1UserBody, OK.intValue)
-
-        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("FireCloud user not activated"))
-          status should equal(Forbidden)
-        }
-      }
-    }
-
-    "when calling /me?userDetailsOnly=false and sam says not-ldap-enabled" - {
-      "Forbidden response is returned" in {
-        mockServerGetResponse(UserApiService.samRegisterUserPath, noLdapV1UserBody, OK.intValue)
-
-        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("FireCloud user not activated"))
-          status should equal(Forbidden)
-        }
-      }
-    }
-
-    "when calling /me?userDetailsOnly=false and sam says fully enabled" - {
-      "OK response is returned" in {
-        mockServerGetResponse(UserApiService.samRegisterUserPath, enabledV1UserBody, OK.intValue)
-
-        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          status should equal(OK)
-        }
-      }
-    }
-
-    "when calling /me?userDetailsOnly=false and sam returns ugly json" - {
-      "InternalServerError response is returned" in {
-        mockServerGetResponse(UserApiService.samRegisterUserPath, uglyJsonBody, OK.intValue)
-
-        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("Received unparseable response from identity service"))
-          status should equal(InternalServerError)
-        }
-      }
-    }
+//
+//    "when calling /me?userDetailsOnly=false and sam says not-google-enabled" - {
+//      "Forbidden response is returned" in {
+//        mockServerGetResponse(UserApiService.samRegisterUserPath, noGoogleV1UserBody, OK.intValue)
+//
+//        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+//          assert(response.entity.asString.contains("FireCloud user not activated"))
+//          status should equal(Forbidden)
+//        }
+//      }
+//    }
+//
+//    "when calling /me?userDetailsOnly=false and sam says not-ldap-enabled" - {
+//      "Forbidden response is returned" in {
+//        mockServerGetResponse(UserApiService.samRegisterUserPath, noLdapV1UserBody, OK.intValue)
+//
+//        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+//          assert(response.entity.asString.contains("FireCloud user not activated"))
+//          status should equal(Forbidden)
+//        }
+//      }
+//    }
+//
+//    "when calling /me?userDetailsOnly=false and sam says fully enabled" - {
+//      "OK response is returned" in {
+//        mockServerGetResponse(UserApiService.samRegisterUserPath, enabledV1UserBody, OK.intValue)
+//
+//        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+//          status should equal(OK)
+//        }
+//      }
+//    }
+//
+//    "when calling /me?userDetailsOnly=false and sam returns ugly json" - {
+//      "InternalServerError response is returned" in {
+//        mockServerGetResponse(UserApiService.samRegisterUserPath, uglyJsonBody, OK.intValue)
+//
+//        Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
+//          assert(response.entity.asString.contains("Received unparseable response from identity service"))
+//          status should equal(InternalServerError)
+//        }
+//      }
+//    }
 
   }
 

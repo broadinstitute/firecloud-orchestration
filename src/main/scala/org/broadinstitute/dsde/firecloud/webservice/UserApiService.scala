@@ -76,10 +76,9 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
   val userServiceConstructor: (WithAccessToken) => UserService
 
   val userServiceRoutes =
-    path("me") {
-      parameter("userDetailsOnly".?) { userDetailsOnly =>
+    pathPrefix("me") {
+      pathEndOrSingleSlash {
         get { requestContext =>
-
           // inspect headers for a pre-existing Authorization: header
           val authorizationHeader: Option[HttpCredentials] = (requestContext.request.headers collect {
             case Authorization(h) => h
@@ -92,16 +91,48 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
             // browser sent Authorization header; try to query Sam for user status
             case Some(_) =>
               val pipeline = authHeaders(requestContext) ~> sendReceive
-              val version2 = userDetailsOnly.exists(_.equalsIgnoreCase("true"))
-              val samRequest = if (version2) Get(UserApiService.samRegisterUserV2URL) else Get(UserApiService.samRegisterUserURL)
+              //val version2 = userDetailsOnly.exists(_.equalsIgnoreCase("true"))
+              val samRequest = Get(UserApiService.samRegisterUserURL)
               pipeline(samRequest) onComplete {
                 case Success(response: HttpResponse) =>
-                  handleSamResponse(response, requestContext, version2)
+                  response.status match {
+                    // Sam rejected our request. User is either invalid or their token timed out; this is truly unauthorized
+                    case Unauthorized =>
+                      respondWithErrorReport(Unauthorized, "Request rejected by identity service - invalid user or expired token.", requestContext)
+                    // Sam 404 means the user is not registered with FireCloud
+                    case NotFound =>
+                      respondWithErrorReport(NotFound, "FireCloud user registration not found.", requestContext)
+                    // Sam error? boo. All we can do is respond with an error.
+                    case InternalServerError =>
+                      respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
+                    // Sam found the user; we'll try to parse the response and inspect it
+                    case OK =>
+                      val respJson = response.entity.as[RegistrationInfo]
+                      respJson match {
+                        case Right(regInfo) =>
+                          if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allUsersGroup) {
+                            requestContext.complete(OK, regInfo)
+                          } else {
+                            respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
+                          }
+                        case Left(_) =>
+                          respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
+                      }
+                    case x =>
+                      // if we get any other error from Sam, pass that error on
+                      respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
+
+                  }
                 // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
                 case Failure(error) =>
                   respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
               }
           }
+        }
+      } ~
+      path("v2") {
+        get { requestContext =>
+          getMe(requestContext, true)
         }
       }
     } ~
@@ -229,6 +260,31 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
 
   private def respondWithErrorReport(statusCode: StatusCode, message: String, error: Throwable, requestContext: RequestContext): Unit = {
     requestContext.complete(statusCode, ErrorReport(statusCode = statusCode, message = message, throwable = error))
+  }
+
+  private def getMe(requestContext: RequestContext, version2: Boolean): Unit = {
+    // inspect headers for a pre-existing Authorization: header
+    val authorizationHeader: Option[HttpCredentials] = (requestContext.request.headers collect {
+      case Authorization(h) => h
+    }).headOption
+
+    authorizationHeader match {
+      // no Authorization header; the user must be unauthorized
+      case None =>
+        respondWithErrorReport(Unauthorized, "No authorization header in request.", requestContext)
+      // browser sent Authorization header; try to query Sam for user status
+      case Some(_) =>
+        val pipeline = authHeaders(requestContext) ~> sendReceive
+        //val version2 = userDetailsOnly.exists(_.equalsIgnoreCase("true"))
+        val samRequest = if (version2) Get(UserApiService.samRegisterUserV2URL) else Get(UserApiService.samRegisterUserURL)
+        pipeline(samRequest) onComplete {
+          case Success(response: HttpResponse) =>
+            handleSamResponse(response, requestContext, version2)
+          // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
+          case Failure(error) =>
+            respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
+        }
+    }
   }
 
   private def handleSamResponse(response: HttpResponse, requestContext: RequestContext, version2: Boolean): Unit = {
