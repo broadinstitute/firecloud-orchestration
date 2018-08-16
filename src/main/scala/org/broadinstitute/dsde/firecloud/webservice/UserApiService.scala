@@ -79,6 +79,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
     pathPrefix("me") {
       pathEndOrSingleSlash {
         get { requestContext =>
+
           // inspect headers for a pre-existing Authorization: header
           val authorizationHeader: Option[HttpCredentials] = (requestContext.request.headers collect {
             case Authorization(h) => h
@@ -91,7 +92,6 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
             // browser sent Authorization header; try to query Sam for user status
             case Some(_) =>
               val pipeline = authHeaders(requestContext) ~> sendReceive
-              //val version2 = userDetailsOnly.exists(_.equalsIgnoreCase("true"))
               val samRequest = Get(UserApiService.samRegisterUserURL)
               pipeline(samRequest) onComplete {
                 case Success(response: HttpResponse) =>
@@ -111,17 +111,20 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
                       respJson match {
                         case Right(regInfo) =>
                           if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allUsersGroup) {
+                            // Sam says the user is fully registered and activated!
                             requestContext.complete(OK, regInfo)
                           } else {
+                            // Sam knows about the user, but the user isn't activated
                             respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
                           }
+                        // we couldn't parse the Sam response. Respond with an error.
                         case Left(_) =>
+                          // TODO: no obvious way to include the JSON parsing error in the ErrorReport. We define `message` below and it does not belong there.
                           respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
                       }
                     case x =>
                       // if we get any other error from Sam, pass that error on
                       respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
-
                   }
                 // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
                 case Failure(error) =>
