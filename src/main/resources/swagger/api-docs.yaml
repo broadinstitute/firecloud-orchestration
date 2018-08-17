@@ -3767,12 +3767,6 @@ paths:
         - Profile
       operationId: me
       summary: Returns registration and activation status for the current user
-      parameters:
-        - in: query
-          description: when set to true only returns user details and ldap status
-          name: userDetailsOnly
-          required: false
-          type: string
       responses:
         200:
           description: OK
