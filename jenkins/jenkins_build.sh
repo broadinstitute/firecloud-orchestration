@@ -10,7 +10,7 @@ docker run --rm  -e VAULT_TOKEN=$VAULT_TOKEN \
    broadinstitute/dsde-toolbox:latest vault read --format=json ${GCR_SVCACCT_VAULT} \
    | jq .data > ${SVCACCT_FILE}
 
-./consent-ws/build.sh jar -d push -g gcr.io/broad-dsp-gcr-public/${PROJECT} -k ${SVCACCT_FILE}
+./script/build.sh jar -d push -g gcr.io/broad-dsp-gcr-public/${PROJECT} -k ${SVCACCT_FILE}
 
 # clean up
 rm -f dspci-wb-gcr-service-account.json
