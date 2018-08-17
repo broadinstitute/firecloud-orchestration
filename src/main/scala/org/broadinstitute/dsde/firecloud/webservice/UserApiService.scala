@@ -105,11 +105,6 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         }
       }
     } ~
-    path("v2") {
-      get { requestContext =>
-        getMe(requestContext, true)
-      }
-    } ~
     pathPrefix("api") {
       pathPrefix("profile" / "billing") {
         pathEnd {
@@ -234,31 +229,6 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
 
   private def respondWithErrorReport(statusCode: StatusCode, message: String, error: Throwable, requestContext: RequestContext): Unit = {
     requestContext.complete(statusCode, ErrorReport(statusCode = statusCode, message = message, throwable = error))
-  }
-
-  private def getMe(requestContext: RequestContext, version2: Boolean): Unit = {
-    // inspect headers for a pre-existing Authorization: header
-    val authorizationHeader: Option[HttpCredentials] = (requestContext.request.headers collect {
-      case Authorization(h) => h
-    }).headOption
-
-    authorizationHeader match {
-      // no Authorization header; the user must be unauthorized
-      case None =>
-        respondWithErrorReport(Unauthorized, "No authorization header in request.", requestContext)
-      // browser sent Authorization header; try to query Sam for user status
-      case Some(_) =>
-        val pipeline = authHeaders(requestContext) ~> sendReceive
-        //val version2 = userDetailsOnly.exists(_.equalsIgnoreCase("true"))
-        val samRequest = if (version2) Get(UserApiService.samRegisterUserV2URL) else Get(UserApiService.samRegisterUserURL)
-        pipeline(samRequest) onComplete {
-          case Success(response: HttpResponse) =>
-            handleSamResponse(response, requestContext, version2)
-          // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
-          case Failure(error) =>
-            respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
-        }
-    }
   }
 
   private def handleSamResponse(response: HttpResponse, requestContext: RequestContext, version2: Boolean): Unit = {
