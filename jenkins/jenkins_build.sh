@@ -3,7 +3,6 @@
 set -eux
 SVCACCT_FILE="dspci-wb-gcr-service-account.json"
 GCR_SVCACCT_VAULT="secret/dsde/dsp-techops/common/$SVCACCT_FILE"
-GCR_REPO_PROJ="broad-dsp-gcr-public"
 VAULT_TOKEN=${VAULT_TOKEN:-$(cat /etc/vault-token-dsde)}
 
 docker run --rm  -e VAULT_TOKEN=$VAULT_TOKEN \
@@ -13,5 +12,5 @@ docker run --rm  -e VAULT_TOKEN=$VAULT_TOKEN \
 ./script/build.sh jar -d push -g gcr.io/broad-dsp-gcr-public/${PROJECT} -k ${SVCACCT_FILE}
 
 # clean up
-rm -f dspci-wb-gcr-service-account.json
+rm -f ${SVCACCT_FILE}
 
