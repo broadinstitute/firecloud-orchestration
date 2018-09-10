@@ -45,8 +45,11 @@ object UserApiService {
   val samRegisterUserPath = "/register/user"
   val samRegisterUserURL = FireCloudConfig.Sam.baseUrl + samRegisterUserPath
 
-  val samRegisterUserV2Path = "/register/user/v2/self/info"
-  val samRegisterUserV2URL = FireCloudConfig.Sam.baseUrl + samRegisterUserV2Path
+  val samRegisterUserInfoPath = "/register/user/v2/self/info"
+  val samRegisterUserInfoURL = FireCloudConfig.Sam.baseUrl + samRegisterUserInfoPath
+
+  val samRegisterUserDiagnosticsPath = "/register/user/v2/self/diagnostics"
+  val samRegisterUserDiagnosticsURL = FireCloudConfig.Sam.baseUrl + samRegisterUserDiagnosticsPath
 
   val rawlsGroupBasePath = FireCloudConfig.Rawls.authPrefix + "/groups"
   val rawlsGroupBaseUrl = FireCloudConfig.Rawls.baseUrl + rawlsGroupBasePath
@@ -92,11 +95,10 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
             // browser sent Authorization header; try to query Sam for user status
             case Some(_) =>
               val pipeline = authHeaders(requestContext) ~> sendReceive
-              val version2 = userDetailsOnly.exists(_.equalsIgnoreCase("true"))
-              val samRequest = if (version2) Get(UserApiService.samRegisterUserV2URL) else Get(UserApiService.samRegisterUserURL)
-              pipeline(samRequest) onComplete {
+              val version1 = !userDetailsOnly.exists(_.equalsIgnoreCase("true"))
+              pipeline(Get(UserApiService.samRegisterUserInfoURL)) onComplete {
                 case Success(response: HttpResponse) =>
-                  handleSamResponse(response, requestContext, version2)
+                  handleSamResponse(response, requestContext, version1)
                 // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
                 case Failure(error) =>
                   respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
@@ -231,7 +233,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
     requestContext.complete(statusCode, ErrorReport(statusCode = statusCode, message = message, throwable = error))
   }
 
-  private def handleSamResponse(response: HttpResponse, requestContext: RequestContext, version2: Boolean): Unit = {
+  private def handleSamResponse(response: HttpResponse, requestContext: RequestContext, version1: Boolean): Unit = {
     response.status match {
       // Sam rejected our request. User is either invalid or their token timed out; this is truly unauthorized
       case Unauthorized =>
@@ -244,40 +246,55 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
       // Sam found the user; we'll try to parse the response and inspect it
       case OK =>
-        val respJson: Either[Deserialized[RegistrationInfoV2], Deserialized[RegistrationInfo]] =
-          if (version2) Left(response.entity.as[RegistrationInfoV2]) else Right(response.entity.as[RegistrationInfo])
-        handleOkResponse(respJson, requestContext, version2)
+        val respJson: Deserialized[RegistrationInfoV2] = response.entity.as[RegistrationInfoV2]
+        handleOkResponse(respJson, requestContext, version1)
       case x =>
         // if we get any other error from Sam, pass that error on
         respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
     }
   }
 
-  private def handleOkResponse(respJson: Either[Deserialized[RegistrationInfoV2], Deserialized[RegistrationInfo]], requestContext: RequestContext, version2: Boolean): Unit = {
+  private def handleOkResponse(respJson: Deserialized[RegistrationInfoV2], requestContext: RequestContext, version1: Boolean): Unit = {
     respJson match {
-      // RegistrationInfo
-      case Right(deserializedRegInfo) => deserializedRegInfo match {
-        case Right(regInfo) =>
-          if (regInfo.enabled.google && regInfo.enabled.ldap && regInfo.enabled.allUsersGroup) {
+      case Right(regInfo) =>
+        if (regInfo.enabled) {
+          if (version1) {
+            respondWithUserDiagnostics(regInfo, requestContext)
+          } else {
             requestContext.complete(OK, regInfo)
-          } else {
-            respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
           }
-        case Left(_) =>
-          respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
-      }
+        } else {
+          respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
+        }
+      case Left(_) =>
+        respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
+    }
+  }
 
-      // RegistrationInfoV2
-      case Left(deserializedRegInfo) => deserializedRegInfo match {
-        case Right(regInfo) =>
-          if (regInfo.enabled) {
-            requestContext.complete(OK,regInfo)
-          } else {
-            respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
-          }
-        case Left(_) =>
-          respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
-      }
+  private def respondWithUserDiagnostics(regInfo: RegistrationInfoV2, requestContext: RequestContext): Unit = {
+    val pipeline = authHeaders(requestContext) ~> sendReceive
+    pipeline(Get(UserApiService.samRegisterUserDiagnosticsURL)) onComplete {
+      case Success(response: HttpResponse) =>
+        response.status match {
+          case InternalServerError =>
+            respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
+          case OK =>
+            response.entity.as[WorkbenchEnabled] match {
+              case Right(diagnostics) =>
+                if (diagnostics.allUsersGroup && diagnostics.google) {
+                  val v1RegInfo = RegistrationInfo(WorkbenchUserInfo(regInfo.userSubjectId, regInfo.userEmail), diagnostics)
+                  requestContext.complete(OK, v1RegInfo)
+                } else {
+                  respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
+                }
+              case Left(_) =>
+                respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
+            }
+          case x =>
+            respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
+        }
+      case Failure(error) =>
+        respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
     }
   }
 }
