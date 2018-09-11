@@ -3,8 +3,7 @@ import sbt._
 object Dependencies {
   val akkaV = "2.4.19"
   val sprayV = "1.3.4"
-  val jacksonV = "2.8.10"
-     // note that jackson-databind overrides this below! 2.8.8.1 is not released for core or annotations.
+  val jacksonV = "2.9.6"
 
   def excludeGuavaJDK5(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava-jdk5")
 
@@ -49,7 +48,8 @@ object Dependencies {
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-cloudbilling" % "v1-rev14-1.23.0"),
 
     "org.webjars"                    % "swagger-ui"          % "2.2.5",
-    "com.jason-goodwin"             %% "authentikat-jwt"     % "0.4.1",
+    "com.jason-goodwin"             %% "authentikat-jwt"     % "0.4.5"
+      exclude("com.fasterxml.jackson.core", "jackson-databind"),
     "com.sun.mail"                   % "javax.mail"          % "1.5.6",
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",
     "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",
