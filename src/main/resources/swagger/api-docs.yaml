@@ -1878,6 +1878,19 @@ paths:
         500:
           description: Internal Server Error
 
+  /version:
+    get:
+      tags:
+        - Version
+      operationId: orchestrationVersion
+      summary: Returns the currently deployed version of this service.
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/OrchestrationVersion'
+      security: []
+
   /version/executionEngine:
     get:
       tags:
@@ -5365,6 +5378,12 @@ definitions:
       notificationKey:
         type: string
       description:
+        type: string
+
+  OrchestrationVersion:
+    type: object
+    properties:
+      version:
         type: string
 
   PermissionReport:
