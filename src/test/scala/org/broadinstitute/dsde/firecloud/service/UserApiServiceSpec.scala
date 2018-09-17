@@ -67,9 +67,9 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
   val enabledV2UserBody = """{"userSubjectId": "1111111111", "userEmail": "no@nope.org", "enabled": true}"""
   val noLdapV2UserBody = """{"userSubjectId": "1111111111", "userEmail": "no@nope.org", "enabled": false}"""
 
-  val enabledV2DiagnosticsBody = """{"google": true, "ldap": true, "allUsersGroup": true}"""
-  val noLdapV2DiagnosticsBody = """{"google": true, "ldap": false, "allUsersGroup": true}"""
-  val noGoogleV2DiagnosticsBody = """{"google": false, "ldap": true, "allUsersGroup": true}"""
+  val enabledV2DiagnosticsBody = """{"enabled": true, "inAllUsersGroup": true, "inGoogleProxyGroup": true}"""
+  val noLdapV2DiagnosticsBody = """{"enabled": false, "inAllUsersGroup": true, "inGoogleProxyGroup": true}"""
+  val noGoogleV2DiagnosticsBody = """{"enabled": true, "inAllUsersGroup": true, "inGoogleProxyGroup": false}"""
 
   val uglyJsonBody = """{"userInfo": "whaaaaaaat??"}"""
 

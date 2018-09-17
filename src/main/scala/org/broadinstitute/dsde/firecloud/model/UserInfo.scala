@@ -41,6 +41,7 @@ case class RegistrationInfoV2(userSubjectId: String, userEmail: String, enabled:
 
 case class WorkbenchUserInfo(userSubjectId: String, userEmail: String)
 case class WorkbenchEnabled(google: Boolean, ldap: Boolean, allUsersGroup: Boolean)
+case class WorkbenchEnabledV2(enabled: Boolean, inAllUsersGroup: Boolean, inGoogleProxyGroup: Boolean)
 
 // TODO: roll into RawlsEnabled? combine with an isAdmin role?
 case class Curator(curator: Boolean)

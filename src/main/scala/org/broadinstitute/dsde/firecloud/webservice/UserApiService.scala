@@ -279,10 +279,10 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
           case InternalServerError =>
             respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
           case OK =>
-            response.entity.as[WorkbenchEnabled] match {
+            response.entity.as[WorkbenchEnabledV2] match {
               case Right(diagnostics) =>
-                if (diagnostics.allUsersGroup && diagnostics.google) {
-                  val v1RegInfo = RegistrationInfo(WorkbenchUserInfo(regInfo.userSubjectId, regInfo.userEmail), diagnostics)
+                if (diagnostics.inAllUsersGroup && diagnostics.inGoogleProxyGroup) {
+                  val v1RegInfo = RegistrationInfo(WorkbenchUserInfo(regInfo.userSubjectId, regInfo.userEmail), WorkbenchEnabled(diagnostics.inGoogleProxyGroup, diagnostics.enabled, diagnostics.inAllUsersGroup))
                   requestContext.complete(OK, v1RegInfo)
                 } else {
                   respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
