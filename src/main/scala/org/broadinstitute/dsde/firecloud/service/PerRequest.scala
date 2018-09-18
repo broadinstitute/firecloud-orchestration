@@ -92,12 +92,19 @@ trait PerRequest extends Actor with LazyLogging {
 
   def handleException(e: Throwable): Unit = {
     import spray.httpx.SprayJsonSupport._
-    logger.error(s"error servicing request ${r.request.method} ${r.request.uri}", e)
-    e match {
+    val errorResponse = e match {
       case e: FireCloudExceptionWithErrorReport =>
-        complete((optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), e.errorReport))
-      case _ => complete((InternalServerError, ErrorReport(InternalServerError, e)))
+        (optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), e.errorReport)
+      case _ =>
+        (InternalServerError, ErrorReport(InternalServerError, e))
     }
+
+    if (errorResponse._1.intValue/100 == 5) {
+      logger.error(s"error servicing request ${r.request.method} ${r.request.uri}", e)
+    } else {
+      logger.debug(s"error servicing request ${r.request.method} ${r.request.uri}", e)
+    }
+    complete(errorResponse)
   }
 }
 

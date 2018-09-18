@@ -328,7 +328,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                 // user has access to the object.
                 // switch solutions based on the size of the target object. If the target object is small enough,
                 // proxy it through orchestration; this allows embedded images inside HTML reports to render correctly.
-                val objSize:Int = objMetadata.size.toInt
+                val objSize = objMetadata.size.toLong
                 // 8MB or under ...
                 if (objSize > 0 && objSize < 8388608) {
                   logger.info(s"$userStr download via proxy allowed for [$objectStr]")
