@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.{Actor, ActorRefFactory, Props}
+import akka.http.scaladsl.model.StatusCodes
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
@@ -172,7 +173,9 @@ trait NihService extends LazyLogging {
   private def ensureWhitelistGroupExists(groupName: WorkbenchGroupName): Future[Unit] = {
     rawlsDao.getGroupsForUser(getAdminAccessToken).flatMap {
       case groups if groups.map(_.toLowerCase).contains(groupName.value.toLowerCase) => Future.successful(())
-      case _ => rawlsDao.createGroup(groupName)(getAdminAccessToken)
+      case _ => rawlsDao.createGroup(groupName)(getAdminAccessToken).recover {
+        case fce: FireCloudExceptionWithErrorReport if fce.errorReport.statusCode.contains(StatusCodes.Conflict) => // somebody else made it
+      }
     }
   }
 
