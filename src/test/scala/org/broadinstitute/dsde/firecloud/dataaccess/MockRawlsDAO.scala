@@ -245,13 +245,7 @@ class MockRawlsDAO extends RawlsDAO with MockGroupSupport {
     Future.successful(userInfo.id == "curator")
   }
 
-  override def registerUser(userInfo: UserInfo): Future[Unit] = Future.successful(())
-
   override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[Metrics.AdminStats] = ???
-
-  override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] = {
-    Future.successful(Seq("TestUserGroup"))
-  }
 
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] = {
     Future.successful(BucketUsageResponse(BigInt("256000000000")))
@@ -421,22 +415,4 @@ class MockRawlsDAO extends RawlsDAO with MockGroupSupport {
 
   override def removeUserFromBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = Future(true)
 
-  override def addMemberToGroup(groupName: WorkbenchGroupName, role: ManagedGroupRole, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit] = {
-    val groupWithNewMembers = groupName -> (groups(groupName).filterNot(_.equals(member)) ++ Set(member))
-    this.synchronized { groups = groups + groupWithNewMembers }
-
-    Future.successful(())
-  }
-
-  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: RawlsGroupMemberList)(implicit userToken: WithAccessToken): Future[Unit] = {
-    val groupWithNewMembers = groupName -> memberList.userEmails.getOrElse(Seq.empty).map(WorkbenchEmail).toSet
-    this.synchronized { groups = groups + groupWithNewMembers }
-
-    Future.successful(())
-  }
-
-  override def createGroup(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[Unit] = {
-    // uses the token in place of the email since we can't get it here
-    overwriteGroupMembership(groupName, ManagedGroupRoles.Admin, RawlsGroupMemberList(userEmails = Option(Seq(userToken.accessToken.token))))
-  }
 }
