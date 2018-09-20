@@ -37,11 +37,9 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   implicit val errorReportSource = ErrorReportSource(RawlsDAO.serviceName)
 
-  lazy val rawlsUserRegistrationUrl = FireCloudConfig.Rawls.baseUrl + "/register/user"
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
-  lazy val rawlsGroupsForUserUrl = FireCloudConfig.Rawls.authUrl + "/user/groups"
   lazy val rawlsWorkpacesUrl = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminWorkspaces = FireCloudConfig.Rawls.authUrl + "/admin/workspaces?attributeName=library:published&valueBoolean=true"
   def rawlsWorkspaceACLUrl(workspaceNamespace: String, workspaceName: String): String = encodeUri(FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/acl")
@@ -54,10 +52,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
-
-  def registerUser(userInfo: UserInfo): Future[Unit]
-
-  def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]]
 
   def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse]
 
@@ -75,12 +69,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL]
 
   def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList]
-
-  def addMemberToGroup(groupName: WorkbenchGroupName, role: ManagedGroupRole, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit]
-
-  def createGroup(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[Unit]
-
-  def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: RawlsGroupMemberList)(implicit userToken: WithAccessToken): Future[Unit]
 
   def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats]
 

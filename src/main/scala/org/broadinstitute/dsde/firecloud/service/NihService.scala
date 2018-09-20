@@ -57,10 +57,10 @@ object NihService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new NihServiceActor(app.samDAO, app.rawlsDAO, app.thurloeDAO, app.googleServicesDAO)
+    new NihServiceActor(app.samDAO, app.thurloeDAO, app.googleServicesDAO)
 }
 
-class NihServiceActor(val samDao: SamDAO, val rawlsDao: RawlsDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO)
+class NihServiceActor(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO)
   (implicit val executionContext: ExecutionContext) extends Actor with NihService {
 
   override def receive = {
@@ -73,7 +73,6 @@ class NihServiceActor(val samDao: SamDAO, val rawlsDao: RawlsDAO, val thurloeDao
 trait NihService extends LazyLogging {
   implicit val executionContext: ExecutionContext
   val samDao: SamDAO
-  val rawlsDao: RawlsDAO
   val thurloeDao: ThurloeDAO
   val googleDao: GoogleServicesDAO
 
@@ -130,7 +129,7 @@ trait NihService extends LazyLogging {
 
       // The request to rawls to completely overwrite the group
       // with the list of actively linked users on the whitelist
-      _ <- rawlsDao.overwriteGroupMembership(nihWhitelist.groupToSync, ManagedGroupRoles.Member, RawlsGroupMemberList(Option(members.map(_.value)), None, None, None))(getAdminAccessToken) recoverWith {
+      _ <- samDao.overwriteGroupMembers(nihWhitelist.groupToSync, ManagedGroupRoles.Member, members)(getAdminAccessToken) recoverWith {
         case _: Exception => throw new FireCloudException("Error synchronizing NIH whitelist")
       }
     } yield ()
@@ -165,15 +164,15 @@ trait NihService extends LazyLogging {
     if(whitelistUsers contains linkedNihUserName) {
       for {
         _ <- ensureWhitelistGroupExists(nihWhitelist.groupToSync)
-        _ <- rawlsDao.addMemberToGroup(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
+        _ <- samDao.addGroupMember(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
       } yield true
     } else Future.successful(false)
   }
 
   private def ensureWhitelistGroupExists(groupName: WorkbenchGroupName): Future[Unit] = {
-    rawlsDao.getGroupsForUser(getAdminAccessToken).flatMap {
-      case groups if groups.map(_.toLowerCase).contains(groupName.value.toLowerCase) => Future.successful(())
-      case _ => rawlsDao.createGroup(groupName)(getAdminAccessToken).recover {
+    samDao.listGroups(getAdminAccessToken).flatMap {
+      case groups if groups.map(_.groupName.toLowerCase).contains(groupName.value.toLowerCase) => Future.successful(())
+      case _ => samDao.createGroup(groupName)(getAdminAccessToken).recover {
         case fce: FireCloudExceptionWithErrorReport if fce.errorReport.statusCode.contains(StatusCodes.Conflict) => // somebody else made it
       }
     }

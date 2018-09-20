@@ -1,13 +1,18 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
+import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, ManagedGroupRoles, RegistrationInfo, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
+import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.{ManagedRoles, RawlsUserEmail}
-import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
-import spray.client.pipelining.{Get, sendReceive}
+import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
+import spray.client.pipelining.sendReceive
+import spray.http.HttpRequest
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
@@ -35,6 +40,53 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
     implicit val accessToken = userInfo
     authedRequestToObject[List[String]](Get(samResourceRoles(managedGroupResourceTypeName, groupName.value)), label=Some("HttpSamDAO.isGroupMember")).map { allRoles =>
       allRoles.map(ManagedGroupRoles.withName).toSet.intersect(ManagedGroupRoles.membershipRoles).nonEmpty
+    }
+  }
+
+  override def createGroup(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
+    userAuthedRequestToUnit(Post(samManagedGroup(groupName)))
+  }
+
+  override def deleteGroup(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
+    userAuthedRequestToUnit(Delete(samManagedGroup(groupName)))
+  }
+
+  override def listGroups(implicit userInfo: WithAccessToken): Future[List[FireCloudManagedGroupMembership]] = {
+    authedRequestToObject[List[FireCloudManagedGroupMembership]](Get(samManagedGroupsBase))
+  }
+
+  override def getGroupEmail(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[WorkbenchEmail] = {
+    authedRequestToObject[WorkbenchEmail](Get(samManagedGroup(groupName)))
+  }
+
+  override def listGroupPolicyEmails(groupName: WorkbenchGroupName, policyName: ManagedGroupRole)(implicit userInfo: WithAccessToken): Future[List[WorkbenchEmail]] = {
+    authedRequestToObject[List[WorkbenchEmail]](Get(samManagedGroupPolicy(groupName, policyName)))
+  }
+
+  override def addGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail)(implicit userInfo: WithAccessToken): Future[Unit] = {
+    userAuthedRequestToUnit(Put(samManagedGroupAlterMember(groupName, role, email)))
+  }
+
+  override def removeGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail)(implicit userInfo: WithAccessToken): Future[Unit] = {
+    userAuthedRequestToUnit(Delete(samManagedGroupAlterMember(groupName, role, email)))
+  }
+
+  override def overwriteGroupMembers(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: List[WorkbenchEmail])(implicit userInfo: WithAccessToken): Future[Unit] = {
+    userAuthedRequestToUnit(Put(samManagedGroupPolicy(groupName, role), memberList))
+  }
+
+  override def addPolicyMember(resourceTypeName: String, resourceId: String, policyName: String, email: WorkbenchEmail)(implicit userInfo: WithAccessToken): Future[Unit] = {
+    userAuthedRequestToUnit(Put(samResourcePolicyAlterMember(resourceTypeName, resourceId, policyName, email)))
+  }
+
+  override def requestGroupAccess(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
+    userAuthedRequestToUnit(Post(samManagedGroupRequestAccess(groupName)))
+  }
+
+  private def userAuthedRequestToUnit(request: HttpRequest)(implicit userInfo: WithAccessToken): Future[Unit] = {
+    userAuthedRequest(request).map { resp =>
+      if(resp.status.isSuccess) ()
+      else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
     }
   }
 

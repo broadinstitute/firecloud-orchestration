@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
-import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.AdminStatsFormat
@@ -27,7 +26,6 @@ import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsBillingProjectMember
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
-import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -58,13 +56,6 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
       }
     }
   }
-
-  override def registerUser(userInfo: UserInfo): Future[Unit] = {
-    userAuthedRequest(Post(rawlsUserRegistrationUrl))(userInfo) map { _ => () }
-  }
-
-  override def getGroupsForUser(implicit userToken: WithAccessToken): Future[Seq[String]] =
-    authedRequestToObject[Seq[String]]( Get(rawlsGroupsForUserUrl), label=Some("HttpRawlsDAO.getGroupsForUser") )
 
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] =
     authedRequestToObject[BucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
@@ -100,42 +91,6 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
           logger.warn(s"Could not unmarshal: ${error.toString}. Status code: ${response.status}.")
           logger.info(s"body of reindex error response: ${response.entity}")
           throw new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "Could not unmarshal: " + error.toString))
-      }
-    }
-  }
-
-  override def overwriteGroupMembership(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: RawlsGroupMemberList)(implicit userToken: WithAccessToken): Future[Unit] = {
-    val url = FireCloudConfig.Rawls.overwriteGroupMembershipUrlFromGroupName(groupName.value, role.toString)
-
-    userAuthedRequest(Put(url, memberList)) map { resp =>
-      if (resp.status.isSuccess) {
-        ()
-      } else {
-        throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
-      }
-    }
-  }
-
-  override def addMemberToGroup(groupName: WorkbenchGroupName, role: ManagedGroupRole, member: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[Unit] = {
-    val url = FireCloudConfig.Rawls.alterGroupMembershipUrlFromGroupName(groupName.value, role.toString, member.value)
-
-    userAuthedRequest(Put(url)) map { resp =>
-      if (resp.status.isSuccess) {
-        ()
-      } else {
-        throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
-      }
-    }
-  }
-
-  override def createGroup(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[Unit] = {
-    val url = FireCloudConfig.Rawls.createGroup(groupName.value)
-
-    userAuthedRequest(Post(url)) map { resp =>
-      if (resp.status.isSuccess) {
-        ()
-      } else {
-        throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
       }
     }
   }

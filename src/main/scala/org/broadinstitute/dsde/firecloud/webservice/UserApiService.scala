@@ -51,18 +51,6 @@ object UserApiService {
   val samRegisterUserDiagnosticsPath = "/register/user/v2/self/diagnostics"
   val samRegisterUserDiagnosticsURL = FireCloudConfig.Sam.baseUrl + samRegisterUserDiagnosticsPath
 
-  val rawlsGroupBasePath = FireCloudConfig.Rawls.authPrefix + "/groups"
-  val rawlsGroupBaseUrl = FireCloudConfig.Rawls.baseUrl + rawlsGroupBasePath
-
-  def rawlsGroupPath(group: String) = rawlsGroupBasePath + "/%s".format(group)
-  def rawlsGroupUrl(group: String) = FireCloudConfig.Rawls.baseUrl + rawlsGroupPath(group)
-
-  def rawlsGroupMemberPath(group: String, role: String, email: String) = rawlsGroupPath(group) + "/%s/%s".format(role, email)
-  def rawlsGroupMemberUrl(group: String, role: String, email: String) = FireCloudConfig.Rawls.baseUrl + rawlsGroupMemberPath(group, role, email)
-
-  def rawlsGroupRequestAccessPath(group: String) = rawlsGroupPath(group) + "/requestAccess"
-  def rawlsGroupRequestAccessUrl(group: String) = FireCloudConfig.Rawls.baseUrl + rawlsGroupRequestAccessPath(group)
-
   def samUserProxyGroupPath(email: String) = s"/api/google/user/proxyGroup/$email"
   def samUserProxyGroupURL(email: String) = FireCloudConfig.Sam.baseUrl + samUserProxyGroupPath(email)
 }
@@ -157,39 +145,6 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
               perRequest(requestContext,
                 TrialService.props(trialServiceConstructor),
                 TrialService.RecordUserAgreement(userInfo))
-            }
-          }
-        }
-      } ~
-      pathPrefix("groups") {
-        pathEnd {
-          get {
-            passthrough(UserApiService.rawlsGroupBaseUrl, HttpMethods.GET)
-          }
-        } ~
-        pathPrefix(Segment) { groupName =>
-          pathEnd {
-            get {
-              passthrough(UserApiService.rawlsGroupUrl(groupName), HttpMethods.GET)
-            } ~
-            post {
-              passthrough(UserApiService.rawlsGroupUrl(groupName), HttpMethods.POST)
-            } ~
-            delete {
-              passthrough(UserApiService.rawlsGroupUrl(groupName), HttpMethods.DELETE)
-            }
-          } ~
-          path("requestAccess") {
-            post {
-              passthrough(UserApiService.rawlsGroupRequestAccessUrl(groupName), HttpMethods.POST)
-            }
-          } ~
-          path(Segment / Segment) { (role, email) =>
-            put {
-              passthrough(UserApiService.rawlsGroupMemberUrl(groupName, role, email), HttpMethods.PUT)
-            } ~
-            delete {
-              passthrough(UserApiService.rawlsGroupMemberUrl(groupName, role, email), HttpMethods.DELETE)
             }
           }
         }
