@@ -29,49 +29,49 @@ trait ManagedGroupApiService extends HttpService with PerRequestCreator with Fir
             }
           }
         } ~
-          pathPrefix(Segment) { groupName =>
-            pathEnd {
-              get {
+        pathPrefix(Segment) { groupName =>
+          pathEnd {
+            get {
+              requireUserInfo() { userInfo =>
+                requestContext =>
+                  perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), ListGroupMembers(WorkbenchGroupName(groupName)))
+              }
+            } ~
+              post {
                 requireUserInfo() { userInfo =>
                   requestContext =>
-                    perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), ListGroupMembers(WorkbenchGroupName(groupName)))
+                    perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), CreateGroup(WorkbenchGroupName(groupName)))
                 }
               } ~
-                post {
-                  requireUserInfo() { userInfo =>
-                    requestContext =>
-                      perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), CreateGroup(WorkbenchGroupName(groupName)))
-                  }
-                } ~
-                delete {
-                  requireUserInfo() { userInfo =>
-                    requestContext =>
-                      perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), DeleteGroup(WorkbenchGroupName(groupName)))
-                  }
+              delete {
+                requireUserInfo() { userInfo =>
+                  requestContext =>
+                    perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), DeleteGroup(WorkbenchGroupName(groupName)))
                 }
-            } ~
-              path("requestAccess") {
-                post {
-                  requireUserInfo() { userInfo =>
-                    requestContext =>
-                      perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), RequestGroupAccess(WorkbenchGroupName(groupName)))
-                  }
-                }
-              } ~
-              path(Segment / Segment) { (role, email) =>
-                put {
-                  requireUserInfo() { userInfo =>
-                    requestContext =>
-                      perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), AddGroupMember(WorkbenchGroupName(groupName), ManagedGroupRoles.withName(role), WorkbenchEmail(email)))
-                  }
-                } ~
-                  delete {
-                    requireUserInfo() { userInfo =>
-                      requestContext =>
-                        perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), RemoveGroupMember(WorkbenchGroupName(groupName), ManagedGroupRoles.withName(role), WorkbenchEmail(email)))
-                    }
-                  }
               }
+            } ~
+            path("requestAccess") {
+              post {
+                requireUserInfo() { userInfo =>
+                  requestContext =>
+                    perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), RequestGroupAccess(WorkbenchGroupName(groupName)))
+                }
+              }
+            } ~
+            path(Segment / Segment) { (role, email) =>
+              put {
+                requireUserInfo() { userInfo =>
+                  requestContext =>
+                    perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), AddGroupMember(WorkbenchGroupName(groupName), ManagedGroupRoles.withName(role), WorkbenchEmail(email)))
+                }
+              } ~
+              delete {
+                requireUserInfo() { userInfo =>
+                  requestContext =>
+                    perRequest(requestContext, ManagedGroupService.props(managedGroupServiceConstructor, userInfo), RemoveGroupMember(WorkbenchGroupName(groupName), ManagedGroupRoles.withName(role), WorkbenchEmail(email)))
+                }
+              }
+            }
           }
       }
     }
