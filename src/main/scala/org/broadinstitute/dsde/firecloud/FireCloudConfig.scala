@@ -4,7 +4,7 @@ import scala.collection.JavaConverters._
 import com.typesafe.config.{ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihWhitelist}
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
-import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import spray.http.Uri
 import spray.http.Uri.{Authority, Host}
 
@@ -99,6 +99,7 @@ object FireCloudConfig {
   object Sam {
     private val sam = config.getConfig("sam")
     val baseUrl = sam.getString("baseUrl")
+    val allUsersGroupRef = WorkbenchEmail(sam.getString("allUsersGroupEmail"))
   }
 
   object Thurloe {

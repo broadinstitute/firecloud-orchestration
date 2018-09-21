@@ -7,7 +7,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.SamDAO
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.{FireCloudManagedGroup, ManagedGroupRoles, WithAccessToken}
@@ -66,7 +66,7 @@ class ManagedGroupService(samDAO: SamDAO, userToken: WithAccessToken)(implicit p
     val membersList = for {
       _ <- samDAO.createGroup(groupName)
       listMembers <- listGroupMembersInternal(groupName)
-      _ <- samDAO.addPolicyMember(samDAO.managedGroupResourceTypeName, groupName.value, ManagedGroupRoles.AdminNotifier.toString, WorkbenchEmail("GROUP_All_Users@dev.test.firecloud.org")) //todo
+      _ <- samDAO.addPolicyMember(samDAO.managedGroupResourceTypeName, groupName.value, ManagedGroupRoles.AdminNotifier.toString, FireCloudConfig.Sam.allUsersGroupRef)
     } yield listMembers
     membersList.map(response => RequestComplete(StatusCodes.Created, response))
   }
