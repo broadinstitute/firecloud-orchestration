@@ -12,7 +12,12 @@ import scala.concurrent.Future
 /**
   * Created by mbemis on 9/7/17.
   */
-class MockSamDAO extends SamDAO with MockGroupSupport {
+class MockSamDAO extends SamDAO {
+
+  var groups: Map[WorkbenchGroupName, Set[WorkbenchEmail]] = Map(
+    WorkbenchGroupName("TCGA-dbGaP-Authorized") -> Set(WorkbenchEmail("tcga-linked"), WorkbenchEmail("tcga-linked-no-expire-date"), WorkbenchEmail("tcga-linked-expired"), WorkbenchEmail("tcga-linked-user-invalid-expire-date"), WorkbenchEmail("tcga-and-target-linked"), WorkbenchEmail("tcga-and-target-linked-expired")),
+    WorkbenchGroupName("TARGET-dbGaP-Authorized") -> Set(WorkbenchEmail("target-linked"), WorkbenchEmail("target-linked-expired"), WorkbenchEmail("tcga-and-target-linked"), WorkbenchEmail("tcga-and-target-linked-expired"))
+  )
 
   override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = enabledUserInfo
 

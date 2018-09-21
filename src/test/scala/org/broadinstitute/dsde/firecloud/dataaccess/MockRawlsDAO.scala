@@ -130,7 +130,7 @@ object MockRawlsDAO {
   * Created by davidan on 9/28/16.
   *
   */
-class MockRawlsDAO extends RawlsDAO with MockGroupSupport {
+class MockRawlsDAO extends RawlsDAO {
 
   private val rawlsWorkspaceWithAttributes = Workspace(
     "attributes",
