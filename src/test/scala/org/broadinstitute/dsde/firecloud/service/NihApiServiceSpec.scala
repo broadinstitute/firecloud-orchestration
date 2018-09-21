@@ -53,44 +53,44 @@ class NihApiServiceSpec extends ApiServiceSpec {
 
     Post("/nih/callback", JWTWrapper("bad-token")) ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(BadRequest)
-      assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
-      assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+      assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
     }
   }
 
   it should "link and sync when user is on TCGA whitelist but not TARGET" in withDefaultApiServices { services =>
     val toLink = WorkbenchEmail(services.thurloeDao.TCGA_UNLINKED)
 
-    assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
-    assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+    assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+    assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     Post("/nih/callback", tcgaUserJwt) ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
-      assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
-      assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+      assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     }
   }
 
   it should "link and sync when user is on TARGET whitelist but not TCGA" in withDefaultApiServices { services =>
     val toLink = WorkbenchEmail(services.thurloeDao.TARGET_UNLINKED)
 
-    assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
-    assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+    assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+    assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     Post("/nih/callback", targetUserJwt) ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
-      assert(services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
-      assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+      assert(services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     }
   }
 
   it should "link and sync when user is on both the TARGET and TCGA whitelists" in withDefaultApiServices { services =>
     val toLink = WorkbenchEmail(services.thurloeDao.TCGA_AND_TARGET_UNLINKED)
 
-    assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
-    assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+    assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+    assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     Post("/nih/callback", firecloudDevJwt) ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
-      assert(services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
-      assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+      assert(services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     }
   }
 
@@ -99,8 +99,8 @@ class NihApiServiceSpec extends ApiServiceSpec {
 
     Post("/nih/callback", validJwtNotOnWhitelist) ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(OK)
-      assert(!services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
-      assert(!services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+      assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
     }
   }
 
@@ -125,8 +125,8 @@ class NihApiServiceSpec extends ApiServiceSpec {
 
       assert(linkExpireTime >= DateUtils.nowMinus1Hour) //link expire time is fresh
       assert(linkExpireTime <= DateUtils.nowPlus30Days) //link expire time is approx 30 days in the future
-      assert(services.rawlsDao.groups(tcgaDbGaPAuthorized).contains(toLink))
-      assert(services.rawlsDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+      assert(services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
     }
   }
 
@@ -142,8 +142,8 @@ class NihApiServiceSpec extends ApiServiceSpec {
   it should "return NoContent and properly sync the whitelist for users of different link statuses across whitelists" in withDefaultApiServices { services =>
     Post("/sync_whitelist") ~> sealRoute(services.syncRoute) ~> check {
       status should equal(NoContent)
-      assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED), services.rawlsDao.groups(tcgaDbGaPAuthorized).map(_.value))
-      assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TARGET_LINKED), services.rawlsDao.groups(targetDbGaPAuthorized).map(_.value))
+      assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED), services.samDao.groups(tcgaDbGaPAuthorized).map(_.value))
+      assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TARGET_LINKED), services.samDao.groups(targetDbGaPAuthorized).map(_.value))
     }
   }
 }
