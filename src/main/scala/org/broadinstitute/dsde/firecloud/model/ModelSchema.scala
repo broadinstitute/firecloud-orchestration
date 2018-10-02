@@ -2,7 +2,9 @@ package org.broadinstitute.dsde.firecloud.model
 
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
+
 import spray.json._
+
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 
 /**
@@ -13,8 +15,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
  */
 
 object ModelSchema {
-
-
+  
   def getTypeSchema(entityType: String): Try[EntityMetadata] = {
     EntityTypes.types.get(entityType) match {
       case Some(schema) => Success(schema)
