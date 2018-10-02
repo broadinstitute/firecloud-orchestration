@@ -241,6 +241,12 @@ object MockTSVStrings {
     List("abc", "123", "").tabbed
   ).newlineSeparated
 
+  val nonModelBigQuery = List(
+    List("bigQuery_id", "query_str").tabbed,
+    List("shakespeare", "SELECT * FROM [bigquery-public-data:samples.shakespeare] LIMIT 1000").tabbed,
+    List("king", "SELECT * FROM [bigquery-public-data:samples.king] LIMIT 1000").tabbed
+  ).newlineSeparated
+
 }
 
 object MockTSVLoadFiles {
