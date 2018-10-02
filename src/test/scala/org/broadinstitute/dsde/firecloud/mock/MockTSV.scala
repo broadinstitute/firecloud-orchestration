@@ -107,8 +107,8 @@ object MockTSVStrings {
     List("sset_01", "sample_02").tabbed).newlineSeparated
 
   //entity TSVs
-  val entityUnknownFirstColumnHeader = List(
-    List("entity:sampel_id", "bar", "baz").tabbed,
+  val entityNonModelFirstColumnHeader = List(
+    List("entity:bigQueyr_id", "bar", "baz").tabbed,
     List("woop", "de", "doo").tabbed,
     List("hip", "hip", "hooray").tabbed).newlineSeparated
 
@@ -156,8 +156,8 @@ object MockTSVStrings {
     List("sample_02", "part_02", "bar").tabbed).newlineSeparated
 
   //update TSVs
-  val updateUnknownFirstColumnHeader = List(
-    List("update:sampel_id", "bar", "baz").tabbed,
+  val updateNonModelFirstColumnHeader = List(
+    List("update:bigQuery_id", "bar", "baz").tabbed,
     List("woop", "de", "doo").tabbed,
     List("hip", "hip", "hooray").tabbed).newlineSeparated
 
@@ -290,7 +290,7 @@ object MockTSVFormData {
   val membershipExtraAttributes = wrapInMultipart("entities", MockTSVStrings.membershipExtraAttributes)
   val membershipValid = wrapInMultipart("entities", MockTSVStrings.membershipValid)
 
-  val entityUnknownFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.entityUnknownFirstColumnHeader)
+  val entityUnknownFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.entityNonModelFirstColumnHeader)
   val entityHasDupes = wrapInMultipart("entities", MockTSVStrings.entityHasDupes)
   val entityHasCollectionMembers = wrapInMultipart("entities", MockTSVStrings.entityHasCollectionMembers)
   val entityHasNoRows = wrapInMultipart("entities", MockTSVStrings.entityHasNoRows)
@@ -298,7 +298,7 @@ object MockTSVFormData {
   val entityUpdateWithRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateWithRequiredAttrs)
   val entityUpdateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateWithRequiredAndOptionalAttrs)
 
-  val updateUnknownFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.updateUnknownFirstColumnHeader)
+  val updateNonModelFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.updateNonModelFirstColumnHeader)
   val updateHasDupes = wrapInMultipart("entities", MockTSVStrings.updateHasDupes)
   val updateHasCollectionMembers = wrapInMultipart("entities", MockTSVStrings.updateHasCollectionMembers)
   val updateMissingRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.updateMissingRequiredAttrs)
