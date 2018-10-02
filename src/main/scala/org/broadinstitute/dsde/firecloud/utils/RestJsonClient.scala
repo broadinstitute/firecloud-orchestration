@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
+import java.time.Instant
+
 import akka.actor.{ActorRef, ActorSystem}
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
@@ -23,7 +25,7 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
 
-  private final val NoPerfLabel: Long = -1
+  private final val NoPerfLabel: Instant = Instant.MIN
 
   def unAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
                       connector: Option[ActorRef] = None, label: Option[String] = None): Future[HttpResponse] = {
@@ -57,11 +59,11 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
 
     val finalPipeline = addCreds.map(creds => creds ~> pipeline).getOrElse(pipeline)
 
-    val tick = if (label.nonEmpty) System.currentTimeMillis() else NoPerfLabel
+    val tick = if (label.nonEmpty) Instant.now() else NoPerfLabel
 
     finalPipeline(req) map { res =>
       if (tick != NoPerfLabel) {
-        val tock = System.currentTimeMillis()
+        val tock = Instant.now()
         perfLogger.info(perfmsg(label.get, res.status.value, tick, tock))
       }
 
@@ -90,7 +92,7 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
   private def requestToObject[T](auth: Boolean, req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
                                  connector: Option[ActorRef] = None, label: Option[String] = None)
                                 (implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[T], ers: ErrorReportSource): Future[T] = {
-    val tick = if (label.nonEmpty) System.currentTimeMillis() else NoPerfLabel
+    val tick = if (label.nonEmpty) Instant.now() else NoPerfLabel
 
     val resp = if(auth) {
       userAuthedRequest(req, compressed, useFireCloudHeader, connector)
@@ -100,12 +102,12 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
     resultsToObject(resp, label, tick)
   }
 
-  private def resultsToObject[T](resp: Future[HttpResponse], label: Option[String] = None, tick: Long = NoPerfLabel)
+  private def resultsToObject[T](resp: Future[HttpResponse], label: Option[String] = None, tick: Instant = NoPerfLabel)
                                 (implicit unmarshaller: Unmarshaller[T], ers: ErrorReportSource): Future[T] = {
     resp map { response =>
 
       if (label.nonEmpty && tick != NoPerfLabel) {
-        val tock = System.currentTimeMillis()
+        val tock = Instant.now()
         perfLogger.info(perfmsg(label.get, response.status.value, tick, tock))
       }
 
