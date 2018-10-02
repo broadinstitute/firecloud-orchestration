@@ -61,8 +61,8 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
 
     finalPipeline(req) map { res =>
       if (tick != NoPerfLabel) {
-        val elapsed = System.currentTimeMillis() - tick
-        perfLogger.info(perfmsg(label.get, elapsed))
+        val tock = System.currentTimeMillis()
+        perfLogger.info(perfmsg(label.get, res.status.value, tick, tock))
       }
 
       res
@@ -105,8 +105,8 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
     resp map { response =>
 
       if (label.nonEmpty && tick != NoPerfLabel) {
-        val elapsed = System.currentTimeMillis() - tick
-        perfLogger.info(perfmsg(label.get, elapsed))
+        val tock = System.currentTimeMillis()
+        perfLogger.info(perfmsg(label.get, response.status.value, tick, tock))
       }
 
       response.status match {

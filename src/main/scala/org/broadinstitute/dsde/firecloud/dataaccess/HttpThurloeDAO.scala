@@ -26,7 +26,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
 
   override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] = {
     wrapExceptions {
-      val req = userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(forUserId)), useFireCloudHeader = true)(callerToken)
+      val req = userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(forUserId)), useFireCloudHeader = true, label = Some("HttpThurloeDAO.getAllKVPs"))(callerToken)
 
       req map { response =>
         response.status match {
@@ -44,7 +44,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   override def getAllUserValuesForKey(key: String): Future[Map[String, String]] = {
     val queryUri = Uri(UserApiService.remoteGetQueryURL).withQuery(Map("key"->key))
     wrapExceptions {
-      adminAuthedRequest(Get(queryUri), false, true).map(unmarshal[Seq[ThurloeKeyValue]]).map { tkvs =>
+      adminAuthedRequest(Get(queryUri), false, true, label = Some("HttpThurloeDAO.getAllUserValuesForKey")).map(unmarshal[Seq[ThurloeKeyValue]]).map { tkvs =>
         val resultOptions = tkvs.map { tkv => (tkv.userId, tkv.keyValuePair.flatMap { kvp => kvp.value }) }
         val actualResultsOnly = resultOptions collect { case (Some(firecloudSubjId), Some(thurloeValue)) => (firecloudSubjId, thurloeValue) }
         actualResultsOnly.toMap
@@ -72,7 +72,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   override def saveKeyValues(forUserId: String, callerToken: WithAccessToken, keyValues: Map[String, String]): Future[Try[Unit]] = {
     val thurloeKeyValues = ThurloeKeyValues(Option(forUserId), Option(keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value)) }.toSeq))
     wrapExceptions {
-      userAuthedRequest(Post(UserApiService.remoteSetKeyURL, thurloeKeyValues), false, true)(callerToken) map { response =>
+      userAuthedRequest(Post(UserApiService.remoteSetKeyURL, thurloeKeyValues), compressed = false, useFireCloudHeader = true, label = Some("HttpThurloeDAO.saveKeyValues"))(callerToken) map { response =>
         if(response.status.isSuccess) Try(())
         else Try(throw new FireCloudException(s"Unable to update user profile"))
       }

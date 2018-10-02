@@ -15,7 +15,7 @@
         </filter>
     </appender>
 
-    <logger name="PerformanceLogging" level="warn" additivity="false">
+    <logger name="PerformanceLogging" level="info" additivity="false">
         <appender-ref ref="console"/>
     </logger>
 

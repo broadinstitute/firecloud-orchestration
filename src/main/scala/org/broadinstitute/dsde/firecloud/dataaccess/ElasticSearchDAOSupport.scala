@@ -20,14 +20,14 @@ trait ElasticSearchDAOSupport extends LazyLogging with PerformanceLogging {
   def executeESRequest[T <: ActionRequest, U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): U = {
     val tick = System.currentTimeMillis
     val responseTry = Try(req.get())
-    val elapsed = System.currentTimeMillis - tick
+    val tock = System.currentTimeMillis
     responseTry match {
       case Success(s) =>
-        perfLogger.info(perfmsg(req.getClass.getSimpleName, elapsed, "success"))
+        perfLogger.info(perfmsg(req.getClass.getSimpleName, "success", tick, tock))
         s
       case Failure(f) =>
-        perfLogger.info(perfmsg(req.getClass.getSimpleName, elapsed, "failure"))
-        logger.warn(s"ElasticSearch %s request failed in %s ms: %s".format(req.getClass.getName, elapsed, f.getMessage))
+        perfLogger.info(perfmsg(req.getClass.getSimpleName, "failure", tick, tock))
+        logger.warn(s"ElasticSearch %s request failed in %s ms: %s".format(req.getClass.getName, tock-tick, f.getMessage))
         throw new FireCloudException("ElasticSearch request failed", f)
     }
   }

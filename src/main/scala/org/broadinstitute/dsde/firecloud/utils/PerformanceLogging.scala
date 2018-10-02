@@ -7,7 +7,9 @@ trait PerformanceLogging {
 
   val perfLogger: Logger = Logger(LoggerFactory.getLogger("PerformanceLogging"))
 
-  def perfmsg(caller: String, time: Long) =              s"[$caller] took [$time] ms"
-  def perfmsg(caller: String, time: Long, msg: String) = s"[$caller] took [$time] ms: $msg"
+  def perfmsg(caller: String, msg: String, start: Long, finish: Long): String = {
+    val elapsed = finish - start
+    s"[$caller] took [$elapsed] ms, start [$start], finish [$finish]: $msg"
+  }
 
 }
