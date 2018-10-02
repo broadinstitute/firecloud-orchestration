@@ -80,9 +80,9 @@ trait TSVFileSupport {
     * Some( its_member_type ) if it's a collection, or None if it isn't.
     * Bails with a 400 Bad Request if the provided entity type is unknown to the schema. */
   def withMemberCollectionType(entityType: String)(op: (Option[String] => Future[PerRequestMessage]))(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
-    ModelSchema.getCollectionMemberType(entityType) match {
-      case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
-      case Success(memberTypeOpt) => op(memberTypeOpt)
+    FlexibleModelSchema.memberTypeFromEntityType(entityType) match {
+      case Failure(regret) => op(None)
+      case Success(memberType) => op(Some(memberType))
     }
   }
 
@@ -157,8 +157,8 @@ trait TSVFileSupport {
     //If we're upserting a collection type entity, add an AddListMember( members_attr, null ) operation.
     //This will force the members_attr attribute to exist if it's being created for the first time.
     val collectionMemberAttrOp: Option[Map[String, Attribute]] =
-    if( ModelSchema.isCollectionType(entityType).getOrElse(false) ) {
-      val membersAttributeName = ModelSchema.getPlural(memberTypeOpt.get).get
+    if( FlexibleModelSchema.isCollectionType(entityType) ) {
+      val membersAttributeName = FlexibleModelSchema.pluralizeEntityType(memberTypeOpt.get)
       Some(Map(
         createRefListOperation,
         "attributeListName"->AttributeString(membersAttributeName)))

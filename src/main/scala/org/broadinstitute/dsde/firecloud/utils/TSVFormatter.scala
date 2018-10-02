@@ -138,7 +138,7 @@ object TSVFormatter {
     }
 
     val entityHeader: String = requestedHeadersSansId match {
-      case Some(headers) if FlexibleModelSchema.isUsingFirecloudSchema(entityType) && !ModelSchema.getRequiredAttributes(entityType).get.keySet.forall(headers.contains) => s"${TsvTypes.UPDATE}:${entityType}_id"
+      case Some(headers) if FlexibleModelSchema.isUsingFirecloudSchema(entityType) && !FlexibleModelSchema.getRequiredAttributes(entityType).keySet.forall(headers.contains) => s"${TsvTypes.UPDATE}:${entityType}_id"
       case _ => s"${TsvTypes.ENTITY}:${entityType}_id"
     }
     (entityHeader +: requestedHeadersSansId.getOrElse(filteredAllHeaders)).toIndexedSeq

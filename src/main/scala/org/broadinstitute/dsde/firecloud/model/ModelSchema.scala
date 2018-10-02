@@ -15,28 +15,12 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
  */
 
 object ModelSchema {
-  
+
   def getTypeSchema(entityType: String): Try[EntityMetadata] = {
     EntityTypes.types.get(entityType) match {
       case Some(schema) => Success(schema)
       case None => Failure(new RuntimeException("Unknown entity type: " + entityType))
     }
-  }
-
-  def isCollectionType(entityType: String): Try[Boolean] = {
-    getTypeSchema(entityType).map(_.memberType.isDefined)
-  }
-
-  def getCollectionMemberType(collectionEntityType: String): Try[Option[String]] = {
-    getTypeSchema(collectionEntityType).map(_.memberType)
-  }
-
-  def getPlural(entityType: String): Try[String] = {
-    getTypeSchema(entityType).map(_.plural)
-  }
-
-  def getRequiredAttributes(entityType: String): Try[Map[String, String]] = {
-    getTypeSchema(entityType).map(_.requiredAttributes)
   }
 }
 
@@ -78,18 +62,17 @@ object FlexibleModelSchema {
     }
   }
 
-//  def getCollectionMemberType(collectionEntityType: String): Option[String] = {
-//    EntityTypes.types.get(collectionEntityType) match {
-//      case Some(schema) => schema.memberType
-//      case None => collectionEntityType.endsWith("_set")
-//    }
-//    getTypeSchema(collectionEntityType).map(_.memberType)
-//  }
-
   def isCollectionType(entityType: String): Boolean = {
     EntityTypes.types.get(entityType) match {
       case Some(schema) => schema.memberType.isDefined
       case None => entityType.endsWith("_set")
+    }
+  }
+
+  def getRequiredAttributes(entityType: String): Map[String, String] = {
+    EntityTypes.types.get(entityType) match {
+      case Some(schema) => schema.requiredAttributes
+      case None => Map.empty
     }
   }
 

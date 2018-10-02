@@ -126,10 +126,7 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
    * Returns the plural form of the entity type.
    * Bails with a 400 Bad Request if the entity type is unknown to the schema. */
   private def withPlural(entityType: String)(op: (String => Future[PerRequestMessage])): Future[PerRequestMessage] = {
-    ModelSchema.getPlural(entityType) match {
-      case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
-      case Success(plural) => op(plural)
-    }
+    op(FlexibleModelSchema.pluralizeEntityType(entityType))
   }
 
 
@@ -138,15 +135,12 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
    * Bails with a 400 Bad Request if the entity type is unknown or if some attributes are missing.
    * Returns the list of required attributes if all is well. */
   private def withRequiredAttributes(entityType: String, headers: Seq[String])(op: (Map[String, String] => Future[PerRequestMessage])):Future[PerRequestMessage] = {
-    ModelSchema.getRequiredAttributes(entityType) match {
-      case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
-      case Success(requiredAttributes) =>
-        if( !requiredAttributes.keySet.subsetOf(headers.toSet) ) {
-          Future( RequestCompleteWithErrorReport(BadRequest,
-            "TSV is missing required attributes: " + (requiredAttributes.keySet -- headers).mkString(", ")) )
-        } else {
-          op(requiredAttributes)
-        }
+    val requiredAttributes = FlexibleModelSchema.getRequiredAttributes(entityType)
+    if( !requiredAttributes.keySet.subsetOf(headers.toSet) ) {
+      Future( RequestCompleteWithErrorReport(BadRequest,
+        "TSV is missing required attributes: " + (requiredAttributes.keySet -- headers).mkString(", ")) )
+    } else {
+      op(requiredAttributes)
     }
   }
 
@@ -225,15 +219,9 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
     checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType) { memberTypeOpt =>
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
-          ModelSchema.getRequiredAttributes(entityType) match {
-            //Required attributes aren't required to be headers in update TSVs - they should already have been
-            //defined when the entity was created. But we still need the type information if the headers do exist.
-            case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
-            case Success(requiredAttributes) =>
-              val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
-              val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
-              batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpdate")
-          }
+          val colInfo = colNamesToAttributeNames(tsv.headers, FlexibleModelSchema.getRequiredAttributes(entityType))
+          val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
+          batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpdate")
         }
       }
     }

@@ -210,7 +210,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
     lines map { _.split("\t", -1).size should equal(2) }
 
-    lines.head.split("\t") should be(Array(s"${TsvTypes.MEMBERSHIP.toString}:${entityType}_id", ModelSchema.getCollectionMemberType(entityType).get.get))
+    lines.head.split("\t") should be(Array(s"${TsvTypes.MEMBERSHIP.toString}:${entityType}_id", FlexibleModelSchema.memberTypeFromEntityType(entityType).get))
   }
 
 }
