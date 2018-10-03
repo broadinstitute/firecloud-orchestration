@@ -22,22 +22,6 @@ object ModelSchema {
       case None => Failure(new RuntimeException("Unknown entity type: " + entityType))
     }
   }
-
-  def isCollectionType(entityType: String): Try[Boolean] = {
-    getTypeSchema(entityType).map(_.memberType.isDefined)
-  }
-
-  def getCollectionMemberType(collectionEntityType: String): Try[Option[String]] = {
-    getTypeSchema(collectionEntityType).map(_.memberType)
-  }
-
-  def getPlural(entityType: String): Try[String] = {
-    getTypeSchema(entityType).map(_.plural)
-  }
-
-  def getRequiredAttributes(entityType: String): Try[Map[String, String]] = {
-    getTypeSchema(entityType).map(_.requiredAttributes)
-  }
 }
 
 object EntityTypes {
@@ -59,3 +43,41 @@ case class EntityMetadata(
 )
 
 case class EntityModel(schema : Map[String, EntityMetadata]) //entity name -> stuff about it
+
+object FlexibleModelSchema {
+  def memberTypeFromEntityType(entityType: String): Try[String] = {
+    val memberType = EntityTypes.types.get(entityType) match {
+      case Some(schema) => schema.memberType
+      case None => if (entityType.endsWith("_set"))
+        Some(entityType.replace("_set", "")) else
+        None
+    }
+    Try(memberType.get)
+  }
+
+  def pluralizeEntityType(entityType: String): String =  {
+    EntityTypes.types.get(entityType) match {
+      case Some(schema) => schema.plural
+      case None => entityType + "s"
+    }
+  }
+
+  def isCollectionType(entityType: String): Boolean = {
+    EntityTypes.types.get(entityType) match {
+      case Some(schema) => schema.memberType.isDefined
+      case None => entityType.endsWith("_set")
+    }
+  }
+
+  def getRequiredAttributes(entityType: String): Map[String, String] = {
+    EntityTypes.types.get(entityType) match {
+      case Some(schema) => schema.requiredAttributes
+      case None => Map.empty
+    }
+  }
+
+  def isUsingFirecloudSchema(entityType: String): Boolean = {
+    EntityTypes.types.get(entityType).isDefined
+  }
+
+}

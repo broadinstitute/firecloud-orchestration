@@ -89,7 +89,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   def streamEntities(): Future[Unit] = {
     entityTypeMetadata flatMap { metadata =>
       val entityQueries = getEntityQueries(metadata, entityType)
-      if (TSVFormatter.isCollectionType(entityType)) {
+      if (FlexibleModelSchema.isCollectionType(entityType)) {
         streamCollectionType(entityQueries, metadata)
       } else {
         val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
@@ -123,6 +123,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
 
   // Stream exceptions have to be handled by directly closing out the RequestContext responder stream
   private def handleStreamException(t: Throwable): Unit = {
+    logger.info("handling exception", t)
     val message = t match {
       case f: FireCloudExceptionWithErrorReport => s"FireCloudException: Error generating entity download: ${f.errorReport.message}"
       case _ => s"FireCloudException: Error generating entity download: ${t.getMessage}"

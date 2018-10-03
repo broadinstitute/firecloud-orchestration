@@ -32,6 +32,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val invalidFireCloudEntitiesParticipantSetTSVPath = "/api/workspaces/broad-dsde-dev/invalid/entities/participant_set/tsv"
   val exceptionFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/exception/entities/sample/tsv"
   val page3ExceptionFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/page3exception/entities/sample/tsv"
+  val nonModelEntitiesBigQueryTSVPath = "/api/workspaces/broad-dsde-dev/nonModel/entities/bigQuery/tsv"
+  val nonModelEntitiesBigQuerySetTSVPath = "/api/workspaces/broad-dsde-dev/nonModelSet/entities/bigQuery_set/tsv"
 
   // Pick the first few headers from the list of available sample headers:
   val filterProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.take(5).map(_.name)
@@ -73,6 +75,33 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
           validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
           validateProps(entity)
+        }
+      }
+    }
+
+    "when calling GET on exporting a non-FC model entity type with all attributes" - {
+      "OK response is returned and attributes are included" in {
+        Get(nonModelEntitiesBigQueryTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
+          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "bigQuery.txt"))) should be(true)
+          validateLineCount(chunks, 2)
+          entity.asString.contains("query_str") should be(true)
+        }
+      }
+    }
+
+    "when calling GET on exporting a non-FC model entity set type with all attributes" - {
+      "OK response is returned" in {
+        Get(nonModelEntitiesBigQuerySetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "bigQuery_set.zip"))) should be(true)
         }
       }
     }

@@ -776,12 +776,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
 
         "an entity-type TSV" - {
-          "should 400 Bad Request if the entity type is unknown" in {
+          "should 200 OK if the entity type is unknown" in {
             (Post(tsvImportPath, MockTSVFormData.entityUnknownFirstColumnHeader)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(BadRequest)
-              errorReportCheck("FireCloud", BadRequest)
+              status should equal(OK)
             }
           }
 
@@ -841,12 +840,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
 
         "an update-type TSV" - {
-          "should 400 Bad Request if the entity type is unknown" in {
-            (Post(tsvImportPath, MockTSVFormData.updateUnknownFirstColumnHeader)
+          "should 200 OK if the entity type is non-FC model" in {
+            stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
+            (Post(tsvImportPath, MockTSVFormData.updateNonModelFirstColumnHeader)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(BadRequest)
-              errorReportCheck("FireCloud", BadRequest)
+              status should equal(OK)
             }
           }
 
