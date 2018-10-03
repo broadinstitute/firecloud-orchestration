@@ -20,11 +20,11 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
   extends SamDAO with RestJsonClient {
 
   override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
-    authedRequestToObject[RegistrationInfo](Post(samUserRegistrationUrl))
+    authedRequestToObject[RegistrationInfo](Post(samUserRegistrationUrl), label=Some("HttpSamDAO.registerUser"))
   }
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
-    authedRequestToObject[RegistrationInfo](Get(samUserRegistrationUrl))
+    authedRequestToObject[RegistrationInfo](Get(samUserRegistrationUrl), label=Some("HttpSamDAO.getRegistrationStatus"))
   }
 
   override def adminGetUserByEmail(email: RawlsUserEmail): Future[RegistrationInfo] = {
@@ -33,14 +33,14 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
 
   override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
     implicit val accessToken = userInfo
-    authedRequestToObject[List[String]](Get(samResourceRoles(managedGroupResourceTypeName, groupName.value))).map { allRoles =>
+    authedRequestToObject[List[String]](Get(samResourceRoles(managedGroupResourceTypeName, groupName.value)), label=Some("HttpSamDAO.isGroupMember")).map { allRoles =>
       allRoles.map(ManagedGroupRoles.withName).toSet.intersect(ManagedGroupRoles.membershipRoles).nonEmpty
     }
   }
 
   override def getPetServiceAccountTokenForUser(user: WithAccessToken, scopes: Seq[String]): Future[AccessToken] = {
     implicit val accessToken = user
-    authedRequestToObject[String](Post(samArbitraryPetTokenUrl, scopes)).map { quotedToken =>
+    authedRequestToObject[String](Post(samArbitraryPetTokenUrl, scopes), label=Some("HttpSamDAO.getPetServiceAccountTokenForUser")).map { quotedToken =>
       // Sam returns a quoted string. We need the token without the quotes.
       val token = if (quotedToken.startsWith("\"") && quotedToken.endsWith("\"") )
         quotedToken.substring(1,quotedToken.length-1)
