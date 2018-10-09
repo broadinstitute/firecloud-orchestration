@@ -226,25 +226,25 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    getEffectiveDiscoverGroups(samDao) flatMap { userGroups =>
-      // we want docsFuture and ids to be parallelized - so declare them here, outside
-      // of the for-yield.
-      val docsFuture = searchDAO.findDocuments(criteria, userGroups)
-      val idsFuture = rawlsDAO.getWorkspaces
-
-      (for {
-        docs <- docsFuture
-        ids <- idsFuture
-      } yield RequestComplete(updateAccess(docs, ids))) recover {
-        case ex =>
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(errorMessageFromSearchException(ex)))
-      }
+    val policies = samDao.listResourcesByType("workspace")
+    policies flatMap { workspacePolicies =>
+      val accessMap = createAccessMap(workspacePolicies)
+      getEffectiveDiscoverGroups(samDao) map { userGroups =>
+        // we want docsFuture and ids to be parallelized - so declare them here, outside
+        // of the for-yield.
+        searchDAO.findDocuments(criteria, userGroups, accessMap)
+      } map (RequestComplete(_))
     }
   }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    getEffectiveDiscoverGroups(samDao) map {userGroups =>
-      searchDAO.suggestionsFromAll(criteria, userGroups)} map (RequestComplete(_))
+    val policies = samDao.listResourcesByType("workspace")
+    policies flatMap { workspacePolicies =>
+      val accessMap = createAccessMap(workspacePolicies)
+      getEffectiveDiscoverGroups(samDao) map { userGroups =>
+        searchDAO.suggestionsFromAll(criteria, userGroups, accessMap.keys.toSeq)
+      } map (RequestComplete(_))
+    }
   }
 
   def populateSuggest(field: String, text: String): Future[PerRequestMessage] = {

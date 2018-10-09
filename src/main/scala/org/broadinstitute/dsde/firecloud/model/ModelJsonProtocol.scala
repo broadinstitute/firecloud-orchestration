@@ -8,6 +8,7 @@ import spray.http.StatusCode
 import spray.http.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
+import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
 import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Trial._
@@ -241,6 +242,13 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impFireCloudManagedGroup = jsonFormat3(FireCloudManagedGroup)
   implicit val impFireCloudManagedGroupMembership = jsonFormat3(FireCloudManagedGroupMembership)
+
+  implicit val impResourceId = jsonFormat1(ResourceId)
+  implicit val impAccessPolicyName = jsonFormat1(AccessPolicyName)
+//  implicit val impWorkbenchGroupName = jsonFormat1(WorkbenchGroupName)
+  implicit val impUserPolicy = jsonFormat4(UserPolicy)
+
+
 
   implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat5(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)

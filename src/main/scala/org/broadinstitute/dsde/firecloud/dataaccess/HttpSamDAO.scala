@@ -7,6 +7,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
+import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.{ManagedRoles, RawlsUserEmail}
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
@@ -91,6 +92,11 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
   override def requestGroupAccess(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
     userAuthedRequestToUnit(Post(samManagedGroupRequestAccess(groupName)))
   }
+
+  override def listResourcesByType(resourceTypeName: String)(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]] ={
+    authedRequestToObject[List[UserPolicy]](Get(samListResources(resourceTypeName)))
+  }
+
 
   private def userAuthedRequestToUnit(request: HttpRequest)(implicit userInfo: WithAccessToken): Future[Unit] = {
     userAuthedRequest(request).map { resp =>

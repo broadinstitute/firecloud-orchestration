@@ -12,6 +12,7 @@ object ElasticSearch {
   final val fieldAll = "_all"
   final val fieldSuggest = "_suggest"
   final val fieldDiscoverableByGroups = "_discoverableByGroups"
+  final val fieldWorkspaceId = "workspaceId"
   final val fieldOntologyParents = "parents"
   final val fieldOntologyParentsOrder = "order"
   final val fieldOntologyParentsLabel = "label"

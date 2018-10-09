@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
+import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, RawlsUserEmail}
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
@@ -43,6 +44,10 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   def samResourcePolicy(resourceTypeName: String, resourceId: String, policyName: String): String = samResourcePolicies(resourceTypeName, resourceId) + s"/$policyName"
   def samResourcePolicyAlterMember(resourceTypeName: String, resourceId: String, policyName: String, email: WorkbenchEmail): String = samResourcePolicy(resourceTypeName, resourceId, policyName) + s"/$email"
 
+
+  val samResourcesBase: String = FireCloudConfig.Sam.baseUrl + s"/api/resources"
+  def samListResources(resourceTypeName: String): String = samResourcesBase + s"/$resourceTypeName"
+
   def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
   def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
 
@@ -58,6 +63,7 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   def removeGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail)(implicit userInfo: WithAccessToken): Future[Unit]
   def overwriteGroupMembers(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: List[WorkbenchEmail])(implicit userInfo: WithAccessToken): Future[Unit]
   def requestGroupAccess(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit]
+  def listResourcesByType(resourceTypeName: String)(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]]
 
   def addPolicyMember(resourceTypeName: String, resourceId: String, policyName: String, email: WorkbenchEmail)(implicit userInfo: WithAccessToken): Future[Unit]
   def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit]

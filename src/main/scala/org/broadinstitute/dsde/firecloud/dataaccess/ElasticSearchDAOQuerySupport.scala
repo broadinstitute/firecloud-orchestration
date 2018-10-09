@@ -5,12 +5,14 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.SamResource.AccessPolicyName
 import org.broadinstitute.dsde.rawls.model.AttributeName
 import org.elasticsearch.search.aggregations.{AggregationBuilders, Aggregations}
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
+import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.aggregations.bucket.terms.{StringTerms, Terms}
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.elasticsearch.search.sort.SortOrder
@@ -38,6 +40,14 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     * {"query":{
     *    "bool":{
     *      "must":[
+    *        {"bool":
+    *          {"should":[
+    *            {"term":{"library:indication":"n/a"}},
+    *            {"term":{"library:indication":"disease"}},
+    *            {"term":{"library:indication":"lukemia"}}]
+    *          }
+    *        }],
+    *      "filter":[
     *        {"bool" :
     *          {"should" : [
     *            {"bool" :
@@ -46,15 +56,8 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     *            {"terms" :
     *            {"_discoverableByGroups" : ["37e1e624-84e0-4046-98d6-f89388a8f727-OWNER", "fdae9abd-be33-4be9-9eb2-321df017b8a2-OWNER"]}}]
     *          }
-    *        },
-    *        {"bool":
-    *          {"should":[
-    *            {"term":{"library:indication":"n/a"}},
-    *            {"term":{"library:indication":"disease"}},
-    *            {"term":{"library:indication":"lukemia"}}]
-    *          }
-    *        },
-    *        {"match":{"all_":"broad"}}]}},
+    *        }]
+    *        }},
     *  "aggregations":{
     *    "library:dataUseRestriction":{
     *      "terms":{"field":"library:dataUseRestriction.raw"}},
@@ -68,7 +71,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     */
 
 
-  def createQuery(criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport, searchField: String = fieldAll, phrase: Boolean = false): QueryBuilder = {
+  def createQuery(criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport, searchField: String = fieldAll, phrase: Boolean = false): QueryBuilder = {
     val query: BoolQueryBuilder = boolQuery // outer query, all subqueries should be added to the must list
     query.must(criteria.searchString match {
       case None => matchAllQuery
@@ -83,13 +86,6 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
           .should(fieldSearch)
           .should(nestedQuery("parents", matchQuery("parents.label", searchTerm).minimumShouldMatch("3<75%"), ScoreMode.Avg))
     })
-    val groupsQuery = boolQuery
-    // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/query-dsl-exists-query.html
-    groupsQuery.should(boolQuery.mustNot(existsQuery(fieldDiscoverableByGroups)))
-    if (groups.nonEmpty) {
-      groupsQuery.should(termsQuery(fieldDiscoverableByGroups, groups.asJavaCollection))
-    }
-    query.must(groupsQuery)
     criteria.filters foreach { case (field:String, values:Seq[String]) =>
       val fieldQuery = boolQuery // query for possible values of aggregation, added via should
       values foreach { value:String => fieldQuery.should(termQuery(field+".keyword", value))}
@@ -99,6 +95,15 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       def toLibraryAttributeName(name: String): String = AttributeName.toDelimitedName(AttributeName.withLibraryNS(name))
       rp => query.must(researchPurposeSupport.researchPurposeFilters(rp, toLibraryAttributeName))
     }
+
+    val groupsQuery = boolQuery
+    // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/query-dsl-exists-query.html
+    groupsQuery.should(boolQuery.mustNot(existsQuery(fieldDiscoverableByGroups)))
+    if (groups.nonEmpty) {
+      groupsQuery.should(termsQuery(fieldDiscoverableByGroups, groups.asJavaCollection))
+    }
+    groupsQuery.should(termsQuery(fieldWorkspaceId , workspaceIds))
+    query.filter(groupsQuery)
 
     query
   }
@@ -147,8 +152,8 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       .setFetchSource(false).highlighter(hb)
   }
 
-  def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequestBuilder = {
-    val searchQuery = createESSearchRequest(client, indexname, createQuery(criteria, groups, researchPurposeSupport), criteria.from, criteria.size, criteria.sortField, criteria.sortDirection)
+  def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequestBuilder = {
+    val searchQuery = createESSearchRequest(client, indexname, createQuery(criteria, groups, workspaceIds, researchPurposeSupport), criteria.from, criteria.size, criteria.sortField, criteria.sortDirection)
     // if we are not collecting aggregation data (in the case of pagination), we can skip adding aggregations
     // if the search criteria contains elements from all of the aggregatable attributes, then we will be making
     // separate queries for each of them. so we can skip adding them in the main search query
@@ -163,15 +168,15 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     searchQuery
   }
 
-  def buildAutocompleteQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequestBuilder = {
-    createESAutocompleteRequest(client, indexname, createQuery(criteria, groups, researchPurposeSupport, searchField=fieldSuggest, phrase=true), 0, criteria.size)
+  def buildAutocompleteQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequestBuilder = {
+    createESAutocompleteRequest(client, indexname, createQuery(criteria, groups, workspaceIds, researchPurposeSupport, searchField=fieldSuggest, phrase=true), 0, criteria.size)
   }
 
-  def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Seq[SearchRequestBuilder] = {
+  def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Seq[SearchRequestBuilder] = {
     // for aggregations fields that are part of the current search criteria, we need to do a separate
     // aggregate request *without* that term in the search criteria
     (criteria.fieldAggregations.keySet.toSeq intersect criteria.filters.keySet.toSeq) map { field: String =>
-      val query = createQuery(criteria.copy(filters = criteria.filters - field), groups, researchPurposeSupport)
+      val query = createQuery(criteria.copy(filters = criteria.filters - field), groups, workspaceIds, researchPurposeSupport)
       // setting size to 0, we will ignore the actual search results
       addAggregationsToQuery(
         createESSearchRequest(client, indexname, query, 0, 0),
@@ -195,9 +200,10 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
-    val searchQuery = buildSearchQuery(client, indexname, criteria, groups, researchPurposeSupport)
-    val aggregateQueries = buildAggregateQueries(client, indexname, criteria, groups, researchPurposeSupport)
+  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceAccessMap: Map[String, AccessPolicyName], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
+    val workspaceIds = workspaceAccessMap.keys.toSeq
+    val searchQuery = buildSearchQuery(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
+    val aggregateQueries = buildAggregateQueries(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
 
     logger.debug(s"main search query: $searchQuery.toJson")
     // search future will request aggregate data for aggregatable attributes that are not being searched on
@@ -214,10 +220,24 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     ) yield LibrarySearchResponse(
       criteria,
       allResults.last.getHits.getTotalHits().toInt,
-      allResults.last.getHits.getHits.toList map { hit => hit.getSourceAsString.parseJson },
+      allResults.last.getHits.getHits.toList map { hit: SearchHit =>
+        addAccessLevel(hit.getSourceAsString.parseJson.asJsObject, workspaceAccessMap)
+      },
       allResults flatMap { aggResp => getAggregationsFromResults(aggResp.getAggregations) }
     )
     response
+  }
+
+  def addAccessLevel(doc: JsObject, workspaceAccessMap: Map[String, AccessPolicyName]): JsValue = {
+    val docId: Option[JsValue] = doc.fields.get("workspaceId")
+    val accessStr = docId match {
+      case Some(wsid:JsString) => workspaceAccessMap.get(wsid.value) match {
+        case Some(accessLevel) => accessLevel.toString
+        case None => "NoAccess"
+      }
+      case _ => "NoAccess"
+    }
+    (doc.fields +  ("workspaceAccess" -> JsString(accessStr))).toJson
   }
 
   def populateSuggestions(client: TransportClient, indexName: String, field: String, text: String) : Future[Seq[String]] = {
@@ -268,9 +288,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
+  def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
 
-    val searchQuery = buildAutocompleteQuery(client, indexname, criteria, groups, researchPurposeSupport)
+    val searchQuery = buildAutocompleteQuery(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
 
     logger.debug(s"autocomplete search query: $searchQuery.toJson")
     val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchQuery))
