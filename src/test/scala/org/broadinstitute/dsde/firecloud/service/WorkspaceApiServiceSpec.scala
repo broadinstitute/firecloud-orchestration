@@ -81,6 +81,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace, workspace.name)
   private final val bucketPath = workspacesRoot + "/%s/%s/checkBucketReadAccess".format(workspace.namespace, workspace.name)
   private final val tsvImportPath = workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace, workspace.name)
+  private final val tsvImportFlexiblePath = workspacesRoot + "/%s/%s/importEntitiesFlexible".format(workspace.namespace, workspace.name)
   private final val bagitImportPath = workspacesRoot + "/%s/%s/importBagit".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
@@ -776,8 +777,17 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
 
         "an entity-type TSV" - {
-          "should 200 OK if the entity type is unknown" in {
+          "should 400 Bad Request if the entity type is unknown calling default import" in {
             (Post(tsvImportPath, MockTSVFormData.entityUnknownFirstColumnHeader)
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(BadRequest)
+              errorReportCheck("FireCloud", BadRequest)
+            }
+          }
+
+          "should 200 OK if the entity type is unknown and calling flexible import" in {
+            (Post(tsvImportFlexiblePath, MockTSVFormData.entityUnknownFirstColumnHeader)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)
@@ -840,9 +850,18 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
 
         "an update-type TSV" - {
-          "should 200 OK if the entity type is non-FC model" in {
+          "should 400 BadRequest if the entity type is non-FC model with calling default import" in {
             stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
             (Post(tsvImportPath, MockTSVFormData.updateNonModelFirstColumnHeader)
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(BadRequest)
+            }
+          }
+
+          "should 200 OK if the entity type is non-FC model when calling the flexible import" in {
+            stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
+            (Post(tsvImportFlexiblePath, MockTSVFormData.updateNonModelFirstColumnHeader)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)

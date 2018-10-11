@@ -3,12 +3,13 @@ package org.broadinstitute.dsde.firecloud.utils
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
-import scala.util.{Failure, Success}
 
+import scala.util.{Failure, Success}
 import spray.json.JsValue
 
 object TSVFormatter {
 
+//  val modelSchema = new FlexibleModelSchema
   /**
     * Generate file content from headers and rows.
     *
@@ -84,8 +85,9 @@ object TSVFormatter {
     * @param entityType The EntityType
     * @return IndexedSeq of header Strings
     */
-  def makeMembershipHeaders(entityType: String): IndexedSeq[String] = {
-    IndexedSeq[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id", FlexibleModelSchema.memberTypeFromEntityType(entityType).getOrElse(""))
+  def makeMembershipHeaders(entityType: String)(implicit modelSchema: ModelSchema): IndexedSeq[String] = {
+    IndexedSeq[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id", modelSchema.memberTypeFromEntityType(entityType).getOrElse(
+      throw new IllegalArgumentException("Entity set type name must end with \"_set\": " + entityType)))
   }
 
   /**
@@ -95,13 +97,15 @@ object TSVFormatter {
     * @param entities The Entity objects to convert to rows.
     * @return Ordered list of rows
     */
-  def makeMembershipRows(entityType: String, entities: Seq[Entity]): Seq[IndexedSeq[String]] = {
+  def makeMembershipRows(entityType: String, entities: Seq[Entity])(implicit modelSchema: ModelSchema): Seq[IndexedSeq[String]] = {
     entities.filter { _.entityType == entityType }.flatMap {
       entity =>
         entity.attributes.filter {
           // To make the membership file, we need the array of elements that correspond to the set type.
           // All other top-level properties are not necessary and are only used for the data load file.
-          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(FlexibleModelSchema.pluralizeEntityType(FlexibleModelSchema.memberTypeFromEntityType(entityType).get)))
+          case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(
+            // this is only for a filter - do not throw exception
+            modelSchema.getPlural(modelSchema.memberTypeFromEntityType(entityType).getOrElse(""))))
         }.flatMap {
           case (_, AttributeEntityReference(`entityType`, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
           case (_, AttributeEntityReferenceList(refs)) => refs.map( ref => IndexedSeq[String](entity.name, ref.entityName) )
@@ -118,8 +122,11 @@ object TSVFormatter {
     * @param requestedHeaders Which, if any, columns were requested. If none, return allHeaders (subject to sanitization)
     * @return Entity name as first column header, followed by matching entity attribute labels
     */
-  def makeEntityHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]]): IndexedSeq[String] = {
-    val memberPlural = FlexibleModelSchema.pluralizeEntityType(FlexibleModelSchema.memberTypeFromEntityType(entityType).getOrElse(""))
+  def makeEntityHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]])(implicit modelSchema: ModelSchema): IndexedSeq[String] = {
+    val memberPlural = modelSchema.isCollectionType(entityType) match {
+      case true => Some(modelSchema.getPlural(modelSchema.memberTypeFromEntityType(entityType).getOrElse("")))
+      case false => None
+    }
 
     val requestedHeadersSansId = requestedHeaders.
       // remove empty strings
@@ -129,16 +136,17 @@ object TSVFormatter {
       // entity id always needs to be first and is handled differently so remove it from requestedHeaders
       map(_.filterNot(_.equalsIgnoreCase(entityType + "_id"))).
       // filter out member attribute if a set type
-      map { h => if (FlexibleModelSchema.isCollectionType(entityType)) h.filterNot(_.equals(memberPlural)) else h }
+      map { h => if (modelSchema.isCollectionType(entityType)) h.filterNot(_.equals(memberPlural.get)) else h }
 
-    val filteredAllHeaders = if (FlexibleModelSchema.isCollectionType(entityType)) {
-      allHeaders.filterNot(_.equals(memberPlural))
+    val filteredAllHeaders = if (modelSchema.isCollectionType(entityType)) {
+      allHeaders.filterNot(_.equals(memberPlural.get))
     } else {
       allHeaders
     }
 
     val entityHeader: String = requestedHeadersSansId match {
-      case Some(headers) if FlexibleModelSchema.isUsingFirecloudSchema(entityType) && !FlexibleModelSchema.getRequiredAttributes(entityType).keySet.forall(headers.contains) => s"${TsvTypes.UPDATE}:${entityType}_id"
+        // if not all required fields are requested, then this tsv is an update
+      case Some(headers) if !modelSchema.getRequiredAttributes(entityType).keySet.forall(headers.contains) => s"${TsvTypes.UPDATE}:${entityType}_id"
       case _ => s"${TsvTypes.ENTITY}:${entityType}_id"
     }
     (entityHeader +: requestedHeadersSansId.getOrElse(filteredAllHeaders)).toIndexedSeq
@@ -152,14 +160,12 @@ object TSVFormatter {
     * @param headers The universe of available column headers
     * @return Ordered list of rows, each row entry value ordered by its corresponding header position
     */
-  def makeEntityRows(entityType: String, entities: Seq[Entity], headers: IndexedSeq[String]): IndexedSeq[IndexedSeq[String]] = {
+  def makeEntityRows(entityType: String, entities: Seq[Entity], headers: IndexedSeq[String])(implicit modelSchema: ModelSchema): IndexedSeq[IndexedSeq[String]] = {
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
-    val filteredEntities = if (FlexibleModelSchema.isCollectionType(entityType)) {
-      FlexibleModelSchema.memberTypeFromEntityType(entityType) match {
-        case Success(memberType) => filterAttributeFromEntities(entities, FlexibleModelSchema.pluralizeEntityType(memberType))
-        case Failure(regret) => ??? // should not happen?
-      }
+    val filteredEntities = if (modelSchema.isCollectionType(entityType)) {
+      val memberPlural = modelSchema.getPlural(modelSchema.memberTypeFromEntityType(entityType).get)
+      filterAttributeFromEntities(entities, memberPlural)
     } else {
       entities
     }

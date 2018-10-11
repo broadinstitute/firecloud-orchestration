@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.model.FirecloudModelSchema
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
 import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 import org.broadinstitute.dsde.rawls.model._
@@ -12,6 +12,8 @@ import scala.io.Source
 import scala.language.postfixOps
 
 class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Inspectors {
+
+  implicit val modelSchema = new FirecloudModelSchema
 
   "TSVFormatter" - {
 
@@ -170,6 +172,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
   }
 
   private def testEntityDataSet(entityType: String, entities: List[Entity], requestedHeaders: Option[IndexedSeq[String]], tsvType: TsvType = TsvTypes.ENTITY) = {
+
     val allHeaders = entities flatMap { e =>
       e.attributes map { a => a._1.name }
     } distinct
@@ -210,7 +213,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
     lines map { _.split("\t", -1).size should equal(2) }
 
-    lines.head.split("\t") should be(Array(s"${TsvTypes.MEMBERSHIP.toString}:${entityType}_id", FlexibleModelSchema.memberTypeFromEntityType(entityType).get))
+    lines.head.split("\t") should be(Array(s"${TsvTypes.MEMBERSHIP.toString}:${entityType}_id", new FirecloudModelSchema().memberTypeFromEntityType(entityType).get))
   }
 
 }

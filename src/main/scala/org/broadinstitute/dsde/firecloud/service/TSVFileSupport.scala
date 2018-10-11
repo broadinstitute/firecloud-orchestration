@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.Actor
-import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
 import spray.http.StatusCodes
 import spray.http.StatusCodes._
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import spray.json._
@@ -79,12 +80,12 @@ trait TSVFileSupport {
     * Collection type entities have typed members enforced by the schema. If the provided entity type exists, returns
     * Some( its_member_type ) if it's a collection, or None if it isn't.
     * Bails with a 400 Bad Request if the provided entity type is unknown to the schema. */
-  def withMemberCollectionType(entityType: String)(op: (Option[String] => Future[PerRequestMessage]))(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
-    FlexibleModelSchema.memberTypeFromEntityType(entityType) match {
-      case Failure(regret) => op(None)
-      case Success(memberType) => op(Some(memberType))
-    }
-  }
+//  def withMemberCollectionType(entityType: String)(op: (Option[String] => Future[PerRequestMessage]))(implicit ec: ExecutionContext, modelSchema: ModelSchema): Future[PerRequestMessage] = {
+//    modelSchema.memberTypeFromEntityType(entityType) match {
+//      case Failure(regret) => op(None)
+//      case Success(memberType) => op(Some(memberType))
+//    }
+//  }
 
   /**
     * Bail with a 400 Bad Request if the tsv is trying to set members on a collection type.
@@ -138,7 +139,7 @@ trait TSVFileSupport {
   /**
     * colInfo is a list of (headerName, refType), where refType is the type of the entity if the headerName is an AttributeRef
     * e.g. on TCGA Pairs, there's a header called case_sample_id where the refType would be Sample */
-  def setAttributesOnEntity(entityType: String, memberTypeOpt: Option[String], row: Seq[String], colInfo: Seq[(String,Option[String])]) = {
+  def setAttributesOnEntity(entityType: String, memberTypeOpt: Option[String], row: Seq[String], colInfo: Seq[(String,Option[String])], membersNameOpt: Option[String]) = {
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?
@@ -156,14 +157,10 @@ trait TSVFileSupport {
 
     //If we're upserting a collection type entity, add an AddListMember( members_attr, null ) operation.
     //This will force the members_attr attribute to exist if it's being created for the first time.
-    val collectionMemberAttrOp: Option[Map[String, Attribute]] =
-    if( FlexibleModelSchema.isCollectionType(entityType) ) {
-      val membersAttributeName = FlexibleModelSchema.pluralizeEntityType(memberTypeOpt.get)
-      Some(Map(
+    val collectionMemberAttrOp: Option[Map[String, Attribute]] = membersNameOpt map { membersAttributeName =>
+      Map(
         createRefListOperation,
-        "attributeListName"->AttributeString(membersAttributeName)))
-    } else {
-      None
+        "attributeListName"->AttributeString(membersAttributeName))
     }
     EntityUpdateDefinition(row.headOption.get,entityType,ops ++ collectionMemberAttrOp )
   }

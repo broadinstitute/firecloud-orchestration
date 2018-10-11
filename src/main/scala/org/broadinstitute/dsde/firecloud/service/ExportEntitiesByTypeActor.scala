@@ -70,6 +70,8 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   implicit val userInfo: UserInfo = argUserInfo
   implicit val materializer: ActorMaterializer = argMaterializer
 
+  implicit val modelSchema = SchemaFactory.getSchemaForEntityType(entityType)
+
   override def receive: Receive = {
     case ExportEntities => streamEntities pipeTo sender
   }
@@ -89,7 +91,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   def streamEntities(): Future[Unit] = {
     entityTypeMetadata flatMap { metadata =>
       val entityQueries = getEntityQueries(metadata, entityType)
-      if (FlexibleModelSchema.isCollectionType(entityType)) {
+      if (modelSchema.isCollectionType(entityType)) {
         streamCollectionType(entityQueries, metadata)
       } else {
         val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)

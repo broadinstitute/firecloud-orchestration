@@ -10,6 +10,7 @@ import akka.pattern.pipe
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
+import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
@@ -39,16 +40,17 @@ object EntityClient {
 
   case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
 
-  def props(requestContext: RequestContext)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext))
+  def props(requestContext: RequestContext, modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext, modelSchema))
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
   }
 
-  def backwardsCompatStripIdSuffixes(tsvLoadFile: TSVLoadFile, entityType: String): TSVLoadFile = {
-    ModelSchema.getTypeSchema(entityType) match {
-      case Failure(regrets) => tsvLoadFile
-      case Success(metaData) =>
+  def backwardsCompatStripIdSuffixes(tsvLoadFile: TSVLoadFile, entityType: String, modelSchema: ModelSchema): TSVLoadFile = {
+    modelSchema.isInstanceOf[FlexibleModelSchema] match {
+      case true => tsvLoadFile
+      case false =>
+        val metaData = modelSchema.getTypeSchema(entityType)
         val newHeaders = tsvLoadFile.headers.map { header =>
           val headerSansId = header.stripSuffix("_id")
           if (metaData.requiredAttributes.keySet.contains(headerSansId) || metaData.memberType.contains(headerSansId)) {
@@ -60,6 +62,7 @@ object EntityClient {
         tsvLoadFile.copy(headers = newHeaders)
     }
   }
+
 
   //returns (contents of participants.tsv, contents of samples.tsv)
   def unzipTSVs(bagName: String, zipFile: ZipFile)(op: (Option[String], Option[String]) => Future[PerRequestMessage]): Future[PerRequestMessage] = {
@@ -107,7 +110,7 @@ object EntityClient {
 
 }
 
-class EntityClient (requestContext: RequestContext)(implicit protected val executionContext: ExecutionContext)
+class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(implicit protected val executionContext: ExecutionContext)
   extends Actor with FireCloudRequestBuilding with TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -121,12 +124,11 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
   }
 
-
   /**
    * Returns the plural form of the entity type.
-   * Bails with a 400 Bad Request if the entity type is unknown to the schema. */
+   * If the entity type is unknown to the schema, simply adds an 's'. */
   private def withPlural(entityType: String)(op: (String => Future[PerRequestMessage])): Future[PerRequestMessage] = {
-    op(FlexibleModelSchema.pluralizeEntityType(entityType))
+    op(modelSchema.getPlural(entityType))
   }
 
 
@@ -135,7 +137,7 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
    * Bails with a 400 Bad Request if the entity type is unknown or if some attributes are missing.
    * Returns the list of required attributes if all is well. */
   private def withRequiredAttributes(entityType: String, headers: Seq[String])(op: (Map[String, String] => Future[PerRequestMessage])):Future[PerRequestMessage] = {
-    val requiredAttributes = FlexibleModelSchema.getRequiredAttributes(entityType)
+    val requiredAttributes = modelSchema.getRequiredAttributes(entityType)
     if( !requiredAttributes.keySet.subsetOf(headers.toSet) ) {
       Future( RequestCompleteWithErrorReport(BadRequest,
         "TSV is missing required attributes: " + (requiredAttributes.keySet -- headers).mkString(", ")) )
@@ -174,19 +176,18 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
   private def importMembershipTSV(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
-    withMemberCollectionType(entityType) { memberTypeOpt =>
-      validateMembershipTSV(tsv, memberTypeOpt) {
-        withPlural(memberTypeOpt.get) { memberPlural =>
-          val rawlsCalls = tsv.tsvData groupBy(_(0)) map { case (entityName, rows) =>
-            val ops = rows map { row =>
-              //row(1) is the entity to add as a member of the entity in row.head
-              val attrRef = AttributeEntityReference(memberTypeOpt.get,row(1))
-              Map(addListMemberOperation,"attributeListName"->AttributeString(memberPlural),"newMember"->attrRef)
-            }
-            EntityUpdateDefinition(entityName,entityType,ops)
+    val memberTypeOpt = modelSchema.memberTypeFromEntityType(entityType)
+    validateMembershipTSV(tsv, memberTypeOpt) {
+      withPlural(memberTypeOpt.get) { memberPlural =>
+        val rawlsCalls = tsv.tsvData groupBy(_(0)) map { case (entityName, rows) =>
+          val ops = rows map { row =>
+            //row(1) is the entity to add as a member of the entity in row.head
+            val attrRef = AttributeEntityReference(memberTypeOpt.get,row(1))
+            Map(addListMemberOperation,"attributeListName"->AttributeString(memberPlural),"newMember"->attrRef)
           }
-          batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls.toSeq, "batchUpsert")
+          EntityUpdateDefinition(entityName,entityType,ops)
         }
+        batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls.toSeq, "batchUpsert")
       }
     }
   }
@@ -198,13 +199,13 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
-      withMemberCollectionType(entityType) { memberTypeOpt =>
-        checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
-          withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
-            val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
-            val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
-            batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpsert")
-          }
+      val memberTypeOpt = modelSchema.memberTypeFromEntityType(entityType)
+      checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
+        withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
+          val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
+          val membersNameOpt = memberTypeOpt map (memberType => modelSchema.getPlural(memberType))
+          val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, membersNameOpt))
+          batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpsert")
         }
       }
     }
@@ -217,12 +218,12 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
-      withMemberCollectionType(entityType) { memberTypeOpt =>
-        checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
-          val colInfo = colNamesToAttributeNames(tsv.headers, FlexibleModelSchema.getRequiredAttributes(entityType))
-          val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo))
-          batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpdate")
-        }
+      val memberTypeOpt = modelSchema.memberTypeFromEntityType(entityType)
+      checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
+        val colInfo = colNamesToAttributeNames(tsv.headers, modelSchema.getRequiredAttributes(entityType))
+        val membersNameOpt = memberTypeOpt map (memberType => modelSchema.getPlural(memberType))
+        val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, membersNameOpt))
+        batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpdate")
       }
     }
   }
@@ -261,8 +262,11 @@ class EntityClient (requestContext: RequestContext)(implicit protected val execu
         }
         case _ => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
       }
-      val strippedTsv = backwardsCompatStripIdSuffixes(tsv, entityType)
-      importEntitiesFromTSVLoadFile(pipeline, workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType)
+      val strippedTsv = Try(backwardsCompatStripIdSuffixes(tsv, entityType, modelSchema))
+      Try(importEntitiesFromTSVLoadFile(pipeline, workspaceNamespace, workspaceName, strippedTsv.get, tsvType, entityType)) match {
+        case Failure(err)  => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, err.toString))
+        case Success(resp) => resp
+      }
     }
   }
 
