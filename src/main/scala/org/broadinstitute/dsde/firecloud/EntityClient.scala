@@ -126,9 +126,13 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
 
   /**
    * Returns the plural form of the entity type.
-   * If the entity type is unknown to the schema, simply adds an 's'. */
+   * Bails with a 400 Bad Request if the entity type is unknown to the schema and we are using firecloud model
+   * If using flexible model, just appends an 's' */
   private def withPlural(entityType: String)(op: (String => Future[PerRequestMessage])): Future[PerRequestMessage] = {
-    op(modelSchema.getPlural(entityType))
+    Try(modelSchema.getPlural(entityType)) match {
+      case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
+      case Success(plural) => op(plural)
+    }
   }
 
 
