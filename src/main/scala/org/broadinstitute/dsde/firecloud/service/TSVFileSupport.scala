@@ -77,17 +77,6 @@ trait TSVFileSupport {
   }
 
   /**
-    * Collection type entities have typed members enforced by the schema. If the provided entity type exists, returns
-    * Some( its_member_type ) if it's a collection, or None if it isn't.
-    * Bails with a 400 Bad Request if the provided entity type is unknown to the schema. */
-//  def withMemberCollectionType(entityType: String)(op: (Option[String] => Future[PerRequestMessage]))(implicit ec: ExecutionContext, modelSchema: ModelSchema): Future[PerRequestMessage] = {
-//    modelSchema.memberTypeFromEntityType(entityType) match {
-//      case Failure(regret) => op(None)
-//      case Success(memberType) => op(Some(memberType))
-//    }
-//  }
-
-  /**
     * Bail with a 400 Bad Request if the tsv is trying to set members on a collection type.
     * Otherwise, carry on. */
   def checkNoCollectionMemberAttribute( tsv: TSVLoadFile, memberTypeOpt: Option[String] )(op: => Future[PerRequestMessage])(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
