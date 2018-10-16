@@ -2594,11 +2594,11 @@ paths:
         500:
           description: Internal Error
 
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/importEntitiesFlexible:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/flexibleImportEntities:
     post:
       tags:
       - Entities
-      operationId: importEntitiesFlexible
+      operationId: flexibleImportEntities
       summary: Import entities from a tsv file
       consumes:
       - multipart/form-data

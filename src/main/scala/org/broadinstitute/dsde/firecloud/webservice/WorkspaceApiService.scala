@@ -110,7 +110,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           } ~
-          path("importEntitiesFlexible") {
+          path("flexibleImportEntities") {
             post {
               requireUserInfo() { _ =>
                 formFields('entities) { entitiesTSV =>

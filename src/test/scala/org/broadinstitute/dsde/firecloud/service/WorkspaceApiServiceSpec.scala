@@ -81,7 +81,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace, workspace.name)
   private final val bucketPath = workspacesRoot + "/%s/%s/checkBucketReadAccess".format(workspace.namespace, workspace.name)
   private final val tsvImportPath = workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace, workspace.name)
-  private final val tsvImportFlexiblePath = workspacesRoot + "/%s/%s/importEntitiesFlexible".format(workspace.namespace, workspace.name)
+  private final val tsvImportFlexiblePath = workspacesRoot + "/%s/%s/flexibleImportEntities".format(workspace.namespace, workspace.name)
   private final val bagitImportPath = workspacesRoot + "/%s/%s/importBagit".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
