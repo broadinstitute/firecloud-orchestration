@@ -28,12 +28,33 @@ trait ModelSchema {
   }
 }
 
-object SchemaFactory {
+
+
+object SchemaTypes {
+  trait SchemaType
+  case object FIRECLOUD extends SchemaType { override def toString = "firecloud" }
+  case object FLEXIBLE extends SchemaType { override def toString = "flexible" }
+
+  def withName(name: String): SchemaType = {
+    name.toLowerCase match {
+      case "firecloud" => FIRECLOUD
+      case "flexible" => FLEXIBLE
+      case _ => throw new FireCloudException(s"Invalid schema type '$name', supported types are: firecloud, flexible")
+    }
+  }
+}
+
+
+
+object ModelSchemaRegistry {
   // add new schema types from most specific to most general
-  val schemas: Seq[ModelSchema] = Seq(new FirecloudModelSchema, new FlexibleModelSchema)
-  def getSchemaForEntityType(entityType: String): ModelSchema = {
-    val possibleMatch = schemas.collectFirst({case schema if schema.isEntityTypeInSchema(entityType) => schema})
-    possibleMatch.getOrElse(schemas.last)
+  val schemas: Map[SchemaTypes.SchemaType, ModelSchema] = Map(SchemaTypes.FIRECLOUD -> new FirecloudModelSchema, SchemaTypes.FLEXIBLE -> new FlexibleModelSchema)
+
+  def getModelForSchemaType(schemaType: SchemaTypes.SchemaType): ModelSchema = schemas.getOrElse(schemaType, schemas.last._2)
+
+  def getModelForEntityType(entityType: String): ModelSchema = {
+    val possibleMatch = schemas.values.collectFirst({case schema if schema.isEntityTypeInSchema(entityType) => schema})
+    possibleMatch.getOrElse(schemas.last._2)
   }
 }
 

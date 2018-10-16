@@ -29,10 +29,10 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
       // this endpoint allows an arbitrary number of attribute names in the POST body (GAWB-1435)
       // but the URL cannot be saved for later use (firecloud-app#80)
       post {
-        formFields('FCtoken, 'attributeNames.?) { (tokenValue, attributeNamesString) => requestContext =>
+        formFields('FCtoken, 'attributeNames.?, 'model.?) { (tokenValue, attributeNamesString, modelString) => requestContext =>
           val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
           val userInfo = dummyUserInfo(tokenValue)
-          val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
+          val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
           val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
           actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
         }
@@ -41,11 +41,11 @@ trait CookieAuthedApiService extends HttpService with PerRequestCreator with Fir
       // but it's possible to exceed the maximum URI length by specifying too many attributes (GAWB-1435)
       get {
         cookie("FCtoken") { tokenCookie =>
-          parameters('attributeNames.?) { attributeNamesString =>
+          parameters('attributeNames.?, 'model.?) { (attributeNamesString, modelString) =>
             requestContext =>
               val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
               val userInfo = dummyUserInfo(tokenCookie.content)
-              val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
+              val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
               val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
               actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
             }

@@ -2440,6 +2440,10 @@ paths:
           description: comma separated list of ordered attribute names to be in downloaded tsv
           type: string
           in: query
+        - name: model
+          description: firecloud (default) or flexible
+          type: string
+          in: query
       responses:
         200:
           description: Workspace entities of specified type in TSV format
@@ -2580,6 +2584,40 @@ paths:
           description: A valid TSV import file
           required: true
           type: file
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Bad Request
+        404:
+          description: Source Workspace not found
+        500:
+          description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importEntitiesFlexible:
+    post:
+      tags:
+      - Entities
+      operationId: importEntitiesFlexible
+      summary: Import entities from a tsv file
+      consumes:
+      - multipart/form-data
+      parameters:
+      - name: workspaceNamespace
+        description: Destination Workspace Namespace
+        required: true
+        type: string
+        in: path
+      - name: workspaceName
+        description: Destination Workspace Name
+        required: true
+        type: string
+        in: path
+      - name: entities
+        in: formData
+        description: A valid TSV import file
+        required: true
+        type: file
       responses:
         200:
           description: Successful Request
@@ -3567,6 +3605,11 @@ paths:
           type: string
           in: formData
           allowEmptyValue: true
+        - name: model
+          description: flexible or firecloud (firecloud model will be used by default)
+          type: string
+          in: formData
+          allowEmptyValue: true
       responses:
         200:
           description: Workspace entities of specified type in TSV format
@@ -3595,6 +3638,10 @@ paths:
         - $ref: '#/parameters/entityTypeParam'
         - name: attributeNames
           description: comma separated list of ordered attribute names to be in downloaded tsv
+          type: string
+          in: query
+        - name: model
+          description: flexible or firecloud (firecloud model will be used by default)
           type: string
           in: query
       responses:

@@ -110,24 +110,24 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           } ~
-          path("importEntities") {
-            post {
-              requireUserInfo() { _ =>
-                formFields('entities) { entitiesTSV =>
-                  respondWithJSON { requestContext =>
-                    perRequest(requestContext, Props(new EntityClient(requestContext, new FirecloudModelSchema)),
-                      EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
-                  }
-                }
-              }
-            }
-          } ~
           path("importEntitiesFlexible") {
             post {
               requireUserInfo() { _ =>
                 formFields('entities) { entitiesTSV =>
                   respondWithJSON { requestContext =>
                     perRequest(requestContext, Props(new EntityClient(requestContext, new FlexibleModelSchema)),
+                      EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
+                  }
+                }
+              }
+            }
+          } ~
+          path("importEntities") {
+            post {
+              requireUserInfo() { _ =>
+                formFields('entities) { entitiesTSV =>
+                  respondWithJSON { requestContext =>
+                    perRequest(requestContext, Props(new EntityClient(requestContext, new FirecloudModelSchema)),
                       EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
                   }
                 }

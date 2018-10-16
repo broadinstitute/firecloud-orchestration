@@ -30,7 +30,8 @@ case class ExportEntitiesByTypeArguments (
   workspaceNamespace: String,
   workspaceName: String,
   entityType: String,
-  attributeNames: Option[IndexedSeq[String]]
+  attributeNames: Option[IndexedSeq[String]],
+  model: Option[String]
 )
 
 object ExportEntitiesByTypeActor {
@@ -44,7 +45,7 @@ object ExportEntitiesByTypeActor {
 
   def constructor(app: Application, materializer: ActorMaterializer)(exportArgs: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) =
     new ExportEntitiesByTypeActor(app.rawlsDAO, exportArgs.requestContext, exportArgs.userInfo, exportArgs.workspaceNamespace,
-      exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, materializer)
+      exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, exportArgs.model, materializer)
 }
 
 /**
@@ -63,6 +64,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
                                 workspaceName: String,
                                 entityType: String,
                                 attributeNames: Option[IndexedSeq[String]],
+                                model: Option[String],
                                 argMaterializer: ActorMaterializer)
                                (implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
 
@@ -70,7 +72,10 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   implicit val userInfo: UserInfo = argUserInfo
   implicit val materializer: ActorMaterializer = argMaterializer
 
-  implicit val modelSchema = SchemaFactory.getSchemaForEntityType(entityType)
+  implicit val modelSchema = model match {
+    case Some(name) => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.withName(name))
+    case None => ModelSchemaRegistry.getModelForEntityType(entityType)
+  }
 
   override def receive: Receive = {
     case ExportEntities => streamEntities pipeTo sender
