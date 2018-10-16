@@ -31,9 +31,9 @@ trait ModelSchema {
 
 
 object SchemaTypes {
-  trait SchemaType
-  case object FIRECLOUD extends SchemaType { override def toString = "firecloud" }
-  case object FLEXIBLE extends SchemaType { override def toString = "flexible" }
+  sealed trait SchemaType
+  final case object FIRECLOUD extends SchemaType { override def toString = "firecloud" }
+  final case object FLEXIBLE extends SchemaType { override def toString = "flexible" }
 
   def withName(name: String): SchemaType = {
     name.toLowerCase match {
