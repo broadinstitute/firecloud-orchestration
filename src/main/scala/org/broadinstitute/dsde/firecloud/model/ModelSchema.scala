@@ -4,7 +4,7 @@ import scala.io.Source
 import spray.json._
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created with IntelliJ IDEA.
@@ -14,11 +14,12 @@ import scala.util.{Failure, Try}
  */
 
 trait ModelSchema {
-  def memberTypeFromEntityType (entityType: String): Option[String]
+  def memberTypeFromEntityType (entityType: String): Try[Option[String]]
   def isCollectionType (entityType: String): Boolean
-  def getPlural (entityType: String): String
-  def getRequiredAttributes(entityType: String): Map[String, String]
-  def getTypeSchema(entityType: String): EntityMetadata
+  def getPlural (entityType: String): Try[String]
+  def getRequiredAttributes(entityType: String): Try[Map[String, String]]
+  def getTypeSchema(entityType: String): Try[EntityMetadata]
+  def supportsBackwardsCompatibleIds(): Boolean
 
   def isEntityTypeInSchema(entityType: String): Boolean = {
     Try(this.memberTypeFromEntityType(entityType)) match {
@@ -61,31 +62,27 @@ object ModelSchemaRegistry {
 
 class FlexibleModelSchema extends ModelSchema {
 
-  def memberTypeFromEntityType(entityType: String): Option[String] = {
-    isCollectionType(entityType) match {
-      case true => Some(entityType.replace("_set", ""))
-      case _ => None
-    }
+  def memberTypeFromEntityType(entityType: String): Try[Option[String]] = {
+    Success(Some(entityType.replace("_set", "")).filter(_ => isCollectionType(entityType)))
   }
 
   def isCollectionType(entityType: String): Boolean = {
     entityType.endsWith("_set")
   }
 
-  def getRequiredAttributes(entityType: String): Map[String, String] = {
-    Map.empty
+  def getRequiredAttributes(entityType: String): Try[Map[String, String]] = {
+    Success(Map.empty)
   }
 
-  def getPlural(entityType: String): String =  {
-    entityType + "s"
+  def getPlural(entityType: String): Try[String] =  {
+    Success(entityType + "s")
   }
 
-  def getTypeSchema(entityType: String): EntityMetadata = {
-    isCollectionType(entityType) match {
-      case true => EntityMetadata(entityType+"s", Map.empty, Some(entityType+"_members"))
-      case _ => EntityMetadata(entityType+"s", Map.empty, None)
-    }
+  def getTypeSchema(entityType: String): Try[EntityMetadata] = {
+    Success(EntityMetadata(entityType, Map.empty, Some(entityType+"_members").filter(_ => isCollectionType(entityType))))
   }
+
+  def supportsBackwardsCompatibleIds(): Boolean = false
 }
 
 class FirecloudModelSchema extends ModelSchema {
@@ -95,32 +92,31 @@ class FirecloudModelSchema extends ModelSchema {
       Source.fromURL(getClass.getResource(FireCloudConfig.Rawls.model)).mkString.parseJson ).schema
   }
 
-  def getTypeSchema(entityType: String): EntityMetadata = {
-    EntityTypes.types.getOrElse(entityType, throw new FireCloudException(("Unknown entity type: " + entityType)))
+  def getTypeSchema(entityType: String): Try[EntityMetadata] = {
+    EntityTypes.types.get(entityType) map (Success(_)) getOrElse(Failure(new RuntimeException("Unknown entity type: " + entityType)))
   }
 
-  def memberTypeFromEntityType(entityType: String): Option[String] = {
-    getTypeSchema(entityType).memberType
+  def memberTypeFromEntityType(entityType: String): Try[Option[String]] = {
+    getTypeSchema(entityType).map(_.memberType)
   }
 
-  def getRequiredAttributes(entityType: String): Map[String, String] = {
-    getTypeSchema(entityType).requiredAttributes
+  def getRequiredAttributes(entityType: String): Try[Map[String, String]] = {
+    getTypeSchema(entityType).map(_.requiredAttributes)
   }
 
   def isCollectionType(entityType: String): Boolean = {
-    EntityTypes.types.get(entityType) match {
-      case Some(schema) => schema.memberType.isDefined
-      case None => entityType.endsWith("_set")
-    }
+    EntityTypes.types.get(entityType) map (_.memberType.isDefined) getOrElse(false)
   }
 
-  def getPlural(entityType: String): String = {
-    getTypeSchema(entityType).plural
+  def getPlural(entityType: String): Try[String] = {
+    getTypeSchema(entityType).map(_.plural)
   }
 
-  def isUsingFirecloudModelSchema(entityType: String): Boolean = {
-    EntityTypes.types.get(entityType).isDefined
-  }
+  def supportsBackwardsCompatibleIds(): Boolean = true
+
+  //  def isUsingFirecloudModelSchema(entityType: String): Boolean = {
+//    EntityTypes.types.get(entityType).isDefined
+//  }
 }
 
 /**

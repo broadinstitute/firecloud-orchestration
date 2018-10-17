@@ -131,7 +131,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           status should be(OK)
           entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "bigQuery_set.zip"))) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "bigQuery_set.txt"))) should be(true)
         }
       }
     }

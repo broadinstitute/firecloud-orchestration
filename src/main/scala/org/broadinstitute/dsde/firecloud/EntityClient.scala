@@ -47,10 +47,8 @@ object EntityClient {
   }
 
   def backwardsCompatStripIdSuffixes(tsvLoadFile: TSVLoadFile, entityType: String, modelSchema: ModelSchema): TSVLoadFile = {
-    modelSchema.isInstanceOf[FlexibleModelSchema] match {
-      case true => tsvLoadFile
-      case false =>
-        val metaData = modelSchema.getTypeSchema(entityType)
+    modelSchema.getTypeSchema(entityType) match {
+      case Success(metaData) =>
         val newHeaders = tsvLoadFile.headers.map { header =>
           val headerSansId = header.stripSuffix("_id")
           if (metaData.requiredAttributes.keySet.contains(headerSansId) || metaData.memberType.contains(headerSansId)) {
@@ -60,9 +58,9 @@ object EntityClient {
           }
         }
         tsvLoadFile.copy(headers = newHeaders)
+      case Failure(exception) => tsvLoadFile // the failure will be handled during parsing
     }
   }
-
 
   //returns (contents of participants.tsv, contents of samples.tsv)
   def unzipTSVs(bagName: String, zipFile: ZipFile)(op: (Option[String], Option[String]) => Future[PerRequestMessage]): Future[PerRequestMessage] = {
@@ -129,7 +127,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
    * Bails with a 400 Bad Request if the entity type is unknown to the schema and we are using firecloud model
    * If using flexible model, just appends an 's' */
   private def withPlural(entityType: String)(op: (String => Future[PerRequestMessage])): Future[PerRequestMessage] = {
-    Try(modelSchema.getPlural(entityType)) match {
+    modelSchema.getPlural(entityType) match {
       case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
       case Success(plural) => op(plural)
     }
@@ -141,14 +139,17 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
    * Bails with a 400 Bad Request if the entity type is unknown or if some attributes are missing.
    * Returns the list of required attributes if all is well. */
   private def withRequiredAttributes(entityType: String, headers: Seq[String])(op: (Map[String, String] => Future[PerRequestMessage])):Future[PerRequestMessage] = {
-    val requiredAttributes = modelSchema.getRequiredAttributes(entityType)
-    if( !requiredAttributes.keySet.subsetOf(headers.toSet) ) {
-      Future( RequestCompleteWithErrorReport(BadRequest,
-        "TSV is missing required attributes: " + (requiredAttributes.keySet -- headers).mkString(", ")) )
-    } else {
-      op(requiredAttributes)
+    modelSchema.getRequiredAttributes(entityType) match {
+      case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
+      case Success(requiredAttributes) =>
+        if( !requiredAttributes.keySet.subsetOf(headers.toSet) ) {
+          Future( RequestCompleteWithErrorReport(BadRequest,
+            "TSV is missing required attributes: " + (requiredAttributes.keySet -- headers).mkString(", ")) )
+        } else {
+          op(requiredAttributes)
+        }
+      }
     }
-  }
 
   def batchCallToRawls(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
@@ -180,18 +181,19 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
   private def importMembershipTSV(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
-    val memberTypeOpt = modelSchema.memberTypeFromEntityType(entityType)
-    validateMembershipTSV(tsv, memberTypeOpt) {
-      withPlural(memberTypeOpt.get) { memberPlural =>
-        val rawlsCalls = tsv.tsvData groupBy(_(0)) map { case (entityName, rows) =>
-          val ops = rows map { row =>
-            //row(1) is the entity to add as a member of the entity in row.head
-            val attrRef = AttributeEntityReference(memberTypeOpt.get,row(1))
-            Map(addListMemberOperation,"attributeListName"->AttributeString(memberPlural),"newMember"->attrRef)
+    withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
+      validateMembershipTSV(tsv, memberTypeOpt) {
+        withPlural(memberTypeOpt.get) { memberPlural =>
+          val rawlsCalls = tsv.tsvData groupBy (_ (0)) map { case (entityName, rows) =>
+            val ops = rows map { row =>
+              //row(1) is the entity to add as a member of the entity in row.head
+              val attrRef = AttributeEntityReference(memberTypeOpt.get, row(1))
+              Map(addListMemberOperation, "attributeListName" -> AttributeString(memberPlural), "newMember" -> attrRef)
+            }
+            EntityUpdateDefinition(entityName, entityType, ops)
           }
-          EntityUpdateDefinition(entityName,entityType,ops)
+          batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls.toSeq, "batchUpsert")
         }
-        batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls.toSeq, "batchUpsert")
       }
     }
   }
@@ -203,13 +205,14 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
-      val memberTypeOpt = modelSchema.memberTypeFromEntityType(entityType)
-      checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
-        withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
-          val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
-          val membersNameOpt = memberTypeOpt map (memberType => modelSchema.getPlural(memberType))
-          val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, membersNameOpt))
-          batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpsert")
+      withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
+        checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
+          withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
+            val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
+//            val membersNameOpt = memberTypeOpt map (memberType => modelSchema.getPlural(memberType))
+            val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
+            batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpsert")
+          }
         }
       }
     }
@@ -222,12 +225,17 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
-      val memberTypeOpt = modelSchema.memberTypeFromEntityType(entityType)
-      checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
-        val colInfo = colNamesToAttributeNames(tsv.headers, modelSchema.getRequiredAttributes(entityType))
-        val membersNameOpt = memberTypeOpt map (memberType => modelSchema.getPlural(memberType))
-        val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, membersNameOpt))
-        batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpdate")
+      withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
+        checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
+          modelSchema.getRequiredAttributes(entityType) match {
+            case Success(requiredAttributes) =>
+              val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
+//              val membersNameOpt = memberTypeOpt map (memberType => modelSchema.getPlural(memberType))
+              val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
+              batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpdate")
+            case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
+          }
+        }
       }
     }
   }
@@ -266,11 +274,13 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
         }
         case _ => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
       }
-      val strippedTsv = Try(backwardsCompatStripIdSuffixes(tsv, entityType, modelSchema))
-      Try(importEntitiesFromTSVLoadFile(pipeline, workspaceNamespace, workspaceName, strippedTsv.get, tsvType, entityType)) match {
-        case Failure(err)  => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, err.toString))
-        case Success(resp) => resp
-      }
+
+      val strippedTsv = if (modelSchema.supportsBackwardsCompatibleIds) {
+          backwardsCompatStripIdSuffixes(tsv, entityType, modelSchema)
+        } else {
+          tsv
+        }
+      importEntitiesFromTSVLoadFile(pipeline, workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType)
     }
   }
 
