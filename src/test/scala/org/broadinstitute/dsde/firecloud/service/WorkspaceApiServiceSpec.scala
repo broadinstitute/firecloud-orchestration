@@ -851,12 +851,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         "an update-type TSV" - {
           "should 400 BadRequest if the entity type is non-FC model with calling default import" in {
-            stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
             (Post(tsvImportPath, MockTSVFormData.updateNonModelFirstColumnHeader)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
-            }
+              errorReportCheck("FireCloud", BadRequest)            }
           }
 
           "should 200 OK if the entity type is non-FC model when calling the flexible import" in {

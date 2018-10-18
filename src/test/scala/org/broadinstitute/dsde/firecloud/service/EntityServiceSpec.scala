@@ -56,9 +56,6 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
   )
   val validSampleEntities = List(Entity("sample_01", "sample", sampleAtts))
 
-  val nonModelBigQueryEntities = List(Entity("shakespeare", "bigQuery", Map(AttributeName.withDefaultNS("query_str") -> AttributeString(""))))
-//  val nonModelBigQuerySetEntities = List(Entity("testset", "bigQuery_set", Map(AttributeName.withDefaultNS())))
-
   override def beforeAll(): Unit = {
     workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
     // Valid Entities by sample type case

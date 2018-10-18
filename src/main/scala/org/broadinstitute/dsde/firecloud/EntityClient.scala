@@ -48,6 +48,7 @@ object EntityClient {
 
   def backwardsCompatStripIdSuffixes(tsvLoadFile: TSVLoadFile, entityType: String, modelSchema: ModelSchema): TSVLoadFile = {
     modelSchema.getTypeSchema(entityType) match {
+      case Failure(exception) => tsvLoadFile // the failure will be handled during parsing
       case Success(metaData) =>
         val newHeaders = tsvLoadFile.headers.map { header =>
           val headerSansId = header.stripSuffix("_id")
@@ -58,7 +59,6 @@ object EntityClient {
           }
         }
         tsvLoadFile.copy(headers = newHeaders)
-      case Failure(exception) => tsvLoadFile // the failure will be handled during parsing
     }
   }
 
@@ -148,8 +148,8 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
         } else {
           op(requiredAttributes)
         }
-      }
     }
+  }
 
   def batchCallToRawls(
     pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
@@ -184,13 +184,13 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
       validateMembershipTSV(tsv, memberTypeOpt) {
         withPlural(memberTypeOpt.get) { memberPlural =>
-          val rawlsCalls = tsv.tsvData groupBy (_ (0)) map { case (entityName, rows) =>
+          val rawlsCalls = tsv.tsvData groupBy(_ (0)) map { case (entityName, rows) =>
             val ops = rows map { row =>
               //row(1) is the entity to add as a member of the entity in row.head
-              val attrRef = AttributeEntityReference(memberTypeOpt.get, row(1))
-              Map(addListMemberOperation, "attributeListName" -> AttributeString(memberPlural), "newMember" -> attrRef)
+              val attrRef = AttributeEntityReference(memberTypeOpt.get,row(1))
+              Map(addListMemberOperation,"attributeListName"->AttributeString(memberPlural),"newMember"->attrRef)
             }
-            EntityUpdateDefinition(entityName, entityType, ops)
+            EntityUpdateDefinition(entityName,entityType,ops)
           }
           batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls.toSeq, "batchUpsert")
         }
@@ -209,7 +209,6 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
             val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
-//            val membersNameOpt = memberTypeOpt map (memberType => modelSchema.getPlural(memberType))
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
             batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpsert")
           }
@@ -228,12 +227,13 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
       withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
         checkNoCollectionMemberAttribute(tsv, memberTypeOpt) {
           modelSchema.getRequiredAttributes(entityType) match {
+            //Required attributes aren't required to be headers in update TSVs - they should already have been
+            //defined when the entity was created. But we still need the type information if the headers do exist.
+            case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
             case Success(requiredAttributes) =>
               val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
-//              val membersNameOpt = memberTypeOpt map (memberType => modelSchema.getPlural(memberType))
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
               batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpdate")
-            case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
           }
         }
       }

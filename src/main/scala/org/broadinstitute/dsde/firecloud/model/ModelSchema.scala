@@ -113,10 +113,6 @@ class FirecloudModelSchema extends ModelSchema {
   }
 
   def supportsBackwardsCompatibleIds(): Boolean = true
-
-  //  def isUsingFirecloudModelSchema(entityType: String): Boolean = {
-//    EntityTypes.types.get(entityType).isDefined
-//  }
 }
 
 /**

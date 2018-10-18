@@ -9,7 +9,6 @@ import spray.json.JsValue
 
 object TSVFormatter {
 
-//  val modelSchema = new FlexibleModelSchema
   /**
     * Generate file content from headers and rows.
     *
@@ -79,7 +78,6 @@ object TSVFormatter {
     regex.replaceAllIn(value.toString(), "")
   }
 
-
   /**
     * Generate a header for a membership file.
     *
@@ -100,10 +98,7 @@ object TSVFormatter {
     */
   def makeMembershipRows(entityType: String, entities: Seq[Entity])(implicit modelSchema: ModelSchema): Seq[IndexedSeq[String]] = {
     // this is only for a filter - do not throw exception
-    (for {
-      memberTry <- modelSchema.memberTypeFromEntityType(entityType)
-      memberPluralTry <- modelSchema.getPlural(memberTry.get)
-    } yield memberPluralTry) match {
+    pluralizeMemberTypeFromEntityType(entityType, modelSchema) match {
       case Success(memberPlural) =>
         entities.filter {
           _.entityType == entityType
@@ -132,11 +127,7 @@ object TSVFormatter {
     * @return Entity name as first column header, followed by matching entity attribute labels
     */
   def makeEntityHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]])(implicit modelSchema: ModelSchema): IndexedSeq[String] = {
-    val memberPlural = (for {
-      memberTry <- modelSchema.memberTypeFromEntityType(entityType)
-      memberPluralTry <- modelSchema.getPlural(memberTry.get)
-    } yield memberPluralTry).getOrElse("")
-
+    val memberPlural = pluralizeMemberTypeFromEntityType(entityType, modelSchema).getOrElse("")
 
     val requestedHeadersSansId = requestedHeaders.
       // remove empty strings
@@ -175,8 +166,8 @@ object TSVFormatter {
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
     val filteredEntities = if (modelSchema.isCollectionType(entityType)) {
-      val memberPlural = modelSchema.getPlural(modelSchema.memberTypeFromEntityType(entityType).get.get)
-      filterAttributeFromEntities(entities, memberPlural.get)
+      val memberPlural = pluralizeMemberTypeFromEntityType(entityType,  modelSchema).getOrElse("")
+      filterAttributeFromEntities(entities, memberPlural)
     } else {
       entities
     }
@@ -187,5 +178,10 @@ object TSVFormatter {
       .toIndexedSeq
   }
 
-
+  def pluralizeMemberTypeFromEntityType(entityType: String, modelSchema: ModelSchema): Try[String] = {
+    for {
+      memberTry <- modelSchema.memberTypeFromEntityType(entityType)
+      memberPluralTry <- modelSchema.getPlural(memberTry.get)
+    } yield memberPluralTry
+  }
 }
