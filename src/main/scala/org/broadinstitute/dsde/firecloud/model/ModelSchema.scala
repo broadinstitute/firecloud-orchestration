@@ -1,10 +1,10 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import scala.io.Source
+import scala.util.{Failure, Success, Try}
 import spray.json._
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 
-import scala.util.{Failure, Success, Try}
 
 /**
  * Created with IntelliJ IDEA.

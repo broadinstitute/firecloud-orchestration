@@ -48,7 +48,7 @@ object EntityClient {
 
   def backwardsCompatStripIdSuffixes(tsvLoadFile: TSVLoadFile, entityType: String, modelSchema: ModelSchema): TSVLoadFile = {
     modelSchema.getTypeSchema(entityType) match {
-      case Failure(exception) => tsvLoadFile // the failure will be handled during parsing
+      case Failure(regrets) => tsvLoadFile // the failure will be handled during parsing
       case Success(metaData) =>
         val newHeaders = tsvLoadFile.headers.map { header =>
           val headerSansId = header.stripSuffix("_id")
@@ -122,6 +122,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
   }
 
+
   /**
    * Returns the plural form of the entity type.
    * Bails with a 400 Bad Request if the entity type is unknown to the schema and we are using firecloud model
@@ -184,7 +185,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
       validateMembershipTSV(tsv, memberTypeOpt) {
         withPlural(memberTypeOpt.get) { memberPlural =>
-          val rawlsCalls = tsv.tsvData groupBy(_ (0)) map { case (entityName, rows) =>
+          val rawlsCalls = tsv.tsvData groupBy(_(0)) map { case (entityName, rows) =>
             val ops = rows map { row =>
               //row(1) is the entity to add as a member of the entity in row.head
               val attrRef = AttributeEntityReference(memberTypeOpt.get,row(1))
