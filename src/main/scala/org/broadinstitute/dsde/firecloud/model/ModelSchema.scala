@@ -60,7 +60,7 @@ object ModelSchemaRegistry {
 }
 
 
-class FlexibleModelSchema extends ModelSchema {
+object FlexibleModelSchema extends ModelSchema {
 
   def memberTypeFromEntityType(entityType: String): Try[Option[String]] = {
     Success(Some(entityType.replace("_set", "")).filter(_ => isCollectionType(entityType)))
@@ -75,17 +75,21 @@ class FlexibleModelSchema extends ModelSchema {
   }
 
   def getPlural(entityType: String): Try[String] =  {
-    Success(entityType + "s")
+    Success(pluralize(entityType))
+  }
+
+  private def pluralize(entityType: String): String =  {
+    entityType + "s"
   }
 
   def getTypeSchema(entityType: String): Try[EntityMetadata] = {
-    Success(EntityMetadata(entityType, Map.empty, Some(entityType+"_members").filter(_ => isCollectionType(entityType))))
+    Success(EntityMetadata(pluralize(entityType), Map.empty, Some(entityType+"_members").filter(_ => isCollectionType(entityType))))
   }
 
   def supportsBackwardsCompatibleIds(): Boolean = false
 }
 
-class FirecloudModelSchema extends ModelSchema {
+object FirecloudModelSchema extends ModelSchema {
 
   object EntityTypes {
     val types : Map[String, EntityMetadata] = ModelJsonProtocol.impModelSchema.read(
