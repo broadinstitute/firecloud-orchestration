@@ -19,7 +19,7 @@ trait ModelSchema {
   def getPlural (entityType: String): Try[String]
   def getRequiredAttributes(entityType: String): Try[Map[String, String]]
   def getTypeSchema(entityType: String): Try[EntityMetadata]
-  def supportsBackwardsCompatibleIds(): Boolean
+  def supportsBackwardsCompatibleIds: Boolean
 
   def isEntityTypeInSchema(entityType: String): Boolean = {
     Try(this.memberTypeFromEntityType(entityType)) match {
@@ -49,7 +49,7 @@ object SchemaTypes {
 
 object ModelSchemaRegistry {
   // add new schema types from most specific to most general
-  val schemas: Map[SchemaTypes.SchemaType, ModelSchema] = Map(SchemaTypes.FIRECLOUD -> new FirecloudModelSchema, SchemaTypes.FLEXIBLE -> new FlexibleModelSchema)
+  val schemas: Map[SchemaTypes.SchemaType, ModelSchema] = Map(SchemaTypes.FIRECLOUD -> FirecloudModelSchema, SchemaTypes.FLEXIBLE -> FlexibleModelSchema)
 
   def getModelForSchemaType(schemaType: SchemaTypes.SchemaType): ModelSchema = schemas.getOrElse(schemaType, schemas.last._2)
 
@@ -97,7 +97,7 @@ object FirecloudModelSchema extends ModelSchema {
   }
 
   def getTypeSchema(entityType: String): Try[EntityMetadata] = {
-    EntityTypes.types.get(entityType) map (Success(_)) getOrElse(Failure(new RuntimeException("Unknown entity type: " + entityType)))
+    EntityTypes.types.get(entityType) map (Success(_)) getOrElse Failure(new RuntimeException("Unknown entity type: " + entityType))
   }
 
   def memberTypeFromEntityType(entityType: String): Try[Option[String]] = {
@@ -109,7 +109,7 @@ object FirecloudModelSchema extends ModelSchema {
   }
 
   def isCollectionType(entityType: String): Boolean = {
-    EntityTypes.types.get(entityType) map (_.memberType.isDefined) getOrElse(false)
+    EntityTypes.types.get(entityType) exists(_.memberType.isDefined)
   }
 
   def getPlural(entityType: String): Try[String] = {

@@ -48,7 +48,7 @@ object EntityClient {
 
   def backwardsCompatStripIdSuffixes(tsvLoadFile: TSVLoadFile, entityType: String, modelSchema: ModelSchema): TSVLoadFile = {
     modelSchema.getTypeSchema(entityType) match {
-      case Failure(regrets) => tsvLoadFile // the failure will be handled during parsing
+      case Failure(_) => tsvLoadFile // the failure will be handled during parsing
       case Success(metaData) =>
         val newHeaders = tsvLoadFile.headers.map { header =>
           val headerSansId = header.stripSuffix("_id")
@@ -73,14 +73,14 @@ object EntityClient {
     val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
       if(!ent.isDirectory && (ent.getName.contains("/participants.tsv") || ent.getName.equals("participants.tsv"))) {
         acc._1 match {
-          case Some(x) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, s"More than one participants.tsv file found in bagit $bagName"))
+          case Some(_) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, s"More than one participants.tsv file found in bagit $bagName"))
           case None =>
             unzipSingleFile(zipFile.getInputStream(ent), participantsTmp)
             (Some(participantsTmp.getPath), acc._2)
         }
       } else if(!ent.isDirectory && (ent.getName.contains("/samples.tsv") || ent.getName.equals("samples.tsv"))) {
         acc._2 match {
-          case Some(x) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, s"More than one samples.tsv file found in bagit $bagName"))
+          case Some(_) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, s"More than one samples.tsv file found in bagit $bagName"))
           case None =>
               unzipSingleFile (zipFile.getInputStream (ent), samplesTmp)
               (acc._1, Some (samplesTmp.getPath) )
@@ -127,7 +127,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
    * Returns the plural form of the entity type.
    * Bails with a 400 Bad Request if the entity type is unknown to the schema and we are using firecloud model
    * If using flexible model, just appends an 's' */
-  private def withPlural(entityType: String)(op: (String => Future[PerRequestMessage])): Future[PerRequestMessage] = {
+  private def withPlural(entityType: String)(op: String => Future[PerRequestMessage]): Future[PerRequestMessage] = {
     modelSchema.getPlural(entityType) match {
       case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
       case Success(plural) => op(plural)
@@ -139,7 +139,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
    * Verifies that the provided list of headers includes all attributes required by the schema for this entity type.
    * Bails with a 400 Bad Request if the entity type is unknown or if some attributes are missing.
    * Returns the list of required attributes if all is well. */
-  private def withRequiredAttributes(entityType: String, headers: Seq[String])(op: (Map[String, String] => Future[PerRequestMessage])):Future[PerRequestMessage] = {
+  private def withRequiredAttributes(entityType: String, headers: Seq[String])(op: Map[String, String] => Future[PerRequestMessage]):Future[PerRequestMessage] = {
     modelSchema.getRequiredAttributes(entityType) match {
       case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
       case Success(requiredAttributes) =>
@@ -185,7 +185,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
       validateMembershipTSV(tsv, memberTypeOpt) {
         withPlural(memberTypeOpt.get) { memberPlural =>
-          val rawlsCalls = tsv.tsvData groupBy(_(0)) map { case (entityName, rows) =>
+          val rawlsCalls = tsv.tsvData groupBy(_.head) map { case (entityName, rows) =>
             val ops = rows map { row =>
               //row(1) is the entity to add as a member of the entity in row.head
               val attrRef = AttributeEntityReference(memberTypeOpt.get,row(1))
@@ -266,13 +266,12 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     withTSVFile(tsvString) { tsv =>
       val (tsvType, entityType) = tsv.firstColumnHeader.split(":") match {
         case Array(entityTypeString) => (TsvTypes.ENTITY, stripEntityType(entityTypeString))
-        case Array(tsvTypeString, entityTypeString) => {
+        case Array(tsvTypeString, entityTypeString) =>
           val tsvType = Try(TsvTypes.withName(tsvTypeString)) match {
             case Success(t) => t
             case Failure(err) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, err.toString))
           }
           (tsvType, stripEntityType(entityTypeString))
-        }
         case _ => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
       }
 

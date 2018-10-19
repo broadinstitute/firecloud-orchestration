@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.model.FirecloudModelSchema
+import org.broadinstitute.dsde.firecloud.model.{FirecloudModelSchema, ModelSchema}
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
 import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 import org.broadinstitute.dsde.rawls.model._
@@ -13,7 +13,7 @@ import scala.language.postfixOps
 
 class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Inspectors {
 
-  implicit val modelSchema = new FirecloudModelSchema
+  implicit val modelSchema: ModelSchema = FirecloudModelSchema
 
   "TSVFormatter" - {
 
@@ -193,7 +193,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
     headers(0) should be(s"${tsvType.toString}:${entityType}_id")
 
     // Check that all lines have the same number of columns as the header.
-    lines foreach( _.split("\t", -1).size should equal(headers.size) )
+    lines foreach( _.split("\t", -1).length should equal(headers.size) )
 
     headers
   }
@@ -211,9 +211,9 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
     val lines: List[String] = Source.fromString(tsv).getLines().toList
     lines.size should equal(expectedSize + 1) // Add 1 for the header line.
 
-    lines map { _.split("\t", -1).size should equal(2) }
+    lines foreach { _.split("\t", -1).length should equal(2) }
 
-    lines.head.split("\t") should be(Array(s"${TsvTypes.MEMBERSHIP.toString}:${entityType}_id", new FirecloudModelSchema().memberTypeFromEntityType(entityType).get.get))
+    lines.head.split("\t") should be(Array(s"${TsvTypes.MEMBERSHIP.toString}:${entityType}_id", FirecloudModelSchema.memberTypeFromEntityType(entityType).get.get))
   }
 
 }

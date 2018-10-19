@@ -72,7 +72,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   implicit val userInfo: UserInfo = argUserInfo
   implicit val materializer: ActorMaterializer = argMaterializer
 
-  implicit val modelSchema = model match {
+  implicit val modelSchema: ModelSchema = model match {
     case Some(name) => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.withName(name))
     case None => ModelSchemaRegistry.getModelForEntityType(entityType)
   }
