@@ -74,7 +74,8 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
 
   implicit val modelSchema: ModelSchema = model match {
     case Some(name) => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.withName(name))
-    case None => ModelSchemaRegistry.getModelForEntityType(entityType)
+      // if no model is specified, use the previous behavior - assume firecloud model
+    case None => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.FIRECLOUD)
   }
 
   override def receive: Receive = {

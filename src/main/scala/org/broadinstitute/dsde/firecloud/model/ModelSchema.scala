@@ -52,11 +52,6 @@ object ModelSchemaRegistry {
   val schemas: Map[SchemaTypes.SchemaType, ModelSchema] = Map(SchemaTypes.FIRECLOUD -> FirecloudModelSchema, SchemaTypes.FLEXIBLE -> FlexibleModelSchema)
 
   def getModelForSchemaType(schemaType: SchemaTypes.SchemaType): ModelSchema = schemas.getOrElse(schemaType, schemas.last._2)
-
-  def getModelForEntityType(entityType: String): ModelSchema = {
-    val possibleMatch = schemas.values.collectFirst({case schema if schema.isEntityTypeInSchema(entityType) => schema})
-    possibleMatch.getOrElse(schemas.last._2)
-  }
 }
 
 
@@ -109,6 +104,7 @@ object FirecloudModelSchema extends ModelSchema {
   }
 
   def isCollectionType(entityType: String): Boolean = {
+    // if the option is None, returns false, if Some evaluates the funtion
     EntityTypes.types.get(entityType) exists(_.memberType.isDefined)
   }
 
