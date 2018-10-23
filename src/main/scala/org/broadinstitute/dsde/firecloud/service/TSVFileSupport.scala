@@ -78,7 +78,7 @@ trait TSVFileSupport {
     * Some( its_member_type ) if it's a collection, or None if it isn't.
     * Bails with a 400 Bad Request if the provided entity type is unknown to the schema. */
   def withMemberCollectionType(entityType: String, modelSchema: ModelSchema)(op: Option[String] => Future[PerRequestMessage])(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
-    modelSchema.memberTypeFromEntityType(entityType) match {
+    modelSchema.getCollectionMemberType(entityType) match {
       case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
       case Success(memberTypeOpt) => op(memberTypeOpt)
     }

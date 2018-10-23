@@ -82,7 +82,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
     }
 
     "when calling GET on exporting a non-FC model entity type with all attributes" - {
-      "OK response is returned and attributes are included" in {
+      "OK response is returned and attributes are included and model is flexible" in {
         Get(nonModelEntitiesBigQueryTSVPath+"?model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
@@ -94,22 +94,16 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           entity.asString.contains("query_str") should be(true)
         }
       }
-      "400 response is returned and attributes are included" in {
+      "400 response is returned is model is firecloud" in {
         Get(nonModelEntitiesBigQueryTSVPath+"?model=firecloud") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
-          status should be(OK)
-          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "bigQuery.txt"))) should be(true)
-          validateLineCount(chunks, 2)
-          entity.asString.contains("query_str") should be(true)
+          status should be(BadRequest)
         }
       }
     }
 
     "when calling GET on exporting a non-FC model entity type with selected attributes" - {
-      "OK response is returned and file is entity type" in {
+      "OK response is returned and file is entity type when model is flexible" in {
         Get(nonModelEntitiesPairTSVPath + "?attributeNames=names&model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
@@ -125,13 +119,10 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
     }
 
     "when calling GET on exporting a non-FC model entity set type with all attributes" - {
-      "OK response is returned" in {
+      "400 response is returned when model defaults to firecloud" in {
         Get(nonModelEntitiesBigQuerySetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
-          status should be(OK)
-          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "bigQuery_set.txt"))) should be(true)
+          status should be(BadRequest)
         }
       }
     }

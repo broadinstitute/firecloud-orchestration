@@ -85,7 +85,7 @@ object TSVFormatter {
     * @return IndexedSeq of header Strings
     */
   def makeMembershipHeaders(entityType: String)(implicit modelSchema: ModelSchema): IndexedSeq[String] = {
-    IndexedSeq[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id", modelSchema.memberTypeFromEntityType(entityType).get.getOrElse(
+    IndexedSeq[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id", modelSchema.getCollectionMemberType(entityType).get.getOrElse(
       entityType.replace("_set", "")))
   }
 
@@ -97,25 +97,21 @@ object TSVFormatter {
     * @return Ordered list of rows
     */
   def makeMembershipRows(entityType: String, entities: Seq[Entity])(implicit modelSchema: ModelSchema): Seq[IndexedSeq[String]] = {
-    // this is only for a filter - do not throw exception
-    pluralizeMemberTypeFromEntityType(entityType, modelSchema) match {
-      case Success(memberPlural) =>
-        entities.filter {
-          _.entityType == entityType
-        }.flatMap {
-          entity =>
-            entity.attributes.filter {
-              // To make the membership file, we need the array of elements that correspond to the set type.
-              // All other top-level properties are not necessary and are only used for the data load file.
-              case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(memberPlural))
-            }.flatMap {
-              case (_, AttributeEntityReference(`entityType`, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
-              case (_, AttributeEntityReferenceList(refs)) => refs.map(ref => IndexedSeq[String](entity.name, ref.entityName))
-              case _ => Seq.empty
-            }
-        }
-      case Failure(_) => Seq.empty
-    }
+    val memberPlural = pluralizeMemberType(memberTypeFromEntityType(entityType, modelSchema), modelSchema)
+      entities.filter {
+        _.entityType == entityType
+      }.flatMap {
+        entity =>
+          entity.attributes.filter {
+            // To make the membership file, we need the array of elements that correspond to the set type.
+            // All other top-level properties are not necessary and are only used for the data load file.
+            case (attributeName, _) => attributeName.equals(AttributeName.withDefaultNS(memberPlural))
+          }.flatMap {
+            case (_, AttributeEntityReference(`entityType`, entityName)) => Seq(IndexedSeq[String](entity.name, entityName))
+            case (_, AttributeEntityReferenceList(refs)) => refs.map(ref => IndexedSeq[String](entity.name, ref.entityName))
+            case _ => Seq.empty
+          }
+      }
   }
 
   /**
@@ -127,7 +123,8 @@ object TSVFormatter {
     * @return Entity name as first column header, followed by matching entity attribute labels
     */
   def makeEntityHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]])(implicit modelSchema: ModelSchema): IndexedSeq[String] = {
-    val memberPlural = pluralizeMemberTypeFromEntityType(entityType, modelSchema).getOrElse("")
+    // will throw exception if firecloud model was requested and the entity type
+    val memberPlural = pluralizeMemberType(memberTypeFromEntityType(entityType, modelSchema), modelSchema)
 
     val requestedHeadersSansId = requestedHeaders.
       // remove empty strings
@@ -166,7 +163,7 @@ object TSVFormatter {
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
     val filteredEntities = if (modelSchema.isCollectionType(entityType)) {
-      val memberPlural = pluralizeMemberTypeFromEntityType(entityType,  modelSchema).getOrElse("")
+      val memberPlural = pluralizeMemberType(memberTypeFromEntityType(entityType, modelSchema), modelSchema)
       filterAttributeFromEntities(entities, memberPlural)
     } else {
       entities
@@ -178,10 +175,7 @@ object TSVFormatter {
       .toIndexedSeq
   }
 
-  def pluralizeMemberTypeFromEntityType(entityType: String, modelSchema: ModelSchema): Try[String] = {
-    for {
-      memberTry <- modelSchema.memberTypeFromEntityType(entityType)
-      memberPluralTry <- modelSchema.getPlural(memberTry.get)
-    } yield memberPluralTry
-  }
+  def memberTypeFromEntityType(entityType: String, modelSchema: ModelSchema): String = modelSchema.getCollectionMemberType(entityType).get.getOrElse(entityType.replace("_set", ""))
+  def pluralizeMemberType(memberType: String, modelSchema: ModelSchema): String = modelSchema.getPlural(memberType).getOrElse(memberType + "s")
+  def isCollectionType(entityType: String, modelSchema: ModelSchema): Boolean = modelSchema.isCollectionType(entityType)
 }

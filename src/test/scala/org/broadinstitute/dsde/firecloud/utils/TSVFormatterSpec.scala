@@ -213,7 +213,7 @@ class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Ins
 
     lines foreach { _.split("\t", -1).length should equal(2) }
 
-    lines.head.split("\t") should be(Array(s"${TsvTypes.MEMBERSHIP.toString}:${entityType}_id", FirecloudModelSchema.memberTypeFromEntityType(entityType).get.get))
+    lines.head.split("\t") should be(Array(s"${TsvTypes.MEMBERSHIP.toString}:${entityType}_id", FirecloudModelSchema.getCollectionMemberType(entityType).get.get))
   }
 
 }

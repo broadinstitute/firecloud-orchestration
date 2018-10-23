@@ -3,7 +3,9 @@ package org.broadinstitute.dsde.firecloud.model
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 import spray.json._
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import spray.http.StatusCodes
 
 
 /**
@@ -14,7 +16,7 @@ import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
  */
 
 trait ModelSchema {
-  def memberTypeFromEntityType (entityType: String): Try[Option[String]]
+  def getCollectionMemberType(entityType: String): Try[Option[String]]
   def isCollectionType (entityType: String): Boolean
   def getPlural (entityType: String): Try[String]
   def getRequiredAttributes(entityType: String): Try[Map[String, String]]
@@ -22,7 +24,7 @@ trait ModelSchema {
   def supportsBackwardsCompatibleIds: Boolean
 
   def isEntityTypeInSchema(entityType: String): Boolean = {
-    Try(this.memberTypeFromEntityType(entityType)) match {
+    Try(this.getCollectionMemberType(entityType)) match {
       case Failure(_) => false
       case _ => true
     }
@@ -57,7 +59,7 @@ object ModelSchemaRegistry {
 
 object FlexibleModelSchema extends ModelSchema {
 
-  def memberTypeFromEntityType(entityType: String): Try[Option[String]] = {
+  def getCollectionMemberType(entityType: String): Try[Option[String]] = {
     Success(Some(entityType.replace("_set", "")).filter(_ => isCollectionType(entityType)))
   }
 
@@ -92,10 +94,11 @@ object FirecloudModelSchema extends ModelSchema {
   }
 
   def getTypeSchema(entityType: String): Try[EntityMetadata] = {
-    EntityTypes.types.get(entityType) map (Success(_)) getOrElse Failure(new RuntimeException("Unknown entity type: " + entityType))
+    EntityTypes.types.get(entityType) map (Success(_)) getOrElse
+      Failure(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "Unknown firecloud model entity type: " + entityType)))
   }
 
-  def memberTypeFromEntityType(entityType: String): Try[Option[String]] = {
+  def getCollectionMemberType(entityType: String): Try[Option[String]] = {
     getTypeSchema(entityType).map(_.memberType)
   }
 
