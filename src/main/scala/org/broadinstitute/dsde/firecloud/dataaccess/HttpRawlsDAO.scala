@@ -57,6 +57,10 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     }
   }
 
+  override def registerUser(userInfo: UserInfo): Future[Unit] = {
+    userAuthedRequest(Post(rawlsUserRegistrationUrl))(userInfo) map { _ => () }
+  }
+
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] =
     authedRequestToObject[BucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
 
