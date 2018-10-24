@@ -30,7 +30,8 @@ case class ExportEntitiesByTypeArguments (
   workspaceNamespace: String,
   workspaceName: String,
   entityType: String,
-  attributeNames: Option[IndexedSeq[String]]
+  attributeNames: Option[IndexedSeq[String]],
+  model: Option[String]
 )
 
 object ExportEntitiesByTypeActor {
@@ -44,7 +45,7 @@ object ExportEntitiesByTypeActor {
 
   def constructor(app: Application, materializer: ActorMaterializer)(exportArgs: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) =
     new ExportEntitiesByTypeActor(app.rawlsDAO, exportArgs.requestContext, exportArgs.userInfo, exportArgs.workspaceNamespace,
-      exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, materializer)
+      exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, exportArgs.model, materializer)
 }
 
 /**
@@ -63,12 +64,19 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
                                 workspaceName: String,
                                 entityType: String,
                                 attributeNames: Option[IndexedSeq[String]],
+                                model: Option[String],
                                 argMaterializer: ActorMaterializer)
                                (implicit protected val executionContext: ExecutionContext) extends Actor with LazyLogging {
 
   implicit val timeout: Timeout = Timeout(1 minute)
   implicit val userInfo: UserInfo = argUserInfo
   implicit val materializer: ActorMaterializer = argMaterializer
+
+  implicit val modelSchema: ModelSchema = model match {
+    case Some(name) => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.withName(name))
+      // if no model is specified, use the previous behavior - assume firecloud model
+    case None => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.FIRECLOUD)
+  }
 
   override def receive: Receive = {
     case ExportEntities => streamEntities pipeTo sender
@@ -89,7 +97,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   def streamEntities(): Future[Unit] = {
     entityTypeMetadata flatMap { metadata =>
       val entityQueries = getEntityQueries(metadata, entityType)
-      if (TSVFormatter.isCollectionType(entityType)) {
+      if (modelSchema.isCollectionType(entityType)) {
         streamCollectionType(entityQueries, metadata)
       } else {
         val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
@@ -123,6 +131,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
 
   // Stream exceptions have to be handled by directly closing out the RequestContext responder stream
   private def handleStreamException(t: Throwable): Unit = {
+    logger.info("handling exception", t)
     val message = t match {
       case f: FireCloudExceptionWithErrorReport => s"FireCloudException: Error generating entity download: ${f.errorReport.message}"
       case _ => s"FireCloudException: Error generating entity download: ${t.getMessage}"

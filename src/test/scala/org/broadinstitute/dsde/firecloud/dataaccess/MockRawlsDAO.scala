@@ -88,7 +88,43 @@ object MockRawlsDAO {
       idName = "sample_set_id",
       attributeNames = largeSampleSetAttributes.map(_._1.name).toSeq))
 
+
+  val validBigQueryEntities = List(
+    Entity("shakespeare", "bigQuery", Map(AttributeName.withDefaultNS("query_str") -> AttributeString("SELECT * FROM [bigquery-public-data:samples.shakespeare] LIMIT 1000"))),
+    Entity("king", "bigQuery", Map(AttributeName.withDefaultNS("query_str") -> AttributeString("SELECT * FROM [bigquery-public-data:samples.king] LIMIT 1000")))
+  )
+
+  val validBigQuerySetEntities = List(
+    Entity("settest", "bigQuery_set", Map(AttributeName.withDefaultNS("bigQuerys") -> AttributeEntityReferenceList(Seq(
+      AttributeEntityReference("bigQuery", "shakespeare"),
+      AttributeEntityReference("bigQuery", "king")))))
+  )
+
+  val nonModelPairEntities = List(
+    Entity("RomeoAndJuliet", "pair", Map(AttributeName.withDefaultNS("names") -> AttributeValueList(Seq(AttributeString("Romeo"), AttributeString("Juliet"))))),
+    Entity("PB&J", "pair", Map(AttributeName.withDefaultNS("names") -> AttributeValueList(Seq(AttributeString("PeanutButter"), AttributeString("Jelly")))))
+  )
+
+  val nonModelBigQueryMetadata = Map(
+    "bigQuery" -> EntityTypeMetadata(
+      count = 2,
+      idName = "bigQuery_id",
+      attributeNames = Seq("query_str")))
+
+  val nonModelBigQuerySetMetadata = Map(
+    "bigQuery_set" -> EntityTypeMetadata(
+      count = 1,
+      idName = "bigQuery_set_id",
+      attributeNames = Seq("bigQuerys")))
+
+  val nonModelPairMetadata = Map(
+    "pair" -> EntityTypeMetadata(
+      count = 2,
+      idName = "pair_id",
+      attributeNames = Seq("names")))
+
 }
+
 
 /**
   * Created by davidan on 9/28/16.
@@ -304,6 +340,27 @@ class MockRawlsDAO extends RawlsDAO with MockGroupSupport {
         results = sampleRange
       )
       Future.successful(queryResponse)
+    } else if (workspaceName == "nonModel") {
+      val queryResponse: EntityQueryResponse = EntityQueryResponse(
+        parameters = query,
+        resultMetadata = EntityQueryResultMetadata(unfilteredCount = 2, filteredCount = 2, filteredPageCount = 1),
+        results = validBigQueryEntities
+      )
+      Future.successful(queryResponse)
+    } else if (workspaceName == "nonModelSet") {
+      val queryResponse: EntityQueryResponse = EntityQueryResponse(
+        parameters = query,
+        resultMetadata = EntityQueryResultMetadata(unfilteredCount = 1, filteredCount = 1, filteredPageCount = 1),
+        results = validBigQuerySetEntities
+      )
+      Future.successful(queryResponse)
+    } else if (workspaceName == "nonModelPair") {
+      val queryResponse: EntityQueryResponse = EntityQueryResponse(
+        parameters = query,
+        resultMetadata = EntityQueryResultMetadata(unfilteredCount = 2, filteredCount = 2, filteredPageCount = 1),
+        results = nonModelPairEntities
+      )
+      Future.successful(queryResponse)
     } else {
       val queryResponse: EntityQueryResponse = EntityQueryResponse(
         parameters = query,
@@ -323,6 +380,12 @@ class MockRawlsDAO extends RawlsDAO with MockGroupSupport {
       Future.successful(largeSampleSetMetadata)
     } else if (workspaceName == "large" || workspaceName == "page3exception") {
       Future.successful(largeSampleMetadata)
+    } else if (workspaceName == "nonModel") {
+      Future.successful(nonModelBigQueryMetadata)
+    } else if (workspaceName == "nonModelSet") {
+      Future.successful(nonModelBigQuerySetMetadata)
+    } else if (workspaceName == "nonModelPair") {
+      Future.successful(nonModelPairMetadata)
     } else {
       Future.successful(validEntitiesMetadata)
     }

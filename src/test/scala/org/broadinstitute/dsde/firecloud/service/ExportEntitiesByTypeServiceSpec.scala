@@ -32,6 +32,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val invalidFireCloudEntitiesParticipantSetTSVPath = "/api/workspaces/broad-dsde-dev/invalid/entities/participant_set/tsv"
   val exceptionFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/exception/entities/sample/tsv"
   val page3ExceptionFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/page3exception/entities/sample/tsv"
+  val nonModelEntitiesBigQueryTSVPath = "/api/workspaces/broad-dsde-dev/nonModel/entities/bigQuery/tsv"
+  val nonModelEntitiesBigQuerySetTSVPath = "/api/workspaces/broad-dsde-dev/nonModelSet/entities/bigQuery_set/tsv"
+  val nonModelEntitiesPairTSVPath = "/api/workspaces/broad-dsde-dev/nonModelPair/entities/pair/tsv"
 
   // Pick the first few headers from the list of available sample headers:
   val filterProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.take(5).map(_.name)
@@ -72,7 +75,54 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
           headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
           validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
+          entity.asString.startsWith("update:") should be(true)
           validateProps(entity)
+        }
+      }
+    }
+
+    "when calling GET on exporting a non-FC model entity type with all attributes" - {
+      "OK response is returned and attributes are included and model is flexible" in {
+        Get(nonModelEntitiesBigQueryTSVPath+"?model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
+          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "bigQuery.txt"))) should be(true)
+          validateLineCount(chunks, 2)
+          entity.asString.contains("query_str") should be(true)
+        }
+      }
+      "400 response is returned is model is firecloud" in {
+        Get(nonModelEntitiesBigQueryTSVPath+"?model=firecloud") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(BadRequest)
+        }
+      }
+    }
+
+    "when calling GET on exporting a non-FC model entity type with selected attributes" - {
+      "OK response is returned and file is entity type when model is flexible" in {
+        Get(nonModelEntitiesPairTSVPath + "?attributeNames=names&model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
+          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "pair.txt"))) should be(true)
+          validateLineCount(chunks, 2)
+          entity.asString.startsWith("entity:") should be(true)
+          entity.asString.contains("names") should be(true)
+        }
+      }
+    }
+
+    "when calling GET on exporting a non-FC model entity set type with all attributes" - {
+      "400 response is returned when model defaults to firecloud" in {
+        Get(nonModelEntitiesBigQuerySetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(BadRequest)
         }
       }
     }

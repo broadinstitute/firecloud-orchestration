@@ -18,12 +18,12 @@ trait ExportEntitiesApiService extends HttpService with FireCloudDirectives with
 
     // Note that this endpoint works in the same way as CookieAuthedApiService tsv download.
     path( "api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" ) { (workspaceNamespace, workspaceName, entityType) =>
-      parameters('attributeNames.?) { attributeNamesString =>
+      parameters('attributeNames.?, 'model.?) { (attributeNamesString, modelString) =>
         requireUserInfo() { userInfo =>
           get {
             requestContext =>
               val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
-              val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames)
+              val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
               val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
               actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
           }

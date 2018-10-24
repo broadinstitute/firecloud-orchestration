@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.utils
 import org.scalatest.FlatSpec
 import org.broadinstitute.dsde.firecloud.EntityClient
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVLoadFiles, MockTSVStrings}
+import org.broadinstitute.dsde.firecloud.model.FirecloudModelSchema
 
 class TSVParserSpec extends FlatSpec {
   "TSV parser" should "throw an exception when given an empty file to parse" in {
@@ -111,7 +112,7 @@ class TSVParserSpec extends FlatSpec {
       "ref_fasta")
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
-      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType)
+      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
     }
   }
 
@@ -135,7 +136,7 @@ class TSVParserSpec extends FlatSpec {
       "ref_fasta")
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
-      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType)
+      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
     }
   }
 
@@ -155,7 +156,7 @@ class TSVParserSpec extends FlatSpec {
       "some_other_id")
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
-      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType)
+      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
     }
   }
 }
