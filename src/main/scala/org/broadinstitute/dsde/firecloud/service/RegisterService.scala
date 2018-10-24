@@ -67,6 +67,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   private def registerUser(userInfo: UserInfo): Future[RegistrationInfo] = {
     for {
       registrationInfo <- samDao.registerUser(userInfo)
+      _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
       freeCredits:Either[Exception,UserTrialStatus] <- enableSelfForFreeCredits(userInfo)
         .map(Right(_)) recover { case e: Exception => Left(e) }
     } yield {
