@@ -39,6 +39,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with UserApiService
   with TrialApiService
   with ShareLogApiService
+  with ManagedGroupApiService
 {
 
   override lazy val log = LoggerFactory.getLogger(getClass)
@@ -104,6 +105,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val trialServiceConstructor: () => TrialService = TrialService.constructor(app, trialProjectManager)
   val userServiceConstructor: (WithAccessToken) => UserService = UserService.constructor(app)
   val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
+  val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
 
   if (FireCloudConfig.Trial.spreadsheetId.nonEmpty && FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes > 0) {
     val freq = FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes
@@ -121,7 +123,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val submissionsService = new SubmissionService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
   val apiRoutes = methodsApiServiceRoutes ~ profileRoutes ~
-    methodConfigurationService.routes ~ submissionsService.routes ~
+    methodConfigurationService.routes ~ submissionsService.routes ~ managedGroupServiceRoutes ~
     nihRoutes ~ billingService.routes ~ trialApiServiceRoutes ~ shareLogServiceRoutes
 
   val healthService = new HealthService with ActorRefFactoryContext
