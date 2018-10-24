@@ -99,7 +99,6 @@ object FireCloudConfig {
   object Sam {
     private val sam = config.getConfig("sam")
     val baseUrl = sam.getString("baseUrl")
-    val allUsersGroupRef = WorkbenchEmail(sam.getString("allUsersGroupEmail"))
   }
 
   object Thurloe {

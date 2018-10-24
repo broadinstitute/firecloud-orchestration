@@ -98,4 +98,6 @@ class MockSamDAO extends SamDAO {
 
   override def getPetServiceAccountTokenForUser(user: WithAccessToken, scopes: Seq[String]): Future[AccessToken] =
     Future.failed(new FireCloudException("mock not implemented"))
+
+  override def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit] = Future.successful(())
 }

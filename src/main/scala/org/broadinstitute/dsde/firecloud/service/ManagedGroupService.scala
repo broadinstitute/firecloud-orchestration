@@ -66,7 +66,7 @@ class ManagedGroupService(samDAO: SamDAO, userToken: WithAccessToken)(implicit p
     val membersList = for {
       _ <- samDAO.createGroup(groupName)
       listMembers <- listGroupMembersInternal(groupName)
-      _ <- samDAO.addPolicyMember(samDAO.managedGroupResourceTypeName, groupName.value, ManagedGroupRoles.AdminNotifier.toString, FireCloudConfig.Sam.allUsersGroupRef)
+      _ <- samDAO.setPolicyPublic(samDAO.managedGroupResourceTypeName, groupName.value, ManagedGroupRoles.AdminNotifier.toString, true)
     } yield listMembers
     membersList.map(response => RequestComplete(StatusCodes.Created, response))
   }
