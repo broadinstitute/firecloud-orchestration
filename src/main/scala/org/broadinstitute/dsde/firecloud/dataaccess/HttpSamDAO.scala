@@ -79,6 +79,10 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
     userAuthedRequestToUnit(Put(samResourcePolicyAlterMember(resourceTypeName, resourceId, policyName, email)))
   }
 
+  override def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit] = {
+    userAuthedRequestToUnit(Put(samResourcePolicy(resourceTypeName, resourceId, policyName) + "/public", public.toString))
+  }
+
   override def requestGroupAccess(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
     userAuthedRequestToUnit(Post(samManagedGroupRequestAccess(groupName)))
   }
