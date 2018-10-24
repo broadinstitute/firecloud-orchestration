@@ -15,6 +15,7 @@ import spray.client.pipelining.sendReceive
 import spray.http.HttpRequest
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
+import spray.json.{JsBoolean, JsValue, JsonFormat, RootJsonFormat}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -80,7 +81,11 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
   }
 
   override def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit] = {
-    userAuthedRequestToUnit(Put(samResourcePolicy(resourceTypeName, resourceId, policyName) + "/public", public.toString))
+    implicit val booleanFormat = new RootJsonFormat[Boolean] {
+      override def read(json: JsValue): Boolean = implicitly[JsonFormat[Boolean]].read(json)
+      override def write(obj: Boolean): JsValue = implicitly[JsonFormat[Boolean]].write(obj)
+    }
+    userAuthedRequestToUnit(Put(samResourcePolicy(resourceTypeName, resourceId, policyName) + "/public", public))
   }
 
   override def requestGroupAccess(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit] = {
