@@ -5,9 +5,10 @@ import java.util.UUID
 
 import akka.http.scaladsl.model.StatusCodes
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
+import com.google.api.services.bigquery.BigqueryScopes
 import com.google.api.services.bigquery.model.{GetQueryResultsResponse, JobReference}
 import org.broadinstitute.dsde.test.OrchConfig
-import org.broadinstitute.dsde.workbench.auth.AuthToken
+import org.broadinstitute.dsde.workbench.auth.{AuthToken, AuthTokenScopes}
 import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
 import org.broadinstitute.dsde.workbench.dao.Google.googleBigQueryDAO
 import org.broadinstitute.dsde.workbench.fixture.BillingFixtures
@@ -36,7 +37,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       val role = "bigquery.jobUser"
 
       val user: Credentials = UserPool.chooseStudent
-      val userToken: AuthToken = user.makeAuthToken()
+      val userToken: AuthToken = user.makeAuthToken(AuthTokenScopes.userLoginScopes ++ Seq(BigqueryScopes.BIGQUERY))
       val bigQuery = googleBigQueryDAO(userToken)
 
       // Willy Shakes uses this insult twice
