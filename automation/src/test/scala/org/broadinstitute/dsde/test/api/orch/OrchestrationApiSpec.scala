@@ -28,6 +28,18 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
   }
 
   "Orchestration" - {
+    /**
+      * This next test is a bit funky. It tests the system's ability to grant/remove Google roles ... and it does so
+      * by trying to execute a BigQuery job as the current user (which should fail), granting the appropriate role
+      * to that user and watching the BQ job succeed, then removing the role and again seeing the BQ job fail.
+      *
+      * The funkiness is that:
+      *   - we never execute BQ jobs as the end user
+      *   - to execute a BQ job as the end user, we have to grant the CLOUD_PLATFORM OAuth scope to that user, which
+      *       we also never do in the real app.
+      *
+      *  But beyond this funkiness, the test does check the right things.
+      */
     "should grant and remove google role access" in {
       // google roles can take a while to take effect
       implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(1, Minutes)), interval = scaled(Span(10, Seconds)))
@@ -37,7 +49,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       val role = "bigquery.jobUser"
 
       val user: Credentials = UserPool.chooseStudent
-      val userToken: AuthToken = user.makeAuthToken(AuthTokenScopes.userLoginScopes ++ Seq(BigqueryScopes.BIGQUERY))
+      val userToken: AuthToken = user.makeAuthToken(AuthTokenScopes.userLoginScopes ++ Seq(BigqueryScopes.CLOUD_PLATFORM))
       val bigQuery = googleBigQueryDAO(userToken)
 
       // Willy Shakes uses this insult twice
