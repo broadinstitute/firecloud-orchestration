@@ -3,14 +3,16 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO, ThurloeDAO, TrialDAO}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
 import org.broadinstitute.dsde.firecloud.service.RegisterService.{CreateUpdateProfile, UpdateProfilePreferences}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
+import org.broadinstitute.dsde.rawls.model.Notifications.{ActivationNotification, NotificationFormat}
+import org.broadinstitute.dsde.rawls.model.RawlsUserSubjectId
 import spray.http._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
@@ -29,10 +31,10 @@ object RegisterService {
   }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.trialDAO)
+    new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.trialDAO, app.googleServicesDAO)
 }
 
-class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO, val trialDao: TrialDAO)
+class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO, val trialDao: TrialDAO, val googleServicesDAO: GoogleServicesDAO)
   (implicit protected val executionContext: ExecutionContext) extends Actor
   with TrialServiceSupport with LazyLogging {
 
@@ -67,9 +69,9 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   private def registerUser(userInfo: UserInfo): Future[RegistrationInfo] = {
     for {
       registrationInfo <- samDao.registerUser(userInfo)
-      _ <- rawlsDao.registerUser(userInfo) //This call to rawls handles leftover registration pieces (welcome email and pending workspace access)
       freeCredits:Either[Exception,UserTrialStatus] <- enableSelfForFreeCredits(userInfo)
         .map(Right(_)) recover { case e: Exception => Left(e) }
+      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(ActivationNotification(RawlsUserSubjectId(userInfo.id))).compactPrint))
     } yield {
       val messages:Option[List[String]] = freeCredits match {
         case Left(ex) => Some(registrationInfo.messages.getOrElse(List.empty[String]) :+

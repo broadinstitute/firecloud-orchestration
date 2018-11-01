@@ -9,6 +9,8 @@ import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.cloudbilling.Cloudbilling
 import com.google.api.services.cloudbilling.model.ProjectBillingInfo
+import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
+import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
 import com.google.api.services.sheets.v4.SheetsScopes
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.ValueRange
@@ -137,12 +139,26 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     new Cloudbilling.Builder(httpTransport, jsonFactory, credential).setApplicationName(appName).build()
   }
 
+  private lazy val pubSub = {
+    new Pubsub.Builder(httpTransport, jsonFactory, getPubSubServiceAccountCredential).setApplicationName(appName).build()
+  }
+
   private def getBucketServiceAccountCredential: Credential = {
     new GoogleCredential.Builder()
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
       .setServiceAccountId(pemFileClientId)
       .setServiceAccountScopes(storageReadOnly)
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
+      .build()
+  }
+
+  private def getPubSubServiceAccountCredential: Credential = {
+    new GoogleCredential.Builder()
+      .setTransport(httpTransport)
+      .setJsonFactory(jsonFactory)
+      .setServiceAccountId(pemFileClientId)
+      .setServiceAccountScopes(Seq(PubsubScopes.PUBSUB))
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
       .build()
   }
@@ -524,4 +540,12 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     }
   }
 
+  override def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit] = {
+    logger.debug(s"publishing to google pubsub topic $fullyQualifiedTopic, messages [${messages.mkString(", ")}]")
+    Future.traverse(messages.grouped(1000)) { messageBatch =>
+      val pubsubMessages = messageBatch.map(text => new PubsubMessage().encodeData(text.getBytes("UTF-8")))
+      val pubsubRequest = new PublishRequest().setMessages(pubsubMessages)
+      Future(executeGoogleRequest(pubSub.projects().topics().publish(fullyQualifiedTopic, pubsubRequest)))
+    }.map(_ => ())
+  }
 }

@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.mock
 
 import java.io.{ByteArrayInputStream, InputStream}
+import java.util.concurrent.LinkedBlockingQueue
 
 import akka.actor.ActorRefFactory
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
@@ -70,6 +71,8 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
                                         |""".stripMargin.parseJson.asJsObject
   final val spreadsheetUpdateJson = """{"spreadsheetId":"randomId","updatedRange":"Sheet1!A1:F45","updatedRows":45,"updatedCells":270,"updatedColumns":6}""".parseJson.asJsObject
 
+  val pubsubMessages = new LinkedBlockingQueue[String]()
+
   override def getAdminUserAccessToken: String = "adminUserAccessToken"
   override def getTrialBillingManagerAccessToken: String = "billingManagerAccessToken"
   override def getTrialBillingManagerEmail: String = "mock-trial-billing-mgr-email"
@@ -100,4 +103,9 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 
+  override def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit] = {
+    import scala.collection.JavaConversions._
+    pubsubMessages.addAll(messages)
+    Future.successful(())
+  }
 }

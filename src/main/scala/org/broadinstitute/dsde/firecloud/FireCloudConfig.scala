@@ -193,4 +193,9 @@ object FireCloudConfig {
     val entityWorkspaceName: Option[String] = if (metrics.hasPath("entityWorkspaceName")) Some(metrics.getString("entityWorkspaceName")) else None
     val libraryNamespaces: List[String] = metrics.getStringList("libraryWorkspaceNamespace").asScala.toList
   }
+
+  object Notification {
+    private val notification = config.getConfig("notification")
+    val fullyQualifiedNotificationTopic: String = notification.getString("fullyQualifiedNotificationTopic")
+  }
 }

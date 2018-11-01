@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockSamDAO, MockThurloeDAO}
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO._
+import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.randomAlpha
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.{BasicProfile, RegistrationInfo, Trial, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
@@ -10,6 +11,8 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impBasicProfil
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates._
 import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, RegisterService}
+import org.broadinstitute.dsde.rawls.model.Notifications.{ActivationNotification, NotificationFormat}
+import org.broadinstitute.dsde.rawls.model.RawlsUserSubjectId
 import spray.http.HttpResponse
 import spray.http.StatusCodes.{NotFound, OK}
 import spray.httpx.SprayJsonSupport
@@ -47,23 +50,30 @@ class TrialRegistrationSpec extends BaseServiceSpec with RegisterApiService with
 
   "When updating the profile for a pre-existing, registered user" - {
     "the system should not read or write the user's trial status" in {
+      app.googleServicesDAO.asInstanceOf[MockGoogleServicesDAO].pubsubMessages.clear()
       Post(registerPath, fullProfile) ~> dummyUserIdHeaders(NORMAL_USER, email = NORMAL_USER) ~> sealRoute(registerRoutes) ~> check {
         status should equal(OK)
         val regInfo = responseAs[RegistrationInfo]
         // if NORMAL_USER triggers a call to either getTrialStatus or saveTrialStatus, UserRegistrationThurloeDAO will
         // fail and RegistrationInfo will have a message below.
         assert(regInfo.messages.isEmpty, "- if this reports a BoxedError it is likely the assert inside UserRegistrationThurloeDAO.getTrialStatus or saveTrialStatus")
+        assert(app.googleServicesDAO.asInstanceOf[MockGoogleServicesDAO].pubsubMessages.isEmpty)
       }
     }
   }
 
   "When registering a brand new user in sam" - {
     "the user should be enabled for free credits" in {
+      app.googleServicesDAO.asInstanceOf[MockGoogleServicesDAO].pubsubMessages.clear()
       Post(registerPath, fullProfile) ~> dummyUserIdHeaders(TRIAL_SELF_ENABLED, email = TRIAL_SELF_ENABLED) ~> sealRoute(registerRoutes) ~> check {
         // triggers an assert in UserRegistrationThurloeDAO.saveTrialStatus
         status should equal(OK)
         val regInfo = responseAs[RegistrationInfo]
         assert(regInfo.messages.isEmpty, "- if this reports a BoxedError it is likely the assert inside UserRegistrationThurloeDAO.saveTrialStatus")
+        assertResult(ActivationNotification(RawlsUserSubjectId(TRIAL_SELF_ENABLED))) {
+          import spray.json._
+          NotificationFormat.read(app.googleServicesDAO.asInstanceOf[MockGoogleServicesDAO].pubsubMessages.poll().parseJson)
+        }
       }
     }
   }
