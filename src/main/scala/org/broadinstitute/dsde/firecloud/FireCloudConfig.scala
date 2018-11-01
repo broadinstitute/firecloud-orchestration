@@ -202,4 +202,9 @@ object FireCloudConfig {
     // grab a copy of this Spray setting to use when displaying an error message
     lazy val chunkLimit = spray.getString("can.client.response-chunk-aggregation-limit")
   }
+
+  object Notification {
+    private val notification = config.getConfig("notification")
+    val fullyQualifiedNotificationTopic: String = notification.getString("fullyQualifiedNotificationTopic")
+  }
 }

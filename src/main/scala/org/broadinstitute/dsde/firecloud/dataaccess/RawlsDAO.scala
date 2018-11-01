@@ -37,7 +37,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   implicit val errorReportSource = ErrorReportSource(RawlsDAO.serviceName)
 
-  lazy val rawlsUserRegistrationUrl = FireCloudConfig.Rawls.baseUrl + "/register/user"
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
   lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
@@ -53,8 +52,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
-
-  def registerUser(userInfo: UserInfo): Future[Unit]
 
   def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse]
 

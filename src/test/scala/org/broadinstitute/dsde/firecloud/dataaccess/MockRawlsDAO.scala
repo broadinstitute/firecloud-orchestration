@@ -245,8 +245,6 @@ class MockRawlsDAO extends RawlsDAO {
     Future.successful(userInfo.id == "curator")
   }
 
-  override def registerUser(userInfo: UserInfo): Future[Unit] = Future.successful(())
-
   override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[Metrics.AdminStats] = ???
 
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] = {

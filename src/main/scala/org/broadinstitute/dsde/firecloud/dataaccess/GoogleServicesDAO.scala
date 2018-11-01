@@ -42,4 +42,5 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def status: Future[SubsystemStatus]
   override def serviceName: String = GoogleServicesDAO.serviceName
 
+  def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit]
 }
