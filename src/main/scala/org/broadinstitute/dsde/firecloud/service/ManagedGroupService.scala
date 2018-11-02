@@ -10,7 +10,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.SamDAO
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
-import org.broadinstitute.dsde.firecloud.model.{FireCloudManagedGroup, ManagedGroupRoles, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{FireCloudManagedGroup, FireCloudManagedGroupMembership, ManagedGroupRoles, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.ManagedGroupService._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import spray.http.StatusCodes
@@ -76,7 +76,9 @@ class ManagedGroupService(samDAO: SamDAO, userToken: WithAccessToken)(implicit p
   }
 
   def listGroups(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
-    samDAO.listGroups.map(response => RequestComplete(StatusCodes.OK, response))
+    samDAO.listGroups.map(response => RequestComplete(StatusCodes.OK, response.map { group =>
+       group.copy(role = group.role.capitalize)
+    }))
   }
 
   def listGroupMembers(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
