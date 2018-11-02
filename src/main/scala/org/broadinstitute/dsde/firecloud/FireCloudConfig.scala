@@ -8,6 +8,8 @@ import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import spray.http.Uri
 import spray.http.Uri.{Authority, Host}
 
+import scala.util.Try
+
 object FireCloudConfig {
   private val config = ConfigFactory.load()
 
@@ -152,6 +154,7 @@ object FireCloudConfig {
     val trialIndexName = elasticsearch.getString("trialIndex")
     val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
     val shareLogIndexName: String = elasticsearch.getString("shareLogIndex")
+    val maxAggregations: Int = Try(elasticsearch.getInt("maxAggregations")).getOrElse(10000)
   }
 
   def parseESServers(confString: String): Seq[Authority] = {
