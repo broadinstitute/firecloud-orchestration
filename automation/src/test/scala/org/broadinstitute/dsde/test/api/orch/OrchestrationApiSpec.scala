@@ -49,7 +49,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       val role = "bigquery.jobUser"
 
       val user: Credentials = UserPool.chooseStudent
-      val userToken: AuthToken = user.makeAuthToken(AuthTokenScopes.userLoginScopes ++ Seq(BigqueryScopes.CLOUD_PLATFORM))
+      val userToken: AuthToken = user.makeAuthToken(AuthTokenScopes.userLoginScopes :+ BigqueryScopes.CLOUD_PLATFORM)
       val bigQuery = googleBigQueryDAO(userToken)
 
       // Willy Shakes uses this insult twice
