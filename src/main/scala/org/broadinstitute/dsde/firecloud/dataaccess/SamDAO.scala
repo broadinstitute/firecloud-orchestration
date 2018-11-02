@@ -33,8 +33,8 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   val samManagedGroupBase: String = FireCloudConfig.Sam.baseUrl + "/api/group"
   def samManagedGroup(groupName: WorkbenchGroupName): String = samManagedGroupBase + s"/$groupName"
   def samManagedGroupRequestAccess(groupName: WorkbenchGroupName): String = samManagedGroup(groupName) + "/requestAccess"
-  def samManagedGroupPolicy(groupName: WorkbenchGroupName, role: ManagedGroupRole): String = samManagedGroup(groupName) + s"/${role.toPolicyName}"
-  def samManagedGroupAlterMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail): String = samManagedGroupPolicy(groupName, role) + s"/$email"
+  def samManagedGroupPolicy(groupName: WorkbenchGroupName, policyName: ManagedGroupRole): String = samManagedGroup(groupName) + s"/$policyName"
+  def samManagedGroupAlterMember(groupName: WorkbenchGroupName, policyName: ManagedGroupRole, email: WorkbenchEmail): String = samManagedGroupPolicy(groupName, policyName) + s"/$email"
 
   val samResourceBase: String = FireCloudConfig.Sam.baseUrl + s"/api/resource"
   def samResource(resourceTypeName: String, resourceId: String): String = samResourceBase + s"/$resourceTypeName/$resourceId"
