@@ -10,6 +10,15 @@ object ManagedGroupRoles {
   sealed trait ManagedGroupRole {
     override def toString: String = {
       this match {
+        case Admin => "Admin"
+        case Member => "Member"
+        case AdminNotifier => "admin-notifier"
+        case _ => throw new Exception(s"invalid ManagedGroupRole [$this]")
+      }
+    }
+
+    def toPolicyName: String = {
+      this match {
         case Admin => "admin"
         case Member => "member"
         case AdminNotifier => "admin-notifier"
