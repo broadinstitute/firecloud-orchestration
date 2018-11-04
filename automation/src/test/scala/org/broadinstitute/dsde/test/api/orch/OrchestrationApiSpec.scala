@@ -34,11 +34,12 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       * to that user and watching the BQ job succeed, then removing the role and again seeing the BQ job fail.
       *
       * The funkiness is that:
-      *   - we never execute BQ jobs as the end user
-      *   - to execute a BQ job as the end user, we have to grant the CLOUD_PLATFORM OAuth scope to that user, which
-      *       we also never do in the real app.
+      *   - FireCloud never executes BQ jobs as the end user
+      *   - to execute a BQ job as the end user, FireCloud would have to grant the CLOUD_PLATFORM OAuth scope to that
+      *       user, which we also never do in the real app.
       *
-      *  But beyond this funkiness, the test does check the right things.
+      * HOWEVER, apps outside of FireCloud show activity to this API, so we should continue to maintain and test it.
+      * The test does check the right things, even if FireCloud itself doesn't use it.
       */
     "should grant and remove google role access" in {
       // google roles can take a while to take effect
