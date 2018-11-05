@@ -140,9 +140,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       // it will also log a share every time a workspace permission is changed
       // i.e. READER to WRITER, etc
       val sharees = aclUpdateList.usersUpdated.filterNot(_.accessLevel == WorkspaceAccessLevels.NoAccess).map(_.email)
-      val invitesUpdated = aclUpdateList.invitesUpdated.filterNot(_.accessLevel == WorkspaceAccessLevels.NoAccess).map(_.email)
       val invitesSent = aclUpdateList.invitesSent.map(_.email)
-      shareLogDAO.logShares(originId, sharees ++ invitesSent ++ invitesUpdated, ShareType.WORKSPACE)
+      shareLogDAO.logShares(originId, sharees ++ invitesSent, ShareType.WORKSPACE)
     }
 
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
@@ -236,7 +235,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   def deleteWorkspace(ns: String, name: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { wsResponse =>
-      val unpublishFuture: Future[Workspace] = if (isPublished(wsResponse))
+      val unpublishFuture: Future[WorkspaceDetails] = if (isPublished(wsResponse))
         setWorkspacePublishedStatus(wsResponse.workspace, publishArg = false, rawlsDAO, ontologyDAO, searchDAO, consentDAO)
       else
         Future.successful(wsResponse.workspace)
@@ -251,7 +250,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     }
   }
 
-  private def getTagsFromWorkspace(ws:Workspace): Seq[String] = {
+  private def getTagsFromWorkspace(ws:WorkspaceDetails): Seq[String] = {
     ws.attributes.get(AttributeName.withTagsNS) match {
       case Some(vals:AttributeValueList) => vals.list collect {
         case s:AttributeString => s.value

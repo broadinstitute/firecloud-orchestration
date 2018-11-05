@@ -18,7 +18,7 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json.JsonParser.ParsingException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impLibraryBulkIndexResponse, impLibrarySearchResponse}
-import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.{AttributeNameFormat, WorkspaceFormat}
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.{AttributeNameFormat, WorkspaceDetailsFormat}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AttributeUpdateOperation, RemoveAttribute}
 
@@ -169,7 +169,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   /*
    * Will republish if it is currently in the published state.
    */
-  private def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[Workspace] = {
+  private def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[WorkspaceDetails] = {
       rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>
       republishDocument(newws, ontologyDAO, searchDAO, consentDAO)
       newws
@@ -203,7 +203,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
 
   def indexAll: Future[PerRequestMessage] = {
     logger.info("reindex: requesting workspaces from rawls ...")
-    rawlsDAO.getAllLibraryPublishedWorkspaces flatMap { workspaces: Seq[Workspace] =>
+    rawlsDAO.getAllLibraryPublishedWorkspaces flatMap { workspaces: Seq[WorkspaceDetails] =>
       if (workspaces.isEmpty)
         Future(RequestComplete(NoContent))
       else {

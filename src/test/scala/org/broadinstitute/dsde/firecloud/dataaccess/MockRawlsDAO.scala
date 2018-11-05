@@ -135,7 +135,6 @@ class MockRawlsDAO extends RawlsDAO {
   private val rawlsWorkspaceWithAttributes = Workspace(
     "attributes",
     "att",
-    Set.empty, //authdomain
     "id",
     "", //bucketname
     DateTime.now(),
@@ -151,15 +150,12 @@ class MockRawlsDAO extends RawlsDAO {
         AttributeNumber(999),
         AttributeBoolean(true)
       ))),
-    Map(), //acls
-    Map(), //authdomain acls
     false
   )
 
   val publishedRawlsWorkspaceWithAttributes = Workspace(
     "attributes",
     "att",
-    Set.empty, //authdomain
     "id",
     "", //bucketname
     DateTime.now(),
@@ -177,15 +173,12 @@ class MockRawlsDAO extends RawlsDAO {
         AttributeNumber(999),
         AttributeBoolean(true)
       ))),
-    Map(), //acls
-    Map(), //authdomain acls,
     false
   )
 
   val unpublishedRawlsWorkspaceLibraryValid = Workspace(
     "attributes",
     "att",
-    Set.empty, //realm
     "id",
     "", //bucketname
     DateTime.now(),
@@ -214,28 +207,24 @@ class MockRawlsDAO extends RawlsDAO {
       AttributeName.withLibraryNS("orsp") -> AttributeString("some orsp"),
       LibraryService.discoverableWSAttribute -> AttributeValueList(Seq( AttributeString("group1"),AttributeString("group2") ))
     ),
-    Map(), //acls
-    Map(), //realm acls,
     false
   )
 
-  val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, rawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
-  val publishedRawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, WorkspaceDetails(rawlsWorkspaceWithAttributes, Set.empty), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
+  val publishedRawlsWorkspaceResponseWithAttributes = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, WorkspaceDetails(publishedRawlsWorkspaceWithAttributes, Set.empty), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
 
-  def newWorkspace: Workspace = {
-    Workspace(
+  def newWorkspace: WorkspaceDetails = {
+    WorkspaceDetails(
       namespace = "namespace",
       name = "name",
-      authorizationDomain = Set.empty,
       workspaceId = "workspaceId",
       bucketName = "bucketName",
       createdDate = DateTime.now(),
       lastModified = DateTime.now(),
       createdBy = "createdBy",
       attributes = Map(),
-      accessLevels = Map(),
-      authDomainACLs = Map(),
-      isLocked = true
+      isLocked = true,
+      authorizationDomain = Set.empty
     )
   }
   

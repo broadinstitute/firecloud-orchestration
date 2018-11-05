@@ -32,7 +32,7 @@ trait ShareLogDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
     * @param shareType The type (workspace, group, or method) see `ShareLog`
     * @return The records of the shares - see `ShareLog.Share`
     */
-  def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share]
+  def logShares(userId: String, sharees: Set[String], shareType: ShareType.Value): Set[Share]
 
   /**
     * Gets a share by the ID.

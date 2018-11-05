@@ -36,7 +36,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken, ec: ExecutionContext): Future[Seq[Document]] = {
+  def indexableDocuments(workspaces: Seq[WorkspaceDetails], ontologyDAO: OntologyDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken, ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
     val nodes = uniqueWorkspaceStringAttributes(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
 
@@ -83,7 +83,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     }
   }
 
-  private def indexableDocument(workspace: Workspace, parentCache: Map[String,Seq[TermParent]], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Document = {
+  private def indexableDocument(workspace: WorkspaceDetails, parentCache: Map[String,Seq[TermParent]], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Document = {
     val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {
@@ -122,7 +122,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     }
   }
 
-  def uniqueWorkspaceStringAttributes(workspaces: Seq[Workspace], attributeName: AttributeName): Set[String] = {
+  def uniqueWorkspaceStringAttributes(workspaces: Seq[WorkspaceDetails], attributeName: AttributeName): Set[String] = {
     val valueSeq:Seq[String] = workspaces.collect {
       case w if w.attributes.contains(attributeName) =>
         w.attributes(attributeName)

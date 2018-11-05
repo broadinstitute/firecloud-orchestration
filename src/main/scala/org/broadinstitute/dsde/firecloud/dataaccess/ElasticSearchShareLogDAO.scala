@@ -83,7 +83,7 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     * @param shareType The type (workspace, group, or method) see `ShareLog`
     * @return The records of the shares - see `ShareLog.Share`
     */
-  override def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share] = {
+  override def logShares(userId: String, sharees: Set[String], shareType: ShareType.Value): Set[Share] = {
     sharees map { sharee => logShare(userId, sharee, shareType) }
   }
 
