@@ -5,9 +5,10 @@ import java.util.UUID
 
 import akka.http.scaladsl.model.StatusCodes
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
+import com.google.api.services.bigquery.BigqueryScopes
 import com.google.api.services.bigquery.model.{GetQueryResultsResponse, JobReference}
 import org.broadinstitute.dsde.test.OrchConfig
-import org.broadinstitute.dsde.workbench.auth.AuthToken
+import org.broadinstitute.dsde.workbench.auth.{AuthToken, AuthTokenScopes}
 import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
 import org.broadinstitute.dsde.workbench.dao.Google.googleBigQueryDAO
 import org.broadinstitute.dsde.workbench.fixture.BillingFixtures
@@ -27,6 +28,19 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
   }
 
   "Orchestration" - {
+    /**
+      * This next test is a bit funky. It tests the system's ability to grant/remove Google roles ... and it does so
+      * by trying to execute a BigQuery job as the current user (which should fail), granting the appropriate role
+      * to that user and watching the BQ job succeed, then removing the role and again seeing the BQ job fail.
+      *
+      * The funkiness is that:
+      *   - FireCloud never executes BQ jobs as the end user
+      *   - to execute a BQ job as the end user, FireCloud would have to grant the CLOUD_PLATFORM OAuth scope to that
+      *       user, which we also never do in the real app.
+      *
+      * HOWEVER, apps outside of FireCloud show activity to this API, so we should continue to maintain and test it.
+      * The test does check the right things, even if FireCloud itself doesn't use it.
+      */
     "should grant and remove google role access" in {
       // google roles can take a while to take effect
       implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(1, Minutes)), interval = scaled(Span(10, Seconds)))
@@ -36,7 +50,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       val role = "bigquery.jobUser"
 
       val user: Credentials = UserPool.chooseStudent
-      val userToken: AuthToken = user.makeAuthToken()
+      val userToken: AuthToken = user.makeAuthToken(AuthTokenScopes.userLoginScopes :+ BigqueryScopes.CLOUD_PLATFORM)
       val bigQuery = googleBigQueryDAO(userToken)
 
       // Willy Shakes uses this insult twice
