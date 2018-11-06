@@ -130,16 +130,16 @@ class ImportPermissionMockRawlsDAO extends MockRawlsDAO {
   override def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]] = {
     parseTestToken(userInfo)._1 match {
       case "hasWorkspaces" => Future.successful(Seq(
-        WorkspaceListResponse(WorkspaceAccessLevels.ProjectOwner, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
-        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
-        WorkspaceListResponse(WorkspaceAccessLevels.Owner, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
-        WorkspaceListResponse(WorkspaceAccessLevels.NoAccess, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false))
+        WorkspaceListResponse(WorkspaceAccessLevels.ProjectOwner, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.Owner, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.NoAccess, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), false)
       ))
       case "onlyReadableWorkspaces" => Future.successful(Seq(
-        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
-        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
-        WorkspaceListResponse(WorkspaceAccessLevels.Read, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false)),
-        WorkspaceListResponse(WorkspaceAccessLevels.NoAccess, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty, Some(false))
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, publishedRawlsWorkspaceWithAttributes, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.NoAccess, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), false)
       ))
       case "noWorkspaces" => Future.successful(Seq.empty[WorkspaceListResponse])
       case _ => Future.failed(new FireCloudException("intentional exception for getWorkspaces catchall case"))

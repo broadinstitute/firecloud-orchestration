@@ -12,7 +12,7 @@ class MockShareLogDAO extends ShareLogDAO {
 
   override def logShare(userId: String, sharee: String, shareType: ShareType.Value): Share = throw new Exception(errorMessage)
 
-  override def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share] = throw new Exception(errorMessage)
+  override def logShares(userId: String, sharees: Set[String], shareType: ShareType.Value): Set[Share] = throw new Exception(errorMessage)
 
   override def getShare(share: Share): Share = throw new Exception(errorMessage)
 
@@ -30,7 +30,7 @@ class ShareLogApiServiceSpecShareLogDAO extends MockShareLogDAO {
 
 class WorkspaceApiServiceSpecShareLogDAO extends MockShareLogDAO {
 
-  override def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share] = {
+  override def logShares(userId: String, sharees: Set[String], shareType: ShareType.Value): Set[Share] = {
     sharees map{ sharee => Share(userId, sharee, shareType)}
   }
 }

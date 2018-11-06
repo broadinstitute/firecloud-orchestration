@@ -21,9 +21,11 @@ object Dependencies {
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.7.2",
 
     "org.broadinstitute.dsde.vault" %% "vault-common"        % "0.1-19-ca8b927"
-      exclude("io.spray", "spray-routing_2.11"),
+      exclude("io.spray", "spray-routing_2.11")
+    ,
     "org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-ac8a38b-SNAP"
-      exclude("com.typesafe.scala-logging", "scala-logging_2.11"),
+      exclude("com.typesafe.scala-logging", "scala-logging_2.11")
+      exclude("com.typesafe.akka", "akka-stream_2.11"),
     "org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP",
 
   "io.spray"                      %% "spray-can"                 % sprayV,

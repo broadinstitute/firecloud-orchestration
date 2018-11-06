@@ -31,7 +31,7 @@ object DataUseRestrictionTestFixtures {
 
   // Datasets are named by the code for easier identification in tests
   val booleanCodes: Seq[String] = Seq("GRU", "HMB", "NCU", "NPU", "NMDS", "NCTRL", "RS-PD", "IRB")
-  val booleanDatasets: Seq[Workspace] = booleanCodes.map { code =>
+  val booleanDatasets: Seq[WorkspaceDetails] = booleanCodes.map { code =>
     val attributes = Map(AttributeName.withLibraryNS(code) -> AttributeBoolean(true))
     mkWorkspace(attributes, code, s"{${code.replace("-","")}}-unique")
   }
@@ -42,7 +42,7 @@ object DataUseRestrictionTestFixtures {
   val diseaseURLs: Seq[String] = Seq("http://purl.obolibrary.org/obo/DOID_9220", "http://purl.obolibrary.org/obo/DOID_535")
   val diseaseValuesLabels: Seq[String] = Seq("central sleep apnea", "sleep disorder")
   val diseaseValuesInts: Seq[Int] = Seq(9220, 535)
-  val diseaseDatasets: Seq[Workspace] = diseaseCodes.map { code =>
+  val diseaseDatasets: Seq[WorkspaceDetails] = diseaseCodes.map { code =>
     val attributes = Map(
       AttributeName.withLibraryNS(code) -> AttributeValueList(diseaseURLs.map(AttributeString)),
       AttributeName.withLibraryNS("DS") -> AttributeValueList(diseaseValuesLabels.map(AttributeString))
@@ -52,14 +52,14 @@ object DataUseRestrictionTestFixtures {
 
   // Gender datasets are named by the gender value for easier identification in tests
   val genderVals: Seq[(String, String)] = Seq(("Female", "RS-FM"), ("Male", "RS-M"), ("N/A", "N/A"))
-  val genderDatasets: Seq[Workspace] = genderVals.flatMap { case (gender: String, code: String) =>
+  val genderDatasets: Seq[WorkspaceDetails] = genderVals.flatMap { case (gender: String, code: String) =>
     val attributes = Map(AttributeName.withLibraryNS("RS-G") -> AttributeString(gender))
     Seq(mkWorkspace(attributes, gender, code), mkWorkspace(attributes, gender, s"""RSG${gender.replace("/","")}"""))
   }
 
   // Both gender and 'NAGR' codes are saved as string values in workspace attributes
   val nagrVals: Seq[String] = Seq("Yes", "No", "Unspecified")
-  val nagrDatasets: Seq[Workspace] = nagrVals.map { value =>
+  val nagrDatasets: Seq[WorkspaceDetails] = nagrVals.map { value =>
     val attributes = Map(AttributeName.withLibraryNS("NAGR") -> AttributeString(value))
     mkWorkspace(attributes, value, s"NAGR$value")
   }
@@ -82,11 +82,11 @@ object DataUseRestrictionTestFixtures {
     "TOP_THREE")
   )
 
-  val allDatasets: Seq[Workspace] = booleanDatasets ++ diseaseDatasets ++ genderDatasets ++ nagrDatasets ++ everythingDataset ++ topThreeDataset
+  val allDatasets: Seq[WorkspaceDetails] = booleanDatasets ++ diseaseDatasets ++ genderDatasets ++ nagrDatasets ++ everythingDataset ++ topThreeDataset
 
-  val validDisplayDatasets: Seq[Workspace] = booleanDatasets ++ everythingDataset ++ topThreeDataset
+  val validDisplayDatasets: Seq[WorkspaceDetails] = booleanDatasets ++ everythingDataset ++ topThreeDataset
 
-  def mkWorkspace(attributes: Map[AttributeName, Attribute], wsName: String, wsDescription: String): Workspace = {
+  def mkWorkspace(attributes: Map[AttributeName, Attribute], wsName: String, wsDescription: String): WorkspaceDetails = {
     val testUUID: UUID = UUID.randomUUID()
     val defaultAttributes = attributes ++ Map(
       AttributeName.withDefaultNS("description") -> AttributeString(wsDescription),
@@ -113,19 +113,16 @@ object DataUseRestrictionTestFixtures {
       AttributeName.withLibraryNS("useLimitationOption") -> AttributeString("questionnaire"),
       AttributeName.withDefaultNS("_discoverableByGroups") -> AttributeValueList(Seq(AttributeString("one"),AttributeString("two")))
     )
-    Workspace(
+    WorkspaceDetails(Workspace(
       workspaceId=testUUID.toString,
       namespace="testWorkspaceNamespace",
       name=wsName,
-      authorizationDomain=Set.empty[ManagedGroupRef],
       isLocked=false,
       createdBy="createdBy",
       createdDate=DateTime.now(),
       lastModified=DateTime.now(),
       attributes=defaultAttributes,
-      bucketName="bucketName",
-      accessLevels=Map.empty,
-      authDomainACLs=Map())
+      bucketName="bucketName"), Set.empty)
   }
 
 }

@@ -26,20 +26,17 @@ import javax.net.ssl.HttpsURLConnection
 
 object WorkspaceApiServiceSpec {
 
-  val publishedWorkspace = Workspace(
+  val publishedWorkspace = WorkspaceDetails(Workspace(
     "namespace",
     "name-published",
-    Set.empty,
     "workspace_id",
     "buckety_bucket",
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
     Map(AttributeName("library", "published") -> AttributeBoolean(true)), //attributes
-    Map(), //acls
-    Map(), //authdomain acls
     false //locked
-  )
+  ), Set.empty)
 
 }
 
@@ -47,20 +44,17 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   def actorRefFactory = system
 
-  val workspace = Workspace(
+  val workspace = WorkspaceDetails(Workspace(
     "namespace",
     "name",
-    Set.empty,
     "workspace_id",
     "buckety_bucket",
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
     Map(), //attributes
-    Map(), //acls
-    Map(), //authdomain acls
     false //locked
-  )
+  ), Set.empty)
 
   val jobId = "testOp"
 
@@ -101,54 +95,45 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val dummyUserId = "1234"
 
-  val protectedRawlsWorkspace = Workspace(
+  val protectedRawlsWorkspace = WorkspaceDetails(Workspace(
     "attributes",
     "att",
-    Set(nihProtectedAuthDomain), //authdomain
     "id",
     "", //bucketname
     DateTime.now(),
     DateTime.now(),
     "mb",
     Map(), //attrs
-    Map(), //acls
-    Map(), //authdomain acls
     false
-  )
+  ), Set(nihProtectedAuthDomain)) //authdomain
 
-  val authDomainRawlsWorkspace = Workspace(
+  val authDomainRawlsWorkspace = WorkspaceDetails(Workspace(
     "attributes",
     "att",
-    Set(ManagedGroupRef(RawlsGroupName("secret_realm"))), //authdomain
     "id",
     "", //bucketname
     DateTime.now(),
     DateTime.now(),
     "mb",
     Map(), //attrs
-    Map(), //acls
-    Map(), //authdomain acls
     false
-  )
+  ), Set(ManagedGroupRef(RawlsGroupName("secret_realm")))) //authdomain
 
-  val nonAuthDomainRawlsWorkspace = Workspace(
+  val nonAuthDomainRawlsWorkspace = WorkspaceDetails(Workspace(
     "attributes",
     "att",
-    Set.empty, //authdomain
     "id",
     "", //bucketname
     DateTime.now(),
     DateTime.now(),
     "mb",
     Map(), //attrs
-    Map(), //acls
-    Map(), //authdomain acls
     false
-  )
+  ), Set.empty)
 
-  val protectedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, protectedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
-  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, authDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
-  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, nonAuthDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+  val protectedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, protectedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
+  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, authDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
+  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, nonAuthDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
 
   var rawlsServer: ClientAndServer = _
   var bagitServer: ClientAndServer = _
@@ -184,10 +169,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param authDomain (optional) authorization domain for the new workspace
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
-  def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty): (WorkspaceRequest, Workspace) = {
+  def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val rawlsRequest = WorkspaceRequest(namespace, name, Map(), Option(authDomain))
-    val rawlsResponse = Workspace(namespace, name, authDomain, "foo", "bar", DateTime.now(), DateTime.now(), "bob", Map(), Map(), Map())
+    val rawlsResponse = WorkspaceDetails(Workspace(namespace, name, "foo", "bar", DateTime.now(), DateTime.now(), "bob", Map()), authDomain)
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -204,12 +189,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param attributes (optional) attributes expected to be given to rawls for the new cloned workspace
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
-  def stubRawlsCloneWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty, attributes: Attributable.AttributeMap = Map()): (WorkspaceRequest, Workspace) = {
+  def stubRawlsCloneWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty, attributes: Attributable.AttributeMap = Map()): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = Workspace(namespace, name, authDomain, "foo", "bar", DateTime.now(), DateTime.now(), "bob", attributes, Map(), Map())
+    val rawlsResponse = WorkspaceDetails(Workspace(namespace, name, "foo", "bar", DateTime.now(), DateTime.now(), "bob", attributes), authDomain)
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -593,7 +578,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
-        responseAs[Workspace] should equal(rawlsResponse)
+        responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
     }
 
@@ -604,7 +589,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
-        responseAs[Workspace] should equal(rawlsResponse)
+        responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
     }
 
@@ -621,7 +606,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
-        responseAs[Workspace] should equal(rawlsResponse)
+        responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
     }
 
@@ -632,7 +617,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
-        responseAs[Workspace] should equal(rawlsResponse)
+        responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
     }
 
@@ -646,7 +631,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
-        responseAs[Workspace] should equal(rawlsResponse)
+        responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
     }
 

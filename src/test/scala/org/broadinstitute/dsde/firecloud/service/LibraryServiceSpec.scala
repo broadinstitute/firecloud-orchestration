@@ -39,18 +39,15 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
   val testGroup1Ref = ManagedGroupRef(RawlsGroupName("test-group1"))
   val testGroup2Ref = ManagedGroupRef(RawlsGroupName("test-group2"))
 
-  val testWorkspace = new Workspace(workspaceId=testUUID.toString,
+  val testWorkspace = WorkspaceDetails(Workspace(workspaceId=testUUID.toString,
     namespace="testWorkspaceNamespace",
     name="testWorkspaceName",
-    authorizationDomain=Set(testGroup1Ref, testGroup2Ref),
     isLocked=false,
     createdBy="createdBy",
     createdDate=DateTime.now(),
     lastModified=DateTime.now(),
     attributes=Map.empty,
-    bucketName="bucketName",
-    accessLevels=Map.empty,
-    authDomainACLs=Map())
+    bucketName="bucketName"), Set(testGroup1Ref, testGroup2Ref))
 
   val testLibraryMetadata =
     """
@@ -281,12 +278,12 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "should be the different for attribute operations" in {
-        val empty = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq.empty))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+        val empty = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq.empty))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
         assert(isDiscoverableDifferent(empty, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))))
-        val one = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+        val one = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))))
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq.empty))))
-        val two = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty)
+        val two = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
         assert(isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"))))))
         assert(!isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"),AttributeString("group1"))))))
       }
@@ -813,7 +810,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "set workspaceAccess to workspace access level if workspace is returned from workspace list" in {
-        val workspaceList = Seq(WorkspaceListResponse(WorkspaceAccessLevels.Owner, testWorkspace, WorkspaceSubmissionStats(None, None, 0), Seq(), Some(false)))
+        val workspaceList = Seq(WorkspaceListResponse(WorkspaceAccessLevels.Owner, testWorkspace, WorkspaceSubmissionStats(None, None, 0), false))
         val result = testLibraryMetadataJsObject.copy(testLibraryMetadataJsObject.fields.updated("workspaceId", JsString(testUUID.toString)))
         val expectedResult: JsValue = result.copy(result.fields.updated("workspaceAccess", JsString(WorkspaceAccessLevels.Owner.toString)))
         val doc = LibrarySearchResponse(params, 1, Seq(result: JsValue), Seq())
@@ -824,21 +821,18 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     }
     "when finding unique string attributes in a Seq of Workspaces" - {
 
-      def makeWorkspacesWithAttributes(attrMaps: Seq[AttributeMap]): Seq[Workspace] = {
-        val ws = Workspace(
+      def makeWorkspacesWithAttributes(attrMaps: Seq[AttributeMap]): Seq[WorkspaceDetails] = {
+        val ws = WorkspaceDetails(Workspace(
           "namespace",
           "name",
-          Set.empty,
           "workspace_id",
           "buckety_bucket",
           DateTime.now(),
           DateTime.now(),
           "my_workspace_creator",
           Map(), //attributes
-          Map(), //acls
-          Map(), //authdomain acls
           false //locked
-        )
+        ), Set.empty)
 
         attrMaps map { attrMap =>
           ws.copy(attributes = attrMap, workspaceId = UUID.randomUUID().toString)
@@ -846,7 +840,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
 
       "should return an empty list when no workspaces" in {
-        val workspaces = Seq.empty[Workspace]
+        val workspaces = Seq.empty[WorkspaceDetails]
         assertResult(Set.empty[String]) {
           uniqueWorkspaceStringAttributes(workspaces, AttributeName.withDefaultNS("description"))
         }

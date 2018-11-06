@@ -12,7 +12,7 @@ case class UIWorkspaceResponse(
   accessLevel: Option[String] = None,
   canShare: Option[Boolean] = None,
   catalog: Option[Boolean] = None,
-  workspace: Option[WorkspaceResponse] = None,
+  workspace: Option[WorkspaceDetails] = None,
   workspaceSubmissionStats: Option[WorkspaceSubmissionStats] = None,
   owners: Option[List[String]] = None)
 

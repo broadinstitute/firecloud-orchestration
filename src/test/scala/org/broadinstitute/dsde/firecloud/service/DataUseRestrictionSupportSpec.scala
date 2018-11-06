@@ -205,7 +205,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
       "when there are no library data use restriction fields" - {
 
         "dataset should not have any data use restriction for empty attributes" in {
-          val workspace: Workspace = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
+          val workspace: WorkspaceDetails = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
           val ontologyDAO = new MockOntologyDAO
           val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).structured
           attrs should be(empty)
@@ -219,7 +219,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             AttributeName.withDefaultNS("workspaceId") -> AttributeString("three"),
             AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
           )
-          val workspace: Workspace = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
+          val workspace: WorkspaceDetails = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
           val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).structured
           attrs should be(empty)
         }
@@ -272,7 +272,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
 
         "dataset should not have any data use display codes for empty attributes" in {
           val ontologyDAO = new MockOntologyDAO
-          val workspace: Workspace = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
+          val workspace: WorkspaceDetails = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
           val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).display
           attrs should be(empty)
         }
@@ -285,7 +285,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
             AttributeName.withDefaultNS("workspaceId") -> AttributeString("three"),
             AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
           )
-          val workspace: Workspace = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
+          val workspace: WorkspaceDetails = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
           val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).display
           attrs should be(empty)
         }
@@ -620,7 +620,7 @@ class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseR
     }).getOrElse(Seq.empty[String])
   }
 
-  private def makeDurFromWorkspace(ds: Workspace, ontologyDAO: MockOntologyDAO): DataUseRestriction = {
+  private def makeDurFromWorkspace(ds: WorkspaceDetails, ontologyDAO: MockOntologyDAO): DataUseRestriction = {
     val attrs = generateStructuredAndDisplayAttributes(ds, ontologyDAO).structured
     val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
     durAtt.toJson.convertTo[DataUseRestriction]

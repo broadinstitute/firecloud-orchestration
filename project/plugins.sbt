@@ -8,3 +8,4 @@ addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.0.0")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.0.4")
 
 addSbtPlugin("com.github.tkawachi" % "sbt-repeat" % "0.1.0")
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
