@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.apache.lucene.search.join.ScoreMode
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -29,7 +30,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
   final val HL_END = "</strong>"
   final val HL_REGEX:Regex = s"$HL_START(.+?)$HL_END".r.unanchored
 
-  final val AGG_MAX_SIZE = 100
+  final val AGG_MAX_SIZE = FireCloudConfig.ElasticSearch.maxAggregations
   final val AGG_DEFAULT_SIZE = 5
 
   /** ES queries - below is similar to what will be created by the query builders
