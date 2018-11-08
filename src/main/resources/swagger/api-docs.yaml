@@ -3251,6 +3251,33 @@ paths:
         - $ref: '#/parameters/workspaceNameParam'
         - $ref: '#/parameters/submissionIdParam'
         - $ref: '#/parameters/workflowIdParam'
+        - name: includeKey
+          description: >
+            When specified, return only these keys in the response. Matches any key in the response, including within
+            nested blocks. May not be used with excludeKey.
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+          in: query
+        - name: excludeKey
+          description: >
+            When specified, omit these keys from the response. Matches any key in the response, including within
+            nested blocks. May not be used with includeKey.
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+          in: query
+        - name: expandSubWorkflows
+          description: >
+            When true, metadata for sub workflows will be fetched and inserted automatically in the metadata response.
+          required: false
+          type: boolean
+          default: false
+          in: query
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
     get:
