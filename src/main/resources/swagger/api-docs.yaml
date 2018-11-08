@@ -3253,8 +3253,8 @@ paths:
         - $ref: '#/parameters/workflowIdParam'
         - name: includeKey
           description: >
-            When specified key(s) to include from the metadata. Matches any key starting with the value. May not be
-            used with excludeKey. This applies to all keys in the response, including within nested blocks.
+            When specified, return only these keys in the response. Matches any key in the response, including within
+            nested blocks. May not be used with excludeKey.
           required: false
           type: array
           items:
@@ -3263,8 +3263,8 @@ paths:
           in: query
         - name: excludeKey
           description: >
-            When specified key(s) to exclude from the metadata. Matches any key starting with the value. May not be
-            used with includeKey. This applies to all keys in the response, including within nested blocks.
+            When specified, omit these keys from the response. Matches any key in the response, including within
+            nested blocks. May not be used with includeKey.
           required: false
           type: array
           items:
