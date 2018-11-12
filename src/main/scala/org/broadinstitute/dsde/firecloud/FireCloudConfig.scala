@@ -196,4 +196,10 @@ object FireCloudConfig {
     val entityWorkspaceName: Option[String] = if (metrics.hasPath("entityWorkspaceName")) Some(metrics.getString("entityWorkspaceName")) else None
     val libraryNamespaces: List[String] = metrics.getStringList("libraryWorkspaceNamespace").asScala.toList
   }
+
+  object Spray {
+    private val spray = config.getConfig("spray")
+    // grab a copy of this Spray setting to use when displaying an error message
+    lazy val chunkLimit = spray.getString("can.client.response-chunk-aggregation-limit")
+  }
 }
