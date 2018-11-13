@@ -24,6 +24,11 @@ object HttpClient {
 
   case class PerformExternalRequest(requestCompression: Boolean, request: HttpRequest)
 
+  lazy val chunkLimitDisplay = FireCloudConfig.Spray.chunkLimit
+    .replace("m", "MB")
+    .replace("k", "KB")
+
+
   def props(requestContext: RequestContext): Props = Props(new HttpClient(requestContext))
 
   def createJsonHttpEntity(json: String) = {
@@ -64,7 +69,7 @@ class HttpClient (requestContext: RequestContext) extends Actor
         log.debug("Got response: " + response)
         context.parent ! RequestComplete(response)
       case Failure(re:RuntimeException) if re.getMessage.startsWith("sendReceive doesn't support chunked responses")  =>
-        val message = s"The response payload was over ${FireCloudConfig.Spray.chunkLimit} and cannot be processed. " +
+        val message = s"The response payload was over ${HttpClient.chunkLimitDisplay} and cannot be processed. " +
                       s"Original request url: ${externalRequest.uri.toString}"
         val customException = new FireCloudException(message, re)
         log.error(message, customException)
