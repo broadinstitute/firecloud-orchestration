@@ -48,10 +48,14 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       _ <- thurloeDao.saveProfile(userInfo, basicProfile)
       _ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
       isRegistered <- isRegistered(userInfo)
-      userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap)
-                      registerUser(userInfo)
-                    else
-                      Future.successful(isRegistered)
+      userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
+        for {
+          _ <- thurloeDao.saveKeyValues(userInfo,  Map("email" -> userInfo.userEmail))
+          registerResult <- registerUser(userInfo)
+        } yield registerResult
+      } else {
+        Future.successful(isRegistered)
+      }
     } yield {
       RequestComplete(StatusCodes.OK, userStatus)
     }

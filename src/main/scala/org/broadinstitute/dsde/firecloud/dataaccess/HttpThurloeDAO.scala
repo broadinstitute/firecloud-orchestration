@@ -80,7 +80,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   }
 
   override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit] = {
-    val profilePropertyMap = profile.propertyValueMap ++ Map("email" -> userInfo.userEmail)
+    val profilePropertyMap = profile.propertyValueMap
     saveKeyValues(userInfo, profilePropertyMap).map(_ => ())
   }
   /**
