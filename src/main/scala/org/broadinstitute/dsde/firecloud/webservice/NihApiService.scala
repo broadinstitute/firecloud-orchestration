@@ -19,11 +19,15 @@ trait NihApiService extends HttpService with PerRequestCreator with FireCloudDir
   val nihServiceConstructor: () => NihServiceActor
 
   val syncRoute: Route =
-    path("sync_whitelist") {
+    path("sync_whitelist" / Segment) { whitelistName =>
       post { requestContext =>
-        NihService.SyncWhitelist
         perRequest(requestContext, NihService.props(nihServiceConstructor),
-          NihService.SyncWhitelist)
+          NihService.SyncWhitelist(whitelistName))
+      }
+    } ~ path("sync_whitelist") {
+      post { requestContext =>
+        perRequest(requestContext, NihService.props(nihServiceConstructor),
+          NihService.SyncAllWhitelists)
       }
     }
 
