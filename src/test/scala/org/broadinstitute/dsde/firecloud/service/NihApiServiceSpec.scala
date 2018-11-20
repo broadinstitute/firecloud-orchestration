@@ -150,7 +150,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
   it should "return NoContent and properly sync a single whitelist" in withDefaultApiServices { services =>
     Post("/sync_whitelist/TCGA") ~> sealRoute(services.syncRoute) ~> check {
       status should equal(NoContent)
-      assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED), services.samDao.groups(tcgaDbGaPAuthorized).map(_.value))
+      assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED), services.rawlsDao.groups(tcgaDbGaPAuthorized).map(_.value))
     }
   }
 
