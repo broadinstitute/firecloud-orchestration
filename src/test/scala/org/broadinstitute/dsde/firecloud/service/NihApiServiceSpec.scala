@@ -146,4 +146,17 @@ class NihApiServiceSpec extends ApiServiceSpec {
       assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TARGET_LINKED), services.rawlsDao.groups(targetDbGaPAuthorized).map(_.value))
     }
   }
+
+  it should "return NoContent and properly sync a single whitelist" in withDefaultApiServices { services =>
+    Post("/sync_whitelist/TCGA") ~> sealRoute(services.syncRoute) ~> check {
+      status should equal(NoContent)
+      assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED), services.rawlsDao.groups(tcgaDbGaPAuthorized).map(_.value))
+    }
+  }
+
+  it should "return NotFound for unknown whitelist" in withDefaultApiServices { services =>
+    Post("/sync_whitelist/foobar") ~> sealRoute(services.syncRoute) ~> check {
+      status should equal(NotFound)
+    }
+  }
 }

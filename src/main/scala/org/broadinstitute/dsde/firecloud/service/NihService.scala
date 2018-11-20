@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO, SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.NihService.{GetNihStatus, SyncWhitelist, UpdateNihLinkAndSyncSelf}
+import org.broadinstitute.dsde.firecloud.service.NihService.{GetNihStatus, SyncAllWhitelists, SyncWhitelist, UpdateNihLinkAndSyncSelf}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.rawls.model.ErrorReport
@@ -48,9 +48,10 @@ object NihStatus {
 
 object NihService {
   sealed trait ServiceMessage
-  case class GetNihStatus(userInfo: UserInfo) extends ServiceMessage
-  case class UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) extends ServiceMessage
-  case object SyncWhitelist extends ServiceMessage
+  final case class GetNihStatus(userInfo: UserInfo) extends ServiceMessage
+  final case class UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) extends ServiceMessage
+  case object SyncAllWhitelists extends ServiceMessage
+  final case class SyncWhitelist(whitelistName: String) extends ServiceMessage
 
   def props(service: () => NihServiceActor): Props = {
     Props(service())
@@ -66,7 +67,8 @@ class NihServiceActor(val samDao: SamDAO, val rawlsDao: RawlsDAO, val thurloeDao
   override def receive = {
     case GetNihStatus(userInfo: UserInfo) => getNihStatus(userInfo) pipeTo sender
     case UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) => updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) pipeTo sender
-    case SyncWhitelist => syncAllNihWhitelistsAllUsers pipeTo sender
+    case SyncAllWhitelists => syncAllNihWhitelistsAllUsers pipeTo sender
+    case SyncWhitelist(whitelistName) => syncWhitelistAllUsers(whitelistName) pipeTo sender
   }
 }
 
@@ -101,6 +103,16 @@ trait NihService extends LazyLogging {
     val usersList = Source.fromInputStream(googleDao.getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, whitelist.fileName))
 
     usersList.getLines().toSet
+  }
+
+  def syncWhitelistAllUsers(whitelistName: String): Future[PerRequestMessage] = {
+    nihWhitelists.find(_.name.equals(whitelistName)) match {
+      case Some(whitelist) =>
+        val whitelistSyncResults = syncNihWhitelistAllUsers(whitelist)
+        whitelistSyncResults map { _ => RequestComplete(NoContent) }
+
+      case None => Future.successful(RequestComplete(NotFound))
+    }
   }
 
   // This syncs all of the whitelists for all of the users
