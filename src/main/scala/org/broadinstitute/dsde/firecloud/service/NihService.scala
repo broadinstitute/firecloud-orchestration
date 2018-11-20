@@ -48,10 +48,10 @@ object NihStatus {
 
 object NihService {
   sealed trait ServiceMessage
-  case class GetNihStatus(userInfo: UserInfo) extends ServiceMessage
-  case class UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) extends ServiceMessage
+  final case class GetNihStatus(userInfo: UserInfo) extends ServiceMessage
+  final case class UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) extends ServiceMessage
   case object SyncAllWhitelists extends ServiceMessage
-  case class SyncWhitelist(whitelistName: String) extends ServiceMessage
+  final case class SyncWhitelist(whitelistName: String) extends ServiceMessage
 
   def props(service: () => NihServiceActor): Props = {
     Props(service())
@@ -106,7 +106,6 @@ trait NihService extends LazyLogging {
   }
 
   def syncWhitelistAllUsers(whitelistName: String): Future[PerRequestMessage] = {
-    println(s"foo $nihWhitelists")
     nihWhitelists.find(_.name.equals(whitelistName)) match {
       case Some(whitelist) =>
         val whitelistSyncResults = syncNihWhitelistAllUsers(whitelist)
