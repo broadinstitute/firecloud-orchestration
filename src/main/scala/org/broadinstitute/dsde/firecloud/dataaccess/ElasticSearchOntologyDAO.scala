@@ -48,7 +48,11 @@ class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) exten
     val autocompleteResults = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchRequest)
 
     val allHits = autocompleteResults.getHits.getHits
-    allHits.map(_.getSourceAsString.parseJson.convertTo[TermResource]).toList
+    val termResources = allHits.map(_.getSourceAsString.parseJson.convertTo[TermResource]).toList
+
+    logger.info(s"autocomplete for input [$term] resulted in: ${termResources.map(_.label)}")
+
+    termResources
   }
 
   private def indexExists: Boolean = {
