@@ -73,7 +73,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
           chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
           validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
           entity.asString.startsWith("update:") should be(true)
           validateProps(entity)
@@ -89,7 +90,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
           chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "bigQuery.txt"))) should be(true)
+          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "bigQuery.tsv")))
+          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
           validateLineCount(chunks, 2)
           entity.asString.contains("query_str") should be(true)
         }
@@ -110,7 +112,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
           chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "pair.txt"))) should be(true)
+          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "pair.tsv")))
+          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
           validateLineCount(chunks, 2)
           entity.asString.startsWith("entity:") should be(true)
           entity.asString.contains("names") should be(true)
@@ -135,7 +138,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
           chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
           validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
         }
       }
@@ -160,7 +164,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           status should be(OK)
           entity shouldNot be(empty)
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample_set.zip"))) should be(true)
+          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample_set.zip")))
+          contentType shouldEqual ContentTypes.`application/octet-stream`
         }
       }
     }
@@ -172,7 +177,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           status should be(OK)
           entity shouldNot be(empty)
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
         }
       }
     }
@@ -237,7 +243,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
           chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
           validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
           validateProps(entity)
         }
@@ -251,7 +258,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           status should be(OK)
           entity shouldNot be(empty)
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
         }
       }
     }
@@ -275,7 +283,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           status should be(OK)
           entity shouldNot be(empty)
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
         }
       }
     }
@@ -301,7 +310,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
     "when calling PUT, PATCH, DELETE on export path" - {
       "MethodNotAllowed response is returned" in {
-        List(HttpMethods.PUT, HttpMethods.DELETE, HttpMethods.PATCH) map { method =>
+        List(HttpMethods.PUT, HttpMethods.DELETE, HttpMethods.PATCH) foreach { method =>
           new RequestBuilder(method)(invalidCookieFireCloudEntitiesParticipantSetTSVPath) ~> sealRoute(cookieAuthedRoutes) ~> check {
             handled should be(true)
             withClue(s"Method $method:") {
@@ -323,7 +332,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
             entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
             chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
             headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-            headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.txt"))) should be(true)
+            headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+            contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
             validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
             validateProps(entity)
           }
@@ -338,8 +348,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
   private def validateProps(entity: HttpEntity): Unit = {
     val entityHeaderString = entity.asString
-    filterProps.map { h => entityHeaderString.contains(h) should be(true) }
-    missingProps.map { h => entityHeaderString.contains(h) should be(false) }
+    filterProps.foreach { h => entityHeaderString.contains(h) should be(true) }
+    missingProps.foreach { h => entityHeaderString.contains(h) should be(false) }
   }
 
   private def validateErrorInLastChunk(chunks: List[MessageChunk], message: String): Unit = {
