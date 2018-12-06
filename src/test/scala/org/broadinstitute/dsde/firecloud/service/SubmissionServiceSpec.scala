@@ -6,7 +6,6 @@ import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import spray.http.Uri
 
 final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
@@ -190,7 +189,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
         // the request inbound to orchestration should encoded, so we replace spaces with  %20 in the test below.
         // this test really verifies that the runtime orch code can accept an encoded URI and maintain the encoding
         // when it passes through the request to rawls - i.e. it doesn't decode the request at any point.
-        Get(Uri(localSpacedWorkspaceWorkflowIdPath.replace(" ","%20"))) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(localSpacedWorkspaceWorkflowIdPath.replace(" ","%20")) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
           status should equal(OK)
         }
       }
