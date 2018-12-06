@@ -50,7 +50,7 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
             pathEnd {
               get {
                 extract(_.request.uri.query) { query =>
-                  passthrough(Uri(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId").withQuery(query), GET)
+                  passthrough(Uri(encodeUri(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId")).withQuery(query), GET)
                 }
               }
             } ~
