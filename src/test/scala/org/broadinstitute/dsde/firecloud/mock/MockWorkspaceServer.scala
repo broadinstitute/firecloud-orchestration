@@ -34,6 +34,21 @@ object MockWorkspaceServer {
     false //locked
   )
 
+  val mockSpacedWorkspace = Workspace(
+    "spacey",
+    "this  workspace has spaces",
+    Set.empty,
+    "workspace_id",
+    "buckety_bucket",
+    DateTime.now(),
+    DateTime.now(),
+    "my_workspace_creator",
+    Map(), //attributes
+    Map(), //acls
+    Map(), //realm acls
+    false //locked
+  )
+
   val mockValidId = randomPositiveInt()
   val mockInvalidId = randomPositiveInt()
 
@@ -206,6 +221,20 @@ object MockWorkspaceServer {
           .withMethod("GET")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s/workflows/%s"
             .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockValidId, mockValidId))
+          .withHeader(authHeader))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+          .withBody(mockValidSubmission.toJson.prettyPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s/workflows/%s"
+            .format(mockSpacedWorkspace.namespace, mockSpacedWorkspace.name, mockValidId, mockValidId))
           .withHeader(authHeader))
       .respond(
         response()
