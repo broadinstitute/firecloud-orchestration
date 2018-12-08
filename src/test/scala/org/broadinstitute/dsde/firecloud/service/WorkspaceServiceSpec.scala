@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken, WorkspaceDeleteResponse}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
-import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeName, AttributeString, Workspace, _}
+import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeName, AttributeString, _}
 import org.scalatest.BeforeAndAfterEach
 import spray.http.{OAuth2BearerToken, StatusCode, StatusCodes}
 
@@ -110,14 +110,14 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] = {
     ns match {
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
-      case "projectowner" => Future(WorkspaceResponse(WorkspaceAccessLevels.ProjectOwner, canShare = true, canCompute=true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
-      case "unpublishsuccess" => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, unpublishsuccess, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
-      case "unpublishfailure" => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, unpublishfailure, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
-      case _ => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), List.empty))
+      case "projectowner" => Future(WorkspaceResponse(WorkspaceAccessLevels.ProjectOwner, canShare = true, canCompute=true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty))
+      case "unpublishsuccess" => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, unpublishsuccess, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty))
+      case "unpublishfailure" => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, unpublishfailure, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty))
+      case _ => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty))
     }
   }
 
-  override def updateLibraryAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
+  override def updateLibraryAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {
     ns match {
       case "projectowner" => Future(newWorkspace)
       case "unpublishsuccess" => Future(publishedRawlsWorkspaceWithAttributes)

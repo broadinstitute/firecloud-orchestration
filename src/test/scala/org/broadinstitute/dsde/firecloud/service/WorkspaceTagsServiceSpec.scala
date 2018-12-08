@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
+import org.broadinstitute.dsde.rawls.model
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
@@ -299,29 +300,27 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
 
   private var statefulTagMap = new ConcurrentHashMap[String, ListBuffer[String]]().asScala
 
-  private val workspace = Workspace(
+  private val workspace = model.WorkspaceDetails(
     "namespace",
     "name",
-    Set.empty,
     "workspace_id",
     "buckety_bucket",
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
     Map(), //attributes
-    Map(), //acls
-    Map(), //authdomain acls
-    false //locked
+    false, //locked
+    Set.empty
   )
 
-  private def workspaceResponse(ws:Workspace=workspace) = WorkspaceResponse(
+  private def workspaceResponse(ws:WorkspaceDetails=workspace) = WorkspaceResponse(
     WorkspaceAccessLevels.ProjectOwner,
     canShare = false,
     canCompute=true,
     catalog=false,
     ws,
     WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0),
-    List.empty
+    Set.empty
   )
 
 
@@ -355,7 +354,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     }
   }
 
-  override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] = {
+  override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {
     ns match {
       // unsafe casts throughout here - we want to throw exceptions if anything is the wrong type
       case "put" =>

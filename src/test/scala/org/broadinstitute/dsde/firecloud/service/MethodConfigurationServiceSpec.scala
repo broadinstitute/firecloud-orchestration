@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{CopyConfigurationIngest, PublishConfigurationIngest}
-import org.broadinstitute.dsde.rawls.model.Workspace
+import org.broadinstitute.dsde.rawls.model.WorkspaceDetails
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
@@ -17,19 +17,17 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
   def actorRefFactory = system
 
   var workspaceServer: ClientAndServer = _
-  private final val mockWorkspace = Workspace(
+  private final val mockWorkspace = WorkspaceDetails(
     "namespace",
     "name",
-    Set.empty,
     "workspace_id",
     "buckety_bucket",
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
     Map(), //attributes
-    Map(), //acls
-    Map(), //authdomain acls
-    false //locked
+    false, //locked
+    Set.empty
   )
 
   override def beforeAll(): Unit = {

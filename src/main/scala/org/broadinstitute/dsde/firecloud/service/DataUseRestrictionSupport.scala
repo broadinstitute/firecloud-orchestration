@@ -65,7 +65,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
     }
   }
 
-  def generateStructuredAndDisplayAttributes(workspace: Workspace, ontologyDAO: OntologyDAO): UseRestriction = {
+  def generateStructuredAndDisplayAttributes(workspace: WorkspaceDetails, ontologyDAO: OntologyDAO): UseRestriction = {
     getDataUseAttributes(workspace)  match {
       case None => UseRestriction(Map.empty[AttributeName, Attribute],Map.empty[AttributeName, Attribute])
       case Some(request) => {
@@ -250,7 +250,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
   }
 
   // TODO: this method needs to respect attribute namespaces: see GAWB-3173
-  private def getDataUseAttributes(workspace: Workspace): Option[StructuredDataRequest] = {
+  private def getDataUseAttributes(workspace: WorkspaceDetails): Option[StructuredDataRequest] = {
     val dataUseAttributes = workspace.attributes.collect {
       case (attr, value) if ConsentCodes.duRestrictionFieldNames.contains(attr.name) => (attr.name, value)
     }

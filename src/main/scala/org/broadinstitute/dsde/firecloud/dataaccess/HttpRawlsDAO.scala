@@ -66,11 +66,11 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
     authedRequestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
 
-  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] =
-    authedRequestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
+  override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[WorkspaceDetails] =
+    authedRequestToObject[WorkspaceDetails]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
 
-  override def updateLibraryAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[Workspace] =
-    authedRequestToObject[Workspace]( Patch(getWorkspaceUrl(ns, name)+"/library", attributeOperations) )
+  override def updateLibraryAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[WorkspaceDetails] =
+    authedRequestToObject[WorkspaceDetails]( Patch(getWorkspaceUrl(ns, name)+"/library", attributeOperations) )
 
   override def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL] =
     authedRequestToObject[WorkspaceACL]( Get(getWorkspaceAclUrl(ns, name)) )
@@ -79,11 +79,11 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     authedRequestToObject[WorkspaceACLUpdateResponseList]( Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates) )
 
   // you must be an admin to execute this method
-  override def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[Workspace]] = {
+  override def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[WorkspaceDetails]] = {
 
     val allPublishedPipeline = addCredentials(userToken.accessToken) ~> sendReceive
     allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
-      response.entity.as[Seq[Workspace]] match {
+      response.entity.as[Seq[WorkspaceDetails]] match {
         case Right(srw) =>
           logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
           srw
