@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, LibrarySearchResponse, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures.DataUseRestriction
 import org.broadinstitute.dsde.firecloud.service.{DataUseRestrictionTestFixtures, LibraryServiceSupport}
-import org.broadinstitute.dsde.rawls.model.{AttributeName, Workspace}
+import org.broadinstitute.dsde.rawls.model.{AttributeName, WorkspaceDetails}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
 import scala.concurrent.Await
@@ -15,7 +15,7 @@ import spray.json.DefaultJsonProtocol._
 
 class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation with BeforeAndAfterAll with Matchers with LibraryServiceSupport {
 
-  val datasets: Seq[Workspace] = DataUseRestrictionTestFixtures.allDatasets
+  val datasets: Seq[WorkspaceDetails] = DataUseRestrictionTestFixtures.allDatasets
 
   implicit val userToken: WithAccessToken = AccessToken("DataUseRestrictionSearchSpec")
 

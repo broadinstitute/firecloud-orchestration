@@ -22,8 +22,8 @@ object Dependencies {
 
     "org.broadinstitute.dsde.vault" %% "vault-common"        % "0.1-19-ca8b927"
       exclude("io.spray", "spray-routing_2.11"),
-    "org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-4e40e8c-SNAP"
-      exclude("com.typesafe.scala-logging", "scala-logging_2.11"),
+    "org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-0d02c8ce-SNAP"
+      exclude("com.typesafe.scala-logging", "scala-logging_2.11") exclude("com.typesafe.akka", "akka-stream_2.11"),
     "org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP",
 
   "io.spray"                      %% "spray-can"                 % sprayV,
@@ -46,6 +46,7 @@ object Dependencies {
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-compute" % "v1-rev163-1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-sheets"  % "v4-rev494-1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-cloudbilling" % "v1-rev14-1.23.0"),
+    excludeGuavaJDK5("com.google.apis"                % "google-api-services-pubsub"       % "v1-rev357-1.22.0"),
 
     "org.webjars"                    % "swagger-ui"          % "2.2.5",
     "com.jason-goodwin"             %% "authentikat-jwt"     % "0.4.5"

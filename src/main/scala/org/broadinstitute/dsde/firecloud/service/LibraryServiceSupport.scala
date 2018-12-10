@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO, SamDAO}
 import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -36,7 +36,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  def indexableDocuments(workspaces: Seq[Workspace], ontologyDAO: OntologyDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken, ec: ExecutionContext): Future[Seq[Document]] = {
+  def indexableDocuments(workspaces: Seq[WorkspaceDetails], ontologyDAO: OntologyDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken, ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
     val nodes = uniqueWorkspaceStringAttributes(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
 
@@ -83,7 +83,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     }
   }
 
-  private def indexableDocument(workspace: Workspace, parentCache: Map[String,Seq[TermParent]], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Document = {
+  private def indexableDocument(workspace: WorkspaceDetails, parentCache: Map[String,Seq[TermParent]], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Document = {
     val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {
@@ -122,7 +122,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     }
   }
 
-  def uniqueWorkspaceStringAttributes(workspaces: Seq[Workspace], attributeName: AttributeName): Set[String] = {
+  def uniqueWorkspaceStringAttributes(workspaces: Seq[WorkspaceDetails], attributeName: AttributeName): Set[String] = {
     val valueSeq:Seq[String] = workspaces.collect {
       case w if w.attributes.contains(attributeName) =>
         w.attributes(attributeName)
@@ -166,8 +166,8 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       (ve.getCausingExceptions flatMap getSchemaValidationMessages)
   }
 
-  def getEffectiveDiscoverGroups(rawlsDAO: RawlsDAO)(implicit ec: ExecutionContext, userInfo:UserInfo): Future[Seq[String]] = {
-    rawlsDAO.getGroupsForUser map {FireCloudConfig.ElasticSearch.discoverGroupNames intersect _}
+  def getEffectiveDiscoverGroups(samDAO: SamDAO)(implicit ec: ExecutionContext, userInfo:UserInfo): Future[Seq[String]] = {
+    samDAO.listGroups(userInfo) map {FireCloudConfig.ElasticSearch.discoverGroupNames intersect _}
   }
 
   def updateAccess(docs: LibrarySearchResponse, workspaces: Seq[WorkspaceListResponse]) = {
