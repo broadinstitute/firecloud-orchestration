@@ -119,12 +119,12 @@ class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurpo
     }
   }
 
-  override def findDocuments(criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String]): Future[LibrarySearchResponse] = {
-    findDocumentsWithAggregateInfo(client, indexName, criteria, groups, workspaceIds, researchPurposeSupport)
+  override def findDocuments(criteria: LibrarySearchParams, groups: Seq[String], workspaceIdAccessMap: Map[String, String]): Future[LibrarySearchResponse] = {
+    findDocumentsWithAggregateInfo(client, indexName, criteria, groups, workspaceIdAccessMap, researchPurposeSupport)
   }
 
-  override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String]): Future[LibrarySearchResponse] = {
-    autocompleteSuggestions(client, indexName, criteria, groups, workspaceIds, researchPurposeSupport)
+  override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String], workspaceIdAccessMap: Map[String, String]): Future[LibrarySearchResponse] = {
+    autocompleteSuggestions(client, indexName, criteria, groups, workspaceIdAccessMap, researchPurposeSupport)
   }
 
   override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {

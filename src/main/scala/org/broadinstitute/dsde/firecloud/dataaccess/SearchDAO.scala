@@ -26,8 +26,8 @@ trait SearchDAO extends LazyLogging with ReportsSubsystemStatus {
   def bulkIndex(docs: Seq[Document], refresh:Boolean = false): LibraryBulkIndexResponse
   def indexDocument(doc: Document): Unit
   def deleteDocument(id: String): Unit
-  def findDocuments(criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String]): Future[LibrarySearchResponse]
-  def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String]): Future[LibrarySearchResponse]
+  def findDocuments(criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Map[String, String]): Future[LibrarySearchResponse]
+  def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Map[String, String]): Future[LibrarySearchResponse]
   def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]]
 
   def statistics: LogitMetric

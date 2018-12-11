@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.SamResource.AccessPolicyName
-import org.broadinstitute.dsde.rawls.model.AttributeName
+import org.broadinstitute.dsde.rawls.model.{AttributeName, WorkspaceAccessLevels}
 import org.elasticsearch.search.aggregations.{AggregationBuilders, Aggregations}
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
@@ -200,7 +200,8 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
+  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIdAccessMap: Map[String, String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
+    val workspaceIds = workspaceIdAccessMap.keys.toSeq
     val searchQuery = buildSearchQuery(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
     val aggregateQueries = buildAggregateQueries(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
 
@@ -220,24 +221,21 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       criteria,
       allResults.last.getHits.getTotalHits().toInt,
       allResults.last.getHits.getHits.toList map { hit: SearchHit =>
-        addAccessLevel(hit.getSourceAsString.parseJson.asJsObject, workspaceIds)
+        addAccessLevel(hit.getSourceAsString.parseJson.asJsObject, workspaceIdAccessMap)
       },
       allResults flatMap { aggResp => getAggregationsFromResults(aggResp.getAggregations) }
     )
     response
   }
 
-  def addAccessLevel(doc: JsObject, workspaceIds: Seq[String]): JsValue = {
+  def addAccessLevel(doc: JsObject, workspaceIdAccessMap: Map[String, String]): JsObject = {
     val docId: Option[JsValue] = doc.fields.get("workspaceId")
     val accessStr = docId match {
       case Some(wsid:JsString) =>
-        if (workspaceIds.contains(wsid.value))
-          "Read"
-        else
-          "NoAccess"
-      case _ => "NoAccess"
+        workspaceIdAccessMap.getOrElse(wsid.value, WorkspaceAccessLevels.NoAccess.toString)
+      case _ => WorkspaceAccessLevels.NoAccess.toString
     }
-    (doc.fields +  ("workspaceAccess" -> JsString(accessStr))).toJson
+    JsObject(doc.fields +  ("workspaceAccess" -> JsString(accessStr)))
   }
 
   def populateSuggestions(client: TransportClient, indexName: String, field: String, text: String) : Future[Seq[String]] = {
@@ -288,9 +286,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
+  def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIdAccessMap: Map[String, String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
 
-    val searchQuery = buildAutocompleteQuery(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
+    val searchQuery = buildAutocompleteQuery(client, indexname, criteria, groups, workspaceIdAccessMap.keys.toSeq, researchPurposeSupport)
 
     logger.debug(s"autocomplete search query: $searchQuery.toJson")
     val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchQuery))

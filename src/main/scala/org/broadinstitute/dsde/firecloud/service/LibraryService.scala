@@ -225,48 +225,26 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
-//  def searchFor(criteria: LibrarySearchParams, searchMethod:()=>LibrarySearchResponse): Future[PerRequestMessage] ={
-//    val workspaces: Future[Seq[WorkspaceListResponse]] = rawlsDAO.getWorkspaces
-//    workspaces flatMap { workspaceList =>
-//      val wsIds = workspaceList map { workspace =>
-//        workspace.workspace.workspaceId
-//      }
-//      getEffectiveDiscoverGroups(samDao) map { userGroups =>
-//        // we want docsFuture and ids to be parallelized - so declare them here, outside
-//        // of the for-yield.
-//        searchMethod(criteria, userGroups, wsIds)
-//      } map (RequestComplete(_))
-//    }
-//
-//  }
-
-
-  def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-//    searchFor(criteria, searchDAO.findDocuments)
+  def searchFor(criteria: LibrarySearchParams, searchMethod:(LibrarySearchParams, Seq[String], Map[String, String])=>Future[LibrarySearchResponse]): Future[PerRequestMessage] ={
     val workspaces: Future[Seq[WorkspaceListResponse]] = rawlsDAO.getWorkspaces
     workspaces flatMap { workspaceList =>
-      val wsIds = workspaceList map { workspace =>
-        workspace.workspace.workspaceId
-      }
+      val workspaceIdAccessMap = (workspaceList map { workspace =>
+        (workspace.workspace.workspaceId, workspace.accessLevel.toString)
+      }).toMap
       getEffectiveDiscoverGroups(samDao) map { userGroups =>
         // we want docsFuture and ids to be parallelized - so declare them here, outside
         // of the for-yield.
-        searchDAO.findDocuments(criteria, userGroups, wsIds)
+        searchMethod(criteria, userGroups, workspaceIdAccessMap)
       } map (RequestComplete(_))
     }
   }
 
+  def findDocuments(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
+    searchFor(criteria, searchDAO.findDocuments)
+  }
 
   def suggest(criteria: LibrarySearchParams): Future[PerRequestMessage] = {
-    val workspaces: Future[Seq[WorkspaceListResponse]] = rawlsDAO.getWorkspaces
-    workspaces flatMap { workspaceList =>
-      val wsIds = workspaceList map { workspace =>
-        workspace.workspace.workspaceId
-      }
-      getEffectiveDiscoverGroups(samDao) map { userGroups =>
-        searchDAO.suggestionsFromAll(criteria, userGroups, wsIds)
-      } map (RequestComplete(_))
-    }
+    searchFor(criteria, searchDAO.suggestionsFromAll)
   }
 
   def populateSuggest(field: String, text: String): Future[PerRequestMessage] = {
