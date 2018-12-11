@@ -119,8 +119,8 @@ class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurpo
     }
   }
 
-  override def findDocuments(criteria: LibrarySearchParams, groups: Seq[String], workspaceAccessMap: Map[String, AccessPolicyName]): Future[LibrarySearchResponse] = {
-    findDocumentsWithAggregateInfo(client, indexName, criteria, groups, workspaceAccessMap, researchPurposeSupport)
+  override def findDocuments(criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String]): Future[LibrarySearchResponse] = {
+    findDocumentsWithAggregateInfo(client, indexName, criteria, groups, workspaceIds, researchPurposeSupport)
   }
 
   override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String]): Future[LibrarySearchResponse] = {

@@ -173,14 +173,6 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   val accessible = Seq(AccessPolicyName("reader"), AccessPolicyName("writer"), AccessPolicyName("owner"))
 
-  def createAccessMap(policies: Seq[UserPolicy]): Map[String,AccessPolicyName] = {
-    (policies groupBy (_.resourceId.value) map {
-      case (id, pollist) => (id, (pollist map (_.accessPolicyName) filter (accessible contains _)).sortBy(accessible.indexOf(_)).lastOption)
-    }).collect  {
-      case (k, Some(v)) => (k, v)
-    }
-  }
-  
   // this method will determine if the user is making a change to discoverableByGroups
   // if the attribute does not exist on the workspace, it is the same as the empty list
   def isDiscoverableDifferent(workspaceResponse: WorkspaceResponse, userAttrs: AttributeMap): Boolean = {

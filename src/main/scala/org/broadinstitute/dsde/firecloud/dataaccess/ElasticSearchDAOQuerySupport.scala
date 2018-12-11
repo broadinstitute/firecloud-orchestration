@@ -102,7 +102,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     if (groups.nonEmpty) {
       groupsQuery.should(termsQuery(fieldDiscoverableByGroups, groups.asJavaCollection))
     }
-    groupsQuery.should(termsQuery(fieldWorkspaceId , workspaceIds))
+    groupsQuery.should(termsQuery(fieldWorkspaceId , workspaceIds.asJavaCollection))
     query.filter(groupsQuery)
 
     query
@@ -200,8 +200,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceAccessMap: Map[String, AccessPolicyName], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
-    val workspaceIds = workspaceAccessMap.keys.toSeq
+  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
     val searchQuery = buildSearchQuery(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
     val aggregateQueries = buildAggregateQueries(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
 
@@ -221,20 +220,21 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       criteria,
       allResults.last.getHits.getTotalHits().toInt,
       allResults.last.getHits.getHits.toList map { hit: SearchHit =>
-        addAccessLevel(hit.getSourceAsString.parseJson.asJsObject, workspaceAccessMap)
+        addAccessLevel(hit.getSourceAsString.parseJson.asJsObject, workspaceIds)
       },
       allResults flatMap { aggResp => getAggregationsFromResults(aggResp.getAggregations) }
     )
     response
   }
 
-  def addAccessLevel(doc: JsObject, workspaceAccessMap: Map[String, AccessPolicyName]): JsValue = {
+  def addAccessLevel(doc: JsObject, workspaceIds: Seq[String]): JsValue = {
     val docId: Option[JsValue] = doc.fields.get("workspaceId")
     val accessStr = docId match {
-      case Some(wsid:JsString) => workspaceAccessMap.get(wsid.value) match {
-        case Some(accessLevel) => accessLevel.toString
-        case None => "NoAccess"
-      }
+      case Some(wsid:JsString) =>
+        if (workspaceIds.contains(wsid.value))
+          "Read"
+        else
+          "NoAccess"
       case _ => "NoAccess"
     }
     (doc.fields +  ("workspaceAccess" -> JsString(accessStr))).toJson
