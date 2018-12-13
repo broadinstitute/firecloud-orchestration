@@ -149,7 +149,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     */
   private def streamSingularType(entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata, headers: IndexedSeq[String]): Future[Done] = {
     // The output to the user
-    val streamingActorRef = context.actorOf(StreamingActor.props(ctx, ContentTypes.`text/plain`, entityType + ".txt"))
+    val streamingActorRef = context.actorOf(StreamingActor.props(ctx, ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`), entityType + ".tsv"))
 
     // The Source
     val entityQuerySource = Source(entityQueries.toStream)
