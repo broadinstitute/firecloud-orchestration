@@ -15,7 +15,7 @@ object Dependencies {
   val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll excludeWorkbenchModel
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google" + scalaV)
 
-  val workbenchServiceTestV = "0.15-40f9df6"
+  val workbenchServiceTestV = "0.16-7e37072-SNAP"
   val workbenchServiceTest: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-service-test" % workbenchServiceTestV % "test" classifier "tests" excludeAll (excludeWorkbenchGoogle, excludeWorkbenchModel)
 
   val rootDependencies = Seq(
