@@ -291,6 +291,10 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
     Orchestration.NIH.syncWhitelistFull
 
-    Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+    // Sam caches group membership for a minute (but not in fiab) so may need to wait
+    implicit val patienceConfig = PatienceConfig(Span(2, Minutes), Span(10, Seconds))
+    eventually {
+      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+    }
   }
 }
