@@ -178,7 +178,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.targetJsonWebTokenKey)
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true))
+        verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true)))
       }
     }
 
@@ -191,7 +191,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.tcgaJsonWebTokenKey)
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false))
+        verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false)))
       }
     }
 
@@ -204,7 +204,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+        verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
       }
     }
 
@@ -217,15 +217,15 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.targetAndTcgaJsonWebTokenKey)
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
+        verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true)))
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true))
+        verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true)))
 
         Orchestration.NIH.syncWhitelistFull
 
-        Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+        verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
       }
     }
 
@@ -291,10 +291,14 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
     Orchestration.NIH.syncWhitelistFull
 
+    verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
+  }
+
+  private def verifyDatasetPermissions(expectedPermissions: Set[NihDatasetPermission])(implicit authToken: AuthToken) = {
     // Sam caches group membership for a minute (but not in fiab) so may need to wait
     implicit val patienceConfig = PatienceConfig(Span(2, Minutes), Span(10, Seconds))
     eventually {
-      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false))
+      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf expectedPermissions
     }
   }
 }
