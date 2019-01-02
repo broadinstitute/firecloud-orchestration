@@ -245,8 +245,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impResourceId = jsonFormat1(ResourceId)
   implicit val impAccessPolicyName = jsonFormat1(AccessPolicyName)
-//  implicit val impWorkbenchGroupName = jsonFormat1(WorkbenchGroupName)
-  implicit val impUserPolicy = jsonFormat4(UserPolicy)
+  implicit val impUserPolicy = jsonFormat5(UserPolicy)
 
 
 

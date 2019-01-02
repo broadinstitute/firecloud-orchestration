@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.SamResource.AccessPolicyName
+import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, UserPolicy}
 import org.broadinstitute.dsde.rawls.model.{AttributeName, WorkspaceAccessLevels}
 import org.elasticsearch.search.aggregations.{AggregationBuilders, Aggregations}
 import org.elasticsearch.client.transport.TransportClient
@@ -54,20 +54,23 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     *              {"must_not" :
     *                {"exists" : {"field" : "_discoverableByGroups"}}}},
     *            {"terms" :
-    *            {"_discoverableByGroups" : ["37e1e624-84e0-4046-98d6-f89388a8f727-OWNER", "fdae9abd-be33-4be9-9eb2-321df017b8a2-OWNER"]}}]
+    *              {"_discoverableByGroups" : ["37e1e624-84e0-4046-98d6-f89388a8f727-OWNER", "fdae9abd-be33-4be9-9eb2-321df017b8a2-OWNER"]}},
+    *            {"terms" :
+    *              {"workspaceId.keyword" : ["fda1107a-c3cb-4fe7-b6af-c118fcb4ace9", "dfc032b2-6d0e-4584-a6f9-d2e93d894f1d"]}}]
     *          }
     *        }]
     *        }},
     *  "aggregations":{
     *    "library:dataUseRestriction":{
-    *      "terms":{"field":"library:dataUseRestriction.raw"}},
+    *      "terms":{"field":"library:dataUseRestriction.keyword"}},
     *    "library:datatype":{
-    *      "terms":{"field":"library:datatype.raw"}}
+    *      "terms":{"field":"library:datatype.keyword"}}
     * }
     *  The outer boolean query, which is a must, is indicating that all selections of the filter and search
     *  are being "and"-ed together
     *  For selections with an attribute, each selection is "or"-ed together - this is represented by the inner
     *  boolean query with the should list
+    *  Permission matching is done in a filter because there is not the same restriction on the number of terms allowed.
     */
 
 
@@ -102,7 +105,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     if (groups.nonEmpty) {
       groupsQuery.should(termsQuery(fieldDiscoverableByGroups, groups.asJavaCollection))
     }
-    groupsQuery.should(termsQuery(fieldWorkspaceId , workspaceIds.asJavaCollection))
+    groupsQuery.should(termsQuery(fieldWorkspaceId+".keyword" , workspaceIds.asJavaCollection))
     query.filter(groupsQuery)
 
     query
@@ -116,7 +119,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
 
     aggregates.keys foreach { property: String =>
       // property here is specifying which attribute to collect aggregation info for
-      // we use field.raw here because we want it to use the unanalyzed form of the data for the aggregations
+      // we use field.keyword here because we want it to use the unanalyzed form of the data for the aggregations
       searchReq.addAggregation(AggregationBuilders.terms(property).field(property + ".keyword").size(aggregates.getOrElse(property, AGG_DEFAULT_SIZE)))
     }
     searchReq
@@ -200,8 +203,8 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIdAccessMap: Map[String, String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
-    val workspaceIds = workspaceIdAccessMap.keys.toSeq
+  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
+    val workspaceIds = workspacePolicyMap.keys.toSeq
     val searchQuery = buildSearchQuery(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
     val aggregateQueries = buildAggregateQueries(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
 
@@ -221,20 +224,20 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       criteria,
       allResults.last.getHits.getTotalHits().toInt,
       allResults.last.getHits.getHits.toList map { hit: SearchHit =>
-        addAccessLevel(hit.getSourceAsString.parseJson.asJsObject, workspaceIdAccessMap)
+        addAccessLevel(hit.getSourceAsString.parseJson.asJsObject, workspacePolicyMap)
       },
       allResults flatMap { aggResp => getAggregationsFromResults(aggResp.getAggregations) }
     )
     response
   }
 
-  def addAccessLevel(doc: JsObject, workspaceIdAccessMap: Map[String, String]): JsObject = {
+  def addAccessLevel(doc: JsObject, workspacePolicyMap: Map[String, UserPolicy]): JsObject = {
     val docId: Option[JsValue] = doc.fields.get("workspaceId")
-    val accessStr = docId match {
+    val accessStr = (docId match {
       case Some(wsid:JsString) =>
-        workspaceIdAccessMap.getOrElse(wsid.value, WorkspaceAccessLevels.NoAccess.toString)
-      case _ => WorkspaceAccessLevels.NoAccess.toString
-    }
+        workspacePolicyMap.get(wsid.value) map (_.accessPolicyName.value)
+      case _ => None
+    }) getOrElse WorkspaceAccessLevels.NoAccess.toString
     JsObject(doc.fields +  ("workspaceAccess" -> JsString(accessStr)))
   }
 
@@ -286,7 +289,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIdAccessMap: Map[String, String], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
+  def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIdAccessMap: Map[String, UserPolicy], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
 
     val searchQuery = buildAutocompleteQuery(client, indexname, criteria, groups, workspaceIdAccessMap.keys.toSeq, researchPurposeSupport)
 

@@ -7,6 +7,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
+import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.{ManagedRoles, RawlsUserEmail}
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
@@ -24,6 +25,10 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
   extends SamDAO with RestJsonClient {
+
+  override def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]] = {
+    authedRequestToObject[Seq[UserPolicy]](Get(samListResources("workspace")))
+  }
 
   override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
     authedRequestToObject[RegistrationInfo](Post(samUserRegistrationUrl), label=Some("HttpSamDAO.registerUser"))

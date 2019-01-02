@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
@@ -18,6 +18,7 @@ import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.json.JsonParser.ParsingException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impLibraryBulkIndexResponse, impLibrarySearchResponse}
+import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.{AttributeNameFormat, WorkspaceDetailsFormat}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AttributeUpdateOperation, RemoveAttribute}
@@ -225,16 +226,16 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
-  def searchFor(criteria: LibrarySearchParams, searchMethod:(LibrarySearchParams, Seq[String], Map[String, String])=>Future[LibrarySearchResponse]): Future[PerRequestMessage] ={
-    val workspaces: Future[Seq[WorkspaceListResponse]] = rawlsDAO.getWorkspaces
-    workspaces flatMap { workspaceList =>
-      val workspaceIdAccessMap = (workspaceList map { workspace =>
-        (workspace.workspace.workspaceId, workspace.accessLevel.toString)
+  def searchFor(criteria: LibrarySearchParams, searchMethod:(LibrarySearchParams, Seq[String], Map[String, UserPolicy])=>Future[LibrarySearchResponse]): Future[PerRequestMessage] ={
+    val workspacePolicies: Future[Seq[UserPolicy]] = samDao.listWorkspaceResources
+    workspacePolicies flatMap { policyList =>
+      val workspacePolicyMap = (policyList map { policy =>
+        (policy.resourceId.value, policy)
       }).toMap
       getEffectiveDiscoverGroups(samDao) map { userGroups =>
         // we want docsFuture and ids to be parallelized - so declare them here, outside
         // of the for-yield.
-        searchMethod(criteria, userGroups, workspaceIdAccessMap)
+        searchMethod(criteria, userGroups, workspacePolicyMap)
       } map (RequestComplete(_))
     }
   }

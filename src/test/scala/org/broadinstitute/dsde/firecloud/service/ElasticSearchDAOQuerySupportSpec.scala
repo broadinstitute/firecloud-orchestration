@@ -13,6 +13,8 @@ import org.scalatest.FreeSpec
 import org.scalatest.Assertions._
 import spray.json._
 
+import scala.collection.Set
+
 class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQuerySupport {
 
   val indexname = "ElasticSearchSpec"
@@ -34,17 +36,24 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
 
     "discoverability" - {
       "when createQuery is given a group for the current user" - {
-        "should include group in search query" in {
-          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq("whitelistedgroup"), researchPurposeSupport)
+        "should include group in the filter" in {
+          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq("whitelistedgroup"), Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
-          validateGroupTerm(jsonRequest, Some("whitelistedgroup"))
+          validateGroupTerms(jsonRequest, Some("whitelistedgroup"), None)
         }
       }
       "when createQuery is given no groups for the current user" - {
-        "should not have groups in search query" in {
-          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], researchPurposeSupport)
+        "should not have groups in the filter" in {
+          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
-          validateGroupTerm(jsonRequest, None)
+          validateGroupTerms(jsonRequest, None, None)
+        }
+      }
+      "when createQuery is given a workspace for the current user" - {
+        "should have workspaceId in the filter" in {
+          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], Seq("workspaceId"), researchPurposeSupport)
+          val jsonRequest = getSearchRequestAsJson(baseRequest)
+          validateGroupTerms(jsonRequest, None, Some("workspaceId"))
         }
       }
     }
@@ -56,7 +65,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
           val sortDirection = Some("asc")
 
           val sortCriteria = criteria.copy(sortField=sortField,sortDirection=sortDirection)
-          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSortField(jsonRequest, sortField)
           validateSortDirection(jsonRequest, sortDirection)
@@ -67,7 +76,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
           val sortField = Some("library:datasetName")
 
           val sortCriteria = criteria.copy(sortField=sortField,sortDirection=None)
-          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSortField(jsonRequest, sortField)
           validateSortDirection(jsonRequest, Some("asc"))
@@ -78,7 +87,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
           val sortField = Some("library:datasetName")
 
           val sortCriteria = criteria.copy(sortField=sortField,sortDirection=Some("unknown"))
-          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSortField(jsonRequest, sortField)
           validateSortDirection(jsonRequest, Some("asc"))
@@ -87,7 +96,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
       "when specifying a sort order but no sort key" - {
         "neither sort order nor sort key is present in query" in {
           val sortCriteria = criteria.copy(sortField=None,sortDirection=Some("asc"))
-          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSortField(jsonRequest, None)
           validateSortDirection(jsonRequest, None)
@@ -96,7 +105,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
       "when specifying neither sort order nor sort key" - {
         "neither sort order nor sort key is present in query" in {
           val sortCriteria = criteria.copy(sortField=None,sortDirection=None)
-          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSortField(jsonRequest, None)
           validateSortDirection(jsonRequest, None)
@@ -109,7 +118,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
         "page offset is present in query" in {
           val offset = 23
           val searchCriteria = criteria.copy(from=offset)
-          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(offset)) {getFromValue(jsonRequest)}
           assertResult(Some(10)) {getSizeValue(jsonRequest)}
@@ -117,7 +126,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
       }
       "when omitting a page offset" - {
         "page offset defaults to 0" in {
-          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(0)) {getFromValue(jsonRequest)}
           assertResult(Some(10)) {getSizeValue(jsonRequest)}
@@ -127,7 +136,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
         "page size is present in query" in {
           val pageSize = 46
           val searchCriteria = criteria.copy(size=pageSize)
-          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(0)) {getFromValue(jsonRequest)}
           assertResult(Some(pageSize)) {getSizeValue(jsonRequest)}
@@ -135,7 +144,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
       }
       "when omitting a page size" - {
         "page size defaults to 10" in {
-          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(0)) {getFromValue(jsonRequest)}
           assertResult(Some(10)) {getSizeValue(jsonRequest)}
@@ -146,7 +155,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
           val offset = 23
           val pageSize = 46
           val searchCriteria = criteria.copy(from=offset,size=pageSize)
-          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(offset)) {getFromValue(jsonRequest)}
           assertResult(Some(pageSize)) {getSizeValue(jsonRequest)}
@@ -159,7 +168,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
         "user criteria is present, searching against _all" in {
           val searchTerm = "normcore kitsch mustache bespoke semiotics"
           val searchCriteria = criteria.copy(searchString=Some(searchTerm))
-          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSearchTermAll(jsonRequest, searchTerm)
         }
@@ -167,15 +176,15 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
       "when omitting text search" - {
         "no search is present in query" in {
           val searchCriteria = criteria.copy(searchString=None)
-          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], researchPurposeSupport)
+          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           // when omitting search term, we have an empty "match_all" and the "bool" for discover mode
-          val arr = getMustArray(jsonRequest)
+          val arr = getQueryArray(jsonRequest)
           val matchAllClause = arr.elements.head.asJsObject
-          assertResult(Set("match_all"), "first element of must clause should be a match") {matchAllClause.fields.keySet}
+          assertResult(Set("match_all"), "first element of must clause should be a match " + jsonRequest.prettyPrint) {matchAllClause.fields.keySet}
           assertResult(JsObject(("boost",JsNumber(1.0)))) {matchAllClause.fields("match_all").asJsObject}
           // calling getMustBoolObject will validate it down to that level
-          getMustBoolObject(jsonRequest)
+//          getMustBoolObject(jsonRequest)
         }
       }
     }
@@ -245,20 +254,38 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     assertResult(expectedSortDirection) {getSortOrder(json)}
   }
 
-  def validateGroupTerm(json:JsObject, expectedGroup:Option[String]) = {
-    val groupBoolClause = getMustBoolObject(json)
-    val groupbool = groupBoolClause.fields("bool").asJsObject
-    expectedGroup match {
-      case Some(group) =>
-        assertDiscoverableGroups(groupbool, Some(group))
-        // assertResult(expectedDiscoverableGroup(group), "group criteria should include expected group name") {groupbool}
-      case None =>
-        assertDiscoverableGroups(groupbool, None)
-        // assertResult(expectedNoDiscoverableGroups, "group criteria should be just the must-not-exists") {groupbool}
+  def validateGroupTerms(json:JsObject, expectedGroup:Option[String], expectedWorkspace:Option[String]): Unit = {
+    val groupShouldClause = getFilterBoolShouldArray(json)
+    groupShouldClause.elements foreach {
+      case subObj: JsObject =>
+        subObj.fields foreach {
+          case ("bool", b:JsObject) =>
+            val mustNotField = b
+              .fields("must_not").asInstanceOf[JsArray].elements(0).asJsObject
+              .fields("exists").asJsObject
+              .fields("field")
+            assertResult(ElasticSearch.fieldDiscoverableByGroups) {mustNotField.asInstanceOf[JsString].value}
+            // assertResult(expectedDiscoverableGroup(group), "group criteria should include expected group name") {groupbool}
+          case ("terms", t:JsObject) =>
+            t.fields.keySet foreach {
+              case ElasticSearch.fieldDiscoverableByGroups =>
+                expectedGroup foreach { grp =>
+                  val actualGroups = t.fields(ElasticSearch.fieldDiscoverableByGroups)
+                  assertResult(Set(JsString(grp))) {actualGroups.asInstanceOf[JsArray].elements.toSet}
+                }
+              case "workspaceId.keyword" =>
+                expectedWorkspace foreach { wksp =>
+                  val actualWorkspaces = t.fields("workspaceId.keyword")
+                  assertResult(Set(JsString(wksp))) {actualWorkspaces.asInstanceOf[JsArray].elements.toSet}
+                }
+              case _ => Unit
+            }
+            // assertResult(expectedNoDiscoverableGroups, "group criteria should be just the must-not-exists") {groupbool}
+      }
     }
   }
 
-  def validateSearchTermAll(json:JsObject, expectedTerm:String) = {
+  def validateSearchTermAll(json:JsObject, expectedTerm:String): Unit = {
     validateSearchTerm(json, expectedTerm, "_all")
   }
 
@@ -291,26 +318,52 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
     assertResult(expectedMinMatch) {searchCriteria.fields("minimum_should_match").asInstanceOf[JsString].value}
   }
 
-  private def getMustArray(json:JsObject):JsArray = {
+
+  private def getOuterBool(json:JsObject):JsObject = {
     getQuery(json) match {
-      case Some(a:JsObject) =>
-        assertResult(Set("bool"), "query should be an outer bool clause") {a.fields.keySet}
-        val outerbool = a.fields("bool").asJsObject
-        assert(outerbool.fields.keySet.contains("must"), "outer bool clause should include a must clause")
-        val must = outerbool.fields("must")
-        must match {
-          case arr:JsArray =>
-            assertResult(2, "must clause should have two elements") {arr.elements.size}
-            arr
-          case _ => fail("must clause should be a JsArray")
+      case Some(a: JsObject) =>
+        assertResult(Set("bool"), "json should have an outer bool clause") {
+          a.fields.keySet
         }
+        a.fields("bool").asJsObject
       case _ => fail("query was not a JsObject")
     }
   }
 
+  private def getQueryArray(json:JsObject):JsArray = {
+    val outerbool = getOuterBool(json)
+    assert(outerbool.fields.keySet.contains("must"), "outer bool clause should include a must clause")
+    outerbool.fields("must") match {
+      case arr:JsArray =>
+        assertResult(1, "must clause should have one element") {arr.elements.size}
+        arr
+      case _ => fail("must clause should be a JsArray")
+    }
+  }
+
+  private def getFilterBoolShouldArray(json:JsObject):JsArray = {
+    val outerbool = getOuterBool(json)
+    assert(outerbool.fields.keySet.contains("filter"), "outer bool should include a filter clause")
+    outerbool.fields("filter") match {
+      case arr:JsArray =>
+        assertResult(1, "filter clause should have one element") {arr.elements.size}
+        assert(arr.elements.head.asJsObject.fields.keySet.contains("bool"), "filter should include a bool clause")
+        arr.elements.head.asJsObject.fields("bool") match {
+          case boolMap:JsObject =>
+            assert(boolMap.fields.keySet.contains("should"), "filter, bool clause should contain a should clause")
+            boolMap.fields("should") match {
+              case shouldArray:JsArray =>
+                shouldArray
+            }
+        }
+      case _ => fail("must clause should be a JsArray")
+    }
+  }
+
+
   private def getTextSearchShouldArray(json:JsObject):JsArray = {
-    val arr = getMustArray(json)
-    val searchClause = arr.elements.head.asJsObject
+    val query = getQueryArray(json)
+    val searchClause = query.elements.head.asJsObject
     assertResult(Set("bool"), "first element of text search clause should be a bool") {searchClause.fields.keySet}
     val boolClause = searchClause.fields("bool").asJsObject
     assert(boolClause.fields.keySet.contains("should"), "first element of text search bool clause should inculde a should")
@@ -319,13 +372,6 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
       case _ => fail("text search should clause should be an array")
     }
     shouldArray
-  }
-
-  private def getMustBoolObject(json:JsObject):JsObject = {
-    val arr = getMustArray(json)
-    val groupBoolClause = arr.elements.tail.head.asJsObject
-    assertResult(Set("bool"), "second (and last) element of must clause should be a bool clause") {groupBoolClause.fields.keySet}
-    groupBoolClause
   }
 
   private def assertDiscoverableGroups(json:JsObject, expectedGroup: Option[String]) = {

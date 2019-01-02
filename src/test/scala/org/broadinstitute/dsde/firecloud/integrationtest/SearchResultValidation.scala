@@ -19,7 +19,7 @@ trait SearchResultValidation {
 
   def searchFor(txt:String) = {
     val criteria = emptyCriteria.copy(searchString = Some(txt))
-    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String]), dur)
+    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String], Map.empty), dur)
   }
 
   def searchWithPurpose(researchPurpose: Option[ResearchPurpose], term:Option[String], filters:Option[Map[String, Seq[String]]]): LibrarySearchResponse = {
@@ -29,7 +29,7 @@ trait SearchResultValidation {
       filters = filters.getOrElse(Map.empty[String, Seq[String]])
     )
     // set size to 100 to make sure we return all results for testing comparisons
-    Await.result(searchDAO.findDocuments(criteria.copy(size=100), Seq.empty[String]), dur)
+    Await.result(searchDAO.findDocuments(criteria.copy(size=100), Seq.empty[String], Map.empty), dur)
   }
 
   def searchWithPurpose(researchPurpose: ResearchPurpose): LibrarySearchResponse =
@@ -46,7 +46,7 @@ trait SearchResultValidation {
       searchString = Some(term),
       researchPurpose = Some(researchPurpose))
     // set size to 100 to make sure we return all results for testing comparisons
-    Await.result(searchDAO.suggestionsFromAll(criteria.copy(size=100), Seq.empty[String]), dur)
+    Await.result(searchDAO.suggestionsFromAll(criteria.copy(size=100), Seq.empty[String], Map.empty), dur)
   }
 
   /**

@@ -105,7 +105,7 @@ class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   val dur = Duration(2, MINUTES)
   private def suggestionsFor(txt:String) = {
     val criteria = emptyCriteria.copy(searchString = Some(txt))
-    Await.result(searchDAO.suggestionsFromAll(criteria, Seq.empty[String]), dur)
+    Await.result(searchDAO.suggestionsFromAll(criteria, Seq.empty[String], Map.empty), dur)
   }
 
 }

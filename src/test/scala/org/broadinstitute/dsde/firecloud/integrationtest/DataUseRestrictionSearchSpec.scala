@@ -191,7 +191,7 @@ class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation 
     val criteria = emptyCriteria.copy(
       searchString = Some(text),
       size = datasets.size)
-    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String]), dur)
+    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String], Map.empty), dur)
   }
 
   private def getDataUseRestrictions(searchResponse: LibrarySearchResponse): Seq[DataUseRestriction] = {
