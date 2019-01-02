@@ -208,7 +208,7 @@
       "typeahead": "populate"
     },
     "library:consentCodes" : {
-      "title": "Consent Codes",
+      "title": "Data Use Limitations",
       "type": "array",
       "items": { "type": "string" },
       "renderHint": { "type": "tag" }
