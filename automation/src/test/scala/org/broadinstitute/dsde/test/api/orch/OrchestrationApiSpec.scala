@@ -27,6 +27,11 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
     println(s"${Instant.now} : $text")
   }
 
+  private def assertNoBillingProjectAccess(exception: Exception) = {
+    exception.getMessage should include("Project does not exist or you do not have appropriate access.")
+    exception.getMessage should include(StatusCodes.Forbidden.intValue.toString)
+  }
+
   "Orchestration" - {
     /**
       * This next test is a bit funky. It tests the system's ability to grant/remove Google roles ... and it does so
@@ -159,14 +164,12 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       val addEx = intercept[RestException] {
         Orchestration.billing.addGoogleRoleToBillingProjectUser(unownedProject, userB.email, role)(userAToken)
       }
-      addEx.getMessage should include(errorMsg)
-      addEx.getMessage should include(StatusCodes.Forbidden.intValue.toString)
+      assertNoBillingProjectAccess(addEx)
 
       val removeEx = intercept[RestException] {
         Orchestration.billing.removeGoogleRoleFromBillingProjectUser(unownedProject, userB.email, role)(userAToken)
       }
-      removeEx.getMessage should include(errorMsg)
-      removeEx.getMessage should include(StatusCodes.Forbidden.intValue.toString)
+      assertNoBillingProjectAccess(removeEx)
     }
 
     "should link an eRA Commons account with access to the TARGET closed-access dataset" in {
@@ -265,7 +268,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
           val getException = intercept[RestException] {
             Orchestration.profile.getUserBillingProjectStatus(random)(ownerToken)
           }
-          getException.message should include(StatusCodes.NotFound.defaultMessage)
+          assertNoBillingProjectAccess(getException)
         }
       }
 
@@ -278,7 +281,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
           val getException = intercept[RestException] {
             Orchestration.profile.getUserBillingProjectStatus(projectName)(userToken)
           }
-          getException.message should include(StatusCodes.NotFound.defaultMessage)
+          assertNoBillingProjectAccess(getException)
         }
       }
     }
