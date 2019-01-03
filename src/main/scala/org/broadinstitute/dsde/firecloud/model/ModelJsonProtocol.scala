@@ -17,6 +17,7 @@ import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
+import org.broadinstitute.dsde.workbench.model.ValueObjectFormat
 import org.broadinstitute.dsde.workbench.model.google.GoogleModelJsonSupport.InstantFormat
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 
@@ -243,8 +244,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impFireCloudManagedGroup = jsonFormat3(FireCloudManagedGroup)
   implicit val impFireCloudManagedGroupMembership = jsonFormat3(FireCloudManagedGroupMembership)
 
-  implicit val impResourceId = jsonFormat1(ResourceId)
-  implicit val impAccessPolicyName = jsonFormat1(AccessPolicyName)
+  implicit val impResourceId = ValueObjectFormat(ResourceId)
+  implicit val impAccessPolicyName = ValueObjectFormat(AccessPolicyName)
   implicit val impUserPolicy = jsonFormat5(UserPolicy)
 
 
