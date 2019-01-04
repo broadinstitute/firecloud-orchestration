@@ -250,9 +250,12 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
         withCleanBillingProject(ownerUser) { projectName =>
           nowPrint(s"Querying for (owner) user profile billing project status: $projectName")
           // Returns a map of projectName and creationStatus for the project specified
-          val statusMap: Map[String, String] = Orchestration.profile.getUserBillingProjectStatus(projectName)(ownerToken)
-          statusMap should contain ("projectName" -> projectName)
-          statusMap should contain ("creationStatus" -> Orchestration.billing.BillingProjectStatus.Ready.toString)
+          implicit val patienceConfig = PatienceConfig(Span(2, Minutes), Span(10, Seconds))
+          eventually {
+            val statusMap: Map[String, String] = Orchestration.profile.getUserBillingProjectStatus(projectName)(ownerToken)
+            statusMap should contain("projectName" -> projectName)
+            statusMap should contain("creationStatus" -> Orchestration.billing.BillingProjectStatus.Ready.toString)
+          }
         }
       }
 
