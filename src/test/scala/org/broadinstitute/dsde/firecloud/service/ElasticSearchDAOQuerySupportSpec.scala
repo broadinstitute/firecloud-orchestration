@@ -4,11 +4,11 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
+import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels
 import org.elasticsearch.action.search.SearchRequestBuilder
 import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.common.xcontent.XContentType
-import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.scalatest.FreeSpec
 import org.scalatest.Assertions._
 import spray.json._
@@ -189,6 +189,25 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
       }
     }
 
+    "setting access level" - {
+      val params = LibrarySearchParams(Some("test"), Map(), None, Map())
+      "to No Access if workspace is not returned from workspace list" in {
+        val result: JsValue = LibraryServiceSpec.testLibraryMetadataJsObject.copy(LibraryServiceSpec.testLibraryMetadataJsObject.fields.updated("workspaceId", JsString("no.access.to.workspace.id")))
+        val expectedResult: JsValue = JsObject(result.asJsObject.fields.updated("workspaceAccess", JsString(WorkspaceAccessLevels.NoAccess.toString)))
+        assertResult(expectedResult.asJsObject) {
+          addAccessLevel(result.asJsObject, Map.empty)
+        }
+      }
+      "to has access if workspace is returned from workspace list" in {
+        val wsId = "owner.access.workspace"
+        val result: JsValue = LibraryServiceSpec.testLibraryMetadataJsObject.copy(LibraryServiceSpec.testLibraryMetadataJsObject.fields.updated("workspaceId", JsString(wsId)))
+        val expectedResult: JsValue = JsObject(result.asJsObject.fields.updated("workspaceAccess", JsString(WorkspaceAccessLevels.Owner.toString)))
+        val userPol = UserPolicy(ResourceId(wsId), false, AccessPolicyName("OWNER"), Seq.empty.toSet, Seq.empty.toSet)
+        assertResult(expectedResult.asJsObject) {
+          addAccessLevel(result.asJsObject, Map(wsId->userPol))
+        }
+      }
+    }
   }
 
   // TODO: do facet selections properly become term filters?

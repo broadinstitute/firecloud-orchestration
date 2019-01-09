@@ -105,9 +105,10 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     if (groups.nonEmpty) {
       groupsQuery.should(termsQuery(fieldDiscoverableByGroups, groups.asJavaCollection))
     }
-    groupsQuery.should(termsQuery(fieldWorkspaceId+".keyword" , workspaceIds.asJavaCollection))
+    if (workspaceIds.nonEmpty) {
+      groupsQuery.should(termsQuery(fieldWorkspaceId + ".keyword", workspaceIds.asJavaCollection))
+    }
     query.filter(groupsQuery)
-
     query
   }
 
@@ -203,6 +204,8 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
+  // TODO: we might want to keep a cache of workspaceIds that have been published so we can intersect with the workspaces
+  // the user has access to before adding them to the filter criteria
   def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
     val workspaceIds = workspacePolicyMap.keys.toSeq
     val searchQuery = buildSearchQuery(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)

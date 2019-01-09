@@ -227,16 +227,19 @@ class LibraryService (protected val argUserInfo: UserInfo,
   }
 
   def searchFor(criteria: LibrarySearchParams, searchMethod:(LibrarySearchParams, Seq[String], Map[String, UserPolicy])=>Future[LibrarySearchResponse]): Future[PerRequestMessage] ={
-    val workspacePolicies: Future[Seq[UserPolicy]] = samDao.listWorkspaceResources
-    workspacePolicies flatMap { policyList =>
-      val workspacePolicyMap = (policyList map { policy =>
+    val workspacePoliciesFuture: Future[Map[String, UserPolicy]] = samDao.listWorkspaceResources map { policyList =>
+      (policyList map { policy =>
         (policy.resourceId.value, policy)
       }).toMap
-      getEffectiveDiscoverGroups(samDao) map { userGroups =>
-        // we want docsFuture and ids to be parallelized - so declare them here, outside
-        // of the for-yield.
-        searchMethod(criteria, userGroups, workspacePolicyMap)
-      } map (RequestComplete(_))
+    }
+    val userGroupsFuture: Future[Seq[String]] = getEffectiveDiscoverGroups(samDao)
+
+    for {
+      workspacePolicyMap <- workspacePoliciesFuture
+      userGroups <- userGroupsFuture
+      searchResults <- searchMethod(criteria, userGroups, workspacePolicyMap)
+    } yield {
+      RequestComplete(searchResults)
     }
   }
 

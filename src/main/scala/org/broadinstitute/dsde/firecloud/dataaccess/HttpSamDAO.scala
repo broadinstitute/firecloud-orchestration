@@ -27,7 +27,7 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
   extends SamDAO with RestJsonClient {
 
   override def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]] = {
-    authedRequestToObject[Seq[UserPolicy]](Get(samListResources("workspace")))
+    authedRequestToObject[Seq[UserPolicy]](Get(samListResources("workspace")), label=Some("HttpSamDAO.listWorkspaceResources"))
   }
 
   override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {

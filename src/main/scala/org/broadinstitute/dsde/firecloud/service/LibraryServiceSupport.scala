@@ -171,8 +171,6 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     samDAO.listGroups(userInfo) map {FireCloudConfig.ElasticSearch.discoverGroupNames intersect _}
   }
 
-  val accessible = Seq(AccessPolicyName("reader"), AccessPolicyName("writer"), AccessPolicyName("owner"))
-
   // this method will determine if the user is making a change to discoverableByGroups
   // if the attribute does not exist on the workspace, it is the same as the empty list
   def isDiscoverableDifferent(workspaceResponse: WorkspaceResponse, userAttrs: AttributeMap): Boolean = {
