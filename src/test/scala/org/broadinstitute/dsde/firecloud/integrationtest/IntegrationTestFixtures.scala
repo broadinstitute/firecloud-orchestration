@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
 import org.broadinstitute.dsde.firecloud.model.Document
-import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeNumber, AttributeString}
+import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeNumber, AttributeString, AttributeValueList}
 
 /**
   * Created by davidan on 2/22/17.
@@ -46,6 +46,18 @@ object IntegrationTestFixtures {
         AttributeName("library","indication") -> AttributeString(phenotype),
         AttributeName("library","datasetOwner") -> AttributeString(phenotype),
         AttributeName("library","numSubjects") -> AttributeNumber(count)
+      ))
+  }
+
+  val fixtureRestrictedDocs:Seq[Document] = datasetTuples map {
+    case (name, phenotype, count) =>
+      Document(name, Map(
+        AttributeName("library","datasetName") -> AttributeString(name),
+        AttributeName("library","indication") -> AttributeString(phenotype),
+        AttributeName("library","datasetOwner") -> AttributeString(phenotype),
+        AttributeName("library","numSubjects") -> AttributeNumber(count),
+        AttributeName.withDefaultNS("workspaceId") -> AttributeString(name),
+        AttributeName.withDefaultNS("_discoverableByGroups") -> AttributeValueList(Seq(AttributeString("no_one")))
       ))
   }
 

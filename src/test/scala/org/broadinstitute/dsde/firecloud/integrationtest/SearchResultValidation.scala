@@ -4,6 +4,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, MockResea
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurpose
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
+import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.index.query.BoolQueryBuilder
 import org.scalatest.Assertions._
@@ -62,6 +63,10 @@ trait SearchResultValidation {
     val elasticSearchDAO = new ElasticSearchDAO(client, itTestIndexName, new MockResearchPurposeSupport)
     val searchRequest = elasticSearchDAO.createESSearchRequest(client, itTestIndexName, boolQuery, 0, 10)
     elasticSearchDAO.executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchRequest)
+  }
+
+  def searchWithFilter(workspacePolicyMap: Map[String, UserPolicy]) = {
+    Await.result(searchDAO.findDocuments(emptyCriteria, Seq.empty[String], workspacePolicyMap), dur)
   }
 
   def validateResultNames(expectedNames:Set[String], response:LibrarySearchResponse) = {
