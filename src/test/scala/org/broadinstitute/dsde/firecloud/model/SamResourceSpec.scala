@@ -47,7 +47,7 @@ class SamResourceSpec extends FreeSpec with Matchers {
 
   "UserPolicy JSON" - {
 
-    "should should convert to UserPolicy object" in {
+    "should convert to UserPolicy object" in {
       val jsobj: JsValue = JsonParser(userPolicyJSON)
       val userPolicy: UserPolicy = jsobj.convertTo[UserPolicy]
       assert(userPolicy.public)
