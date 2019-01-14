@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.Metrics.{LogitMetric, NumSubjects}
+import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, UserPolicy}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -118,12 +119,12 @@ class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurpo
     }
   }
 
-  override def findDocuments(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
-    findDocumentsWithAggregateInfo(client, indexName, criteria, groups, researchPurposeSupport)
+  override def findDocuments(criteria: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy]): Future[LibrarySearchResponse] = {
+    findDocumentsWithAggregateInfo(client, indexName, criteria, groups, workspacePolicyMap, researchPurposeSupport)
   }
 
-  override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String]): Future[LibrarySearchResponse] = {
-    autocompleteSuggestions(client, indexName, criteria, groups, researchPurposeSupport)
+  override def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy]): Future[LibrarySearchResponse] = {
+    autocompleteSuggestions(client, indexName, criteria, groups, workspacePolicyMap, researchPurposeSupport)
   }
 
   override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {

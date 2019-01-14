@@ -23,33 +23,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Try
 
-class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
-  def toName(s:String) = AttributeName.fromDelimitedName(s)
-
-  implicit val userToken: WithAccessToken = AccessToken("LibraryServiceSpec")
-
-  val libraryAttributePredicate = (k: AttributeName) => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name
-
-  val existingLibraryAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "library:keythree"->"valthree", "library:keyfour"->"valfour").toJson.convertTo[AttributeMap]
-  val existingMixedAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "keythree"->"valthree", "keyfour"->"valfour").toJson.convertTo[AttributeMap]
-  val existingPublishedAttrs = Map("library:published"->"true", "library:keytwo"->"valtwo", "keythree"->"valthree", "keyfour"->"valfour").toJson.convertTo[AttributeMap]
-
-  val testUUID = UUID.randomUUID()
-
-  val testGroup1Ref = ManagedGroupRef(RawlsGroupName("test-group1"))
-  val testGroup2Ref = ManagedGroupRef(RawlsGroupName("test-group2"))
-
-  val testWorkspace = new WorkspaceDetails(workspaceId=testUUID.toString,
-    namespace="testWorkspaceNamespace",
-    name="testWorkspaceName",
-    authorizationDomain=Set(testGroup1Ref, testGroup2Ref),
-    isLocked=false,
-    createdBy="createdBy",
-    createdDate=DateTime.now(),
-    lastModified=DateTime.now(),
-    attributes=Map.empty,
-    bucketName="bucketName")
-
+object LibraryServiceSpec {
   val testLibraryMetadata =
     """
       |{
@@ -81,6 +55,35 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     """.stripMargin
   val testLibraryMetadataJsObject = testLibraryMetadata.parseJson.asJsObject
 
+}
+class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
+  def toName(s:String) = AttributeName.fromDelimitedName(s)
+
+  implicit val userToken: WithAccessToken = AccessToken("LibraryServiceSpec")
+
+  val libraryAttributePredicate = (k: AttributeName) => k.namespace == AttributeName.libraryNamespace && k.name != LibraryService.publishedFlag.name
+
+  val existingLibraryAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "library:keythree"->"valthree", "library:keyfour"->"valfour").toJson.convertTo[AttributeMap]
+  val existingMixedAttrs = Map("library:keyone"->"valone", "library:keytwo"->"valtwo", "keythree"->"valthree", "keyfour"->"valfour").toJson.convertTo[AttributeMap]
+  val existingPublishedAttrs = Map("library:published"->"true", "library:keytwo"->"valtwo", "keythree"->"valthree", "keyfour"->"valfour").toJson.convertTo[AttributeMap]
+
+  val testUUID = UUID.randomUUID()
+
+  val testGroup1Ref = ManagedGroupRef(RawlsGroupName("test-group1"))
+  val testGroup2Ref = ManagedGroupRef(RawlsGroupName("test-group2"))
+
+  val testWorkspace = new WorkspaceDetails(workspaceId = testUUID.toString,
+    namespace = "testWorkspaceNamespace",
+    name = "testWorkspaceName",
+    authorizationDomain = Set(testGroup1Ref, testGroup2Ref),
+    isLocked = false,
+    createdBy = "createdBy",
+    createdDate = DateTime.now(),
+    lastModified = DateTime.now(),
+    attributes = Map.empty,
+    bucketName = "bucketName")
+
+
   val DULAdditionalJsObject =
     """
       |{
@@ -96,8 +99,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       |  "library:IRB"  : false
       |}
     """.stripMargin.parseJson.asJsObject
-  val DULfields = (testLibraryMetadataJsObject.fields-"library:orsp") ++ DULAdditionalJsObject.fields
-  val testLibraryDULMetadata = testLibraryMetadataJsObject.copy(DULfields).compactPrint
+  val DULfields = (LibraryServiceSpec.testLibraryMetadataJsObject.fields-"library:orsp") ++ DULAdditionalJsObject.fields
+  val testLibraryDULMetadata = LibraryServiceSpec.testLibraryMetadataJsObject.copy(DULfields).compactPrint
 
   val dur = Duration(2, MINUTES)
 
@@ -569,7 +572,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
       "fails with one missing key" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val defaultData = LibraryServiceSpec.testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields-"library:datasetName").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
@@ -579,7 +582,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
       "fails with two missing keys" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val defaultData = LibraryServiceSpec.testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields-"library:datasetName"-"library:datasetOwner").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
@@ -588,7 +591,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
       "fails on a string that should be a number" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val defaultData = LibraryServiceSpec.testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields.updated("library:numSubjects", JsString("isString"))).compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
@@ -598,7 +601,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
       "fails on a number out of bounds" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val defaultData = LibraryServiceSpec.testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields.updated("library:numSubjects", JsNumber(-1))).compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
@@ -608,7 +611,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
       "fails on a value outside its enum" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val defaultData = LibraryServiceSpec.testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields.updated("library:coverage", JsString("foobar"))).compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
@@ -618,7 +621,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
       "fails on a string that should be an array" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val defaultData = LibraryServiceSpec.testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields.updated("library:institute", JsString("isString"))).compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
@@ -628,7 +631,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
       "fails with missing ORSP key" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val defaultData = LibraryServiceSpec.testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields-"library:orsp").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
@@ -638,7 +641,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       }
       "validates on a complete metadata packet with ORSP key" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        validateJsonSchema(testLibraryMetadata, testSchema)
+        validateJsonSchema(LibraryServiceSpec.testLibraryMetadata, testSchema)
       }
       "fails with one missing key from the DUL set" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
@@ -665,7 +668,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
 
       "has error messages for top-level missing keys" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val defaultData = testLibraryMetadata.parseJson.asJsObject
+        val defaultData = LibraryServiceSpec.testLibraryMetadata.parseJson.asJsObject
         val sampleData = defaultData.copy(defaultData.fields-"library:datasetName"-"library:datasetOwner").compactPrint
         val ex = intercept[ValidationException] {
           validateJsonSchema(sampleData, testSchema)
@@ -792,32 +795,6 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         val attrJson = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
         val testJson = makeMapping(attrJson)
         assert(testJson.contains(ElasticSearch.fieldDiscoverableByGroups))
-      }
-    }
-    "when finding documents" - {
-      val params = LibrarySearchParams(Some("test"), Map(), None, Map())
-      "don't add workspaceAccess to document if can't find workspace id for a document" in {
-        val doc = LibrarySearchResponse(params, 1, Seq(testLibraryMetadataJsObject: JsValue), Seq())
-        assertResult(doc) {
-          updateAccess(doc, Seq())
-        }
-      }
-      "set workspaceAccess to No Access if workspace is not returned from workspace list" in {
-        val result = testLibraryMetadataJsObject.copy(testLibraryMetadataJsObject.fields.updated("workspaceId", JsString("no.access.to.workspace.id")))
-        val expectedResult: JsValue = result.copy(result.fields.updated("workspaceAccess", JsString(WorkspaceAccessLevels.NoAccess.toString)))
-        val doc = LibrarySearchResponse(params, 1, Seq(result: JsValue), Seq())
-        assertResult(doc.copy(results=Seq(expectedResult))) {
-          updateAccess(doc, Seq())
-        }
-      }
-      "set workspaceAccess to workspace access level if workspace is returned from workspace list" in {
-        val workspaceList = Seq(WorkspaceListResponse(WorkspaceAccessLevels.Owner, testWorkspace, WorkspaceSubmissionStats(None, None, 0), false))
-        val result = testLibraryMetadataJsObject.copy(testLibraryMetadataJsObject.fields.updated("workspaceId", JsString(testUUID.toString)))
-        val expectedResult: JsValue = result.copy(result.fields.updated("workspaceAccess", JsString(WorkspaceAccessLevels.Owner.toString)))
-        val doc = LibrarySearchResponse(params, 1, Seq(result: JsValue), Seq())
-        assertResult(doc.copy(results=Seq(expectedResult))) {
-          updateAccess(doc, workspaceList)
-        }
       }
     }
     "when finding unique string attributes in a Seq of Workspaces" - {

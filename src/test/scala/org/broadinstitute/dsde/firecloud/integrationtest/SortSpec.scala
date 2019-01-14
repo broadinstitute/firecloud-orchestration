@@ -123,7 +123,7 @@ class SortSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLo
   }
 
   private def searchFor(criteria: LibrarySearchParams) = {
-    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String]), dur)
+    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String], Map.empty), dur)
   }
 
   private def validateFirstResult(field: String, expectedValue: String, response: LibrarySearchResponse): Unit = {

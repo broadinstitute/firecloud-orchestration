@@ -7,6 +7,7 @@ import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
+import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
 import org.broadinstitute.dsde.firecloud.model.{ConsentCodes, Document, ElasticSearch, LibrarySearchResponse, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.LibraryService.orspIdAttribute
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
@@ -168,27 +169,6 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   def getEffectiveDiscoverGroups(samDAO: SamDAO)(implicit ec: ExecutionContext, userInfo:UserInfo): Future[Seq[String]] = {
     samDAO.listGroups(userInfo) map {FireCloudConfig.ElasticSearch.discoverGroupNames intersect _}
-  }
-
-  def updateAccess(docs: LibrarySearchResponse, workspaces: Seq[WorkspaceListResponse]) = {
-
-    val accessMap = workspaces map { workspaceResponse: WorkspaceListResponse =>
-      workspaceResponse.workspace.workspaceId -> workspaceResponse.accessLevel
-    } toMap
-
-    val updatedResults = docs.results.map { document =>
-      val docId = document.asJsObject.fields.get("workspaceId")
-      val newJson = docId match {
-        case Some(id: JsString) => accessMap.get(id.value) match {
-          case Some(accessLevel) => document.asJsObject.fields + ("workspaceAccess" -> JsString(accessLevel.toString))
-          case _ => document.asJsObject.fields + ("workspaceAccess" -> JsString(WorkspaceAccessLevels.NoAccess.toString))
-        }
-        case _ => document.asJsObject.fields
-      }
-      JsObject(newJson)
-    }
-
-    docs.copy(results = updatedResults)
   }
 
   // this method will determine if the user is making a change to discoverableByGroups

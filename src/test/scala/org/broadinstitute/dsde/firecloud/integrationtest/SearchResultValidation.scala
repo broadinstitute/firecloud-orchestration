@@ -4,6 +4,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, MockResea
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurpose
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
+import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.index.query.BoolQueryBuilder
 import org.scalatest.Assertions._
@@ -19,7 +20,7 @@ trait SearchResultValidation {
 
   def searchFor(txt:String) = {
     val criteria = emptyCriteria.copy(searchString = Some(txt))
-    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String]), dur)
+    Await.result(searchDAO.findDocuments(criteria, Seq.empty[String], Map.empty), dur)
   }
 
   def searchWithPurpose(researchPurpose: Option[ResearchPurpose], term:Option[String], filters:Option[Map[String, Seq[String]]]): LibrarySearchResponse = {
@@ -29,7 +30,7 @@ trait SearchResultValidation {
       filters = filters.getOrElse(Map.empty[String, Seq[String]])
     )
     // set size to 100 to make sure we return all results for testing comparisons
-    Await.result(searchDAO.findDocuments(criteria.copy(size=100), Seq.empty[String]), dur)
+    Await.result(searchDAO.findDocuments(criteria.copy(size=100), Seq.empty[String], Map.empty), dur)
   }
 
   def searchWithPurpose(researchPurpose: ResearchPurpose): LibrarySearchResponse =
@@ -46,7 +47,7 @@ trait SearchResultValidation {
       searchString = Some(term),
       researchPurpose = Some(researchPurpose))
     // set size to 100 to make sure we return all results for testing comparisons
-    Await.result(searchDAO.suggestionsFromAll(criteria.copy(size=100), Seq.empty[String]), dur)
+    Await.result(searchDAO.suggestionsFromAll(criteria.copy(size=100), Seq.empty[String], Map.empty), dur)
   }
 
   /**
@@ -62,6 +63,10 @@ trait SearchResultValidation {
     val elasticSearchDAO = new ElasticSearchDAO(client, itTestIndexName, new MockResearchPurposeSupport)
     val searchRequest = elasticSearchDAO.createESSearchRequest(client, itTestIndexName, boolQuery, 0, 10)
     elasticSearchDAO.executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchRequest)
+  }
+
+  def searchWithFilter(workspacePolicyMap: Map[String, UserPolicy]) = {
+    Await.result(searchDAO.findDocuments(emptyCriteria, Seq.empty[String], workspacePolicyMap), dur)
   }
 
   def validateResultNames(expectedNames:Set[String], response:LibrarySearchResponse) = {
