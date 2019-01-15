@@ -12,7 +12,7 @@ import org.broadinstitute.dsde.firecloud.service.RegisterService.{CreateUpdatePr
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.rawls.model.Notifications.{ActivationNotification, NotificationFormat}
-import org.broadinstitute.dsde.rawls.model.RawlsUserSubjectId
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserSubjectId}
 import spray.http._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
@@ -87,7 +87,11 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   }
 
   private def updateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]): Future[PerRequestMessage] = {
-    thurloeDao.saveKeyValues(userInfo, preferences).map(_ => RequestComplete(StatusCodes.NoContent))
+    if (preferences.forall(_._1.startsWith("notifications/"))) {
+      thurloeDao.saveKeyValues(userInfo, preferences).map(_ => RequestComplete(StatusCodes.NoContent))
+    } else {
+      throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "illegal preference key"))
+    }
   }
 
 }
