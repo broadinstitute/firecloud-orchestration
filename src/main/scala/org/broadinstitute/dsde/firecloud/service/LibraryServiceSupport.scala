@@ -168,9 +168,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   def getEffectiveDiscoverGroups(samDAO: SamDAO)(implicit ec: ExecutionContext, userInfo:UserInfo): Future[Seq[String]] = {
     samDAO.listGroups(userInfo) map { groupMemberships =>
-      groupMemberships map { groupMembership =>
-        groupMembership.groupName
-      } intersect FireCloudConfig.ElasticSearch.discoverGroupNames
+      groupMemberships map (_.groupName) intersect FireCloudConfig.ElasticSearch.discoverGroupNames
     }
   }
 
