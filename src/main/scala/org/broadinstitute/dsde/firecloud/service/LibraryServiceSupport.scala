@@ -7,8 +7,7 @@ import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
-import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
-import org.broadinstitute.dsde.firecloud.model.{ConsentCodes, Document, ElasticSearch, LibrarySearchResponse, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{ConsentCodes, Document, ElasticSearch, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.LibraryService.orspIdAttribute
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
@@ -168,7 +167,9 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
   }
 
   def getEffectiveDiscoverGroups(samDAO: SamDAO)(implicit ec: ExecutionContext, userInfo:UserInfo): Future[Seq[String]] = {
-    samDAO.listGroups(userInfo) map {FireCloudConfig.ElasticSearch.discoverGroupNames intersect _}
+    samDAO.listGroups(userInfo) map { groupMemberships =>
+      groupMemberships map (_.groupName) intersect FireCloudConfig.ElasticSearch.discoverGroupNames
+    }
   }
 
   // this method will determine if the user is making a change to discoverableByGroups

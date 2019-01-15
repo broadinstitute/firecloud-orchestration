@@ -16,6 +16,7 @@ import spray.json.{JsObject, _}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
+import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import org.joda.time.DateTime
 
 import scala.collection.JavaConversions._
@@ -884,6 +885,15 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         ))
         assertResult(Set("one","four")) {
           uniqueWorkspaceStringAttributes(workspaces, AttributeName.withDefaultNS("something"))
+        }
+      }
+    }
+    "getting effective discoverable by groups" - {
+      "should include all_broad_users" in {
+        implicit val userInfo = UserInfo("thisismytoken", "thisismysubjectid")
+        samDao.createGroup(WorkbenchGroupName("all_broad_users"))
+        assertResult(Seq("all_broad_users")) {
+          Await.result(getEffectiveDiscoverGroups(samDao), dur)
         }
       }
     }
