@@ -88,7 +88,7 @@ object Profile {
     }).toMap
 
     requiredKeys foreach {req =>
-      assert(mappedKVPs.contains(req), s"Profile must contain a key-value entry for $req")
+      assert(mappedKVPs.contains(req), s"Profile for user ${wrapper.userId} must contain a key-value entry for $req")
     }
 
     new Profile(
