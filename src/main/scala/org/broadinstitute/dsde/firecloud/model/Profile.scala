@@ -79,23 +79,30 @@ object Profile {
   // increment this number every time you make a change to the user-provided profile fields
   val currentVersion:Int = 3
 
-  def apply(wrapper: ProfileWrapper) = {
+  val requiredKeys = List("firstName", "lastName", "title", "institute", "institutionalProgram", "programLocationCity",
+                          "programLocationState", "programLocationCountry", "pi", "nonProfitStatus")
 
-    val mappedKVPs:Map[String,String] = (wrapper.keyValuePairs map {
-      fckv:FireCloudKeyValue => (fckv.key.get -> fckv.value.get) }).toMap
+  def apply(wrapper: ProfileWrapper): Profile = {
+    val mappedKVPs: Map[String, String] = (wrapper.keyValuePairs collect {
+      case fckv: FireCloudKeyValue if fckv.key.nonEmpty && fckv.value.nonEmpty => fckv.key.get -> fckv.value.get
+    }).toMap
+
+    requiredKeys foreach {req =>
+      assert(mappedKVPs.contains(req), s"Profile for user ${wrapper.userId} must contain a key-value entry for $req")
+    }
 
     new Profile(
-      firstName = mappedKVPs.get("firstName").get,
-      lastName = mappedKVPs.get("lastName").get,
-      title = mappedKVPs.get("title").get,
+      firstName = mappedKVPs("firstName"),
+      lastName = mappedKVPs("lastName"),
+      title = mappedKVPs("title"),
       contactEmail = mappedKVPs.get("contactEmail"),
-      institute = mappedKVPs.get("institute").get,
-      institutionalProgram = mappedKVPs.get("institutionalProgram").get,
-      programLocationCity = mappedKVPs.get("programLocationCity").get,
-      programLocationState = mappedKVPs.get("programLocationState").get,
-      programLocationCountry = mappedKVPs.get("programLocationCountry").get,
-      pi = mappedKVPs.get("pi").get,
-      nonProfitStatus = mappedKVPs.get("nonProfitStatus").get,
+      institute = mappedKVPs("institute"),
+      institutionalProgram = mappedKVPs("institutionalProgram"),
+      programLocationCity = mappedKVPs("programLocationCity"),
+      programLocationState = mappedKVPs("programLocationState"),
+      programLocationCountry = mappedKVPs("programLocationCountry"),
+      pi = mappedKVPs("pi"),
+      nonProfitStatus = mappedKVPs("nonProfitStatus"),
       linkedNihUsername = mappedKVPs.get("linkedNihUsername"),
       linkExpireTime = mappedKVPs.get("linkExpireTime") match {
         case Some(time) => Some(time.toLong)
@@ -103,6 +110,7 @@ object Profile {
       }
     )
   }
+
 }
 
 case class NihLink(linkedNihUsername: String, linkExpireTime: Long) extends mappedPropVals {

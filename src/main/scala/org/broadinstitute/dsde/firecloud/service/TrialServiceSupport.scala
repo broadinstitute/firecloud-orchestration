@@ -35,7 +35,6 @@ trait TrialServiceSupport extends LazyLogging {
   // the default set of values to use if a project has no users; one fewer than # of columns
   private val defaultValues = List.fill(headers.size() - 1)("")
 
-
   def makeSpreadsheetResponse(spreadsheetId: String): SpreadsheetResponse = {
     SpreadsheetResponse(s"https://docs.google.com/spreadsheets/d/$spreadsheetId")
   }
@@ -45,12 +44,19 @@ trait TrialServiceSupport extends LazyLogging {
     new SpreadsheetProperties().setTitle(s"$title: $dateString")
   }
 
+  def errorValues(subjectIdInError: String) = {
+    List(subjectIdInError) ++ List.fill(headers.size() - 2)("ERROR IN FIRECLOUD")
+  }
+
   def makeSpreadsheetValues(managerInfo: WithAccessToken, trialDAO: TrialDAO, thurloeDAO: ThurloeDAO, majorDimension: String, range: String)
     (implicit executionContext: ExecutionContext): Future[ValueRange] = {
 
     // get the list of projects from ES
     val projects: Seq[TrialProject] = trialDAO.projectReport
+    logger.info(s"makeSpreadsheetValues processing ${projects.length} projects ...")
+
     // find the Thurloe KVPs for any users referenced in those projects
+    // TODO: this should switch to using Thurloe's bulk endpoint, so we're not making a large burst of requests.
     val profileWrappers:Future[Seq[ProfileWrapper]] = Future.sequence(projects.filter(p => p.user.isDefined).map { p =>
       thurloeDAO.getAllKVPs(p.user.get.userSubjectId, managerInfo) map { kvpOption =>
         kvpOption.getOrElse(ProfileWrapper(p.user.get.userSubjectId, List.empty[FireCloudKeyValue]))
@@ -59,13 +65,19 @@ trait TrialServiceSupport extends LazyLogging {
 
     // resolve the Thurloe KVPs future
     profileWrappers.map { wrappers =>
+      logger.info(s"makeSpreadsheetValues processing ${wrappers.length} profiles ...")
       // cache a map of subjectId -> ProfileWrapper for efficient lookups later
       val userKVPMap: Map[String, ProfileWrapper] = wrappers.map(pw => pw.userId -> pw).toMap
 
       // loop over all projects (including those that have no defined user) and build spreadsheet rows
       val rows: List[util.List[AnyRef]] = projects.map { trialProject =>
         val rowStrings = trialProject.user match {
-          case Some(user) => getTrialUserInformation(user, userKVPMap).toSpreadsheetValues
+          case Some(user) => Try(getTrialUserInformation(user, userKVPMap).toSpreadsheetValues) match {
+            case Success(s) => s
+            case Failure(x) =>
+              logger.error(s"Failure during getTrialUserInformation for user ${user.userSubjectId} ${user.userEmail} in project ${trialProject.name.value}: ${x.getMessage}", x)
+              errorValues(user.userSubjectId)
+          }
           case None => defaultValues
         }
 

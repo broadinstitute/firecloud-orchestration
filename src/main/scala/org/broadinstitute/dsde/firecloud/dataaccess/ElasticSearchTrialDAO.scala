@@ -282,7 +282,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
       .prepareSearch(indexName)
       .setQuery(Ready)
       .addSort("name.keyword", SortOrder.ASC)
-      .setSize(1000)
+      .setSize(5000) // we should loop and make paginated requests; this will have to suffice for now
 
     val reportProjectResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](reportProjectRequest)
 
