@@ -506,7 +506,7 @@ final class TrialService
         case Failure(e) =>
           e match {
             case g: GoogleJsonResponseException =>
-              logger.error(s"Unable to update spreadsheet [$spreadsheetId]: ${g.getDetails.getMessage}")
+              logger.error(s"Unable to update spreadsheet [$spreadsheetId]: ${g.getDetails.getMessage}", e)
               val code = StatusCodes.getForKey(g.getDetails.getCode).getOrElse(StatusCodes.InternalServerError)
               throw new FireCloudExceptionWithErrorReport(ErrorReport(code, e.getMessage))
             case _ => throw e
@@ -514,7 +514,7 @@ final class TrialService
       }
     }.recoverWith {
       case e: Throwable =>
-        logger.error(s"Unable to update google spreadsheet [$spreadsheetId]: ${e.getMessage}")
+        logger.error(s"Unable to update google spreadsheet [$spreadsheetId]: ${e.getMessage}", e)
         throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, e.getMessage))
     }
   }
