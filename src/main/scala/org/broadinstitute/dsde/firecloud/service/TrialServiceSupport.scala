@@ -45,7 +45,7 @@ trait TrialServiceSupport extends LazyLogging {
   }
 
   def errorValues(subjectIdInError: String) = {
-    List(subjectIdInError) ++ List.fill(headers.size() - 2)("ERROR")
+    List(subjectIdInError) ++ List.fill(headers.size() - 2)("ERROR IN FIRECLOUD")
   }
 
   def makeSpreadsheetValues(managerInfo: WithAccessToken, trialDAO: TrialDAO, thurloeDAO: ThurloeDAO, majorDimension: String, range: String)
