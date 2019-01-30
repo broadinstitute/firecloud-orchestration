@@ -32,6 +32,8 @@ trait TrialServiceSupport extends LazyLogging {
     "Enrollment Date", "Terminated Date", "Expiration Date", "User Agreement", "User Agreement Date",
     "First Name", "Last Name", "Organization", "City", "State", "Country").map(_.asInstanceOf[AnyRef]).asJava
 
+  // default value to use if user has no entry for a field in their profile
+  private val defaultProfileField = ""
   // the default set of values to use if a project has no users; one fewer than # of columns
   private val defaultValues = List.fill(headers.size() - 1)("")
 
@@ -98,8 +100,20 @@ trait TrialServiceSupport extends LazyLogging {
     // we expect to always find the user.
     val profileWrapper: ProfileWrapper = userKVPMap.getOrElse(userSubjectId,
       ProfileWrapper(userSubjectId, List.empty[FireCloudKeyValue]))
-    val profile = Profile(profileWrapper)
+
     val status = UserTrialStatus(profileWrapper)
+
+    // profile may be incomplete - especially for users coming in via Terra
+    val maybeProfile  = Try(Profile(profileWrapper))
+
+    val List(firstName, lastName, contactEmail, institute,
+          programLocationCity, programLocationState, programLocationCountry) =  maybeProfile match {
+      case Success(profile) =>
+        List(profile.firstName, profile.lastName, profile.contactEmail.getOrElse(user.userEmail),
+          profile.institute, profile.programLocationCity, profile.programLocationState, profile.programLocationCountry)
+      case Failure(ex) =>
+        List.fill(7)(defaultProfileField)
+    }
 
     SpreadsheetRow(
       userSubjectId = status.userId,
@@ -110,13 +124,13 @@ trait TrialServiceSupport extends LazyLogging {
       expiredDate = status.expirationDate,
       userAgreed = status.userAgreed,
       userAgreedDate = status.enrolledDate, // TODO: should be separate date
-      firstName = profile.firstName,
-      lastName = profile.lastName,
-      contactEmail = profile.contactEmail.getOrElse(user.userEmail),
-      institute = profile.institute,
-      programLocationCity = profile.programLocationCity,
-      programLocationState = profile.programLocationState,
-      programLocationCountry = profile.programLocationCountry
+      firstName = firstName,
+      lastName = lastName,
+      contactEmail = contactEmail,
+      institute = institute,
+      programLocationCity = programLocationCity,
+      programLocationState = programLocationState,
+      programLocationCountry = programLocationCountry
     )
   }
 
