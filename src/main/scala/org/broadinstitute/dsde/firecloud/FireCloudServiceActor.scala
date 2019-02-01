@@ -40,6 +40,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with TrialApiService
   with ShareLogApiService
   with ManagedGroupApiService
+  with CromIamApiService
 {
 
   override lazy val log = LoggerFactory.getLogger(getClass)
@@ -172,6 +173,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         managedGroupServiceRoutes ~
         workspaceRoutes ~
         notificationsRoutes ~
+        cromIamApiServiceRoutes ~
         statusRoutes ~
         ga4ghRoutes ~
         pathPrefix("api") {
