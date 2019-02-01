@@ -1,23 +1,26 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import org.broadinstitute.dsde.firecloud.model.WithAccessToken
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, TrialService, UserService}
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.http.HttpMethods
-import spray.routing.{HttpService, Route}
+import spray.routing.Route
 import spray.routing.HttpService
 
 trait CromIamApiService extends HttpService with FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
+  lazy val workflowRoot: String = FireCloudConfig.CromIAM.authUrl + "/workflows/v1"
+  lazy val engineRoot: String = FireCloudConfig.CromIAM.baseUrl + "/engine/v1"
+
   val cromIamApiServiceRoutes: Route =
-    pathPrefix( "workflows" / Segment ) { apiVersion: String =>
+    pathPrefix( "workflows" / Segment ) { _ =>
       path("query") {
         pathEnd {
           get {
-            passthrough(s"https://cromwell.caas-dev.broadinstitute.org/api/workflows/$apiVersion/query", HttpMethods.GET)
+            passthrough(s"$workflowRoot/query", HttpMethods.GET)
           } ~
           post {
-            passthrough(s"https://cromwell.caas-dev.broadinstitute.org/api/workflows/$apiVersion/query", HttpMethods.POST)
+            passthrough(s"$workflowRoot/query", HttpMethods.POST)
           }
         }
       } ~
@@ -25,21 +28,21 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
         path("abort") {
           pathEnd {
             post {
-              passthrough(s"https://cromwell.caas-dev.broadinstitute.org/api/workflows/$apiVersion/$workflowId/abort", HttpMethods.POST)
+              passthrough(s"$workflowRoot/$workflowId/abort", HttpMethods.POST)
             }
           }
         } ~
         path("metadata") {
           pathEnd {
             get {
-              passthrough(s"https://cromwell.caas-dev.broadinstitute.org/api/workflows/$apiVersion/$workflowId/metadata", HttpMethods.GET)
+              passthrough(s"$workflowRoot/$workflowId/metadata", HttpMethods.GET)
             }
           }
         } ~
         path("labels") {
           pathEnd {
             patch {
-              passthrough(s"https://cromwell.caas-dev.broadinstitute.org/api/workflows/$apiVersion/$workflowId/labels", HttpMethods.PATCH)
+              passthrough(s"$workflowRoot/$workflowId/labels", HttpMethods.PATCH)
             }
           }
         }
@@ -47,15 +50,15 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
     }
 
   val cromIamEngineRoutes: Route =
-    pathPrefix( "engine" / Segment ) { apiVersion: String =>
+    pathPrefix( "engine" / Segment ) { _ =>
       path("version" ) {
         pathEnd {
-          passthrough(s"https://cromwell.caas-dev.broadinstitute.org/engine/$apiVersion/version", HttpMethods.GET)
+          passthrough(s"$engineRoot/version", HttpMethods.GET)
         }
       } ~
       path("status" ) {
         pathEnd {
-          passthrough(s"https://cromwell.caas-dev.broadinstitute.org/engine/$apiVersion/status", HttpMethods.GET)
+          passthrough(s"$engineRoot/status", HttpMethods.GET)
         }
       }
     }

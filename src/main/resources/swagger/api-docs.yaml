@@ -590,7 +590,7 @@ paths:
           schema:
             type: object
       tags:
-        - Workflows
+        - CromIAM Workflows
       responses:
         '200':
           description: Successful Request
