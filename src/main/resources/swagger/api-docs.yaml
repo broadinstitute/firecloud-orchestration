@@ -530,6 +530,42 @@ paths:
           - email
           - profile
 
+  /api/workflows/{version}/{id}/abort:
+    post:
+      summary: Abort a workflow based on workflow id
+      parameters:
+        - name: version
+          description: API Version
+          required: true
+          type: string
+          in: path
+          default: v1
+        - name: id
+          description: Workflow ID
+          required: true
+          type: string
+          in: path
+      tags:
+        - CromIAM Workflows
+      responses:
+        '200':
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkflowAbortResponse'
+        '400':
+          description: Malformed Workflow ID
+        '403':
+          description: Workflow in terminal status
+        '404':
+          description: Workflow ID Not Found
+        '500':
+          description: Internal Error
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
   /api/workflows/{version}/query:
     get:
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
@@ -6780,3 +6816,14 @@ definitions:
             type: array
             items:
               type: string
+  WorkflowAbortResponse:
+    required:
+      - id
+      - status
+    properties:
+      id:
+        type: string
+        description: The identifier of the workflow
+      status:
+        type: string
+        description: The status of the workflow

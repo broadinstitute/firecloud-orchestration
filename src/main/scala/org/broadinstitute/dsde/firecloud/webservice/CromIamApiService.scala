@@ -20,6 +20,13 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
             passthrough("https://cromwell.caas-dev.broadinstitute.org/api/workflows/v1/query", HttpMethods.POST)
           }
         }
+      } ~
+      path( "abort" ) {
+        pathEnd {
+          post {
+            passthrough("https://cromwell.caas-dev.broadinstitute.org/api/workflows/v1/abort", HttpMethods.POST)
+          }
+        }
       }
     }
 
