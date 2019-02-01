@@ -123,7 +123,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
   val submissionsService = new SubmissionService with ActorRefFactoryContext
   val billingService = new BillingService with ActorRefFactoryContext
-  val apiRoutes = methodsApiServiceRoutes ~ profileRoutes ~
+  val apiRoutes = methodsApiServiceRoutes ~ profileRoutes ~ cromIamApiServiceRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
     nihRoutes ~ billingService.routes ~ trialApiServiceRoutes ~ shareLogServiceRoutes
 
@@ -158,6 +158,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   def receive = runRoute(
     appendTimestampOnFailure {
       logRequests {
+        cromIamEngineRoutes ~
         exportEntitiesRoutes ~
         entityRoutes ~
         healthService.routes ~
@@ -173,7 +174,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
         managedGroupServiceRoutes ~
         workspaceRoutes ~
         notificationsRoutes ~
-        cromIamApiServiceRoutes ~
         statusRoutes ~
         ga4ghRoutes ~
         pathPrefix("api") {

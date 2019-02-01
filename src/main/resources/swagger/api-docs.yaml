@@ -530,7 +530,7 @@ paths:
           - email
           - profile
 
-  /api/cromiam/workflows/{version}/query:
+  /api/workflows/{version}/query:
     get:
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
@@ -596,7 +596,7 @@ paths:
             Returns only workflows with the specified workflow id.  If specified multiple times,
             returns workflows with any of the specified workflow ids.
       tags:
-        - CromIAM
+        - CromIAM Workflows
       responses:
         '200':
           description: Successful Request
@@ -631,7 +631,7 @@ paths:
             Same query parameters as GET /query endpoint, submitted as a json list.
             Example: [{"status":"Success"},{"status":"Failed"}]
       tags:
-        - CromIAM
+        - CromIAM Workflows
       responses:
         '200':
           description: Successful Request
@@ -646,6 +646,44 @@ paths:
             - openid
             - email
             - profile
+  /engine/{version}/version:
+    get:
+      summary: Returns the version of the Cromwell Engine
+      parameters:
+        - name: version
+          description: API Version
+          required: true
+          type: string
+          in: path
+          default: v1
+      tags:
+        - CromIAM Engine
+      responses:
+        '200':
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/VersionResponse'
+  /engine/{version}/status:
+    get:
+      summary: Returns the current health status of any monitored subsystems
+      parameters:
+        - name: version
+          description: API Version
+          required: true
+          type: string
+          in: path
+          default: v1
+      tags:
+        - CromIAM Engine
+      responses:
+        '200':
+          description: All subsystems report an "ok" status
+          schema:
+            $ref: '#/definitions/StatusResponse'
+        '500':
+          description: At least one subsystem does not have an "ok" status
+          schema:
+            $ref: '#/definitions/StatusResponse'
 
   /api/groups/{groupName}:
     get:
@@ -6723,3 +6761,22 @@ definitions:
         description: >
           Returns only workflows with the specified workflow id.  If specified multiple times,
           returns workflows with any of the specified workflow ids.
+  VersionResponse:
+    description: Returns the version of Cromwell
+    properties:
+      cromwell:
+        type: string
+        description: The version of the Cromwell Engine
+  StatusResponse:
+    description: Returns the status of monitored subsystems.
+    type: object
+    properties:
+      serviceName:
+        type: object
+        properties:
+          ok:
+            type: boolean
+          messages:
+            type: array
+            items:
+              type: string

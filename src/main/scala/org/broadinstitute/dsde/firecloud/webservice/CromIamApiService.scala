@@ -9,20 +9,32 @@ import spray.routing.HttpService
 
 trait CromIamApiService extends HttpService with FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
-  val cromIamApiServiceRoutes: Route = pathPrefix( "cromiam" ) {
+  val cromIamApiServiceRoutes: Route =
     pathPrefix( "workflows" / Segment ) { _ =>
       path( "query" ) {
         pathEnd {
           get {
-            passthrough("https://cromwell.caas-prod.broadinstitute.org/api/workflows/v1/query", HttpMethods.GET)
+            passthrough("https://cromwell.caas-dev.broadinstitute.org/api/workflows/v1/query", HttpMethods.GET)
           } ~
           post {
-            passthrough("https://cromwell.caas-prod.broadinstitute.org/api/workflows/v1/query", HttpMethods.POST)
+            passthrough("https://cromwell.caas-dev.broadinstitute.org/api/workflows/v1/query", HttpMethods.POST)
           }
         }
       }
     }
-  }
 
+  val cromIamEngineRoutes: Route =
+    pathPrefix( "engine" / Segment ) {  _ =>
+      path("version" ) {
+        pathEnd {
+          passthrough("https://cromwell.caas-dev.broadinstitute.org/engine/v1/version", HttpMethods.GET)
+        }
+      } ~
+      path("status" ) {
+        pathEnd {
+          passthrough("https://cromwell.caas-dev.broadinstitute.org/engine/v1/status", HttpMethods.GET)
+        }
+      }
+    }
 
 }
