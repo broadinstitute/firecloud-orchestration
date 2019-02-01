@@ -10,36 +10,52 @@ import spray.routing.HttpService
 trait CromIamApiService extends HttpService with FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
   val cromIamApiServiceRoutes: Route =
-    pathPrefix( "workflows" / Segment ) { _ =>
-      path( "query" ) {
+    pathPrefix( "workflows" / Segment ) { apiVersion: String =>
+      path("query") {
         pathEnd {
           get {
-            passthrough("https://cromwell.caas-dev.broadinstitute.org/api/workflows/v1/query", HttpMethods.GET)
+            passthrough(s"https://cromwell.caas-dev.broadinstitute.org/api/workflows/$apiVersion/query", HttpMethods.GET)
           } ~
           post {
-            passthrough("https://cromwell.caas-dev.broadinstitute.org/api/workflows/v1/query", HttpMethods.POST)
+            passthrough(s"https://cromwell.caas-dev.broadinstitute.org/api/workflows/$apiVersion/query", HttpMethods.POST)
           }
         }
       } ~
-      path( "abort" ) {
-        pathEnd {
-          post {
-            passthrough("https://cromwell.caas-dev.broadinstitute.org/api/workflows/v1/abort", HttpMethods.POST)
+      pathPrefix( Segment ) { workflowId: String =>
+        path("abort") {
+          pathEnd {
+            post {
+              passthrough(s"https://cromwell.caas-dev.broadinstitute.org/api/workflows/$apiVersion/$workflowId/abort", HttpMethods.POST)
+            }
+          }
+        } ~
+        path("metadata") {
+          pathEnd {
+            get {
+              passthrough(s"https://cromwell.caas-dev.broadinstitute.org/api/workflows/$apiVersion/$workflowId/metadata", HttpMethods.GET)
+            }
+          }
+        } ~
+        path("labels") {
+          pathEnd {
+            patch {
+              passthrough(s"https://cromwell.caas-dev.broadinstitute.org/api/workflows/$apiVersion/$workflowId/labels", HttpMethods.PATCH)
+            }
           }
         }
       }
     }
 
   val cromIamEngineRoutes: Route =
-    pathPrefix( "engine" / Segment ) {  _ =>
+    pathPrefix( "engine" / Segment ) { apiVersion: String =>
       path("version" ) {
         pathEnd {
-          passthrough("https://cromwell.caas-dev.broadinstitute.org/engine/v1/version", HttpMethods.GET)
+          passthrough(s"https://cromwell.caas-dev.broadinstitute.org/engine/$apiVersion/version", HttpMethods.GET)
         }
       } ~
       path("status" ) {
         pathEnd {
-          passthrough("https://cromwell.caas-dev.broadinstitute.org/engine/v1/status", HttpMethods.GET)
+          passthrough(s"https://cromwell.caas-dev.broadinstitute.org/engine/$apiVersion/status", HttpMethods.GET)
         }
       }
     }
