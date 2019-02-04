@@ -103,6 +103,13 @@ object FireCloudConfig {
     val baseUrl = sam.getString("baseUrl")
   }
 
+  object CromIAM {
+    private val cromIam = config.getConfig("cromiam")
+    val baseUrl = cromIam.getString("baseUrl")
+    val authPrefix = cromIam.getString("authPrefix")
+    val authUrl = baseUrl + authPrefix
+  }
+
   object Thurloe {
     private val profile = config.getConfig("userprofile")
     private val thurloe = config.getConfig("thurloe")
