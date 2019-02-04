@@ -19,6 +19,7 @@ object MockUtils {
   val consentServerPort = 8992
   val ontologyServerPort = 8993
   val samServerPort = 8994
+  val cromiamServerPort = 8995
   val searchServerPort = 9292
   val bagitServerPort = 9393
 
