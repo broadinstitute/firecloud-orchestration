@@ -546,7 +546,7 @@ paths:
           type: string
           in: path
       tags:
-        - CromIAM Workflows
+        - CromIAM Workflows (for Job Manager)
       responses:
         '200':
           description: Successful Request
@@ -590,7 +590,7 @@ paths:
           schema:
             type: object
       tags:
-        - CromIAM Workflows
+        - CromIAM Workflows (for Job Manager)
       responses:
         '200':
           description: Successful Request
@@ -651,13 +651,13 @@ paths:
           default: false
           in: query
       tags:
-        - CromIAM Workflows
+        - CromIAM Workflows (for Job Manager)
       responses:
         '200':
           description: Successful Request
           schema:
             $ref: '#/definitions/WorkflowMetadataResponse'
-# AEN TODO 2019-02-01: this JSON breaks the whole page
+# AEN TODO 2019-02-01: this JSON breaks the whole page but I don't have time to convert the while thing to YAML
 #          examples:
 #            application/json: |-
 #              {
@@ -862,7 +862,7 @@ paths:
             Returns only workflows with the specified workflow id.  If specified multiple times,
             returns workflows with any of the specified workflow ids.
       tags:
-        - CromIAM Workflows
+        - CromIAM Workflows (for Job Manager)
       responses:
         '200':
           description: Successful Request
@@ -897,7 +897,7 @@ paths:
             Same query parameters as GET /query endpoint, submitted as a json list.
             Example: [{"status":"Success"},{"status":"Failed"}]
       tags:
-        - CromIAM Workflows
+        - CromIAM Workflows (for Job Manager)
       responses:
         '200':
           description: Successful Request
@@ -923,7 +923,7 @@ paths:
           in: path
           default: v1
       tags:
-        - CromIAM Engine
+        - CromIAM Engine (for Job Manager)
       responses:
         '200':
           description: Successful Request
@@ -940,7 +940,7 @@ paths:
           in: path
           default: v1
       tags:
-        - CromIAM Engine
+        - CromIAM Engine (for Job Manager)
       responses:
         '200':
           description: All subsystems report an "ok" status
