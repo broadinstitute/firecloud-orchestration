@@ -12,7 +12,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
   // The route tests pass without the mock server, but we attempt to contact `http://localhost:8995`
   // and print out a hideous stacktrace if nothing is running there. If there is a smarter way to do
-  // this, please speak up!
+  // this, please speak up! (AEN 2019-02-04)
   var cromiamServer: ClientAndServer = _
 
   override def beforeAll(): Unit = {
@@ -28,7 +28,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
     lazy val workflowRoot: String = "/workflows/v1"
     lazy val engineRoot: String = "/engine/v1"
 
-    "/workflows/{version}/abort" - {
+    "/api/workflows/{version}/abort" - {
 
       val endpoint = workflowRoot + "/my-bogus-workflow-id-565656/abort"
       val myMethods = List(HttpMethods.POST)
@@ -46,7 +46,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
       }
     }
 
-    "/workflows/{version}/labels" - {
+    "/api/workflows/{version}/labels" - {
 
       val endpoint = workflowRoot + "/my-bogus-workflow-id-565656/labels"
       val myMethods = List(HttpMethods.PATCH)
@@ -64,7 +64,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
       }
     }
 
-    "/workflows/{version}/metadata" - {
+    "/api/workflows/{version}/metadata" - {
 
       val endpoint = workflowRoot + "/my-bogus-workflow-id-565656/metadata"
       val myMethods = List(HttpMethods.GET)
@@ -82,7 +82,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
       }
     }
 
-    "/workflows/{version}/query" - {
+    "/api/workflows/{version}/query" - {
 
       val endpoint = workflowRoot + "/query"
       val myMethods = List(HttpMethods.GET, HttpMethods.POST)
@@ -96,6 +96,40 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
       "should reject everything else" in {
         allHttpMethodsExcept(myMethods) foreach { method =>
           checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
+        }
+      }
+    }
+
+    "/engine/{version}/status" - {
+      val endpoint = engineRoot + "/status"
+      val myMethods = List(HttpMethods.GET)
+
+      "should pass through my methods" in {
+        myMethods foreach { method =>
+          checkIfPassedThrough(cromIamEngineRoutes, method, endpoint, toBeHandled = true)
+        }
+      }
+
+      "should reject everything else" in {
+        allHttpMethodsExcept(myMethods) foreach { method =>
+          checkIfPassedThrough(cromIamEngineRoutes, method, endpoint, toBeHandled = false)
+        }
+      }
+    }
+
+    "/engine/{version}/version" - {
+      val endpoint = engineRoot + "/version"
+      val myMethods = List(HttpMethods.GET)
+
+      "should pass through my methods" in {
+        myMethods foreach { method =>
+          checkIfPassedThrough(cromIamEngineRoutes, method, endpoint, toBeHandled = true)
+        }
+      }
+
+      "should reject everything else" in {
+        allHttpMethodsExcept(myMethods) foreach { method =>
+          checkIfPassedThrough(cromIamEngineRoutes, method, endpoint, toBeHandled = false)
         }
       }
     }

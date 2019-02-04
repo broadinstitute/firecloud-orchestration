@@ -12,6 +12,12 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
   lazy val workflowRoot: String = FireCloudConfig.CromIAM.authUrl + "/workflows/v1"
   lazy val engineRoot: String = FireCloudConfig.CromIAM.baseUrl + "/engine/v1"
 
+  // This is the subset of CromIAM endpoints required for Job Manager. We are proxying Job Manager requests through
+  // Orchestration as of February 2019 for compliance reasons. Adding passthrough endpoints to Orchestration is "free",
+  // but having Job Manager contact CromIAM directly would require a lengthy compliance process. That may still happen
+  // in the future, at which point these routes should be removed.
+  // Adam Nichols, 2019-02-04
+
   val cromIamApiServiceRoutes: Route =
     pathPrefix( "workflows" / Segment ) { _ =>
       path("query") {
