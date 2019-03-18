@@ -10,6 +10,7 @@ import spray.routing.HttpService
 trait CromIamApiService extends HttpService with FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
   lazy val workflowRoot: String = FireCloudConfig.CromIAM.authUrl + "/workflows/v1"
+  lazy val womtoolRoute: String = FireCloudConfig.CromIAM.authUrl + "/womtool/v1"
   lazy val engineRoot: String = FireCloudConfig.CromIAM.baseUrl + "/engine/v1"
 
   // This is the subset of CromIAM endpoints required for Job Manager. Orchestration is acting as a proxy between
@@ -48,6 +49,15 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
             patch {
               passthrough(s"$workflowRoot/$workflowId/labels", HttpMethods.PATCH)
             }
+          }
+        }
+      }
+    } ~
+    pathPrefix( "womtool" / Segment ) { _ =>
+      path( "describe" ) {
+        pathEnd {
+          post {
+            passthrough(s"$womtoolRoute/describe", HttpMethods.POST)
           }
         }
       }
