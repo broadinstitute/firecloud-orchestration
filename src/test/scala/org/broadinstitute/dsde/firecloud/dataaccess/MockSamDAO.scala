@@ -23,8 +23,6 @@ class MockSamDAO extends SamDAO {
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = enabledUserInfo
 
-  override def adminGetUserByEmail(email: RawlsUserEmail): Future[RegistrationInfo] = customUserInfo(email.value)
-
   override def getUserIds(email: RawlsUserEmail)(implicit userInfo: WithAccessToken): Future[UserIdInfo] = customUserId(email.value)
 
   override def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[SamResource.UserPolicy]] = Future.successful(Seq.empty)

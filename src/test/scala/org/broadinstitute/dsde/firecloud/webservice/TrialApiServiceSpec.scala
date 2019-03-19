@@ -77,6 +77,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       (enabledButNotAgreedUser, enabledButNotAgreedProps),
       (selfEnabledUser, selfEnabledUserProps),
       (enrolledUser, enrolledProps),
+      (invitedUser, enrolledProps),
       (terminatedUser, terminatedProps),
       (finalizedUser, finalizedProps))
 
@@ -390,6 +391,20 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
           }
         }
       }
+
+      "Attempting to terminate a user who joined via invite should succeed" in {
+        val assortmentOfUserEmails =
+          Seq(invitedUser)
+
+        Post(terminatePath, assortmentOfUserEmails) ~> dummyUserIdHeaders(manager) ~> trialApiServiceRoutes ~> check {
+          val terminateResponse = responseAs[Map[String, Set[String]]].map(_.swap)
+          assertResult(1) { terminateResponse.size }
+          assert(terminateResponse(Set(invitedUser)) === StatusUpdate.Success.toString)
+          assertResult(OK) {
+            status
+          }
+        }
+      }
     }
 
     "Attempting to enable a non registered user should fail" in {
@@ -549,7 +564,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
 
           Future.successful(Success(()))
         }
-        case `enrolledUser` => {
+        case `enrolledUser` | `invitedUser` => {
           assertResult(Some(TrialStates.Terminated)) { trialStatus.state }
           assert(trialStatus.enabledDate.toEpochMilli > 0)
           assert(trialStatus.enrolledDate.toEpochMilli > 0)
@@ -578,18 +593,19 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
   }
 
   final class TrialApiServiceSpecSamDAO extends HttpSamDAO {
-    override def adminGetUserByEmail(email: RawlsUserEmail) = {
-      email.value match {
-        case x if registrationInfoByEmail.keySet.contains(x)=> Future.successful(registrationInfoByEmail(email.value))
-        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(NotFound, ""))
-      }
-    }
 
     override def getUserIds(email: RawlsUserEmail)(implicit userInfo: WithAccessToken): Future[UserIdInfo] = {
       email.value match {
         case x if registrationInfoByEmail.keySet.contains(x) =>
           val regInfo = registrationInfoByEmail(email.value).userInfo
-          val userIdInfo = UserIdInfo(regInfo.userSubjectId, regInfo.userEmail, regInfo.userSubjectId)
+          val userSubjectId = if (x == invitedUserEmail) {
+            // "invited-user" has a different userSubjectId and googleSubjectId
+            regInfo.userSubjectId + "XXXXXX"
+          } else {
+            regInfo.userSubjectId
+          }
+          val googleSubjectId = regInfo.userSubjectId
+          val userIdInfo = UserIdInfo(userSubjectId, regInfo.userEmail, googleSubjectId)
           Future.successful(userIdInfo)
         case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(NotFound, ""))
       }
@@ -653,6 +669,7 @@ object TrialApiServiceSpec {
   val finalizedUser = "finalized-user"
   val registeredUser = "registered-user"
   val unregisteredUser = "unregistered-user"
+  val invitedUser = "invited-user"
 
   val noTrialProps = Map.empty[String,String]
 
@@ -717,6 +734,7 @@ object TrialApiServiceSpec {
   val terminatedUserEmail = "terminated-user-email"
   val finalizedUserEmail = "finalized-user-email"
   val registeredUserEmail = "registered-user-email"
+  val invitedUserEmail = "invited-user-email"
 
   val dummy1UserInfo = WorkbenchUserInfo(userSubjectId = dummy1User, dummy1UserEmail)
   val dummy2UserInfo = WorkbenchUserInfo(userSubjectId = dummy2User, dummy2UserEmail)
@@ -727,6 +745,8 @@ object TrialApiServiceSpec {
   val terminatedUserInfo = WorkbenchUserInfo(userSubjectId = terminatedUser, terminatedUserEmail)
   val finalizedUserInfo = WorkbenchUserInfo(userSubjectId = finalizedUser, finalizedUserEmail)
   val registeredUserInfo = WorkbenchUserInfo(userSubjectId = registeredUser, registeredUserEmail)
+  val invitedUserInfo = WorkbenchUserInfo(userSubjectId = invitedUser, invitedUserEmail)
+
 
   val dummy1UserRegInfo = RegistrationInfo(dummy1UserInfo, workbenchEnabled)
   val dummy2UserRegInfo = RegistrationInfo(dummy2UserInfo, workbenchEnabled)
@@ -737,6 +757,7 @@ object TrialApiServiceSpec {
   val terminatedUserRegInfo = RegistrationInfo(terminatedUserInfo, workbenchEnabled)
   val finalizedUserRegInfo = RegistrationInfo(finalizedUserInfo, workbenchEnabled)
   val registeredUserRegInfo = RegistrationInfo(registeredUserInfo, workbenchEnabled)
+  val invitedUserRegInfo = RegistrationInfo(invitedUserInfo, workbenchEnabled)
 
   val registrationInfoByEmail = Map(
     dummy1User -> dummy1UserRegInfo,
@@ -747,5 +768,7 @@ object TrialApiServiceSpec {
     enrolledUser -> enrolledUserRegInfo,
     terminatedUser -> terminatedUserRegInfo,
     finalizedUser -> finalizedUserRegInfo,
-    registeredUser -> registeredUserRegInfo)
+    registeredUser -> registeredUserRegInfo,
+    invitedUser -> invitedUserRegInfo
+  )
 }
