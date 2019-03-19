@@ -202,10 +202,12 @@ final class TrialService
 
     val userTransitions = userEmails.map { userEmail =>
       val status = Try(for {
-        regInfo <- samDao.adminGetUserByEmail(RawlsUserEmail(userEmail))
-        subId = regInfo.userInfo.userSubjectId
+        // use Sam's GET /api/users/v1/{email} to get both the userSubjectId and the googleSubjectId
+        userIds <- samDao.getUserIds(RawlsUserEmail(userEmail))(managerInfo)
+        subId = userIds.userSubjectId
         userInfo = WorkbenchUserInfo(subId, userEmail)
-        userTrialStatus <- thurloeDao.getTrialStatus(subId, managerInfo)
+        // Thurloe requires the googleSubjectId from Sam
+        userTrialStatus <- thurloeDao.getTrialStatus(userIds.googleSubjectId, managerInfo)
         newStatus = statusTransition(userInfo, userTrialStatus)
         result <- checkAndUpdateState(userInfo, userTrialStatus, newStatus)
       } yield result) match {
@@ -228,9 +230,9 @@ final class TrialService
   private def updateTrialStatus(managerInfo: UserInfo,
                                 userInfo: WorkbenchUserInfo,
                                 updatedTrialStatus: UserTrialStatus): Future[StatusUpdate.Attempt] = {
-    thurloeDao.saveTrialStatus(userInfo.userSubjectId, managerInfo, updatedTrialStatus) map {
+    thurloeDao.saveTrialStatus(updatedTrialStatus.userId, managerInfo, updatedTrialStatus) map {
       case Success(_) =>
-        logger.info(s"[trialaudit] updated user ${userInfo.userEmail} (${userInfo.userSubjectId}) to state ${updatedTrialStatus.state.getOrElse("")}")
+        logger.info(s"[trialaudit] updated user ${userInfo.userEmail} (${updatedTrialStatus.userId}) to state ${updatedTrialStatus.state.getOrElse("")}")
         StatusUpdate.Success
       case Failure(ex) => StatusUpdate.ServerError(ex.getMessage)
     }

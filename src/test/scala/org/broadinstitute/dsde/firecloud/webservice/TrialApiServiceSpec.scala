@@ -585,6 +585,16 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       }
     }
 
+    override def getUserIds(email: RawlsUserEmail)(implicit userInfo: WithAccessToken): Future[UserIdInfo] = {
+      email.value match {
+        case x if registrationInfoByEmail.keySet.contains(x) =>
+          val regInfo = registrationInfoByEmail(email.value).userInfo
+          val userIdInfo = UserIdInfo(regInfo.userSubjectId, regInfo.userEmail, regInfo.userSubjectId)
+          Future.successful(userIdInfo)
+        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(NotFound, ""))
+      }
+    }
+
     private val groupMap = Map(
       "apples" -> Seq("alice"),
       "bananas" -> Seq("bob"),

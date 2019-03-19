@@ -39,6 +39,8 @@ case class OAuthUser(sub: String, email: String)
 case class RegistrationInfo(userInfo: WorkbenchUserInfo, enabled: WorkbenchEnabled, messages:Option[List[String]] = None)
 case class RegistrationInfoV2(userSubjectId: String, userEmail: String, enabled: Boolean)
 
+case class UserIdInfo(userSubjectId: String, userEmail: String, googleSubjectId: String)
+
 case class WorkbenchUserInfo(userSubjectId: String, userEmail: String)
 case class WorkbenchEnabled(google: Boolean, ldap: Boolean, allUsersGroup: Boolean)
 case class WorkbenchEnabledV2(enabled: Boolean, inAllUsersGroup: Boolean, inGoogleProxyGroup: Boolean)
