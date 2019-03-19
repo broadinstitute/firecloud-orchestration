@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, UserIdInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
@@ -38,8 +38,8 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
     authedRequestToObject[RegistrationInfo](Get(samUserRegistrationUrl), label=Some("HttpSamDAO.getRegistrationStatus"))
   }
 
-  override def adminGetUserByEmail(email: RawlsUserEmail): Future[RegistrationInfo] = {
-    adminAuthedRequestToObject[RegistrationInfo](Get(samAdminUserByEmail.format(email.value)))
+  override def getUserIds(email: RawlsUserEmail)(implicit userInfo: WithAccessToken): Future[UserIdInfo] = {
+    authedRequestToObject[UserIdInfo](Get(samGetUserIdsUrl.format(email.value)))
   }
 
   override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {

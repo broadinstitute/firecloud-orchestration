@@ -225,6 +225,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impWorkbenchEnabledV2 = jsonFormat3(WorkbenchEnabledV2)
   implicit val impRegistrationInfo = jsonFormat3(RegistrationInfo)
   implicit val impRegistrationInfoV2 = jsonFormat3(RegistrationInfoV2)
+  implicit val impUserIdInfo = jsonFormat3(UserIdInfo)
   implicit val impCurator = jsonFormat1(Curator)
   implicit val impUserImportPermission = jsonFormat2(UserImportPermission)
 
