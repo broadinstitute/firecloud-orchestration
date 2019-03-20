@@ -27,6 +27,22 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
     lazy val workflowRoot: String = "/workflows/v1"
     lazy val engineRoot: String = "/engine/v1"
+    lazy val womtoolRoot: String = "/womtool/v1"
+
+    "/api/womtool/{version}/describe" - {
+
+      val endpoint = s"$womtoolRoot/describe"
+
+      "should pass through my methods" in {
+        checkIfPassedThrough(cromIamApiServiceRoutes, HttpMethods.POST, endpoint, toBeHandled = true)
+      }
+
+      "should reject everything else" in {
+        allHttpMethodsExcept(List(HttpMethods.POST)) foreach { method =>
+          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
+        }
+      }
+    }
 
     "/api/workflows/{version}/abort" - {
 
