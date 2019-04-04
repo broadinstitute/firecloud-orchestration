@@ -3982,25 +3982,6 @@ paths:
         500:
           description: Rawls Internal Error
 
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/genomics/operations/{jobId}:
-    get:
-      tags:
-        - Workspaces
-      operationId: getGenomicsOperation
-      summary: |
-        Retrieve operations info from Google Genomics API
-      parameters:
-        - $ref: '#/parameters/workspaceNamespaceParam'
-        - $ref: '#/parameters/workspaceNameParam'
-        - $ref: '#/parameters/jobIdParam'
-      responses:
-        200:
-          description: Operations info
-        404:
-          description: jobId not found
-        500:
-          description: Rawls Internal Error
-
   /cookie-authed/download/b/{bucket}/o/{object}:
     get:
       tags:
