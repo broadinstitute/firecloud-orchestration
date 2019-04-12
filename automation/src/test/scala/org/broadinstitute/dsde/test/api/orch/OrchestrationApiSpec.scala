@@ -17,6 +17,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
+import org.broadinstitute.dsde.workbench.service.BillingProject.BillingProjectStatus
 import org.broadinstitute.dsde.workbench.service.Orchestration.NIH.NihDatasetPermission
 
 class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with Eventually
@@ -254,7 +255,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
           eventually {
             val statusMap: Map[String, String] = Orchestration.profile.getUserBillingProjectStatus(projectName)(ownerToken)
             statusMap should contain("projectName" -> projectName)
-            statusMap should contain("creationStatus" -> Orchestration.billing.BillingProjectStatus.Ready.toString)
+            statusMap should contain("creationStatus" -> BillingProjectStatus.Ready.toString)
           }
         }
       }
