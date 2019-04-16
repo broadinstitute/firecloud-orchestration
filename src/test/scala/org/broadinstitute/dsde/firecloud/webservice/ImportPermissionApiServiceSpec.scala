@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
-import org.broadinstitute.dsde.firecloud.model.{Trial, UserImportPermission, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{Trial, UserImportPermission, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impUserImportPermission
 import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService, UserService}
@@ -23,7 +23,7 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
 
   val trialProjectManager = system.actorOf(ProjectManager.props(testApp.rawlsDAO, testApp.trialDAO, testApp.googleServicesDAO), "trial-project-manager")
   val trialServiceConstructor:() => TrialService = TrialService.constructor(testApp, trialProjectManager)
-  val userServiceConstructor:(WithAccessToken) => UserService = UserService.constructor(testApp)
+  val userServiceConstructor:(UserInfo) => UserService = UserService.constructor(testApp)
 
   "UserService /api/profile/importstatus endpoint tests" - {
 
