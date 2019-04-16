@@ -2100,6 +2100,44 @@ paths:
         500:
           description: Internal Server Error
 
+  /api/profile/terra:
+    get:
+      tags:
+        - Profile
+      operationId: setTerraPreference
+      summary: Returns the current user's preference for Terra UI vs. Legacy view
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/TerraPreference'
+        500:
+          description: Internal Server Error
+    post:
+      tags:
+        - Profile
+      operationId: setTerraPreference
+      summary: Sets the current user's preference to use Terra UI, not Legacy view
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/TerraPreference'
+        500:
+          description: Internal Server Error
+    delete:
+      tags:
+        - Profile
+      operationId: setTerraPreference
+      summary: Sets the current user's preference to use Legacy view, not Terra UI
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/TerraPreference'
+        500:
+          description: Internal Server Error
+
   /api/profile/trial:
     post:
       tags:
@@ -6441,6 +6479,13 @@ definitions:
       inputName:
         type: string
         description: name of input
+
+  TerraPreference:
+    description: Current user's choice of UI views.
+    properties:
+      PreferTerra:
+        type: boolean
+        description: When true, prefer Terra UI; when false, prefer Legacy FireCloud UI.
 
   ToolClass:
     description: Describes a class (type) of tool allowing us to categorize workflows, tools, and maybe even other entities (such as services) separately
