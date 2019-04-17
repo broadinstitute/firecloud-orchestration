@@ -5,9 +5,9 @@ import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, ThurloeDAO}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impUserImportPermission
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impUserImportPermission, impTerraPreference}
 import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses
-import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, RequestCompleteWithErrorReport, UserImportPermission, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RequestCompleteWithErrorReport, TerraPreference, UserImportPermission, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.UserService.{DeleteTerraPreference, GetTerraPreference, ImportPermission, SetTerraPreference}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels
@@ -21,7 +21,8 @@ import scala.util.{Failure, Success, Try}
 object UserService {
   sealed trait UserServiceMessage
 
-  val TerraPreferenceKey = "PreferTerra"
+  val TerraPreferenceKey = "preferTerra"
+  val TerraPreferenceLastUpdatedKey = "preferTerraLastUpdated"
 
   case object ImportPermission extends UserServiceMessage
   case object GetTerraPreference extends UserServiceMessage
@@ -64,33 +65,48 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, userToken: UserInf
         writableWorkspace = hasWorkspace))
   }
 
+  private def getProfileValue(profileWrapper: ProfileWrapper, targetKey: String): Option[String] = {
+    profileWrapper.keyValuePairs
+      .find(_.key.contains(targetKey)) // .find returns Option[FireCloudKeyValue]
+      .flatMap(_.value) // .value returns Option[String]
+  }
+
   def getTerraPreference(implicit userToken: UserInfo): Future[PerRequestMessage] = {
     // so, so many nested Options ...
-    val maybeValue:Future[Option[Long]] = thurloeDAO.getAllKVPs(userToken.id, userToken) map { // .getAllKVPs returns Option[ProfileWrapper]
-      case None => None
-      case Some(wrapper) => wrapper.keyValuePairs
-        .find(_.key.contains(UserService.TerraPreferenceKey)) // .find returns Option[FireCloudKeyValue]
-        .flatMap(_.value.map(_.toLong)) // .value returns Option[String]
+    val futurePref:Future[TerraPreference] = thurloeDAO.getAllKVPs(userToken.id, userToken) map { // .getAllKVPs returns Option[ProfileWrapper]
+      case None => TerraPreference(true, 0)
+      case Some(wrapper) => {
+        val pref:Boolean =  Try(getProfileValue(wrapper, UserService.TerraPreferenceKey).getOrElse("true").toBoolean)
+          .toOption.getOrElse(true)
+        val updated:Long = Try(getProfileValue(wrapper, UserService.TerraPreferenceLastUpdatedKey).getOrElse("0").toLong)
+          .toOption.getOrElse(0L)
+        TerraPreference(pref, updated)
+      }
     }
-    maybeValue map { v =>
-      val pref:Boolean = v.getOrElse(0L) >= 0 // if user no key, or the key has no value, default to 0
-      RequestComplete(Map(UserService.TerraPreferenceKey -> pref))
-    }
+
+    futurePref map { pref => RequestComplete(pref) }
   }
 
   def setTerraPreference(userToken: UserInfo): Future[PerRequestMessage] = {
-    writeTerraPreference(userToken, System.currentTimeMillis())
+    writeTerraPreference(userToken, prefValue = true)
   }
 
 
   def deleteTerraPreference(userToken: UserInfo): Future[PerRequestMessage] = {
-    writeTerraPreference(userToken, System.currentTimeMillis() * -1)
+    writeTerraPreference(userToken, prefValue = false)
   }
 
-  private def writeTerraPreference(userToken: UserInfo, prefValue: Long): Future[PerRequestMessage] = {
-    thurloeDAO.saveKeyValues(userToken, Map(UserService.TerraPreferenceKey -> prefValue.toString)) flatMap {
+  private def writeTerraPreference(userToken: UserInfo, prefValue: Boolean): Future[PerRequestMessage] = {
+    val kvpsToUpdate = Map(
+      UserService.TerraPreferenceKey -> prefValue.toString,
+      UserService.TerraPreferenceLastUpdatedKey -> System.currentTimeMillis().toString
+    )
+
+    logger.info(s"${userToken.userEmail} (${userToken.id}) setting Terra preference to $prefValue")
+
+    thurloeDAO.saveKeyValues(userToken, kvpsToUpdate) flatMap {
       case Failure(exception) => Future(RequestCompleteWithErrorReport(StatusCodes.InternalServerError,
-        "could not save preference", exception))
+        "could not save Terra preference", exception))
       case Success(_) => getTerraPreference(userToken)
     }
   }

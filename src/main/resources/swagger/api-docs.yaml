@@ -6483,9 +6483,12 @@ definitions:
   TerraPreference:
     description: Current user's choice of UI views.
     properties:
-      PreferTerra:
+      preferTerra:
         type: boolean
         description: When true, prefer Terra UI; when false, prefer Legacy FireCloud UI.
+      preferTerraLastUpdated:
+        type: number
+        description: Epoch timestamp representing when the Terra Preference was last saved.
 
   ToolClass:
     description: Describes a class (type) of tool allowing us to categorize workflows, tools, and maybe even other entities (such as services) separately
