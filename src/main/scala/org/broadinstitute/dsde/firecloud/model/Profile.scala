@@ -142,3 +142,5 @@ trait mappedPropVals {
     } toMap
   }
 }
+
+case class TerraPreference(preferTerra: Boolean, preferTerraLastUpdated: Long)

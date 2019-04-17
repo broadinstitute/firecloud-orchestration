@@ -55,7 +55,7 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
         rawlsDAO = localRawlsDao,
         googleServicesDAO = localGoogleDao),
       trialProjectManager)
-  val userServiceConstructor:(WithAccessToken) => UserService = UserService.constructor(app)
+  val userServiceConstructor:(UserInfo) => UserService = UserService.constructor(app)
 
   var localThurloeServer: ClientAndServer = _
 
