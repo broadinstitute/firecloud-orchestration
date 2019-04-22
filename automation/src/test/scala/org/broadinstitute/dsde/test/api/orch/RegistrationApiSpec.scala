@@ -7,18 +7,19 @@ import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
 import org.broadinstitute.dsde.workbench.fixture.BillingFixtures
 import org.broadinstitute.dsde.workbench.service.{Sam, Thurloe}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.tagobjects.Retryable
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfterEach, FreeSpec, Matchers}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach, FreeSpec, Matchers}
 
 class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with Eventually
-  with BillingFixtures with BeforeAndAfterEach {
+  with BillingFixtures with BeforeAndAfter {
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)))
 
   val subjectId: String = Users.tempSubjectId
   val adminUser: Credentials = UserPool.chooseAdmin
   implicit val authToken: AuthToken = adminUser.makeAuthToken()
 
-  override protected def beforeEach() = {
+  before {
     if (Sam.admin.doesUserExist(subjectId).getOrElse(false)) {
       try {
         Sam.admin.deleteUser(subjectId)
@@ -29,7 +30,7 @@ class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with 
 
   "FireCloud registration" - {
 
-    "should allow a person to register" in {
+    "should allow a person to register" taggedAs Retryable in {
       val user = UserPool.userConfig.Temps.getUserCredential("luna")
       implicit val authToken: AuthToken = user.makeAuthToken()
 
