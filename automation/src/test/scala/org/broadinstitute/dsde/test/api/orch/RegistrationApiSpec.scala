@@ -9,17 +9,17 @@ import org.broadinstitute.dsde.workbench.service.{Sam, Thurloe}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.tagobjects.Retryable
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach, FreeSpec, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
 class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with Eventually
-  with BillingFixtures with BeforeAndAfter {
+  with BillingFixtures with BeforeAndAfterAll {
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)))
 
   val subjectId: String = Users.tempSubjectId
   val adminUser: Credentials = UserPool.chooseAdmin
   implicit val authToken: AuthToken = adminUser.makeAuthToken()
 
-  before{
+  override protected def beforeAll() = {
     if (Sam.admin.doesUserExist(subjectId).getOrElse(false)) {
       try {
         Sam.admin.deleteUser(subjectId)
