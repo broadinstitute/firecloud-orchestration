@@ -5269,6 +5269,9 @@ definitions:
       billingAccount:
         type: string
         description: the id of the billing account to use, must start with 'billingAccounts/'
+      highSecurityNetwork:
+        type: boolean
+        description: Optional. Whether to remove the default GCP network in this project and replace it with a high-security VPC.
 
   CuratorStatus:
     description: is the user a curator?
