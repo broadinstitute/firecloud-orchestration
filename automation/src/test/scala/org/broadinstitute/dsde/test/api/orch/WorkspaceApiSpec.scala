@@ -1,29 +1,22 @@
 package org.broadinstitute.dsde.test.api.orch
 
-import java.time.Instant
 import java.util.UUID
-
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
 import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
+import org.broadinstitute.dsde.workbench.service.OrchestrationModel._
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 import DefaultJsonProtocol._
 
-class WorkspaceApiSpec extends FreeSpec with Matchers with ScalaFutures with Eventually
+class WorkspaceApiSpec extends FreeSpec with Matchers
   with BillingFixtures with WorkspaceFixtures {
 
-  implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(1, Minutes)))
-
-  implicit val StorageCostEstimateFormat = jsonFormat1(StorageCostEstimate)
-  final case class StorageCostEstimate(estimate: String)
+  val owner: Credentials = UserPool.chooseProjectOwner
+  val ownerAuthToken: AuthToken = owner.makeAuthToken()
 
   "Orchestration" - {
-    val owner: Credentials = UserPool.chooseProjectOwner
-    val ownerAuthToken: AuthToken = owner.makeAuthToken()
 
     "should return a storage cost estimate" - {
       "for the owner of a workspace" in {
@@ -60,7 +53,7 @@ class WorkspaceApiSpec extends FreeSpec with Matchers with ScalaFutures with Eve
             }
             val exceptionMessage = exception.message.parseJson.asJsObject.fields("message").convertTo[String]
 
-            exceptionMessage should be (s"insufficient permissions to perform operation on $projectName/$workspaceName")
+            exceptionMessage.contains(s"insufficient permissions to perform operation on $projectName/$workspaceName") should be (true)
           } (ownerAuthToken)
         }
       }
