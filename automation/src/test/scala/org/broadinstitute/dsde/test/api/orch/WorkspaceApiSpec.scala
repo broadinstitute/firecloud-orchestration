@@ -24,6 +24,8 @@ class WorkspaceApiSpec extends FreeSpec with Matchers
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("owner-storage-cost")) { workspaceName =>
+            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
+
             val storageCostEstimate = Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName).parseJson.convertTo[StorageCostEstimate]
             storageCostEstimate.estimate should be ("$0.00")
           }
@@ -35,6 +37,8 @@ class WorkspaceApiSpec extends FreeSpec with Matchers
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("writer-storage-cost"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
+            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
+
             val storageCostEstimate = Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)(writer.makeAuthToken()).parseJson.convertTo[StorageCostEstimate]
             storageCostEstimate.estimate should be ("$0.00")
           } (ownerAuthToken)
@@ -48,6 +52,8 @@ class WorkspaceApiSpec extends FreeSpec with Matchers
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("reader-storage-cost"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
+            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
+
             val exception = intercept[RestException] {
               Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)(reader.makeAuthToken())
             }
