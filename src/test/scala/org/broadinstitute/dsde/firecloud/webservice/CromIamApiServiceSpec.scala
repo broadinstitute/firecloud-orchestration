@@ -98,6 +98,37 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
       }
     }
 
+    "/api/workflows/{version}/backend/metadata" - {
+
+      val endpointPapiV1 = workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/operations/foobar"
+      val endpointPapiV2 = workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/projects/proj/operations/foobar"
+      val myMethods = List(HttpMethods.GET)
+
+      "should pass through my methods PAPIv1" in {
+        myMethods foreach { method =>
+          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpointPapiV1, toBeHandled = true)
+        }
+      }
+
+      "should pass through my methods PAPIv2" in {
+        myMethods foreach { method =>
+          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpointPapiV2, toBeHandled = true)
+        }
+      }
+
+      "should reject everything else PAPIv1" in {
+        allHttpMethodsExcept(myMethods) foreach { method =>
+          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpointPapiV1, toBeHandled = false)
+        }
+      }
+
+      "should reject everything else PAPIv2" in {
+        allHttpMethodsExcept(myMethods) foreach { method =>
+          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpointPapiV2, toBeHandled = false)
+        }
+      }
+    }
+
     "/api/workflows/{version}/query" - {
 
       val endpoint = workflowRoot + "/query"

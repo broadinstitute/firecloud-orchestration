@@ -566,6 +566,41 @@ paths:
             - email
             - profile
 
+  /api/workflows/{version}/{id}/backend/metadata/{backendId}:
+    get:
+      summary: Get backend (e.g. PAPI) metadata for a job
+      parameters:
+        - name: version
+          description: API Version
+          required: true
+          type: string
+          in: path
+          default: v1
+        - name: id
+          description: Workflow ID
+          required: true
+          type: string
+          in: path
+        - name: backendId
+          description: Backend ID, must be a job that is part of the workflow
+          required: true
+          type: string
+          in: path
+      tags:
+        - CromIAM Workflows (for Job Manager)
+      responses:
+        '200':
+          description: Successful Request, format is backend dependent
+        '404':
+          description: Workflow or Backend ID Not Found
+        '500':
+          description: Internal Error
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
   /api/workflows/{version}/{id}/labels:
     patch:
       summary: Add new labels or update values for existing label keys by workflow id.
