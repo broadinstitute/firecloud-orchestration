@@ -23,6 +23,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
+import org.mockserver.model.JsonBody
 
 object WorkspaceApiServiceSpec {
 
@@ -639,7 +640,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(published, discoverable))
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
+        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(new JsonBody(rawlsRequest.toJson.toString)))
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }

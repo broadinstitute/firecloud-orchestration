@@ -103,7 +103,7 @@ class ElasticSearchSpec  extends FreeSpec with Assertions {
 
   "ESInternalType model" - {
     val modelObject = ESInternalType("string",index="not_analyzed",include_in_all=false)
-    val modelJsonStr = """{"type":"string","index":"not_analyzed","include_in_all":false}"""
+    val modelJsonStr = """{"include_in_all":false,"index":"not_analyzed","type":"string"}"""
 
     "when unmarshalling from json" - {
       "using parseJson" in {
@@ -139,7 +139,7 @@ class ElasticSearchSpec  extends FreeSpec with Assertions {
       "foo" -> ESInnerField("string"),
       "bar" -> ESInnerField("integer", include_in_all=Some(false))
     ))
-    val modelJsonStr = """{"properties":{"foo":{"type":"string"},"bar":{"type":"integer","include_in_all":false}},"type":"nested"}"""
+    val modelJsonStr = """{"properties":{"foo":{"type":"string"},"bar":{"include_in_all":false,"type":"integer"}},"type":"nested"}"""
 
     "when unmarshalling from json" - {
       "using parseJson" in {
