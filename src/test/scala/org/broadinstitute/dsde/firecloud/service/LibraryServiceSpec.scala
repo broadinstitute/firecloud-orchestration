@@ -82,7 +82,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     createdDate = DateTime.now(),
     lastModified = DateTime.now(),
     attributes = Map.empty,
-    bucketName = "bucketName")
+    bucketName = "bucketName",
+    workflowCollectionName = Some("wf-collection"))
 
 
   val DULAdditionalJsObject =
@@ -806,6 +807,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           "name",
           "workspace_id",
           "buckety_bucket",
+          Some("wf-collection"),
           DateTime.now(),
           DateTime.now(),
           "my_workspace_creator",
