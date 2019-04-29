@@ -14,7 +14,7 @@ import spray.json._
 
 class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with BillingFixtures with Matchers with Eventually with RandomUtil {
 
-  implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(30, Seconds)), interval = scaled(Span(30, Seconds)))
+  implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(30, Seconds)), interval = scaled(Span(2, Seconds)))
 
   "For a user with publish permissions" - {
     "a published workspace" - {
