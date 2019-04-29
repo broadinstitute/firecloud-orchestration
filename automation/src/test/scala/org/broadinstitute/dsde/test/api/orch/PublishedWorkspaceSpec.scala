@@ -16,10 +16,10 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(30, Seconds)), interval = scaled(Span(2, Seconds)))
 
-  "For a user with publish permissions" - {
-    "a published workspace" - {
+  "a user with publish permissions" - {
+    "can publish a workspace" - {
 
-      "should be visible in the library table" in {
+      "published workspace should be visible in the library table" in {
 
         val curatorUser = UserPool.chooseCurator
         implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
@@ -51,8 +51,8 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
         }
       }
 
-      "a cloned workspace" - {
-        "should be cloned without copying the published status" in {
+      "can clone a published workspace" - {
+        "cloned workspace should default to unpublished status" in {
 
           val curatorUser = UserPool.chooseCurator
           implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
@@ -82,7 +82,7 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
           }
         }
 
-        "should default to visible to 'all users' in Library Attributes" in {
+        "cloned workspace should default to visible to 'all users'" in {
 
           val curatorUser = UserPool.chooseCurator
           implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
@@ -112,53 +112,52 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
         }
 
       }
-    }
 
-    "For a dataset with consent codes" in {
+      "publish a dataset with consent codes" in {
 
-      val curatorUser = UserPool.chooseCurator
-      implicit val authToken: AuthToken = curatorUser.makeAuthToken()
+        val curatorUser = UserPool.chooseCurator
+        implicit val authToken: AuthToken = curatorUser.makeAuthToken()
 
-      withCleanBillingProject(curatorUser) { billingProject =>
-        withWorkspace(billingProject, "PublishedWorkspaceSpec_consentcodes") { workspaceName =>
+        withCleanBillingProject(curatorUser) { billingProject =>
+          withWorkspace(billingProject, "PublishedWorkspaceSpec_consentcodes") { workspaceName =>
 
-          val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName) ++ LibraryData.consentCodes
-          Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
-          Orchestration.library.publishWorkspace(billingProject, workspaceName)
+            val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName) ++ LibraryData.consentCodes
+            Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
+            Orchestration.library.publishWorkspace(billingProject, workspaceName)
 
-          withClue("find library:consentCodes in library dataset") {
-            eventually {
-              val codes = getDatasetFieldValues(workspaceName, "library:consentCodes")
-              codes should contain theSameElementsAs List("NPU", "NCU", "HMB", "NMDS")
+            withClue("find library:consentCodes in library dataset") {
+              eventually {
+                val codes = getDatasetFieldValues(workspaceName, "library:consentCodes")
+                codes should contain theSameElementsAs List("NPU", "NCU", "HMB", "NMDS")
+              }
+            }
+          }
+        }
+      }
+
+      "publish a dataset with tags" in {
+
+        val tags = Map("tag:tags" -> Seq("testing", "diabetes", "PublishedWorkspaceSpec"))
+        val curatorUser = UserPool.chooseCurator
+        implicit val authToken: AuthToken = curatorUser.makeAuthToken()
+
+        withCleanBillingProject(curatorUser) { billingProject =>
+          withWorkspace(billingProject, "PublishedWorkspaceSpec_tags", attributes = Some(tags)) { workspaceName =>
+
+            val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
+            Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
+            Orchestration.library.publishWorkspace(billingProject, workspaceName)
+
+            withClue("find tag:tags in library dataset") {
+              eventually {
+                val codes = getDatasetFieldValues(workspaceName, "tag:tags")
+                codes should contain theSameElementsAs List("PublishedWorkspaceSpec", "testing", "diabetes")
+              }
             }
           }
         }
       }
     }
-
-    "For a dataset with tags" in {
-
-      val tags = Map("tag:tags" -> Seq("testing","diabetes", "PublishedWorkspaceSpec"))
-      val curatorUser = UserPool.chooseCurator
-      implicit val authToken: AuthToken = curatorUser.makeAuthToken()
-
-      withCleanBillingProject(curatorUser) { billingProject =>
-        withWorkspace(billingProject, "PublishedWorkspaceSpec_tags", attributes = Some(tags)) { workspaceName =>
-
-          val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
-          Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
-          Orchestration.library.publishWorkspace(billingProject, workspaceName)
-
-          withClue("find tag:tags in library dataset") {
-            eventually {
-              val codes = getDatasetFieldValues(workspaceName, "tag:tags")
-              codes should contain theSameElementsAs List("PublishedWorkspaceSpec", "testing", "diabetes")
-            }
-          }
-        }
-      }
-    }
-
   }
 
 
