@@ -7,8 +7,9 @@ import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 import DefaultJsonProtocol._
+import org.broadinstitute.dsde.workbench.service.test.RandomUtil
 
-class MethodApiSpec extends FreeSpec with Matchers
+class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
   with BillingFixtures with WorkspaceFixtures with MethodFixtures {
 
   "For a method config that references a redacted method" - {
@@ -32,7 +33,7 @@ class MethodApiSpec extends FreeSpec with Matchers
             //get method
             val getMethodResponse = intercept[RestException]{ Orchestration.methods.getMethod(method.methodNamespace, method.methodName, method.snapshotId)}
             println("getMethodResponse " + getMethodResponse.toString)
-            getMethodResponse.message.parseJson.asJsObject.fields("statusCode").convertTo[Int] should be (403)
+            getMethodResponse.message should be (s"Methods Repository entity ${method.methodNamespace}/${method.methodName}/1 not found.")
 
             //            {
             //  "deleted": false,
@@ -89,7 +90,7 @@ class MethodApiSpec extends FreeSpec with Matchers
       }
     }
 
-    "launch analysis and delete errors on redacted method" in {
+    "launching an analysis should not be possible" in {
       val user = UserPool.chooseProjectOwner
       implicit val authToken: AuthToken = user.makeAuthToken()
       withCleanBillingProject(user) { billingProject =>
@@ -110,8 +111,8 @@ class MethodApiSpec extends FreeSpec with Matchers
 
             Orchestration.methods.redact(method)
 
-            val participantId = "123"
-            Orchestration.importMetaData(billingProject, workspaceName, "participant", s"entity:participant_id\n$participantId")
+            val participantId = randomIdWithPrefix(SimpleMethodConfig.rootEntityType)
+            Orchestration.importMetaData(billingProject, workspaceName, "entities", s"entity:participant_id\n$participantId")
 
             val launchException = intercept[RestException]{ Orchestration.submissions.launchWorkflow(
               billingProject,
@@ -124,21 +125,37 @@ class MethodApiSpec extends FreeSpec with Matchers
               false)}
             println("launchException " + launchException)
             launchException.message.parseJson.asJsObject.fields("statusCode").convertTo[Int] should be (403)
-
-
-            //            // should be able to be deleted when no unredacted snapshot exists
-//            methodConfigDetailsPage.openEditMode(expectSuccess = false)
-//            val modal = await ready new MessageModal()
-//            modal.isVisible shouldBe true
-//            modal.getMessageText should include("There are no available method snapshots")
-//            modal.clickOk()
-//
-//            methodConfigDetailsPage.deleteMethodConfig()
-//            val list = await ready new WorkspaceMethodConfigListPage(billingProject, workspaceName)
-//            list.hasConfig(methodConfigName) shouldBe false
           }
         }
       }
+    }
+
+    "the method config should be deleteable " in {
+      val user = UserPool.chooseProjectOwner
+      implicit val authToken: AuthToken = user.makeAuthToken()
+      withCleanBillingProject(user) { billingProject =>
+        withWorkspace(billingProject, "MethodRedactedSpec_delete") { workspaceName =>
+          withMethod("MethodRedactedSpec_delete", MethodData.SimpleMethod, cleanUp = false) { methodName =>
+            val method = MethodData.SimpleMethod.copy(methodName = methodName)
+
+            Orchestration.methodConfigurations.createMethodConfigInWorkspace(
+              billingProject,
+              workspaceName,
+              method,
+              SimpleMethodConfig.configNamespace,
+              SimpleMethodConfig.configName,
+              1,
+              SimpleMethodConfig.inputs,
+              SimpleMethodConfig.outputs,
+              SimpleMethodConfig.rootEntityType)
+
+            Orchestration.methods.redact(method)
+
+            Orchestration.methodConfigurations.deleteMethodConfig(billingProject, workspaceName, SimpleMethodConfig.configNamespace, SimpleMethodConfig.configName)
+          }
+        }
+      }
+
     }
   }
 
