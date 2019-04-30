@@ -88,6 +88,8 @@ trait NihService extends LazyLogging {
           case None => Future.successful(RequestComplete(NotFound))
         }
       case None => Future.successful(RequestComplete(NotFound))
+    } recover {
+      case e:Exception => RequestCompleteWithErrorReport(InternalServerError, e.getMessage, e)
     }
   }
 
