@@ -27,37 +27,8 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
 
             Orchestration.methods.redact(method)
 
-            //Terra uses orch for methods and rawls for method configs
-            //Rawls.methodConfigs.getMethodConfigInWorkspace()
-
-            //get method
             val getMethodResponse = intercept[RestException]{ Orchestration.methods.getMethod(method.methodNamespace, method.methodName, method.snapshotId)}
-            println("getMethodResponse " + getMethodResponse.toString)
             getMethodResponse.message should include (s"Methods Repository entity ${method.methodNamespace}/${method.methodName}/1 not found.")
-
-            //            {
-            //  "deleted": false,
-            //  "inputs": {
-            //    "optional.optionalInput": "",
-            //    "optional.t.b": "",
-            //    "optional.t.i": ""
-            //  },
-            //  "methodConfigVersion": 1,
-            //  "methodRepoMethod": {
-            //    "methodName": "optional_multiple",
-            //    "methodVersion": 1,
-            //    "methodNamespace": "anutest",
-            //    "methodUri": "agora://anutest/optional_multiple/1",
-            //    "sourceRepo": "agora"
-            //  },
-            //  "name": "a_optional_multiple",
-            //  "namespace": "anutest",
-            //  "outputs": {
-            //    "optional.didItWork": ""
-            //  },
-            //  "prerequisites": {},
-            //  "rootEntityType": "participant"
-            //}
 
             val newMethodSnapshotId = 2
             val methodRepoMethod = Map(
@@ -81,10 +52,9 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
             )
 
             //choose new snapshot
-            val editResponse = Orchestration.methodConfigurations.editMethodConfig(billingProject, workspaceName, method.methodNamespace, method.methodName, editedMethodConfig)
+            val editResponse = Orchestration.methodConfigurations.editMethodConfig(billingProject, workspaceName, SimpleMethodConfig.configNamespace, SimpleMethodConfig.configName, editedMethodConfig)
             println("editResponse " + editResponse)
-            editResponse should include (""""methodVersion": 2,""")
-
+            editResponse should include (""""methodVersion": 2""")
           }
         }
       }
@@ -94,8 +64,8 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
       val user = UserPool.chooseProjectOwner
       implicit val authToken: AuthToken = user.makeAuthToken()
       withCleanBillingProject(user) { billingProject =>
-        withWorkspace(billingProject, "MethodRedactedSpec_delete") { workspaceName =>
-          withMethod("MethodRedactedSpec_delete", MethodData.SimpleMethod, cleanUp = false) { methodName =>
+        withWorkspace(billingProject, "MethodApiSpec_launch_after_redact") { workspaceName =>
+          withMethod("MethodApiSpec_launch_after_redact", MethodData.SimpleMethod, cleanUp = false) { methodName =>
             val method = MethodData.SimpleMethod.copy(methodName = methodName)
 
             Orchestration.methodConfigurations.createMethodConfigInWorkspace(
@@ -123,7 +93,7 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
               participantId,
               "this",
               false)}
-            println("launchException " + launchException)
+
             launchException.message.parseJson.asJsObject.fields("statusCode").convertTo[Int] should be (404)
           }
         }
@@ -134,8 +104,8 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
       val user = UserPool.chooseProjectOwner
       implicit val authToken: AuthToken = user.makeAuthToken()
       withCleanBillingProject(user) { billingProject =>
-        withWorkspace(billingProject, "MethodRedactedSpec_delete") { workspaceName =>
-          withMethod("MethodRedactedSpec_delete", MethodData.SimpleMethod, cleanUp = false) { methodName =>
+        withWorkspace(billingProject, "MethodApiSpec_delete_after_redacted") { workspaceName =>
+          withMethod("MethodApiSpec_delete_after_redacted", MethodData.SimpleMethod, cleanUp = false) { methodName =>
             val method = MethodData.SimpleMethod.copy(methodName = methodName)
 
             Orchestration.methodConfigurations.createMethodConfigInWorkspace(
