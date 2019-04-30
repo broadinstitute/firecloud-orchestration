@@ -53,8 +53,7 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
 
             //choose new snapshot
             val editResponse = Orchestration.methodConfigurations.editMethodConfig(billingProject, workspaceName, SimpleMethodConfig.configNamespace, SimpleMethodConfig.configName, editedMethodConfig)
-            println("editResponse " + editResponse)
-            editResponse should include (""""methodVersion": 2""")
+            editResponse should include (""""methodVersion":2""")
           }
         }
       }
