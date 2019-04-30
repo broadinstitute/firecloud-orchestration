@@ -36,14 +36,6 @@ case class NihDatasetPermission(name: String, authorized: Boolean)
 object NihStatus {
   implicit val impNihDatasetPermission = jsonFormat2(NihDatasetPermission)
   implicit val impNihStatus = jsonFormat3(NihStatus.apply)
-
-  def apply(profile: Profile, whitelistAccess: Set[NihDatasetPermission]): NihStatus = {
-    new NihStatus(
-      profile.linkedNihUsername,
-      whitelistAccess,
-      profile.linkExpireTime
-    )
-  }
 }
 
 object NihService {
@@ -83,14 +75,15 @@ trait NihService extends LazyLogging {
   val nihWhitelists: Set[NihWhitelist] = FireCloudConfig.Nih.whitelists
 
   def getNihStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
-    thurloeDao.getProfile(userInfo) flatMap {
-      case Some(profile) =>
-        profile.linkedNihUsername match {
-          case Some(_) =>
+    thurloeDao.getAllKVPs(userInfo.id, userInfo) flatMap {
+      case Some(profileWrapper) =>
+        profileWrapper.keyValuePairs.find(_.key.contains("linkedNihUsername")).flatMap(_.value) match {
+          case Some(linkedNihUsername) =>
             Future.traverse(nihWhitelists) { whitelistDef =>
               samDao.isGroupMember(whitelistDef.groupToSync, userInfo).map(isMember => NihDatasetPermission(whitelistDef.name, isMember))
             }.map { whitelistMembership =>
-              RequestComplete(NihStatus(profile, whitelistMembership))
+              val linkExpireTime = Try(profileWrapper.keyValuePairs.find(_.key.contains("linkExpireTime")).flatMap(_.value.map(_.toLong))).toOption.flatten
+              RequestComplete(NihStatus(Some(linkedNihUsername), whitelistMembership, linkExpireTime))
             }
           case None => Future.successful(RequestComplete(NotFound))
         }
