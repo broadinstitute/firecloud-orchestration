@@ -33,7 +33,7 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
             //get method
             val getMethodResponse = intercept[RestException]{ Orchestration.methods.getMethod(method.methodNamespace, method.methodName, method.snapshotId)}
             println("getMethodResponse " + getMethodResponse.toString)
-            getMethodResponse.message should be (s"Methods Repository entity ${method.methodNamespace}/${method.methodName}/1 not found.")
+            getMethodResponse.message should include (s"Methods Repository entity ${method.methodNamespace}/${method.methodName}/1 not found.")
 
             //            {
             //  "deleted": false,
@@ -124,7 +124,7 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
               "this",
               false)}
             println("launchException " + launchException)
-            launchException.message.parseJson.asJsObject.fields("statusCode").convertTo[Int] should be (403)
+            launchException.message.parseJson.asJsObject.fields("statusCode").convertTo[Int] should be (404)
           }
         }
       }
