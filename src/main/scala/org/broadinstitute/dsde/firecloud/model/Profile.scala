@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import spray.json.DefaultJsonProtocol._
 
 import scala.language.postfixOps
+import scala.util.Try
 
 case class FireCloudKeyValue(
   key: Option[String] = None,
@@ -126,6 +127,17 @@ object ProfileValidator {
     case Some(x) if x.isEmpty => true
     case Some(x) if emailRegex.findFirstMatchIn(x).isDefined => true
     case _ => false
+  }
+}
+
+object ProfileUtils {
+  def getString(key: String, profileWrapper: ProfileWrapper): Option[String] = {
+    profileWrapper.keyValuePairs.collectFirst {
+      case fckv if fckv.key.contains(key) => fckv.value
+    }.flatten
+  }
+  def getLong(key: String, profileWrapper: ProfileWrapper): Option[Long] = {
+    getString(key, profileWrapper).flatMap(x => Try(x.toLong).toOption)
   }
 }
 

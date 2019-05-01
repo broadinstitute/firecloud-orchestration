@@ -77,12 +77,12 @@ trait NihService extends LazyLogging {
   def getNihStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
     thurloeDao.getAllKVPs(userInfo.id, userInfo) flatMap {
       case Some(profileWrapper) =>
-        profileWrapper.keyValuePairs.find(_.key.contains("linkedNihUsername")).flatMap(_.value) match {
+        ProfileUtils.getString("linkedNihUsername", profileWrapper) match {
           case Some(linkedNihUsername) =>
             Future.traverse(nihWhitelists) { whitelistDef =>
               samDao.isGroupMember(whitelistDef.groupToSync, userInfo).map(isMember => NihDatasetPermission(whitelistDef.name, isMember))
             }.map { whitelistMembership =>
-              val linkExpireTime = Try(profileWrapper.keyValuePairs.find(_.key.contains("linkExpireTime")).flatMap(_.value.map(_.toLong))).toOption.flatten
+              val linkExpireTime = ProfileUtils.getLong("linkExpireTime", profileWrapper)
               RequestComplete(NihStatus(Some(linkedNihUsername), whitelistMembership, linkExpireTime))
             }
           case None => Future.successful(RequestComplete(NotFound))

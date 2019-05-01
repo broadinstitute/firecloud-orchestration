@@ -117,4 +117,74 @@ class ProfileSpec extends FreeSpec with Matchers {
 
   }
 
+  "ProfileUtils" - {
+
+    val pw = ProfileWrapper("123", List(
+      FireCloudKeyValue(Some("imastring"), Some("hello")),
+      FireCloudKeyValue(Some("imalong"), Some("1556724034")),
+      FireCloudKeyValue(Some("imnotalong"), Some("not-a-long")),
+      FireCloudKeyValue(Some("imnothing"), None)
+    ))
+
+    "getString" - {
+      "returns None if key doesn't exist" - {
+        val targetKey = "nonexistent"
+        // assert key does not exist in sample data
+        pw.keyValuePairs.find(_.key.contains(targetKey)) shouldBe None
+        // and therefore getString returns None
+        val actual = ProfileUtils.getString(targetKey, pw)
+        actual shouldBe None
+      }
+      "returns None if key exists but value doesn't" - {
+        val targetKey = "imnothing"
+        // assert key exists in sample data with no value
+        val targetKV = pw.keyValuePairs.find(_.key.contains(targetKey))
+        targetKV.isDefined shouldBe true
+        targetKV.get.value shouldBe None
+
+        val actual = ProfileUtils.getString(targetKey, pw)
+        actual shouldBe None
+      }
+      "returns Some(String) if key and value exist" - {
+        val targetKey = "imastring"
+        val actual = ProfileUtils.getString(targetKey, pw)
+        actual shouldBe Some("hello")
+      }
+    }
+    "getLong" - {
+      "returns None if key doesn't exist" - {
+        val targetKey = "nonexistent"
+        // assert key does not exist in sample data
+        pw.keyValuePairs.find(_.key.contains(targetKey)) shouldBe None
+        // and therefore getString returns None
+        val actual = ProfileUtils.getLong(targetKey, pw)
+        actual shouldBe None
+
+      }
+      "returns None if key exists but value doesn't" - {
+        val targetKey = "imnothing"
+        // assert key exists in sample data with no value
+        val targetKV = pw.keyValuePairs.find(_.key.contains(targetKey))
+        targetKV.isDefined shouldBe true
+        targetKV.get.value shouldBe None
+
+        val actual = ProfileUtils.getLong(targetKey, pw)
+        actual shouldBe None
+      }
+      "returns None if key and value exist but value is not a Long" - {
+        val targetKey = "imnotalong"
+        // assert the key exists
+        ProfileUtils.getString(targetKey, pw) shouldBe Some("not-a-long")
+        // but can't be parsed as a Long
+        val actual = ProfileUtils.getLong(targetKey, pw)
+        actual shouldBe None
+      }
+      "returns Some(Long) if key and value exist and value is Long-able" - {
+        val targetKey = "imalong"
+        val actual = ProfileUtils.getLong(targetKey, pw)
+        actual shouldBe Some(1556724034L)
+      }
+    }
+  }
+
 }
