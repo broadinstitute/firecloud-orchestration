@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+
+import akka.http.scaladsl.server.PathMatchers._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -12,6 +14,7 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
   lazy val workflowRoot: String = FireCloudConfig.CromIAM.authUrl + "/workflows/v1"
   lazy val womtoolRoute: String = FireCloudConfig.CromIAM.authUrl + "/womtool/v1"
   lazy val engineRoot: String = FireCloudConfig.CromIAM.baseUrl + "/engine/v1"
+  lazy val rawlsWorkflowRoot: String = FireCloudConfig.Rawls.authUrl + "/workflows"
 
   // This is the subset of CromIAM endpoints required for Job Manager. Orchestration is acting as a proxy between
   // CromIAM and Job Manager as of February 2019.
@@ -49,6 +52,11 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
             patch {
               passthrough(s"$workflowRoot/$workflowId/labels", HttpMethods.PATCH)
             }
+          }
+        } ~
+        path("backend" / "metadata" / Segment.repeat(Slash)) { operationId =>
+          get {
+            passthrough(s"$rawlsWorkflowRoot/$workflowId/genomics/${operationId.mkString("/")}", HttpMethods.GET)
           }
         }
       }
