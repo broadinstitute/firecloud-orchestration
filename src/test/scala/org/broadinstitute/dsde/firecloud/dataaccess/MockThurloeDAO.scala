@@ -114,8 +114,14 @@ class MockThurloeDAO extends ThurloeDAO {
     )
 
 
-  override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] =
-    Future.successful(None)
+  override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] = {
+    val profileWrapper = try {
+      Option(ProfileWrapper(forUserId, mockKeyValues(forUserId).toList))
+    } catch {
+      case e:NoSuchElementException => None
+    }
+    Future.successful(profileWrapper)
+  }
 
   override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
     val profileWrapper = try {
