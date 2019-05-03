@@ -38,9 +38,6 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     }
   }
 
-  override def getProfile(userInfo: UserInfo): Future[Option[Profile]] =
-    getAllKVPs(userInfo.id, userInfo) map { optionalWrapper => optionalWrapper map (Profile(_)) }
-
   override def getAllUserValuesForKey(key: String): Future[Map[String, String]] = {
     val queryUri = Uri(UserApiService.remoteGetQueryURL).withQuery(Map("key"->key))
     wrapExceptions {

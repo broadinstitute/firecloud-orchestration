@@ -4,13 +4,13 @@ import java.util.NoSuchElementException
 
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO._
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, Profile, ProfileWrapper, Trial, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, ProfileWrapper, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 /**
  * Created by mbemis on 10/25/16.
@@ -117,15 +117,6 @@ class MockThurloeDAO extends ThurloeDAO {
   override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] = {
     val profileWrapper = try {
       Option(ProfileWrapper(forUserId, mockKeyValues(forUserId).toList))
-    } catch {
-      case e:NoSuchElementException => None
-    }
-    Future.successful(profileWrapper)
-  }
-
-  override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
-    val profileWrapper = try {
-      Option(Profile(ProfileWrapper(userInfo.id, mockKeyValues(userInfo.id).toList)))
     } catch {
       case e:NoSuchElementException => None
     }
