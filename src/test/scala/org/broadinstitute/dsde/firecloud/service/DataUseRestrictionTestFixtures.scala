@@ -124,7 +124,8 @@ object DataUseRestrictionTestFixtures {
       createdDate=DateTime.now(),
       lastModified=DateTime.now(),
       attributes=defaultAttributes,
-      bucketName="bucketName")
+      bucketName="bucketName",
+      workflowCollectionName=Some("wf-collection"))
   }
 
 }

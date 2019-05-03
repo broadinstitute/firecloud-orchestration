@@ -23,6 +23,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
+import org.mockserver.model.JsonBody
 
 object WorkspaceApiServiceSpec {
 
@@ -31,6 +32,7 @@ object WorkspaceApiServiceSpec {
     "name-published",
     "workspace_id",
     "buckety_bucket",
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
@@ -50,6 +52,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "name",
     "workspace_id",
     "buckety_bucket",
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
@@ -102,6 +105,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "att",
     "id",
     "", //bucketname
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "mb",
@@ -115,6 +119,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "att",
     "id",
     "", //bucketname
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "mb",
@@ -128,6 +133,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "att",
     "id",
     "", //bucketname
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "mb",
@@ -177,7 +183,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val rawlsRequest = WorkspaceRequest(namespace, name, Map(), Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", DateTime.now(), DateTime.now(), "bob", Map(), false, authDomain)
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Map(), false, authDomain)
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -199,7 +205,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", DateTime.now(), DateTime.now(), "bob", attributes, false, authDomain)
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", attributes, false, authDomain)
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -290,7 +296,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
       Seq("this","workspace") foreach { prefix =>
         s"Forbidden error is returned for HTTP POST with an output to $prefix.library:" in {
-          val methodConfigs = MethodConfiguration("namespace", "name", Some("root"), Map.empty, Map.empty, Map("value" -> AttributeString(s"$prefix.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
+          val methodConfigs = MethodConfiguration("namespace", "name", Some("root"), None, Map.empty, Map("value" -> AttributeString(s"$prefix.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
           Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(Forbidden)
           }
@@ -634,7 +640,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(published, discoverable))
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
+        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(new JsonBody(rawlsRequest.toJson.toString)))
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }

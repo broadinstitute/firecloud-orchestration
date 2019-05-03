@@ -138,6 +138,7 @@ class MockRawlsDAO extends RawlsDAO {
     "att",
     "id",
     "", //bucketname
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "ansingh",
@@ -160,6 +161,7 @@ class MockRawlsDAO extends RawlsDAO {
     "att",
     "id",
     "", //bucketname
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "ansingh",
@@ -184,6 +186,7 @@ class MockRawlsDAO extends RawlsDAO {
     "att",
     "id",
     "", //bucketname
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "ansingh",
@@ -224,6 +227,7 @@ class MockRawlsDAO extends RawlsDAO {
       authorizationDomain = Set.empty,
       workspaceId = "workspaceId",
       bucketName = "bucketName",
+      workflowCollectionName = Some("wf-collection"),
       createdDate = DateTime.now(),
       lastModified = DateTime.now(),
       createdBy = "createdBy",
