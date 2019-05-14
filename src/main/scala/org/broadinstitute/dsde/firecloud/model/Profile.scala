@@ -21,6 +21,8 @@ case class ThurloeKeyValues(
 
 case class ProfileWrapper(userId: String, keyValuePairs: List[FireCloudKeyValue])
 
+case class ProfileKVP(userId: String, keyValuePair: FireCloudKeyValue)
+
 case class BasicProfile (
     firstName: String,
     lastName: String,

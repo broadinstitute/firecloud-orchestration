@@ -211,6 +211,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impBasicProfile = jsonFormat11(BasicProfile)
   implicit val impProfile = jsonFormat13(Profile.apply)
   implicit val impProfileWrapper = jsonFormat2(ProfileWrapper)
+  implicit val impProfileKVP = jsonFormat2(ProfileKVP)
   implicit val impTerraPreference = jsonFormat2(TerraPreference)
 
   implicit val impTokenResponse = jsonFormat6(OAuthTokens.apply)

@@ -11,10 +11,11 @@ import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, Create
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
 import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
-import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
+import org.elasticsearch.action.search._
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.action.update.{UpdateRequest, UpdateRequestBuilder, UpdateResponse}
 import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.common.unit.TimeValue
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.index.query.QueryBuilders._
@@ -273,23 +274,75 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     )
   }
 
+  private def handleScrollResponse(scrollResponse: SearchResponse, accum: List[TrialProject]): (String, List[TrialProject]) = {
+    val scrollId: String = scrollResponse.getScrollId
+
+    val trialProjects: List[TrialProject] = if (scrollResponse.getHits.totalHits == 0) {
+      List.empty[TrialProject]
+    } else {
+      scrollResponse.getHits.getHits.toList map ( _.getSourceAsString.parseJson.convertTo[TrialProject] )
+    }
+
+    val tpname  = trialProjects.headOption.map(_.name.value)
+
+    (scrollId, accum ++ trialProjects)
+  }
+
+  private def startScroll: (String, List[TrialProject]) = {
+    val startScrollRequest = client
+      .prepareSearch(indexName)
+      .setQuery(Ready)
+      .setScroll(TimeValue.timeValueMinutes(1))
+      .addSort("_doc", SortOrder.ASC)
+      .setSize(250) // tweak pagesize here
+
+    handleScrollResponse(
+      executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](startScrollRequest),
+      List.empty[TrialProject])
+  }
+
+  private def continueScroll(scrollId: String, accum: List[TrialProject]): (String, List[TrialProject]) = {
+    val continueScrollRequest = client
+      .prepareSearchScroll(scrollId)
+      .setScroll(TimeValue.timeValueMinutes(1))
+
+    handleScrollResponse(
+      executeESRequest[SearchScrollRequest, SearchResponse, SearchScrollRequestBuilder](continueScrollRequest),
+      accum)
+  }
+
+  private def clearScroll(scrollId: String): Future[Any] = {
+    // we want to clear the scroll to release resources on the ES server.
+    // however, ES will automatically clean up scrolls after their timeout.
+    // so, we make this a fire-and-forget request, and don't care whether or not it succeeds or fails.
+    val clearScrollRequest = client
+      .prepareClearScroll()
+      .addScrollId(scrollId)
+    Future(executeESRequest[ClearScrollRequest, ClearScrollResponse, ClearScrollRequestBuilder](clearScrollRequest))
+  }
+
   /**
     * Returns a list of all project records.
     * @return list of all project records.
     */
   override def projectReport: Seq[TrialProject] = {
-    val reportProjectRequest = client
-      .prepareSearch(indexName)
-      .setQuery(Ready)
-      .addSort("name.keyword", SortOrder.ASC)
-      .setSize(5000) // we should loop and make paginated requests; this will have to suffice for now
 
-    val reportProjectResponse = executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](reportProjectRequest)
+    def nextScroll(scrollId: String, startCount: Int, accum: List[TrialProject]): (String, List[TrialProject]) = {
+      if (accum.length > startCount) {
+        // continueScroll and accumulate
+        val (newScrollId, newAccum) = continueScroll(scrollId, accum)
+        nextScroll(newScrollId, accum.length, newAccum)
+      } else {
+        // clearScroll and return
+        clearScroll(scrollId)
+        (scrollId, accum)
+      }
+    }
 
-    if (reportProjectResponse.getHits.totalHits == 0)
-      Seq.empty[TrialProject]
-    else
-      reportProjectResponse.getHits.getHits.toSeq map ( _.getSourceAsString.parseJson.convertTo[TrialProject] )
+    val (scrollId, accum) = startScroll // initial query
+    val (_, finalAccum) = nextScroll(scrollId, startCount = 0, accum)
+
+    finalAccum
   }
 
   private def indexExists: Boolean = {

@@ -15,8 +15,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
+import scala.util.Try
 /**
  * Created by mbemis on 10/21/16.
  */
@@ -115,6 +114,33 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     codeBlock.recover {
       case t: Throwable => {
         throw new FireCloudExceptionWithErrorReport(ErrorReport.apply(StatusCodes.InternalServerError, t))
+      }
+    }
+  }
+
+  override def bulkUserQuery(userIds: List[String], keySelection: List[String]): Future[List[ProfileWrapper]] = {
+    val userIdParams:List[(String,String)] = userIds.map(("userId", _))
+    val keyParams:List[(String,String)] = keySelection.map(("key", _))
+
+    val allQueryParams = userIdParams ++ keyParams
+
+    val queryUri = Uri(UserApiService.remoteGetQueryURL).withQuery(allQueryParams:_*)
+
+    // default uri length for Spray - which Thurloe uses - is 2048 chars
+    assert(queryUri.toString().length <  2048, s"generated url is too long at ${queryUri.toString().length} chars.")
+
+    val req = adminAuthedRequest(Get(queryUri), useFireCloudHeader = true,label = Some("HttpThurloeDAO.bulkUserQuery"))
+
+    req map { response =>
+      response.status match {
+        case StatusCodes.OK =>
+          val profileKVPs:List[ProfileKVP] = unmarshal[List[ProfileKVP]].apply(response)
+          val groupedByUser:Map[String, List[ProfileKVP]] = profileKVPs.groupBy(_.userId)
+          groupedByUser.map{
+            case(userId:String, kvps:List[ProfileKVP]) => ProfileWrapper(userId, kvps.map(_.keyValuePair))
+          }.toList
+
+        case _ => throw new FireCloudException(s"Unable to execute bulkUserQuery from profile service: ${response.status} $response")
       }
     }
   }
