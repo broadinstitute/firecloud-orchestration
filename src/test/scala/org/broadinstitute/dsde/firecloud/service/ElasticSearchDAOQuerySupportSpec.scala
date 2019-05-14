@@ -300,7 +300,9 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
               case _ => Unit
             }
             // assertResult(expectedNoDiscoverableGroups, "group criteria should be just the must-not-exists") {groupbool}
+          case x => throw new Exception(s"unmatched case for  ${x.getClass.getName}: ${x.toString()}")
       }
+      case x => throw new Exception(s"unmatched case for  ${x.getClass.getName}: ${x.toString()}")
     }
   }
 
@@ -373,7 +375,9 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
             boolMap.fields("should") match {
               case shouldArray:JsArray =>
                 shouldArray
+              case x => throw new Exception(s"unmatched case for  ${x.getClass.getName}: ${x.toString()}")
             }
+          case x => throw new Exception(s"unmatched case for  ${x.getClass.getName}: ${x.toString()}")
         }
       case _ => fail("must clause should be a JsArray")
     }
