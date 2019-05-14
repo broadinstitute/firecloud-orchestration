@@ -342,7 +342,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     val (scrollId, accum) = startScroll // initial query
     val (_, finalAccum) = nextScroll(scrollId, startCount = 0, accum)
 
-    finalAccum
+    finalAccum.sortBy(_.name.value)
   }
 
   private def indexExists: Boolean = {
