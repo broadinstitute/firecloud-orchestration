@@ -274,7 +274,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     )
   }
 
-  private def handleScrollResponse(scrollResponse: SearchResponse, accum: List[TrialProject]): (String, List[TrialProject]) = {
+  private def handleScrollResponse(scrollResponse: SearchResponse): (String, List[TrialProject]) = {
     val scrollId: String = scrollResponse.getScrollId
 
     val trialProjects: List[TrialProject] = if (scrollResponse.getHits.totalHits == 0) {
@@ -283,9 +283,7 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
       scrollResponse.getHits.getHits.toList map ( _.getSourceAsString.parseJson.convertTo[TrialProject] )
     }
 
-    val tpname  = trialProjects.headOption.map(_.name.value)
-
-    (scrollId, accum ++ trialProjects)
+    (scrollId, trialProjects)
   }
 
   private def startScroll: (String, List[TrialProject]) = {
@@ -297,18 +295,16 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
       .setSize(250) // tweak pagesize here
 
     handleScrollResponse(
-      executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](startScrollRequest),
-      List.empty[TrialProject])
+      executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](startScrollRequest))
   }
 
-  private def continueScroll(scrollId: String, accum: List[TrialProject]): (String, List[TrialProject]) = {
+  private def continueScroll(scrollId: String): (String, List[TrialProject]) = {
     val continueScrollRequest = client
       .prepareSearchScroll(scrollId)
       .setScroll(TimeValue.timeValueMinutes(1))
 
     handleScrollResponse(
-      executeESRequest[SearchScrollRequest, SearchResponse, SearchScrollRequestBuilder](continueScrollRequest),
-      accum)
+      executeESRequest[SearchScrollRequest, SearchResponse, SearchScrollRequestBuilder](continueScrollRequest))
   }
 
   private def clearScroll(scrollId: String): Future[Any] = {
@@ -327,20 +323,24 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
     */
   override def projectReport: Seq[TrialProject] = {
 
-    def nextScroll(scrollId: String, startCount: Int, accum: List[TrialProject]): (String, List[TrialProject]) = {
-      if (accum.length > startCount) {
-        // continueScroll and accumulate
-        val (newScrollId, newAccum) = continueScroll(scrollId, accum)
-        nextScroll(newScrollId, accum.length, newAccum)
+    def nextScroll(scrollId: Option[String], accum: List[TrialProject]): (String, List[TrialProject]) = {
+      // is this the initial query?
+      val (newScrollId, batch) = scrollId match {
+        case None => startScroll
+        case Some(s) => continueScroll(s)
+      }
+
+      // if the query returned results, add them to the accumulator and make another query
+      if (batch.nonEmpty) {
+        nextScroll(Some(newScrollId), accum ++ batch)
       } else {
-        // clearScroll and return
-        clearScroll(scrollId)
-        (scrollId, accum)
+        // else, release the scroll in ES and return results
+        clearScroll(newScrollId)
+        (newScrollId, accum)
       }
     }
 
-    val (scrollId, accum) = startScroll // initial query
-    val (_, finalAccum) = nextScroll(scrollId, startCount = 0, accum)
+    val (_, finalAccum) = nextScroll(None, List.empty[TrialProject])
 
     finalAccum.sortBy(_.name.value)
   }
