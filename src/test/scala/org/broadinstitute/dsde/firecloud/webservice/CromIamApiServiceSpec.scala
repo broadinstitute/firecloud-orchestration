@@ -100,11 +100,11 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .withStatusCode(200)
           .withBody("We got all of your includeKeys")
 
-        cromiamServer.when(request)
-                     .respond(response)
+        cromiamServer
+          .when(request)
+          .respond(response)
 
         Get(Uri(endpoint).withQuery("includeKey=hit&includeKey=hitFailure")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
-
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -173,11 +173,11 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .withStatusCode(200)
           .withBody("Got a query with start and end values")
 
-        cromiamServer.when(request)
+        cromiamServer
+          .when(request)
           .respond(response)
 
         Get(Uri(endpoint).withQuery("start=start%20value&end=end%20value")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
-
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
