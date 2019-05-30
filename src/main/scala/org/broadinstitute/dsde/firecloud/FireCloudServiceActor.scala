@@ -109,10 +109,10 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
 
   if (FireCloudConfig.Trial.spreadsheetId.nonEmpty && FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes > 0) {
-    val freq = FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes
+    val freq = 2 // TODO: should be: FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes
     val scheduledTrialService = system.actorOf(TrialService.props(trialServiceConstructor), "trial-spreadsheet-actor")
     // use a randomized startup delay to avoid multiple instances of this app executing on the same cycle
-    val initialDelay = 1 + scala.util.Random.nextInt(freq/2)
+    val initialDelay = 0 // TODO: should be: 1 + scala.util.Random.nextInt(freq/2)
     logger.info(s"Free credits spreadsheet updates are enabled: every $freq minutes, starting $initialDelay minutes from now.")
     system.scheduler.schedule(initialDelay.minutes, freq.minutes, scheduledTrialService, UpdateBillingReport(FireCloudConfig.Trial.spreadsheetId))
   } else {
