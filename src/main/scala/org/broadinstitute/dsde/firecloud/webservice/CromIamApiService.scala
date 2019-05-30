@@ -1,7 +1,5 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-
-import akka.http.scaladsl.server.PathMatchers._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
