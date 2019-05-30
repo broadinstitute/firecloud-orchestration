@@ -68,10 +68,8 @@ trait TrialServiceSupport extends LazyLogging {
 
     // split users into chunks of size N for efficient querying to Thurloe
     val profileQueries = assignedUsers
-      .grouped(100) // tweak chunk size here!
-      .map{ userChunk =>
-        thurloeDAO.bulkUserQuery(userChunk, thurloeKeys)
-      }
+      .grouped(40) // tweak chunk size here!
+      .map{ userChunk => thurloeDAO.bulkUserQuery(userChunk, thurloeKeys) }
 
     // TODO: make this sequential instead of parallel, to reduce load? Would have to not start them eagerly above.
     val profileWrappers:Future[Seq[ProfileWrapper]] = Future.sequence(profileQueries).map(_.flatten.toSeq)
