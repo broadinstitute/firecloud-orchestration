@@ -2,20 +2,14 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.ActorRefFactory
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, ServiceSpec}
+import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.HttpRequest.request
-import spray.http.StatusCodes.OK
 import spray.http.{HttpMethods, Uri}
 import spray.httpx.SprayJsonSupport
 
 class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with SprayJsonSupport {
 
-
-  // The route tests pass without the mock server, but we attempt to contact `http://localhost:8995`
-  // and print out a hideous stacktrace if nothing is running there. If there is a smarter way to do
-  // this, please speak up! (AEN 2019-02-04)
   var cromiamServer: ClientAndServer = _
 
   override def beforeAll(): Unit = {
