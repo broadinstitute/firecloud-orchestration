@@ -122,7 +122,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     val userIdParams:List[(String,String)] = userIds.map(("userId", _))
     val keyParams:List[(String,String)] = keySelection.map(("key", _))
 
-    val allQueryParams = userIdParams ++ keyParams
+    val allQueryParams = keyParams ++ userIdParams
 
     val queryUri = Uri(UserApiService.remoteGetQueryURL).withQuery(allQueryParams:_*)
 
