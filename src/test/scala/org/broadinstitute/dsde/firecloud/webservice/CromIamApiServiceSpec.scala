@@ -5,10 +5,13 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, ServiceSpec}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import spray.http.HttpMethods
+import org.mockserver.model.HttpRequest.request
+import spray.http.StatusCodes.OK
+import spray.http.{HttpMethods, Uri}
 import spray.httpx.SprayJsonSupport
 
 class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with SprayJsonSupport {
+
 
   // The route tests pass without the mock server, but we attempt to contact `http://localhost:8995`
   // and print out a hideous stacktrace if nothing is running there. If there is a smarter way to do
@@ -91,6 +94,30 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
+      "should forward query parameters on GET" in {
+
+        val request = org.mockserver.model.HttpRequest.request()
+          .withMethod("GET")
+          .withPath(s"/api$endpoint")
+          .withQueryStringParameter("includeKey", "hit")
+          .withQueryStringParameter("includeKey", "hitFailure")
+
+        val response = org.mockserver.model.HttpResponse.response()
+          .withStatusCode(200)
+          .withBody("We got all of your includeKeys")
+
+        cromiamServer.when(request)
+                     .respond(response)
+
+        Get(Uri(endpoint).withQuery("includeKey=hit&includeKey=hitFailure")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+
+          cromiamServer.verify(request)
+
+          status.intValue should equal(200)
+          responseAs[String] shouldEqual "We got all of your includeKeys"
+        }
+      }
+
       "should reject everything else" in {
         allHttpMethodsExcept(myMethods) foreach { method =>
           checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
@@ -140,6 +167,30 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
+      "should forward query parameters on GET" in {
+
+        val request = org.mockserver.model.HttpRequest.request()
+          .withMethod("GET")
+          .withPath(s"/api$endpoint")
+          .withQueryStringParameter("start", "start value")
+          .withQueryStringParameter("end", "end value")
+
+        val response = org.mockserver.model.HttpResponse.response()
+          .withStatusCode(200)
+          .withBody("Got a query with start and end values")
+
+        cromiamServer.when(request)
+          .respond(response)
+
+        Get(Uri(endpoint).withQuery("start=start%20value&end=end%20value")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+
+          cromiamServer.verify(request)
+
+          status.intValue should equal(200)
+          responseAs[String] shouldEqual "Got a query with start and end values"
+        }
+      }
+
       "should reject everything else" in {
         allHttpMethodsExcept(myMethods) foreach { method =>
           checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
@@ -183,5 +234,5 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
   }
 
-  override implicit def actorRefFactory: ActorRefFactory = system
+  override def actorRefFactory: ActorRefFactory = system
 }
