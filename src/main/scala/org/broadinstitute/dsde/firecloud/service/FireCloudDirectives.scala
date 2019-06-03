@@ -27,7 +27,7 @@ trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreato
     passthrough(Uri(unencodedPath), methods: _*)
   }
 
-  // Danger: it is a common mistake to pass in a URI that ommits the query parameters included in the original request to Orch.
+  // Danger: it is a common mistake to pass in a URI that omits the query parameters included in the original request to Orch.
   // To preserve the query, extract it and attach it to the passthrough URI using `.withQuery(query)`.
   def passthrough(uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
     generateExternalHttpPerRequestForMethod(uri, inMethod)
