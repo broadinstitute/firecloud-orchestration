@@ -1,11 +1,9 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-
-import akka.http.scaladsl.server.PathMatchers._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import spray.http.HttpMethods
+import spray.http.{HttpMethods, Uri}
 import spray.routing.Route
 import spray.routing.HttpService
 
@@ -25,7 +23,9 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
       path("query") {
         pathEnd {
           get {
-            passthrough(s"$workflowRoot/query", HttpMethods.GET)
+            extract(_.request.uri.query) { query =>
+              passthrough(Uri(s"$workflowRoot/query").withQuery(query), HttpMethods.GET)
+            }
           } ~
           post {
             passthrough(s"$workflowRoot/query", HttpMethods.POST)
@@ -43,7 +43,9 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
         path("metadata") {
           pathEnd {
             get {
-              passthrough(s"$workflowRoot/$workflowId/metadata", HttpMethods.GET)
+              extract(_.request.uri.query) { query =>
+                passthrough(Uri(s"$workflowRoot/$workflowId/metadata").withQuery(query), HttpMethods.GET)
+              }
             }
           }
         } ~
