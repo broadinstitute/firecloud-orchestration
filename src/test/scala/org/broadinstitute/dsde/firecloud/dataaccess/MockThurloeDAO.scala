@@ -169,4 +169,17 @@ class MockThurloeDAO extends ThurloeDAO {
 
   override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus): Future[Try[Unit]] =
     Future.successful(Success(()))
+
+  override def bulkUserQuery(userIds: List[String], keySelection: List[String]): Future[List[ProfileWrapper]] = {
+
+    val mockdata = userIds.map { forUserId =>
+      if (mockKeyValues.contains(forUserId)) {
+        val kvps = mockKeyValues(forUserId).filter(kvp => kvp.key.isDefined && keySelection.contains(kvp.key.get))
+        Some(ProfileWrapper(forUserId, kvps.toList))
+      } else {
+        None
+      }
+    }
+    Future.successful(mockdata.flatten)
+  }
 }

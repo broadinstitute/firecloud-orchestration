@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.{SamDAO, ThurloeDAO, TrialDAO}
 import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.{Disabled, Enabled, TrialState}
 import org.broadinstitute.dsde.firecloud.model.Trial.{SpreadsheetResponse, TrialProject, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, Profile, ProfileWrapper, UserInfo, WithAccessToken, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, Profile, ProfileUtils, ProfileWrapper, UserInfo, WithAccessToken, WorkbenchUserInfo}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -31,6 +31,11 @@ trait TrialServiceSupport extends LazyLogging {
   private val headers = List("Project Name", "User Subject Id", "Status", "Login Email", "Contact Email",
     "Enrollment Date", "Terminated Date", "Expiration Date", "User Agreement", "User Agreement Date",
     "First Name", "Last Name", "Organization", "City", "State", "Country").map(_.asInstanceOf[AnyRef]).asJava
+
+  // keys to retrieve from Thurloe to populate spreadsheet
+  private val thurloeKeys = List("trialState", "trialEnrolledDate", "trialTerminatedDate", "trialExpirationDate",
+    "userAgreed", "trialEnrolledDate", "firstName", "lastName", "contactEmail", "institute", "programLocationCity",
+    "programLocationState", "programLocationCountry")
 
   // default value to use if user has no entry for a field in their profile
   private val defaultProfileField = ""
@@ -57,13 +62,23 @@ trait TrialServiceSupport extends LazyLogging {
     val projects: Seq[TrialProject] = trialDAO.projectReport
     logger.info(s"makeSpreadsheetValues processing ${projects.length} projects ...")
 
-    // find the Thurloe KVPs for any users referenced in those projects
-    // TODO: this should switch to using Thurloe's bulk endpoint, so we're not making a large burst of requests.
-    val profileWrappers:Future[Seq[ProfileWrapper]] = Future.sequence(projects.filter(p => p.user.isDefined).map { p =>
-      thurloeDAO.getAllKVPs(p.user.get.userSubjectId, managerInfo) map { kvpOption =>
-        kvpOption.getOrElse(ProfileWrapper(p.user.get.userSubjectId, List.empty[FireCloudKeyValue]))
-      }
-    })
+    // from the list of projects, get assigned userids
+    val assignedUsers:List[String] = projects.toList.filter(p => p.user.isDefined).flatMap(_.user.map(_.userSubjectId))
+    logger.info(s"makeSpreadsheetValues found ${assignedUsers.length} users assigned to projects ...")
+
+    /* split users into chunks of size N for efficient querying to Thurloe
+        based on empirical perf/scale testing, the most efficient value for N is ~40.
+
+        Dear future engineer: if you find that you ever need to change this value, even
+        just to experiment with other values, or to use different values in different environments,
+        please move it to config so that it is easier to tweak.
+     */
+    val profileQueries = assignedUsers
+      .grouped(40) // tweak chunk size here!
+      .map{ userChunk => thurloeDAO.bulkUserQuery(userChunk, thurloeKeys) }
+
+    // TODO: make this sequential instead of parallel, to reduce load? Would have to not start them eagerly above.
+    val profileWrappers:Future[Seq[ProfileWrapper]] = Future.sequence(profileQueries).map(_.flatten.toSeq)
 
     // resolve the Thurloe KVPs future
     profileWrappers.map { wrappers =>
@@ -103,17 +118,7 @@ trait TrialServiceSupport extends LazyLogging {
 
     val status = UserTrialStatus(profileWrapper)
 
-    // profile may be incomplete - especially for users coming in via Terra
-    val maybeProfile  = Try(Profile(profileWrapper))
-
-    val List(firstName, lastName, contactEmail, institute,
-          programLocationCity, programLocationState, programLocationCountry) =  maybeProfile match {
-      case Success(profile) =>
-        List(profile.firstName, profile.lastName, profile.contactEmail.getOrElse(user.userEmail),
-          profile.institute, profile.programLocationCity, profile.programLocationState, profile.programLocationCountry)
-      case Failure(ex) =>
-        List.fill(7)(defaultProfileField)
-    }
+    def fromProfileWrapper(key: String) = ProfileUtils.getString(key, profileWrapper).getOrElse(defaultProfileField)
 
     SpreadsheetRow(
       userSubjectId = status.userId,
@@ -124,13 +129,13 @@ trait TrialServiceSupport extends LazyLogging {
       expiredDate = status.expirationDate,
       userAgreed = status.userAgreed,
       userAgreedDate = status.enrolledDate, // TODO: should be separate date
-      firstName = firstName,
-      lastName = lastName,
-      contactEmail = contactEmail,
-      institute = institute,
-      programLocationCity = programLocationCity,
-      programLocationState = programLocationState,
-      programLocationCountry = programLocationCountry
+      firstName = fromProfileWrapper("firstName"),
+      lastName = fromProfileWrapper("lastName"),
+      contactEmail = fromProfileWrapper("contactEmail"),
+      institute = fromProfileWrapper("institute"),
+      programLocationCity = fromProfileWrapper("programLocationCity"),
+      programLocationState = fromProfileWrapper("programLocationState"),
+      programLocationCountry = fromProfileWrapper("programLocationCountry")
     )
   }
 
