@@ -66,7 +66,13 @@ trait TrialServiceSupport extends LazyLogging {
     val assignedUsers:List[String] = projects.toList.filter(p => p.user.isDefined).flatMap(_.user.map(_.userSubjectId))
     logger.info(s"makeSpreadsheetValues found ${assignedUsers.length} users assigned to projects ...")
 
-    // split users into chunks of size N for efficient querying to Thurloe
+    /* split users into chunks of size N for efficient querying to Thurloe
+        based on empirical perf/scale testing, the most efficient value for N is ~40.
+
+        Dear future engineer: if you find that you ever need to change this value, even
+        just to experiment with other values, or to use different values in different environments,
+        please move it to config so that it is easier to tweak.
+     */
     val profileQueries = assignedUsers
       .grouped(40) // tweak chunk size here!
       .map{ userChunk => thurloeDAO.bulkUserQuery(userChunk, thurloeKeys) }

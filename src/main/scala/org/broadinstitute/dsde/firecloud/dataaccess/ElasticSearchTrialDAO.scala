@@ -287,6 +287,15 @@ class ElasticSearchTrialDAO(client: TransportClient, indexName: String, refreshM
   }
 
   private def startScroll: (String, List[TrialProject]) = {
+    /* Start an Elasticsearch scroll request. This allows us to retrieve all records in the index,
+        in batches of N records.
+
+        We currently have N set to 250.
+
+        Dear future engineer: if you find that you ever need to change this value, even
+        just to experiment with other values, or to use different values in different environments,
+        please move it to config so that it is easier to tweak.
+    */
     val startScrollRequest = client
       .prepareSearch(indexName)
       .setQuery(Ready)
