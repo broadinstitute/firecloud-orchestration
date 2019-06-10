@@ -44,7 +44,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       */
     "should grant and remove google role access" in {
       // google roles can take a while to take effect
-      implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(1, Minutes)), interval = scaled(Span(10, Seconds)))
+      implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(3, Minutes)), interval = scaled(Span(10, Seconds)))
 
       val ownerUser: Credentials = UserPool.chooseProjectOwner
       val ownerToken: AuthToken = ownerUser.makeAuthToken()
