@@ -43,7 +43,8 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       * The test does check the right things, even if FireCloud itself doesn't use it.
       */
     "should grant and remove google role access" in {
-      // google roles can take a while to take effect
+      // According to google, role changes will take, at most, 7 minutes to propagate through the system. However, that is an
+      // extreme upper limit, which is why our Patience config is set lower than that.
       implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(3, Minutes)), interval = scaled(Span(10, Seconds)))
 
       val ownerUser: Credentials = UserPool.chooseProjectOwner
