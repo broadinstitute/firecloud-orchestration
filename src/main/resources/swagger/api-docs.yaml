@@ -77,7 +77,7 @@ paths:
 
   /api/billing/{projectId}/members:
     get:
-      x-passthrough: TODO
+      x-passthrough: true
       responses:
         200:
           description: Success
@@ -111,7 +111,7 @@ paths:
 
   /api/billing/{projectId}/{workbenchRole}/{email}:
     put:
-      x-passthrough: TODO
+      x-passthrough: true
       responses:
         200:
           description: Successfully Added User To Billing Project
@@ -154,7 +154,7 @@ paths:
           - email
           - profile
     delete:
-      x-passthrough: TODO
+      x-passthrough: true
       responses:
         200:
           description: Successfully Removed User From Billing Project
@@ -199,7 +199,7 @@ paths:
 
   /api/billing/{projectId}/googleRole/{role}/{email}:
     put:
-      x-passthrough: TODO
+      x-passthrough: true
       responses:
         200:
           description: Successfully Granted Google Role to User
@@ -241,7 +241,7 @@ paths:
           - email
           - profile
     delete:
-      x-passthrough: TODO
+      x-passthrough: true
       responses:
         200:
           description: Successfully Removed Google Role from User
@@ -285,6 +285,7 @@ paths:
 
   /api/configurations:
     get:
+      x-passthrough: true
       tags:
       - Method Repository
       operationId: listMethodRepositoryConfigurations
@@ -350,7 +351,6 @@ paths:
         #   description: Fields to include in JSON response
         #   required: false
         #   type: string
-      x-passthrough: TODO
       responses:
         200:
           description: An array of configurations.
@@ -363,6 +363,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     post:
+      x-passthrough: true
       summary: Add a configuration.
       description: |
         Inserts a method configuration into the method repository and
@@ -377,7 +378,6 @@ paths:
             $ref: '#/definitions/ConfigurationQuery'
       tags:
         - Method Repository
-      x-passthrough: TODO
       responses:
         201:
           description: Method successfully added.
@@ -394,6 +394,7 @@ paths:
 
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
+      x-passthrough: true
       tags:
         - Method Repository
       operationId: getMethodRepositoryConfiguration
@@ -408,7 +409,6 @@ paths:
           required: false
           type: boolean
           default: false
-      x-passthrough: TODO
       responses:
         200:
           description: Method Repository configuration detail
@@ -419,6 +419,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     delete:
+      x-passthrough: true
       tags:
         - Method Repository
       summary: Redact a single configuration.
@@ -428,7 +429,6 @@ paths:
         - $ref: '#/parameters/configNamespaceParam'
         - $ref: '#/parameters/configNameParam'
         - $ref: '#/parameters/configSnapshotId'
-      x-passthrough: TODO
       responses:
         200:
           description: >
@@ -443,6 +443,7 @@ paths:
 
   /api/configurations/{namespace}/{name}/{snapshotId}/permissions:
     get:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: getConfigACL
@@ -451,7 +452,6 @@ paths:
         - $ref: '#/parameters/configNamespaceParam'
         - $ref: '#/parameters/configNameParam'
         - $ref: '#/parameters/configSnapshotId'
-      x-passthrough: TODO
       responses:
         200:
           description: the indicated configuration ACL
@@ -460,6 +460,7 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: setConfigACL
@@ -469,7 +470,6 @@ paths:
         - $ref: '#/parameters/configNameParam'
         - $ref: '#/parameters/configSnapshotId'
         - $ref: '#/parameters/configACLPayload'
-      x-passthrough: TODO
       responses:
         200:
           description: the indicated configuration ACL once the posted changes have been applied
@@ -482,13 +482,13 @@ paths:
 
   /api/configurations/{namespace}/permissions:
     get:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: getConfigNamespaceACL
       summary: get ACL permissions on a Method Repository Configuration Namespace
       parameters:
         - $ref: '#/parameters/configNamespaceParam'
-      x-passthrough: TODO
       responses:
         200:
           description: List of the indicated configuration namespace ACL permissions
@@ -499,6 +499,7 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: setConfigNamespaceACL
@@ -506,7 +507,6 @@ paths:
       parameters:
         - $ref: '#/parameters/configNamespaceParam'
         - $ref: '#/parameters/configACLPayload'
-      x-passthrough: TODO
       responses:
         200:
           description: the indicated configuration ACL once the posted changes have been applied
