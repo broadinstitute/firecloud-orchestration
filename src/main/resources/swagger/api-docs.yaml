@@ -5271,7 +5271,10 @@ definitions:
         description: the id of the billing account to use, must start with 'billingAccounts/'
       highSecurityNetwork:
         type: boolean
-        description: Optional. Whether to remove the default GCP network in this project and replace it with a high-security VPC.
+        description: Optional, false if not specified. If true, spin up all compute in a VPC network.
+      enableFlowLogs:
+        type: boolean
+        description: Optional, false if not specified. If true, enable flow logs within the high security network. Requires highSecurityNetwork = true.
 
   CuratorStatus:
     description: is the user a curator?
