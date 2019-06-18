@@ -321,6 +321,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     catalog=false,
     ws,
     WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0),
+    WorkspaceBucketOptions(false),
     Set.empty
   )
 
