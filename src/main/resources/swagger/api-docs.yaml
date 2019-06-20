@@ -2262,7 +2262,7 @@ paths:
       x-passthrough: false
       tags:
         - Profile
-      operationId: unsetTerraPreference
+      operationId: setFCPreference
       summary: Sets the current user's preference to use Legacy view, not Terra UI
       responses:
         200:
@@ -2705,6 +2705,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/bucketOptions:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         '200':
           description: Successful Request
