@@ -2428,43 +2428,43 @@ paths:
           description: Internal Server Error
 
   /api/trial/manager/{operation}:
-      post:
-        x-passthrough: false
-        tags:
-          - Trial (FireCloud Credits)
-        operationId: updateTrialUserStatus
-        summary: Update user status in the FireCloud Free Credits Program; for managers of the Program only.
-        description: |
-          * **Enable** Add registered user(s) to FireCloud's internal record of users that are allowed to enroll (of their own accord, by clicking the Enroll button in the UI)
-          * **Disable** If a user has not yet enrolled themselves, we can still remove them from the trial. Reverse of the Enable operation.
-          * **Terminate** End the user's trial by removing their billing project from the FireCloud Free Credits Program billing account. The user will no longer be able to create workspaces in that billing project.
-        parameters:
-          - name: operation
-            description: operation to perform on the specified users.
-            required: true
-            in: path
-            type: string
-            enum:
-              - enable
-              - disable
-              - terminate
-          - name: users
-            description: list of users on which to operate
-            required: true
-            in: body
-            schema:
-              $ref: '#/definitions/StringArray'
-        responses:
-          200:
-            description: Success
-            schema:
-              $ref: '#/definitions/TrialOperationResponse'
-          204:
-            description: Success (No Content)
-          403:
-            description: Forbidden; you must be a campaign manager to call this endpoint.
-          500:
-            description: Internal Server Error
+    post:
+      x-passthrough: false
+      tags:
+        - Trial (FireCloud Credits)
+      operationId: updateTrialUserStatus
+      summary: Update user status in the FireCloud Free Credits Program; for managers of the Program only.
+      description: |
+        * **Enable** Add registered user(s) to FireCloud's internal record of users that are allowed to enroll (of their own accord, by clicking the Enroll button in the UI)
+        * **Disable** If a user has not yet enrolled themselves, we can still remove them from the trial. Reverse of the Enable operation.
+        * **Terminate** End the user's trial by removing their billing project from the FireCloud Free Credits Program billing account. The user will no longer be able to create workspaces in that billing project.
+      parameters:
+        - name: operation
+          description: operation to perform on the specified users.
+          required: true
+          in: path
+          type: string
+          enum:
+            - enable
+            - disable
+            - terminate
+        - name: users
+          description: list of users on which to operate
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/StringArray'
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/TrialOperationResponse'
+        204:
+          description: Success (No Content)
+        403:
+          description: Forbidden; you must be a campaign manager to call this endpoint.
+        500:
+          description: Internal Server Error
 
   /api/trial/manager/projects:
     post:
