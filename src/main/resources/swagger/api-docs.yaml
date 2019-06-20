@@ -40,6 +40,7 @@ paths:
   /api/billing:
     post:
       x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         204:
           description: Successfully Created Billing Project in FireCloud and Google
@@ -78,6 +79,7 @@ paths:
   /api/billing/{projectId}/members:
     get:
       x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Success
@@ -112,6 +114,7 @@ paths:
   /api/billing/{projectId}/{workbenchRole}/{email}:
     put:
       x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successfully Added User To Billing Project
@@ -155,6 +158,7 @@ paths:
           - profile
     delete:
       x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successfully Removed User From Billing Project
@@ -200,6 +204,7 @@ paths:
   /api/billing/{projectId}/googleRole/{role}/{email}:
     put:
       x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successfully Granted Google Role to User
@@ -242,6 +247,7 @@ paths:
           - profile
     delete:
       x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successfully Removed Google Role from User
@@ -286,6 +292,7 @@ paths:
   /api/configurations:
     get:
       x-passthrough: true
+      x-passthrough-target: agora
       tags:
       - Method Repository
       operationId: listMethodRepositoryConfigurations
@@ -364,6 +371,7 @@ paths:
             $ref: '#/definitions/Error'
     post:
       x-passthrough: true
+      x-passthrough-target: agora
       summary: Add a configuration.
       description: |
         Inserts a method configuration into the method repository and
@@ -395,6 +403,7 @@ paths:
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
       x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       operationId: getMethodRepositoryConfiguration
@@ -420,6 +429,7 @@ paths:
             $ref: '#/definitions/Error'
     delete:
       x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       summary: Redact a single configuration.
@@ -523,7 +533,7 @@ paths:
 
   /api/groups:
     get:
-      x-passthrough: TODO
+      x-passthrough: false
       responses:
         200:
           description: Successfully listed group membership
@@ -547,6 +557,8 @@ paths:
 
   /api/workflows/{version}/{id}/abort:
     post:
+      x-passthrough: true
+      x-passthrouh-target: cromiam
       summary: Abort a workflow based on workflow id
       parameters:
         - name: version
@@ -562,7 +574,6 @@ paths:
           in: path
       tags:
         - CromIAM Workflows (for Job Manager)
-      x-passthrough: TODO
       responses:
         '200':
           description: Successful Request
@@ -584,6 +595,8 @@ paths:
 
   /api/workflows/{version}/{id}/backend/metadata/{backendId}:
     get:
+      x-passthrough: true
+      x-passthrouh-target: rawls
       summary: Get backend (e.g. PAPI) metadata for a job
       parameters:
         - name: version
@@ -604,7 +617,6 @@ paths:
           in: path
       tags:
         - CromIAM Workflows (for Job Manager)
-      x-passthrough: TODO
       responses:
         '200':
           description: Successful Request, format is backend dependent
@@ -620,6 +632,8 @@ paths:
 
   /api/workflows/{version}/{id}/labels:
     patch:
+      x-passthrough: true
+      x-passthrouh-target: cromiam
       summary: Add new labels or update values for existing label keys by workflow id.
       parameters:
         - name: version
@@ -643,7 +657,6 @@ paths:
             type: object
       tags:
         - CromIAM Workflows (for Job Manager)
-      x-passthrough: TODO
       responses:
         '200':
           description: Successful Request
@@ -663,6 +676,8 @@ paths:
 
   /api/workflows/{version}/{id}/metadata:
     get:
+      x-passthrough: true
+      x-passthrouh-target: cromiam
       summary: Query for workflow and call-level metadata for a specified workflow
       parameters:
         - name: version
@@ -705,7 +720,6 @@ paths:
           in: query
       tags:
         - CromIAM Workflows (for Job Manager)
-      x-passthrough: TODO
       responses:
         '200':
           description: Successful Request
@@ -852,6 +866,8 @@ paths:
 
   /api/workflows/{version}/query:
     get:
+      x-passthrough: true
+      x-passthrouh-target: cromiam
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
         - name: version
@@ -917,7 +933,6 @@ paths:
             returns workflows with any of the specified workflow ids.
       tags:
         - CromIAM Workflows (for Job Manager)
-      x-passthrough: TODO
       responses:
         '200':
           description: Successful Request
@@ -933,6 +948,8 @@ paths:
             - email
             - profile
     post:
+      x-passthrough: true
+      x-passthrouh-target: cromiam
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
         - name: version
@@ -953,7 +970,6 @@ paths:
             Example: [{"status":"Success"},{"status":"Failed"}]
       tags:
         - CromIAM Workflows (for Job Manager)
-      x-passthrough: TODO
       responses:
         '200':
           description: Successful Request
@@ -971,6 +987,8 @@ paths:
 
   '/api/womtool/{version}/describe':
     post:
+      x-passthrough: true
+      x-passthrouh-target: cromiam
       operationId: describe
       summary: Machine-readable description of a workflow, including inputs and outputs
       consumes:
@@ -994,7 +1012,6 @@ paths:
           in: formData
         - $ref: '#/parameters/workflowTypeParam'
         - $ref: '#/parameters/workflowTypeVersionParam'
-      x-passthrough: TODO
       responses:
         '200':
           description: Workflow description.
@@ -1005,6 +1022,8 @@ paths:
 
   /engine/{version}/version:
     get:
+      x-passthrough: true
+      x-passthrouh-target: cromiam
       summary: Returns the version of the Cromwell Engine
       parameters:
         - name: version
@@ -1015,7 +1034,6 @@ paths:
           default: v1
       tags:
         - CromIAM Engine (for Job Manager)
-      x-passthrough: TODO
       responses:
         '200':
           description: Successful Request
@@ -1023,6 +1041,8 @@ paths:
             $ref: '#/definitions/VersionResponse'
   /engine/{version}/status:
     get:
+      x-passthrough: true
+      x-passthrouh-target: cromiam
       summary: Returns the current health status of any monitored subsystems
       parameters:
         - name: version
@@ -1033,7 +1053,6 @@ paths:
           default: v1
       tags:
         - CromIAM Engine (for Job Manager)
-      x-passthrough: TODO
       responses:
         '200':
           description: All subsystems report an "ok" status
@@ -1046,7 +1065,7 @@ paths:
 
   /api/groups/{groupName}:
     get:
-      x-passthrough: TODO
+      x-passthrough: false
       responses:
         200:
           description: Successfully loaded group
@@ -1080,7 +1099,7 @@ paths:
           - email
           - profile
     post:
-      x-passthrough: TODO
+      x-passthrough: false
       responses:
         201:
           description: Successfully created group
@@ -1110,7 +1129,7 @@ paths:
           - email
           - profile
     delete:
-      x-passthrough: TODO
+      x-passthrough: false
       responses:
         204:
           description: Successfully Deleted Group
@@ -1148,7 +1167,7 @@ paths:
 
   /api/groups/{groupName}/requestAccess:
     post:
-      x-passthrough: TODO
+      x-passthrough: false
       responses:
         204:
           description: Successfully requested access
@@ -1178,7 +1197,7 @@ paths:
 
   /api/groups/{groupName}/{role}/{email}:
     put:
-      x-passthrough: TODO
+      x-passthrough: false
       responses:
         204:
           description: Successfully Added User To Group
@@ -1221,7 +1240,7 @@ paths:
           - email
           - profile
     delete:
-      x-passthrough: TODO
+      x-passthrough: false
       responses:
         204:
           description: Successfully Removed User From Group
@@ -1266,6 +1285,8 @@ paths:
 
   /api/inputsOutputs:
     post:
+      x-passthrough: true
+      x-passthrouh-target: rawls
       tags:
         - Method Repository
       operationId: getMethodIO
@@ -1277,7 +1298,6 @@ paths:
           in: body
           schema:
             $ref: '#/definitions/MethodID'
-      x-passthrough: TODO
       responses:
         200:
           description: Method Configuration inputs and outputs
@@ -1290,12 +1310,12 @@ paths:
 
   /api/library/admin/reindex:
     post:
+      x-passthrough: false
       tags:
         - Library
       operationId: reindexAll
       summary: |
         deletes and rebuilds the entire index of published library datasets
-      x-passthrough: TODO
       responses:
         200:
           description: Indexing Success
@@ -1312,12 +1332,12 @@ paths:
 
   /api/library/groups:
     get:
+      x-passthrough: false
       tags:
         - Library
       operationId: groups
       summary: |
         returns groups that can be used for discoverable datasets
-      x-passthrough: TODO
       responses:
         200:
           description: Names of the allowed groups
@@ -1327,6 +1347,7 @@ paths:
               type: string
   /api/library/search:
     post:
+      x-passthrough: false
       tags:
         - Library
       operationId: FindDocuments
@@ -1338,13 +1359,13 @@ paths:
           description: Search terms and pagination parameters
           schema:
             $ref: '#/definitions/SearchTermRef'
-      x-passthrough: TODO
       responses:
         200:
           description: Matching datasets
 
   /api/library/suggest:
     post:
+      x-passthrough: false
       tags:
         - Library
       operationId: searchSuggest
@@ -1356,13 +1377,13 @@ paths:
           description: Search terms and pagination parameters
           schema:
             $ref: '#/definitions/SearchTermRef'
-      x-passthrough: TODO
       responses:
         200:
           description: Search suggestions, with highlighting
 
   /api/library/populate/suggest/{field}:
     get:
+      x-passthrough: false
       tags:
         - Library
       operationId: populateSuggest
@@ -1379,7 +1400,6 @@ paths:
           type: string
           required: true
           description: the initial text to complete
-      x-passthrough: TODO
       responses:
         200:
           description: Field specific suggestions
@@ -1390,7 +1410,7 @@ paths:
 
   /api/library/user/role/curator:
     get:
-      x-passthrough: TODO
+      x-passthrough: false
       responses:
         200:
           description: are you a curator?
@@ -1408,6 +1428,7 @@ paths:
 
   /api/library/{workspaceNamespace}/{workspaceName}/discoverableGroups:
     get:
+      x-passthrough: false
       tags:
         - Library
       operationId: getDiscoverableGroups
@@ -1416,7 +1437,6 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-      x-passthrough: TODO
       responses:
         200:
           description: The groups that can discover the dataset
@@ -1435,6 +1455,7 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
     put:
+      x-passthrough: false
       tags:
         - Library
       operationId: updateDiscoverableGroups
@@ -1449,7 +1470,6 @@ paths:
           in: body
           schema:
             $ref: '#/definitions/StringArray'
-      x-passthrough: TODO
       responses:
         200:
           description: The workspace, after assigning groups to be able to discover the dataset
@@ -1474,6 +1494,7 @@ paths:
 
   /api/library/{workspaceNamespace}/{workspaceName}/metadata:
     get:
+      x-passthrough: false
       tags:
         - Library
       operationId: getLibraryMetadata
@@ -1482,7 +1503,6 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-      x-passthrough: TODO
       responses:
         200:
           description: Success
@@ -1497,6 +1517,7 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
     put:
+      x-passthrough: false
       tags:
         - Library
       operationId: putLibraryMetadata
@@ -1518,7 +1539,6 @@ paths:
           in: body
           schema:
             $ref: '#/definitions/LibraryMetadataInput'
-      x-passthrough: TODO
       responses:
         200:
           description: Success
@@ -1535,6 +1555,7 @@ paths:
 
   /api/library/{workspaceNamespace}/{workspaceName}/published:
     post:
+      x-passthrough: false
       tags:
         - Library
       operationId: publishLibraryWorkspace
@@ -1543,7 +1564,6 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-      x-passthrough: TODO
       responses:
         200:
           description: Success
@@ -1558,6 +1578,7 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
     delete:
+      x-passthrough: false
       tags:
         - Library
       operationId: unpublishLibraryWorkspace
@@ -1566,7 +1587,6 @@ paths:
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
-      x-passthrough: TODO
       responses:
         200:
           description: Success
@@ -1581,6 +1601,8 @@ paths:
 
   /api/methods:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       operationId: listMethodRepositoryMethods
@@ -1643,7 +1665,6 @@ paths:
         #   description: Fields to include in JSON response
         #   required: false
         #   type: string
-      x-passthrough: TODO
       responses:
         200:
           description: An array of methods.
@@ -1656,6 +1677,8 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     post:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: Add a Method.
       description: |
         Inserts a method into the method repository and
@@ -1670,7 +1693,6 @@ paths:
           required: false
           schema:
             $ref: '#/definitions/MethodQuery'
-      x-passthrough: TODO
       responses:
         201:
           description: Method successfully added.
@@ -1687,13 +1709,14 @@ paths:
 
   /api/methods/definitions:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List method definitions
       description: |
         List method definitions - i.e. unique namespace/name pairs - with counts
         of snapshots and associated configurations
       tags:
         - Method Repository
-      x-passthrough: TODO
       responses:
         200:
           description: An array of method definitions.
@@ -1708,6 +1731,8 @@ paths:
 
   /api/methods/{namespace}/{name}/configurations:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List configurations associated with a method
       description: |
         Given the namespace/name of a method, returns all configurations
@@ -1725,7 +1750,6 @@ paths:
           type: string
       tags:
         - Method Repository
-      x-passthrough: TODO
       responses:
         200:
           description: An array of configurations.
@@ -1742,6 +1766,8 @@ paths:
 
   /api/methods/{namespace}/{name}/{snapshotId}:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       summary: Find a single method.
@@ -1758,7 +1784,6 @@ paths:
           required: false
           type: boolean
           default: false
-      x-passthrough: TODO
       responses:
         200:
           description: A single method.
@@ -1769,6 +1794,8 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     delete:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       summary: Redact a single method.
@@ -1778,7 +1805,6 @@ paths:
         - $ref: '#/parameters/methodNamespaceParam'
         - $ref: '#/parameters/methodNameParam'
         - $ref: '#/parameters/methodSnapshotId'
-      x-passthrough: TODO
       responses:
         200:
           description: |
@@ -1791,6 +1817,8 @@ paths:
             $ref: '#/definitions/Error'
 
     post:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       summary: Create a new snapshot of an existing Method.
@@ -1842,7 +1870,6 @@ paths:
                 type: string
                 description: Snapshot comment of the AgoraEntity
                 default: Improve spline reticulation
-      x-passthrough: TODO
       responses:
         '200':
           description: Method successfully copied.
@@ -1861,6 +1888,8 @@ paths:
 
   /api/methods/{namespace}/{name}/{snapshotId}/configurations:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List compatible configurations for this method snapshot
       description: |
         Returns all configurations that 1. have the exact same input and output
@@ -1872,7 +1901,6 @@ paths:
         - $ref: '#/parameters/methodSnapshotId'
       tags:
         - Method Repository
-      x-passthrough: TODO
       responses:
         200:
           description: An array of configurations.
@@ -1891,6 +1919,7 @@ paths:
 
   /api/methods/{namespace}/{name}/{snapshotId}/permissions:
     get:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: getMethodACL
@@ -1899,7 +1928,6 @@ paths:
         - $ref: '#/parameters/methodNamespaceParam'
         - $ref: '#/parameters/methodNameParam'
         - $ref: '#/parameters/methodSnapshotId'
-      x-passthrough: TODO
       responses:
         200:
           description: the indicated method ACL
@@ -1908,6 +1936,7 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: setMethodACL
@@ -1917,7 +1946,6 @@ paths:
         - $ref: '#/parameters/methodNameParam'
         - $ref: '#/parameters/methodSnapshotId'
         - $ref: '#/parameters/configACLPayload'
-      x-passthrough: TODO
       responses:
         200:
           description: the indicated method ACL once the posted changes have been applied
@@ -1930,13 +1958,13 @@ paths:
 
   /api/methods/{namespace}/permissions:
     get:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: getMethodNamespaceACL
       summary: get ACL permissions on a Method Repository Method Namespace
       parameters:
         - $ref: '#/parameters/methodNamespaceParam'
-      x-passthrough: TODO
       responses:
         200:
           description: List of indicated method namespace ACL permissions
@@ -1947,6 +1975,7 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: setMethodNamespaceACL
@@ -1954,7 +1983,6 @@ paths:
       parameters:
         - $ref: '#/parameters/methodNamespaceParam'
         - $ref: '#/parameters/configACLPayload'
-      x-passthrough: TODO
       responses:
         200:
           description: the indicated method namespace ACL permissions once the posted changes have been applied
@@ -1969,6 +1997,7 @@ paths:
 
   /api/methods/permissions:
     put:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: multiUpsertMethodsACL
@@ -1985,7 +2014,6 @@ paths:
             type: array
             items:
               $ref: '#/definitions/MethodAclPair'
-      x-passthrough: TODO
       responses:
         200:
           description: the indicated method namespace ACL permissions once the posted changes have been applied
@@ -2000,6 +2028,7 @@ paths:
 
   /api/nih/callback:
     post:
+      x-passthrough: false
       tags:
         - NIH
       operationId: NIHCallback
@@ -2011,7 +2040,6 @@ paths:
           in: body
           schema:
             $ref: '#/definitions/JWTWrapper'
-      x-passthrough: TODO
       responses:
         200:
           description: Successfully updated NIH link
@@ -2026,11 +2054,11 @@ paths:
 
   /api/nih/status:
     get:
+      x-passthrough: false
       tags:
         - NIH
       operationId: NIHStatus
       summary: "Retrieves info about a user's NIH link"
-      x-passthrough: TODO
       responses:
         200:
           description: Successfully retrieved NIH status
@@ -2043,7 +2071,8 @@ paths:
 
   '/api/notifications/general':
     get:
-      x-passthrough: TODO
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Success
@@ -2063,7 +2092,8 @@ paths:
 
   '/api/notifications/workspace/{workspaceNamespace}/{workspaceName}':
     get:
-      x-passthrough: TODO
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Success
@@ -2094,11 +2124,12 @@ paths:
 
   /api/profile/billing:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Profile
       operationId: billing
       summary: List billing projects for a user
-      x-passthrough: TODO
       responses:
         200:
           description: OK
@@ -2113,6 +2144,8 @@ paths:
 
   /api/profile/billing/{projectName}:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Profile
       operationId: billingProjectStatus
@@ -2124,7 +2157,6 @@ paths:
           in: path
       description: billing project status
       summary: billing project status
-      x-passthrough: TODO
       responses:
         200:
           description: OK
@@ -2137,11 +2169,12 @@ paths:
 
   /api/profile/billingAccounts:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Profile
       operationId: billingAccounts
       summary: List billing accounts for a user
-      x-passthrough: TODO
       responses:
         200:
           description: OK
@@ -2164,12 +2197,12 @@ paths:
 
   /api/profile/importstatus:
     get:
+      x-passthrough: false
       tags:
         - Profile
         - Method Configurations
       operationId: importStatus
       summary: Check the user's ability to import a method config into a workspace
-      x-passthrough: TODO
       responses:
         200:
           description: OK
@@ -2180,6 +2213,7 @@ paths:
 
   /api/profile/preferences:
     post:
+      x-passthrough: false
       tags:
         - Profile
       operationId: updateProfile
@@ -2191,7 +2225,6 @@ paths:
           required: true
           schema:
             type: object
-      x-passthrough: TODO
       responses:
         204:
           description: Success (No Content)
@@ -2200,11 +2233,11 @@ paths:
 
   /api/profile/terra:
     get:
+      x-passthrough: false
       tags:
         - Profile
       operationId: getTerraPreference
       summary: Returns the current user's preference for Terra UI vs. Legacy view
-      x-passthrough: TODO
       responses:
         200:
           description: Success
@@ -2213,11 +2246,11 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: false
       tags:
         - Profile
       operationId: setTerraPreference
       summary: Sets the current user's preference to use Terra UI, not Legacy view
-      x-passthrough: TODO
       responses:
         200:
           description: Success
@@ -2226,11 +2259,11 @@ paths:
         500:
           description: Internal Server Error
     delete:
+      x-passthrough: false
       tags:
         - Profile
       operationId: setFCPreference
       summary: Sets the current user's preference to use Legacy view, not Terra UI
-      x-passthrough: TODO
       responses:
         200:
           description: Success
@@ -2241,6 +2274,7 @@ paths:
 
   /api/profile/trial:
     post:
+      x-passthrough: false
       tags:
         - Profile
       operationId: userTrial
@@ -2258,7 +2292,6 @@ paths:
             - enroll
             - finalize
           default: enroll
-      x-passthrough: TODO
       responses:
         204:
           description: Success (No Content)
@@ -2271,11 +2304,11 @@ paths:
 
   /api/profile/trial/userAgreement:
     put:
+      x-passthrough: false
       tags:
         - Profile
       operationId: recordUserAgreement
       summary: Set userAgreed flag to true
-      x-passthrough: TODO
       responses:
         204:
           description: NoContent; userAgreed set to true
@@ -2286,11 +2319,11 @@ paths:
 
   /api/refresh-token-status:
     get:
+      x-passthrough: false
       tags:
         - OAuth
       operationId: getRefreshTokenStatus
       summary: Returns the status of the current user's refresh token.
-      x-passthrough: TODO
       responses:
         200:
           description: OK
@@ -2303,6 +2336,7 @@ paths:
 
   /api/sharelog/sharees:
     get:
+      x-passthrough: false
       tags:
       - ShareLog
       operationId: getSharees
@@ -2310,7 +2344,6 @@ paths:
         Get a list of users with whom current user has shared a Workspace.
       description: |
         Get a list of users with whom current user has shared a Workspace.
-      x-passthrough: TODO
       responses:
         200:
           description: Success
@@ -2321,6 +2354,7 @@ paths:
 
   /api/storage/{bucket}/{object}:
     get:
+      x-passthrough: false
       tags:
       - Storage
       operationId: getMetadata
@@ -2341,7 +2375,6 @@ paths:
           required: true
           type: string
           in: path
-      x-passthrough: TODO
       responses:
         200:
           description: Success
@@ -2352,7 +2385,8 @@ paths:
 
   /api/submissions/queueStatus:
     get:
-      x-passthrough: TODO
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successful Request
@@ -2370,6 +2404,8 @@ paths:
 
   /api/template:
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Method Repository
       operationId: createMethodTemplate
@@ -2381,7 +2417,6 @@ paths:
           in: body
           schema:
             $ref: '#/definitions/MethodID'
-      x-passthrough: TODO
       responses:
         200:
           description: Method Configuration template
@@ -2394,6 +2429,7 @@ paths:
 
   /api/trial/manager/{operation}:
       post:
+        x-passthrough: false
         tags:
           - Trial (FireCloud Credits)
         operationId: updateTrialUserStatus
@@ -2432,6 +2468,7 @@ paths:
 
   /api/trial/manager/projects:
     post:
+      x-passthrough: false
       tags:
         - Trial (FireCloud Credits)
       operationId: manageTrialProjects
@@ -2467,7 +2504,6 @@ paths:
           required: false
           in: query
           type: string
-      x-passthrough: TODO
       responses:
         200:
           description: OK; used for verify operation
@@ -2482,11 +2518,11 @@ paths:
 
   /version:
     get:
+      x-passthrough: false
       tags:
         - Version
       operationId: orchestrationVersion
       summary: Returns the currently deployed version of this service.
-      x-passthrough: TODO
       responses:
         200:
           description: OK
@@ -2496,11 +2532,12 @@ paths:
 
   /version/executionEngine:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Version
       operationId: executionEngineVersion
       summary: Returns the currently deployed version of FireCloud's execution engine
-      x-passthrough: TODO
       responses:
         200:
           description: OK
