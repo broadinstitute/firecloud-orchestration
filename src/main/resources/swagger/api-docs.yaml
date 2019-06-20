@@ -1039,6 +1039,7 @@ paths:
           description: Successful Request
           schema:
             $ref: '#/definitions/VersionResponse'
+
   /engine/{version}/status:
     get:
       x-passthrough: true
@@ -1345,6 +1346,7 @@ paths:
             type: array
             items:
               type: string
+
   /api/library/search:
     post:
       x-passthrough: false
@@ -1815,7 +1817,6 @@ paths:
           description: Error upon redaction
           schema:
             $ref: '#/definitions/Error'
-
     post:
       x-passthrough: true
       x-passthrough-target: agora
@@ -2069,7 +2070,7 @@ paths:
         500:
           description: Internal server error retrieving NIH status
 
-  '/api/notifications/general':
+  /api/notifications/general:
     get:
       x-passthrough: true
       x-passthrough-target: rawls
@@ -2090,7 +2091,7 @@ paths:
           - email
           - profile
 
-  '/api/notifications/workspace/{workspaceNamespace}/{workspaceName}':
+  /api/notifications/workspace/{workspaceNamespace}/{workspaceName}:
     get:
       x-passthrough: true
       x-passthrough-target: rawls
@@ -2736,13 +2737,11 @@ paths:
           name: workspaceName
           required: true
           type: string
-
       security:
         - googleoauth:
             - openid
             - email
             - profile
-
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/bucketUsage:
     get:
@@ -2956,6 +2955,7 @@ paths:
           description: Destination workspace must match source's authorization domain, if the source has one
         500:
           description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
     post:
       x-passthrough: true
@@ -3000,6 +3000,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ErrorReport'
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
       x-passthrough: true
@@ -4059,7 +4060,7 @@ paths:
         500:
           description: Internal Error
 
-  '/api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/cost':
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/cost:
     get:
       x-passthrough: true
       x-passthrough-target: rawls
