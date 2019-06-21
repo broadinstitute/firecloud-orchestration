@@ -558,7 +558,7 @@ paths:
   /api/workflows/{version}/{id}/abort:
     post:
       x-passthrough: true
-      x-passthrouh-target: cromiam
+      x-passthrough-target: cromiam
       summary: Abort a workflow based on workflow id
       parameters:
         - name: version
@@ -596,7 +596,7 @@ paths:
   /api/workflows/{version}/{id}/backend/metadata/{backendId}:
     get:
       x-passthrough: true
-      x-passthrouh-target: rawls
+      x-passthrough-target: rawls
       summary: Get backend (e.g. PAPI) metadata for a job
       parameters:
         - name: version
@@ -633,7 +633,7 @@ paths:
   /api/workflows/{version}/{id}/labels:
     patch:
       x-passthrough: true
-      x-passthrouh-target: cromiam
+      x-passthrough-target: cromiam
       summary: Add new labels or update values for existing label keys by workflow id.
       parameters:
         - name: version
@@ -677,7 +677,7 @@ paths:
   /api/workflows/{version}/{id}/metadata:
     get:
       x-passthrough: true
-      x-passthrouh-target: cromiam
+      x-passthrough-target: cromiam
       summary: Query for workflow and call-level metadata for a specified workflow
       parameters:
         - name: version
@@ -865,7 +865,7 @@ paths:
   /api/workflows/{version}/query:
     get:
       x-passthrough: true
-      x-passthrouh-target: cromiam
+      x-passthrough-target: cromiam
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
         - name: version
@@ -947,7 +947,7 @@ paths:
             - profile
     post:
       x-passthrough: true
-      x-passthrouh-target: cromiam
+      x-passthrough-target: cromiam
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
         - name: version
@@ -986,7 +986,7 @@ paths:
   '/api/womtool/{version}/describe':
     post:
       x-passthrough: true
-      x-passthrouh-target: cromiam
+      x-passthrough-target: cromiam
       operationId: describe
       summary: Machine-readable description of a workflow, including inputs and outputs
       consumes:
@@ -1021,7 +1021,7 @@ paths:
   /engine/{version}/version:
     get:
       x-passthrough: true
-      x-passthrouh-target: cromiam
+      x-passthrough-target: cromiam
       summary: Returns the version of the Cromwell Engine
       parameters:
         - name: version
@@ -1041,7 +1041,7 @@ paths:
   /engine/{version}/status:
     get:
       x-passthrough: true
-      x-passthrouh-target: cromiam
+      x-passthrough-target: cromiam
       summary: Returns the current health status of any monitored subsystems
       parameters:
         - name: version
@@ -1285,7 +1285,7 @@ paths:
   /api/inputsOutputs:
     post:
       x-passthrough: true
-      x-passthrouh-target: rawls
+      x-passthrough-target: rawls
       tags:
         - Method Repository
       operationId: getMethodIO
