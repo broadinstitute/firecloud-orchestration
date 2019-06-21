@@ -39,6 +39,8 @@ paths:
 
   /api/billing:
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         204:
           description: Successfully Created Billing Project in FireCloud and Google
@@ -76,6 +78,8 @@ paths:
 
   /api/billing/{projectId}/members:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Success
@@ -109,6 +113,8 @@ paths:
 
   /api/billing/{projectId}/{workbenchRole}/{email}:
     put:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successfully Added User To Billing Project
@@ -151,6 +157,8 @@ paths:
           - email
           - profile
     delete:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successfully Removed User From Billing Project
@@ -195,6 +203,8 @@ paths:
 
   /api/billing/{projectId}/googleRole/{role}/{email}:
     put:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successfully Granted Google Role to User
@@ -236,6 +246,8 @@ paths:
           - email
           - profile
     delete:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successfully Removed Google Role from User
@@ -279,6 +291,8 @@ paths:
 
   /api/configurations:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
       - Method Repository
       operationId: listMethodRepositoryConfigurations
@@ -356,6 +370,8 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     post:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: Add a configuration.
       description: |
         Inserts a method configuration into the method repository and
@@ -386,6 +402,8 @@ paths:
 
   /api/configurations/{namespace}/{name}/{snapshotId}:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       operationId: getMethodRepositoryConfiguration
@@ -410,6 +428,8 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     delete:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       summary: Redact a single configuration.
@@ -433,6 +453,7 @@ paths:
 
   /api/configurations/{namespace}/{name}/{snapshotId}/permissions:
     get:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: getConfigACL
@@ -449,6 +470,7 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: setConfigACL
@@ -470,6 +492,7 @@ paths:
 
   /api/configurations/{namespace}/permissions:
     get:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: getConfigNamespaceACL
@@ -486,6 +509,7 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: setConfigNamespaceACL
@@ -509,6 +533,7 @@ paths:
 
   /api/groups:
     get:
+      x-passthrough: false
       responses:
         200:
           description: Successfully listed group membership
@@ -532,6 +557,8 @@ paths:
 
   /api/workflows/{version}/{id}/abort:
     post:
+      x-passthrough: true
+      x-passthrough-target: cromiam
       summary: Abort a workflow based on workflow id
       parameters:
         - name: version
@@ -568,6 +595,8 @@ paths:
 
   /api/workflows/{version}/{id}/backend/metadata/{backendId}:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       summary: Get backend (e.g. PAPI) metadata for a job
       parameters:
         - name: version
@@ -603,6 +632,8 @@ paths:
 
   /api/workflows/{version}/{id}/labels:
     patch:
+      x-passthrough: true
+      x-passthrough-target: cromiam
       summary: Add new labels or update values for existing label keys by workflow id.
       parameters:
         - name: version
@@ -645,6 +676,8 @@ paths:
 
   /api/workflows/{version}/{id}/metadata:
     get:
+      x-passthrough: true
+      x-passthrough-target: cromiam
       summary: Query for workflow and call-level metadata for a specified workflow
       parameters:
         - name: version
@@ -692,133 +725,131 @@ paths:
           description: Successful Request
           schema:
             $ref: '#/definitions/WorkflowMetadataResponse'
-# AEN TODO 2019-02-01: this JSON breaks the whole page but I don't have time to convert the while thing to YAML
-#          examples:
-#            application/json: |-
-#              {
-#                "workflowName": "example",
-#                "calls": {
-#                  "example.gather": [{
-#                    "executionStatus": "Done",
-#                    "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-gather/stdout",
-#                    "shardIndex": -1,
-#                    "outputs": {
-#                      "str": "_one_\n_two_\n_three_\n_four_"
-#                    },
-#                    "inputs": {
-#                      "array": "analysis.out"
-#                    },
-#                    "returnCode": 0,
-#                    "backend": "Local",
-#                    "end": "2015-12-11T16:53:23.000-05:00",
-#                    "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-gather/stderr",
-#                    "executionEvents": [{
-#                      "description": "execution event - only one in this call, some calls might have none!",
-#                      "startTime": "2015-12-11T16:53:23.000-05:00",
-#                      "endTime": "2015-12-11T16:53:23.000-05:00"
-#                    }],
-#                    "start": "2015-12-11T16:53:23.000-05:00"
-#                  }],
-#                  "example.prepare": [{
-#                    "executionStatus": "Done",
-#                    "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-prepare/stdout",
-#                    "shardIndex": -1,
-#                    "outputs": {
-#                      "array": ["one", "two", "three", "four"]
-#                    },
-#                    "inputs": {
-#                    },
-#                    "returnCode": 0,
-#                    "backend": "Local",
-#                    "end": "2015-12-11T16:53:22.000-05:00",
-#                    "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-prepare/stderr",
-#                    "executionEvents": [],
-#                    "start": "2015-12-11T16:53:21.000-05:00"
-#                  }],
-#                  "example.analysis": [{
-#                    "executionStatus": "Done",
-#                    "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-0/stdout",
-#                    "shardIndex": 0,
-#                    "outputs": {
-#                      "out": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-0/a.txt"
-#                    },
-#                    "inputs": {
-#                      "str": "x"
-#                    },
-#                    "returnCode": 0,
-#                    "backend": "Local",
-#                    "end": "2015-12-11T16:53:23.000-05:00",
-#                    "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-0/stderr",
-#                    "executionEvents": [],
-#                    "start": "2015-12-11T16:53:22.000-05:00"
-#                  }, {
-#                    "executionStatus": "Done",
-#                    "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-1/stdout",
-#                    "shardIndex": 1,
-#                    "outputs": {
-#                      "out": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-1/a.txt"
-#                    },
-#                    "inputs": {
-#                      "str": "x"
-#                    },
-#                    "returnCode": 0,
-#                    "backend": "Local",
-#                    "end": "2015-12-11T16:53:23.000-05:00",
-#                    "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-1/stderr",
-#                    "executionEvents": [],
-#                    "start": "2015-12-11T16:53:22.000-05:00"
-#                  }, {
-#                    "executionStatus": "Done",
-#                    "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-2/stdout",
-#                    "shardIndex": 2,
-#                    "outputs": {
-#                      "out": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-2/a.txt"
-#                    },
-#                    "inputs": {
-#                      "str": "x"
-#                    },
-#                    "returnCode": 0,
-#                    "backend": "Local",
-#                    "end": "2015-12-11T16:53:23.000-05:00",
-#                    "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-2/stderr",
-#                    "executionEvents": [],
-#                    "start": "2015-12-11T16:53:22.000-05:00"
-#                  }, {
-#                    "executionStatus": "Done",
-#                    "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-3/stdout",
-#                    "shardIndex": 3,
-#                    "outputs": {
-#                      "out": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-3/a.txt"
-#                    },
-#                    "inputs": {
-#                      "str": "x"
-#                    },
-#                    "returnCode": 0,
-#                    "backend": "Local",
-#                    "end": "2015-12-11T16:53:23.000-05:00",
-#                    "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-3/stderr",
-#                    "executionEvents": [],
-#                    "start": "2015-12-11T16:53:22.000-05:00"
-#                  }]
-#                },
-#                "outputs": {
-#                  "example.analysis.out": ["/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-0/a.txt", "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-1/a.txt", "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-2/a.txt", "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-3/a.txt"],
-#                  "example.gather.str": "_one_\n_two_\n_three_\n_four_",
-#                  "example.prepare.array": ["one", "two", "three", "four"]
-#                },
-#                "id": "e552029e-4b9a-48e9-b11f-6e5d6d0dccc4",
-#                "inputs": {
-#                  "test.hello.name": "chris",
-#                  "blah2.grep.pattern": "h",
-#                  "blah2.cat.asdf": "gs://cromwell-root/blah/c0c116ef-aac6-4029-8d0a-70d86b17c843/call-ls/job.stdout.txt",
-#                  "blah.grep.pattern": "v",
-#                  "blah.ls.pattern": "./"
-#                },
-#                "submission": "2015-12-11T16:53:21.000-05:00",
-#                "status": "Succeeded",
-#                "end": "2015-12-11T16:53:23.000-05:00",
-#                "start": "2015-12-11T16:53:21.000-05:00"
-#              }
+          examples:
+            {
+              "workflowName": "example",
+              "calls": {
+                "example.gather": [{
+                  "executionStatus": "Done",
+                  "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-gather/stdout",
+                  "shardIndex": -1,
+                  "outputs": {
+                    "str": "_one_\n_two_\n_three_\n_four_"
+                  },
+                  "inputs": {
+                    "array": "analysis.out"
+                  },
+                  "returnCode": 0,
+                  "backend": "Local",
+                  "end": "2015-12-11T16:53:23.000-05:00",
+                  "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-gather/stderr",
+                  "executionEvents": [{
+                    "description": "execution event - only one in this call, some calls might have none!",
+                    "startTime": "2015-12-11T16:53:23.000-05:00",
+                    "endTime": "2015-12-11T16:53:23.000-05:00"
+                  }],
+                  "start": "2015-12-11T16:53:23.000-05:00"
+                }],
+                "example.prepare": [{
+                  "executionStatus": "Done",
+                  "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-prepare/stdout",
+                  "shardIndex": -1,
+                  "outputs": {
+                    "array": ["one", "two", "three", "four"]
+                  },
+                  "inputs": {
+                  },
+                  "returnCode": 0,
+                  "backend": "Local",
+                  "end": "2015-12-11T16:53:22.000-05:00",
+                  "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-prepare/stderr",
+                  "executionEvents": [],
+                  "start": "2015-12-11T16:53:21.000-05:00"
+                }],
+                "example.analysis": [{
+                  "executionStatus": "Done",
+                  "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-0/stdout",
+                  "shardIndex": 0,
+                  "outputs": {
+                    "out": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-0/a.txt"
+                  },
+                  "inputs": {
+                    "str": "x"
+                  },
+                  "returnCode": 0,
+                  "backend": "Local",
+                  "end": "2015-12-11T16:53:23.000-05:00",
+                  "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-0/stderr",
+                  "executionEvents": [],
+                  "start": "2015-12-11T16:53:22.000-05:00"
+                }, {
+                  "executionStatus": "Done",
+                  "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-1/stdout",
+                  "shardIndex": 1,
+                  "outputs": {
+                    "out": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-1/a.txt"
+                  },
+                  "inputs": {
+                    "str": "x"
+                  },
+                  "returnCode": 0,
+                  "backend": "Local",
+                  "end": "2015-12-11T16:53:23.000-05:00",
+                  "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-1/stderr",
+                  "executionEvents": [],
+                  "start": "2015-12-11T16:53:22.000-05:00"
+                }, {
+                  "executionStatus": "Done",
+                  "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-2/stdout",
+                  "shardIndex": 2,
+                  "outputs": {
+                    "out": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-2/a.txt"
+                  },
+                  "inputs": {
+                    "str": "x"
+                  },
+                  "returnCode": 0,
+                  "backend": "Local",
+                  "end": "2015-12-11T16:53:23.000-05:00",
+                  "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-2/stderr",
+                  "executionEvents": [],
+                  "start": "2015-12-11T16:53:22.000-05:00"
+                }, {
+                  "executionStatus": "Done",
+                  "stdout": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-3/stdout",
+                  "shardIndex": 3,
+                  "outputs": {
+                    "out": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-3/a.txt"
+                  },
+                  "inputs": {
+                    "str": "x"
+                  },
+                  "returnCode": 0,
+                  "backend": "Local",
+                  "end": "2015-12-11T16:53:23.000-05:00",
+                  "stderr": "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-3/stderr",
+                  "executionEvents": [],
+                  "start": "2015-12-11T16:53:22.000-05:00"
+                }]
+              },
+              "outputs": {
+                "example.analysis.out": ["/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-0/a.txt", "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-1/a.txt", "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-2/a.txt", "/cromwell/cromwell-executions/example/e552029e-4b9a-48e9-b11f-6e5d6d0dccc4/call-analysis/shard-3/a.txt"],
+                "example.gather.str": "_one_\n_two_\n_three_\n_four_",
+                "example.prepare.array": ["one", "two", "three", "four"]
+              },
+              "id": "e552029e-4b9a-48e9-b11f-6e5d6d0dccc4",
+              "inputs": {
+                "test.hello.name": "chris",
+                "blah2.grep.pattern": "h",
+                "blah2.cat.asdf": "gs://cromwell-root/blah/c0c116ef-aac6-4029-8d0a-70d86b17c843/call-ls/job.stdout.txt",
+                "blah.grep.pattern": "v",
+                "blah.ls.pattern": "./"
+              },
+              "submission": "2015-12-11T16:53:21.000-05:00",
+              "status": "Succeeded",
+              "end": "2015-12-11T16:53:23.000-05:00",
+              "start": "2015-12-11T16:53:21.000-05:00"
+            }
         '400':
           description: Malformed Workflow ID
         '404':
@@ -833,6 +864,8 @@ paths:
 
   /api/workflows/{version}/query:
     get:
+      x-passthrough: true
+      x-passthrough-target: cromiam
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
         - name: version
@@ -913,6 +946,8 @@ paths:
             - email
             - profile
     post:
+      x-passthrough: true
+      x-passthrough-target: cromiam
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
         - name: version
@@ -950,6 +985,8 @@ paths:
 
   '/api/womtool/{version}/describe':
     post:
+      x-passthrough: true
+      x-passthrough-target: cromiam
       operationId: describe
       summary: Machine-readable description of a workflow, including inputs and outputs
       consumes:
@@ -983,6 +1020,8 @@ paths:
 
   /engine/{version}/version:
     get:
+      x-passthrough: true
+      x-passthrough-target: cromiam
       summary: Returns the version of the Cromwell Engine
       parameters:
         - name: version
@@ -998,8 +1037,11 @@ paths:
           description: Successful Request
           schema:
             $ref: '#/definitions/VersionResponse'
+
   /engine/{version}/status:
     get:
+      x-passthrough: true
+      x-passthrough-target: cromiam
       summary: Returns the current health status of any monitored subsystems
       parameters:
         - name: version
@@ -1022,6 +1064,7 @@ paths:
 
   /api/groups/{groupName}:
     get:
+      x-passthrough: false
       responses:
         200:
           description: Successfully loaded group
@@ -1055,6 +1098,7 @@ paths:
           - email
           - profile
     post:
+      x-passthrough: false
       responses:
         201:
           description: Successfully created group
@@ -1084,6 +1128,7 @@ paths:
           - email
           - profile
     delete:
+      x-passthrough: false
       responses:
         204:
           description: Successfully Deleted Group
@@ -1121,6 +1166,7 @@ paths:
 
   /api/groups/{groupName}/requestAccess:
     post:
+      x-passthrough: false
       responses:
         204:
           description: Successfully requested access
@@ -1150,6 +1196,7 @@ paths:
 
   /api/groups/{groupName}/{role}/{email}:
     put:
+      x-passthrough: false
       responses:
         204:
           description: Successfully Added User To Group
@@ -1192,6 +1239,7 @@ paths:
           - email
           - profile
     delete:
+      x-passthrough: false
       responses:
         204:
           description: Successfully Removed User From Group
@@ -1236,6 +1284,8 @@ paths:
 
   /api/inputsOutputs:
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Method Repository
       operationId: getMethodIO
@@ -1259,6 +1309,7 @@ paths:
 
   /api/library/admin/reindex:
     post:
+      x-passthrough: false
       tags:
         - Library
       operationId: reindexAll
@@ -1280,6 +1331,7 @@ paths:
 
   /api/library/groups:
     get:
+      x-passthrough: false
       tags:
         - Library
       operationId: groups
@@ -1292,8 +1344,10 @@ paths:
             type: array
             items:
               type: string
+
   /api/library/search:
     post:
+      x-passthrough: false
       tags:
         - Library
       operationId: FindDocuments
@@ -1311,6 +1365,7 @@ paths:
 
   /api/library/suggest:
     post:
+      x-passthrough: false
       tags:
         - Library
       operationId: searchSuggest
@@ -1328,6 +1383,7 @@ paths:
 
   /api/library/populate/suggest/{field}:
     get:
+      x-passthrough: false
       tags:
         - Library
       operationId: populateSuggest
@@ -1354,6 +1410,7 @@ paths:
 
   /api/library/user/role/curator:
     get:
+      x-passthrough: false
       responses:
         200:
           description: are you a curator?
@@ -1371,6 +1428,7 @@ paths:
 
   /api/library/{workspaceNamespace}/{workspaceName}/discoverableGroups:
     get:
+      x-passthrough: false
       tags:
         - Library
       operationId: getDiscoverableGroups
@@ -1397,6 +1455,7 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
     put:
+      x-passthrough: false
       tags:
         - Library
       operationId: updateDiscoverableGroups
@@ -1435,6 +1494,7 @@ paths:
 
   /api/library/{workspaceNamespace}/{workspaceName}/metadata:
     get:
+      x-passthrough: false
       tags:
         - Library
       operationId: getLibraryMetadata
@@ -1457,6 +1517,7 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
     put:
+      x-passthrough: false
       tags:
         - Library
       operationId: putLibraryMetadata
@@ -1494,6 +1555,7 @@ paths:
 
   /api/library/{workspaceNamespace}/{workspaceName}/published:
     post:
+      x-passthrough: false
       tags:
         - Library
       operationId: publishLibraryWorkspace
@@ -1516,6 +1578,7 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
     delete:
+      x-passthrough: false
       tags:
         - Library
       operationId: unpublishLibraryWorkspace
@@ -1538,6 +1601,8 @@ paths:
 
   /api/methods:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       operationId: listMethodRepositoryMethods
@@ -1612,6 +1677,8 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     post:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: Add a Method.
       description: |
         Inserts a method into the method repository and
@@ -1642,6 +1709,8 @@ paths:
 
   /api/methods/definitions:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List method definitions
       description: |
         List method definitions - i.e. unique namespace/name pairs - with counts
@@ -1662,6 +1731,8 @@ paths:
 
   /api/methods/{namespace}/{name}/configurations:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List configurations associated with a method
       description: |
         Given the namespace/name of a method, returns all configurations
@@ -1695,6 +1766,8 @@ paths:
 
   /api/methods/{namespace}/{name}/{snapshotId}:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       summary: Find a single method.
@@ -1721,6 +1794,8 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     delete:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       summary: Redact a single method.
@@ -1740,8 +1815,9 @@ paths:
           description: Error upon redaction
           schema:
             $ref: '#/definitions/Error'
-
     post:
+      x-passthrough: true
+      x-passthrough-target: agora
       tags:
         - Method Repository
       summary: Create a new snapshot of an existing Method.
@@ -1811,6 +1887,8 @@ paths:
 
   /api/methods/{namespace}/{name}/{snapshotId}/configurations:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List compatible configurations for this method snapshot
       description: |
         Returns all configurations that 1. have the exact same input and output
@@ -1840,6 +1918,7 @@ paths:
 
   /api/methods/{namespace}/{name}/{snapshotId}/permissions:
     get:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: getMethodACL
@@ -1856,6 +1935,7 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: setMethodACL
@@ -1877,6 +1957,7 @@ paths:
 
   /api/methods/{namespace}/permissions:
     get:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: getMethodNamespaceACL
@@ -1893,6 +1974,7 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: setMethodNamespaceACL
@@ -1914,6 +1996,7 @@ paths:
 
   /api/methods/permissions:
     put:
+      x-passthrough: false
       tags:
         - Method Repository
       operationId: multiUpsertMethodsACL
@@ -1944,6 +2027,7 @@ paths:
 
   /api/nih/callback:
     post:
+      x-passthrough: false
       tags:
         - NIH
       operationId: NIHCallback
@@ -1969,6 +2053,7 @@ paths:
 
   /api/nih/status:
     get:
+      x-passthrough: false
       tags:
         - NIH
       operationId: NIHStatus
@@ -1983,8 +2068,10 @@ paths:
         500:
           description: Internal server error retrieving NIH status
 
-  '/api/notifications/general':
+  /api/notifications/general:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Success
@@ -2002,8 +2089,10 @@ paths:
           - email
           - profile
 
-  '/api/notifications/workspace/{workspaceNamespace}/{workspaceName}':
+  /api/notifications/workspace/{workspaceNamespace}/{workspaceName}:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Success
@@ -2034,6 +2123,8 @@ paths:
 
   /api/profile/billing:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Profile
       operationId: billing
@@ -2052,6 +2143,8 @@ paths:
 
   /api/profile/billing/{projectName}:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Profile
       operationId: billingProjectStatus
@@ -2075,6 +2168,8 @@ paths:
 
   /api/profile/billingAccounts:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Profile
       operationId: billingAccounts
@@ -2101,6 +2196,7 @@ paths:
 
   /api/profile/importstatus:
     get:
+      x-passthrough: false
       tags:
         - Profile
         - Method Configurations
@@ -2116,6 +2212,7 @@ paths:
 
   /api/profile/preferences:
     post:
+      x-passthrough: false
       tags:
         - Profile
       operationId: updateProfile
@@ -2135,6 +2232,7 @@ paths:
 
   /api/profile/terra:
     get:
+      x-passthrough: false
       tags:
         - Profile
       operationId: getTerraPreference
@@ -2147,6 +2245,7 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: false
       tags:
         - Profile
       operationId: setTerraPreference
@@ -2159,6 +2258,7 @@ paths:
         500:
           description: Internal Server Error
     delete:
+      x-passthrough: false
       tags:
         - Profile
       operationId: setFCPreference
@@ -2173,6 +2273,7 @@ paths:
 
   /api/profile/trial:
     post:
+      x-passthrough: false
       tags:
         - Profile
       operationId: userTrial
@@ -2202,6 +2303,7 @@ paths:
 
   /api/profile/trial/userAgreement:
     put:
+      x-passthrough: false
       tags:
         - Profile
       operationId: recordUserAgreement
@@ -2216,6 +2318,7 @@ paths:
 
   /api/refresh-token-status:
     get:
+      x-passthrough: false
       tags:
         - OAuth
       operationId: getRefreshTokenStatus
@@ -2232,6 +2335,7 @@ paths:
 
   /api/sharelog/sharees:
     get:
+      x-passthrough: false
       tags:
       - ShareLog
       operationId: getSharees
@@ -2249,6 +2353,7 @@ paths:
 
   /api/storage/{bucket}/{object}:
     get:
+      x-passthrough: false
       tags:
       - Storage
       operationId: getMetadata
@@ -2279,6 +2384,8 @@ paths:
 
   /api/submissions/queueStatus:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successful Request
@@ -2296,6 +2403,8 @@ paths:
 
   /api/template:
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Method Repository
       operationId: createMethodTemplate
@@ -2318,45 +2427,47 @@ paths:
           description: Internal Server Error
 
   /api/trial/manager/{operation}:
-      post:
-        tags:
-          - Trial (FireCloud Credits)
-        operationId: updateTrialUserStatus
-        summary: Update user status in the FireCloud Free Credits Program; for managers of the Program only.
-        description: |
-          * **Enable** Add registered user(s) to FireCloud's internal record of users that are allowed to enroll (of their own accord, by clicking the Enroll button in the UI)
-          * **Disable** If a user has not yet enrolled themselves, we can still remove them from the trial. Reverse of the Enable operation.
-          * **Terminate** End the user's trial by removing their billing project from the FireCloud Free Credits Program billing account. The user will no longer be able to create workspaces in that billing project.
-        parameters:
-          - name: operation
-            description: operation to perform on the specified users.
-            required: true
-            in: path
-            type: string
-            enum:
-              - enable
-              - disable
-              - terminate
-          - name: users
-            description: list of users on which to operate
-            required: true
-            in: body
-            schema:
-              $ref: '#/definitions/StringArray'
-        responses:
-          200:
-            description: Success
-            schema:
-              $ref: '#/definitions/TrialOperationResponse'
-          204:
-            description: Success (No Content)
-          403:
-            description: Forbidden; you must be a campaign manager to call this endpoint.
-          500:
-            description: Internal Server Error
+    post:
+      x-passthrough: false
+      tags:
+        - Trial (FireCloud Credits)
+      operationId: updateTrialUserStatus
+      summary: Update user status in the FireCloud Free Credits Program; for managers of the Program only.
+      description: |
+        * **Enable** Add registered user(s) to FireCloud's internal record of users that are allowed to enroll (of their own accord, by clicking the Enroll button in the UI)
+        * **Disable** If a user has not yet enrolled themselves, we can still remove them from the trial. Reverse of the Enable operation.
+        * **Terminate** End the user's trial by removing their billing project from the FireCloud Free Credits Program billing account. The user will no longer be able to create workspaces in that billing project.
+      parameters:
+        - name: operation
+          description: operation to perform on the specified users.
+          required: true
+          in: path
+          type: string
+          enum:
+            - enable
+            - disable
+            - terminate
+        - name: users
+          description: list of users on which to operate
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/StringArray'
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/TrialOperationResponse'
+        204:
+          description: Success (No Content)
+        403:
+          description: Forbidden; you must be a campaign manager to call this endpoint.
+        500:
+          description: Internal Server Error
 
   /api/trial/manager/projects:
     post:
+      x-passthrough: false
       tags:
         - Trial (FireCloud Credits)
       operationId: manageTrialProjects
@@ -2406,6 +2517,7 @@ paths:
 
   /version:
     get:
+      x-passthrough: false
       tags:
         - Version
       operationId: orchestrationVersion
@@ -2419,6 +2531,8 @@ paths:
 
   /version/executionEngine:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Version
       operationId: executionEngineVersion
@@ -2432,6 +2546,8 @@ paths:
 
   /api/workspaces:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
       - Workspaces
       operationId: listWorkspaces
@@ -2444,6 +2560,8 @@ paths:
         200:
           description: List of workspaces.
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Workspaces
       operationId: createWorkspace
@@ -2469,6 +2587,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Workspaces
       operationId: getWorkspace
@@ -2484,6 +2604,7 @@ paths:
         500:
           description: Internal Server Error
     delete:
+      x-passthrough: false
       tags:
         - Workspaces
       operationId: deleteWorkspace
@@ -2503,6 +2624,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/accessInstructions:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Workspaces
       operationId: getWorkspaceAccessInstructions
@@ -2524,6 +2647,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/acl:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Workspaces
       operationId: getWorkspaceAcl
@@ -2543,6 +2668,7 @@ paths:
         500:
           description: Internal Server Error
     patch:
+      x-passthrough: false
       tags:
         - Workspaces
       operationId: updateWorkspaceACL
@@ -2578,6 +2704,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/bucketOptions:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         '200':
           description: Successful Request
@@ -2607,16 +2735,16 @@ paths:
           name: workspaceName
           required: true
           type: string
-
       security:
         - googleoauth:
             - openid
             - email
             - profile
 
-
   /api/workspaces/{workspaceNamespace}/{workspaceName}/bucketUsage:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Workspaces
       operationId: getBucketUsage
@@ -2630,6 +2758,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/catalog:
     get:
+      x-passthrough: false
       responses:
         200:
           description: Successful Request
@@ -2654,6 +2783,7 @@ paths:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
     patch:
+      x-passthrough: false
       responses:
         200:
           description: Successful Request
@@ -2690,6 +2820,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/checkBucketReadAccess:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       description: Read a workspace bucket
       tags:
         - Workspaces
@@ -2710,6 +2842,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/clone:
     post:
+      x-passthrough: false
       tags:
         - Workspaces
       operationId: cloneWorkspace
@@ -2737,6 +2870,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
       - Entities
       operationId: getEntityTypes
@@ -2755,6 +2890,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities_with_type:
     get:
+      x-passthrough: false
       tags:
       - Entities
       operationId: getEntitiesWithType
@@ -2773,6 +2909,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/copy:
     post:
+      x-passthrough: false
       tags:
       - Entities
       operationId: copyEntities
@@ -2816,8 +2953,11 @@ paths:
           description: Destination workspace must match source's authorization domain, if the source has one
         500:
           description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete:
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
       - Entities
       operationId: deleteEntities
@@ -2858,8 +2998,11 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ErrorReport'
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
       - Entities
       operationId: getEntities
@@ -2883,6 +3026,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Entities
       operationId: getEntity
@@ -2900,6 +3045,8 @@ paths:
         500:
           description: Internal Server Error
     patch:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Entity updated
@@ -2940,6 +3087,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}/evaluate:
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Entities
       operationId: evaluateEntityExpression
@@ -2967,6 +3116,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
     get:
+      x-passthrough: false
       tags:
       - Workspaces
       operationId: exportAttributesTSV
@@ -2989,6 +3139,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
+      x-passthrough: false
       tags:
       - Entities
       operationId: downloadEntitiesTSV
@@ -3024,6 +3175,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
     get:
+      x-passthrough: false
       tags:
         - Entities
       operationId: entityQuery
@@ -3071,6 +3223,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importAttributesTSV:
     post:
+      x-passthrough: false
       tags:
       - Workspaces
       operationId: importAttributesTSV
@@ -3099,6 +3252,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importBagit:
     post:
+      x-passthrough: false
       tags:
         - Entities
       operationId: importBagit
@@ -3126,6 +3280,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importEntities:
     post:
+      x-passthrough: false
       tags:
         - Entities
       operationId: importEntities
@@ -3160,6 +3315,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/flexibleImportEntities:
     post:
+      x-passthrough: false
       tags:
       - Entities
       operationId: flexibleImportEntities
@@ -3194,6 +3350,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/lock:
     put:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Workspaces
       operationId: lockWorkspace
@@ -3215,6 +3373,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Method Configurations
       operationId: getWorkspaceMethodConfig
@@ -3240,6 +3400,8 @@ paths:
         500:
           description: Internal Server Error
     put:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Method Configurations
       operationId: overwriteWorkspaceMethodConfig
@@ -3276,6 +3438,8 @@ paths:
         500:
           description: Internal Server Error
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Method Configurations
       operationId: updateWorkspaceMethodConfig
@@ -3317,6 +3481,8 @@ paths:
         500:
           description: Internal Server Error
     delete:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Method Configurations
       operationId: deleteWorkspaceMethodConfig
@@ -3344,6 +3510,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/rename:
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Method Configurations
       operationId: renameWorkspaceMethodConfig
@@ -3381,6 +3549,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/{configNamespace}/{configName}/validate:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successful Request
@@ -3410,6 +3580,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyFromMethodRepo:
     post:
+      x-passthrough: false
       tags:
         - Method Configurations
         - Method Repository
@@ -3438,6 +3609,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/method_configs/copyToMethodRepo:
     post:
+      x-passthrough: false
       tags:
         - Method Configurations
         - Method Repository
@@ -3466,6 +3638,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Method Configurations
         - Workspaces
@@ -3513,6 +3687,7 @@ paths:
         ```
         If you are only working with Agora methods, the fields `"sourceRepo"` and `"methodUri"` can be considered informational and do not need to be round-tripped (see the corresponding `POST /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs` for more details).
     post:
+      x-passthrough: false
       tags:
         - Method Configurations
         - Workspaces
@@ -3570,6 +3745,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/permissionReport:
     post:
+      x-passthrough: false
       tags:
         - Method Configurations
         - Workspaces
@@ -3596,6 +3772,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/sendChangeNotification:
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Success
@@ -3624,6 +3802,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
     get:
+      x-passthrough: false
       tags:
       - Workspaces
       operationId: getStorageCostEstimate
@@ -3641,6 +3820,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
       - Submissions
       operationId: listSubmissions
@@ -3657,6 +3838,8 @@ paths:
         500:
           description: Internal Error
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
       - Submissions
       operationId: createSubmission
@@ -3685,6 +3868,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissionsCount:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Submissions
       summary: Count submissions by status
@@ -3709,6 +3894,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}:
     delete:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
       - Submissions
       operationId: abortSubmission
@@ -3726,6 +3913,8 @@ paths:
         500:
           description: Internal Error
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
       - Submissions
       operationId: monitorSubmission
@@ -3756,6 +3945,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/validate:
     post:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Validation Response
@@ -3794,6 +3985,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       responses:
         200:
           description: Successful Request
@@ -3845,6 +4038,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/outputs:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
       - Submissions
       operationId: workflowOutputsInSubmission
@@ -3863,8 +4058,10 @@ paths:
         500:
           description: Internal Error
 
-  '/api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/cost':
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/{submissionId}/workflows/{workflowId}/cost:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
       - Submissions
       operationId: workflowCostInSubmission
@@ -3896,6 +4093,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/tags:
     get:
+      x-passthrough: false
       tags:
       - Workspaces
       operationId: getWorkspaceTags
@@ -3914,6 +4112,7 @@ paths:
         500:
           description: Internal Error
     put:
+      x-passthrough: false
       tags:
       - Workspaces
       operationId: putWorkspaceTags
@@ -3940,6 +4139,7 @@ paths:
         500:
           description: Internal Error
     patch:
+      x-passthrough: false
       tags:
       - Workspaces
       operationId: patchWorkspaceTags
@@ -3966,6 +4166,7 @@ paths:
         500:
           description: Internal Error
     delete:
+      x-passthrough: false
       tags:
       - Workspaces
       operationId: deleteWorkspaceTags
@@ -3994,6 +4195,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/unlock:
     put:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Workspaces
       operationId: unlockWorkspace
@@ -4015,6 +4218,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/updateAttributes:
     patch:
+      x-passthrough: false
       tags:
       - Workspaces
       operationId: updateAttributes
@@ -4043,6 +4247,7 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/setAttributes:
     patch:
+      x-passthrough: false
       tags:
       - Workspaces
       operationId: setAttributes
@@ -4069,6 +4274,8 @@ paths:
 
   /api/workspaces/tags:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
        - Workspaces
       operationId: getTags
@@ -4093,6 +4300,8 @@ paths:
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/genomics/operations/{jobId}:
     get:
+      x-passthrough: true
+      x-passthrough-target: rawls
       tags:
         - Workspaces
       operationId: getGenomicsOperation
@@ -4112,6 +4321,7 @@ paths:
 
   /cookie-authed/download/b/{bucket}/o/{object}:
     get:
+      x-passthrough: false
       tags:
       - Storage
       operationId: getStorageDownload
@@ -4146,6 +4356,7 @@ paths:
 
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
     get:
+      x-passthrough: false
       tags:
       - Workspaces
       operationId: browserDownloadAttributes
@@ -4169,6 +4380,7 @@ paths:
 
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     post:
+      x-passthrough: false
       tags:
       - Entities
       operationId: browserDownloadEntitiesTSV
@@ -4212,6 +4424,7 @@ paths:
           description: Internal Server Error
       security: []
     get:
+      x-passthrough: false
       tags:
       - Entities
       operationId: browserDownloadEntitiesTSVGet
@@ -4252,6 +4465,7 @@ paths:
 
   /duos/autocomplete/{queryTerm}:
     get:
+      x-passthrough: false
       tags:
       - Library
       operationId: duosAutocomplete
@@ -4272,6 +4486,7 @@ paths:
 
   /duos/researchPurposeQuery:
     post:
+      x-passthrough: false
       tags:
       - Library
       operationId: duosResearchPurposeQuery
@@ -4289,6 +4504,7 @@ paths:
 
   /duos/structuredData:
     post:
+      x-passthrough: false
       tags:
       - Library
       operationId: dataIngest
@@ -4301,6 +4517,9 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/structuredDataRequest'
+      responses:
+        500:
+          description: Internal Server Error
       security:
         - googleoauth:
           - openid
@@ -4309,6 +4528,8 @@ paths:
 
   /api/duos/consent/orsp/{orspId}:
     get:
+      x-passthrough: true
+      x-passthrough-target: consent
       tags:
       - Library
       operationId: duosConsentOrspId
@@ -4335,6 +4556,7 @@ paths:
 
   /error:
     get:
+      x-passthrough: false
       tags:
       - Status
       operationId: error
@@ -4347,6 +4569,7 @@ paths:
 
   /health:
     get:
+      x-passthrough: false
       tags:
       - Status
       operationId: health
@@ -4359,6 +4582,7 @@ paths:
 
   /status:
     get:
+      x-passthrough: false
       operationId: status
       tags:
         - Status
@@ -4377,6 +4601,7 @@ paths:
 
   /handle-oauth-code:
     post:
+      x-passthrough: false
       tags:
         - OAuth
       operationId: handleOauthCode
@@ -4401,6 +4626,7 @@ paths:
 
   /me:
     get:
+      x-passthrough: false
       tags:
         - Profile
       operationId: me
@@ -4423,6 +4649,8 @@ paths:
 
   /api/proxyGroup/{email}:
     get:
+      x-passthrough: true
+      x-passthrough-target: sam
       tags:
         - Profile
       operationId: getProxyGroup
@@ -4447,6 +4675,8 @@ paths:
 
   /register:
     get:
+      x-passthrough: true
+      x-passthrough-target: sam
       tags:
         - Profile
       operationId: getUserStatus
@@ -4463,6 +4693,7 @@ paths:
 
   /register/profile:
     get:
+      x-passthrough: false
       tags:
         - Profile
       operationId: getAll
@@ -4478,6 +4709,7 @@ paths:
         500:
           description: Internal server error
     post:
+      x-passthrough: false
       tags:
         - Profile
       operationId: setProfile
@@ -4498,6 +4730,7 @@ paths:
 
   /register/userinfo:
     get:
+      x-passthrough: false
       tags:
         - Profile
       operationId: userInfo
@@ -4511,6 +4744,8 @@ paths:
 
   /ga4gh/v1/tools/{id}:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List one specific tool, acts as an anchor for self references
       description: This endpoint returns one specific tool (which has ToolVersions nested inside it)
       tags:
@@ -4530,6 +4765,8 @@ paths:
 
   /ga4gh/v1/tools/{id}/versions:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List versions of a tool
       description: Returns all versions of the specified tool
       tags:
@@ -4551,6 +4788,8 @@ paths:
 
   /ga4gh/v1/tools/{id}/versions/{version-id}:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List one specific tool version, acts as an anchor for self references
       description: This endpoint returns one specific tool version
       tags:
@@ -4575,6 +4814,8 @@ paths:
 
   /ga4gh/v1/tools:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List all tools
       description: >
         This endpoint returns all tools available.
@@ -4591,6 +4832,8 @@ paths:
 
   /ga4gh/v1/tools/{id}/versions/{version-id}/{type}/descriptor:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: Get the tool descriptor (WDL) for the specified tool.
       description: Returns the WDL descriptor for the specified tool.
       tags:
@@ -4638,6 +4881,8 @@ paths:
 
   /ga4gh/v1/metadata:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: Return some metadata that is useful for describing this registry
       description: Return some metadata that is useful for describing this registry
       tags:
@@ -4651,6 +4896,8 @@ paths:
 
   /ga4gh/v1/tool-classes:
     get:
+      x-passthrough: true
+      x-passthrough-target: agora
       summary: List all tool types
       description: >
         This endpoint returns all tool-classes available

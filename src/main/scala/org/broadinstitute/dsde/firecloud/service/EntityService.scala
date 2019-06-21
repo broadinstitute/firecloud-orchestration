@@ -72,7 +72,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                   pathPrefix(Segment) { entityName =>
                     pathEnd {
                       requireUserInfo() { _ =>
-                        passthrough(entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.DELETE)
+                        passthrough(entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH)
                       }
                     } ~
                     path("evaluate") {
