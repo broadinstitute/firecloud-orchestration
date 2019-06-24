@@ -2348,6 +2348,26 @@ paths:
           description: Success
           schema:
             $ref: '#/definitions/StringArray'
+
+  /api/staticNotebooks/convert:
+    post:
+      x-passthrough: true
+      tags:
+        - Static Notebooks
+      operationId: convertNotebook
+      summary: |
+        Convert a Notebook ipynb file to a static HTML representation
+      description: |
+        Convert a Notebook ipynb file to a static HTML representation
+      parameters:
+        - name: notebook
+          description: Notebook ipynb file
+          required: true
+          in: body
+          type: string
+      responses:
+        200:
+          description: Success
         500:
           description: Internal Error
 
