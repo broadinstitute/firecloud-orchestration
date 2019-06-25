@@ -2354,6 +2354,7 @@ paths:
   /api/staticNotebooks/convert:
     post:
       x-passthrough: true
+      x-passthrough-target: calhoun
       tags:
         - Static Notebooks
       operationId: convertNotebook
