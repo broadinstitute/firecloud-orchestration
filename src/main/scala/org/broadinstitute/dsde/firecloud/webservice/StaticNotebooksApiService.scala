@@ -7,14 +7,12 @@ import spray.http.HttpMethods
 import spray.routing._
 
 trait StaticNotebooksApiService extends HttpService
-  with PerRequestCreator
-  with FireCloudDirectives with StandardUserInfoDirectives {
+  with FireCloudDirectives
+  with StandardUserInfoDirectives {
 
   private implicit val executionContext = actorRefFactory.dispatcher
 
   val calhounStaticNotebooksRoot: String = FireCloudConfig.StaticNotebooks.baseUrl
-
-  val statusServiceConstructor: () => StatusService
 
   val staticNotebooksRoutes: Route = {
     path("staticNotebooks" / "convert") {
