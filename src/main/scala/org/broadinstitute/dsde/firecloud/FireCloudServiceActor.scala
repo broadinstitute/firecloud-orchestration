@@ -73,7 +73,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
 
   val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, trialDAO, logitDAO, shareLogDAO)
-
   val materializer: ActorMaterializer = ActorMaterializer()
 
   private val healthChecks = new HealthChecks(app)
