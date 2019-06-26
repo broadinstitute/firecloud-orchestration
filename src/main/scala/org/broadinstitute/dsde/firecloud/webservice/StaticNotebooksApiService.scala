@@ -21,7 +21,10 @@ trait StaticNotebooksApiService extends HttpService
         post {
           respondWithMediaType(`text/html`) {
             requestContext =>
-              externalHttpPerRequest(requestContext, Post(calhounStaticNotebooksURL, requestContext.request.entity))
+              // call Calhoun and pass its response back to our own caller
+              // can't use passthrough() here because that demands a JSON response
+              externalHttpPerRequest(requestContext,
+                Post(calhounStaticNotebooksURL, requestContext.request.entity))
           }
         }
       }
