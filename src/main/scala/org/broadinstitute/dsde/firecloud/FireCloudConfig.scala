@@ -214,4 +214,9 @@ object FireCloudConfig {
     private val notification = config.getConfig("notification")
     val fullyQualifiedNotificationTopic: String = notification.getString("fullyQualifiedNotificationTopic")
   }
+
+  object StaticNotebooks {
+    private val staticNotebooks = config.getConfig("staticNotebooks")
+    val baseUrl: String = staticNotebooks.getString("baseUrl")
+  }
 }

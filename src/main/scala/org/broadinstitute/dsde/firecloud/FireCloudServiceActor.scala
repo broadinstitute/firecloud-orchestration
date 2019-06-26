@@ -41,6 +41,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with ShareLogApiService
   with ManagedGroupApiService
   with CromIamApiService
+  with StaticNotebooksApiService
 {
 
   override lazy val log = LoggerFactory.getLogger(getClass)
@@ -125,7 +126,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val billingService = new BillingService with ActorRefFactoryContext
   val apiRoutes = methodsApiServiceRoutes ~ profileRoutes ~ cromIamApiServiceRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    nihRoutes ~ billingService.routes ~ trialApiServiceRoutes ~ shareLogServiceRoutes
+    nihRoutes ~ billingService.routes ~ trialApiServiceRoutes ~ shareLogServiceRoutes ~
+    staticNotebooksRoutes
 
   val healthService = new HealthService with ActorRefFactoryContext
 
