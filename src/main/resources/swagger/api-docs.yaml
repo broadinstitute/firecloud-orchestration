@@ -2355,6 +2355,8 @@ paths:
     post:
       x-passthrough: true
       x-passthrough-target: calhoun
+      produces:
+        - text/html
       tags:
         - Static Notebooks
       operationId: convertNotebook
