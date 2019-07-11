@@ -2369,7 +2369,8 @@ paths:
           description: Notebook ipynb file
           required: true
           in: body
-          type: string
+          schema:
+            type: string
       responses:
         200:
           description: Success
