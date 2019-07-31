@@ -5548,6 +5548,9 @@ definitions:
       enableFlowLogs:
         type: boolean
         description: Optional, false if not specified. If true, enable flow logs within the high security network. Requires highSecurityNetwork = true.
+      servicePerimeter:
+        type: string
+        description: The fully qualified name of the GCP service perimeter to put this project into in the form accessPolicies/[POLICY NUMBER]/servicePerimeters/[NAME]. Caller must have the add_project action for this service perimeter in Sam.
 
   CuratorStatus:
     description: is the user a curator?
