@@ -50,8 +50,7 @@ object Dependencies {
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-pubsub"       % "v1-rev357-1.22.0"),
 
     "org.webjars"                    % "swagger-ui"          % "2.2.5",
-    "com.jason-goodwin"             %% "authentikat-jwt"     % "0.4.5"
-      exclude("com.fasterxml.jackson.core", "jackson-databind"),
+    "com.pauldijou"                 %% "jwt-core"            % "3.1.0",
     "com.sun.mail"                   % "javax.mail"          % "1.5.6",
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",
     "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",
