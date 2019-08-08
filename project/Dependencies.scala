@@ -4,7 +4,7 @@ object Dependencies {
   val akkaV = "2.4.19"
   val sprayV = "1.3.4"
   val jacksonV = "2.9.9"
-  val jacksonHotfixV = "2.9.9.2" // for when only some of the Jackson libs have hotfix releases
+  val jacksonHotfixV = "2.9.9.3" // for when only some of the Jackson libs have hotfix releases
 
   def excludeGuavaJDK5(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava-jdk5")
 
