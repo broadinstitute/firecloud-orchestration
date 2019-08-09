@@ -42,7 +42,6 @@ object Dependencies {
 
     "com.google.guava"               % "guava"               % "19.0",
 
-    excludeGuavaJDK5("com.google.api-client"          % "google-api-client"   % "1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-storage" % "v1-rev116-1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-compute" % "v1-rev163-1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-sheets"  % "v4-rev494-1.23.0"),
