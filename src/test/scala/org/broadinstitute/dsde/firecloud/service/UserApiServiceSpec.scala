@@ -84,13 +84,6 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
       )
 
-    workspaceServer
-      .when(request.withMethod("GET").withPath(RawlsDAO.refreshTokenDateUrl))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-      )
-
     samServer = startClientAndServer(samServerPort)
     samServer
       .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))

@@ -292,14 +292,6 @@ class MockRawlsDAO extends RawlsDAO {
     Future.successful(WorkspaceACLUpdateResponseList(aclUpdates.toSet, aclUpdates.toSet, aclUpdates.toSet))
   }
 
-  override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
-    Future.successful(None)
-  }
-
-  override def saveRefreshToken(userInfo: UserInfo, refreshToken: String): Future[Unit] = {
-    Future.successful(())
-  }
-
   override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit userInfo: UserInfo): Future[Seq[Entity]] = {
     if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
