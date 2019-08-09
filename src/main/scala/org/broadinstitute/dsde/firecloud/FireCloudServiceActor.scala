@@ -98,7 +98,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val nihServiceConstructor: () => NihServiceActor = NihService.constructor(app)
-  val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
   val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
