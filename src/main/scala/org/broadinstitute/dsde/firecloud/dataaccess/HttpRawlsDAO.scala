@@ -127,22 +127,6 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   private def patchWorkspaceAclUrl(ns: String, name: String, inviteUsersNotFound: Boolean) = rawlsWorkspaceACLUrl(ns, name) + rawlsWorkspaceACLQuerystring.format(inviteUsersNotFound)
   private def workspaceCatalogUrl(ns: String, name: String) = encodeUri(FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name/catalog")
 
-  override def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]] = {
-    userAuthedRequest(Get(RawlsDAO.refreshTokenDateUrl), label=Some("HttpRawlsDAO.getRefreshTokenStatus"))(userInfo) map { response =>
-      response.status match {
-        case OK =>
-          Option(DateTime.parse(unmarshal[RawlsTokenDate].apply(response).refreshTokenUpdatedDate))
-        case NotFound | BadRequest => None
-        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
-      }
-    }
-  }
-
-  override def saveRefreshToken(userInfo: UserInfo, refreshToken: String): Future[Unit] = {
-    userAuthedRequest(Put(RawlsDAO.refreshTokenUrl, RawlsToken(refreshToken)))(userInfo) map
-      { _ => () }
-  }
-
   override def getCatalog(ns: String, name: String)(implicit userToken: WithAccessToken): Future[Seq[WorkspaceCatalog]] =
     authedRequestToObject[Seq[WorkspaceCatalog]](Get(workspaceCatalogUrl(ns, name)), true)
 
