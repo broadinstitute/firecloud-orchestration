@@ -40,7 +40,7 @@ object Dependencies {
 
     "org.elasticsearch.client"       % "transport"           % "5.4.3",
 
-    "com.google.guava"               % "guava"               % "19.0",
+    "com.google.guava"               % "guava"               % "28.0-jre",
 
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-storage" % "v1-rev116-1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-sheets"  % "v4-rev494-1.23.0"),
