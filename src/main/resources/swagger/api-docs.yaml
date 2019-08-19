@@ -3308,6 +3308,34 @@ paths:
         500:
           description: Internal Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importPFB:
+    post:
+      x-passthrough: false
+      tags:
+        - Entities
+      operationId: importPFB
+      summary: Import PFB data from an [Avro](https://avro.apache.org/) file
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: body
+          description: JSON object containing PFB URL
+          name: pfbImportRequest
+          required: true
+          schema:
+            $ref: '#/definitions/PFBRequest'
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Bad Request
+        404:
+          description: Source Workspace not found
+        500:
+          description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importEntities:
     post:
       x-passthrough: false
@@ -5235,6 +5263,15 @@ definitions:
     required:
       - bagitURL
       - format
+
+  PFBRequest:
+    type: object
+    properties:
+      url:
+        type: string
+        description: link to publically accessible PFB/Avro
+    required:
+      - url
 
   ConfigurationIngest:
     type: object

@@ -34,11 +34,16 @@ import scala.util.{Failure, Success, Try}
 
 object EntityClient {
 
+  lazy val arrowRoot: String = FireCloudConfig.Arrow.baseUrl
+  lazy val avroToRawlsURL: String = s"$arrowRoot/avroToRawls"
+
   case class ImportEntitiesFromTSV(workspaceNamespace: String,
                                    workspaceName: String,
                                    tsvString: String)
 
   case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
+
+  case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)
 
   def props(requestContext: RequestContext, modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext, modelSchema))
 
@@ -120,6 +125,9 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
+    case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest) =>
+      val pipeline = authHeaders(requestContext) ~> sendReceive
+      importPFB(pipeline, workspaceNamespace, workspaceName, pfbRequest) pipeTo sender
   }
 
 
@@ -337,6 +345,51 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
         } finally {
           bagItFile.delete()
         }
+      }
+    }
+  }
+
+  def importPFB(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
+                workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
+    def callArrow = {
+      logger.debug("calling arrow")
+      pipeline {
+        Post(avroToRawlsURL, requestContext.request.entity)
+      }
+    }
+
+    def callRawls(arrowResponse: HttpResponse) = {
+      logger.debug("calling rawls")
+      pipeline {
+        Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), arrowResponse.entity)
+      }
+    }
+
+    val pfbUrl = new URL(pfbRequest.url.replace(" ", "%20"))
+    val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
+
+    if (!acceptableProtocols.contains(pfbUrl.getProtocol)) {
+      Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid URL protocol: must be https only"))
+    } else {
+      val futureResponse = for {
+        arrowResponse <- callArrow
+        rawlsResponse <- arrowResponse.status match {
+          case OK =>
+            callRawls(arrowResponse)
+          case _ =>
+            Future.successful(arrowResponse)
+        }
+      } yield (rawlsResponse.status match {
+        case NoContent =>
+          logger.debug("OK response")
+          RequestComplete(OK)
+        case _ =>
+          // Bubble up all other unmarshallable responses
+          logger.warn("Unanticipated response: " + rawlsResponse.status.defaultMessage)
+          RequestComplete(rawlsResponse)
+      })
+      futureResponse recover {
+        case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,  "Service API call failed", e)
       }
     }
   }
