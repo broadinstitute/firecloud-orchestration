@@ -21,6 +21,7 @@ import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
+import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.routing.RequestContext
@@ -351,45 +352,39 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
 
   def importPFB(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                 workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
-    def callArrow = {
-      logger.debug("calling arrow")
+
+    def callArrow(url: String) = {
+      pipeline { Post(avroToRawlsURL, PfbImportRequest(url)) }
+    }
+
+    def callRawls(entity: HttpEntity) = {
       pipeline {
-        Post(avroToRawlsURL, requestContext.request.entity)
+        Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), entity)
       }
     }
 
-    def callRawls(arrowResponse: HttpResponse) = {
-      logger.debug("calling rawls")
-      pipeline {
-        Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), arrowResponse.entity)
-      }
-    }
-
-    val pfbUrl = new URL(pfbRequest.url.replace(" ", "%20"))
+    val pfbUrl = new URL(pfbRequest.url)
     val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
 
     if (!acceptableProtocols.contains(pfbUrl.getProtocol)) {
       Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid URL protocol: must be https only"))
     } else {
-      val futureResponse = for {
-        arrowResponse <- callArrow
-        rawlsResponse <- arrowResponse.status match {
-          case OK =>
-            callRawls(arrowResponse)
-          case _ =>
-            Future.successful(arrowResponse)
+
+      val futurePerRequestMessage = for {
+        arrowResponse <- callArrow(pfbUrl.toString)
+        rawlsJsonEntity <- arrowResponse.status match {
+          case OK => Future.successful(arrowResponse.entity)
+          case _ => Future.failed(new FireCloudException(arrowResponse.status.value + ": " + arrowResponse.entity.asString))
         }
-      } yield (rawlsResponse.status match {
-        case NoContent =>
-          logger.debug("OK response")
-          RequestComplete(OK)
-        case _ =>
-          // Bubble up all other unmarshallable responses
-          logger.warn("Unanticipated response: " + rawlsResponse.status.defaultMessage)
-          RequestComplete(rawlsResponse)
-      })
-      futureResponse recover {
-        case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,  "Service API call failed", e)
+        rawlsResponse <- callRawls(rawlsJsonEntity)
+        result <- rawlsResponse.status match {
+          case NoContent => Future.successful(RequestComplete(NoContent))
+          case _ => Future.failed(new FireCloudException(rawlsResponse.status.value + ": " + rawlsResponse.entity.asString))
+        }
+      } yield (result)
+
+      futurePerRequestMessage recover {
+        case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Import failed. Details: " + e.getMessage, e)
       }
     }
   }
