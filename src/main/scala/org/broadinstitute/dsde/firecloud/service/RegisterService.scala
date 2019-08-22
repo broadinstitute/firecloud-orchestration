@@ -86,8 +86,16 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     }
   }
 
+  /*  utility method to determine if a preferences key headed to Thurloe is valid for user input.
+      Add whitelist logic here if you need to allow more keys.
+      If we find we update this logic frequently, I suggest moving the predicates to a config file!
+   */
+  private def isValidPreferenceKey(key: String): Boolean = {
+    key.startsWith("notifications/")
+  }
+
   private def updateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]): Future[PerRequestMessage] = {
-    if (preferences.forall(_._1.startsWith("notifications/"))) {
+    if (preferences.keys.forall(isValidPreferenceKey)) {
       thurloeDao.saveKeyValues(userInfo, preferences).map(_ => RequestComplete(StatusCodes.NoContent))
     } else {
       throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "illegal preference key"))
