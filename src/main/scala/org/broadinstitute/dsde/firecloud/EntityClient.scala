@@ -10,6 +10,7 @@ import akka.pattern.pipe
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -353,8 +354,8 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
   def importPFB(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
                 workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
 
-    def callArrow(url: String) = {
-      pipeline { Post(avroToRawlsURL, PfbImportRequest(url)) }
+    def callArrow = {
+      pipeline { Post(avroToRawlsURL, pfbRequest) }
     }
 
     def callRawls(entity: HttpEntity) = {
@@ -371,7 +372,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     } else {
 
       val futurePerRequestMessage = for {
-        arrowResponse <- callArrow(pfbUrl.toString)
+        arrowResponse <- callArrow
         rawlsJsonEntity <- arrowResponse.status match {
           case OK => Future.successful(arrowResponse.entity)
           case _ => Future.failed(new FireCloudException(arrowResponse.status.value + ": " + arrowResponse.entity.asString))
@@ -379,11 +380,13 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
         rawlsResponse <- callRawls(rawlsJsonEntity)
         result <- rawlsResponse.status match {
           case NoContent => Future.successful(RequestComplete(NoContent))
+          case NotFound => Future.failed(new FireCloudExceptionWithErrorReport(FCErrorReport(rawlsResponse)))
           case _ => Future.failed(new FireCloudException(rawlsResponse.status.value + ": " + rawlsResponse.entity.asString))
         }
       } yield (result)
 
       futurePerRequestMessage recover {
+        case e: FireCloudExceptionWithErrorReport => RequestCompleteWithErrorReport(optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), e.errorReport.message, e)
         case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Import failed. Details: " + e.getMessage, e)
       }
     }
