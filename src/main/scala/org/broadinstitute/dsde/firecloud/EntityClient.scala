@@ -368,19 +368,20 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
 
     if (!acceptableProtocols.contains(pfbUrl.getProtocol)) {
-      Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid URL protocol: must be https only"))
+      Future.successful(RequestCompleteWithErrorReport(BadRequest, "Invalid URL protocol: must be https only"))
     } else {
 
       val futurePerRequestMessage = for {
         arrowResponse <- callArrow
         rawlsJsonEntity <- arrowResponse.status match {
           case OK => Future.successful(arrowResponse.entity)
+          case Unauthorized | Forbidden | NotFound => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(arrowResponse.status, arrowResponse.entity.asString)))
           case _ => Future.failed(new FireCloudException(arrowResponse.status.value + ": " + arrowResponse.entity.asString))
         }
         rawlsResponse <- callRawls(rawlsJsonEntity)
         result <- rawlsResponse.status match {
           case NoContent => Future.successful(RequestComplete(NoContent))
-          case NotFound => Future.failed(new FireCloudExceptionWithErrorReport(FCErrorReport(rawlsResponse)))
+          case Unauthorized | Forbidden | NotFound => Future.failed(new FireCloudExceptionWithErrorReport(FCErrorReport(rawlsResponse)))
           case _ => Future.failed(new FireCloudException(rawlsResponse.status.value + ": " + rawlsResponse.entity.asString))
         }
       } yield (result)

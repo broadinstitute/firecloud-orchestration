@@ -3366,8 +3366,12 @@ paths:
           description: Successful Request
         400:
           description: Bad Request
+        401:
+          description: Unauthorized access to Avro file or Workspace
+        403:
+          description: Forbidden access to Avro file or Workspace
         404:
-          description: Workspace not found
+          description: Avro file or Workspace not found
         500:
           description: Internal Error
 
