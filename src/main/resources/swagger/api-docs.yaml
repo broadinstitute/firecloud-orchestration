@@ -3343,6 +3343,38 @@ paths:
         500:
           description: Internal Error
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importPFB:
+    post:
+      x-passthrough: false
+      tags:
+        - Entities
+      operationId: importPFB
+      summary: Import PFB data from an [Avro](https://avro.apache.org/) file
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: body
+          description: JSON object containing PFB URL
+          name: pfbImportRequest
+          required: true
+          schema:
+            $ref: '#/definitions/PFBRequest'
+      responses:
+        204:
+          description: Successful Request
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized access to Avro file or Workspace
+        403:
+          description: Forbidden access to Avro file or Workspace
+        404:
+          description: Avro file or Workspace not found
+        500:
+          description: Internal Error
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/flexibleImportEntities:
     post:
       x-passthrough: false
@@ -6366,6 +6398,15 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/MethodConfigurationName'
+
+  PFBRequest:
+    type: object
+    properties:
+      url:
+        type: string
+        description: link to publically accessible PFB/Avro
+    required:
+      - url
 
   Profile:
     type: object

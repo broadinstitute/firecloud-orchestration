@@ -28,6 +28,8 @@ case class EntityId(entityType: String, entityName: String)
 
 case class BagitImportRequest(bagitURL: String, format: String)
 
+case class PfbImportRequest(url: String)
+
 case class MethodConfigurationId(
   name: Option[String] = None,
   namespace: Option[String] = None,
