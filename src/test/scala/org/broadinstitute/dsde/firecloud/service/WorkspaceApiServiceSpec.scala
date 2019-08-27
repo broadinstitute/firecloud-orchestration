@@ -993,11 +993,37 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "WorkspaceService PFB Tests" - {
+      "should 400 if PFB URL is empty" in {
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":""}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute((workspaceRoutes)) ~> check {
+            status should equal(BadRequest)
+          })
+      }
+
       "should 400 if PFB URL is not https" in {
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"http://missing.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
+          }
+      }
+
+      "should 400 if arrow indicates a bad request" in {
+        // This may be caused by either orch giving arrow a bad request or the client giving a URL
+        // that results in a bad request. We'll surface 400 in both cases in order to avoid hiding
+        // the latter case behind a 500.
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(400)
+            .withBody("Bad request encountered when accessing PFB data"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(BadRequest)
+            body.asString should include ("Bad request encountered when accessing PFB data")
           }
       }
 
@@ -1011,9 +1037,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://unauthorized.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(Unauthorized)
-          body.asString should include ("unauthorized.avro not found")
-        }
+            status should equal(Unauthorized)
+            body.asString should include ("unauthorized.avro not found")
+          }
       }
 
       "should 403 if avro file access is forbidden" in {
@@ -1026,9 +1052,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://forbidden.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(Forbidden)
-          body.asString should include ("forbidden.avro not found")
-        }
+            status should equal(Forbidden)
+            body.asString should include ("forbidden.avro not found")
+          }
       }
 
       "should 404 if avro file is not found" in {
@@ -1050,14 +1076,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         arrowServer
           .when(request().withMethod("POST").withPath("/avroToRawls"))
           .respond(org.mockserver.model.HttpResponse.response()
-          .withStatusCode(400)
-          .withBody("invalid request"))
+          .withStatusCode(500)
+          .withBody("arrow error"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://missing.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(InternalServerError)
-            body.asString should include ("invalid request")
+            body.asString should include ("arrow error")
           }
       }
 

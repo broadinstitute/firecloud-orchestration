@@ -364,7 +364,11 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
       }
     }
 
-    val pfbUrl = new URL(pfbRequest.url)
+    val pfbUrl = try {
+      new URL(pfbRequest.url)
+    } catch {
+      case e: Exception => throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, s"Invalid URL: ${pfbRequest.url}", e))
+    }
     val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
 
     if (!acceptableProtocols.contains(pfbUrl.getProtocol)) {
@@ -375,7 +379,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
         arrowResponse <- callArrow
         rawlsJsonEntity <- arrowResponse.status match {
           case OK => Future.successful(arrowResponse.entity)
-          case Unauthorized | Forbidden | NotFound => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(arrowResponse.status, arrowResponse.entity.asString)))
+          case BadRequest | Unauthorized | Forbidden | NotFound => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(arrowResponse.status, arrowResponse.entity.asString)))
           case _ => Future.failed(new FireCloudException(arrowResponse.status.value + ": " + arrowResponse.entity.asString))
         }
         rawlsResponse <- callRawls(rawlsJsonEntity)
