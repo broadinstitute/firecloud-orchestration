@@ -76,7 +76,6 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
         val preRoleFailure = bigQuery.startQuery(GoogleProject(projectName), "meh").failed.futureValue
 
         preRoleFailure shouldBe a[GoogleJsonResponseException]
-        preRoleFailure.getMessage should include(user.email)
         preRoleFailure.getMessage should include(projectName)
         preRoleFailure.getMessage should include("bigquery.jobs.create")
 
@@ -118,7 +117,6 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
           failure
         }
 
-        postRoleFailure.getMessage should include(user.email)
         postRoleFailure.getMessage should include(projectName)
         postRoleFailure.getMessage should include("bigquery.jobs.create")
 
