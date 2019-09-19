@@ -2644,6 +2644,8 @@ paths:
       responses:
         200:
           description: Successful Request
+        400:
+          description: Unrecognized query parameters
         404:
           description: Workspace does not exist
         500:
