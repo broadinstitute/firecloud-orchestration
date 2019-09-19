@@ -297,11 +297,6 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               }
             }
           } ~
-          path("genomics" / "operations" / Segment) { jobId =>
-            requireUserInfo() { _ =>
-              passthrough(s"$workspacePath/genomics/operations/$jobId", HttpMethods.GET)
-            }
-          } ~
           path("tags") {
             requireUserInfo() { userInfo =>
               get { requestContext =>
