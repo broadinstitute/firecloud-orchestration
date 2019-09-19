@@ -23,6 +23,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
+import org.mockserver.model.JsonBody
 
 object WorkspaceApiServiceSpec {
 
@@ -31,6 +32,7 @@ object WorkspaceApiServiceSpec {
     "name-published",
     "workspace_id",
     "buckety_bucket",
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
@@ -50,6 +52,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "name",
     "workspace_id",
     "buckety_bucket",
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
@@ -79,6 +82,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val tsvImportPath = workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace, workspace.name)
   private final val tsvImportFlexiblePath = workspacesRoot + "/%s/%s/flexibleImportEntities".format(workspace.namespace, workspace.name)
   private final val bagitImportPath = workspacesRoot + "/%s/%s/importBagit".format(workspace.namespace, workspace.name)
+  private final val pfbImportPath = workspacesRoot + "/%s/%s/importPFB".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
   private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
   private final val tagAutocompletePath = s"$workspacesRoot/tags"
@@ -101,6 +105,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "att",
     "id",
     "", //bucketname
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "mb",
@@ -114,6 +119,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "att",
     "id",
     "", //bucketname
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "mb",
@@ -127,6 +133,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "att",
     "id",
     "", //bucketname
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "mb",
@@ -135,12 +142,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Set.empty
   )
 
-  val protectedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, protectedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
-  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, authDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
-  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, nonAuthDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
+  val protectedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, protectedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
+  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, authDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
+  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, nonAuthDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
 
   var rawlsServer: ClientAndServer = _
   var bagitServer: ClientAndServer = _
+  var arrowServer: ClientAndServer = _
 
   /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
     *
@@ -148,12 +156,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param path   request path
     * @param status status for the response
     */
-  def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None): Unit = {
+  def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None, requestBody: Option[String] = None): Unit = {
     rawlsServer.reset()
     val request = org.mockserver.model.HttpRequest.request()
       .withMethod(method.name)
       .withPath(path)
     if (query.isDefined) request.withQueryStringParameter(query.get._1, query.get._2)
+    requestBody.foreach(request.withBody)
     val response = org.mockserver.model.HttpResponse.response()
       .withHeaders(MockUtils.header).withStatusCode(status.intValue)
     if (body.isDefined) response.withBody(body.get)
@@ -176,7 +185,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val rawlsRequest = WorkspaceRequest(namespace, name, Map(), Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", DateTime.now(), DateTime.now(), "bob", Map(), false, authDomain)
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Map(), false, authDomain)
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -198,7 +207,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", DateTime.now(), DateTime.now(), "bob", attributes, false, authDomain)
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", attributes, false, authDomain)
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -239,11 +248,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   override def beforeAll(): Unit = {
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
     bagitServer = startClientAndServer(MockUtils.bagitServerPort)
+    arrowServer = startClientAndServer(MockUtils.arrowServerPort)
   }
 
   override def afterAll(): Unit = {
     rawlsServer.stop
     bagitServer.stop
+    arrowServer.stop
   }
 
   override def beforeEach(): Unit = {
@@ -251,6 +262,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   override def afterEach(): Unit = {
+    arrowServer.reset
     this.searchDao.reset
   }
 
@@ -289,7 +301,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
       Seq("this","workspace") foreach { prefix =>
         s"Forbidden error is returned for HTTP POST with an output to $prefix.library:" in {
-          val methodConfigs = MethodConfiguration("namespace", "name", Some("root"), Map.empty, Map.empty, Map("value" -> AttributeString(s"$prefix.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
+          val methodConfigs = MethodConfiguration("namespace", "name", Some("root"), None, Map.empty, Map("value" -> AttributeString(s"$prefix.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
           Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(Forbidden)
           }
@@ -614,7 +626,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(published, discoverable))
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
+        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(new JsonBody(rawlsRequest.toJson.toString)))
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
@@ -957,6 +969,181 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
         }
+      }
+    }
+
+    "WorkspaceService PFB Tests" - {
+      "should 400 if PFB URL is empty" in {
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":""}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute((workspaceRoutes)) ~> check {
+            status should equal(BadRequest)
+          })
+      }
+
+      "should 400 if PFB URL is not https" in {
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"http://missing.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(BadRequest)
+          }
+      }
+
+      "should 400 if arrow indicates a bad request" in {
+        // This may be caused by either orch giving arrow a bad request or the client giving a URL
+        // that results in a bad request. We'll surface 400 in both cases in order to avoid hiding
+        // the latter case behind a 500.
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(400)
+            .withBody("Bad request encountered when accessing PFB data"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(BadRequest)
+            body.asString should include ("Bad request encountered when accessing PFB data")
+          }
+      }
+
+      "should 401 if avro file access is unauthorized" in {
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(401)
+            .withBody("unauthorized.avro not found"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://unauthorized.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(Unauthorized)
+            body.asString should include ("unauthorized.avro not found")
+          }
+      }
+
+      "should 403 if avro file access is forbidden" in {
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(403)
+            .withBody("forbidden.avro not found"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://forbidden.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(Forbidden)
+            body.asString should include ("forbidden.avro not found")
+          }
+      }
+
+      "should 404 if avro file is not found" in {
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(404)
+            .withBody("missing.avro not found"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://missing.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(NotFound)
+            body.asString should include ("missing.avro not found")
+          }
+      }
+
+      "should 500 if arrow fails" in {
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+          .withStatusCode(500)
+          .withBody("arrow error"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://missing.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(InternalServerError)
+            body.asString should include ("arrow error")
+          }
+      }
+
+      "should 401 if workspace access unauthorized" in {
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+          .withStatusCode(200)
+          .withBody("Pretend this is Rawls upsert JSON"))
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", Unauthorized, requestBody = Some("Pretend this is Rawls upsert JSON"), body = Some("workspace access unauthorized"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(Unauthorized)
+            body.asString should include ("workspace access unauthorized")
+          }
+      }
+
+      "should 403 if workspace access forbidden" in {
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+          .withStatusCode(200)
+          .withBody("Pretend this is Rawls upsert JSON"))
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", Forbidden, requestBody = Some("Pretend this is Rawls upsert JSON"), body = Some("workspace access forbidden"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(Forbidden)
+            body.asString should include ("workspace access forbidden")
+          }
+      }
+
+      "should 404 if workspace not found" in {
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+          .withStatusCode(200)
+          .withBody("Pretend this is Rawls upsert JSON"))
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NotFound, requestBody = Some("Pretend this is Rawls upsert JSON"), body = Some("workspace not found"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(NotFound)
+            body.asString should include ("workspace not found")
+          }
+      }
+
+      "should 500 if rawls fails" in {
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(200)
+            .withBody("Pretend this is Rawls upsert JSON"))
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", BadRequest, requestBody = Some("Pretend this is Rawls upsert JSON"), body = Some("Rawls is unhappy"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(InternalServerError)
+            body.asString should include ("Rawls is unhappy")
+          }
+      }
+
+      "should 204 if everything works" in {
+        arrowServer
+          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(200)
+            .withBody("Pretend this is Rawls upsert JSON"))
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent, requestBody = Some("Pretend this is Rawls upsert JSON"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(NoContent)
+          }
       }
     }
 

@@ -21,9 +21,6 @@ import scala.concurrent.Future
   */
 
 object RawlsDAO {
-  lazy val refreshTokenUrl = authedUrl("/user/refreshToken")
-  lazy val refreshTokenDateUrl = authedUrl("/user/refreshTokenDate")
-
   lazy val serviceName = "Rawls"
 
   def groupUrl(group: String): String = authedUrl(s"/user/group/$group")
@@ -77,10 +74,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def queryEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String, query: EntityQuery)(implicit userToken: UserInfo): Future[EntityQueryResponse]
 
   def getEntityTypes(workspaceNamespace: String, workspaceName: String)(implicit userToken: UserInfo): Future[Map[String, EntityTypeMetadata]]
-
-  def getRefreshTokenStatus(userInfo: UserInfo): Future[Option[DateTime]]
-
-  def saveRefreshToken(userInfo: UserInfo, refreshToken: String): Future[Unit]
 
   def getCatalog(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Seq[WorkspaceCatalog]]
 

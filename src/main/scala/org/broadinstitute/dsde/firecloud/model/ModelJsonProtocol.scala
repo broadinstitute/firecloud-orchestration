@@ -181,6 +181,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impEntityId = jsonFormat2(EntityId)
 
   implicit val impBagitImportRequest = jsonFormat2(BagitImportRequest)
+  implicit val impPfbImportRequest = jsonFormat1(PfbImportRequest)
 
   implicit val impDestination = jsonFormat3(MethodConfigurationId)
   implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)
@@ -211,10 +212,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impBasicProfile = jsonFormat11(BasicProfile)
   implicit val impProfile = jsonFormat13(Profile.apply)
   implicit val impProfileWrapper = jsonFormat2(ProfileWrapper)
-
-  implicit val impTokenResponse = jsonFormat6(OAuthTokens.apply)
-  implicit val impRawlsToken = jsonFormat1(RawlsToken)
-  implicit val impRawlsTokenDate = jsonFormat1(RawlsTokenDate)
+  implicit val impProfileKVP = jsonFormat2(ProfileKVP)
+  implicit val impTerraPreference = jsonFormat2(TerraPreference)
 
   implicit val impJWTWrapper = jsonFormat1(JWTWrapper)
 

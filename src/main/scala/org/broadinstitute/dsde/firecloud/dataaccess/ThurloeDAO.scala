@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, Profile, ProfileWrapper, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, ProfileWrapper, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
 import scala.concurrent.Future
@@ -20,8 +20,6 @@ trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
   implicit val errorReportSource = ErrorReportSource(ThurloeDAO.serviceName)
 
   def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]]
-
-  def getProfile(userInfo: UserInfo): Future[Option[Profile]]
   def getAllUserValuesForKey(key: String): Future[Map[String, String]]
   def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit]
 
@@ -64,6 +62,7 @@ trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
     */
   def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus): Future[Try[Unit]]
 
+  def bulkUserQuery(userIds: List[String], keySelection: List[String]): Future[List[ProfileWrapper]]
 
   override def serviceName:String = ThurloeDAO.serviceName
 }

@@ -10,6 +10,7 @@ import akka.pattern.pipe
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
+import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -21,6 +22,7 @@ import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
+import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.routing.RequestContext
@@ -34,11 +36,16 @@ import scala.util.{Failure, Success, Try}
 
 object EntityClient {
 
+  lazy val arrowRoot: String = FireCloudConfig.Arrow.baseUrl
+  lazy val avroToRawlsURL: String = s"$arrowRoot/avroToRawls"
+
   case class ImportEntitiesFromTSV(workspaceNamespace: String,
                                    workspaceName: String,
                                    tsvString: String)
 
   case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
+
+  case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)
 
   def props(requestContext: RequestContext, modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext, modelSchema))
 
@@ -120,6 +127,9 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
+    case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest) =>
+      val pipeline = authHeaders(requestContext) ~> sendReceive
+      importPFB(pipeline, workspaceNamespace, workspaceName, pfbRequest) pipeTo sender
   }
 
 
@@ -337,6 +347,52 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
         } finally {
           bagItFile.delete()
         }
+      }
+    }
+  }
+
+  def importPFB(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
+                workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
+
+    def callArrow = {
+      pipeline { Post(avroToRawlsURL, pfbRequest) }
+    }
+
+    def callRawls(entity: HttpEntity) = {
+      pipeline {
+        Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), entity)
+      }
+    }
+
+    val pfbUrl = try {
+      new URL(pfbRequest.url)
+    } catch {
+      case e: Exception => throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, s"Invalid URL: ${pfbRequest.url}", e))
+    }
+    val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
+
+    if (!acceptableProtocols.contains(pfbUrl.getProtocol)) {
+      Future.successful(RequestCompleteWithErrorReport(BadRequest, "Invalid URL protocol: must be https only"))
+    } else {
+
+      val futurePerRequestMessage = for {
+        arrowResponse <- callArrow
+        rawlsJsonEntity <- arrowResponse.status match {
+          case OK => Future.successful(arrowResponse.entity)
+          case BadRequest | Unauthorized | Forbidden | NotFound => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(arrowResponse.status, arrowResponse.entity.asString)))
+          case _ => Future.failed(new FireCloudException(arrowResponse.status.value + ": " + arrowResponse.entity.asString))
+        }
+        rawlsResponse <- callRawls(rawlsJsonEntity)
+        result <- rawlsResponse.status match {
+          case NoContent => Future.successful(RequestComplete(NoContent))
+          case Unauthorized | Forbidden | NotFound => Future.failed(new FireCloudExceptionWithErrorReport(FCErrorReport(rawlsResponse)))
+          case _ => Future.failed(new FireCloudException(rawlsResponse.status.value + ": " + rawlsResponse.entity.asString))
+        }
+      } yield (result)
+
+      futurePerRequestMessage recover {
+        case e: FireCloudExceptionWithErrorReport => RequestCompleteWithErrorReport(optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), e.errorReport.message, e)
+        case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Import failed. Details: " + e.getMessage, e)
       }
     }
   }

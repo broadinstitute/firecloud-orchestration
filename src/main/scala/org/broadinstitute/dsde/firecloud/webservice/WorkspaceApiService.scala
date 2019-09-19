@@ -79,7 +79,9 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
           pathEnd {
             get {
               requireUserInfo() { _ =>
-                passthrough(workspacePath, HttpMethods.GET)
+                extract(_.request.uri.query) { query =>
+                  passthrough(Uri(workspacePath).withQuery(query), HttpMethods.GET)
+                }
               }
             } ~
             delete {
@@ -141,6 +143,18 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   respondWithJSON { requestContext =>
                     perRequest(requestContext, Props(new EntityClient(requestContext, FirecloudModelSchema)),
                       EntityClient.ImportBagit(workspaceNamespace, workspaceName, bagitRq))
+                  }
+                }
+              }
+            }
+          } ~
+          path("importPFB") {
+            post {
+              requireUserInfo() { userInfo =>
+                entity(as[PfbImportRequest]) { pfbRequest =>
+                  respondWithJSON { requestContext =>
+                    perRequest(requestContext, Props(new EntityClient(requestContext, FlexibleModelSchema)),
+                      EntityClient.ImportPFB(workspaceNamespace, workspaceName, pfbRequest))
                   }
                 }
               }
@@ -232,6 +246,11 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
           path("checkBucketReadAccess") {
             requireUserInfo() { _ =>
               passthrough(workspacePath + "/checkBucketReadAccess", HttpMethods.GET)
+            }
+          } ~
+          path("bucketOptions") {
+            requireUserInfo() { _ =>
+              passthrough(workspacePath + "/bucketOptions", HttpMethods.GET)
             }
           } ~
           path("sendChangeNotification") {

@@ -17,6 +17,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
+import org.broadinstitute.dsde.workbench.service.BillingProject.BillingProjectStatus
 import org.broadinstitute.dsde.workbench.service.Orchestration.NIH.NihDatasetPermission
 
 class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with Eventually
@@ -42,8 +43,9 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
       * The test does check the right things, even if FireCloud itself doesn't use it.
       */
     "should grant and remove google role access" in {
-      // google roles can take a while to take effect
-      implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(1, Minutes)), interval = scaled(Span(10, Seconds)))
+      // According to google, role changes will take, at most, 7 minutes to propagate through the system, which is why the
+      // the patience config is set to that number. If it takes longer, create a ticket with google.
+      implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(7, Minutes)), interval = scaled(Span(10, Seconds)))
 
       val ownerUser: Credentials = UserPool.chooseProjectOwner
       val ownerToken: AuthToken = ownerUser.makeAuthToken()
@@ -74,7 +76,6 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
         val preRoleFailure = bigQuery.startQuery(GoogleProject(projectName), "meh").failed.futureValue
 
         preRoleFailure shouldBe a[GoogleJsonResponseException]
-        preRoleFailure.getMessage should include(user.email)
         preRoleFailure.getMessage should include(projectName)
         preRoleFailure.getMessage should include("bigquery.jobs.create")
 
@@ -116,7 +117,6 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
           failure
         }
 
-        postRoleFailure.getMessage should include(user.email)
         postRoleFailure.getMessage should include(projectName)
         postRoleFailure.getMessage should include("bigquery.jobs.create")
 
@@ -254,7 +254,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
           eventually {
             val statusMap: Map[String, String] = Orchestration.profile.getUserBillingProjectStatus(projectName)(ownerToken)
             statusMap should contain("projectName" -> projectName)
-            statusMap should contain("creationStatus" -> Orchestration.billing.BillingProjectStatus.Ready.toString)
+            statusMap should contain("creationStatus" -> BillingProjectStatus.Ready.toString)
           }
         }
       }

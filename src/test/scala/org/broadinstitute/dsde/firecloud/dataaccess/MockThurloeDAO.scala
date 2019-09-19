@@ -4,13 +4,13 @@ import java.util.NoSuchElementException
 
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO._
 import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, Profile, ProfileWrapper, Trial, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, ProfileWrapper, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 /**
  * Created by mbemis on 10/25/16.
@@ -114,12 +114,9 @@ class MockThurloeDAO extends ThurloeDAO {
     )
 
 
-  override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] =
-    Future.successful(None)
-
-  override def getProfile(userInfo: UserInfo): Future[Option[Profile]] = {
+  override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] = {
     val profileWrapper = try {
-      Option(Profile(ProfileWrapper(userInfo.id, mockKeyValues(userInfo.id).toList)))
+      Option(ProfileWrapper(forUserId, mockKeyValues(forUserId).toList))
     } catch {
       case e:NoSuchElementException => None
     }
@@ -172,4 +169,17 @@ class MockThurloeDAO extends ThurloeDAO {
 
   override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus): Future[Try[Unit]] =
     Future.successful(Success(()))
+
+  override def bulkUserQuery(userIds: List[String], keySelection: List[String]): Future[List[ProfileWrapper]] = {
+
+    val mockdata = userIds.map { forUserId =>
+      if (mockKeyValues.contains(forUserId)) {
+        val kvps = mockKeyValues(forUserId).filter(kvp => kvp.key.isDefined && keySelection.contains(kvp.key.get))
+        Some(ProfileWrapper(forUserId, kvps.toList))
+      } else {
+        None
+      }
+    }
+    Future.successful(mockdata.flatten)
+  }
 }

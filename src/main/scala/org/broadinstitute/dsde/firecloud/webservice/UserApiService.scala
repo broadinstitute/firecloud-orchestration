@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.UserService.ImportPermission
+import org.broadinstitute.dsde.firecloud.service.UserService.{DeleteTerraPreference, GetTerraPreference, ImportPermission, SetTerraPreference}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.rawls.model.ErrorReport
@@ -64,7 +64,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
   lazy val log = LoggerFactory.getLogger(getClass)
 
   val trialServiceConstructor: () => TrialService
-  val userServiceConstructor: (WithAccessToken) => UserService
+  val userServiceConstructor: (UserInfo) => UserService
 
   val userServiceRoutes =
     path("me") {
@@ -117,6 +117,23 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         get {
           requireUserInfo() { userInfo => requestContext =>
             perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), ImportPermission)
+          }
+        }
+      } ~
+      path("profile" / "terra") {
+        get {
+          requireUserInfo() { userInfo => requestContext =>
+            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), GetTerraPreference)
+          }
+        } ~
+        post {
+          requireUserInfo() { userInfo => requestContext =>
+            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), SetTerraPreference)
+          }
+        } ~
+        delete {
+          requireUserInfo() { userInfo => requestContext =>
+            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), DeleteTerraPreference)
           }
         }
       } ~

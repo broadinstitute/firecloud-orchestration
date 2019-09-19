@@ -22,6 +22,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
     "name",
     "workspace_id",
     "buckety_bucket",
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",

@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import spray.http.HttpMethods
+import spray.http.{HttpMethods, Uri}
 import spray.routing.Route
 import spray.routing.HttpService
 
@@ -12,6 +12,7 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
   lazy val workflowRoot: String = FireCloudConfig.CromIAM.authUrl + "/workflows/v1"
   lazy val womtoolRoute: String = FireCloudConfig.CromIAM.authUrl + "/womtool/v1"
   lazy val engineRoot: String = FireCloudConfig.CromIAM.baseUrl + "/engine/v1"
+  lazy val rawlsWorkflowRoot: String = FireCloudConfig.Rawls.authUrl + "/workflows"
 
   // This is the subset of CromIAM endpoints required for Job Manager. Orchestration is acting as a proxy between
   // CromIAM and Job Manager as of February 2019.
@@ -22,7 +23,9 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
       path("query") {
         pathEnd {
           get {
-            passthrough(s"$workflowRoot/query", HttpMethods.GET)
+            extract(_.request.uri.query) { query =>
+              passthrough(Uri(s"$workflowRoot/query").withQuery(query), HttpMethods.GET)
+            }
           } ~
           post {
             passthrough(s"$workflowRoot/query", HttpMethods.POST)
@@ -40,7 +43,9 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
         path("metadata") {
           pathEnd {
             get {
-              passthrough(s"$workflowRoot/$workflowId/metadata", HttpMethods.GET)
+              extract(_.request.uri.query) { query =>
+                passthrough(Uri(s"$workflowRoot/$workflowId/metadata").withQuery(query), HttpMethods.GET)
+              }
             }
           }
         } ~
@@ -49,6 +54,11 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
             patch {
               passthrough(s"$workflowRoot/$workflowId/labels", HttpMethods.PATCH)
             }
+          }
+        } ~
+        path("backend" / "metadata" / Segment.repeat(Slash)) { operationId =>
+          get {
+            passthrough(s"$rawlsWorkflowRoot/$workflowId/genomics/${operationId.mkString("/")}", HttpMethods.GET)
           }
         }
       }

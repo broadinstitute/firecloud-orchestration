@@ -3,7 +3,8 @@ import sbt._
 object Dependencies {
   val akkaV = "2.4.19"
   val sprayV = "1.3.4"
-  val jacksonV = "2.9.8"
+  val jacksonV = "2.9.9"
+  val jacksonHotfixV = "2.9.9.3" // for when only some of the Jackson libs have hotfix releases
 
   def excludeGuavaJDK5(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava-jdk5")
 
@@ -11,7 +12,7 @@ object Dependencies {
     // proactively pull in latest versions of Jackson libs, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     "com.fasterxml.jackson.core"     % "jackson-annotations" % jacksonV,
-    "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonV,
+    "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonHotfixV,
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
 
     "org.apache.logging.log4j"       % "log4j-api"           % "2.8.2", // elasticsearch requires log4j ...
@@ -22,7 +23,7 @@ object Dependencies {
 
     "org.broadinstitute.dsde.vault" %% "vault-common"        % "0.1-19-ca8b927"
       exclude("io.spray", "spray-routing_2.11"),
-    "org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-0d02c8ce-SNAP"
+    "org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-b9d04a47"
       exclude("com.typesafe.scala-logging", "scala-logging_2.11") exclude("com.typesafe.akka", "akka-stream_2.11"),
     "org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP",
 
@@ -39,18 +40,15 @@ object Dependencies {
 
     "org.elasticsearch.client"       % "transport"           % "5.4.3",
 
-    "com.google.guava"               % "guava"               % "19.0",
+    "com.google.guava"               % "guava"               % "28.0-jre",
 
-    excludeGuavaJDK5("com.google.api-client"          % "google-api-client"   % "1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-storage" % "v1-rev116-1.23.0"),
-    excludeGuavaJDK5("com.google.apis"                % "google-api-services-compute" % "v1-rev163-1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-sheets"  % "v4-rev494-1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-cloudbilling" % "v1-rev14-1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-pubsub"       % "v1-rev357-1.22.0"),
 
     "org.webjars"                    % "swagger-ui"          % "2.2.5",
-    "com.jason-goodwin"             %% "authentikat-jwt"     % "0.4.5"
-      exclude("com.fasterxml.jackson.core", "jackson-databind"),
+    "com.pauldijou"                 %% "jwt-core"            % "3.1.0",
     "com.sun.mail"                   % "javax.mail"          % "1.5.6",
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",
     "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",

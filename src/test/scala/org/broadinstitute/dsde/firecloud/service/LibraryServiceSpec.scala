@@ -82,7 +82,8 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     createdDate = DateTime.now(),
     lastModified = DateTime.now(),
     attributes = Map.empty,
-    bucketName = "bucketName")
+    bucketName = "bucketName",
+    workflowCollectionName = Some("wf-collection"))
 
 
   val DULAdditionalJsObject =
@@ -283,12 +284,12 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "should be the different for attribute operations" in {
-        val empty = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq.empty))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
+        val empty = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq.empty))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
         assert(isDiscoverableDifferent(empty, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))))
-        val one = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
+        val one = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))))
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq.empty))))
-        val two = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), Set.empty)
+        val two = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
         assert(isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"))))))
         assert(!isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"),AttributeString("group1"))))))
       }
@@ -806,6 +807,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           "name",
           "workspace_id",
           "buckety_bucket",
+          Some("wf-collection"),
           DateTime.now(),
           DateTime.now(),
           "my_workspace_creator",

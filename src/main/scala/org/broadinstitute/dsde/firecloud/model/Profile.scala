@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import spray.json.DefaultJsonProtocol._
 
 import scala.language.postfixOps
+import scala.util.Try
 
 case class FireCloudKeyValue(
   key: Option[String] = None,
@@ -19,6 +20,8 @@ case class ThurloeKeyValues(
   keyValuePairs: Option[Seq[FireCloudKeyValue]] = None)
 
 case class ProfileWrapper(userId: String, keyValuePairs: List[FireCloudKeyValue])
+
+case class ProfileKVP(userId: String, keyValuePair: FireCloudKeyValue)
 
 case class BasicProfile (
     firstName: String,
@@ -129,6 +132,17 @@ object ProfileValidator {
   }
 }
 
+object ProfileUtils {
+  def getString(key: String, profileWrapper: ProfileWrapper): Option[String] = {
+    profileWrapper.keyValuePairs.collectFirst {
+      case fckv if fckv.key.contains(key) => fckv.value
+    }.flatten
+  }
+  def getLong(key: String, profileWrapper: ProfileWrapper): Option[Long] = {
+    getString(key, profileWrapper).flatMap(x => Try(x.toLong).toOption)
+  }
+}
+
 trait mappedPropVals {
   def propertyValueMap: Map[String, String] = {
     this.getClass.getDeclaredFields map {
@@ -142,3 +156,5 @@ trait mappedPropVals {
     } toMap
   }
 }
+
+case class TerraPreference(preferTerra: Boolean, preferTerraLastUpdated: Long)

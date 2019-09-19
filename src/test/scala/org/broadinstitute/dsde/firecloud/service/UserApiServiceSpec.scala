@@ -23,7 +23,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app, trialProjectManager)
-  val userServiceConstructor:(WithAccessToken) => UserService = UserService.constructor(app)
+  val userServiceConstructor:(UserInfo) => UserService = UserService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
   var samServer: ClientAndServer = _
@@ -79,13 +79,6 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     workspaceServer = startClientAndServer(workspaceServerPort)
     workspaceServer
       .when(request.withMethod("GET").withPath(UserApiService.billingPath))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-      )
-
-    workspaceServer
-      .when(request.withMethod("GET").withPath(RawlsDAO.refreshTokenDateUrl))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)

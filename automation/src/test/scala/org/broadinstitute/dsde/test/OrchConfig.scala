@@ -9,6 +9,7 @@ object OrchConfig extends CommonConfig {
     val targetJsonWebTokenKey = usersConfig.getString("targetJsonWebTokenKey")
     val targetAndTcgaJsonWebTokenKey = usersConfig.getString("targetAndTcgaJsonWebTokenKey")
     val genericJsonWebTokenKey = usersConfig.getString("genericJsonWebTokenKey")
+    val tempSubjectId = usersConfig.getString("tempSubjectId")
   }
 
   object GCS extends CommonGCS {

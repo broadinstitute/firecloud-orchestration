@@ -41,6 +41,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with ShareLogApiService
   with ManagedGroupApiService
   with CromIamApiService
+  with StaticNotebooksApiService
 {
 
   override lazy val log = LoggerFactory.getLogger(getClass)
@@ -97,14 +98,13 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
   val nihServiceConstructor: () => NihServiceActor = NihService.constructor(app)
-  val oauthServiceConstructor: () => OAuthService = OAuthService.constructor(app)
   val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
   val trialServiceConstructor: () => TrialService = TrialService.constructor(app, trialProjectManager)
-  val userServiceConstructor: (WithAccessToken) => UserService = UserService.constructor(app)
+  val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
   val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
   val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
 
@@ -125,7 +125,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val billingService = new BillingService with ActorRefFactoryContext
   val apiRoutes = methodsApiServiceRoutes ~ profileRoutes ~ cromIamApiServiceRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    nihRoutes ~ billingService.routes ~ trialApiServiceRoutes ~ shareLogServiceRoutes
+    nihRoutes ~ billingService.routes ~ trialApiServiceRoutes ~ shareLogServiceRoutes ~
+    staticNotebooksRoutes
 
   val healthService = new HealthService with ActorRefFactoryContext
 

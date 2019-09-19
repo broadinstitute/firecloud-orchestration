@@ -305,6 +305,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     "name",
     "workspace_id",
     "buckety_bucket",
+    Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
@@ -320,6 +321,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     catalog=false,
     ws,
     WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0),
+    WorkspaceBucketOptions(false),
     Set.empty
   )
 
