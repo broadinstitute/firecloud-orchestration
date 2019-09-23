@@ -20,9 +20,13 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import spray.client.pipelining._
+import spray.http.HttpEncodings._
+import spray.http.HttpHeaders.`Accept-Encoding`
+import spray.http.{HttpRequest, HttpResponse}
 import spray.http.StatusCodes._
 import spray.http._
 import spray.httpx.SprayJsonSupport._
+import spray.httpx.encoding.Gzip
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.routing.RequestContext
@@ -355,7 +359,8 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
                 workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
 
     def callArrow = {
-      pipeline { Post(avroToRawlsURL, pfbRequest) }
+      val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> pipeline ~> decode(Gzip)
+      gzipPipeline { Post(avroToRawlsURL, pfbRequest) }
     }
 
     def callRawls(entity: HttpEntity) = {

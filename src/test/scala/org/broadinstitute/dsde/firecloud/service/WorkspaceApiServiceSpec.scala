@@ -1133,7 +1133,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "should 204 if everything works" in {
         arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls"))
+          .when(request().withMethod("POST").withPath("/avroToRawls").withHeader("Accept-Encoding", "gzip"))
           .respond(org.mockserver.model.HttpResponse.response()
             .withStatusCode(200)
             .withBody("Pretend this is Rawls upsert JSON"))
