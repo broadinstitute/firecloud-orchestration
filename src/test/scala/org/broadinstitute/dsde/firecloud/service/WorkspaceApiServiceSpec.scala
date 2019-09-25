@@ -14,7 +14,9 @@ import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
+import org.mockserver.model.Header
 import org.mockserver.model.HttpRequest._
+import org.mockserver.model.NottableString
 import org.mockserver.socket.SSLFactory
 import org.scalatest.BeforeAndAfterEach
 import spray.http._
@@ -159,6 +161,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None, requestBody: Option[String] = None): Unit = {
     rawlsServer.reset()
     val request = org.mockserver.model.HttpRequest.request()
+      .withHeader("authorization", "Bearer .*")
       .withMethod(method.name)
       .withPath(path)
     if (query.isDefined) request.withQueryStringParameter(query.get._1, query.get._2)
@@ -1133,7 +1136,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "should 204 if everything works" in {
         arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls").withHeader("Accept-Encoding", "gzip"))
+          .when(request().withMethod("POST").withPath("/avroToRawls").withHeaders(
+            Header.header("Accept-Encoding", "gzip"),
+            Header.header(NottableString.not("x-firecloud-id"), NottableString.string(".*")),
+            Header.header(NottableString.not("authorization"), NottableString.string(".*"))
+          ))
           .respond(org.mockserver.model.HttpResponse.response()
             .withStatusCode(200)
             .withBody("Pretend this is Rawls upsert JSON"))

@@ -132,7 +132,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
       val pipeline = authHeaders(requestContext) ~> sendReceive
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
     case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest) =>
-      val pipeline = authHeaders(requestContext) ~> sendReceive
+      val pipeline = sendReceive
       importPFB(pipeline, workspaceNamespace, workspaceName, pfbRequest) pipeTo sender
   }
 
@@ -364,7 +364,8 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     }
 
     def callRawls(entity: HttpEntity) = {
-      pipeline {
+      val authPipeline = authHeaders(requestContext) ~> pipeline
+      authPipeline {
         Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), entity)
       }
     }
