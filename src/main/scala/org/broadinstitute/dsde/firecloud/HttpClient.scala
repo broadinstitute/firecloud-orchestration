@@ -16,6 +16,9 @@ import spray.http._
 import spray.routing.RequestContext
 import spray.http.StatusCodes._
 
+import scala.concurrent.duration._
+import akka.util.Timeout
+
 import org.broadinstitute.dsde.firecloud.HttpClient.PerformExternalRequest
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
@@ -57,6 +60,9 @@ class HttpClient (requestContext: RequestContext) extends Actor
       requestCompression: Boolean,
       requestContext: RequestContext,
       externalRequest: HttpRequest): Unit = {
+
+    implicit val requestTimeout = Timeout(120 seconds)
+
     val pipeline: HttpRequest => Future[HttpResponse] =
       requestCompression match {
         case true =>
