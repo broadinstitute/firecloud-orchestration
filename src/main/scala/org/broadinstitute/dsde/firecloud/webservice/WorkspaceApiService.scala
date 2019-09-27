@@ -57,7 +57,9 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
       pathPrefix("workspaces") {
         pathEnd {
           requireUserInfo() { _ =>
-            passthrough(rawlsWorkspacesRoot, HttpMethods.GET, HttpMethods.POST)
+            extract(_.request.uri.query) { query =>
+              passthrough(Uri(rawlsWorkspacesRoot).withQuery(query), HttpMethods.GET, HttpMethods.POST)
+            }
           }
         } ~
         pathPrefix("tags") {
