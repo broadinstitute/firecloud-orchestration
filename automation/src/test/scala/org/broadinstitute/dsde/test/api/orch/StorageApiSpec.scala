@@ -145,7 +145,16 @@ class StorageApiSpec extends FreeSpec with StorageApiSpecSupport with Matchers w
       }
     }
 
-    "should redirect to a direct-download url when SA doesn't have signing permissions for large (>8MB) files " in {
+    /*  David An 30-Sep-19: disabling this test. We recently re-evaluated our SA permissions, removing many that were
+        unnecessary. SA now has storage-admin, which means this test is failing, since the SA *does* have permission
+        to sign the URL.
+
+        End-user functionality remains fine. The test is faulty. The test will need to be rewritten such that after
+        it grants the student access to the file, it removes the SA's permission.
+
+        TODO: rewrite/refactor/re-enable
+     */
+    "should redirect to a direct-download url when SA doesn't have signing permissions for large (>8MB) files " ignore {
       implicit val authToken: AuthToken = student.makeAuthToken()
       withLargeFile { largeFile =>
         setStudentOnly(largeFile, student)
