@@ -52,7 +52,7 @@ object Dependencies {
     "com.sun.mail"                   % "javax.mail"          % "1.5.6",
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",
     "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",
-    "org.everit.json"                % "org.everit.json.schema" % "1.4.1",
+    "com.github.everit-org.json-schema" % "org.everit.json.schema" % "1.12.0",
     "com.github.pathikrit"          %% "better-files"        % "2.17.1",
     "org.apache.httpcomponents"      % "httpclient"          % "4.5.3",
 

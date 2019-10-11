@@ -619,7 +619,13 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getCausingExceptions.last.getMessage.contains("library:coverage: foobar is not a valid enum value"))
+        // getSchemaValidationMessages is used at runtime to generate error messages to the user; it recurses through
+        // the exception and its causes.
+        val errMsgs = getSchemaValidationMessages(ex)
+        assert(
+          errMsgs.exists(_.contains("library:coverage: foobar is not a valid enum value")),
+          "did not find expected string 'library:coverage: foobar is not a valid enum value' in error messages"
+        )
       }
       "fails on a string that should be an array" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
