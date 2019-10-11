@@ -7,7 +7,7 @@ import akka.actor.ActorRefFactory
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, ProfileWrapper, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.http.{HttpResponse, StatusCodes}
@@ -105,6 +105,9 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
 
 
   override def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Boolean = false
+
+  override def checkGoogleGroupExists(groupEmail: String): Option[String] = Option("fluffy-panda-238dskfj28@support.test.firecloud.org")
+  override def createGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option("fluffy-panda-238dskfj28@support.test.firecloud.org")
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 

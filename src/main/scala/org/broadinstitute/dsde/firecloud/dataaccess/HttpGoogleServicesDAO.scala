@@ -1,12 +1,17 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import java.io
 import java.io.FileInputStream
 
 import akka.actor.ActorRefFactory
+import com.google.api.client.auth.oauth2.Credential
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
 import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.services.admin.directory.Directory
+import com.google.api.services.admin.directory.model.{Group, Member}
 import com.google.api.services.cloudbilling.Cloudbilling
 import com.google.api.services.cloudbilling.model.ProjectBillingInfo
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
@@ -19,6 +24,7 @@ import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO.{pemFile, pemFileClientId}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
@@ -27,6 +33,7 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
+import org.broadinstitute.dsde.workbench.util.Retry
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
@@ -84,6 +91,8 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
+  // will be for Directory/Group stuff
+  val directoryScope = Seq("https://www.googleapis.com/auth/admin.directory.group")
   // the scope we want is not defined in CloudbillingScopes, so we hardcode it here
   val billingScope = Seq("https://www.googleapis.com/auth/cloud-billing")
   val spreadsheetScopes = Seq(SheetsScopes.SPREADSHEETS)
@@ -98,6 +107,12 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   // credentials for the rawls service account, used for signing GCS urls
   lazy private val rawlsSACreds = ServiceAccountCredentials
     .fromStream(new FileInputStream(FireCloudConfig.Auth.rawlsSAJsonFile))
+
+  // TODO: clean up here
+  val pemFile = FireCloudConfig.Auth.pemFile
+  val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
+  val firecloudAccountJsonFile = FireCloudConfig.Auth.firecloudAccountJsonFile
+  val userAdminAccount = "google@"+FireCloudConfig.FireCloud.supportDomain.replace("support.","")
 
   // credentials for the trial billing service account, used for free trial duties
   lazy private val trialBillingSACreds = ServiceAccountCredentials
@@ -140,8 +155,28 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(authScopes ++ billingScope))).setApplicationName(appName).build()
   }
 
+  def getDirectoryManager(credential: Credential): Directory = {
+    new Directory.Builder(httpTransport, jsonFactory, credential).setApplicationName(appName).build()
+  }
+
+  def getDirectoryManager(credential: Credential): Directory = {
+    new Directory.Builder(httpTransport, jsonFactory, credential).setApplicationName(appName).build()
+  }
+
   private lazy val pubSub = {
     new Pubsub.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getPubSubServiceAccountCredential)).setApplicationName(appName).build()
+  }
+
+  // TODO: fix this to match new pattern
+  private def getDirectoryServiceAccountCredential: Credential = {
+    new GoogleCredential.Builder()
+      .setTransport(httpTransport)
+      .setJsonFactory(jsonFactory)
+      .setServiceAccountUser(userAdminAccount) // google@support.firecloud.org (for prod) or google@support.test.firecloud.org (for all other environments)
+      .setServiceAccountId(pemFileClientId)
+      .setServiceAccountScopes(directoryScope) // Seq("https://www.googleapis.com/auth/admin.directory.group")
+      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
+      .build()
   }
 
   private def getBucketServiceAccountCredential = {
@@ -503,6 +538,90 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           updatedProject.getBillingEnabled != null && updatedProject.getBillingEnabled
         }
     }
+  }
+
+  override def checkGoogleGroupExists(groupEmail: String): Option[String] = {
+    val directoryService = getDirectoryManager(getDirectoryServiceAccountCredential)
+    // check if group exists
+    val checkGroupRequest = directoryService.groups.get(groupEmail)
+    val existingGroup = Try(executeGoogleRequest(checkGroupRequest)) match {
+      case Failure(f) =>
+        logger.warn(s"Google Group $groupEmail does not exist")
+        "" // return nothing in case of failure
+      case Success(_) => {
+        groupEmail // return groupEmail
+      }
+    }
+    Option(existingGroup)
+  }
+
+  override def createGoogleGroup(groupEmail: String, targetUserEmail: String): Option[String] = {
+    val newGroup = new Group().setEmail(groupEmail)
+    val directoryService = getDirectoryManager(getDirectoryServiceAccountCredential)
+
+    val insertRequest = directoryService.groups.insert(newGroup)
+    val setEmail = Try(executeGoogleRequest[Group](insertRequest)) match {
+      case Failure(f) => {
+        logger.warn(s"Could not create new group called $groupEmail")
+        "" // return empty string
+      }
+      case Success(newGroupInfo) => {
+        // TODO: add groupSettings - might not be necessary?
+        // add targetUserEmail as member of google group - modeled after `override def addMemberToGroup` in workbench-libs HttpGoogleDirectoryDAO.scala
+        val member = new Member().setEmail(targetUserEmail).setRole("MEMBER").setDeliverySettings("ALL_MAIL")
+        val memberInsertRequest = directoryService.members.insert(groupEmail, member)
+
+        Try(executeGoogleRequest(memberInsertRequest)) match {
+          case Failure(f) =>
+            logger.warn(s"Could not add new member $targetUserEmail to group $groupEmail")
+            "" // return nothing
+          case Success(_) => {
+            newGroupInfo.getEmail() // return groupEmail
+          }
+        }
+      }
+    }
+
+    Option(setEmail)
+  }
+
+  override def createGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = {
+    // create full email address with proper domain
+    val validEmail: String = groupName + "@" + FireCloudConfig.FireCloud.supportDomain
+
+    val newGroup:Group = new Group().setEmail(validEmail)
+
+    val directoryService = getDirectoryManager(getDirectoryServiceAccountCredential)
+
+    val insertRequest = directoryService.groups().insert(newGroup)
+    Try(executeGoogleRequest[Group](insertRequest)) match {
+      case Failure(f) =>
+        logger.warn(s"Could not create new group called $validEmail at termination.")
+        true
+      case Success(newGroupInfo) => {
+        true
+      }
+    }
+    Option(validEmail)
+//        if (currentBillingInfo.getBillingAccountName != FireCloudConfig.) {
+//          // the project is not linked to the free-tier billing account. Don't change anything.
+//          logger.warn(s"Free trial project $project has third-party billing account " +
+//            s"${currentBillingInfo.getBillingAccountName}; not removing it.")
+//          true
+//        } else {
+//          // At this point, we know that the user is a member of the project and that the project
+//          // is on the free-trial billing account. We've done our due diligence - remove the billing.
+//          // We do this by creating a ProjectBillingInfo with an empty account name - that's how Google
+//          // indicates we want to remove the billing account association.
+//          val noBillingInfo = new ProjectBillingInfo().setBillingAccountName("")
+//          // generate the request to send to Google
+//          val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential())
+//            .projects().updateBillingInfo(projectName, noBillingInfo)
+//          // send the request
+//          val updatedProject = executeGoogleRequest[ProjectBillingInfo](noBillingRequest)
+//          updatedProject.getBillingEnabled != null && updatedProject.getBillingEnabled
+//        }
+//    }
   }
 
   // ====================================================================================

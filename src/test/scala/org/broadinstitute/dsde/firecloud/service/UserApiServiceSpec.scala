@@ -13,6 +13,7 @@ import org.mockserver.model.HttpRequest._
 import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
+import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService {
@@ -30,6 +31,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
   val httpMethods = List(HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT,
     HttpMethods.DELETE, HttpMethods.PATCH, HttpMethods.OPTIONS, HttpMethods.HEAD)
 
+  val userWithGoogleGroup = "have-google-group"
   val uniqueId = "normal-user"
   val exampleKey = "favoriteColor"
   val exampleVal = "green"
@@ -200,6 +202,20 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         Get(s"/$ApiPrefix") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           log.debug(s"GET /$ApiPrefix: " + status)
           status shouldNot equal(MethodNotAllowed)
+        }
+      }
+      "If new anonymousGroup does not exist, it gets assigned" in {
+        Get("/register/profile") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
+          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+            .flatMap(_.value).equals(Option("fluffy-panda-238dskfj28@support.test.firecloud.org")))
+        }
+      }
+      "Existing anonymousGroup is not overwritten" in {
+        Get("/register/profile") ~> dummyUserIdHeaders(userWithGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
+          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+            .flatMap(_.value).equals(Option("caffeinated-pizzacake@support.test.firecloud.org")))
         }
       }
     }
