@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val akkaV = "2.4.19"
   val sprayV = "1.3.4"
-  val jacksonV = "2.9.9"
-  val jacksonHotfixV = "2.9.9.3" // for when only some of the Jackson libs have hotfix releases
+  val jacksonV = "2.10.0"
+  val jacksonHotfixV = "2.10.0" // for when only some of the Jackson libs have hotfix releases
 
   def excludeGuavaJDK5(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava-jdk5")
 
@@ -52,7 +52,7 @@ object Dependencies {
     "com.sun.mail"                   % "javax.mail"          % "1.5.6",
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",
     "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",
-    "org.everit.json"                % "org.everit.json.schema" % "1.4.1",
+    "com.github.everit-org.json-schema" % "org.everit.json.schema" % "1.12.0",
     "com.github.pathikrit"          %% "better-files"        % "2.17.1",
     "org.apache.httpcomponents"      % "httpclient"          % "4.5.3",
 
