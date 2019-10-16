@@ -29,26 +29,24 @@ class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with 
   }
 
   "FireCloud registration" - {
+    val basicUser = Orchestration.profile.BasicProfile(
+      "Test",
+      "Dummy",
+      "Tester",
+      Some("test@firecloud.org"),
+      "Broad",
+      "DSDE",
+      "Cambridge",
+      "MA",
+      "USA",
+      "Nobody",
+      "true"
+    )
+    Orchestration.profile.registerUser(basicUser)
 
     "should allow a person to register" taggedAs Retryable in {
       val user = UserPool.userConfig.Temps.getUserCredential("luna")
       implicit val authToken: AuthToken = user.makeAuthToken()
-
-      val basicUser = Orchestration.profile.BasicProfile(
-        "Test",
-        "Dummy",
-        "Tester",
-        Some("test@firecloud.org"),
-        "Broad",
-        "DSDE",
-        "Cambridge",
-        "MA",
-        "USA",
-        "Nobody",
-        "true"
-      )
-
-      Orchestration.profile.registerUser(basicUser)
 
       val userInfo = Sam.user.getUserStatusInfo()(authToken).get
       userInfo.userEmail should include (user.email)
