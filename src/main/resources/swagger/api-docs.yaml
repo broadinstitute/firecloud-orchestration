@@ -316,7 +316,8 @@ paths:
           in: query
           description: Snapshot ID of configuration.
           required: false
-          type: number
+          type: integer
+          format: int32
         - name: snapshotComment
           in: query
           description: Snapshot comment of AgoraEntity
@@ -445,7 +446,8 @@ paths:
             An integer showing how many configurations were deleted. Should be
             1.
           schema:
-            type: number
+            type: integer
+            format: int32
         default:
           description: Error upon redaction
           schema:
@@ -1623,7 +1625,8 @@ paths:
           in: query
           description: Snapshot ID of method.
           required: false
-          type: number
+          type: integer
+          format: int32
         - name: snapshotComment
           in: query
           description: Snapshot comment of AgoraEntity
@@ -1810,7 +1813,8 @@ paths:
           description: |
             An integer showing how many methods were deleted.
           schema:
-            type: number
+            type: integer
+            format: int32
         default:
           description: Error upon redaction
           schema:
@@ -2527,7 +2531,8 @@ paths:
           description: number of projects to create; only used for create operation
           required: false
           in: query
-          type: number
+          type: integer
+          format: int32
         - name: project
           description: name of project to adopt or scratch; only used for adopt and scratch operations
           required: false
@@ -3253,13 +3258,15 @@ paths:
           description: Page number, 1-indexed (default 1)
           default: 1
           minimum: 1
-          type: number
+          type: integer
+          format: int32
           in: query
         - name: pageSize
           description: Page size (default 10)
           default: 10
           minimum: 1
-          type: number
+          type: integer
+          format: int32
           in: query
         - name: sortField
           description: Sort field (default "name")
@@ -5252,6 +5259,7 @@ definitions:
         description: unique ID of job
       returnCode:
         type: integer
+        format: int32
         description: result code
       backend:
         type: string
@@ -5264,6 +5272,7 @@ definitions:
         description: location of stderr
       shardIndex:
         type: integer
+        format: int32
         description: call index within a scatter block, as reported by execution service
 
 
@@ -5374,6 +5383,7 @@ definitions:
         default: BWA
       snapshotId:
         type: integer
+        format: int32
         description: SnapshotId of AgoraEntity
       snapshotComment:
         type: string
@@ -5423,6 +5433,7 @@ definitions:
         default: BWA
       snapshotId:
         type: integer
+        format: int32
         description: SnapshotId of AgoraEntity
       snapshotComment:
         type: string
@@ -5462,13 +5473,16 @@ definitions:
         type: string
         description: Name used to identify the consent.
       createDate:
-        type: number
+        type: integer
+        format: int64
         description: Creation Date in date-time milliseconds
       lastUpdate:
-        type: number
+        type: integer
+        format: int64
         description: Date of the last update in date-time milliseconds
       sortDate:
-        type: number
+        type: integer
+        format: int64
         description: The lastest modification date in date-time milliseconds
       requiresManualReview:
         type: boolean
@@ -5553,7 +5567,8 @@ definitions:
         type: string
         description: Method configuration name
       configurationSnapshotId:
-        type: number
+        type: integer
+        format: int32
         description: Method configuration snapshot id
       destinationNamespace:
         type: string
@@ -5735,10 +5750,12 @@ definitions:
     type: object
     properties:
       page:
-        type: number
+        type: integer
+        format: int32
         description: page number, 1-indexed positive integer
       pageSize:
-        type: number
+        type: integer
+        format: int32
         description: count of items per page, positive integer
       sortField:
         type: string
@@ -5776,13 +5793,16 @@ definitions:
     type: object
     properties:
       unfilteredCount:
-        type: number
+        type: integer
+        format: int32
         description: count of results before filtering
       filteredCount:
-        type: number
+        type: integer
+        format: int32
         description: count of results after filtering
       filteredPageCount:
-        type: number
+        type: integer
+        format: int32
         description: count of pages after filtering; honors pageSize parameter
 
   EntitySoftConflict:
@@ -5810,6 +5830,7 @@ definitions:
     properties:
       code:
         type: integer
+        format: int32
         default: 500
       message:
         type: string
@@ -5832,6 +5853,7 @@ definitions:
         description: what went wrong
       statusCode:
         type: integer
+        format: int32
         description: HTTP status code
       causes:
         type: array
@@ -5908,7 +5930,8 @@ definitions:
     type: object
     properties:
       totalCount:
-        type: number
+        type: integer
+        format: int32
         description: the number of published workspaces sent to be indexed
       hasFailures:
         type: boolean
@@ -6081,6 +6104,7 @@ definitions:
         description: The properties of the method from the method store that this config is associated with
       methodConfigVersion:
         type: integer
+        format: int32
         description: 'Version number, incremented on edit'
       deleted:
         type: boolean
@@ -6120,10 +6144,12 @@ definitions:
         type: boolean
         description: Is this method publicly readable?
       numConfigurations:
-        type: number
+        type: integer
+        format: int32
         description: count of configurations associated with this method
       numSnapshots:
-        type: number
+        type: integer
+        format: int32
         description: count of snapshots of this method
       entityType:
         type: string
@@ -6142,6 +6168,7 @@ definitions:
       methodVersion:
         type: integer
         default: 0
+        format: int32
         description: Method version
     required:
       - methodNamespace
@@ -6208,6 +6235,7 @@ definitions:
         default: BWA
       snapshotId:
         type: integer
+        format: int32
         description: SnapshotId of AgoraEntity
       public:
         type: boolean
@@ -6229,6 +6257,7 @@ definitions:
         description: The name of the method in Agora
       methodVersion:
         type: integer
+        format: int32
         description: The integer method version in Agora (or a string method version for Dockstore)
       methodPath:
         type: string
@@ -6263,6 +6292,7 @@ definitions:
         default: BWA
       snapshotId:
         type: integer
+        format: int32
         description: SnapshotId of AgoraEntity
       snapshotComment:
         type: string
@@ -6332,6 +6362,7 @@ definitions:
         description: Method ID - Map
       methodConfigVersion:
         type: integer
+        format: int32
         description: 'Version number, incremented on edit'
       deleted:
         type: boolean
@@ -6623,10 +6654,12 @@ definitions:
         description: Map[String, Int] The list of fields for which you would like to retrieve aggregations and the number of aggregations to return. Default is 5. Specify 0 to get all
       from:
         type: integer
+        format: int32
         default: 0
         description: Where in the results list to start (used for pagination)
       size:
         type: integer
+        format: int32
         default: 10
         description: How many results to return
       sortField:
@@ -6656,6 +6689,7 @@ definitions:
         description: source file name
       lineNumber:
         type: integer
+        format: int32
         description: line number
 
   StringArray:
@@ -6714,18 +6748,25 @@ definitions:
     properties:
       Accepted:
         type: integer
+        format: int32
       Evaluating:
         type: integer
+        format: int32
       Submitting:
         type: integer
+        format: int32
       Submitted:
         type: integer
+        format: int32
       Aborting:
         type: integer
+        format: int32
       Aborted:
         type: integer
+        format: int32
       Done:
         type: integer
+        format: int32
 
   SubmissionRequest:
     description: If the referenced method configuration takes no root entity, do not define `entityType`, `entityName` and `expression`.
@@ -6903,7 +6944,8 @@ definitions:
         type: boolean
         description: When true, prefer Terra UI; when false, prefer Legacy FireCloud UI.
       preferTerraLastUpdated:
-        type: number
+        type: integer
+        format: int64
         description: Epoch timestamp representing when the Terra Preference was last saved.
 
   ToolClass:
@@ -7157,6 +7199,7 @@ definitions:
     properties:
       cost:
         type: number
+        format: float
         description: Workflow cost
       workflowId:
         type: string
@@ -7172,9 +7215,11 @@ definitions:
     properties:
       estimatedQueueTimeMS:
         type: integer
+        format: int64
         description: estimated milliseconds until the current queue is submitted
       workflowsBeforeNextUserWorkflow:
         type: integer
+        format: int32
         description: the number of workflows in the queue ahead of the user's first workflow
       workflowCountsByStatus:
         type: object
@@ -7430,6 +7475,7 @@ definitions:
         example: "a tag"
       count:
         type: number
+        format: int32
         description: number of usages of the tag across Firecloud
         example: 5
 
@@ -7457,6 +7503,7 @@ definitions:
             default: broad-dsde-dev,
           methodVersion:
             type: integer
+            format: int64
             description: Snapshot ID of referenced method
             default: 1
       outputs:
@@ -7474,6 +7521,7 @@ definitions:
         default: {}
       methodConfigVersion:
         type: integer
+        format: int32
         description: Snapshot ID of this config
         default: 1
       deleted:
