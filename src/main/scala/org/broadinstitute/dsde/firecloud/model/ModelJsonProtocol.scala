@@ -181,7 +181,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impEntityId = jsonFormat2(EntityId)
 
   implicit val impBagitImportRequest = jsonFormat2(BagitImportRequest)
-  implicit val impPfbImportRequest = jsonFormat1(PfbImportRequest)
+  implicit val impPfbImportRequest = jsonFormat3(PfbImportRequest)
 
   implicit val impDestination = jsonFormat3(MethodConfigurationId)
   implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)
