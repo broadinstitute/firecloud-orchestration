@@ -384,7 +384,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
 
       probeUpsert.map {
         case resp if resp.status == NoContent => op(true)
-        case resp => throw new FireCloudExceptionWithErrorReport(ErrorReport(resp.status, resp.message.toString))
+        case resp => RequestComplete(resp) // bubble up errors
       }
     }
 
