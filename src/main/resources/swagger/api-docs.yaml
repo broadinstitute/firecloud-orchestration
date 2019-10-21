@@ -3385,6 +3385,10 @@ paths:
         - Entities
       operationId: importPFB
       summary: Import PFB data from an [Avro](https://avro.apache.org/) file
+      description: >
+        This API will return a jobID representing the import operation. The import
+        itself will continue asynchronously in the background. Monitor the data in your workspace
+        to check progress of the import.
       produces:
         - application/json
       parameters:
@@ -3397,16 +3401,18 @@ paths:
           schema:
             $ref: '#/definitions/PFBRequest'
       responses:
-        204:
+        202:
           description: Successful Request
+          schema:
+            $ref: '#/definitions/PFBResponse'
         400:
           description: Bad Request
         401:
-          description: Unauthorized access to Avro file or Workspace
+          description: Unauthorized access to Workspace
         403:
-          description: Forbidden access to Avro file or Workspace
+          description: Forbidden access to Workspace
         404:
-          description: Avro file or Workspace not found
+          description: Workspace not found
         500:
           description: Internal Error
 
@@ -6421,6 +6427,29 @@ definitions:
         description: link to publically accessible PFB/Avro
     required:
       - url
+
+  PFBResponse:
+    type: object
+    properties:
+      url:
+        type: string
+        description: the link to PFB/Avro specified in the request
+      jobId:
+        type: string
+        description: unique id for the import job.
+      workspace:
+        type: object
+        properties:
+          namespace:
+            type: string
+            description: the workspace namespace specified in the request
+          name:
+            type: string
+            description: the workspace name specified in the request
+    required:
+      - url
+      - jobId
+      - workspaceName
 
   Profile:
     type: object
