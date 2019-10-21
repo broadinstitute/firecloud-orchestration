@@ -395,7 +395,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
         // generate job UUID
         val jobId = java.util.UUID.randomUUID()
 
-        val populatedRequest = pfbRequest.copy(jobId = Option(jobId.toString), workspaceName = Option(WorkspaceName(workspaceNamespace, workspaceName)))
+        val populatedRequest = pfbRequest.copy(jobId = Option(jobId.toString), workspace = Option(WorkspaceName(workspaceNamespace, workspaceName)))
 
         // fire-and-forget call Arrow with UUID, workspace info, and presigned URL
         val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
