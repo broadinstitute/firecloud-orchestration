@@ -180,9 +180,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impEntityCopyWithoutDestinationDefinition = jsonFormat3(EntityCopyWithoutDestinationDefinition)
   implicit val impEntityId = jsonFormat2(EntityId)
 
-  implicit val impBagitImportRequest = jsonFormat2(BagitImportRequest)
-  implicit val impPfbImportRequest = jsonFormat3(PfbImportRequest)
-
   implicit val impDestination = jsonFormat3(MethodConfigurationId)
   implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)
   implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)
@@ -227,6 +224,9 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impUserIdInfo = jsonFormat3(UserIdInfo)
   implicit val impCurator = jsonFormat1(Curator)
   implicit val impUserImportPermission = jsonFormat2(UserImportPermission)
+
+  implicit val impBagitImportRequest = jsonFormat2(BagitImportRequest)
+  implicit val impPfbImportRequest = jsonFormat4(PfbImportRequest)
 
   implicit val impWorkspaceStorageCostEstimate = jsonFormat1(WorkspaceStorageCostEstimate)
 

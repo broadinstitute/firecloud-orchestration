@@ -28,7 +28,11 @@ case class EntityId(entityType: String, entityName: String)
 
 case class BagitImportRequest(bagitURL: String, format: String)
 
-case class PfbImportRequest(url: String, jobId: Option[String] = None, workspace: Option[WorkspaceName] = None)
+case class PfbImportRequest(
+  url: String,
+  jobId: Option[String] = None,
+  workspace: Option[WorkspaceName] = None,
+  user: Option[WorkbenchUserInfo] = None)
 
 case class MethodConfigurationId(
   name: Option[String] = None,

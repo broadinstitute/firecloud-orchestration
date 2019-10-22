@@ -49,7 +49,7 @@ object EntityClient {
 
   case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
 
-  case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)
+  case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo)
 
   def props(requestContext: RequestContext, modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext, modelSchema))
 
@@ -131,8 +131,8 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
-    case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest) =>
-      importPFB(workspaceNamespace, workspaceName, pfbRequest) pipeTo sender
+    case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo) =>
+      importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) pipeTo sender
   }
 
 
@@ -354,7 +354,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     }
   }
 
-  def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
+  def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
 
     // initial validation of the presigned url provided as an argument
     def validatePfbUrl(pfbRequest: PfbImportRequest)(op: URL => Future[PerRequestMessage]) = {
@@ -395,14 +395,21 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
         // generate job UUID
         val jobId = java.util.UUID.randomUUID()
 
-        val populatedRequest = pfbRequest.copy(jobId = Option(jobId.toString), workspace = Option(WorkspaceName(workspaceNamespace, workspaceName)))
+        // the payload to Arrow needs to include the PFB url, job id, workspace info, and user info
+        val user = WorkbenchUserInfo(userInfo.id, userInfo.userEmail)
+        val arrowPayload = pfbRequest.copy(jobId = Option(jobId.toString),
+          workspace = Option(WorkspaceName(workspaceNamespace, workspaceName)),
+          user = Option(user))
 
         // fire-and-forget call Arrow with UUID, workspace info, and presigned URL
         val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
-        gzipPipeline { Post(avroToRawlsURL, populatedRequest) }
+        gzipPipeline { Post(avroToRawlsURL, arrowPayload) }
+
+        // the response payload to the end user omits the userid/email
+        val responsePayload = arrowPayload.copy(user = None)
 
         // return Accepted with UUID
-        RequestComplete(Accepted, populatedRequest)
+        RequestComplete(Accepted, responsePayload)
       }
     }
   }

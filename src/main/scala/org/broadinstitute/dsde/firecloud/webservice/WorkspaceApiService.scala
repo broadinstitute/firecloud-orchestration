@@ -156,7 +156,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                 entity(as[PfbImportRequest]) { pfbRequest =>
                   respondWithJSON { requestContext =>
                     perRequest(requestContext, Props(new EntityClient(requestContext, FlexibleModelSchema)),
-                      EntityClient.ImportPFB(workspaceNamespace, workspaceName, pfbRequest))
+                      EntityClient.ImportPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo))
                   }
                 }
               }
