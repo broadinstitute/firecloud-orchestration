@@ -222,6 +222,7 @@ object FireCloudConfig {
 
   object Arrow {
     private val arrow = config.getConfig("arrow")
+    val appName: String = if (arrow.hasPath("appName")) arrow.getString("appName") else "avro-import"
     val baseUrl: String = arrow.getString("baseUrl")
   }
 }

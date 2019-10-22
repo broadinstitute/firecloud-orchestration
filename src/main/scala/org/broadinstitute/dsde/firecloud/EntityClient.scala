@@ -41,7 +41,8 @@ import scala.util.{Failure, Success, Try}
 object EntityClient {
 
   lazy val arrowRoot: String = FireCloudConfig.Arrow.baseUrl
-  lazy val avroToRawlsURL: String = s"$arrowRoot/avroToRawls"
+  lazy val arrowAppName: String = FireCloudConfig.Arrow.appName
+  lazy val avroToRawlsURL: String = s"$arrowRoot/$arrowAppName"
 
   case class ImportEntitiesFromTSV(workspaceNamespace: String,
                                    workspaceName: String,
