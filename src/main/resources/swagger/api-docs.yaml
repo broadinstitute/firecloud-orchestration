@@ -7503,7 +7503,7 @@ definitions:
             default: broad-dsde-dev,
           methodVersion:
             type: integer
-            format: int64
+            format: int32
             description: Snapshot ID of referenced method
             default: 1
       outputs:
