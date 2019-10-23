@@ -1010,8 +1010,18 @@ paths:
           required: false
           type: file
           in: formData
-        - $ref: '#/parameters/workflowTypeParam'
-        - $ref: '#/parameters/workflowTypeVersionParam'
+        - name: workflowType
+          type: string
+          description: The workflow language for the file you submitted. Cromwell currently supports WDL and CWL.
+          enum: [WDL, CWL]
+          required: false
+          in: formData
+        - name: workflowTypeVersion
+          description: The specification version for the workflow language being used. For WDL, Cromwell currently supports draft-2 and 1.0. For CWL, Cromwell currently supports v1.0.
+          required: false
+          type: string
+          enum: ["draft-2", "1.0", "v1.0"]
+          in: formData
       responses:
         '200':
           description: Workflow description.
@@ -5008,20 +5018,6 @@ paths:
 ## PARAMETERS
 ##########################################################################################
 parameters:
-  workflowTypeParam:
-    name: workflowType
-    type: string
-    description: The workflow language for the file you submitted. Cromwell currently supports WDL and CWL.
-    enum: [WDL, CWL]
-    required: false
-    in: formData
-  workflowTypeVersionParam:
-    name: workflowTypeVersion
-    description: The specification version for the workflow language being used. For WDL, Cromwell currently supports draft-2 and 1.0. For CWL, Cromwell currently supports v1.0.
-    required: false
-    type: string
-    enum: ["draft-2", "1.0", "v1.0"]
-    in: formData
   versionParam:
     name: version
     description: Cromwell API Version
