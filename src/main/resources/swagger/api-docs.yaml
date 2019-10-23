@@ -2627,10 +2627,12 @@ paths:
           schema:
             $ref: '#/definitions/WorkspaceIngest'
       responses:
-        200:
-          description: No response was specified
         201:
           description: Successful Request
+          schema:
+            $ref: '#/definitions/CreateWorkspaceResponse'
+        400:
+          description: Bad request
         403:
           description: Unable to create bucket for workspace
         409:
@@ -2929,6 +2931,8 @@ paths:
       responses:
         201:
           description: Successful Request
+          schema:
+            $ref: '#/definitions/CreateWorkspaceResponse'
         400:
           description: Unable to create resources for workspace
         404:
@@ -5620,6 +5624,59 @@ definitions:
       servicePerimeter:
         type: string
         description: The fully qualified name of the GCP service perimeter to put this project into in the form accessPolicies/[POLICY NUMBER]/servicePerimeters/[NAME]. Caller must have the add_project action for this service perimeter in Sam.
+
+  CreateWorkspaceResponse:
+    description: payload returned from create- or clone-workspace
+    required:
+      - attributes
+      - authorizationDomain
+      - bucketName
+      - createdBy
+      - createdDate
+      - isLocked
+      - lastModified
+      - name
+      - namespace
+      - workspaceId
+    type: object
+    properties:
+      attributes:
+        type: object
+        description: Map[String, Attribute]
+      authorizationDomain:
+        type: array
+        items:
+          $ref: '#/definitions/ManagedGroupRef'
+        description: The list of groups to form the Authorization Domain (empty if no Authorization Domain is set)
+      bucketName:
+        type: string
+        description: The name of the bucket associated with the workspace
+      createdBy:
+        type: string
+        description: The user who created the workspace
+      createdDate:
+        type: string
+        format: date-time
+        description: 'The date the workspace was created in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
+      isLocked:
+        type: boolean
+        description: Can the Workspace currently be modified?
+      lastModified:
+        type: string
+        format: date-time
+        description: 'The date the workspace was last modified in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
+      name:
+        type: string
+        description: The name of the workspace
+      namespace:
+        type: string
+        description: The namespace the workspace belongs to
+      workflowCollectionName:
+        type: string
+        description: Workflow collection name
+      workspaceId:
+        type: string
+        description: A UUID associated with the workspace
 
   CuratorStatus:
     description: is the user a curator?
