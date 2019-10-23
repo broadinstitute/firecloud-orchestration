@@ -34,6 +34,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
 
   val workspaceServiceConstructor: WithAccessToken => WorkspaceService
   val permissionReportServiceConstructor: UserInfo => PermissionReportService
+  val entityClientConstructor: UserInfo => EntityClient
 
   private val filename = "-workspace-attributes.tsv"
 
@@ -119,7 +120,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               requireUserInfo() { _ =>
                 formFields('entities) { entitiesTSV =>
                   respondWithJSON { requestContext =>
-                    perRequest(requestContext, Props(new EntityClient(requestContext, FlexibleModelSchema)),
+                    perRequest(requestContext, Props(EntityClient(requestContext, FlexibleModelSchema)),
                       EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
                   }
                 }
@@ -131,7 +132,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               requireUserInfo() { _ =>
                 formFields('entities) { entitiesTSV =>
                   respondWithJSON { requestContext =>
-                    perRequest(requestContext, Props(new EntityClient(requestContext, FirecloudModelSchema)),
+                    perRequest(requestContext, Props(EntityClient(requestContext, FirecloudModelSchema)),
                       EntityClient.ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV))
                   }
                 }
@@ -143,7 +144,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               requireUserInfo() { userInfo =>
                 entity(as[BagitImportRequest]) { bagitRq =>
                   respondWithJSON { requestContext =>
-                    perRequest(requestContext, Props(new EntityClient(requestContext, FirecloudModelSchema)),
+                    perRequest(requestContext, Props(EntityClient(requestContext, FirecloudModelSchema)),
                       EntityClient.ImportBagit(workspaceNamespace, workspaceName, bagitRq))
                   }
                 }
@@ -155,8 +156,12 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               requireUserInfo() { userInfo =>
                 entity(as[PfbImportRequest]) { pfbRequest =>
                   respondWithJSON { requestContext =>
-                    perRequest(requestContext, Props(new EntityClient(requestContext, FlexibleModelSchema)),
-                      EntityClient.ImportPFB(workspaceNamespace, workspaceName, pfbRequest))
+                    def syncImport = perRequest(requestContext, Props(EntityClient(requestContext, FlexibleModelSchema)), EntityClient.ImportPFB(workspaceNamespace, workspaceName, pfbRequest))
+                    def asyncImport = perRequest(requestContext, EntityClient.props(entityClientConstructor, userInfo), EntityClient.ImportPFBAsync(workspaceNamespace, workspaceName, pfbRequest))
+                    pfbRequest.mode match {
+                      case Some("async") => asyncImport
+                      case _ => syncImport
+                    }
                   }
                 }
               }

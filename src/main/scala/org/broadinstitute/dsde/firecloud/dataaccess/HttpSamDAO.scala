@@ -16,7 +16,7 @@ import spray.client.pipelining.sendReceive
 import spray.http.HttpRequest
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
-import spray.json.{JsBoolean, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.{JsBoolean, JsObject, JsValue, JsonFormat, RootJsonFormat}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -114,6 +114,10 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
         quotedToken
       AccessToken.apply(token)
     }
+  }
+
+  override def getPetServiceAccountKey(googleProject: String)(implicit userInfo: WithAccessToken): Future[JsObject] = {
+    authedRequestToObject[JsObject](Get(samProjectPetKeyUrl.format(googleProject)))
   }
 
   override def status: Future[SubsystemStatus] = {

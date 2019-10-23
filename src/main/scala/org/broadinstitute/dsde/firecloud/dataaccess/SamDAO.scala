@@ -7,6 +7,7 @@ import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, UserIdInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, RawlsUserEmail}
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
+import spray.json.JsObject
 
 import scala.concurrent.Future
 
@@ -29,6 +30,7 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   val samStatusUrl = FireCloudConfig.Sam.baseUrl + "/status"
   val samGetUserIdsUrl = FireCloudConfig.Sam.baseUrl + "/api/users/v1/%s"
   val samArbitraryPetTokenUrl = FireCloudConfig.Sam.baseUrl + "/api/google/v1/user/petServiceAccount/token"
+  val samProjectPetKeyUrl = FireCloudConfig.Sam.baseUrl + "/api/google/v1/user/petServiceAccount/%s/key"
 
   val samManagedGroupsBase: String = FireCloudConfig.Sam.baseUrl + "/api/groups"
   val samManagedGroupBase: String = FireCloudConfig.Sam.baseUrl + "/api/group"
@@ -70,6 +72,7 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit]
 
   def getPetServiceAccountTokenForUser(user: WithAccessToken, scopes: Seq[String]): Future[AccessToken]
+  def getPetServiceAccountKey(googleProject: String)(implicit userInfo: WithAccessToken): Future[JsObject]
 
   val serviceName = SamDAO.serviceName
 }

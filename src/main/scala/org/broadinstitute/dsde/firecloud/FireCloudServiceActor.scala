@@ -71,8 +71,9 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     else
       new NoopLogitDAO
   val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
+  val cromIAMDAO:CromIAMDAO = new HttpCromIAMDAO
 
-  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, trialDAO, logitDAO, shareLogDAO)
+  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, trialDAO, logitDAO, shareLogDAO, cromIAMDAO)
   val materializer: ActorMaterializer = ActorMaterializer()
 
   private val healthChecks = new HealthChecks(app)
@@ -107,6 +108,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
   val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
   val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
+  val entityClientConstructor: (UserInfo) => EntityClient = EntityClient.constructor(app)
 
   if (FireCloudConfig.Trial.spreadsheetId.nonEmpty && FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes > 0) {
     val freq = FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes

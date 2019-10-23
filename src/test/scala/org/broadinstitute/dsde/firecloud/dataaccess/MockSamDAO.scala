@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGro
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
+import spray.json.{JsObject, JsString}
 
 import scala.concurrent.Future
 
@@ -104,6 +105,11 @@ class MockSamDAO extends SamDAO {
 
   override def getPetServiceAccountTokenForUser(user: WithAccessToken, scopes: Seq[String]): Future[AccessToken] =
     Future.failed(new FireCloudException("mock not implemented"))
+
+  override def getPetServiceAccountKey(googleProject: String)(implicit userInfo: WithAccessToken): Future[JsObject] =
+    Future.successful(JsObject(Map(
+      "client_email" -> JsString("dummy@test.org")
+    )))
 
   override def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit] = Future.successful(())
 }

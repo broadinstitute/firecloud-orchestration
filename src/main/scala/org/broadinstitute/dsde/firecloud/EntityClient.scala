@@ -10,6 +10,7 @@ import akka.pattern.pipe
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
+import org.broadinstitute.dsde.firecloud.dataaccess.{CromIAMDAO, GoogleServicesDAO, RawlsDAO, SamDAO}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.rawls.model._
@@ -51,7 +52,9 @@ object EntityClient {
 
   case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)
 
-  def props(requestContext: RequestContext, modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext, modelSchema))
+  case class ImportPFBAsync(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)
+
+  def props(requestContext: RequestContext, modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = Props(EntityClient(requestContext, modelSchema))
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -117,9 +120,17 @@ object EntityClient {
     Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
   }
 
+  def props(entityClientConstructor: UserInfo => EntityClient, userInfo: UserInfo): Props = {
+    Props(entityClientConstructor(userInfo))
+  }
+
+  def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) = EntityClient(userInfo, app.samDAO, app.rawlsDAO, app.cromIAMDAO, app.googleServicesDAO)
+
+  def apply(userInfo: UserInfo, samDAO: SamDAO, rawlsDAO: RawlsDAO, cromIAMDAO: CromIAMDAO, googleServicesDAO: GoogleServicesDAO)(implicit executionContext: ExecutionContext) = new EntityClient(userInfo, null, null, samDAO, rawlsDAO, cromIAMDAO, googleServicesDAO)
+  def apply(requestContext: RequestContext, modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) = new EntityClient(null, requestContext, modelSchema, null, null, null, null)
 }
 
-class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(implicit protected val executionContext: ExecutionContext)
+class EntityClient(protected val userInfo: UserInfo, requestContext: RequestContext, modelSchema: ModelSchema, samDAO: SamDAO, rawlsDAO: RawlsDAO, cromIAMDAO: CromIAMDAO, googleServicesDAO: GoogleServicesDAO)(implicit protected val executionContext: ExecutionContext)
   extends Actor with FireCloudRequestBuilding with TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -134,6 +145,8 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest) =>
       val pipeline = sendReceive
       importPFB(pipeline, workspaceNamespace, workspaceName, pfbRequest) pipeTo sender
+    case ImportPFBAsync(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest) =>
+      importPFBAsync(workspaceNamespace, workspaceName, pfbRequest) pipeTo sender
   }
 
 
@@ -401,5 +414,39 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
         case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Import failed. Details: " + e.getMessage, e)
       }
     }
+  }
+
+  def importPFBAsync(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
+    val inputs: String = JsObject(Map(
+      "Terra_import_PFB.do_import.workspace_namespace" -> JsString(workspaceNamespace),
+      "Terra_import_PFB.do_import.workspace_name" -> JsString(workspaceName),
+      "Terra_import_PFB.do_import.pfb_url" -> JsString(pfbRequest.url),
+      "Terra_import_PFB.do_import.env" -> JsString("dev")
+    )) toString
+    val pfbFileName = new URL(pfbRequest.url).getPath.split('/').last
+
+    val futureWorkspace: Future[WorkspaceResponse] = rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo)
+    val futurePet = samDAO.getPetServiceAccountKey(workspaceNamespace)(userInfo)
+
+    for {
+      workspace: WorkspaceResponse <- futureWorkspace
+      petSAJson: JsObject <- futurePet
+      petSAEmail: JsValue <- Future.successful(petSAJson.getFields("client_email").head)
+      options <- Future.successful(JsObject(Map(
+        "jes_gcs_root" -> JsString(s"gs://${workspace.workspace.bucketName}/data-import-logs/${pfbFileName}"),
+        "google_project" -> JsString(workspaceNamespace),
+        "account_name" -> JsString(userInfo.userEmail),
+        "google_compute_service_account" -> petSAEmail,
+        "user_service_account_json" -> JsString(petSAJson.toString),
+        "auth_bucket" -> JsString("gs://cromwell-auth-general-dev-billing-account"), // TODO: Is this option needed? If so, figure out how to fetch/calculate it.
+        "final_workflow_log_dir" -> JsString(s"gs://${workspace.workspace.bucketName}/data-import-logs/${pfbFileName}/workflow.logs"),
+        "default_runtime_attributes" -> JsObject(Map("zones" -> JsString("us-central1-b us-central1-c us-central1-f"))),
+        "read_from_cache" -> JsBoolean(false),
+        "backend" -> JsString("PAPIv2")
+      )))
+      response <- {
+        cromIAMDAO.submit("https://storage.googleapis.com/breilly-pfb-scratch/importPFB.wdl", inputs, Some(options.toString))(userInfo)
+      }
+    } yield { RequestComplete(response) }
   }
 }

@@ -21,4 +21,5 @@ case class Application(agoraDAO: AgoraDAO,
                        thurloeDAO: ThurloeDAO,
                        trialDAO: TrialDAO,
                        logitDAO: LogitDAO,
-                       shareLogDAO: ShareLogDAO)
+                       shareLogDAO: ShareLogDAO,
+                       cromIAMDAO: CromIAMDAO)

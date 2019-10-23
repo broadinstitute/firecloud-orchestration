@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.apache.commons.io.IOUtils
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
 import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
@@ -97,6 +97,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app.copy(shareLogDAO = localShareLogDao))
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
+  val entityClientConstructor: (UserInfo) => EntityClient = EntityClient.constructor(app)
 
   val nihProtectedAuthDomain = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
 
@@ -1150,6 +1151,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(NoContent)
+          }
+      }
+
+      "should call CromIAM, not Arrow, if async" in {
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro", "mode":"async"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(OK)
+            body.asString should equal("123-456-789")
           }
       }
     }
