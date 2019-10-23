@@ -18,10 +18,6 @@ class HttpCromIAMDAO(implicit val system: ActorSystem, implicit val executionCon
   private val workflowRoot = FireCloudConfig.CromIAM.authUrl + "/workflows/v1"
 
   override def submit(wdlUrl: String, inputs: String, options: Option[String])(implicit userToken: WithAccessToken): Future[String] = {
-//    val bodyParts = Seq(BodyPart("workflowUrl", wdl),
-//      FormData.BodyPart("workflowInputs", inputs.mkString("[", ",", "]"))
-//    ) ++ options.map(FormData.BodyPart("workflowOptions", _)) // ++ labelsBodyPart ++ wfc
-
     val bodyParts = Map(
       "workflowUrl" -> BodyPart(wdlUrl),
       "workflowInputs" -> BodyPart(inputs)
@@ -31,7 +27,6 @@ class HttpCromIAMDAO(implicit val system: ActorSystem, implicit val executionCon
 
     val formData = MultipartFormData(bodyParts)
     val response = authedRequestToObject[String](Post(workflowRoot, formData))
-//    Future.failed(new Exception("not yet implemented"))
     response
   }
 
