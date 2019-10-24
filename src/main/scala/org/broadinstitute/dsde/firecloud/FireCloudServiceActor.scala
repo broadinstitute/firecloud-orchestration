@@ -4,12 +4,12 @@ import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.metrics.MetricsActor
-import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.TrialService.UpdateBillingReport
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
-import spray.routing.{HttpServiceActor, Route}
+import spray.routing.{HttpServiceActor, RequestContext, Route}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.firecloud.webservice._
@@ -94,6 +94,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   }
 
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
+  val entityClientConstructor: (RequestContext, ModelSchema) => EntityClient = EntityClient.constructor(app)
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
