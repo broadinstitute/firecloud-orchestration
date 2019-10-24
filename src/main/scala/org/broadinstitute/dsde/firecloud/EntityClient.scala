@@ -41,7 +41,8 @@ import scala.util.{Failure, Success, Try}
 object EntityClient {
 
   lazy val arrowRoot: String = FireCloudConfig.Arrow.baseUrl
-  lazy val avroToRawlsURL: String = s"$arrowRoot/avroToRawls"
+  lazy val arrowAppName: String = FireCloudConfig.Arrow.appName
+  lazy val avroToRawlsURL: String = s"$arrowRoot/$arrowAppName"
 
   case class ImportEntitiesFromTSV(workspaceNamespace: String,
                                    workspaceName: String,
@@ -49,7 +50,7 @@ object EntityClient {
 
   case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
 
-  case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)
+  case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo)
 
   def props(requestContext: RequestContext, modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext, modelSchema))
 
@@ -131,9 +132,8 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
-    case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest) =>
-      val pipeline = sendReceive
-      importPFB(pipeline, workspaceNamespace, workspaceName, pfbRequest) pipeTo sender
+    case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo) =>
+      importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) pipeTo sender
   }
 
 
@@ -355,51 +355,64 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     }
   }
 
-  def importPFB(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-                workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
+  def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
 
-    def callArrow = {
-      val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> pipeline ~> decode(Gzip)
-      gzipPipeline { Post(avroToRawlsURL, pfbRequest) }
+    // initial validation of the presigned url provided as an argument
+    def validatePfbUrl(pfbRequest: PfbImportRequest)(op: URL => Future[PerRequestMessage]) = {
+      val pfbUrl = try {
+        new URL(pfbRequest.url)
+      } catch {
+        case e: Exception => throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, s"Invalid URL: ${pfbRequest.url}", e))
+      }
+      val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
+
+      if (!acceptableProtocols.contains(pfbUrl.getProtocol)) {
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "Invalid URL protocol: must be https only"))
+      }
+
+      // TODO: add real (semantic) validation for origins, to ensure caller isn't supplying malice
+      op(pfbUrl)
     }
 
-    def callRawls(entity: HttpEntity) = {
-      val authPipeline = authHeaders(requestContext) ~> pipeline
-      authPipeline {
-        Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), entity)
+    // probe Rawls with an empty upsert to this workspace. This checks that the workspace exists and that the user has
+    // permissions to perform an upsert.
+    def validateUpsertPermissions()(op: Boolean => PerRequestMessage) = {
+      val pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = authHeaders(requestContext) ~> sendReceive
+
+      val probeUpsert = pipeline {
+        Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), List.empty[String])
+      }
+
+      probeUpsert.map {
+        case resp if resp.status == NoContent => op(true)
+        case resp => RequestComplete(resp) // bubble up errors
       }
     }
 
-    val pfbUrl = try {
-      new URL(pfbRequest.url)
-    } catch {
-      case e: Exception => throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, s"Invalid URL: ${pfbRequest.url}", e))
-    }
-    val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
+    // validate presigned URL
+    validatePfbUrl(pfbRequest) { pfbUrl =>
+      // empty-array batchUpsert to Rawls to verify workspace existence and permissions
+      validateUpsertPermissions() { _ =>
+        // generate job UUID
+        val jobId = java.util.UUID.randomUUID()
 
-    if (!acceptableProtocols.contains(pfbUrl.getProtocol)) {
-      Future.successful(RequestCompleteWithErrorReport(BadRequest, "Invalid URL protocol: must be https only"))
-    } else {
+        // the payload to Arrow needs to include the PFB url, job id, workspace info, and user info
+        val user = WorkbenchUserInfo(userInfo.id, userInfo.userEmail)
+        val arrowPayload = pfbRequest.copy(jobId = Option(jobId.toString),
+          workspace = Option(WorkspaceName(workspaceNamespace, workspaceName)),
+          user = Option(user))
 
-      val futurePerRequestMessage = for {
-        arrowResponse <- callArrow
-        rawlsJsonEntity <- arrowResponse.status match {
-          case OK => Future.successful(arrowResponse.entity)
-          case BadRequest | Unauthorized | Forbidden | NotFound => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(arrowResponse.status, arrowResponse.entity.asString)))
-          case _ => Future.failed(new FireCloudException(arrowResponse.status.value + ": " + arrowResponse.entity.asString))
-        }
-        rawlsResponse <- callRawls(rawlsJsonEntity)
-        result <- rawlsResponse.status match {
-          case NoContent => Future.successful(RequestComplete(NoContent))
-          case Unauthorized | Forbidden | NotFound => Future.failed(new FireCloudExceptionWithErrorReport(FCErrorReport(rawlsResponse)))
-          case _ => Future.failed(new FireCloudException(rawlsResponse.status.value + ": " + rawlsResponse.entity.asString))
-        }
-      } yield (result)
+        // fire-and-forget call Arrow with UUID, workspace info, and presigned URL
+        val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
+        gzipPipeline { Post(avroToRawlsURL, arrowPayload) }
 
-      futurePerRequestMessage recover {
-        case e: FireCloudExceptionWithErrorReport => RequestCompleteWithErrorReport(optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), e.errorReport.message, e)
-        case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Import failed. Details: " + e.getMessage, e)
+        // the response payload to the end user omits the userid/email
+        val responsePayload = arrowPayload.copy(user = None)
+
+        // return Accepted with UUID
+        RequestComplete(Accepted, responsePayload)
       }
     }
   }
+
 }
