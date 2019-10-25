@@ -16,6 +16,7 @@ import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
 import com.google.api.services.sheets.v4.SheetsScopes
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.ValueRange
+import com.google.api.services.storage.model.Objects
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
@@ -184,17 +185,47 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .build()
   }
 
-  def getRawlsServiceAccountAccessToken = {
-    val googleCredential = new GoogleCredential.Builder()
+  def getRawlsServiceAccountCredential: Credential = {
+    new GoogleCredential.Builder()
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
       .setServiceAccountId(rawlsPemFileClientId)
       .setServiceAccountScopes(storageReadOnly)
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(rawlsPemFile))
       .build()
+  }
+
+  def getRawlsServiceAccountAccessToken = {
+    val googleCredential = getRawlsServiceAccountCredential
 
     googleCredential.refreshToken()
     googleCredential.getAccessToken
+  }
+
+  override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getRawlsServiceAccountCredential).setApplicationName(appName).build()
+    val listRequest = storage.objects().list(bucketName).setPrefix(prefix)
+    Try(executeGoogleRequest[Objects](listRequest)) match {
+      case Failure(ex) =>
+        // handle this case so we can give a good log message. In the future we may handle this
+        // differently, such as returning an empty list.
+        logger.warn(s"could not list objects in bucket/prefix gs://$bucketName/$prefix", ex)
+        throw ex
+      case Success(obs) =>
+        Option(obs.getItems) match {
+          case None => List.empty[String]
+          case Some(items) => items.toList.map { ob =>
+            ob.getName
+          }
+        }
+    }
+  }
+
+  // WARNING: only call on smallish objects!
+  override def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getRawlsServiceAccountCredential).setApplicationName(appName).build()
+    val is = storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
+    scala.io.Source.fromInputStream(is).mkString
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {

@@ -42,7 +42,7 @@ object Dependencies {
 
     "com.google.guava"               % "guava"               % "28.0-jre",
 
-    excludeGuavaJDK5("com.google.apis"                % "google-api-services-storage" % "v1-rev116-1.23.0"),
+    excludeGuavaJDK5("com.google.apis"                % "google-api-services-storage" % "v1-rev20190910-1.30.3"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-sheets"  % "v4-rev494-1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-cloudbilling" % "v1-rev14-1.23.0"),
     excludeGuavaJDK5("com.google.apis"                % "google-api-services-pubsub"       % "v1-rev357-1.22.0"),
