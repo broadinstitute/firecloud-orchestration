@@ -10,7 +10,7 @@ import akka.pattern.pipe
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
-import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
+import org.broadinstitute.dsde.firecloud.dataaccess.GoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -52,7 +52,14 @@ object EntityClient {
 
   case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo)
 
-  def props(requestContext: RequestContext, modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext, modelSchema))
+  def props(entityClientConstructor: (RequestContext, ModelSchema) => EntityClient, requestContext: RequestContext,
+            modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = {
+    Props(entityClientConstructor(requestContext, modelSchema))
+  }
+
+  def constructor(app: Application)(requestContext: RequestContext,
+                                    modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
+    new EntityClient(requestContext, modelSchema, app.googleServicesDAO)
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -120,7 +127,7 @@ object EntityClient {
 
 }
 
-class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(implicit protected val executionContext: ExecutionContext)
+class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDAO)(implicit protected val executionContext: ExecutionContext)
   extends Actor with FireCloudRequestBuilding with TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -403,7 +410,8 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
           user = Option(user))
 
         // fire-and-forget call Arrow with UUID, workspace info, and presigned URL
-        val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
+        val idToken = googleServicesDAO.getAdminIdentityToken
+        val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> addCredentials(OAuth2BearerToken(idToken)) ~> sendReceive ~> decode(Gzip)
         gzipPipeline { Post(avroToRawlsURL, arrowPayload) }
 
         // the response payload to the end user omits the userid/email
