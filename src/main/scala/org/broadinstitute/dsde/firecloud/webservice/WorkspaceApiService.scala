@@ -168,7 +168,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
               requireUserInfo() { userInfo =>
                 respondWithJSON { requestContext =>
                   perRequest(requestContext, EntityClient.props(entityClientConstructor, requestContext, FlexibleModelSchema),
-                    EntityClient.ImportPFBStatus(workspaceNamespace, workspaceName, jobId, userInfo))
+                    EntityClient.PFBImportStatus(workspaceNamespace, workspaceName, jobId, userInfo))
                 }
               }
             }

@@ -52,7 +52,7 @@ object EntityClient {
   case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
 
   case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo)
-  case class ImportPFBStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo)
+  case class PFBImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo)
 
   def props(entityClientConstructor: (RequestContext, ModelSchema) => EntityClient, requestContext: RequestContext,
             modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = {
@@ -143,8 +143,8 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
     case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo) =>
       importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) pipeTo sender
-    case ImportPFBStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo) =>
-      importPFBStatus(workspaceNamespace, workspaceName, jobId, userInfo) pipeTo sender
+    case PFBImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo) =>
+      pfbImportStatus(workspaceNamespace, workspaceName, jobId, userInfo) pipeTo sender
   }
 
 
@@ -427,7 +427,7 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
     }
   }
 
-  def importPFBStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+  def pfbImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[PerRequestMessage] = {
 
     val bucketName = FireCloudConfig.Arrow.bucketName
 
