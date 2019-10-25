@@ -3408,8 +3408,7 @@ paths:
       summary: Import PFB data from an [Avro](https://avro.apache.org/) file
       description: >
         This API will return a jobID representing the import operation. The import
-        itself will continue asynchronously in the background. Monitor the data in your workspace
-        to check progress of the import.
+        itself will continue asynchronously in the background.
       produces:
         - application/json
       parameters:
@@ -3434,6 +3433,36 @@ paths:
           description: Forbidden access to Workspace
         404:
           description: Workspace not found
+        500:
+          description: Internal Error
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importPFB/{jobId}:
+    get:
+      x-passthrough: false
+      tags:
+        - Entities
+      operationId: importPFBStatus
+      summary: Report status on a PFB import job
+      description: >
+        This API will return status of an import jobID. The jobID was returned from a
+        previous import request.
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: path
+          description: job ID of the import to check
+          name: jobId
+          required: true
+          type: string
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/PFBStatusResponse'
+        404:
+          description: job ID not found
         500:
           description: Internal Error
 
@@ -6534,6 +6563,28 @@ definitions:
       - url
       - jobId
       - workspaceName
+
+  PFBStatusResponse:
+    type: object
+    properties:
+      jobId:
+        type: string
+        description: unique id for the import job.
+      status:
+        type: string
+        description: short status for the import job.
+      message:
+        type: string
+        description: extended explanation for the import job.
+      timestamp:
+        type: integer
+        format: int64
+        description: time of the response
+    required:
+      - jobId
+      - status
+      - message
+      - timestamp
 
   Profile:
     type: object

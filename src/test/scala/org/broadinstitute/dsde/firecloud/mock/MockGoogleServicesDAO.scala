@@ -90,6 +90,10 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
                                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
     Future.successful(ObjectMetadata("foo", "bar", "baz", "bla", "blah", None, Some("blahh"), "blahh", "blahh", "blahh", Some("blahh"), "blahh", Option("blahh"), Option("blahh"), Option("blahh"), None))
   }
+
+  override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = List("foo", "bar")
+  override def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String = "my object contents"
+
   override def getUserProfile(accessToken: WithAccessToken)
                              (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)
   override def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
