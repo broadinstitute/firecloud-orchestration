@@ -431,6 +431,15 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
 
     val bucketName = FireCloudConfig.Arrow.bucketName
 
+    def readStatusFile(filename: String, default: String): String = {
+      Try(googleServicesDAO.getObjectContentsAsRawlsSA(bucketName, s"$jobId/$filename")) match {
+        case Success(msg) =>
+          if (msg.trim.nonEmpty) msg else default
+        case Failure(ex) =>
+          logger.warn(s"error reading GCS object gs://$bucketName/$jobId/$filename", ex)
+          default
+      }
+    }
 
     // list all files in the jobId's subdirectory and strip jobId prefix so we have just the filenames
     val files = Try(googleServicesDAO.listObjectsAsRawlsSA(bucketName, jobId + "/").map(_.replace(jobId + "/",""))) match {
@@ -450,28 +459,19 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
       // somebody wrote an error.json: it's an error.
       case error if error.contains("error.json") =>
         // try to read the error contents
-        val errorMessage = Try(googleServicesDAO.getObjectContentsAsRawlsSA(bucketName, s"$jobId/error.json")) match {
-          case Success(msg) => msg
-          case Failure(ex) =>
-            logger.warn(s"error reading GCS object gs://$bucketName/$jobId/error.json", ex)
-            "Error!"
-        }
+        val errorMessage = readStatusFile("error.json", "Error!")
         (OK, "ERROR", errorMessage)
 
       // we finished with a success.json: it's a success. Yay!
       case success if success.contains("success.json") =>
         // try to read the success contents
-        val successMessage = Try(googleServicesDAO.getObjectContentsAsRawlsSA(bucketName, s"$jobId/error.json")) match {
-          case Success(msg) => msg
-          case Failure(ex) =>
-            logger.warn(s"error reading GCS object gs://$bucketName/$jobId/error.json", ex)
-            "Success! Import completed."
-        }
+        val successMessage = readStatusFile("success.json", "Success! Import completed.")
         (OK, "SUCCESS", successMessage)
 
       // we have a start marker, but do not yet have a success or error marker. It's in progress.
       case started if started.contains("running.json") =>
-        (OK, "RUNNING", "import in progress")
+        val runningMessage = readStatusFile("running.json", "import in progress")
+        (OK, "RUNNING", runningMessage)
 
       // we've got either/both of the upsert and the metadata, but no other markers - it's in progress.
       case alsostarted if alsostarted == Set("upsert.json") || alsostarted == Set("metadata.json") || alsostarted == Set("upsert.json", "metadata.json") =>
