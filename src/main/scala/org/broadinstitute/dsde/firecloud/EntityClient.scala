@@ -442,53 +442,56 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
     }
 
     // list all files in the jobId's subdirectory and strip jobId prefix so we have just the filenames
-    val files = Try(googleServicesDAO.listObjectsAsRawlsSA(bucketName, jobId + "/").map(_.replace(jobId + "/",""))) match {
-      case Success(obs) => obs
+    Try(googleServicesDAO.listObjectsAsRawlsSA(bucketName, jobId + "/").map(_.replace(jobId + "/",""))) match {
+
       case Failure(ex) =>
         logger.warn(s"Error listing GCS objects for prefix gs://$bucketName/$jobId", ex)
-        List("failed to list")
+        // do not expose the bucket name in the error report we send to users
+        Future.successful(RequestCompleteWithErrorReport(InternalServerError, "Error listing bucket"))
+
+      case Success(files) =>
+        // what files do we have?
+        val (statusCode, statusString, message) = files.toSet match {
+
+          // no files yet, or subdirectory doesn't exist
+          case nothing if nothing.isEmpty =>
+            (NotFound, "NOT FOUND", "jobId not found or job not yet started")
+
+          // somebody wrote an error.json: it's an error.
+          case error if error.contains("error.json") =>
+            // try to read the error contents
+            val errorMessage = readStatusFile("error.json", "Error!")
+            (OK, "ERROR", errorMessage)
+
+          // we finished with a success.json: it's a success. Yay!
+          case success if success.contains("success.json") =>
+            // try to read the success contents
+            val successMessage = readStatusFile("success.json", "Success! Import completed.")
+            (OK, "SUCCESS", successMessage)
+
+          // we have a start marker, but do not yet have a success or error marker. It's in progress.
+          case started if started.contains("running.json") =>
+            val runningMessage = readStatusFile("running.json", "import in progress")
+            (OK, "RUNNING", runningMessage)
+
+          // we've got either/both of the upsert and the metadata, but no other markers - it's in progress.
+          case alsostarted if alsostarted == Set("upsert.json") || alsostarted == Set("metadata.json") || alsostarted == Set("upsert.json", "metadata.json") =>
+            (OK, "RUNNING", "import in progress")
+
+          // the files don't make sense; give up.
+          case _ =>
+            logger.warn(s"could not determine importPFB status for $jobId: $files")
+            (InternalServerError, "UNKNOWN", "could not determine status")
+        }
+
+        val responsePayload = JsObject(
+          "status" -> JsString(statusString),
+          "message" -> JsString(message),
+          "jobId" -> JsString(jobId)
+        )
+
+        Future.successful(RequestComplete(statusCode, responsePayload))
     }
-
-    // what files do we have?
-    val (statusCode, statusString, message) = files.toSet match {
-
-      // no files yet, or subdirectory doesn't exist
-      case nothing if nothing.isEmpty =>
-        (NotFound, "NOT FOUND", "jobId not found or job not yet started")
-
-      // somebody wrote an error.json: it's an error.
-      case error if error.contains("error.json") =>
-        // try to read the error contents
-        val errorMessage = readStatusFile("error.json", "Error!")
-        (OK, "ERROR", errorMessage)
-
-      // we finished with a success.json: it's a success. Yay!
-      case success if success.contains("success.json") =>
-        // try to read the success contents
-        val successMessage = readStatusFile("success.json", "Success! Import completed.")
-        (OK, "SUCCESS", successMessage)
-
-      // we have a start marker, but do not yet have a success or error marker. It's in progress.
-      case started if started.contains("running.json") =>
-        val runningMessage = readStatusFile("running.json", "import in progress")
-        (OK, "RUNNING", runningMessage)
-
-      // we've got either/both of the upsert and the metadata, but no other markers - it's in progress.
-      case alsostarted if alsostarted == Set("upsert.json") || alsostarted == Set("metadata.json") || alsostarted == Set("upsert.json", "metadata.json") =>
-        (OK, "RUNNING", "import in progress")
-
-      // the files don't make sense; give up.
-      case _ =>
-        logger.warn(s"could not determine importPFB status for $jobId: $files")
-        (InternalServerError, "UNKNOWN", "could not determine status")
-    }
-
-    val responsePayload = JsObject(
-      "status" -> JsString(statusString),
-      "message" -> JsString(message),
-      "jobId" -> JsString(jobId)
-    )
-
-    Future.successful(RequestComplete(statusCode, responsePayload))
   }
+
 }
