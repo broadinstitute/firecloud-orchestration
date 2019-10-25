@@ -409,11 +409,10 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
           workspace = Option(WorkspaceName(workspaceNamespace, workspaceName)),
           user = Option(user))
 
-        googleServicesDAO.getAdminIdentityToken map { idToken =>
-          // fire-and-forget call Arrow with UUID, workspace info, and presigned URL
-          val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> addCredentials(OAuth2BearerToken(idToken)) ~> sendReceive ~> decode(Gzip)
-          gzipPipeline { Post(avroToRawlsURL, arrowPayload) }
-        }
+        // fire-and-forget call Arrow with UUID, workspace info, and presigned URL
+        val idToken = googleServicesDAO.getAdminIdentityToken
+        val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> addCredentials(OAuth2BearerToken(idToken)) ~> sendReceive ~> decode(Gzip)
+        gzipPipeline { Post(avroToRawlsURL, arrowPayload) }
 
         // the response payload to the end user omits the userid/email
         val responsePayload = arrowPayload.copy(user = None)

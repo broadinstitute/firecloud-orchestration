@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.time.Instant
+import java.io.FileInputStream
 
 import akka.actor.ActorRefFactory
 import com.google.api.client.auth.oauth2.Credential
@@ -17,6 +17,7 @@ import com.google.api.services.sheets.v4.SheetsScopes
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.ValueRange
 import com.google.api.services.storage.{Storage, StorageScopes}
+import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
@@ -26,7 +27,6 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtHeader}
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._
@@ -93,6 +93,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   val pemFile = FireCloudConfig.Auth.pemFile
   val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
+  val firecloudAccountJsonFile = FireCloudConfig.Auth.firecloudAccountJsonFile
 
   val rawlsPemFile = FireCloudConfig.Auth.rawlsPemFile
   val rawlsPemFileClientId = FireCloudConfig.Auth.rawlsPemFileClientId
@@ -113,69 +114,20 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     googleCredential.getAccessToken
   }
 
-  override def getAdminIdentityToken(implicit actorRefFactory: ActorRefFactory): Future[String] = {
+  override def getAdminIdentityToken: String = {
+    // Beware that this method uses *Credentials classes from com.google.auth.oauth2,
+    // while other methods in this class use com.google.api.client.googleapis.auth.oauth2.
+    // TODO: resolve this and centralize on one implementation.
+    val firecloudSACredentials:GoogleCredentials = ServiceAccountCredentials
+      .fromStream(new FileInputStream(firecloudAccountJsonFile))
+        .createScoped(Seq("openid", "email"))
 
-    // https://cloud.google.com/iap/docs/authentication-howto#authenticating_from_a_service_account
-
-    val OAUTH_TOKEN_URI = "https://www.googleapis.com/oauth2/v4/token"
-
-    // get private key, private key id, and email for the orch service account
-    val googleCredential = new GoogleCredential.Builder()
-      .setTransport(httpTransport)
-      .setJsonFactory(jsonFactory)
-      .setServiceAccountId(pemFileClientId)
-      .setServiceAccountScopes(Seq("openid", "email")) // use the smallest scope possible
-      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
-      .build()
-    val privateKeyId = googleCredential.getServiceAccountPrivateKeyId
-    val privateKey = googleCredential.getServiceAccountPrivateKey
-    val email = googleCredential.getServiceAccountId
-
-    // 1. self-sign a service account JWT with the target_audience claim set to the URL of the receiving function.
-
-    // build JWT header
-    val header = JwtHeader(Option(JwtAlgorithm.RS256), Option("JWT"), None, Option(privateKeyId))
-
-    // build JWT claim
-    val iat:Long = Instant.now().getEpochSecond()
-    val exp:Long = iat + 3600
-    val claim = JwtClaim(
-      content = s"""{"target_audience": "${EntityClient.avroToRawlsURL}"}""",
-      issuer = Option(email),
-      subject = Option(email),
-      audience = Option(Set(OAUTH_TOKEN_URI)),
-      expiration = Option(exp),
-      issuedAt = Option(iat)
-    )
-
-    // build JWT itself
-    val jwt = Jwt.encode(header, claim, privateKey)
-
-    // 2. Exchange the self-signed JWT for a Google-signed ID token, which should have the aud claim set to the above URL.
-    val tokenPayload =
-      s"""
-        | {
-        |   "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        |   "assertion": "${jwt.toString}",
-        |   "scope": "openid email"
-        | }
-        |""".stripMargin
-
-    val oidcPipeline = sendReceive
-    val oidcRequest = Post(OAUTH_TOKEN_URI, tokenPayload)
-
-    oidcPipeline{ oidcRequest } map { resp: HttpResponse =>
-      resp.status match {
-        case OK =>
-          val oidcJson = resp.entity.asString.parseJson.asJsObject
-          oidcJson.fields.get("id_token") match {
-            case Some(s:JsString) => s.value
-            case _ => throw new FireCloudException(s"id_token string value not found in OIDC token: ${oidcJson.fields.keySet}")
-          }
-        case badStatus =>
-          logger.error(resp.message.toString)
-          throw new FireCloudException(s"Error $badStatus getting OIDC token")
-      }
+    firecloudSACredentials match {
+      case saCreds:ServiceAccountCredentials =>
+        val idToken = saCreds.idTokenWithAudience(EntityClient.avroToRawlsURL, List())
+        idToken.getTokenValue
+      case _ =>
+        throw new FireCloudException("Unexpected error: ServiceAccountCredentials.create... did not return a ServiceAccountCredentials instance")
     }
   }
 

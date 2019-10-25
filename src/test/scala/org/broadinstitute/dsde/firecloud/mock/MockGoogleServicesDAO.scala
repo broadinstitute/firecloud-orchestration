@@ -74,7 +74,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   val pubsubMessages = new LinkedBlockingQueue[String]()
 
   override def getAdminUserAccessToken: String = "adminUserAccessToken"
-  override def getAdminIdentityToken(implicit actorRefFactory: ActorRefFactory): Future[String] = Future.successful("adminIdentityToken")
+  override def getAdminIdentityToken: String = "adminIdentityToken"
   override def getTrialBillingManagerAccessToken: String = "billingManagerAccessToken"
   override def getTrialBillingManagerEmail: String = "mock-trial-billing-mgr-email"
   override def getTrialSpreadsheetAccessToken: String = "trialSpreadsheetAccessToken"

@@ -19,6 +19,7 @@ object FireCloudConfig {
     val googleSecretJson = auth.getString("googleSecretsJson")
     val pemFile = auth.getString("pemFile")
     val pemFileClientId = auth.getString("pemFileClientId")
+    val firecloudAccountJsonFile = auth.getString("jsonFile")
     val rawlsPemFile = auth.getString("rawlsPemFile")
     val rawlsPemFileClientId = auth.getString("rawlsPemFileClientId")
     val trialBillingPemFile = auth.getString("trialBillingPemFile")
