@@ -207,7 +207,9 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val listRequest = storage.objects().list(bucketName).setPrefix(prefix)
     Try(executeGoogleRequest[Objects](listRequest)) match {
       case Failure(ex) =>
-        // TODO: do anything else here?
+        // handle this case so we can give a good log message. In the future we may handle this
+        // differently, such as returning an empty list.
+        logger.warn(s"could not list objects in bucket/prefix gs://$bucketName/$prefix", ex)
         throw ex
       case Success(obs) =>
         Option(obs.getItems) match {
