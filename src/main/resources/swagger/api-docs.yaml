@@ -2620,6 +2620,10 @@ paths:
       responses:
         200:
           description: List of workspaces.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceListResponse'
         400:
           description: Unrecognized query parameters
     post:
@@ -2640,7 +2644,7 @@ paths:
         201:
           description: Successful Request
           schema:
-            $ref: '#/definitions/CreateWorkspaceResponse'
+            $ref: '#/definitions/WorkspaceDetails'
         400:
           description: Bad request
         403:
@@ -2679,6 +2683,8 @@ paths:
       responses:
         200:
           description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkspaceResponse'
         400:
           description: Unrecognized query parameters
         404:
@@ -2942,7 +2948,7 @@ paths:
         201:
           description: Successful Request
           schema:
-            $ref: '#/definitions/CreateWorkspaceResponse'
+            $ref: '#/definitions/WorkspaceDetails'
         400:
           description: Unable to create resources for workspace
         404:
@@ -4391,6 +4397,8 @@ paths:
       responses:
         200:
           description: Success
+          schema:
+            $ref: '#/definitions/WorkspaceDetails'
         400:
           description: Invalid operation
         404:
@@ -5655,59 +5663,6 @@ definitions:
       servicePerimeter:
         type: string
         description: The fully qualified name of the GCP service perimeter to put this project into in the form accessPolicies/[POLICY NUMBER]/servicePerimeters/[NAME]. Caller must have the add_project action for this service perimeter in Sam.
-
-  CreateWorkspaceResponse:
-    description: payload returned from create- or clone-workspace
-    required:
-      - attributes
-      - authorizationDomain
-      - bucketName
-      - createdBy
-      - createdDate
-      - isLocked
-      - lastModified
-      - name
-      - namespace
-      - workspaceId
-    type: object
-    properties:
-      attributes:
-        type: object
-        description: Map[String, Attribute]
-      authorizationDomain:
-        type: array
-        items:
-          $ref: '#/definitions/ManagedGroupRef'
-        description: The list of groups to form the Authorization Domain (empty if no Authorization Domain is set)
-      bucketName:
-        type: string
-        description: The name of the bucket associated with the workspace
-      createdBy:
-        type: string
-        description: The user who created the workspace
-      createdDate:
-        type: string
-        format: date-time
-        description: 'The date the workspace was created in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
-      isLocked:
-        type: boolean
-        description: Can the Workspace currently be modified?
-      lastModified:
-        type: string
-        format: date-time
-        description: 'The date the workspace was last modified in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
-      name:
-        type: string
-        description: The name of the workspace
-      namespace:
-        type: string
-        description: The namespace the workspace belongs to
-      workflowCollectionName:
-        type: string
-        description: Workflow collection name
-      workspaceId:
-        type: string
-        description: A UUID associated with the workspace
 
   CuratorStatus:
     description: is the user a curator?
@@ -7517,6 +7472,16 @@ definitions:
         type: boolean
         description: True if the user can launch compute in this workspace, false otherwise
 
+  WorkspaceAccessLevel:
+    description: 'The level of access a user or group has on a Workspace. NoAccess, Read, Write, Owner, ProjectOwner'
+    type: string
+    enum:
+      - PROJECT_OWNER
+      - OWNER
+      - WRITER
+      - READER
+      - NO ACCESS
+
   WorkspaceBucketOptions:
     description: 'Extra information about a GCS bucket attached to a workspace'
     required:
@@ -7572,6 +7537,56 @@ definitions:
         items:
           type: string
 
+  WorkspaceDetails:
+    description: ''
+    required:
+      - bucketName
+      - createdBy
+      - createdDate
+      - isLocked
+      - lastModified
+      - name
+      - namespace
+      - workspaceId
+    properties:
+      attributes:
+        type: object
+        description: Map[String, Attribute]
+      authorizationDomain:
+        type: array
+        items:
+          $ref: '#/definitions/ManagedGroupRef'
+        description: The list of groups in the Authorization Domain (empty if no AD is set)
+      bucketName:
+        type: string
+        description: The name of the bucket associated with the workspace
+      createdBy:
+        type: string
+        description: The user who created the workspace
+      createdDate:
+        type: string
+        format: date-time
+        description: 'The date the workspace was created in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
+      isLocked:
+        type: boolean
+        description: Can the Workspace currently be modified?
+      lastModified:
+        type: string
+        format: date-time
+        description: 'The date the workspace was last modified in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
+      name:
+        type: string
+        description: The name of the workspace
+      namespace:
+        type: string
+        description: The namespace the workspace belongs to
+      workflowCollectionName:
+        type: string
+        description: The name of the workflow collection associated with the workspace
+      workspaceId:
+        type: string
+        description: A UUID associated with the workspace
+
   WorkspaceIngest:
     required:
       - namespace
@@ -7595,6 +7610,60 @@ definitions:
         items:
           $ref: '#/definitions/ManagedGroupRef'
         description: The list of groups to form the Authorization Domain (empty if no Authorization Domain is set)
+
+  WorkspaceListResponse:
+    description: ''
+    properties:
+      accessLevel:
+        $ref: '#/definitions/WorkspaceAccessLevel'
+      public:
+        type: boolean
+      workspace:
+        $ref: '#/definitions/WorkspaceDetails'
+      workspaceSubmissionStats:
+        $ref: '#/definitions/WorkspaceSubmissionStats'
+
+  WorkspaceResponse:
+    description: ''
+    properties:
+      accessLevel:
+        $ref: '#/definitions/WorkspaceAccessLevel'
+      bucketOptions:
+        $ref: '#/definitions/WorkspaceBucketOptions'
+      canCompute:
+        type: boolean
+      canShare:
+        type: boolean
+      catalog:
+        type: boolean
+      owners:
+        type: array
+        items:
+          type: string
+        description: >
+          Owners of this workspace. This API only lists owners; use the get-workspace-ACL API to get the full list of
+          all users at all permission levels.
+      workspace:
+        $ref: '#/definitions/WorkspaceDetails'
+      workspaceSubmissionStats:
+        $ref: '#/definitions/WorkspaceSubmissionStats'
+
+  WorkspaceSubmissionStats:
+    description: Statistics about submissions in a workspace
+    required:
+      - runningSubmissionsCount
+    properties:
+      lastSuccessDate:
+        type: string
+        format: date-time
+        description: The date of the last successful submission
+      lastFailureDate:
+        type: string
+        format: date-time
+        description: The date of the last failed submission
+      runningSubmissionsCount:
+        type: integer
+        description: Count of all the running submissions
 
   WorkspaceTag:
     required:
