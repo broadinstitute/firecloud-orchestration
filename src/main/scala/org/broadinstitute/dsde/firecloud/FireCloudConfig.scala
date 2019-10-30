@@ -17,13 +17,16 @@ object FireCloudConfig {
     private val auth = config.getConfig("auth")
     val googleClientId = auth.getString("googleClientId")
     val googleSecretJson = auth.getString("googleSecretsJson")
-    val pemFile = auth.getString("pemFile")
-    val pemFileClientId = auth.getString("pemFileClientId")
-    val firecloudAccountJsonFile = auth.getString("jsonFile")
-    val rawlsPemFile = auth.getString("rawlsPemFile")
-    val rawlsPemFileClientId = auth.getString("rawlsPemFileClientId")
-    val trialBillingPemFile = auth.getString("trialBillingPemFile")
-    val trialBillingPemFileClientId = auth.getString("trialBillingPemFileClientId")
+
+    // credentials for orchestration's "firecloud" service account, used for admin duties
+    val firecloudAdminSAJsonFile = auth.getString("firecloudAdminSA")
+
+    // credentials for the rawls service account, used for signing GCS urls
+    val rawlsSAJsonFile = auth.getString("rawlsSA")
+
+    // credentials for the trial billing service account, used for free trial duties
+    val trialBillingSAJsonFile = auth.getString("trialBillingSA")
+
     val swaggerRealm = auth.getString("swaggerRealm")
   }
 

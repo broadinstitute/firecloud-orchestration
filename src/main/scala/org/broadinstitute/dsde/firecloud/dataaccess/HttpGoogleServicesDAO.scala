@@ -3,8 +3,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.io.FileInputStream
 
 import akka.actor.ActorRefFactory
-import com.google.api.client.auth.oauth2.Credential
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
 import com.google.api.client.http.HttpResponseException
@@ -18,6 +16,7 @@ import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.ValueRange
 import com.google.api.services.storage.model.Objects
 import com.google.api.services.storage.{Storage, StorageScopes}
+import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
@@ -92,118 +91,77 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
   val jsonFactory = JacksonFactory.getDefaultInstance
 
-  val pemFile = FireCloudConfig.Auth.pemFile
-  val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
-  val firecloudAccountJsonFile = FireCloudConfig.Auth.firecloudAccountJsonFile
+  // credentials for orchestration's "firecloud" service account, used for admin duties
+  lazy private val firecloudAdminSACreds = ServiceAccountCredentials
+    .fromStream(new FileInputStream(FireCloudConfig.Auth.firecloudAdminSAJsonFile))
 
-  val rawlsPemFile = FireCloudConfig.Auth.rawlsPemFile
-  val rawlsPemFileClientId = FireCloudConfig.Auth.rawlsPemFileClientId
+  // credentials for the rawls service account, used for signing GCS urls
+  lazy private val rawlsSACreds = ServiceAccountCredentials
+    .fromStream(new FileInputStream(FireCloudConfig.Auth.rawlsSAJsonFile))
 
-  val trialBillingPemFile = FireCloudConfig.Auth.trialBillingPemFile
-  val trialBillingPemFileClientId = FireCloudConfig.Auth.trialBillingPemFileClientId
+  // credentials for the trial billing service account, used for free trial duties
+  lazy private val trialBillingSACreds = ServiceAccountCredentials
+    .fromStream(new FileInputStream(FireCloudConfig.Auth.trialBillingSAJsonFile))
 
-  def getAdminUserAccessToken = {
-    val googleCredential = new GoogleCredential.Builder()
-      .setTransport(httpTransport)
-      .setJsonFactory(jsonFactory)
-      .setServiceAccountId(pemFileClientId)
-      .setServiceAccountScopes(authScopes) // use the smallest scope possible
-      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
-      .build()
-
-    googleCredential.refreshToken()
-    googleCredential.getAccessToken
+  private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials = {
+    baseCreds.createScoped(scopes)
   }
 
-  override def getAdminIdentityToken: String = {
-    // Beware that this method uses *Credentials classes from com.google.auth.oauth2,
-    // while other methods in this class use com.google.api.client.googleapis.auth.oauth2.
-    // TODO: resolve this and centralize on one implementation.
-    val firecloudSACredentials:GoogleCredentials = ServiceAccountCredentials
-      .fromStream(new FileInputStream(firecloudAccountJsonFile))
-        .createScoped(Seq("openid", "email"))
-
-    firecloudSACredentials match {
-      case saCreds:ServiceAccountCredentials =>
-        val idToken = saCreds.idTokenWithAudience(EntityClient.avroToRawlsURL, List())
-        idToken.getTokenValue
-      case _ =>
-        throw new FireCloudException("Unexpected error: ServiceAccountCredentials.create... did not return a ServiceAccountCredentials instance")
+  private def getScopedServiceAccountCredentials(baseCreds: ServiceAccountCredentials, scopes: Seq[String]): ServiceAccountCredentials = {
+    getScopedCredentials(baseCreds, scopes) match {
+      case sa:ServiceAccountCredentials => sa
+      case ex => throw new Exception(s"Excpected a ServiceAccountCredentials instance, got a ${ex.getClass.getName}")
     }
   }
 
-  def getTrialBillingManagerCredential(addlScopes: Seq[String] = billingScope): Credential = {
-    val builder = new GoogleCredential.Builder()
-      .setTransport(httpTransport)
-      .setJsonFactory(jsonFactory)
-      .setServiceAccountId(trialBillingPemFileClientId)
-      .setServiceAccountScopes(authScopes ++ addlScopes)
-      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(trialBillingPemFile))
+  def getAdminUserAccessToken = {
+    getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
+      .refreshAccessToken().getTokenValue
+  }
 
-    builder.build()
+  override def getAdminIdentityToken: String = {
+    getScopedServiceAccountCredentials(firecloudAdminSACreds, Seq("openid", "email"))
+      .idTokenWithAudience(EntityClient.avroToRawlsURL, List()).getTokenValue
   }
 
   def getTrialBillingManagerAccessToken = {
-    val googleCredential = getTrialBillingManagerCredential()
-    googleCredential.refreshToken()
-    googleCredential.getAccessToken
+    getScopedServiceAccountCredentials(trialBillingSACreds, authScopes ++ billingScope)
+      .refreshAccessToken().getTokenValue
   }
 
   def getTrialSpreadsheetAccessToken = {
-    val googleCredential = getTrialBillingManagerCredential(spreadsheetScopes)
-    googleCredential.refreshToken()
-    googleCredential.getAccessToken
+    getScopedServiceAccountCredentials(trialBillingSACreds, authScopes ++ spreadsheetScopes)
+      .refreshAccessToken().getTokenValue
   }
 
-  def getTrialBillingManagerEmail = trialBillingPemFileClientId
+  def getTrialBillingManagerEmail = trialBillingSACreds.getClientEmail
 
-  def getCloudBillingManager(credential: Credential): Cloudbilling = {
-    new Cloudbilling.Builder(httpTransport, jsonFactory, credential).setApplicationName(appName).build()
+  def getCloudBillingManager(credential: ServiceAccountCredentials): Cloudbilling = {
+    new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential)).setApplicationName(appName).build()
   }
 
   private lazy val pubSub = {
-    new Pubsub.Builder(httpTransport, jsonFactory, getPubSubServiceAccountCredential).setApplicationName(appName).build()
+    new Pubsub.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getPubSubServiceAccountCredential)).setApplicationName(appName).build()
   }
 
-  private def getBucketServiceAccountCredential: Credential = {
-    new GoogleCredential.Builder()
-      .setTransport(httpTransport)
-      .setJsonFactory(jsonFactory)
-      .setServiceAccountId(pemFileClientId)
-      .setServiceAccountScopes(storageReadOnly)
-      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
-      .build()
+  private def getBucketServiceAccountCredential = {
+    getScopedServiceAccountCredentials(firecloudAdminSACreds, storageReadOnly)
   }
 
-  private def getPubSubServiceAccountCredential: Credential = {
-    new GoogleCredential.Builder()
-      .setTransport(httpTransport)
-      .setJsonFactory(jsonFactory)
-      .setServiceAccountId(pemFileClientId)
-      .setServiceAccountScopes(Seq(PubsubScopes.PUBSUB))
-      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(pemFile))
-      .build()
+  private def getPubSubServiceAccountCredential = {
+    getScopedServiceAccountCredentials(firecloudAdminSACreds, Seq(PubsubScopes.PUBSUB))
   }
 
-  def getRawlsServiceAccountCredential: Credential = {
-    new GoogleCredential.Builder()
-      .setTransport(httpTransport)
-      .setJsonFactory(jsonFactory)
-      .setServiceAccountId(rawlsPemFileClientId)
-      .setServiceAccountScopes(storageReadOnly)
-      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(rawlsPemFile))
-      .build()
+  def getRawlsServiceAccountCredential = {
+    getScopedServiceAccountCredentials(rawlsSACreds, storageReadOnly)
   }
 
   def getRawlsServiceAccountAccessToken = {
-    val googleCredential = getRawlsServiceAccountCredential
-
-    googleCredential.refreshToken()
-    googleCredential.getAccessToken
+    getRawlsServiceAccountCredential.refreshAccessToken().getTokenValue
   }
 
   override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, getRawlsServiceAccountCredential).setApplicationName(appName).build()
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getRawlsServiceAccountCredential)).setApplicationName(appName).build()
     val listRequest = storage.objects().list(bucketName).setPrefix(prefix)
     Try(executeGoogleRequest[Objects](listRequest)) match {
       case Failure(ex) =>
@@ -223,13 +181,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   // WARNING: only call on smallish objects!
   override def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, getRawlsServiceAccountCredential).setApplicationName(appName).build()
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getRawlsServiceAccountCredential)).setApplicationName(appName).build()
     val is = storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
     scala.io.Source.fromInputStream(is).mkString
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName(appName).build()
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
@@ -246,10 +204,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     val signableString = s"$verb\n$md5\n$contentType\n$expireSeconds\n$objectPath"
 
-    // use GoogleCredential.Builder to parse the private key from the pem file
-    val builder = new GoogleCredential.Builder()
-      .setServiceAccountPrivateKeyFromPemFile(new java.io.File(rawlsPemFile))
-    val privateKey = builder.getServiceAccountPrivateKey
+    val privateKey = rawlsSACreds.getPrivateKey
 
     // sign the string
     val signature = java.security.Signature.getInstance("SHA256withRSA")
@@ -259,7 +214,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     // assemble the final url
     s"https://storage.googleapis.com/$bucketName/$objectKey" +
-      s"?GoogleAccessId=$rawlsPemFileClientId" +
+      s"?GoogleAccessId=${rawlsSACreds.getClientId}" +
       s"&Expires=$expireSeconds" +
       "&Signature=" + java.net.URLEncoder.encode(java.util.Base64.getEncoder.encodeToString(signedBytes), "UTF-8")
   }
@@ -462,14 +417,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   /**
     * Updates an existing google drive spreadsheet with the provided data.
     *
-    * @param withAccessToken       WithAccessToken
     * @param spreadsheetId  Spreadsheet ID
     * @param newContent     ValueRange
     * @return               JsObject representing the Google Update response
     */
-  def updateSpreadsheet(withAccessToken: WithAccessToken, spreadsheetId: String, newContent: ValueRange): JsObject = {
-    val credential = new GoogleCredential().setAccessToken(withAccessToken.accessToken.token)
-    val service = new Sheets.Builder(httpTransport, jsonFactory, credential).setApplicationName("FireCloud").build()
+  def updateSpreadsheet(spreadsheetId: String, newContent: ValueRange): JsObject = {
+
+    val service = new Sheets.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(trialBillingSACreds)).setApplicationName("FireCloud").build()
 
     // Retrieve existing records
     val getExisting: Sheets#Spreadsheets#Values#Get = service.spreadsheets().values.get(spreadsheetId, "Sheet1")
@@ -521,7 +475,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     // as the service account, get the current billing info to make sure we are removing the right thing.
     // this call will fail if the free-tier billing account has already been removed from the project.
-    val billingService = getCloudBillingManager(getTrialBillingManagerCredential())
+    val billingService = getCloudBillingManager(trialBillingSACreds)
 
     val readRequest = billingService.projects().getBillingInfo(projectName)
     Try(executeGoogleRequest[ProjectBillingInfo](readRequest)) match {
@@ -542,7 +496,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           // indicates we want to remove the billing account association.
           val noBillingInfo = new ProjectBillingInfo().setBillingAccountName("")
           // generate the request to send to Google
-          val noBillingRequest = getCloudBillingManager(getTrialBillingManagerCredential())
+          val noBillingRequest = getCloudBillingManager(trialBillingSACreds)
             .projects().updateBillingInfo(projectName, noBillingInfo)
           // send the request
           val updatedProject = executeGoogleRequest[ProjectBillingInfo](noBillingRequest)
@@ -581,7 +535,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   // ====================================================================================
 
   def status: Future[SubsystemStatus] = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, getBucketServiceAccountCredential).setApplicationName(appName).build()
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
     val bucketResponseTry = Try(storage.buckets().list(FireCloudConfig.FireCloud.serviceProject).executeUsingHead())
     bucketResponseTry match {
       case scala.util.Success(bucketResponse) => bucketResponse.getStatusCode match {
