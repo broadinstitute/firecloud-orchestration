@@ -7587,6 +7587,18 @@ definitions:
         type: string
         description: A UUID associated with the workspace
 
+  WorkspaceListResponse:
+    description: ''
+    properties:
+      accessLevel:
+        $ref: '#/definitions/WorkspaceAccessLevel'
+      public:
+        type: boolean
+      workspace:
+        $ref: '#/definitions/WorkspaceDetails'
+      workspaceSubmissionStats:
+        $ref: '#/definitions/WorkspaceSubmissionStats'
+
   # clone- and create-workspace both use the WorkspaceRequest Scala class, but create-workspace ignores the
   # copyFilesWithPrefix property. This is difficult to represent in swagger-ui, so here we use two different models
   WorkspaceRequest:
@@ -7635,18 +7647,6 @@ definitions:
       copyFilesWithPrefix:
         type: string
         description: Used for clone operations only; the prefix for files to copy between source and destination workspace buckets
-
-  WorkspaceListResponse:
-    description: ''
-    properties:
-      accessLevel:
-        $ref: '#/definitions/WorkspaceAccessLevel'
-      public:
-        type: boolean
-      workspace:
-        $ref: '#/definitions/WorkspaceDetails'
-      workspaceSubmissionStats:
-        $ref: '#/definitions/WorkspaceSubmissionStats'
 
   WorkspaceResponse:
     description: ''
