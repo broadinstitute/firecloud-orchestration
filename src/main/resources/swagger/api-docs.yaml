@@ -2662,6 +2662,10 @@ paths:
         - Workspaces
       operationId: getWorkspace
       summary: Get workspace
+      description: >
+        Get a single workspace's details, optionally filtered to only the specified fields. See additional GET methods
+        in this section to retrieve additional details about the workspace. For instance, this API only returns the
+        workspace's owners; use the GET .../acl method to retrieve the full list of all users at all permission levels.
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
