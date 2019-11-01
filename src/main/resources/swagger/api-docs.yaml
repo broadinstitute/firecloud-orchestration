@@ -2620,6 +2620,10 @@ paths:
       responses:
         200:
           description: List of workspaces.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/WorkspaceListResponse'
         400:
           description: Unrecognized query parameters
     post:
@@ -2635,12 +2639,12 @@ paths:
           required: true
           in: body
           schema:
-            $ref: '#/definitions/WorkspaceIngest'
+            $ref: '#/definitions/WorkspaceRequest'
       responses:
         201:
           description: Successful Request
           schema:
-            $ref: '#/definitions/CreateWorkspaceResponse'
+            $ref: '#/definitions/WorkspaceDetails'
         400:
           description: Bad request
         403:
@@ -2658,6 +2662,10 @@ paths:
         - Workspaces
       operationId: getWorkspace
       summary: Get workspace
+      description: >
+        Get a single workspace's details, optionally filtered to only the specified fields. See additional GET methods
+        in this section to retrieve additional details about the workspace. For instance, this API only returns the
+        workspace's owners; use the GET .../acl method to retrieve the full list of all users at all permission levels.
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
@@ -2679,6 +2687,8 @@ paths:
       responses:
         200:
           description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkspaceResponse'
         400:
           description: Unrecognized query parameters
         404:
@@ -2937,12 +2947,12 @@ paths:
           required: true
           in: body
           schema:
-            $ref: '#/definitions/WorkspaceIngest'
+            $ref: '#/definitions/WorkspaceRequestClone'
       responses:
         201:
           description: Successful Request
           schema:
-            $ref: '#/definitions/CreateWorkspaceResponse'
+            $ref: '#/definitions/WorkspaceDetails'
         400:
           description: Unable to create resources for workspace
         404:
@@ -3167,7 +3177,7 @@ paths:
           name: attributeUpdateJson
           required: false
           schema:
-            $ref: '#/definitions/AttributeUpdateOperation'
+            $ref: '#/definitions/AttributeUpdateOperationArray'
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}/evaluate:
     post:
@@ -4384,13 +4394,13 @@ paths:
           description: Attribute operations. WARNING! This should not be used to change library metadata (republish will not happen). Use UpdateAttributes in the library section.
           required: true
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/AttributeUpdateOperation'
+            $ref: '#/definitions/AttributeUpdateOperationArray'
           in: body
       responses:
         200:
           description: Success
+          schema:
+            $ref: '#/definitions/WorkspaceDetails'
         400:
           description: Invalid operation
         404:
@@ -5165,18 +5175,132 @@ definitions:
         type: string
         description: The name of the entity
 
-  AttributeUpdateOperation:
-    type: object
+  AttributeUpdateOperationArray:
+    description: ''
+    type: array
+    items:
+      $ref: '#/definitions/AtttributeUpdateOperation'
+    example: >
+      [
+        {
+          "op": "AddUpdateAttribute",
+          "attributeName": "name of attribute to add/update",
+          "addUpdateAttribute": "value to add/update"
+        },
+        {
+          "op": "RemoveAttribute",
+          "attributeName": "name of attribute to remove"
+        },
+        {
+          "op": "AddListMember",
+          "attributeListName": "name of list attribute",
+          "newMember": "value to add to list"
+        },
+        {
+          "op": "RemoveListMember",
+          "attributeListName": "name of list attribute",
+          "removeMember": "value to remove from list"
+        },
+        {
+          "op": "CreateAttributeEntityReferenceList",
+          "attributeListName": "name of entity-reference list attribute to create"
+        },
+        {
+          "op": "CreateAttributeValueList",
+          "attributeName": "name of value-list attribute to create"
+        }
+      ]
+
+  AtttributeUpdateOperation:
+    discriminator: op
+    required:
+      - op
     properties:
       op:
         type: string
-        description: Operation to perform on the attribute
-      attributeName:
-        type: string
-        description: The name of the attribute
-      addUpdateAttribute:
-        type: string
-        description: The value of the attribute (if adding/updating)
+        description: The operation to perform on the attribute
+        enum:
+          - AddUpdateAttribute
+          - RemoveAttribute
+          - AddListMember
+          - RemoveListMember
+          - CreateAttributeEntityReferenceList
+          - CreateAttributeValueList
+
+  AddUpdateAttribute:
+    allOf:
+      - $ref: '#/definitions/AtttributeUpdateOperation'
+      - properties:
+          attributeName:
+            type: string
+            description: Name of attribute to add/update
+          addUpdateAttribute:
+            type: string
+            description: Value to add/update. Accepts strings, numbers, booleans.
+    required:
+      - op
+      - attributeName
+      - addUpdateAttribute
+
+  RemoveAttribute:
+    allOf:
+      - $ref: '#/definitions/AtttributeUpdateOperation'
+      - properties:
+          attributeName:
+            type: string
+            description: The name of attribute to remove
+    required:
+      - op
+      - attributeName
+
+  AddListMember:
+    allOf:
+      - $ref: '#/definitions/AtttributeUpdateOperation'
+      - properties:
+          attributeListName:
+            type: string
+            description: The name of the attribute list
+          newMember:
+            type: string
+            description: The attribute to add to the list
+    required:
+      - op
+      - attributeListName
+      - newMember
+
+  RemoveListMember:
+    allOf:
+      - $ref: '#/definitions/AtttributeUpdateOperation'
+      - properties:
+          attributeListName:
+            type: string
+            description: The name of the attribute list
+          removeMember:
+            type: string
+            description: The attribute to remove from the list
+    required:
+      - op
+      - attributeListName
+      - removeMember
+
+  CreateAttributeEntityReferenceList:
+    allOf:
+      - $ref: '#/definitions/AtttributeUpdateOperation'
+      - properties:
+          attributeListName:
+            type: string
+            description: The name of the empty attribute entity-reference list to create. This is a non-destructive operation.
+    required:
+      - op
+      - attributeListName
+
+  CreateAttributeValueList:
+    allOf:
+      - $ref: '#/definitions/AtttributeUpdateOperation'
+      - properties:
+          attributeName:
+            type: string
+            description: The name of the empty attribute value-list to create. This is a non-destructive operation.
     required:
       - op
       - attributeName
@@ -5655,59 +5779,6 @@ definitions:
       servicePerimeter:
         type: string
         description: The fully qualified name of the GCP service perimeter to put this project into in the form accessPolicies/[POLICY NUMBER]/servicePerimeters/[NAME]. Caller must have the add_project action for this service perimeter in Sam.
-
-  CreateWorkspaceResponse:
-    description: payload returned from create- or clone-workspace
-    required:
-      - attributes
-      - authorizationDomain
-      - bucketName
-      - createdBy
-      - createdDate
-      - isLocked
-      - lastModified
-      - name
-      - namespace
-      - workspaceId
-    type: object
-    properties:
-      attributes:
-        type: object
-        description: Map[String, Attribute]
-      authorizationDomain:
-        type: array
-        items:
-          $ref: '#/definitions/ManagedGroupRef'
-        description: The list of groups to form the Authorization Domain (empty if no Authorization Domain is set)
-      bucketName:
-        type: string
-        description: The name of the bucket associated with the workspace
-      createdBy:
-        type: string
-        description: The user who created the workspace
-      createdDate:
-        type: string
-        format: date-time
-        description: 'The date the workspace was created in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
-      isLocked:
-        type: boolean
-        description: Can the Workspace currently be modified?
-      lastModified:
-        type: string
-        format: date-time
-        description: 'The date the workspace was last modified in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
-      name:
-        type: string
-        description: The name of the workspace
-      namespace:
-        type: string
-        description: The namespace the workspace belongs to
-      workflowCollectionName:
-        type: string
-        description: Workflow collection name
-      workspaceId:
-        type: string
-        description: A UUID associated with the workspace
 
   CuratorStatus:
     description: is the user a curator?
@@ -7517,6 +7588,16 @@ definitions:
         type: boolean
         description: True if the user can launch compute in this workspace, false otherwise
 
+  WorkspaceAccessLevel:
+    description: 'The level of access a user or group has on a Workspace. NoAccess, Read, Write, Owner, ProjectOwner'
+    type: string
+    enum:
+      - PROJECT_OWNER
+      - OWNER
+      - WRITER
+      - READER
+      - NO ACCESS
+
   WorkspaceBucketOptions:
     description: 'Extra information about a GCS bucket attached to a workspace'
     required:
@@ -7572,29 +7653,158 @@ definitions:
         items:
           type: string
 
-  WorkspaceIngest:
+  WorkspaceDetails:
+    description: ''
     required:
-      - namespace
+      - bucketName
+      - createdBy
+      - createdDate
+      - isLocked
+      - lastModified
       - name
-      - attributes
-    type: object
+      - namespace
+      - workspaceId
     properties:
-      namespace:
-        type: string
-        description: New workspace namespace
-      name:
-        type: string
-        description: New workspace name
       attributes:
         type: object
-        additionalProperties:
-          type: string
-        description: Map of attributes
+        description: Map[String, Attribute]
       authorizationDomain:
         type: array
         items:
           $ref: '#/definitions/ManagedGroupRef'
-        description: The list of groups to form the Authorization Domain (empty if no Authorization Domain is set)
+        description: The list of groups in the Authorization Domain (empty if no AD is set)
+      bucketName:
+        type: string
+        description: The name of the bucket associated with the workspace
+      createdBy:
+        type: string
+        description: The user who created the workspace
+      createdDate:
+        type: string
+        format: date-time
+        description: 'The date the workspace was created in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
+      isLocked:
+        type: boolean
+        description: Can the Workspace currently be modified?
+      lastModified:
+        type: string
+        format: date-time
+        description: 'The date the workspace was last modified in yyyy-MM-ddTHH:mm:ss.SSSZZ format'
+      name:
+        type: string
+        description: The name of the workspace
+      namespace:
+        type: string
+        description: The namespace the workspace belongs to
+      workflowCollectionName:
+        type: string
+        description: The name of the workflow collection associated with the workspace
+      workspaceId:
+        type: string
+        description: A UUID associated with the workspace
+
+  WorkspaceListResponse:
+    description: ''
+    properties:
+      accessLevel:
+        $ref: '#/definitions/WorkspaceAccessLevel'
+      public:
+        type: boolean
+      workspace:
+        $ref: '#/definitions/WorkspaceDetails'
+      workspaceSubmissionStats:
+        $ref: '#/definitions/WorkspaceSubmissionStats'
+
+  # clone- and create-workspace both use the WorkspaceRequest Scala class, but create-workspace ignores the
+  # copyFilesWithPrefix property. This is difficult to represent in swagger-ui, so here we use two different models
+  WorkspaceRequest:
+    description: ''
+    required:
+      - namespace
+      - name
+      - attributes
+    properties:
+      namespace:
+        type: string
+        description: The namespace (billing project) the workspace belongs to
+      name:
+        type: string
+        description: The name of the workspace
+      authorizationDomain:
+        type: array
+        items:
+          $ref: '#/definitions/ManagedGroupRef'
+        description: The list of groups in the Authorization Domain (empty if no AD is set)
+      attributes:
+        type: object
+
+  # clone- and create-workspace both use the WorkspaceRequest Scala class, but create-workspace ignores the
+  # copyFilesWithPrefix property. This is difficult to represent in swagger-ui, so here we use two different models
+  WorkspaceRequestClone:
+    description: ''
+    required:
+      - namespace
+      - name
+      - attributes
+    properties:
+      namespace:
+        type: string
+        description: The namespace (billing project) the workspace belongs to
+      name:
+        type: string
+        description: The name of the workspace
+      authorizationDomain:
+        type: array
+        items:
+          $ref: '#/definitions/ManagedGroupRef'
+        description: The list of groups in the Authorization Domain (empty if no AD is set)
+      attributes:
+        type: object
+      copyFilesWithPrefix:
+        type: string
+        description: Used for clone operations only; the prefix for files to copy between source and destination workspace buckets
+
+  WorkspaceResponse:
+    description: ''
+    properties:
+      accessLevel:
+        $ref: '#/definitions/WorkspaceAccessLevel'
+      bucketOptions:
+        $ref: '#/definitions/WorkspaceBucketOptions'
+      canCompute:
+        type: boolean
+      canShare:
+        type: boolean
+      catalog:
+        type: boolean
+      owners:
+        type: array
+        items:
+          type: string
+        description: >
+          Owners of this workspace. This API only lists owners; use the get-workspace-ACL API to get the full list of
+          all users at all permission levels.
+      workspace:
+        $ref: '#/definitions/WorkspaceDetails'
+      workspaceSubmissionStats:
+        $ref: '#/definitions/WorkspaceSubmissionStats'
+
+  WorkspaceSubmissionStats:
+    description: Statistics about submissions in a workspace
+    required:
+      - runningSubmissionsCount
+    properties:
+      lastSuccessDate:
+        type: string
+        format: date-time
+        description: The date of the last successful submission
+      lastFailureDate:
+        type: string
+        format: date-time
+        description: The date of the last failed submission
+      runningSubmissionsCount:
+        type: integer
+        description: Count of all the running submissions
 
   WorkspaceTag:
     required:
