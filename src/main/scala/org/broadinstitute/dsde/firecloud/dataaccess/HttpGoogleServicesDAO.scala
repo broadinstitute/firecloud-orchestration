@@ -423,7 +423,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     */
   def updateSpreadsheet(spreadsheetId: String, newContent: ValueRange): JsObject = {
 
-    val service = new Sheets.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(trialBillingSACreds)).setApplicationName("FireCloud").build()
+    val service = new Sheets.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(trialBillingSACreds.createScoped(spreadsheetScopes))).setApplicationName("FireCloud").build()
 
     // Retrieve existing records
     val getExisting: Sheets#Spreadsheets#Values#Get = service.spreadsheets().values.get(spreadsheetId, "Sheet1")
