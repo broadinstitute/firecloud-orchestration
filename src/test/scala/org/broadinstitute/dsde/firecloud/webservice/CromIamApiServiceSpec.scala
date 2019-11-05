@@ -20,7 +20,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
     cromiamServer.stop()
   }
 
-  "CromIAM passthrough for Job Manager" - {
+  "CromIAM passthrough" - {
 
     lazy val workflowRoot: String = "/workflows/v1"
     lazy val engineRoot: String = "/engine/v1"
@@ -44,6 +44,24 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
     "/api/workflows/{version}/abort" - {
 
       val endpoint = workflowRoot + "/my-bogus-workflow-id-565656/abort"
+      val myMethods = List(HttpMethods.POST)
+
+      "should pass through my methods" in {
+        myMethods foreach { method =>
+          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = true)
+        }
+      }
+
+      "should reject everything else" in {
+        allHttpMethodsExcept(myMethods) foreach { method =>
+          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
+        }
+      }
+    }
+
+    "/api/workflows/{version}/releaseHold" - {
+
+      val endpoint = workflowRoot + "/my-bogus-workflow-id-565656/releaseHold"
       val myMethods = List(HttpMethods.POST)
 
       "should pass through my methods" in {
@@ -182,6 +200,48 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
           status.intValue should equal(200)
           responseAs[String] shouldEqual "Got a query with start and end values"
+        }
+      }
+
+      "should reject everything else" in {
+        allHttpMethodsExcept(myMethods) foreach { method =>
+          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
+        }
+      }
+    }
+
+    "/api/workflows/{version}/callcaching/diff" - {
+
+      val endpoint = workflowRoot + "/callcaching/diff"
+      val myMethods = List(HttpMethods.GET)
+
+      "should pass through my methods" in {
+        myMethods foreach { method =>
+          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = true)
+        }
+      }
+
+      "should forward query parameters on GET" in {
+
+        val request = org.mockserver.model.HttpRequest.request()
+          .withMethod("GET")
+          .withPath(s"/api$endpoint")
+          .withQueryStringParameter("workflowA", "workflowA value")
+          .withQueryStringParameter("workflowB", "workflowB value")
+
+        val response = org.mockserver.model.HttpResponse.response()
+          .withStatusCode(200)
+          .withBody("Got a query with workflowA and workflowB values")
+
+        cromiamServer
+          .when(request)
+          .respond(response)
+
+        Get(Uri(endpoint).withQuery("workflowA=workflowA%20value&workflowB=workflowB%20value")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+          cromiamServer.verify(request)
+
+          status.intValue should equal(200)
+          responseAs[String] shouldEqual "Got a query with workflowA and workflowB values"
         }
       }
 
