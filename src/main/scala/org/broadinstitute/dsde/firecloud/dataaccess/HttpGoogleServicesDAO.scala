@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import java.io.FileInputStream
+
 import akka.actor.ActorRefFactory
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
@@ -14,14 +16,16 @@ import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
 import com.google.api.services.sheets.v4.SheetsScopes
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.ValueRange
+import com.google.api.services.storage.model.Objects
 import com.google.api.services.storage.{Storage, StorageScopes}
+import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.client.pipelining._
@@ -90,6 +94,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   val pemFile = FireCloudConfig.Auth.pemFile
   val pemFileClientId = FireCloudConfig.Auth.pemFileClientId
+  val firecloudAccountJsonFile = FireCloudConfig.Auth.firecloudAccountJsonFile
 
   val rawlsPemFile = FireCloudConfig.Auth.rawlsPemFile
   val rawlsPemFileClientId = FireCloudConfig.Auth.rawlsPemFileClientId
@@ -108,6 +113,23 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     googleCredential.refreshToken()
     googleCredential.getAccessToken
+  }
+
+  override def getAdminIdentityToken: String = {
+    // Beware that this method uses *Credentials classes from com.google.auth.oauth2,
+    // while other methods in this class use com.google.api.client.googleapis.auth.oauth2.
+    // TODO: resolve this and centralize on one implementation.
+    val firecloudSACredentials:GoogleCredentials = ServiceAccountCredentials
+      .fromStream(new FileInputStream(firecloudAccountJsonFile))
+        .createScoped(Seq("openid", "email"))
+
+    firecloudSACredentials match {
+      case saCreds:ServiceAccountCredentials =>
+        val idToken = saCreds.idTokenWithAudience(EntityClient.avroToRawlsURL, List())
+        idToken.getTokenValue
+      case _ =>
+        throw new FireCloudException("Unexpected error: ServiceAccountCredentials.create... did not return a ServiceAccountCredentials instance")
+    }
   }
 
   def getTrialBillingManagerCredential(addlScopes: Seq[String] = billingScope): Credential = {
@@ -163,17 +185,47 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .build()
   }
 
-  def getRawlsServiceAccountAccessToken = {
-    val googleCredential = new GoogleCredential.Builder()
+  def getRawlsServiceAccountCredential: Credential = {
+    new GoogleCredential.Builder()
       .setTransport(httpTransport)
       .setJsonFactory(jsonFactory)
       .setServiceAccountId(rawlsPemFileClientId)
       .setServiceAccountScopes(storageReadOnly)
       .setServiceAccountPrivateKeyFromPemFile(new java.io.File(rawlsPemFile))
       .build()
+  }
+
+  def getRawlsServiceAccountAccessToken = {
+    val googleCredential = getRawlsServiceAccountCredential
 
     googleCredential.refreshToken()
     googleCredential.getAccessToken
+  }
+
+  override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getRawlsServiceAccountCredential).setApplicationName(appName).build()
+    val listRequest = storage.objects().list(bucketName).setPrefix(prefix)
+    Try(executeGoogleRequest[Objects](listRequest)) match {
+      case Failure(ex) =>
+        // handle this case so we can give a good log message. In the future we may handle this
+        // differently, such as returning an empty list.
+        logger.warn(s"could not list objects in bucket/prefix gs://$bucketName/$prefix", ex)
+        throw ex
+      case Success(obs) =>
+        Option(obs.getItems) match {
+          case None => List.empty[String]
+          case Some(items) => items.toList.map { ob =>
+            ob.getName
+          }
+        }
+    }
+  }
+
+  // WARNING: only call on smallish objects!
+  override def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, getRawlsServiceAccountCredential).setApplicationName(appName).build()
+    val is = storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
+    scala.io.Source.fromInputStream(is).mkString
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {

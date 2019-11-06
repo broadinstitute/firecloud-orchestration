@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.apache.commons.io.IOUtils
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
 import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
@@ -26,6 +26,7 @@ import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
 import org.mockserver.model.JsonBody
+import spray.routing.RequestContext
 
 object WorkspaceApiServiceSpec {
 
@@ -97,6 +98,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app.copy(shareLogDAO = localShareLogDao))
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
+  val entityClientConstructor: (RequestContext, ModelSchema) => EntityClient = EntityClient.constructor(app)
 
   val nihProtectedAuthDomain = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
 
@@ -992,7 +994,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
       }
 
-      "should 400 if arrow indicates a bad request" in {
+      // ignored: Arrow requests are now async
+      "should 400 if arrow indicates a bad request" ignore {
         // This may be caused by either orch giving arrow a bad request or the client giving a URL
         // that results in a bad request. We'll surface 400 in both cases in order to avoid hiding
         // the latter case behind a 500.
@@ -1010,7 +1013,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
       }
 
-      "should 401 if avro file access is unauthorized" in {
+      // ignored: Arrow requests are now async
+      "should 401 if avro file access is unauthorized" ignore {
         arrowServer
           .when(request().withMethod("POST").withPath("/avroToRawls"))
           .respond(org.mockserver.model.HttpResponse.response()
@@ -1025,7 +1029,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
       }
 
-      "should 403 if avro file access is forbidden" in {
+      // ignored: Arrow requests are now async
+      "should 403 if avro file access is forbidden" ignore {
         arrowServer
           .when(request().withMethod("POST").withPath("/avroToRawls"))
           .respond(org.mockserver.model.HttpResponse.response()
@@ -1040,7 +1045,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
       }
 
-      "should 404 if avro file is not found" in {
+      // ignored: Arrow requests are now async
+      "should 404 if avro file is not found" ignore {
         arrowServer
           .when(request().withMethod("POST").withPath("/avroToRawls"))
           .respond(org.mockserver.model.HttpResponse.response()
@@ -1055,7 +1061,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
       }
 
-      "should 500 if arrow fails" in {
+      // ignored: Arrow requests are now async
+      "should 500 if arrow fails" ignore {
         arrowServer
           .when(request().withMethod("POST").withPath("/avroToRawls"))
           .respond(org.mockserver.model.HttpResponse.response()
@@ -1076,7 +1083,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           .respond(org.mockserver.model.HttpResponse.response()
           .withStatusCode(200)
           .withBody("Pretend this is Rawls upsert JSON"))
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", Unauthorized, requestBody = Some("Pretend this is Rawls upsert JSON"), body = Some("workspace access unauthorized"))
+
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", Unauthorized, requestBody = Some("[]"), body = Some("workspace access unauthorized"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1092,7 +1100,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           .respond(org.mockserver.model.HttpResponse.response()
           .withStatusCode(200)
           .withBody("Pretend this is Rawls upsert JSON"))
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", Forbidden, requestBody = Some("Pretend this is Rawls upsert JSON"), body = Some("workspace access forbidden"))
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", Forbidden, requestBody = Some("[]"), body = Some("workspace access forbidden"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1108,7 +1116,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           .respond(org.mockserver.model.HttpResponse.response()
           .withStatusCode(200)
           .withBody("Pretend this is Rawls upsert JSON"))
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NotFound, requestBody = Some("Pretend this is Rawls upsert JSON"), body = Some("workspace not found"))
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NotFound, requestBody = Some("[]"), body = Some("workspace not found"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1118,7 +1126,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
       }
 
-      "should 500 if rawls fails" in {
+      // ignored: the real rawls request to upsert entities is now async
+      "should 500 if rawls fails" ignore {
         arrowServer
           .when(request().withMethod("POST").withPath("/avroToRawls"))
           .respond(org.mockserver.model.HttpResponse.response()
@@ -1134,7 +1143,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
       }
 
-      "should 204 if everything works" in {
+      "should 202 if everything validated and import request was accepted" in {
         arrowServer
           .when(request().withMethod("POST").withPath("/avroToRawls").withHeaders(
             Header.header("Accept-Encoding", "gzip"),
@@ -1144,14 +1153,20 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           .respond(org.mockserver.model.HttpResponse.response()
             .withStatusCode(200)
             .withBody("Pretend this is Rawls upsert JSON"))
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent, requestBody = Some("Pretend this is Rawls upsert JSON"))
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent, requestBody = Some("[]"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(NoContent)
+            status should equal(Accepted)
           }
       }
+
+      // ignored: real semantic validation not implemented yet
+      "should 400 if presigned URL is invalid" ignore {
+        fail("test not implemented")
+      }
+
     }
 
     "Workspace updateAttributes tests" - {

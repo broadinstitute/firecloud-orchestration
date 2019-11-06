@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.io.InputStream
 
 import akka.actor.ActorRefFactory
+import com.google.api.client.auth.oauth2.Credential
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
@@ -23,6 +24,7 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   implicit val errorReportSource = ErrorReportSource(GoogleServicesDAO.serviceName)
 
   def getAdminUserAccessToken: String
+  def getAdminIdentityToken: String
   def getTrialBillingManagerAccessToken: String
   def getTrialBillingManagerEmail: String
   def getTrialSpreadsheetAccessToken: String
@@ -34,6 +36,10 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
                  (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[PerRequestMessage]
   def getObjectMetadata(bucketName: String, objectKey: String, userAuthToken: String)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata]
+
+  def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String]
+  def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String
+
   def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList]
   def updateSpreadsheet(withAccessToken: WithAccessToken, spreadsheetId: String, content: ValueRange): JsObject
 

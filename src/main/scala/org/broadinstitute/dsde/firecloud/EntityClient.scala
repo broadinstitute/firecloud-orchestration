@@ -10,7 +10,7 @@ import akka.pattern.pipe
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
-import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
+import org.broadinstitute.dsde.firecloud.dataaccess.GoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -32,6 +32,7 @@ import spray.json._
 import spray.routing.RequestContext
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable.Set
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.io.Source
@@ -41,7 +42,8 @@ import scala.util.{Failure, Success, Try}
 object EntityClient {
 
   lazy val arrowRoot: String = FireCloudConfig.Arrow.baseUrl
-  lazy val avroToRawlsURL: String = s"$arrowRoot/avroToRawls"
+  lazy val arrowAppName: String = FireCloudConfig.Arrow.appName
+  lazy val avroToRawlsURL: String = s"$arrowRoot/$arrowAppName"
 
   case class ImportEntitiesFromTSV(workspaceNamespace: String,
                                    workspaceName: String,
@@ -49,9 +51,17 @@ object EntityClient {
 
   case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
 
-  case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)
+  case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo)
+  case class PFBImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo)
 
-  def props(requestContext: RequestContext, modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = Props(new EntityClient(requestContext, modelSchema))
+  def props(entityClientConstructor: (RequestContext, ModelSchema) => EntityClient, requestContext: RequestContext,
+            modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = {
+    Props(entityClientConstructor(requestContext, modelSchema))
+  }
+
+  def constructor(app: Application)(requestContext: RequestContext,
+                                    modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
+    new EntityClient(requestContext, modelSchema, app.googleServicesDAO)
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -119,7 +129,7 @@ object EntityClient {
 
 }
 
-class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(implicit protected val executionContext: ExecutionContext)
+class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDAO)(implicit protected val executionContext: ExecutionContext)
   extends Actor with FireCloudRequestBuilding with TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -131,9 +141,10 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
       val pipeline = authHeaders(requestContext) ~> sendReceive
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
-    case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest) =>
-      val pipeline = sendReceive
-      importPFB(pipeline, workspaceNamespace, workspaceName, pfbRequest) pipeTo sender
+    case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo) =>
+      importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) pipeTo sender
+    case PFBImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo) =>
+      pfbImportStatus(workspaceNamespace, workspaceName, jobId, userInfo) pipeTo sender
   }
 
 
@@ -355,51 +366,132 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema)(im
     }
   }
 
-  def importPFB(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-                workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
+  def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
 
-    def callArrow = {
-      val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> pipeline ~> decode(Gzip)
-      gzipPipeline { Post(avroToRawlsURL, pfbRequest) }
+    // initial validation of the presigned url provided as an argument
+    def validatePfbUrl(pfbRequest: PfbImportRequest)(op: URL => Future[PerRequestMessage]) = {
+      val pfbUrl = try {
+        new URL(pfbRequest.url)
+      } catch {
+        case e: Exception => throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, s"Invalid URL: ${pfbRequest.url}", e))
+      }
+      val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
+
+      if (!acceptableProtocols.contains(pfbUrl.getProtocol)) {
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "Invalid URL protocol: must be https only"))
+      }
+
+      // TODO: add real (semantic) validation for origins, to ensure caller isn't supplying malice
+      op(pfbUrl)
     }
 
-    def callRawls(entity: HttpEntity) = {
-      val authPipeline = authHeaders(requestContext) ~> pipeline
-      authPipeline {
-        Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), entity)
+    // probe Rawls with an empty upsert to this workspace. This checks that the workspace exists and that the user has
+    // permissions to perform an upsert.
+    def validateUpsertPermissions()(op: Boolean => PerRequestMessage) = {
+      val pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = authHeaders(requestContext) ~> sendReceive
+
+      val probeUpsert = pipeline {
+        Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), List.empty[String])
+      }
+
+      probeUpsert.map {
+        case resp if resp.status == NoContent => op(true)
+        case resp => RequestComplete(resp) // bubble up errors
       }
     }
 
-    val pfbUrl = try {
-      new URL(pfbRequest.url)
-    } catch {
-      case e: Exception => throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, s"Invalid URL: ${pfbRequest.url}", e))
-    }
-    val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
+    // validate presigned URL
+    validatePfbUrl(pfbRequest) { pfbUrl =>
+      // empty-array batchUpsert to Rawls to verify workspace existence and permissions
+      validateUpsertPermissions() { _ =>
+        // generate job UUID
+        val jobId = java.util.UUID.randomUUID()
 
-    if (!acceptableProtocols.contains(pfbUrl.getProtocol)) {
-      Future.successful(RequestCompleteWithErrorReport(BadRequest, "Invalid URL protocol: must be https only"))
-    } else {
+        // the payload to Arrow needs to include the PFB url, job id, workspace info, and user info
+        val user = WorkbenchUserInfo(userInfo.id, userInfo.userEmail)
+        val arrowPayload = pfbRequest.copy(jobId = Option(jobId.toString),
+          workspace = Option(WorkspaceName(workspaceNamespace, workspaceName)),
+          user = Option(user))
 
-      val futurePerRequestMessage = for {
-        arrowResponse <- callArrow
-        rawlsJsonEntity <- arrowResponse.status match {
-          case OK => Future.successful(arrowResponse.entity)
-          case BadRequest | Unauthorized | Forbidden | NotFound => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(arrowResponse.status, arrowResponse.entity.asString)))
-          case _ => Future.failed(new FireCloudException(arrowResponse.status.value + ": " + arrowResponse.entity.asString))
-        }
-        rawlsResponse <- callRawls(rawlsJsonEntity)
-        result <- rawlsResponse.status match {
-          case NoContent => Future.successful(RequestComplete(NoContent))
-          case Unauthorized | Forbidden | NotFound => Future.failed(new FireCloudExceptionWithErrorReport(FCErrorReport(rawlsResponse)))
-          case _ => Future.failed(new FireCloudException(rawlsResponse.status.value + ": " + rawlsResponse.entity.asString))
-        }
-      } yield (result)
+        // fire-and-forget call Arrow with UUID, workspace info, and presigned URL
+        val idToken = googleServicesDAO.getAdminIdentityToken
+        val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> addCredentials(OAuth2BearerToken(idToken)) ~> sendReceive ~> decode(Gzip)
+        gzipPipeline { Post(avroToRawlsURL, arrowPayload) }
 
-      futurePerRequestMessage recover {
-        case e: FireCloudExceptionWithErrorReport => RequestCompleteWithErrorReport(optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), e.errorReport.message, e)
-        case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, "Import failed. Details: " + e.getMessage, e)
+        // the response payload to the end user omits the userid/email
+        val responsePayload = arrowPayload.copy(user = None)
+
+        // return Accepted with UUID
+        RequestComplete(Accepted, responsePayload)
       }
     }
   }
+
+  def pfbImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+
+    val bucketName = FireCloudConfig.Arrow.bucketName
+
+    def readStatusFile(filename: String, default: String): String = {
+      Try(googleServicesDAO.getObjectContentsAsRawlsSA(bucketName, s"$jobId/$filename")) match {
+        case Success(msg) =>
+          if (msg.trim.nonEmpty) msg else default
+        case Failure(ex) =>
+          logger.warn(s"error reading GCS object gs://$bucketName/$jobId/$filename", ex)
+          default
+      }
+    }
+
+    // list all files in the jobId's subdirectory and strip jobId prefix so we have just the filenames
+    Try(googleServicesDAO.listObjectsAsRawlsSA(bucketName, jobId + "/").map(_.replace(jobId + "/",""))) match {
+
+      case Failure(ex) =>
+        logger.warn(s"Error listing GCS objects for prefix gs://$bucketName/$jobId", ex)
+        // do not expose the bucket name in the error report we send to users
+        Future.successful(RequestCompleteWithErrorReport(InternalServerError, "Error listing bucket"))
+
+      case Success(files) =>
+        // what files do we have?
+        val (statusCode, statusString, message) = files.toSet match {
+
+          // no files yet, or subdirectory doesn't exist
+          case nothing if nothing.isEmpty =>
+            (NotFound, "NOT FOUND", "jobId not found or job not yet started")
+
+          // somebody wrote an error.json: it's an error.
+          case error if error.contains("error.json") =>
+            // try to read the error contents
+            val errorMessage = readStatusFile("error.json", "Error!")
+            (OK, "ERROR", errorMessage)
+
+          // we finished with a success.json: it's a success. Yay!
+          case success if success.contains("success.json") =>
+            // try to read the success contents
+            val successMessage = readStatusFile("success.json", "Success! Import completed.")
+            (OK, "SUCCESS", successMessage)
+
+          // we have a start marker, but do not yet have a success or error marker. It's in progress.
+          case started if started.contains("running.json") =>
+            val runningMessage = readStatusFile("running.json", "import in progress")
+            (OK, "RUNNING", runningMessage)
+
+          // we've got either/both of the upsert and the metadata, but no other markers - it's in progress.
+          case alsostarted if alsostarted == Set("upsert.json") || alsostarted == Set("metadata.json") || alsostarted == Set("upsert.json", "metadata.json") =>
+            (OK, "RUNNING", "import in progress")
+
+          // the files don't make sense; give up.
+          case _ =>
+            logger.warn(s"could not determine importPFB status for $jobId: $files")
+            (InternalServerError, "UNKNOWN", "could not determine status")
+        }
+
+        val responsePayload = JsObject(
+          "status" -> JsString(statusString),
+          "message" -> JsString(message),
+          "jobId" -> JsString(jobId)
+        )
+
+        Future.successful(RequestComplete(statusCode, responsePayload))
+    }
+  }
+
 }

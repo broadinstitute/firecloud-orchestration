@@ -19,6 +19,7 @@ object FireCloudConfig {
     val googleSecretJson = auth.getString("googleSecretsJson")
     val pemFile = auth.getString("pemFile")
     val pemFileClientId = auth.getString("pemFileClientId")
+    val firecloudAccountJsonFile = auth.getString("jsonFile")
     val rawlsPemFile = auth.getString("rawlsPemFile")
     val rawlsPemFileClientId = auth.getString("rawlsPemFileClientId")
     val trialBillingPemFile = auth.getString("trialBillingPemFile")
@@ -222,6 +223,8 @@ object FireCloudConfig {
 
   object Arrow {
     private val arrow = config.getConfig("arrow")
+    val appName: String = if (arrow.hasPath("appName")) arrow.getString("appName") else "avro-import"
     val baseUrl: String = arrow.getString("baseUrl")
+    val bucketName: String = arrow.getString("bucketName")
   }
 }
