@@ -137,7 +137,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def getTrialBillingManagerEmail = trialBillingSACreds.getClientEmail
 
   def getCloudBillingManager(credential: ServiceAccountCredentials): Cloudbilling = {
-    new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential)).setApplicationName(appName).build()
+    new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(authScopes ++ billingScope))).setApplicationName(appName).build()
   }
 
   private lazy val pubSub = {
