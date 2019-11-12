@@ -41,7 +41,7 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String
 
   def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList]
-  def updateSpreadsheet(withAccessToken: WithAccessToken, spreadsheetId: String, content: ValueRange): JsObject
+  def updateSpreadsheet(spreadsheetId: String, content: ValueRange): JsObject
 
   def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Boolean
 

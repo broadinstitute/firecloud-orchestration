@@ -27,7 +27,7 @@ object Dependencies {
       exclude("com.typesafe.scala-logging", "scala-logging_2.11") exclude("com.typesafe.akka", "akka-stream_2.11"),
     "org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP",
 
-  "io.spray"                      %% "spray-can"                 % sprayV,
+    "io.spray"                      %% "spray-can"                 % sprayV,
     "io.spray"                      %% "spray-json"                % "1.3.3",
     "io.spray"                      %% "spray-client"              % sprayV,
     "io.spray"                      %% "spray-routing-shapeless23" % sprayV,
@@ -40,13 +40,13 @@ object Dependencies {
 
     "org.elasticsearch.client"       % "transport"           % "5.4.3",
 
-    "com.google.guava"               % "guava"               % "28.0-jre",
+    "com.google.guava"               % "guava"               % "28.1-android",
 
-    excludeGuavaJDK5("com.google.apis"                % "google-api-services-storage" % "v1-rev20190910-1.30.3"),
-    excludeGuavaJDK5("com.google.apis"                % "google-api-services-sheets"  % "v4-rev494-1.23.0"),
-    excludeGuavaJDK5("com.google.apis"                % "google-api-services-cloudbilling" % "v1-rev14-1.23.0"),
-    excludeGuavaJDK5("com.google.apis"                % "google-api-services-pubsub"       % "v1-rev357-1.22.0"),
-    excludeGuavaJDK5("com.google.auth"                % "google-auth-library-oauth2-http" % "0.18.0"),
+    excludeGuavaJDK5("com.google.apis"     % "google-api-services-storage"      % "v1-rev20190910-1.30.3"),
+    excludeGuavaJDK5("com.google.apis"     % "google-api-services-sheets"       % "v4-rev20191001-1.30.3"),
+    excludeGuavaJDK5("com.google.apis"     % "google-api-services-cloudbilling" % "v1-rev20191005-1.30.3"),
+    excludeGuavaJDK5("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
+    excludeGuavaJDK5("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.18.0"),
 
     "org.webjars"                    % "swagger-ui"          % "2.2.5",
     "com.pauldijou"                 %% "jwt-core"            % "3.1.0",
