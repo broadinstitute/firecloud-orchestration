@@ -898,11 +898,6 @@ paths:
           description: Workflow ID Not Found
         '500':
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
 
   '/api/workflows/{version}/callcaching/diff':
     get:
@@ -949,17 +944,14 @@ paths:
       responses:
         '200':
           description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkflowCacheDiffResponse'
         '400':
           description: Malformed query parameters
         '404':
           description: No matching cache entry
         '500':
           description: Internal Error
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
 
   /api/workflows/{version}/query:
     get:
@@ -8062,6 +8054,39 @@ definitions:
             type: array
             items:
               type: string
+  WorkflowCacheDiffResponse:
+    type: object
+    properties:
+      callA:
+        $ref: '#/definitions/WorkflowCallDiff'
+      callB:
+        $ref: '#/definitions/WorkflowCallDiff'
+      hashDifferential:
+        type: array
+        items:
+          $ref: '#/definitions/WorkflowCallDiffCallHashDiff'
+  WorkflowCallDiff:
+    type: object
+    properties:
+      allowResultReuse:
+        type: boolean
+      callFqn:
+        type: string
+      executionStatus:
+        type: string
+      jobIndex:
+        type: number
+      workflowId:
+        $ref: '#/parameters/workflowIdParam'
+  WorkflowCallDiffCallHashDiff:
+    type: object
+    properties:
+      hashKey:
+        type: string
+      callA:
+        type: string
+      callB:
+        type: string
   WorkflowStatusResponse:
     required:
       - id
