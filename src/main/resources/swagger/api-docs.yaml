@@ -580,7 +580,7 @@ paths:
         '200':
           description: Successful Request
           schema:
-            $ref: '#/definitions/WorkflowAbortResponse'
+            $ref: '#/definitions/WorkflowStatusResponse'
         '400':
           description: Malformed Workflow ID
         '403':
@@ -863,6 +863,95 @@ paths:
             - openid
             - email
             - profile
+
+  /api/workflows/{version}/{id}/releaseHold:
+    post:
+      x-passthrough: true
+      x-passthrough-target: cromiam
+      summary: Request Cromwell to release the hold on a workflow. It will switch the status of a workflow
+        from ‘On Hold’ to ‘Submitted’ so it can be picked for running. For instance this might be necessary
+        in cases where you have submitted a workflow with workflowOnHold = true.
+      parameters:
+        - name: version
+          description: API Version
+          required: true
+          type: string
+          in: path
+          default: v1
+        - name: id
+          description: Workflow ID
+          required: true
+          type: string
+          in: path
+      tags:
+        - CromIAM Workflows (for Admin)
+      responses:
+        '200':
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkflowStatusResponse'
+        '400':
+          description: Malformed Workflow ID
+        '403':
+          description: Malformed Request
+        '404':
+          description: Workflow ID Not Found
+        '500':
+          description: Internal Error
+
+  '/api/workflows/{version}/callcaching/diff':
+    get:
+      summary: Return the hash differential between two calls
+      parameters:
+        - name: version
+          description: API Version
+          required: true
+          type: string
+          in: path
+          default: v1
+        - name: workflowA
+          description: Workflow Id of the first workflow
+          required: true
+          type: string
+          in: query
+        - name: callA
+          description: Call FQN (including workflow name) of the first call
+          required: true
+          type: string
+          in: query
+        - name: indexA
+          description: Index of the first call
+          required: false
+          type: number
+          in: query
+        - name: workflowB
+          description: Workflow Id of the second workflow
+          required: true
+          type: string
+          in: query
+        - name: callB
+          description: Call FQN (including workflow name) of the second call
+          required: true
+          type: string
+          in: query
+        - name: indexB
+          description: Index of the second call
+          required: false
+          type: number
+          in: query
+      tags:
+        - CromIAM Workflows (for Admin)
+      responses:
+        '200':
+          description: Successful Request
+          schema:
+            $ref: '#/definitions/WorkflowCacheDiffResponse'
+        '400':
+          description: Malformed query parameters
+        '404':
+          description: No matching cache entry
+        '500':
+          description: Internal Error
 
   /api/workflows/{version}/query:
     get:
@@ -7965,7 +8054,40 @@ definitions:
             type: array
             items:
               type: string
-  WorkflowAbortResponse:
+  WorkflowCacheDiffResponse:
+    type: object
+    properties:
+      callA:
+        $ref: '#/definitions/WorkflowCallDiff'
+      callB:
+        $ref: '#/definitions/WorkflowCallDiff'
+      hashDifferential:
+        type: array
+        items:
+          $ref: '#/definitions/WorkflowCallDiffCallHashDiff'
+  WorkflowCallDiff:
+    type: object
+    properties:
+      allowResultReuse:
+        type: boolean
+      callFqn:
+        type: string
+      executionStatus:
+        type: string
+      jobIndex:
+        type: number
+      workflowId:
+        $ref: '#/parameters/workflowIdParam'
+  WorkflowCallDiffCallHashDiff:
+    type: object
+    properties:
+      hashKey:
+        type: string
+      callA:
+        type: string
+      callB:
+        type: string
+  WorkflowStatusResponse:
     required:
       - id
       - status

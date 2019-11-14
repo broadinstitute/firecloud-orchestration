@@ -32,6 +32,15 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
           }
         }
       } ~
+      path("callcaching" / "diff") {
+        pathEnd {
+          get {
+            extract(_.request.uri.query) { query =>
+              passthrough(Uri(s"$workflowRoot/callcaching/diff").withQuery(query), HttpMethods.GET)
+            }
+          }
+        }
+      } ~
       pathPrefix( Segment ) { workflowId: String =>
         path("abort") {
           pathEnd {
@@ -59,6 +68,13 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
         path("backend" / "metadata" / Segment.repeat(Slash)) { operationId =>
           get {
             passthrough(s"$rawlsWorkflowRoot/$workflowId/genomics/${operationId.mkString("/")}", HttpMethods.GET)
+          }
+        } ~
+        path("releaseHold") {
+          pathEnd {
+            post {
+              passthrough(s"$workflowRoot/$workflowId/releaseHold", HttpMethods.POST)
+            }
           }
         }
       }
