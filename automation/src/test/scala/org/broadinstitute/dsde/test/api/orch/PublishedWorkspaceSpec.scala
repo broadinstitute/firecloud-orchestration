@@ -59,23 +59,25 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
 
           withCleanBillingProject(curatorUser) { billingProject =>
             withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
+              withCleanUp {
 
-              val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
-              Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
-              Orchestration.library.publishWorkspace(billingProject, workspaceName)
+                val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
+                Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
+                Orchestration.library.publishWorkspace(billingProject, workspaceName)
 
-              val clonedWorkspaceName = uuidWithPrefix("cloneWorkspace")
+                val clonedWorkspaceName = uuidWithPrefix("cloneWorkspace")
 
-              register cleanUp Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
-              Orchestration.workspaces.clone(billingProject, workspaceName, billingProject, clonedWorkspaceName)
-              // check cloned workspace does not have published status in workspace detail: "library:published": false
-              val response = Rawls.workspaces.getWorkspaceDetails(billingProject, clonedWorkspaceName)
-              response should include(""""library:published":false""")
+                register cleanUp Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
+                Orchestration.workspaces.clone(billingProject, workspaceName, billingProject, clonedWorkspaceName)
+                // check cloned workspace does not have published status in workspace detail: "library:published": false
+                val response = Rawls.workspaces.getWorkspaceDetails(billingProject, clonedWorkspaceName)
+                response should include(""""library:published":false""")
 
-              // check cloned workspace is not visible in library
-              withClue("a cloned workspace should not be visible in library.") {
-                eventually {
-                  isVisibleInLibrary(clonedWorkspaceName) shouldBe false
+                // check cloned workspace is not visible in library
+                withClue("a cloned workspace should not be visible in library.") {
+                  eventually {
+                    isVisibleInLibrary(clonedWorkspaceName) shouldBe false
+                  }
                 }
               }
             }
@@ -89,22 +91,24 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
 
           withCleanBillingProject(curatorUser) { billingProject =>
             withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
+              withCleanUp {
 
-              val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
-              Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
-              Orchestration.library.setDiscoverableGroups(billingProject, workspaceName, List("all_broad_users"))
-              Orchestration.library.publishWorkspace(billingProject, workspaceName)
+                val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
+                Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
+                Orchestration.library.setDiscoverableGroups(billingProject, workspaceName, List("all_broad_users"))
+                Orchestration.library.publishWorkspace(billingProject, workspaceName)
 
-              val clonedWorkspaceName = workspaceName + "_clone"
-              register cleanUp Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
-              Orchestration.workspaces.clone(billingProject, workspaceName, billingProject, clonedWorkspaceName)
+                val clonedWorkspaceName = workspaceName + "_clone"
+                register cleanUp Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
+                Orchestration.workspaces.clone(billingProject, workspaceName, billingProject, clonedWorkspaceName)
 
-              //Verify default group "All users"
-              //In swagger you make sure that getDiscoverableGroup endpoint shows []
-              withClue(s"Get api/library/${billingProject}/${clonedWorkspaceName}/discoverableGroups endpoint shows []") {
-                eventually {
-                  val accessGroup: Seq[String] = Orchestration.library.getDiscoverableGroups(billingProject, clonedWorkspaceName)
-                  accessGroup.size shouldBe 0
+                //Verify default group "All users"
+                //In swagger you make sure that getDiscoverableGroup endpoint shows []
+                withClue(s"Get api/library/${billingProject}/${clonedWorkspaceName}/discoverableGroups endpoint shows []") {
+                  eventually {
+                    val accessGroup: Seq[String] = Orchestration.library.getDiscoverableGroups(billingProject, clonedWorkspaceName)
+                    accessGroup.size shouldBe 0
+                  }
                 }
               }
             }
