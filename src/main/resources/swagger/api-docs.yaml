@@ -655,8 +655,7 @@ paths:
             Example: {"key-1":"value-1","key-2":"value-2"}
           required: true
           in: body
-          schema:
-            type: object
+          schema: {}
       tags:
         - CromIAM Workflows (for Job Manager)
       responses:
@@ -2327,6 +2326,8 @@ paths:
           required: true
           schema:
             type: object
+            additionalProperties:
+              type: string
       responses:
         204:
           description: Success (No Content)
@@ -4513,6 +4514,7 @@ paths:
           required: true
           schema:
             type: object
+            additionalProperties: {}
           in: body
       responses:
         200:
@@ -5244,6 +5246,16 @@ parameters:
     required: true
     type: string
     in: path
+  preferencesParam:
+    name: preferences
+    in: body
+    description: The preferences to set as a Map[String, String]
+    required: true
+    schema:
+      type: object
+      additionalProperties:
+        type: string
+
 
 ##########################################################################################
 ## DEFINITIONS
@@ -5478,6 +5490,7 @@ definitions:
       inputs:
         type: object
         description: map from input names onto resolved values
+        additionalProperties: {}
       executionStatus:
         type: string
         description: status of call
@@ -5491,9 +5504,13 @@ definitions:
       backendLogs:
         type: object
         description: map of log files from backend
+        additionalProperties:
+          type: string
       outputs:
         type: object
         description: map from output names to local files
+        additionalProperties:
+          type: string
       start:
         type: string
         format: date-time
@@ -5554,18 +5571,28 @@ definitions:
       workspaceName:
         type: object
         description: Map[String, String] with corresponding workspace-related information - name and namespace
+        additionalProperties:
+          type: string
       methodRepoMethod:
         type: object
         description: Map[String, String] with corresponding method-related information
+        additionalProperties:
+          type: string
       outputs:
         type: object
         description: Map[String, String] with outputs information
+        additionalProperties:
+          type: string
       inputs:
         type: object
         description: Map[String, String] with inputs information
+        additionalProperties:
+          type: string
       prerequisites:
         type: object
         description: Map[String, String] of prerequisites (keys unused, will be removed in the future)
+        additionalProperties:
+          type: string
     required:
       - namespace
       - name
@@ -5621,6 +5648,7 @@ definitions:
         description: List of Owners.
       method:
         type: object
+        additionalProperties: {}
       namespace:
         type: string
         description: Namespace which contains AgoraEntity.
@@ -5741,6 +5769,7 @@ definitions:
       useRestriction:
         type: object
         description: The UseRestriction of this consent. Used to match against another entities.
+        additionalProperties: {}
       dulName:
         type: string
         description: Name that identifies the Data Use Letter file.
@@ -5918,6 +5947,7 @@ definitions:
       attributes:
         type: object
         description: Map[String,Attribute]
+        additionalProperties: {}
 
   EntityAccessControl:
     type: object
@@ -6188,6 +6218,8 @@ definitions:
       failureMessages:
         type: object
         description: Map[String,String] of id -> failure message
+        additionalProperties:
+          type: string
 
   LibraryMetadataInput:
     type: object
@@ -6315,6 +6347,8 @@ definitions:
       workspaceName:
         type: object
         description: Map[String, String] with corresponding workspace-related information - name and namespace
+        additionalProperties:
+          type: string
     required:
       - namespace
       - name
@@ -6341,12 +6375,18 @@ definitions:
       prerequisites:
         type: object
         description: Map[String, String]
+        additionalProperties:
+          type: string
       inputs:
         type: object
         description: Map[String, String]
+        additionalProperties:
+          type: string
       outputs:
         type: object
         description: Map[String, String]
+        additionalProperties:
+          type: string
       methodRepoMethod:
         $ref: '#/definitions/MethodRepoMethod'
         description: The properties of the method from the method store that this config is associated with
@@ -6599,15 +6639,23 @@ definitions:
       inputs:
         type: object
         description: Input map - Map[string, string]
+        additionalProperties:
+          type: string
       outputs:
         type: object
         description: Output map - Map[string, string]
+        additionalProperties:
+          type: string
       prerequisites:
         type: object
         description: Prerequisites map - Map[string, string]
+        additionalProperties:
+          type: string
       methodRepoMethod:
         type: object
         description: Method ID - Map
+        additionalProperties:
+          type: string
       methodConfigVersion:
         type: integer
         format: int32
@@ -6940,11 +6988,18 @@ definitions:
       filters:
         type: object
         description: Map[String, Array[String]] Each entry contains the column name (i.e. "library:indication") and a list of terms that will be or'ed in the query (["cancer", "sleep apnea"])
+        additionalProperties:
+          type: array
+          items:
+            type: string
       researchPurpose:
         $ref: '#/definitions/ResearchPurpose'
       fieldAggregations:
         type: object
         description: Map[String, Int] The list of fields for which you would like to retrieve aggregations and the number of aggregations to return. Default is 5. Specify 0 to get all
+        additionalProperties:
+          type: integer
+          format: int32
       from:
         type: integer
         format: int32
@@ -7183,6 +7238,7 @@ definitions:
       systems:
         type: object
         description: Map[String, SubsystemStatus]
+        additionalProperties: {}
         example:
           Agora:
             ok: true
@@ -7439,6 +7495,7 @@ definitions:
           type: string
       invalidInputs:
         type: object
+        additionalProperties: {}
       missingInputs:
         type: array
         items:
@@ -7453,6 +7510,7 @@ definitions:
           type: string
       invalidOutputs:
         type: object
+        additionalProperties: {}
       methodConfiguration:
         $ref: '#/definitions/MethodConfiguration'
 
@@ -7517,6 +7575,9 @@ definitions:
       workflowCountsByStatus:
         type: object
         description: Map[String,Int]
+        additionalProperties:
+          type: integer
+          format: int32
 
   WorkflowStatus:
     type: string
@@ -7571,12 +7632,18 @@ definitions:
       attributes:
         type: object
         description: Map[String, Attribute]
+        additionalProperties:
+          type: string
       accessLevels:
         type: object
         description: Map[String, RawlsGroupRef]
+        additionalProperties:
+          $ref: '#/definitions/RawlsGroupRef'
       authDomainACLs:
          type: object
          description: Map[String, RawlsGroupRef]
+         additionalProperties:
+           $ref: '#/definitions/RawlsGroupRef'
       isLocked:
         type: boolean
         description: Can the Workspace currently be modified?
@@ -7590,6 +7657,8 @@ definitions:
       acl:
         type: object
         description: Map[String, WorkspaceAccessEntry]
+        additionalProperties:
+          $ref: '#/definitions/WorkspaceAccessEntry'
 
   WorkspaceACLUpdate:
     description: ''
@@ -7906,7 +7975,7 @@ definitions:
         description: tag string
         example: "a tag"
       count:
-        type: number
+        type: integer
         format: int32
         description: number of usages of the tag across Firecloud
         example: 5
@@ -7941,9 +8010,13 @@ definitions:
       outputs:
         type: object
         description: Map[String, AttributeString] from method's WDL outputs to fields in the workspace data model
+        additionalProperties:
+          type: string
       inputs:
         type: object
         description: Map[String, AttributeString] from method's WDL inputs to fields in the workspace data model
+        additionalProperties:
+          type: string
       rootEntityType:
         type: string
         default: pair
@@ -7951,6 +8024,8 @@ definitions:
         type: object
         description: Map[String, AttributeString]
         default: {}
+        additionalProperties:
+          type: string
       methodConfigVersion:
         type: integer
         format: int32
@@ -8126,9 +8201,11 @@ definitions:
       inputs:
         type: object
         description: Map of input keys to input values
+        additionalProperties: {}
       outputs:
         type: object
         description: Map of output keys to output values
+        additionalProperties: {}
       calls:
         $ref: '#/definitions/CallMetadata'
       failures:
