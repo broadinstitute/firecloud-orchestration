@@ -101,6 +101,22 @@ object MockTSVStrings {
     List("sset_01", "sample_01").tabbed,
     List("sset_01", "sample_02").tabbed).newlineSeparated
 
+  val membershipValidWithMultipleNewlines = List(
+    List("membership:sample_set_id", "sample").tabbed,
+    List("sset_01", "sample_01").tabbed,
+    List("sset_01", "sample_02").tabbed,
+    List().tabbed,
+    List().tabbed,
+    List().tabbed).newlineSeparated
+
+  val membershipValidWithMultipleDelimiterOnlylines = List(
+    List("membership:sample_set_id", "sample").tabbed,
+    List("sset_01", "sample_01").tabbed,
+    List("sset_01", "sample_02").tabbed,
+    List("", "").tabbed,
+    List("", "").tabbed,
+    List("", "").tabbed).newlineSeparated
+
   val defaultMembershipValid = List(
     List("sample_set_id", "sample").tabbed,
     List("sset_01", "sample_01").tabbed,
@@ -139,6 +155,22 @@ object MockTSVStrings {
     List("entity:sample_id", "participant").tabbed,
     List("sample_01", "part_01").tabbed,
     List("sample_02", "part_02").tabbed).newlineSeparated
+
+  val entityUpdateWithMultipleNewlines = List(
+    List("entity:sample_id", "participant").tabbed,
+    List("sample_01", "part_01").tabbed,
+    List("sample_02", "part_02").tabbed,
+    List().tabbed,
+    List().tabbed,
+    List().tabbed).newlineSeparated
+
+  val entityUpdateWithMultipleDelimiterOnlylines = List(
+    List("entity:sample_id", "participant").tabbed,
+    List("sample_01", "part_01").tabbed,
+    List("sample_02", "part_02").tabbed,
+    List("","").tabbed,
+    List("","").tabbed,
+    List("","").tabbed).newlineSeparated
 
   val defaultUpdateWithRequiredAttrs = List(
     List("sample_id", "participant").tabbed,
@@ -289,6 +321,8 @@ object MockTSVFormData {
   val membershipMissingMembersHeader = wrapInMultipart("entities", MockTSVStrings.membershipMissingMembersHeader)
   val membershipExtraAttributes = wrapInMultipart("entities", MockTSVStrings.membershipExtraAttributes)
   val membershipValid = wrapInMultipart("entities", MockTSVStrings.membershipValid)
+  val membershipValidWithMultipleNewlines = wrapInMultipart("entities", MockTSVStrings.membershipValidWithMultipleNewlines)
+  val membershipValidWithMultipleDelimiterOnlylines = wrapInMultipart("entities", MockTSVStrings.membershipValidWithMultipleDelimiterOnlylines)
 
   val entityUnknownFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.entityNonModelFirstColumnHeader)
   val entityHasDupes = wrapInMultipart("entities", MockTSVStrings.entityHasDupes)
@@ -296,6 +330,8 @@ object MockTSVFormData {
   val entityHasNoRows = wrapInMultipart("entities", MockTSVStrings.entityHasNoRows)
   val entityUpdateMissingRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateMissingRequiredAttrs)
   val entityUpdateWithRequiredAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateWithRequiredAttrs)
+  val entityUpdateWithMultipleNewlines = wrapInMultipart("entities", MockTSVStrings.entityUpdateWithMultipleNewlines)
+  val entityUpdateWithMultipleDelimiterOnlylines = wrapInMultipart("entities", MockTSVStrings.entityUpdateWithMultipleDelimiterOnlylines)
   val entityUpdateWithRequiredAndOptionalAttrs = wrapInMultipart("entities", MockTSVStrings.entityUpdateWithRequiredAndOptionalAttrs)
 
   val updateNonModelFirstColumnHeader = wrapInMultipart("entities", MockTSVStrings.updateNonModelFirstColumnHeader)
