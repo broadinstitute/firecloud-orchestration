@@ -20,6 +20,10 @@ object TSVParser {
     settings.setLineSeparatorDetectionEnabled(true)
     settings.setMaxCharsPerColumn(16384)
     settings.getFormat.setDelimiter('\t')
+    // By default, the CsvParser returns null for missing fields, however the application expects the
+    // empty string. These replace all nulls with the empty string.
+    settings.setNullValue("")
+    settings.setEmptyValue("")
     new CsvParser(settings)
   }
 
@@ -31,13 +35,7 @@ object TSVParser {
   }
 
   def parse(tsvString: String): TSVLoadFile = {
-    val allRows = makeParser.parseAll(new StringReader(tsvString)).asScala
-      // The CsvParser returns null for missing fields, however the application expects the
-      // empty string. This replaces all nulls with the empty string.
-      // someday, consider trying CsvParserSettings.setEmptyValue("") instead of doing this ourselves
-      .map(_.map(s => Option(s).getOrElse("")))
-      .toList
-    allRows match {
+    makeParser.parseAll(new StringReader(tsvString)).asScala.toList match {
       case h :: t =>
         val tsvData = t.zipWithIndex.map { case (line, idx) => parseLine(line, idx, h.length) }
         // for user-friendliness, we are lenient and ignore any lines that are either just a newline,
