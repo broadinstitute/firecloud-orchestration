@@ -761,6 +761,24 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
               status should equal(OK)
             }
           }
+
+          "should 200 OK if it has the correct headers and valid internals followed by multiple newlines" in {
+            stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
+            (Post(tsvImportPath, MockTSVFormData.membershipValidWithMultipleNewlines)
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(OK)
+            }
+          }
+
+          "should 200 OK if it has the correct headers and valid internals followed by multiple delimiter-only lines" in {
+            stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
+            (Post(tsvImportPath, MockTSVFormData.membershipValidWithMultipleDelimiterOnlylines)
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(OK)
+            }
+          }
         }
 
         "an entity-type TSV" - {
@@ -820,6 +838,24 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           "should 200 OK if it has the full set of required attribute headers" in {
             stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
             (Post(tsvImportPath, MockTSVFormData.entityUpdateWithRequiredAttrs)
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(OK)
+            }
+          }
+
+          "should 200 OK if it has valid rows followed by multiple newlines" in {
+            stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
+            (Post(tsvImportPath, MockTSVFormData.entityUpdateWithMultipleNewlines)
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(OK)
+            }
+          }
+
+          "should 200 OK if it has valid rows followed by multiple delimiter-only lines" in {
+            stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
+            (Post(tsvImportPath, MockTSVFormData.entityUpdateWithMultipleDelimiterOnlylines)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)

@@ -34,12 +34,22 @@ object TSVParser {
     val allRows = makeParser.parseAll(new StringReader(tsvString)).asScala
       // The CsvParser returns null for missing fields, however the application expects the
       // empty string. This replaces all nulls with the empty string.
+      // someday, consider trying CsvParserSettings.setEmptyValue("") instead of doing this ourselves
       .map(_.map(s => Option(s).getOrElse("")))
       .toList
     allRows match {
       case h :: t =>
         val tsvData = t.zipWithIndex.map { case (line, idx) => parseLine(line, idx, h.length) }
-        TSVLoadFile(h.head, h.toList, tsvData)
+        // for user-friendliness, we are lenient and ignore any lines that are either just a newline,
+        // or consist only of delimiters (tabs) but have no data.
+        // we implement this by checking to see if any of the line's values is non-empty.  If the line
+        // consists only of delimiters, all values will be empty.
+        // NB: CsvParserSettings.setSkipEmptyLines, setIgnoreTrailingWhitespaces, and setIgnoreLeadingWhitespaces
+        // do not help with this use case, so we write our own implementation.
+        val validData =  tsvData.collect {
+          case hasValues if hasValues.exists(_.nonEmpty) => hasValues
+        }
+        TSVLoadFile(h.head, h.toList, validData)
       case _ => throw new RuntimeException("TSV parsing error: no header")
     }
   }
