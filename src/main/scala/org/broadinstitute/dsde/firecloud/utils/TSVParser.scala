@@ -47,8 +47,7 @@ object TSVParser {
         // NB: CsvParserSettings.setSkipEmptyLines, setIgnoreTrailingWhitespaces, and setIgnoreLeadingWhitespaces
         // do not help with this use case, so we write our own implementation.
         val validData =  tsvData.collect {
-          case hasValues if hasValues.exists(_.nonEmpty) =>
-            hasValues
+          case hasValues if hasValues.exists(_.nonEmpty) => hasValues
         }
         TSVLoadFile(h.head, h.toList, validData)
       case _ => throw new RuntimeException("TSV parsing error: no header")
