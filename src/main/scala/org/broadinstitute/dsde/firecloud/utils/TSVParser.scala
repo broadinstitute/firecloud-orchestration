@@ -42,11 +42,12 @@ object TSVParser {
         val tsvData = t.zipWithIndex.map { case (line, idx) => parseLine(line, idx, h.length) }
         // for user-friendliness, we are lenient and ignore any lines that are either just a newline,
         // or consist only of delimiters (tabs) but have no data.
-        // we implement this by checking if the line is empty or if all values in the line are the empty string.
+        // we implement this by checking to see if any of the line's values is non-empty.  If the line
+        // consists only of delimiters, all values will be empty.
         // NB: CsvParserSettings.setSkipEmptyLines, setIgnoreTrailingWhitespaces, and setIgnoreLeadingWhitespaces
         // do not help with this use case, so we write our own implementation.
         val validData =  tsvData.collect {
-          case hasValues if hasValues.nonEmpty && hasValues.forall(_.nonEmpty) =>
+          case hasValues if hasValues.exists(_.nonEmpty) =>
             hasValues
         }
         TSVLoadFile(h.head, h.toList, validData)
