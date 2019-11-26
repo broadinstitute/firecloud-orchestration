@@ -32,7 +32,6 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import org.broadinstitute.dsde.workbench.util.Retry
 import spray.client.pipelining._
 import spray.http.StatusCodes._
 import spray.http._

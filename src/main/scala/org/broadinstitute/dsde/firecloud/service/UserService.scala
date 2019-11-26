@@ -129,10 +129,6 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     wordList(modIndex)
   }
 
-  def deleteAnonymousGroup(userToken: UserInfo): Future[PerRequestMessage] = {
-    writeAnonymousGroup(userToken, anonymousGroupName = "")
-  }
-
   private def writeAnonymousGroup(userToken: UserInfo, anonymousGroupName: String): Future[PerRequestMessage] = {
     val kvpsToUpdate = Map(
       UserService.AnonymousGroupKey -> anonymousGroupName
