@@ -113,8 +113,8 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   lazy private val trialBillingSACreds = ServiceAccountCredentials
     .fromStream(new FileInputStream(FireCloudConfig.Auth.trialBillingSAJsonFile))
 
-  private def getDelegatedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String], user: String): GoogleCredentials= {
-    baseCreds.createDelegated(user).createScoped(scopes)
+  private def getDelegatedCredentials(baseCreds: GoogleCredentials, user: String): GoogleCredentials= {
+    baseCreds.createDelegated(user)
   }
 
   private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials = {
@@ -155,15 +155,15 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   def getDirectoryManager(credential: GoogleCredentials): Directory = {
-    new Directory.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(authScopes ++ billingScope))).setApplicationName(appName).build()
+    new Directory.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(directoryScope))).setApplicationName(appName).build()
   }
 
   private lazy val pubSub = {
     new Pubsub.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getPubSubServiceAccountCredential)).setApplicationName(appName).build()
   }
 
-  private def getDirectoryServiceAccountCredential: GoogleCredentials = {
-    getDelegatedCredentials(firecloudAdminSACreds, directoryScope, userAdminAccount)
+  private def getDelegatedCredentialForAdminUser: GoogleCredentials = {
+    getDelegatedCredentials(firecloudAdminSACreds, userAdminAccount)
   }
 
   private def getBucketServiceAccountCredential = {
@@ -528,7 +528,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   override def checkGoogleGroupExists(groupEmail: String): Option[String] = {
-    val directoryService = getDirectoryManager(getDirectoryServiceAccountCredential)
+    val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
     // check if group exists
     val checkGroupRequest = directoryService.groups.get(groupEmail)
     val existingGroup = Try(executeGoogleRequest(checkGroupRequest)) match {
@@ -544,7 +544,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   override def createGoogleGroup(groupEmail: String, targetUserEmail: String): Option[String] = {
     val newGroup = new Group().setEmail(groupEmail)
-    val directoryService = getDirectoryManager(getDirectoryServiceAccountCredential)
+    val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
 
     val insertRequest = directoryService.groups.insert(newGroup)
     val setEmail = Try(executeGoogleRequest[Group](insertRequest)) match {
