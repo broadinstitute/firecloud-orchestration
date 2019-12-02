@@ -30,7 +30,7 @@ object UserService {
   val TerraPreferenceLastUpdatedKey = "preferTerraLastUpdated"
   val AnonymousGroupKey = "anonymousGroup"
   val ContactEmailKey = "contactEmail"
-  // TODO: check permissions from https://github.com/aaronbassett/Pass-phrase
+  // following lists are governed by this license (https://aaron.mit-license.org/) and come from https://github.com/aaronbassett/Pass-phrase
   val randomNounList: List[String] = FileUtils.readAllTextFromResource("nouns_ab.txt").split("\n").toList
   val randomAdjectiveList: List[String] = FileUtils.readAllTextFromResource("adjectives_ab.txt").split("\n").toList
 
@@ -147,7 +147,7 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
   }
 
   private def getAnonymousGroup: String = {
-    // randomly generate the anonymousGroupName, which follows format: adjective-noun-endOfUUID
+    // randomly generate the anonymousGroupName, which follows format: terra-user-adjective-noun-endOfUUID
     val anonymousGroupUUID: UUID = UUID.randomUUID()
     val anonymousGroupName: String = (FireCloudConfig.FireCloud.supportPrefix
       + getWord(anonymousGroupUUID.getMostSignificantBits(), UserService.randomAdjectiveList) + "-"

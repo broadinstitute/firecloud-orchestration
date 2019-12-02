@@ -552,7 +552,6 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
         "" // return empty string
       }
       case Success(newGroupInfo) => {
-        // TODO: add groupSettings - might not be necessary?
         // add targetUserEmail as member of google group - modeled after `override def addMemberToGroup` in workbench-libs HttpGoogleDirectoryDAO.scala
         val member = new Member().setEmail(targetUserEmail).setRole("MEMBER").setDeliverySettings("ALL_MAIL")
         val memberInsertRequest = directoryService.members.insert(groupEmail, member)
