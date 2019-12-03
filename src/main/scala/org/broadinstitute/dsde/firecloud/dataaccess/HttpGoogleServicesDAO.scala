@@ -539,6 +539,17 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     }
   }
 
+  override def deleteGoogleGroup(groupEmail: String): Unit = {
+    val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
+    val deleteGroupRequest = directoryService.groups.delete(groupEmail)
+    Try(executeGoogleRequest(deleteGroupRequest)) match {
+      case Failure(_) => {
+        logger.warn(s"Failed to delete group $groupEmail")
+      }
+      case Success(_) => {}
+    }
+  }
+
   /**
     * create a new anonymized Google group and add the user's contact email address to the group.
     * @param groupEmail is the name of the new Google group to be created. it is formatted as an email address, with an
@@ -564,8 +575,9 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
         Try(executeGoogleRequest(memberInsertRequest)) match {
           case Failure(_) =>
-            logger.warn(s"Could not add new member $targetUserEmail to group $groupEmail")
-            "" // return nothing
+            logger.warn(s"Could not add new member $targetUserEmail to group $groupEmail.")
+            deleteGoogleGroup(groupEmail)
+            "" // return empty string
           case Success(_) => {
             newGroupInfo.getEmail() // return groupEmail (string)
           }

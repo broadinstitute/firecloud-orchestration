@@ -106,6 +106,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
 
   override def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Boolean = false
 
+  override def deleteGoogleGroup(groupEmail: String): Unit = Unit
   override def checkGoogleGroupExists(groupEmail: String): Boolean = true
   override def createGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option("fluffy-panda-238dskfj28@support.test.firecloud.org")
 

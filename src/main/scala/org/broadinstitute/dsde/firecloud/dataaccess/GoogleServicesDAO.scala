@@ -45,7 +45,8 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
 
   def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Boolean
 
-  def checkGoogleGroupExists(groupEmail: String): Boolean // Option[String]
+  def deleteGoogleGroup(groupEmail: String) : Unit
+  def checkGoogleGroupExists(groupEmail: String): Boolean
   def createGoogleGroup(groupName: String, targetUserEmail: String): Option[String]
 
   def status: Future[SubsystemStatus]
