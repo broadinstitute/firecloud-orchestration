@@ -208,14 +208,14 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         Get("/register/profile") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
-            .flatMap(_.value).equals(Option("fluffy-panda-238dskfj28@support.test.firecloud.org")))
+            .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
         }
       }
       "Existing anonymousGroup is not overwritten" in {
         Get("/register/profile") ~> dummyUserIdHeaders(userWithGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
           assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
-            .flatMap(_.value).equals(Option("caffeinated-pizzacake@support.test.firecloud.org")))
+            .flatMap(_.value).equals(Option("existing-google-group@support.something.firecloud.org")))
         }
       }
     }

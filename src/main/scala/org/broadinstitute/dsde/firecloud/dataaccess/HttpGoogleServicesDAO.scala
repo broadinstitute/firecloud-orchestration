@@ -4,8 +4,6 @@ import java.io
 import java.io.FileInputStream
 
 import akka.actor.ActorRefFactory
-import com.google.api.client.auth.oauth2.Credential
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
 import com.google.api.client.http.HttpResponseException
@@ -551,14 +549,12 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   /**
-    * create a new anonymized Google group and add the user's contact email address to the group.
-    * @param groupEmail is the name of the new Google group to be created. it is formatted as an email address, with an
-    *                   anonymized group name and the appropriate support domain
-    * @param targetUserEmail is the user's contact email address, that is put inside the new Google group as a member
-    * @return Option of the groupEmail address if all above is successful, otherwise if either the group
-    *         creation step or adding the user's email step failed, return Option of an empty string
+    * create a new Google group
+    * @param groupEmail     the name of the new Google group to be created. it must be formatted as an email address
+    * @return               Option of the groupEmail address if all above is successful, otherwise if the group creation
+    *                        step failed, return Option of an empty string
     */
-  override def createGoogleGroup(groupEmail: String, targetUserEmail: String): Option[String] = {
+  override def createGoogleGroup(groupEmail: String): Option[String] = {
     val newGroup = new Group().setEmail(groupEmail)
     val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
 
@@ -569,22 +565,37 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
         "" // return empty string
       }
       case Success(newGroupInfo) => {
-        // add targetUserEmail as member of google group - modeled after `override def addMemberToGroup` in workbench-libs HttpGoogleDirectoryDAO.scala
-        val member = new Member().setEmail(targetUserEmail).setRole(anonymizedGroupRole).setDeliverySettings(anonymizedGroupDeliverySettings)
-        val memberInsertRequest = directoryService.members.insert(groupEmail, member)
-
-        Try(executeGoogleRequest(memberInsertRequest)) match {
-          case Failure(_) =>
-            logger.warn(s"Could not add new member $targetUserEmail to group $groupEmail.")
-            deleteGoogleGroup(groupEmail)
-            "" // return empty string
-          case Success(_) => {
-            newGroupInfo.getEmail() // return groupEmail (string)
-          }
-        }
+        newGroupInfo.getEmail()
       }
     }
     Option(setEmail)
+  }
+
+  /**
+    * add a new member (Terra user email address) to an existing Google group. this is currently set up with settings for
+    * anonymized Google groups, which set the user to be a member of the group and allow them to receive emails via the group address.
+    * @param groupEmail       is the name of the existing Google group. it must be formatted as an email address
+    * @param targetUserEmail  is the email address of the Terra user to be added to the Google group
+    * @return                 Option of the email address of the user if all above is successful, otherwise if the group
+    *                         creation step failed, return Option of an empty string
+    */
+  override def addMemberToAnonymizedGoogleGroup(groupEmail: String, targetUserEmail: String): Option[String] = {
+    val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
+
+    // add targetUserEmail as member of google group - modeled after `override def addMemberToGroup` in workbench-libs HttpGoogleDirectoryDAO.scala
+    val member = new Member().setEmail(targetUserEmail).setRole(anonymizedGroupRole).setDeliverySettings(anonymizedGroupDeliverySettings)
+    val memberInsertRequest = directoryService.members.insert(groupEmail, member)
+
+    val memberEmail = Try(executeGoogleRequest(memberInsertRequest)) match {
+      case Failure(_) =>
+        logger.warn(s"Could not add new member $targetUserEmail to group $groupEmail.")
+        deleteGoogleGroup(groupEmail)
+        "" // return empty string
+      case Success(memberInserted) => {
+        memberInserted.getEmail() // return email address of added user (string)
+      }
+    }
+    Option(memberEmail)
   }
 
   // ====================================================================================

@@ -166,24 +166,34 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
   }
 
   /**
-    * creates a new anonymized Google group for the user
-    * @param keys the user's KVPs
-    * @param anonymousGroupName sets the name of the Google group to be created
-    * @return Future[PerRequestMessage] of all KVPs for the user
+    * creates a new anonymized Google group for the user and adds the user's contact email to the new Google group
+    * @param keys                 the user's KVPs
+    * @param anonymousGroupName   sets the name of the Google group to be created
+    * @return                     Future[PerRequestMessage] for all KVPs for the user
     */
-  private def callCreateGoogleGroup(keys: ProfileWrapper, anonymousGroupName: String): Future[PerRequestMessage] = {
+  private def setupAnonymizedGoogleGroup(keys: ProfileWrapper, anonymousGroupName: String): Future[PerRequestMessage] = {
     // define userEmail to add to google Group - check first for contactEmail, otherwise use user's login email
     val userEmail = getProfileValue(keys, UserService.ContactEmailKey) match {
       case None | Some("") => userToken.userEmail
       case Some(contactEmail) => contactEmail // if there is a non-empty value set for contactEmail, we assume contactEmail is a valid email
     }
 
-    googleServicesDAO.createGoogleGroup(anonymousGroupName, userEmail) match { // returns "" if group creation is not successful
+    // create the new anonymized Google group
+    googleServicesDAO.createGoogleGroup(anonymousGroupName) match { // returns "" if group creation is not successful
       case None | Some("") => {
         Future(RequestComplete(keys))
       }
       case Some(groupEmailName) => {
-        writeAnonymousGroup(userToken, groupEmailName) // write new KVP to Thurloe
+        // if Google group creation was successful, add the user's email address to the group
+        googleServicesDAO.addMemberToAnonymizedGoogleGroup(groupEmailName, userEmail) match { // returns "" if user addition is not successful
+          case None | Some("") => {
+            Future(RequestComplete(keys))
+          }
+          case Some(addedUserEmail) => {
+            // only if the anonymized Google group was successfully created and user email added to group
+            writeAnonymousGroup(userToken, groupEmailName) // write new KVP to Thurloe
+          }
+        }
       } // this returns a Future[PerRequestMessage]
     }
   }
@@ -195,9 +205,9 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     *       - double check that that google group actually exists (and try to create it if it doesn't)
     *       - return all keys
     *     - if that key does not exist, we:
-    *       - generate an anonymized Google group for the user
-    *       - set that as the value for `anonymousGroup` KVP
-    *       - return all keys, including new `anonymousGroup`
+    *       - generate an anonymized Google group for the user and add the user's email address to the group
+    *       - set that anonymized Google group email address as the value for `anonymousGroup` KVP
+    *       - return all keys, including new `anonymousGroup` KVP
     * @param userToken
     * @return
     */
@@ -207,14 +217,14 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
       getProfileValue(keys, UserService.AnonymousGroupKey) match { // getProfileValue returns Option[String]
         case Some(anonymousGroupName) => {
           googleServicesDAO.checkGoogleGroupExists(anonymousGroupName) match {
-              case false => { callCreateGoogleGroup(keys, anonymousGroupName) }
+              case false => { setupAnonymizedGoogleGroup(keys, anonymousGroupName) }
               case true => {}
           }
           Future(RequestComplete(keys))
         }
         case None => {
           val groupEmail: String = getAnonymousGroup + "@" + FireCloudConfig.FireCloud.supportDomain
-          callCreateGoogleGroup(keys, groupEmail)
+          setupAnonymizedGoogleGroup(keys, groupEmail)
         }
       }
     }

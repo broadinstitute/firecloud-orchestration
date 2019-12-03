@@ -47,7 +47,8 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
 
   def deleteGoogleGroup(groupEmail: String) : Unit
   def checkGoogleGroupExists(groupEmail: String): Boolean
-  def createGoogleGroup(groupName: String, targetUserEmail: String): Option[String]
+  def createGoogleGroup(groupName: String): Option[String]
+  def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String]
 
   def status: Future[SubsystemStatus]
   override def serviceName: String = GoogleServicesDAO.serviceName

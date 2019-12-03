@@ -114,7 +114,7 @@ class MockThurloeDAO extends ThurloeDAO {
       TRIAL_SELF_ENABLED_ERROR -> baseProfile,
       TRIAL_SELF_ENABLED_PREEXISTING -> baseProfile,
       HAVE_GOOGLE_GROUP -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("anonymousGroup"), Some("caffeinated-pizzacake@support.test.firecloud.org")))
+        FireCloudKeyValue(Some("anonymousGroup"), Some("existing-google-group@support.something.firecloud.org")))
       )
 
     )

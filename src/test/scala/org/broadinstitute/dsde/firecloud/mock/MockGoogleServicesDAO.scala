@@ -108,7 +108,9 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
 
   override def deleteGoogleGroup(groupEmail: String): Unit = Unit
   override def checkGoogleGroupExists(groupEmail: String): Boolean = true
-  override def createGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option("fluffy-panda-238dskfj28@support.test.firecloud.org")
+  override def createGoogleGroup(groupName: String): Option[String] = Option("new-google-group@support.something.firecloud.org")
+
+  override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option("user-email@something.com")
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 
