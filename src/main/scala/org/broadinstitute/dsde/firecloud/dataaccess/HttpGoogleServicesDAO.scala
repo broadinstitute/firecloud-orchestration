@@ -89,7 +89,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
-  // will be for Directory/Group stuff
+  // scope for creating anonymized Google groups
   val directoryScope = Seq("https://www.googleapis.com/auth/admin.directory.group")
   // the scope we want is not defined in CloudbillingScopes, so we hardcode it here
   val billingScope = Seq("https://www.googleapis.com/auth/cloud-billing")
@@ -106,7 +106,11 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   lazy private val rawlsSACreds = ServiceAccountCredentials
     .fromStream(new FileInputStream(FireCloudConfig.Auth.rawlsSAJsonFile))
 
+  // credential for creating anonymized Google groups
   val userAdminAccount = "google@"+FireCloudConfig.FireCloud.supportDomain.replace("support.","")
+  // settings for users in anonymized Google groups
+  val anonymizedGroupRole = "MEMBER"
+  val anonymizedGroupDeliverySettings = "ALL_MAIL"
 
   // credentials for the trial billing service account, used for free trial duties
   lazy private val trialBillingSACreds = ServiceAccountCredentials
@@ -541,17 +545,17 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     val insertRequest = directoryService.groups.insert(newGroup)
     val setEmail = Try(executeGoogleRequest[Group](insertRequest)) match {
-      case Failure(f) => {
+      case Failure(_) => {
         logger.warn(s"Could not create new group called $groupEmail")
         "" // return empty string
       }
       case Success(newGroupInfo) => {
         // add targetUserEmail as member of google group - modeled after `override def addMemberToGroup` in workbench-libs HttpGoogleDirectoryDAO.scala
-        val member = new Member().setEmail(targetUserEmail).setRole("MEMBER").setDeliverySettings("ALL_MAIL")
+        val member = new Member().setEmail(targetUserEmail).setRole(anonymizedGroupRole).setDeliverySettings(anonymizedGroupDeliverySettings)
         val memberInsertRequest = directoryService.members.insert(groupEmail, member)
 
         Try(executeGoogleRequest(memberInsertRequest)) match {
-          case Failure(f) =>
+          case Failure(_) =>
             logger.warn(s"Could not add new member $targetUserEmail to group $groupEmail")
             "" // return nothing
           case Success(_) => {
