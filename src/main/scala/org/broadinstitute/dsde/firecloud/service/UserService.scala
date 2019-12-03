@@ -188,11 +188,13 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
       getProfileValue(keys, UserService.AnonymousGroupKey) match { // getProfileValue returns Option[String]
         case Some(anonymousGroupName) => { // if anonymousGroup key exists, return the keys
           // check if Google Group actually exists and create it if not
-          googleServicesDAO.checkGoogleGroupExists(anonymousGroupName) match { // this will return "" if group does not exist
-            case None | Some("") => {
-              callCreateGoogleGroup(keys, anonymousGroupName)
-            }
-            case Some(_) => {}
+          googleServicesDAO.checkGoogleGroupExists(anonymousGroupName) match { // this will return false if group does not exist
+//            case None | Some("") => {
+//              callCreateGoogleGroup(keys, anonymousGroupName)
+//            }
+//            case Some(_) => {}
+              case false => { callCreateGoogleGroup(keys, anonymousGroupName) }
+              case true => {}
           }
           Future(RequestComplete(keys)) // this creates a Future[PerRequestMessage]
         }

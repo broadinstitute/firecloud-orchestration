@@ -526,19 +526,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     }
   }
 
-  override def checkGoogleGroupExists(groupEmail: String): Option[String] = {
+  override def checkGoogleGroupExists(groupEmail: String): Boolean = {
     val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
-    // check if group exists
     val checkGroupRequest = directoryService.groups.get(groupEmail)
-    val existingGroup = Try(executeGoogleRequest(checkGroupRequest)) match {
-      case Failure(f) =>
-        logger.warn(s"Google Group $groupEmail does not exist")
-        "" // return nothing in case of failure
-      case Success(_) => {
-        groupEmail // return groupEmail
-      }
+    Try(executeGoogleRequest(checkGroupRequest)) match {
+      case Failure(_) => false
+      case Success(_) => true
     }
-    Option(existingGroup)
   }
 
   override def createGoogleGroup(groupEmail: String, targetUserEmail: String): Option[String] = {
