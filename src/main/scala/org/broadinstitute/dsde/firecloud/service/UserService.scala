@@ -165,46 +165,58 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     }
   }
 
+  /**
+    * creates a new anonymized Google group for the user
+    * @param keys the user's KVPs
+    * @param anonymousGroupName sets the name of the Google group to be created
+    * @return Future[PerRequestMessage] of all KVPs for the user
+    */
   private def callCreateGoogleGroup(keys: ProfileWrapper, anonymousGroupName: String): Future[PerRequestMessage] = {
     // define userEmail to add to google Group - check first for contactEmail, otherwise use user's login email
     val userEmail = getProfileValue(keys, UserService.ContactEmailKey) match {
-      case None | Some("") => userToken.userEmail // if the contactEmail key doesn't exist OR (|) if there's no contactEmail set in the profile
+      case None | Some("") => userToken.userEmail
       case Some(contactEmail) => contactEmail // if there is a non-empty value set for contactEmail, we assume contactEmail is a valid email
     }
 
-    googleServicesDAO.createGoogleGroup(anonymousGroupName, userEmail) match { // this will return "" if group creation is not successful
+    googleServicesDAO.createGoogleGroup(anonymousGroupName, userEmail) match { // returns "" if group creation is not successful
       case None | Some("") => {
-        Future(RequestComplete(keys)) // this creates a Future[PerRequestMessage]
+        Future(RequestComplete(keys))
       }
       case Some(groupEmailName) => {
-        writeAnonymousGroup(userToken, groupEmailName)
+        writeAnonymousGroup(userToken, groupEmailName) // write new KVP to Thurloe
       } // this returns a Future[PerRequestMessage]
     }
   }
 
+  /**
+    * gets all KVPs for the user from Thurloe
+    *   - checks whether the key `anonymousGroup` exists
+    *     - if `anonymousGroup` KVP exists for user:
+    *       - double check that that google group actually exists (and try to create it if it doesn't)
+    *       - return all keys
+    *     - if that key does not exist, we:
+    *       - generate an anonymized Google group for the user
+    *       - set that as the value for `anonymousGroup` KVP
+    *       - return all keys, including new `anonymousGroup`
+    * @param userToken
+    * @return
+    */
   def getAllUserKeys(userToken: UserInfo): Future[PerRequestMessage] = {
     val futureKeys:Future[ProfileWrapper] = getAllKeysFromThurloe(userToken)
-    futureKeys flatMap { keys: ProfileWrapper => // flatMap to keep the updated value of futureKeys
+    futureKeys flatMap { keys: ProfileWrapper =>
       getProfileValue(keys, UserService.AnonymousGroupKey) match { // getProfileValue returns Option[String]
-        case Some(anonymousGroupName) => { // if anonymousGroup key exists, return the keys
-          // check if Google Group actually exists and create it if not
-          googleServicesDAO.checkGoogleGroupExists(anonymousGroupName) match { // this will return false if group does not exist
-//            case None | Some("") => {
-//              callCreateGoogleGroup(keys, anonymousGroupName)
-//            }
-//            case Some(_) => {}
+        case Some(anonymousGroupName) => {
+          googleServicesDAO.checkGoogleGroupExists(anonymousGroupName) match {
               case false => { callCreateGoogleGroup(keys, anonymousGroupName) }
               case true => {}
           }
-          Future(RequestComplete(keys)) // this creates a Future[PerRequestMessage]
+          Future(RequestComplete(keys))
         }
-        case None => { // if anonymousGroup key does not exist, create one and return the keys
-          // randomly generate an anonymousGroup
+        case None => {
           val groupEmail: String = getAnonymousGroup + "@" + FireCloudConfig.FireCloud.supportDomain
-          // create Google Group and add userEmail to anonymousGroupEmail
           callCreateGoogleGroup(keys, groupEmail)
         }
       }
-    } // flatMap (on a future input) executes the call to get the actual (not future) keys
+    }
   }
 }

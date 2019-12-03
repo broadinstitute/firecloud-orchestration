@@ -539,6 +539,14 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     }
   }
 
+  /**
+    * create a new anonymized Google group and add the user's contact email address to the group.
+    * @param groupEmail is the name of the new Google group to be created. it is formatted as an email address, with an
+    *                   anonymized group name and the appropriate support domain
+    * @param targetUserEmail is the user's contact email address, that is put inside the new Google group as a member
+    * @return Option of the groupEmail address if all above is successful, otherwise if either the group
+    *         creation step or adding the user's email step failed, return Option of an empty string
+    */
   override def createGoogleGroup(groupEmail: String, targetUserEmail: String): Option[String] = {
     val newGroup = new Group().setEmail(groupEmail)
     val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
@@ -559,12 +567,11 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
             logger.warn(s"Could not add new member $targetUserEmail to group $groupEmail")
             "" // return nothing
           case Success(_) => {
-            newGroupInfo.getEmail() // return groupEmail
+            newGroupInfo.getEmail() // return groupEmail (string)
           }
         }
       }
     }
-
     Option(setEmail)
   }
 
