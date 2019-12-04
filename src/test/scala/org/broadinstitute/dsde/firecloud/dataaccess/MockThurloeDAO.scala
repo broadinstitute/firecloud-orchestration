@@ -41,6 +41,7 @@ class MockThurloeDAO extends ThurloeDAO {
   val TCGA_AND_TARGET_UNLINKED = "tcga-and-target-unlinked"
 
   val HAVE_GOOGLE_GROUP = "have-google-group"
+  val HAVE_EMPTY_GOOGLE_GROUP = "have-empty-google-group"
 
   val baseProfile = Set(
     FireCloudKeyValue(Some("firstName"), Some("Bobby")),
@@ -115,6 +116,9 @@ class MockThurloeDAO extends ThurloeDAO {
       TRIAL_SELF_ENABLED_PREEXISTING -> baseProfile,
       HAVE_GOOGLE_GROUP -> baseProfile.++(Set(
         FireCloudKeyValue(Some("anonymousGroup"), Some("existing-google-group@support.something.firecloud.org")))
+      ),
+      HAVE_EMPTY_GOOGLE_GROUP -> baseProfile.++(Set(
+      FireCloudKeyValue(Some("anonymousGroup"), Some("")))
       )
 
     )

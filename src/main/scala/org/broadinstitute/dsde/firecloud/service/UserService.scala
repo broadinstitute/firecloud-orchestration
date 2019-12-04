@@ -215,16 +215,16 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     val futureKeys:Future[ProfileWrapper] = getAllKeysFromThurloe(userToken)
     futureKeys flatMap { keys: ProfileWrapper =>
       getProfileValue(keys, UserService.AnonymousGroupKey) match { // getProfileValue returns Option[String]
+        case None | Some("") => {
+          val groupEmail: String = getAnonymousGroup + "@" + FireCloudConfig.FireCloud.supportDomain
+          setupAnonymizedGoogleGroup(keys, groupEmail)
+        }
         case Some(anonymousGroupName) => {
           googleServicesDAO.checkGoogleGroupExists(anonymousGroupName) match {
               case false => { setupAnonymizedGoogleGroup(keys, anonymousGroupName) }
               case true => {}
           }
           Future(RequestComplete(keys))
-        }
-        case None => {
-          val groupEmail: String = getAnonymousGroup + "@" + FireCloudConfig.FireCloud.supportDomain
-          setupAnonymizedGoogleGroup(keys, groupEmail)
         }
       }
     }

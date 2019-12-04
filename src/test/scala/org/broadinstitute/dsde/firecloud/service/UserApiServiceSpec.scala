@@ -32,6 +32,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     HttpMethods.DELETE, HttpMethods.PATCH, HttpMethods.OPTIONS, HttpMethods.HEAD)
 
   val userWithGoogleGroup = "have-google-group"
+  val userWithEmptyGoogleGroup = "have-empty-google-group"
   val uniqueId = "normal-user"
   val exampleKey = "favoriteColor"
   val exampleVal = "green"
@@ -204,14 +205,21 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
           status shouldNot equal(MethodNotAllowed)
         }
       }
-      "If new anonymousGroup does not exist, it gets assigned" in {
+      "if anonymousGroup KVP does not exist, it gets assigned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
             .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
         }
       }
-      "Existing anonymousGroup is not overwritten" in {
+      "if anonymousGroup key exists but value is empty, a new group gets assigned" in {
+        Get("/register/profile") ~> dummyUserIdHeaders(userWithEmptyGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
+          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+            .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
+        }
+      }
+      "existing anonymousGroup is not overwritten" in {
         Get("/register/profile") ~> dummyUserIdHeaders(userWithGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
           assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
