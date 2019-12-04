@@ -105,7 +105,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     .fromStream(new FileInputStream(FireCloudConfig.Auth.rawlsSAJsonFile))
 
   // credential for creating anonymized Google groups
-  val userAdminAccount = "google@"+FireCloudConfig.FireCloud.supportDomain.replace("support.","")
+  val userAdminAccount = FireCloudConfig.FireCloud.userAdminAccount
   // settings for users in anonymized Google groups
   val anonymizedGroupRole = "MEMBER"
   val anonymizedGroupDeliverySettings = "ALL_MAIL"
