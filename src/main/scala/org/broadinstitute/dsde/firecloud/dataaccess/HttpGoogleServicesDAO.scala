@@ -552,23 +552,22 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     * create a new Google group
     * @param groupEmail     the name of the new Google group to be created. it must be formatted as an email address
     * @return               Option of the groupEmail address if all above is successful, otherwise if the group creation
-    *                        step failed, return Option of an empty string
+    *                        step failed, return Option.empty
     */
   override def createGoogleGroup(groupEmail: String): Option[String] = {
     val newGroup = new Group().setEmail(groupEmail)
     val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
 
     val insertRequest = directoryService.groups.insert(newGroup)
-    val setEmail = Try(executeGoogleRequest[Group](insertRequest)) match {
+    Try(executeGoogleRequest[Group](insertRequest)) match {
       case Failure(_) => {
         logger.warn(s"Could not create new group called $groupEmail")
-        "" // return empty string
+        Option.empty // return empty string
       }
       case Success(newGroupInfo) => {
-        newGroupInfo.getEmail()
+        Option(newGroupInfo.getEmail())
       }
     }
-    Option(setEmail)
   }
 
   /**
@@ -577,7 +576,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     * @param groupEmail       is the name of the existing Google group. it must be formatted as an email address
     * @param targetUserEmail  is the email address of the Terra user to be added to the Google group
     * @return                 Option of the email address of the user if all above is successful, otherwise if the group
-    *                         creation step failed, return Option of an empty string
+    *                         creation step failed, return Option.empty
     */
   override def addMemberToAnonymizedGoogleGroup(groupEmail: String, targetUserEmail: String): Option[String] = {
     val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
@@ -586,16 +585,15 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val member = new Member().setEmail(targetUserEmail).setRole(anonymizedGroupRole).setDeliverySettings(anonymizedGroupDeliverySettings)
     val memberInsertRequest = directoryService.members.insert(groupEmail, member)
 
-    val memberEmail = Try(executeGoogleRequest(memberInsertRequest)) match {
+    Try(executeGoogleRequest(memberInsertRequest)) match {
       case Failure(_) =>
         logger.warn(s"Could not add new member $targetUserEmail to group $groupEmail.")
         deleteGoogleGroup(groupEmail)
-        "" // return empty string
-      case Success(memberInserted) => {
-        memberInserted.getEmail() // return email address of added user (string)
+        Option.empty
+      case Success(_) => {
+        Option(targetUserEmail) // return email address of added user (string)
       }
     }
-    Option(memberEmail)
   }
 
   // ====================================================================================

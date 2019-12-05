@@ -179,22 +179,22 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     }
 
     // create the new anonymized Google group
-    googleServicesDAO.createGoogleGroup(anonymousGroupName) match { // returns "" if group creation is not successful
-      case None | Some("") => {
+    googleServicesDAO.createGoogleGroup(anonymousGroupName) match { // returns Option.empty if group creation not successful
+      case None => {
         Future(RequestComplete(keys))
       }
       case Some(groupEmailName) => {
         // if Google group creation was successful, add the user's email address to the group
-        googleServicesDAO.addMemberToAnonymizedGoogleGroup(groupEmailName, userEmail) match { // returns "" if user addition is not successful
-          case None | Some("") => {
+        googleServicesDAO.addMemberToAnonymizedGoogleGroup(groupEmailName, userEmail) match { // returns Option.empty if user addition is not successful
+          case None => {
             Future(RequestComplete(keys))
           }
-          case Some(addedUserEmail) => {
+          case Some(_) => {
             // only if the anonymized Google group was successfully created and user email added to group
             writeAnonymousGroup(userToken, groupEmailName) // write new KVP to Thurloe
           }
         }
-      } // this returns a Future[PerRequestMessage]
+      }
     }
   }
 
