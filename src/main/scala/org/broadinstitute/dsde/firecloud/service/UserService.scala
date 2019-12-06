@@ -34,7 +34,6 @@ object UserService {
   val randomNounList: List[String] = FileUtils.readAllTextFromResource("nouns_ab.txt").split("\n").toList
   val randomAdjectiveList: List[String] = FileUtils.readAllTextFromResource("adjectives_ab.txt").split("\n").toList
 
-
   case object ImportPermission extends UserServiceMessage
   case object GetTerraPreference extends UserServiceMessage
   case object SetTerraPreference extends UserServiceMessage
@@ -146,13 +145,14 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     }
   }
 
-  private def getAnonymousGroup: String = {
-    // randomly generate the anonymousGroupName, which follows format: terra-user-adjective-noun-endOfUUID
+  private def getNewAnonymousGroupName: String = {
+    // randomly generate the anonymousGroupName, which follows format: terra-user-adjective-noun-endOfUUID@supportdomain.org
     val anonymousGroupUUID: UUID = UUID.randomUUID()
-    val anonymousGroupName: String = (FireCloudConfig.FireCloud.supportPrefix
+    val anonymousGroupName: String = ( FireCloudConfig.FireCloud.supportPrefix
       + getWord(anonymousGroupUUID.getMostSignificantBits(), UserService.randomAdjectiveList) + "-"
       + getWord(anonymousGroupUUID.getLeastSignificantBits(), UserService.randomNounList) + "-"
-      + anonymousGroupUUID.toString().split("-")(4))
+      + anonymousGroupUUID.toString().split("-")(4)
+      + "@" + FireCloudConfig.FireCloud.supportDomain )
     anonymousGroupName
   }
 
@@ -165,6 +165,13 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     }
   }
 
+  private def getUserContactEmail(keys: ProfileWrapper): String = {
+    // define userEmail to add to google Group - check first for contactEmail, otherwise use user's login email
+    getProfileValue(keys, UserService.ContactEmailKey) match {
+      case None | Some("") => userToken.userEmail
+      case Some(contactEmail) => contactEmail // if there is a non-empty value set for contactEmail, we assume contactEmail is a valid email
+    }
+  }
   /**
     * creates a new anonymized Google group for the user and adds the user's contact email to the new Google group
     * @param keys                 the user's KVPs
@@ -173,10 +180,7 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     */
   private def setupAnonymizedGoogleGroup(keys: ProfileWrapper, anonymousGroupName: String): Future[PerRequestMessage] = {
     // define userEmail to add to google Group - check first for contactEmail, otherwise use user's login email
-    val userEmail = getProfileValue(keys, UserService.ContactEmailKey) match {
-      case None | Some("") => userToken.userEmail
-      case Some(contactEmail) => contactEmail // if there is a non-empty value set for contactEmail, we assume contactEmail is a valid email
-    }
+    val userEmail = getUserContactEmail(keys)
 
     // create the new anonymized Google group
     googleServicesDAO.createGoogleGroup(anonymousGroupName) match { // returns Option.empty if group creation not successful
@@ -202,7 +206,10 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     * gets all KVPs for the user from Thurloe
     *   - checks whether the key `anonymousGroup` exists
     *     - if `anonymousGroup` KVP exists for user:
-    *       - double check that that google group actually exists (and try to create it if it doesn't)
+    *       - double check that that the user is actually in an existing google group
+    *         - if the group exists but the user isn't in it (error 404), create a NEW group (in case you've reached the
+    *           unlikely event that you have a duplicate group that belongs to another user)
+    *         - if the group doesn't exist, create a new group
     *       - return all keys
     *     - if that key does not exist, we:
     *       - generate an anonymized Google group for the user and add the user's email address to the group
@@ -216,13 +223,15 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     futureKeys flatMap { keys: ProfileWrapper =>
       getProfileValue(keys, UserService.AnonymousGroupKey) match { // getProfileValue returns Option[String]
         case None | Some("") => {
-          val groupEmail: String = getAnonymousGroup + "@" + FireCloudConfig.FireCloud.supportDomain
-          setupAnonymizedGoogleGroup(keys, groupEmail)
+          setupAnonymizedGoogleGroup(keys, getNewAnonymousGroupName)
         }
         case Some(anonymousGroupName) => {
-          googleServicesDAO.checkGoogleGroupExists(anonymousGroupName) match {
-              case false => { setupAnonymizedGoogleGroup(keys, anonymousGroupName) }
-              case true => {}
+          val userEmail = getUserContactEmail(keys)
+          googleServicesDAO.checkUserIsInExistingGoogleGroup(anonymousGroupName, userEmail) match {
+              case 404 => { // if the group didn't exist or the user wasn't a member of the group, make a brand new group
+                setupAnonymizedGoogleGroup(keys, getNewAnonymousGroupName) }
+              case 200 => {} // if successful, great.
+              case _ => {} // for other (e.g. connection, 403 forbidden) errors checking member/group, don't do anything
           }
           Future(RequestComplete(keys))
         }

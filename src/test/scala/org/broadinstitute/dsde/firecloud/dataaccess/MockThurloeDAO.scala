@@ -118,7 +118,7 @@ class MockThurloeDAO extends ThurloeDAO {
         FireCloudKeyValue(Some("anonymousGroup"), Some("existing-google-group@support.something.firecloud.org")))
       ),
       HAVE_EMPTY_GOOGLE_GROUP -> baseProfile.++(Set(
-      FireCloudKeyValue(Some("anonymousGroup"), Some("")))
+        FireCloudKeyValue(Some("anonymousGroup"), Some("")))
       )
 
     )

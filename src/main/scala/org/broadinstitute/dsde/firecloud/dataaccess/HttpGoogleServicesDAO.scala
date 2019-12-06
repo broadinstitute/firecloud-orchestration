@@ -5,6 +5,7 @@ import java.io.FileInputStream
 
 import akka.actor.ActorRefFactory
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
 import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
@@ -528,12 +529,23 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     }
   }
 
-  override def checkGoogleGroupExists(groupEmail: String): Boolean = {
+  override def checkUserIsInExistingGoogleGroup(groupEmail: String, userEmail: String): Int = {
     val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
-    val checkGroupRequest = directoryService.groups.get(groupEmail)
-    Try(executeGoogleRequest(checkGroupRequest)) match {
-      case Failure(_) => false
-      case Success(_) => true
+
+    val memberGetRequest = directoryService.members.get(groupEmail, userEmail)
+
+    Try(executeGoogleRequest(memberGetRequest)) match {
+      case Failure(f) => {
+        val errorcode = f.asInstanceOf[GoogleJsonResponseException].getDetails.getCode
+        if (errorcode != 404) { // log errors other than 404 (404 means group doesn't exist or member not in group)
+          val message = f.asInstanceOf[GoogleJsonResponseException].getDetails.getMessage
+          logger.warn(s"Error checking if $userEmail is member of $groupEmail, error code $errorcode, message: $message")
+        }
+        errorcode
+      }
+      case Success(f) => {
+        200 // 200 is a successful response code
+      }
     }
   }
 
