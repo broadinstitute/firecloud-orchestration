@@ -159,28 +159,23 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
   private def getAllKeysFromThurloe(userToken: UserInfo): Future[ProfileWrapper] = {
     thurloeDAO.getAllKVPs(userToken.id, userToken) map { // .getAllKVPs returns Option[ProfileWrapper]
       case None => ProfileWrapper(userToken.id, List())
-      case Some(wrapper) => {
-        wrapper
-      }
+      case Some(wrapper) => wrapper
     }
   }
 
-  private def getUserContactEmail(keys: ProfileWrapper): String = {
-    // define userEmail to add to google Group - check first for contactEmail, otherwise use user's login email
-    getProfileValue(keys, UserService.ContactEmailKey) match {
-      case None | Some("") => userToken.userEmail
-      case Some(contactEmail) => contactEmail // if there is a non-empty value set for contactEmail, we assume contactEmail is a valid email
-    }
-  }
   /**
-    * creates a new anonymized Google group for the user and adds the user's contact email to the new Google group
+    * creates a new anonymized Google group for the user and adds the user's contact email to the new Google group.
+    * note that if any step fails, we just return the keys so the user's experience is not interrupted.
     * @param keys                 the user's KVPs
     * @param anonymousGroupName   sets the name of the Google group to be created
     * @return                     Future[PerRequestMessage] for all KVPs for the user
     */
   private def setupAnonymizedGoogleGroup(keys: ProfileWrapper, anonymousGroupName: String): Future[PerRequestMessage] = {
     // define userEmail to add to google Group - check first for contactEmail, otherwise use user's login email
-    val userEmail = getUserContactEmail(keys)
+    val userEmail = getProfileValue(keys, UserService.ContactEmailKey) match {
+      case None | Some ("") => userToken.userEmail
+      case Some (contactEmail) => contactEmail // if there is a non-empty value set for contactEmail, we assume contactEmail is a valid email
+    }
 
     // create the new anonymized Google group
     googleServicesDAO.createGoogleGroup(anonymousGroupName) match { // returns Option.empty if group creation not successful
@@ -205,12 +200,7 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
   /**
     * gets all KVPs for the user from Thurloe
     *   - checks whether the key `anonymousGroup` exists
-    *     - if `anonymousGroup` KVP exists for user:
-    *       - double check that that the user is actually in an existing google group
-    *         - if the group exists but the user isn't in it (error 404), create a NEW group (in case you've reached the
-    *           unlikely event that you have a duplicate group that belongs to another user)
-    *         - if the group doesn't exist, create a new group
-    *       - return all keys
+    *     - if `anonymousGroup` KVP exists for user, return all keys.
     *     - if that key does not exist, we:
     *       - generate an anonymized Google group for the user and add the user's email address to the group
     *       - set that anonymized Google group email address as the value for `anonymousGroup` KVP
@@ -225,14 +215,7 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
         case None | Some("") => {
           setupAnonymizedGoogleGroup(keys, getNewAnonymousGroupName)
         }
-        case Some(anonymousGroupName) => {
-          val userEmail = getUserContactEmail(keys)
-          googleServicesDAO.checkUserIsInExistingGoogleGroup(anonymousGroupName, userEmail) match {
-              case 404 => { // if the group didn't exist or the user wasn't a member of the group, make a brand new group
-                setupAnonymizedGoogleGroup(keys, getNewAnonymousGroupName) }
-              case 200 => {} // if successful, great.
-              case _ => {} // for other (e.g. connection, 403 forbidden) errors checking member/group, don't do anything
-          }
+        case Some(_) => {
           Future(RequestComplete(keys))
         }
       }

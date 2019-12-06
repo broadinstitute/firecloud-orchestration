@@ -529,34 +529,11 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     }
   }
 
-  override def checkUserIsInExistingGoogleGroup(groupEmail: String, userEmail: String): Int = {
-    val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
-
-    val memberGetRequest = directoryService.members.get(groupEmail, userEmail)
-
-    Try(executeGoogleRequest(memberGetRequest)) match {
-      case Failure(f) => {
-        val errorcode = f.asInstanceOf[GoogleJsonResponseException].getDetails.getCode
-        if (errorcode != 404) { // log errors other than 404 (404 means group doesn't exist or member not in group)
-          val message = f.asInstanceOf[GoogleJsonResponseException].getDetails.getMessage
-          logger.warn(s"Error checking if $userEmail is member of $groupEmail, error code $errorcode, message: $message")
-        }
-        errorcode
-      }
-      case Success(f) => {
-        200 // 200 is a successful response code
-      }
-    }
-  }
-
   override def deleteGoogleGroup(groupEmail: String): Unit = {
     val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
     val deleteGroupRequest = directoryService.groups.delete(groupEmail)
     Try(executeGoogleRequest(deleteGroupRequest)) match {
-      case Failure(_) => {
-        logger.warn(s"Failed to delete group $groupEmail")
-      }
-      case Success(_) => {}
+      case Failure(_) => logger.warn(s"Failed to delete group $groupEmail")
     }
   }
 
@@ -572,8 +549,10 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     val insertRequest = directoryService.groups.insert(newGroup)
     Try(executeGoogleRequest[Group](insertRequest)) match {
-      case Failure(_) => {
-        logger.warn(s"Could not create new group called $groupEmail")
+      case Failure(response) => {
+        val errorCode = response.asInstanceOf[GoogleJsonResponseException].getDetails.getCode
+        val message = response.asInstanceOf[GoogleJsonResponseException].getDetails.getMessage
+        logger.warn(s"Error $errorCode: Could not create new group $groupEmail; $message")
         Option.empty // return empty string
       }
       case Success(newGroupInfo) => {
@@ -598,9 +577,11 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val memberInsertRequest = directoryService.members.insert(groupEmail, member)
 
     Try(executeGoogleRequest(memberInsertRequest)) match {
-      case Failure(_) =>
-        logger.warn(s"Could not add new member $targetUserEmail to group $groupEmail.")
-        deleteGoogleGroup(groupEmail)
+      case Failure(response) =>
+        val errorCode = response.asInstanceOf[GoogleJsonResponseException].getDetails.getCode
+        val message = response.asInstanceOf[GoogleJsonResponseException].getDetails.getMessage
+        logger.warn(s"Error $errorCode: Could not add new member $targetUserEmail to group $groupEmail; $message")
+        deleteGoogleGroup(groupEmail) // try to clean up after yourself
         Option.empty
       case Success(_) => {
         Option(targetUserEmail) // return email address of added user (string)
