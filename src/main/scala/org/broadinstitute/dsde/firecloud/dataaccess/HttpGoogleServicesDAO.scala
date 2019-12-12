@@ -534,6 +534,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val deleteGroupRequest = directoryService.groups.delete(groupEmail)
     Try(executeGoogleRequest(deleteGroupRequest)) match {
       case Failure(_) => logger.warn(s"Failed to delete group $groupEmail")
+      case Success(_) =>
     }
   }
 
