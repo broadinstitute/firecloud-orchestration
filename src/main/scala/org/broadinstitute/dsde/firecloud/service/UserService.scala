@@ -145,7 +145,7 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     }
   }
 
-  private def getNewAnonymousGroupName: String = {
+  def getNewAnonymousGroupName: String = {
     // randomly generate the anonymousGroupName, which follows format: terra-user-adjective-noun-endOfUUID@supportdomain.org
     val anonymousGroupUUID: UUID = UUID.randomUUID()
     val anonymousGroupName: String = ( FireCloudConfig.FireCloud.supportPrefix
