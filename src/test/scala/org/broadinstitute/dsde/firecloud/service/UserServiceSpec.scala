@@ -39,7 +39,16 @@ class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
     "setUpAnonymizedGoogleGroup" - {
       "should return original keys if Google group creation fails" in {
         val keys = ProfileWrapper(userToken.id, List())
-        val anonymousGroupName = "fake-group@fake-domain.org"
+        val anonymousGroupName = "makeGoogleGroupCreationFail"
+        val rqComplete = Await.
+          result(userService.setupAnonymizedGoogleGroup(keys, anonymousGroupName), 3.seconds).
+          asInstanceOf[RequestComplete[ProfileWrapper]]
+        val returnedKeys = rqComplete.response
+        returnedKeys should equal(keys)
+      }
+      "should return original keys if adding a member to Google group fails" in {
+        val keys = ProfileWrapper(userToken.id, List())
+        val anonymousGroupName = "makeAddMemberFail"
         val rqComplete = Await.
           result(userService.setupAnonymizedGoogleGroup(keys, anonymousGroupName), 3.seconds).
           asInstanceOf[RequestComplete[ProfileWrapper]]
@@ -55,9 +64,19 @@ class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
 /*
  * Mock out DAO classes specific to this test class.
  * Override the chain of methods that are called within these service tests to isolate functionality.
- * [Copied from WorkspaceServiceSpec]
+ * [Copied/modified from WorkspaceServiceSpec]
  */
 class MockGoogleServicesFailedGroupsDAO extends MockGoogleServicesDAO {
-  override def createGoogleGroup(groupName: String): Option[String] = Option.empty
-  override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option.empty
+  override def createGoogleGroup(groupName: String): Option[String] = {
+    groupName match {
+      case "makeGoogleGroupCreationFail" => Option.empty
+      case _ => Option(groupName)
+    }
+  }
+  override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = {
+    groupName match {
+      case "makeAddMemberFail" => Option.empty
+      case _ => Option(targetUserEmail)
+    }
+  }
 }
