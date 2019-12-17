@@ -3,37 +3,61 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.testkit.TestActorRef
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockLogitDAO, MockResearchPurposeSupport, MockShareLogDAO}
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.model.{ProfileWrapper, UserInfo}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.scalatest.BeforeAndAfterEach
 import spray.http.OAuth2BearerToken
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+
 class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
 
-  val customApp = Application(agoraDao, googleServicesDao, ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, trialDao, new MockLogitDAO, new MockShareLogDAO)
+  val customApp = Application(agoraDao, new MockGoogleServicesFailedGroupsDAO(), ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, trialDao, new MockLogitDAO, new MockShareLogDAO)
 
   val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(customApp)
 
-  lazy val userService: UserService = TestActorRef(UserService.props(userServiceConstructor, UserInfo("me@me.com", OAuth2BearerToken(""), 3600, "111"))).underlyingActor
-
+  val userToken: UserInfo = UserInfo("me@me.com", OAuth2BearerToken(""), 3600, "111")
+  lazy val userService: UserService = TestActorRef(UserService.props(userServiceConstructor, userToken)).underlyingActor
 
   "UserService " - {
-    "getAllUserKeys" - {
-      "form a proper email address" in {
-        //todo: may want to match against a regex or something but this will probably suffice
+    "getNewAnonymousGroupName" - { // this indirectly tests getWord
+      "should form a proper email address" in {
         val anonymousGroupName = userService.getNewAnonymousGroupName
         anonymousGroupName should endWith(FireCloudConfig.FireCloud.supportDomain)
         anonymousGroupName should startWith(FireCloudConfig.FireCloud.supportPrefix)
+        anonymousGroupName should include("@")
+      }
+      "should return a different email address every time it's called" in {
+        val anonymousGroupName1 = userService.getNewAnonymousGroupName
+        val anonymousGroupName2 = userService.getNewAnonymousGroupName
+        anonymousGroupName1 shouldNot include(anonymousGroupName2)
+      }
+    }
+    "setUpAnonymizedGoogleGroup" - {
+      "should return original keys if Google group creation fails" in {
+        val keys = ProfileWrapper(userToken.id, List())
+        val anonymousGroupName = "fake-group@fake-domain.org"
+        val rqComplete = Await.
+          result(userService.setupAnonymizedGoogleGroup(keys, anonymousGroupName), 3.seconds).
+          asInstanceOf[RequestComplete[ProfileWrapper]]
+        val returnedKeys = rqComplete.response
+        returnedKeys should equal(keys)
       }
     }
   }
 
-  //test case(s) for writeAnonymousGroup
+  // getAllUserKeys, writeAnonymousGroup are tested in UserApiServiceSpec
+}
 
-  //test case(s) for getWord
-
-  //test case(s) for setupAnonymizedGoogleGroup
-
-  //test case(s) for getAllUserKeys
-
-  //above where customApp is defined, we've got googleServicesDao which is an instance of the MockGoogleServicesDAO. that mock version will be called instead of the real Http implementation
+/*
+ * Mock out DAO classes specific to this test class.
+ * Override the chain of methods that are called within these service tests to isolate functionality.
+ * [Copied from WorkspaceServiceSpec]
+ */
+class MockGoogleServicesFailedGroupsDAO extends MockGoogleServicesDAO {
+  override def createGoogleGroup(groupName: String): Option[String] = Option.empty
+  override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option.empty
 }

@@ -170,7 +170,7 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     * @param anonymousGroupName   sets the name of the Google group to be created
     * @return                     Future[PerRequestMessage] for all KVPs for the user
     */
-  private def setupAnonymizedGoogleGroup(keys: ProfileWrapper, anonymousGroupName: String): Future[PerRequestMessage] = {
+  def setupAnonymizedGoogleGroup(keys: ProfileWrapper, anonymousGroupName: String): Future[PerRequestMessage] = {
     // define userEmail to add to google Group - check first for contactEmail, otherwise use user's login email
     val userEmail = getProfileValue(keys, UserService.ContactEmailKey) match {
       case None | Some ("") => userToken.userEmail

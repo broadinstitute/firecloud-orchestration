@@ -4,7 +4,6 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import com.google.api.services.sheets.v4.model.ValueRange
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
 import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
 import spray.http.HttpHeaders.RawHeader
@@ -265,30 +264,4 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       ).asInstanceOf[List[java.util.List[AnyRef]]])
     }
   }
-
-//  // these don't work
-//  // new to test:
-//  //    def createGoogleGroup(groupName: String): Option[String]
-//  //    def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String]
-//  //    def deleteGoogleGroup(groupEmail: String) : Unit
-//  val testGroup: String = "test_group@" + FireCloudConfig.FireCloud.supportDomain
-//  val testUser: String = "test_user@test.com"
-//
-//  it should "create a new google group" in {
-//    val output = HttpGoogleServicesDAO.createGoogleGroup(testGroup).getOrElse("")
-//    val expectedOutput = testGroup
-//    assert(output == expectedOutput)
-//  }
-//
-//  it should "add a new user to the new google group" in {
-//    val output = HttpGoogleServicesDAO.addMemberToAnonymizedGoogleGroup(testGroup, testUser).getOrElse("")
-//    val expectedOutput = testUser
-//    assert(output == expectedOutput)
-//  }
-//
-//  it should "delete the google group" in {
-//    val output = HttpGoogleServicesDAO.deleteGoogleGroup(testGroup)
-//    val expectedOutput = Unit
-//    assert(output == expectedOutput)
-//  }
 }
