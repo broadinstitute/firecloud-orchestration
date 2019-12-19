@@ -550,11 +550,15 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
     val insertRequest = directoryService.groups.insert(newGroup)
     Try(executeGoogleRequest[Group](insertRequest)) match {
-      case Failure(response) => {
-        val errorCode = response.asInstanceOf[GoogleJsonResponseException].getDetails.getCode
-        val message = response.asInstanceOf[GoogleJsonResponseException].getDetails.getMessage
+      case Failure(response: GoogleJsonResponseException) => {
+        val errorCode = response.getDetails.getCode
+        val message = response.getDetails.getMessage
         logger.warn(s"Error $errorCode: Could not create new group $groupEmail; $message")
-        Option.empty // return empty string
+        Option.empty
+      }
+      case Failure(f) => {
+        logger.warn(s"Error: Could not create new group $groupEmail: $f")
+        Option.empty
       }
       case Success(newGroupInfo) => {
         Option(newGroupInfo.getEmail())
@@ -578,12 +582,18 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val memberInsertRequest = directoryService.members.insert(groupEmail, member)
 
     Try(executeGoogleRequest(memberInsertRequest)) match {
-      case Failure(response) =>
-        val errorCode = response.asInstanceOf[GoogleJsonResponseException].getDetails.getCode
-        val message = response.asInstanceOf[GoogleJsonResponseException].getDetails.getMessage
+      case Failure(response: GoogleJsonResponseException) => {
+        val errorCode = response.getDetails.getCode
+        val message = response.getDetails.getMessage
         logger.warn(s"Error $errorCode: Could not add new member $targetUserEmail to group $groupEmail; $message")
         deleteGoogleGroup(groupEmail) // try to clean up after yourself
         Option.empty
+      }
+      case Failure(f) => {
+        logger.warn(s"Error: Could not add new member $targetUserEmail to group $groupEmail; $f")
+        deleteGoogleGroup(groupEmail)
+        Option.empty
+      }
       case Success(_) => {
         Option(targetUserEmail) // return email address of added user (string)
       }
