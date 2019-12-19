@@ -47,6 +47,7 @@ object Dependencies {
     excludeGuavaJDK5("com.google.apis"     % "google-api-services-cloudbilling" % "v1-rev20191005-1.30.3"),
     excludeGuavaJDK5("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
     excludeGuavaJDK5("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.18.0"),
+    excludeGuavaJDK5("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
     "org.webjars"                    % "swagger-ui"          % "2.2.5",
     "com.pauldijou"                 %% "jwt-core"            % "3.1.0",

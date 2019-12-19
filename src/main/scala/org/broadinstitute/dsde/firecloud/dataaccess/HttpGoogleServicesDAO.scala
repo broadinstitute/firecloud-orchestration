@@ -1,12 +1,16 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import java.io
 import java.io.FileInputStream
 
 import akka.actor.ActorRefFactory
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
 import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
+import com.google.api.services.admin.directory.model.{Group, Member}
 import com.google.api.services.cloudbilling.Cloudbilling
 import com.google.api.services.cloudbilling.model.ProjectBillingInfo
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
@@ -84,6 +88,8 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
+  // scope for creating anonymized Google groups
+  val directoryScope = Seq(DirectoryScopes.ADMIN_DIRECTORY_GROUP)
   // the scope we want is not defined in CloudbillingScopes, so we hardcode it here
   val billingScope = Seq("https://www.googleapis.com/auth/cloud-billing")
   val spreadsheetScopes = Seq(SheetsScopes.SPREADSHEETS)
@@ -99,9 +105,19 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   lazy private val rawlsSACreds = ServiceAccountCredentials
     .fromStream(new FileInputStream(FireCloudConfig.Auth.rawlsSAJsonFile))
 
+  // credential for creating anonymized Google groups
+  val userAdminAccount = FireCloudConfig.FireCloud.userAdminAccount
+  // settings for users in anonymized Google groups
+  val anonymizedGroupRole = "MEMBER"
+  val anonymizedGroupDeliverySettings = "ALL_MAIL"
+
   // credentials for the trial billing service account, used for free trial duties
   lazy private val trialBillingSACreds = ServiceAccountCredentials
     .fromStream(new FileInputStream(FireCloudConfig.Auth.trialBillingSAJsonFile))
+
+  private def getDelegatedCredentials(baseCreds: GoogleCredentials, user: String): GoogleCredentials= {
+    baseCreds.createDelegated(user)
+  }
 
   private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials = {
     baseCreds.createScoped(scopes)
@@ -140,8 +156,16 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(authScopes ++ billingScope))).setApplicationName(appName).build()
   }
 
+  def getDirectoryManager(credential: GoogleCredentials): Directory = {
+    new Directory.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(directoryScope))).setApplicationName(appName).build()
+  }
+
   private lazy val pubSub = {
     new Pubsub.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getPubSubServiceAccountCredential)).setApplicationName(appName).build()
+  }
+
+  private def getDelegatedCredentialForAdminUser: GoogleCredentials = {
+    getDelegatedCredentials(firecloudAdminSACreds, userAdminAccount)
   }
 
   private def getBucketServiceAccountCredential = {
@@ -502,6 +526,77 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           val updatedProject = executeGoogleRequest[ProjectBillingInfo](noBillingRequest)
           updatedProject.getBillingEnabled != null && updatedProject.getBillingEnabled
         }
+    }
+  }
+
+  override def deleteGoogleGroup(groupEmail: String): Unit = {
+    val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
+    val deleteGroupRequest = directoryService.groups.delete(groupEmail)
+    Try(executeGoogleRequest(deleteGroupRequest)) match {
+      case Failure(_) => logger.warn(s"Failed to delete group $groupEmail")
+      case Success(_) =>
+    }
+  }
+
+  /**
+    * create a new Google group
+    * @param groupEmail     the name of the new Google group to be created. it must be formatted as an email address
+    * @return               Option of the groupEmail address if all above is successful, otherwise if the group creation
+    *                        step failed, return Option.empty
+    */
+  override def createGoogleGroup(groupEmail: String): Option[String] = {
+    val newGroup = new Group().setEmail(groupEmail)
+    val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
+
+    val insertRequest = directoryService.groups.insert(newGroup)
+    Try(executeGoogleRequest[Group](insertRequest)) match {
+      case Failure(response: GoogleJsonResponseException) => {
+        val errorCode = response.getDetails.getCode
+        val message = response.getDetails.getMessage
+        logger.warn(s"Error $errorCode: Could not create new group $groupEmail; $message")
+        Option.empty
+      }
+      case Failure(f) => {
+        logger.warn(s"Error: Could not create new group $groupEmail: $f")
+        Option.empty
+      }
+      case Success(newGroupInfo) => {
+        Option(newGroupInfo.getEmail())
+      }
+    }
+  }
+
+  /**
+    * add a new member (Terra user email address) to an existing Google group. this is currently set up with settings for
+    * anonymized Google groups, which set the user to be a member of the group and allow them to receive emails via the group address.
+    * @param groupEmail       is the name of the existing Google group. it must be formatted as an email address
+    * @param targetUserEmail  is the email address of the Terra user to be added to the Google group
+    * @return                 Option of the email address of the user if all above is successful, otherwise if the group
+    *                         creation step failed, return Option.empty
+    */
+  override def addMemberToAnonymizedGoogleGroup(groupEmail: String, targetUserEmail: String): Option[String] = {
+    val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
+
+    // add targetUserEmail as member of google group - modeled after `override def addMemberToGroup` in workbench-libs HttpGoogleDirectoryDAO.scala
+    val member = new Member().setEmail(targetUserEmail).setRole(anonymizedGroupRole).setDeliverySettings(anonymizedGroupDeliverySettings)
+    val memberInsertRequest = directoryService.members.insert(groupEmail, member)
+
+    Try(executeGoogleRequest(memberInsertRequest)) match {
+      case Failure(response: GoogleJsonResponseException) => {
+        val errorCode = response.getDetails.getCode
+        val message = response.getDetails.getMessage
+        logger.warn(s"Error $errorCode: Could not add new member $targetUserEmail to group $groupEmail; $message")
+        deleteGoogleGroup(groupEmail) // try to clean up after yourself
+        Option.empty
+      }
+      case Failure(f) => {
+        logger.warn(s"Error: Could not add new member $targetUserEmail to group $groupEmail; $f")
+        deleteGoogleGroup(groupEmail)
+        Option.empty
+      }
+      case Success(_) => {
+        Option(targetUserEmail) // return email address of added user (string)
+      }
     }
   }
 

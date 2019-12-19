@@ -264,5 +264,4 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
       ).asInstanceOf[List[java.util.List[AnyRef]]])
     }
   }
-
 }

@@ -40,6 +40,10 @@ class MockThurloeDAO extends ThurloeDAO {
   val TCGA_AND_TARGET_LINKED_EXPIRED = "tcga-and-target-linked-expired"
   val TCGA_AND_TARGET_UNLINKED = "tcga-and-target-unlinked"
 
+  val HAVE_GOOGLE_GROUP = "have-google-group"
+  val HAVE_EMPTY_GOOGLE_GROUP = "have-empty-google-group"
+  val NO_CONTACT_EMAIL = "no-contact-email"
+
   val baseProfile = Set(
     FireCloudKeyValue(Some("firstName"), Some("Bobby")),
     FireCloudKeyValue(Some("lastName"), Some("Testerson")),
@@ -110,7 +114,17 @@ class MockThurloeDAO extends ThurloeDAO {
       ),
       TRIAL_SELF_ENABLED -> baseProfile,
       TRIAL_SELF_ENABLED_ERROR -> baseProfile,
-      TRIAL_SELF_ENABLED_PREEXISTING -> baseProfile
+      TRIAL_SELF_ENABLED_PREEXISTING -> baseProfile,
+      //Anonymized google groups
+      HAVE_GOOGLE_GROUP -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("anonymousGroup"), Some("existing-google-group@support.something.firecloud.org")))
+      ),
+      HAVE_EMPTY_GOOGLE_GROUP -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("anonymousGroup"), Some("")))
+      ),
+      NO_CONTACT_EMAIL -> baseProfile.++(Set(
+        FireCloudKeyValue(Some("contactEmail"), Some("")))
+      )
     )
 
 

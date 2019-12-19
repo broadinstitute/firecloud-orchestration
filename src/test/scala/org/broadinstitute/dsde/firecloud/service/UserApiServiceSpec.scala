@@ -13,6 +13,7 @@ import org.mockserver.model.HttpRequest._
 import spray.http.HttpMethods
 import spray.http.StatusCodes._
 import spray.httpx.SprayJsonSupport._
+import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService {
@@ -30,6 +31,9 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
   val httpMethods = List(HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT,
     HttpMethods.DELETE, HttpMethods.PATCH, HttpMethods.OPTIONS, HttpMethods.HEAD)
 
+  val userWithGoogleGroup = "have-google-group"
+  val userWithEmptyGoogleGroup = "have-empty-google-group"
+  val userWithNoContactEmail = "no-contact-email"
   val uniqueId = "normal-user"
   val exampleKey = "favoriteColor"
   val exampleVal = "green"
@@ -199,6 +203,37 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       "MethodNotAllowed response is not returned" in {
         Get(s"/$ApiPrefix") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           log.debug(s"GET /$ApiPrefix: " + status)
+          status shouldNot equal(MethodNotAllowed)
+        }
+      }
+      "if anonymousGroup KVP does not exist, it gets assigned" in {
+        Get("/register/profile") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
+          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+            .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
+        }
+      }
+      "if anonymousGroup key exists but value is empty, a new group gets assigned, and MethodNotAllowed is not returned" in {
+        Get("/register/profile") ~> dummyUserIdHeaders(userWithEmptyGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
+          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+            .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
+          status shouldNot equal(MethodNotAllowed)
+        }
+      }
+      "existing anonymousGroup is not overwritten, and MethodNotAllowed is not returned" in {
+        Get("/register/profile") ~> dummyUserIdHeaders(userWithGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
+          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+            .flatMap(_.value).equals(Option("existing-google-group@support.something.firecloud.org")))
+          status shouldNot equal(MethodNotAllowed)
+        }
+      }
+      "a user with no contact email still gets assigned a new anonymousGroup, and MethodNotAllowed is not returned" in {
+        Get("/register/profile") ~> dummyUserIdHeaders(userWithNoContactEmail) ~> sealRoute(userServiceRoutes) ~> check {
+          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+            .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
           status shouldNot equal(MethodNotAllowed)
         }
       }

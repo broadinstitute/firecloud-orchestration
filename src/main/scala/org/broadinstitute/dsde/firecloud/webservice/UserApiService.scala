@@ -188,9 +188,10 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         pathEnd {
           get {
             requireUserInfo() { userInfo =>
-              mapRequest(addFireCloudCredentials) {
-                passthrough(UserApiService.remoteGetAllURL.format(userInfo.getUniqueId), HttpMethods.GET)
-              }
+              requestContext =>
+                perRequest(requestContext,
+                  UserService.props(userServiceConstructor, userInfo),
+                  UserService.GetAllUserKeys)
             }
           }
         }
