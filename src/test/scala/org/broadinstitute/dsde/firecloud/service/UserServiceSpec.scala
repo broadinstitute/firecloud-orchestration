@@ -57,8 +57,6 @@ class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
       }
     }
   }
-
-  // getAllUserKeys, writeAnonymousGroup are tested in UserApiServiceSpec
 }
 
 /*
