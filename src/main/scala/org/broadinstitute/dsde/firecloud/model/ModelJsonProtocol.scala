@@ -23,6 +23,7 @@ import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 
 import scala.util.{Failure, Success, Try}
 
+//noinspection TypeAnnotation,RedundantNewCaseClass
 object ModelJsonProtocol extends WorkspaceJsonSupport {
   import spray.json.DefaultJsonProtocol._
 
@@ -199,7 +200,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)
-  implicit val impSubmissionRequest = jsonFormat7(SubmissionRequest)
+  implicit val impSubmissionRequest = jsonFormat8(SubmissionRequest)
 
   implicit val impEntityUpdateDefinition = jsonFormat3(EntityUpdateDefinition)
 

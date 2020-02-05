@@ -81,6 +81,7 @@ case class SubmissionRequest(
   entityName: Option[String],
   expression: Option[String],
   useCallCache: Option[Boolean],
+  deleteIntermediateOutputFiles: Option[Boolean],
   workflowFailureMode: Option[String])
 
 case class RawlsGroupMemberList(
