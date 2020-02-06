@@ -83,15 +83,19 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
             val participantId = randomIdWithPrefix(SimpleMethodConfig.rootEntityType)
             Orchestration.importMetaData(billingProject, workspaceName, "entities", s"entity:participant_id\n$participantId")
 
-            val launchException = intercept[RestException]{ Orchestration.submissions.launchWorkflow(
-              billingProject,
-              workspaceName,
-              SimpleMethodConfig.configNamespace,
-              SimpleMethodConfig.configName,
-              SimpleMethodConfig.rootEntityType,
-              participantId,
-              "this",
-              false)}
+            val launchException = intercept[RestException]{
+              Orchestration.submissions.launchWorkflow(
+                ns = billingProject,
+                wsName = workspaceName,
+                methodConfigurationNamespace = SimpleMethodConfig.configNamespace,
+                methodConfigurationName = SimpleMethodConfig.configName,
+                entityType = SimpleMethodConfig.rootEntityType,
+                entityName = participantId,
+                expression = "this",
+                useCallCache = false,
+                deleteIntermediateOutputFiles = false
+              )
+            }
 
             launchException.message.parseJson.asJsObject.fields("statusCode").convertTo[Int] should be (404)
           }
