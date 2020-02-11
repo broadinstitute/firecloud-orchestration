@@ -7,16 +7,15 @@ object Dependencies {
   val akkaV = "2.5.7"
   val akkaHttpV = "10.1.0"
 
-  val workbenchModelV  = "0.10-6800f3a"
+  val workbenchModelV  = "0.13-58c913d"
   val workbenchModel: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-model" % workbenchModelV
   val excludeWorkbenchModel = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-model_" + scalaV)
 
-
-  val workbenchGoogleV = "0.16-847c3ff"
+  val workbenchGoogleV = "0.21-890a74f"
   val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll excludeWorkbenchModel
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google" + scalaV)
 
-  val workbenchServiceTestV = "0.16-f63a6eb"
+  val workbenchServiceTestV = "0.17-bb34724"
   val workbenchServiceTest: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-service-test" % workbenchServiceTestV % "test" classifier "tests" excludeAll (excludeWorkbenchGoogle, excludeWorkbenchModel)
 
   val rootDependencies = Seq(
@@ -49,7 +48,6 @@ object Dependencies {
     workbenchServiceTest,
     workbenchModel,
     workbenchGoogle,
-
 
     // required by workbenchGoogle
     "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.6" % "provided"

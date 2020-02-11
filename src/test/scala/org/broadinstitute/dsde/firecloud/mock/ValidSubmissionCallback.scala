@@ -20,6 +20,7 @@ class ValidSubmissionCallback extends ExpectationCallback {
         x.entityType.isDefined &&
         x.expression.isDefined &&
         x.useCallCache.isDefined &&
+        x.deleteIntermediateOutputFiles.isDefined &&
         x.workflowFailureMode.isDefined &&
         x.methodConfigurationName.isDefined &&
         x.methodConfigurationNamespace.isDefined =>

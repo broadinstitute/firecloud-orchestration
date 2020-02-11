@@ -17,6 +17,7 @@ import spray.json._
 /**
  * Represents potential results that can be returned from the Workspace Service
  */
+//noinspection TypeAnnotation,NameBooleanParameters
 object MockWorkspaceServer {
 
   val mockValidWorkspace = WorkspaceDetails(
@@ -57,6 +58,7 @@ object MockWorkspaceServer {
     entityName = Option(randomAlpha()),
     expression = Option(randomAlpha()),
     useCallCache = Option(randomBoolean()),
+    deleteIntermediateOutputFiles = Option(randomBoolean()),
     workflowFailureMode = Option(randomElement(List("ContinueWhilePossible", "NoNewCalls")))
   ) 
   
@@ -67,6 +69,7 @@ object MockWorkspaceServer {
     entityName = Option.empty,
     expression = Option.empty,
     useCallCache = Option.empty,
+    deleteIntermediateOutputFiles = Option.empty,
     workflowFailureMode = Option.empty
   )
 

@@ -7112,6 +7112,11 @@ definitions:
       useCallCache:
         type: boolean
         description: Whether or not to read from cache for this submission
+      deleteIntermediateOutputFiles:
+        type: boolean
+        description: >-
+          Whether or not to delete intermediate output files when the workflow completes.
+          See Cromwell docs for more information.
       workflowFailureMode:
         type: string
         description: What happens after a task fails. Choose from ContinueWhilePossible and NoNewCalls. Defaults to NoNewCalls if not specified. See Cromwell docs for more information.
@@ -7149,6 +7154,7 @@ definitions:
       - methodConfigurationNamespace
       - methodConfigurationName
       - useCallCache
+      - deleteIntermedateOutputFiles
     type: object
     properties:
       methodConfigurationNamespace:
@@ -7169,6 +7175,11 @@ definitions:
       useCallCache:
         type: boolean
         description: Whether or not to read from cache for this submission.
+      deleteIntermediateOutputFiles:
+        type: boolean
+        description: >-
+          Whether or not to delete intermediate output files when the workflow completes.
+          See Cromwell docs for more information.
       workflowFailureMode:
         type: string
         description: What happens after a task fails. Choose from ContinueWhilePossible and NoNewCalls. Defaults to NoNewCalls if not specified. See Cromwell docs for more information.
