@@ -181,6 +181,8 @@ object FireCloudConfig {
   object GoogleCloud {
     private val googlecloud = config.getConfig("googlecloud")
     val priceListUrl = googlecloud.getString("priceListUrl")
+    val priceListEgressKey = googlecloud.getString("priceListEgressKey")
+    val priceListStorageKey = googlecloud.getString("priceListStorageKey")
   }
 
   object Duos {

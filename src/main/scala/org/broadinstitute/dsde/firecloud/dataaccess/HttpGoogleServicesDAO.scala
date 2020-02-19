@@ -74,7 +74,7 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
       case x => throw new DeserializationException("invalid value: " + x)
     }
   }
-  implicit val GooglePricesFormat = jsonFormat(GooglePrices, "CP-BIGSTORE-STORAGE", "CP-COMPUTEENGINE-INTERNET-EGRESS-NA-NA")
+  implicit val GooglePricesFormat = jsonFormat(GooglePrices, FireCloudConfig.GoogleCloud.priceListStorageKey, FireCloudConfig.GoogleCloud.priceListEgressKey)
   implicit val GooglePriceListFormat = jsonFormat(GooglePriceList, "gcp_price_list", "version", "updated")
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
