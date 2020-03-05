@@ -34,6 +34,14 @@ case class PfbImportRequest(
   workspace: Option[WorkspaceName] = None,
   user: Option[WorkbenchUserInfo] = None)
 
+case class ImportServiceRequest(
+  path: String,
+  filetype: String)
+
+case class ImportServiceResponse(
+  id: String,
+  status: String)
+
 case class MethodConfigurationId(
   name: Option[String] = None,
   namespace: Option[String] = None,

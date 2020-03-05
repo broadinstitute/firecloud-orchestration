@@ -235,4 +235,9 @@ object FireCloudConfig {
     val baseUrl: String = arrow.getString("baseUrl")
     val bucketName: String = arrow.getString("bucketName")
   }
+
+  object ImportService {
+    lazy val server: String = if (config.hasPath("importService.server")) config.getString("importService.server") else ""
+  }
+
 }

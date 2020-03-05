@@ -41,6 +41,7 @@ import scala.util.{Failure, Success, Try}
 
 object EntityClient {
 
+  // TODO: AS-155: updte these as necessray
   lazy val arrowRoot: String = FireCloudConfig.Arrow.baseUrl
   lazy val arrowAppName: String = FireCloudConfig.Arrow.appName
   lazy val avroToRawlsURL: String = s"$arrowRoot/$arrowAppName"
@@ -385,18 +386,19 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
       op(pfbUrl)
     }
 
+    // TODO: AS-155: use new Rawls "check permissions with lock" api instead
     // probe Rawls with an empty upsert to this workspace. This checks that the workspace exists and that the user has
     // permissions to perform an upsert.
-    def validateUpsertPermissions()(op: Boolean => PerRequestMessage) = {
+    def validateUpsertPermissions()(op: Boolean => Future[PerRequestMessage]) = {
       val pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = authHeaders(requestContext) ~> sendReceive
 
       val probeUpsert = pipeline {
         Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), List.empty[String])
       }
 
-      probeUpsert.map {
+      probeUpsert flatMap {
         case resp if resp.status == NoContent => op(true)
-        case resp => RequestComplete(resp) // bubble up errors
+        case resp => Future(RequestComplete(resp)) // bubble up errors
       }
     }
 
@@ -404,93 +406,58 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
     validatePfbUrl(pfbRequest) { pfbUrl =>
       // empty-array batchUpsert to Rawls to verify workspace existence and permissions
       validateUpsertPermissions() { _ =>
-        // generate job UUID
-        val jobId = java.util.UUID.randomUUID()
+        // val idToken = googleServicesDAO.getAdminIdentityToken
+        val idToken = userInfo.accessToken
+        // the payload to Import Service sends the path
+        val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbUrl.toString, filetype = "pfb")
+        val importServiceUrl = s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports"
 
-        // the payload to Arrow needs to include the PFB url, job id, workspace info, and user info
-        val user = WorkbenchUserInfo(userInfo.id, userInfo.userEmail)
-        val arrowPayload = pfbRequest.copy(jobId = Option(jobId.toString),
-          workspace = Option(WorkspaceName(workspaceNamespace, workspaceName)),
-          user = Option(user))
+        val gzipPipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = addHeader (`Accept-Encoding`(gzip)) ~> addCredentials(idToken) ~> sendReceive ~> decode(Gzip)
+        val newImportCall:Future[HttpResponse] = gzipPipeline {
+          Post(importServiceUrl, importServicePayload)
+        }
 
-        // fire-and-forget call Arrow with UUID, workspace info, and presigned URL
-        val idToken = googleServicesDAO.getAdminIdentityToken
-        val gzipPipeline = addHeader (`Accept-Encoding`(gzip)) ~> addCredentials(OAuth2BearerToken(idToken)) ~> sendReceive ~> decode(Gzip)
-        gzipPipeline { Post(avroToRawlsURL, arrowPayload) }
+        newImportCall.map {
+          case resp if resp.status == Created =>
+            val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
 
-        // the response payload to the end user omits the userid/email
-        val responsePayload = arrowPayload.copy(user = None)
-
-        // return Accepted with UUID
-        RequestComplete(Accepted, responsePayload)
+            RequestComplete(Created, importServiceResponse)
+          case otherResp =>
+            RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
+        }
       }
     }
   }
 
   def pfbImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[PerRequestMessage] = {
 
-    val bucketName = FireCloudConfig.Arrow.bucketName
+    // TODO: AS-155: update swagger response for this API (no longer jobId/status/message, now only id/status or ErrorResponse)
 
-    def readStatusFile(filename: String, default: String): String = {
-      Try(googleServicesDAO.getObjectContentsAsRawlsSA(bucketName, s"$jobId/$filename")) match {
-        case Success(msg) =>
-          if (msg.trim.nonEmpty) msg else default
-        case Failure(ex) =>
-          logger.warn(s"error reading GCS object gs://$bucketName/$jobId/$filename", ex)
-          default
-      }
+    // TODO: AS-155: check for read access on this workspace
+
+    // val idToken = googleServicesDAO.getAdminIdentityToken
+    val idToken = userInfo.accessToken
+    // the payload to Import Service sends the path
+    val importServiceUrl = s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports/$jobId"
+
+    val gzipPipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = addHeader (`Accept-Encoding`(gzip)) ~> addCredentials(idToken) ~> sendReceive ~> decode(Gzip)
+    val newImportCall:Future[HttpResponse] = gzipPipeline {
+      Get(importServiceUrl)
     }
 
-    // list all files in the jobId's subdirectory and strip jobId prefix so we have just the filenames
-    Try(googleServicesDAO.listObjectsAsRawlsSA(bucketName, jobId + "/").map(_.replace(jobId + "/",""))) match {
-
-      case Failure(ex) =>
-        logger.warn(s"Error listing GCS objects for prefix gs://$bucketName/$jobId", ex)
-        // do not expose the bucket name in the error report we send to users
-        Future.successful(RequestCompleteWithErrorReport(InternalServerError, "Error listing bucket"))
-
-      case Success(files) =>
-        // what files do we have?
-        val (statusCode, statusString, message) = files.toSet match {
-
-          // no files yet, or subdirectory doesn't exist
-          case nothing if nothing.isEmpty =>
-            (NotFound, "NOT FOUND", "jobId not found or job not yet started")
-
-          // somebody wrote an error.json: it's an error.
-          case error if error.contains("error.json") =>
-            // try to read the error contents
-            val errorMessage = readStatusFile("error.json", "Error!")
-            (OK, "ERROR", errorMessage)
-
-          // we finished with a success.json: it's a success. Yay!
-          case success if success.contains("success.json") =>
-            // try to read the success contents
-            val successMessage = readStatusFile("success.json", "Success! Import completed.")
-            (OK, "SUCCESS", successMessage)
-
-          // we have a start marker, but do not yet have a success or error marker. It's in progress.
-          case started if started.contains("running.json") =>
-            val runningMessage = readStatusFile("running.json", "import in progress")
-            (OK, "RUNNING", runningMessage)
-
-          // we've got either/both of the upsert and the metadata, but no other markers - it's in progress.
-          case alsostarted if alsostarted == Set("upsert.json") || alsostarted == Set("metadata.json") || alsostarted == Set("upsert.json", "metadata.json") =>
-            (OK, "RUNNING", "import in progress")
-
-          // the files don't make sense; give up.
-          case _ =>
-            logger.warn(s"could not determine importPFB status for $jobId: $files")
-            (InternalServerError, "UNKNOWN", "could not determine status")
-        }
+    newImportCall map {
+      case resp if resp.status == OK =>
+        val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
 
         val responsePayload = JsObject(
-          "status" -> JsString(statusString),
-          "message" -> JsString(message),
-          "jobId" -> JsString(jobId)
+          "status" -> JsString(importServiceResponse.status),
+          "message" -> JsString(importServiceResponse.status),
+          "jobId" -> JsString(importServiceResponse.id.toString)
         )
 
-        Future.successful(RequestComplete(statusCode, responsePayload))
+        RequestComplete(OK, responsePayload)
+      case otherResp =>
+        RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
     }
   }
 
