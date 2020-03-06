@@ -15,10 +15,10 @@ import org.broadinstitute.dsde.firecloud.model.ModelSchema
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding, TSVFileSupport, TsvTypes}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, TSVFileSupport, TsvTypes}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
-import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, TSVLoadFile}
 import spray.client.pipelining._
 import spray.http.HttpEncodings._
 import spray.http.HttpHeaders.`Accept-Encoding`
@@ -41,7 +41,7 @@ import scala.util.{Failure, Success, Try}
 
 object EntityClient {
 
-  // TODO: AS-155: updte these as necessray
+  // TODO: AS-155: update these as necessray
   lazy val arrowRoot: String = FireCloudConfig.Arrow.baseUrl
   lazy val arrowAppName: String = FireCloudConfig.Arrow.appName
   lazy val avroToRawlsURL: String = s"$arrowRoot/$arrowAppName"
@@ -130,17 +130,25 @@ object EntityClient {
 
 }
 
-class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDAO)(implicit protected val executionContext: ExecutionContext)
-  extends Actor with FireCloudRequestBuilding with TSVFileSupport with LazyLogging {
+class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDAO)(implicit val executionContext: ExecutionContext)
+  extends Actor with RestJsonClient with TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
 
+  //  ========================
+  // we have ambiguous implicit ActorRefFactories from Actor and RestJsonClient, so we need to tell sendReceive which to use,
+  // and we have to satisfy RestJsonClient's implicit
+  override implicit val system = context.system
+  private def sendRec = sendReceive(context, executionContext)
+  //  ========================
+
+
   override def receive: Receive = {
     case ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
-      val pipeline = authHeaders(requestContext) ~> sendReceive
+      val pipeline = authHeaders(requestContext) ~> sendRec
       importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo sender
     case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
-      val pipeline = authHeaders(requestContext) ~> sendReceive
+      val pipeline = authHeaders(requestContext) ~> sendRec
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
     case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo) =>
       importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) pipeTo sender
@@ -367,6 +375,22 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
     }
   }
 
+  // ask Rawls if we have permission on this workspace. For writes, Rawls will also check if the workspace is locked.
+  private def validateUpsertPermissions(userInfo: UserInfo, workspaceNamespace: String, workspaceName: String, action: String = "read")(op: Boolean => Future[PerRequestMessage]) = {
+    val pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = authHeaders(requestContext) ~> sendRec
+
+    def enc(s: String) = java.net.URLEncoder.encode(s, "utf-8")
+
+    val checkUrl = s"${Rawls.workspacesUrl}/${enc(workspaceNamespace)}/${enc(workspaceName)}/checkIamActionWithLock/$action"
+
+    userAuthedRequest(Get(checkUrl))(userInfo: UserInfo) flatMap {
+      case resp if resp.status == NoContent => op(true)
+      case resp =>
+        logger.warn(s"****** workspace permissions failed with ${resp.status.intValue} ${resp.status.defaultMessage}: ${resp}")
+        Future(RequestComplete(resp)) // bubble up errors
+    }
+  }
+
   def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
 
     // initial validation of the presigned url provided as an argument
@@ -386,41 +410,18 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
       op(pfbUrl)
     }
 
-    // TODO: AS-155: use new Rawls "check permissions with lock" api instead
-    // probe Rawls with an empty upsert to this workspace. This checks that the workspace exists and that the user has
-    // permissions to perform an upsert.
-    def validateUpsertPermissions()(op: Boolean => Future[PerRequestMessage]) = {
-      val pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = authHeaders(requestContext) ~> sendReceive
-
-      val probeUpsert = pipeline {
-        Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/batchUpsert"), List.empty[String])
-      }
-
-      probeUpsert flatMap {
-        case resp if resp.status == NoContent => op(true)
-        case resp => Future(RequestComplete(resp)) // bubble up errors
-      }
-    }
-
     // validate presigned URL
     validatePfbUrl(pfbRequest) { pfbUrl =>
-      // empty-array batchUpsert to Rawls to verify workspace existence and permissions
-      validateUpsertPermissions() { _ =>
-        // val idToken = googleServicesDAO.getAdminIdentityToken
-        val idToken = userInfo.accessToken
+      // verify workspace existence and permissions
+      validateUpsertPermissions(userInfo, workspaceNamespace, workspaceName, "write") { _ =>
         // the payload to Import Service sends the path
         val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbUrl.toString, filetype = "pfb")
+        // TODO: AS-155: always encode namespace/name
         val importServiceUrl = s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports"
 
-        val gzipPipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = addHeader (`Accept-Encoding`(gzip)) ~> addCredentials(idToken) ~> sendReceive ~> decode(Gzip)
-        val newImportCall:Future[HttpResponse] = gzipPipeline {
-          Post(importServiceUrl, importServicePayload)
-        }
-
-        newImportCall.map {
+        userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) map {
           case resp if resp.status == Created =>
             val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
-
             RequestComplete(Created, importServiceResponse)
           case otherResp =>
             RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
@@ -431,33 +432,24 @@ class EntityClient (requestContext: RequestContext, modelSchema: ModelSchema, go
 
   def pfbImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[PerRequestMessage] = {
 
-    // TODO: AS-155: update swagger response for this API (no longer jobId/status/message, now only id/status or ErrorResponse)
+    validateUpsertPermissions(userInfo, workspaceNamespace, workspaceName) { _ =>
+      val importServiceUrl = s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports/$jobId"
 
-    // TODO: AS-155: check for read access on this workspace
+      userAuthedRequest(Get(importServiceUrl))(userInfo) map {
+        case resp if resp.status == OK =>
+          val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
 
-    // val idToken = googleServicesDAO.getAdminIdentityToken
-    val idToken = userInfo.accessToken
-    // the payload to Import Service sends the path
-    val importServiceUrl = s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports/$jobId"
+          // for backwards compatibility, we return a different model than import service does
+          val responsePayload = JsObject(
+            "status" -> JsString(importServiceResponse.status),
+            "message" -> JsString(importServiceResponse.status),
+            "jobId" -> JsString(importServiceResponse.id.toString)
+          )
 
-    val gzipPipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = addHeader (`Accept-Encoding`(gzip)) ~> addCredentials(idToken) ~> sendReceive ~> decode(Gzip)
-    val newImportCall:Future[HttpResponse] = gzipPipeline {
-      Get(importServiceUrl)
-    }
-
-    newImportCall map {
-      case resp if resp.status == OK =>
-        val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
-
-        val responsePayload = JsObject(
-          "status" -> JsString(importServiceResponse.status),
-          "message" -> JsString(importServiceResponse.status),
-          "jobId" -> JsString(importServiceResponse.id.toString)
-        )
-
-        RequestComplete(OK, responsePayload)
-      case otherResp =>
-        RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
+          RequestComplete(OK, responsePayload)
+        case otherResp =>
+          RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
+      }
     }
   }
 
