@@ -24,6 +24,7 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   implicit val errorReportSource = ErrorReportSource(GoogleServicesDAO.serviceName)
 
   def getAdminUserAccessToken: String
+  @deprecated("currently unused and targeted for deletion", "2020-03-06")
   def getAdminIdentityToken: String
   def getTrialBillingManagerAccessToken: String
   def getTrialBillingManagerEmail: String

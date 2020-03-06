@@ -135,6 +135,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .refreshAccessToken().getTokenValue
   }
 
+  @deprecated("currently unused and targeted for deletion", "2020-03-06")
   override def getAdminIdentityToken: String = {
     getScopedServiceAccountCredentials(firecloudAdminSACreds, Seq("openid", "email"))
       .idTokenWithAudience(EntityClient.avroToRawlsURL, List()).getTokenValue

@@ -74,6 +74,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   val pubsubMessages = new LinkedBlockingQueue[String]()
 
   override def getAdminUserAccessToken: String = "adminUserAccessToken"
+  @deprecated("currently unused and targeted for deletion", "2020-03-06")
   override def getAdminIdentityToken: String = "adminIdentityToken"
   override def getTrialBillingManagerAccessToken: String = "billingManagerAccessToken"
   override def getTrialBillingManagerEmail: String = "mock-trial-billing-mgr-email"
