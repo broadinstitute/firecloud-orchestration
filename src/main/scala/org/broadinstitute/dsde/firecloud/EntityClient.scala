@@ -422,7 +422,8 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
         userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) map {
           case resp if resp.status == Created =>
             val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
-            RequestComplete(Created, importServiceResponse)
+            // for backwards compatibility, we return Accepted(202), not Created(201)
+            RequestComplete(Accepted, importServiceResponse)
           case otherResp =>
             RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
         }
