@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.util.UUID
+
 import org.apache.commons.io.IOUtils
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
@@ -1124,7 +1126,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       "should 202 (Accepted) if everything validated and import request was accepted" in {
 
         val responsePayload = JsObject(
-          ("id", JsString(java.util.UUID.randomUUID().toString)),
+          ("id", JsString(UUID.randomUUID().toString)),
           ("status", JsString("Pending"))
         )
 
@@ -1147,14 +1149,137 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
       }
 
-      // TODO: AS-155: new tests needed:
-      /*
-        - get job status
-        - get job listing
-        - job listing passes query param
-       */
-
     }
+
+    "WorkspaceService importPFB job-status Tests" - {
+
+      "should 403 if import service access is forbidden" in {
+
+        val jobId = UUID.randomUUID().toString
+
+        importServiceServer
+          .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(Forbidden.intValue)
+            .withBody("Missing Authorization: Bearer token in header"))
+
+        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", NoContent)
+
+        (Get(s"$pfbImportPath/$jobId")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(Forbidden)
+          body.asString should include ("Missing Authorization: Bearer token in header")
+        }
+      }
+
+      "should 403 if workspace access not permitted" in {
+
+        val jobId = UUID.randomUUID().toString
+
+        // set the import service mock server to be successful. We expect this test to fail when calling checkIamActionWithLock.
+        // if we mistakenly succeed when calling checkIamActionWithLock, by ignoring its response, make sure that the import
+        // service mock keeps succeeding so the final assert that looks for Forbidden will fail the test.
+        importServiceServer
+          .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(Created.intValue)
+            .withBody("""{"id":"123","status":"RUNNING"}"""))
+
+        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", Forbidden, body = Some(Forbidden.defaultMessage))
+
+        (Get(s"$pfbImportPath/$jobId")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(Forbidden)
+          body.asString should be (Forbidden.defaultMessage)
+        }
+      }
+
+      "should 404 if workspace not found" in {
+
+        val jobId = UUID.randomUUID().toString
+
+        // set the import service mock server to be successful. We expect this test to fail when calling checkIamActionWithLock.
+        // if we mistakenly succeed when calling checkIamActionWithLock, by ignoring its response, make sure that the import
+        // service mock keeps succeeding so the final assert that looks for NotFound will fail the test.
+        importServiceServer
+          .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(Created.intValue)
+            .withBody("""{"id":"123","status":"RUNNING"}"""))
+
+        // note the extra "XXXX" appended to the workspace name in the path; this makes it such that the Rawls
+        // mock will not find the workspace.
+        stubRawlsService(HttpMethods.GET, s"${workspacesPath}XXXX/checkIamActionWithLock/read", NotFound)
+
+        (Get(s"$pfbImportPath/$jobId")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(NotFound)
+        }
+      }
+
+      "should propagate unexpected errors from import service" in {
+
+        val jobId = UUID.randomUUID().toString
+
+        // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
+        importServiceServer
+          .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(UnavailableForLegalReasons.intValue)
+            .withBody(UnavailableForLegalReasons.defaultMessage))
+
+        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", NoContent)
+
+        (Get(s"$pfbImportPath/$jobId")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(UnavailableForLegalReasons)
+          body.asString should include (UnavailableForLegalReasons.defaultMessage)
+        }
+      }
+
+      "should 200 (OK) if everything validated and import request was accepted" in {
+
+        val jobId = UUID.randomUUID().toString
+
+        val importServiceResponsePayload = JsObject(
+          ("id", JsString(jobId)),
+          ("status", JsString("Running"))
+        )
+
+        // for backwards compatibiilty reasons, orch returns a different payload than import service
+        val expectedOrchResponsePayload = JsObject(
+          ("jobId", JsString(jobId)),
+          ("status", JsString("Running")),
+          ("message", JsString("Running"))
+        )
+
+        importServiceServer
+          .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(OK.intValue)
+            .withBody(importServiceResponsePayload.compactPrint)
+            .withHeader("Content-Type", "application/json"))
+
+        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", NoContent)
+
+        (Get(s"$pfbImportPath/$jobId")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(OK)
+          body.asString.parseJson should be (expectedOrchResponsePayload) // to address string-formatting issues
+        }
+      }
+    }
+
+    // TODO: AS-155: new tests needed:
+    /*
+      - get job listing
+      - job listing passes query param
+     */
 
     "Workspace updateAttributes tests" - {
       "when calling any method other than PATCH on workspaces/*/*/updateAttributes path" - {
