@@ -380,9 +380,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
 
     userAuthedRequest(Get(checkUrl))(userInfo: UserInfo) flatMap {
       case resp if resp.status == NoContent => op(true)
-      case resp =>
-        logger.warn(s"****** workspace permissions failed with ${resp.status.intValue} ${resp.status.defaultMessage}: ${resp}")
-        Future(RequestComplete(resp)) // bubble up errors
+      case resp => Future(RequestComplete(resp)) // bubble up errors
     }
   }
 
@@ -417,7 +415,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
         userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) map {
           case resp if resp.status == Created =>
             val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
-            // for backwards compatibility, we return Accepted(202), not Created(201)
+            // for backwards compatibility, we return Accepted(202), even though import service returns Created(201)
             RequestComplete(Accepted, importServiceResponse)
           case otherResp =>
             RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)

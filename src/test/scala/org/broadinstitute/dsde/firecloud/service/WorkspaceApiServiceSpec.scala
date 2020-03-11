@@ -255,7 +255,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   override def beforeAll(): Unit = {
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
     bagitServer = startClientAndServer(MockUtils.bagitServerPort)
-    importServiceServer = startClientAndServer(MockUtils.importServerPort)
+    importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
   }
 
   override def afterAll(): Unit = {
