@@ -16,9 +16,8 @@ import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.Header
+import org.mockserver.model.{Header, JsonBody, NottableString, Parameter}
 import org.mockserver.model.HttpRequest._
-import org.mockserver.model.NottableString
 import org.mockserver.socket.SSLFactory
 import org.scalatest.BeforeAndAfterEach
 import spray.http._
@@ -27,7 +26,6 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
-import org.mockserver.model.JsonBody
 import spray.routing.RequestContext
 
 object WorkspaceApiServiceSpec {
@@ -1273,6 +1271,84 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           body.asString.parseJson should be (expectedOrchResponsePayload) // to address string-formatting issues
         }
       }
+    }
+
+    "WorkspaceService importPFB list-jobs tests" - {
+
+      "Successful passthrough should return OK with payload" in {
+        val responsePayload = JsArray(
+          JsObject(
+            ("id", JsString(UUID.randomUUID().toString)),
+            ("status", JsString("Running"))
+          ),
+          JsObject(
+            ("id", JsString(UUID.randomUUID().toString)),
+            ("status", JsString("Error"))
+          ),
+          JsObject(
+            ("id", JsString(UUID.randomUUID().toString)),
+            ("status", JsString("ImAUnitTest"))
+          )
+        )
+
+        importServiceServer
+          .when(request()
+            .withMethod("GET")
+            .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(OK.intValue)
+            .withBody(responsePayload.compactPrint)
+            .withHeader("Content-Type", "application/json"))
+
+        (Get(pfbImportPath)
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(OK)
+          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+        }
+      }
+
+      "Passthrough should pass on querystrings" in {
+        val responsePayload = JsArray(
+          JsObject(
+            ("id", JsString(UUID.randomUUID().toString)),
+            ("status", JsString("Running"))
+          )
+        )
+
+        val k1 = UUID.randomUUID().toString
+        val v1 = UUID.randomUUID().toString
+        val k2 = UUID.randomUUID().toString
+        val v2 = UUID.randomUUID().toString
+
+        val queryString = s"$k1=$v1&$k2=$v2"
+
+        importServiceServer
+          .when(request()
+            .withMethod("GET")
+            .withPath(s"/${workspace.namespace}/${workspace.name}/imports")
+            .withQueryStringParameters(new Parameter(k1, v1), new Parameter(k2, v2)))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(OK.intValue)
+            .withBody(responsePayload.compactPrint)
+            .withHeader("Content-Type", "application/json"))
+
+        (Get(s"$pfbImportPath?$queryString")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(OK)
+          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+        }
+      }
+
+      "Passthrough should not pass unrecognized HTTP verbs" in {
+        (Delete(s"$pfbImportPath")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(MethodNotAllowed)
+        }
+      }
+
     }
 
     // TODO: AS-155: new tests needed:

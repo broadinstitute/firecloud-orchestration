@@ -3527,6 +3527,38 @@ paths:
           description: Internal Error
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importPFB:
+    get:
+      x-passthrough: false
+      tags:
+        - Entities
+      operationId: listImportPFBJobs
+      summary: List PFB import jobs in this workspace
+      description: >
+        Lists all imports for this workspace, optionally filtered to only those imports currently in progress
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: query
+          description: When true, filters to only those imports currently in progress
+          name: running_only
+          required: false
+          type: boolean
+          default: false
+      responses:
+        200:
+          description: Successful Request
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized access to Workspace
+        403:
+          description: Forbidden access to Workspace
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
     post:
       x-passthrough: false
       tags:

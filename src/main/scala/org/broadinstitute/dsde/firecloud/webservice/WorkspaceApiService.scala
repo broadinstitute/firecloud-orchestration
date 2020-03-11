@@ -161,6 +161,13 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
                   }
                 }
               }
+            } ~
+            get {
+              requireUserInfo() { _ =>
+                extract(_.request.uri.query) { query =>
+                  passthrough(Uri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports").withQuery(query), HttpMethods.GET)
+                }
+              }
             }
           } ~
           path("importPFB" / Segment) { jobId =>
