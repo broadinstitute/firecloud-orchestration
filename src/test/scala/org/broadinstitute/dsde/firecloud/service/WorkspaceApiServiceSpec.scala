@@ -1055,7 +1055,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
           .respond(org.mockserver.model.HttpResponse.response()
             .withStatusCode(UnavailableForLegalReasons.intValue)
-            .withBody(UnavailableForLegalReasons.defaultMessage))
+            .withBody("import service message"))
 
         stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/write", NoContent)
 
@@ -1063,7 +1063,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(UnavailableForLegalReasons)
-          body.asString should include (UnavailableForLegalReasons.defaultMessage)
+          body.asString should include ("import service message")
         }
       }
 
@@ -1092,13 +1092,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             .withStatusCode(Created.intValue)
             .withBody("""{"id":"123","status":"RUNNING"}"""))
 
-        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/write", Forbidden, body = Some(Forbidden.defaultMessage))
+        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/write", Forbidden, body = Some("import service message"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Forbidden)
-            body.asString should be (Forbidden.defaultMessage)
+            body.asString should include ("import service message")
           }
       }
 
@@ -1186,13 +1186,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             .withStatusCode(Created.intValue)
             .withBody("""{"id":"123","status":"RUNNING"}"""))
 
-        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", Forbidden, body = Some(Forbidden.defaultMessage))
+        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", Forbidden, body = Some("import service message"))
 
         (Get(s"$pfbImportPath/$jobId")
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(Forbidden)
-          body.asString should be (Forbidden.defaultMessage)
+          body.asString should include ("import service message")
         }
       }
 
@@ -1229,7 +1229,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
           .respond(org.mockserver.model.HttpResponse.response()
             .withStatusCode(UnavailableForLegalReasons.intValue)
-            .withBody(UnavailableForLegalReasons.defaultMessage))
+            .withBody("import service message"))
 
         stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", NoContent)
 
@@ -1237,7 +1237,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(UnavailableForLegalReasons)
-          body.asString should include (UnavailableForLegalReasons.defaultMessage)
+          body.asString should include ("import service message")
         }
       }
 

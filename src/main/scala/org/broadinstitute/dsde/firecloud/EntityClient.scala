@@ -371,16 +371,16 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
   }
 
   // ask Rawls if we have permission on this workspace. For writes, Rawls will also check if the workspace is locked.
-  private def validateUpsertPermissions(userInfo: UserInfo, workspaceNamespace: String, workspaceName: String, action: String = "read")(op: Boolean => Future[PerRequestMessage]) = {
+  private def validateUpsertPermissions(userInfo: UserInfo, workspaceNamespace: String, workspaceName: String, action: String = "read"): Future[Boolean] = {
     val pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = authHeaders(requestContext) ~> sendRec
 
     def enc(s: String) = java.net.URLEncoder.encode(s, "utf-8")
 
     val checkUrl = s"${Rawls.workspacesUrl}/${enc(workspaceNamespace)}/${enc(workspaceName)}/checkIamActionWithLock/$action"
 
-    userAuthedRequest(Get(checkUrl))(userInfo: UserInfo) flatMap {
-      case resp if resp.status == NoContent => op(true)
-      case resp => Future(RequestComplete(resp)) // bubble up errors
+    userAuthedRequest(Get(checkUrl))(userInfo: UserInfo) map {
+      case resp if resp.status == NoContent => true
+      case resp => throw new FireCloudExceptionWithErrorReport(ErrorReport(resp.status, resp.entity.asString)) // bubble up errors
     }
   }
 
@@ -406,7 +406,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
     // validate presigned URL
     validatePfbUrl(pfbRequest) { pfbUrl =>
       // verify workspace existence and permissions
-      validateUpsertPermissions(userInfo, workspaceNamespace, workspaceName, "write") { _ =>
+      validateUpsertPermissions(userInfo, workspaceNamespace, workspaceName, "write") flatMap { _ =>
         // the payload to Import Service sends the path
         val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbUrl.toString, filetype = "pfb")
         // TODO: AS-155: always encode namespace/name
@@ -426,7 +426,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
 
   def pfbImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[PerRequestMessage] = {
 
-    validateUpsertPermissions(userInfo, workspaceNamespace, workspaceName) { _ =>
+    validateUpsertPermissions(userInfo, workspaceNamespace, workspaceName) flatMap { _ =>
       val importServiceUrl = s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports/$jobId"
 
       userAuthedRequest(Get(importServiceUrl))(userInfo) map {
