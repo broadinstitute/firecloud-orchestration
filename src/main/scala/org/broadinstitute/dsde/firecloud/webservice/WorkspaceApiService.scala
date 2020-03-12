@@ -165,6 +165,7 @@ trait WorkspaceApiService extends HttpService with FireCloudRequestBuilding
             get {
               requireUserInfo() { _ =>
                 extract(_.request.uri.query) { query =>
+                  // TODO: AS-155: simple passthrough is nice, but it retuns a payload inconsistent with the other PFB endpoints
                   passthrough(Uri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports").withQuery(query), HttpMethods.GET)
                 }
               }

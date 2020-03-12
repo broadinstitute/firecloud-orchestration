@@ -1351,12 +1351,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     }
 
-    // TODO: AS-155: new tests needed:
-    /*
-      - get job listing
-      - job listing passes query param
-     */
-
     "Workspace updateAttributes tests" - {
       "when calling any method other than PATCH on workspaces/*/*/updateAttributes path" - {
         "should receive a MethodNotAllowed error" in {

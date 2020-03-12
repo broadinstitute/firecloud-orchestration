@@ -416,6 +416,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
           case resp if resp.status == Created =>
             val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
             // for backwards compatibility, we return Accepted(202), even though import service returns Created(201)
+            // TODO: AS-155: this returns "id", not "jobId" as in the status endpoint
             RequestComplete(Accepted, importServiceResponse)
           case otherResp =>
             RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
@@ -434,11 +435,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
           val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
 
           // for backwards compatibility, we return a different model than import service does
-          val responsePayload = JsObject(
-            "status" -> JsString(importServiceResponse.status),
-            "message" -> JsString(importServiceResponse.status),
-            "jobId" -> JsString(importServiceResponse.id.toString)
-          )
+          val responsePayload = ImportStatusResponse.apply(importServiceResponse)
 
           RequestComplete(OK, responsePayload)
         case otherResp =>
