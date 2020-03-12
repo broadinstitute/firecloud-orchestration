@@ -1239,7 +1239,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
 
-      "should 200 (OK) if everything validated and import request was accepted" in {
+      "should 200 (OK) if everything validated and we return import status" in {
 
         val jobId = UUID.randomUUID().toString
 
@@ -1251,8 +1251,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         // for backwards compatibiilty reasons, orch returns a different payload than import service
         val expectedOrchResponsePayload = JsObject(
           ("jobId", JsString(jobId)),
-          ("status", JsString("Running")),
-          ("message", JsString("Running"))
+          ("status", JsString("Running"))
         )
 
         importServiceServer
