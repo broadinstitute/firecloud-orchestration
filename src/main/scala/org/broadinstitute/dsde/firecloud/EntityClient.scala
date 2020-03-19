@@ -387,7 +387,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
 
     // the payload to Import Service sends "path" and filetype.  Here, we force-hardcode filetype because this API
     // should only be used for PFBs.
-    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbRequest.url, filetype = "pfb")
+    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbRequest.url.getOrElse(""), filetype = "pfb")
 
     val importServiceUrl = s"${FireCloudConfig.ImportService.server}/${enc(workspaceNamespace)}/${enc(workspaceName)}/imports"
 

@@ -1014,21 +1014,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "WorkspaceService importPFB Tests" - {
-      "should 400 if PFB URL is empty" in {
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":""}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute((workspaceRoutes)) ~> check {
-            status should equal(BadRequest)
-          })
-      }
-
-      "should 400 if PFB URL is not https" in {
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"http://missing.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(BadRequest)
-          }
-      }
 
       "should 400 if import service indicates a bad request" in {
         importServiceServer
@@ -1037,32 +1022,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             .withStatusCode(400)
             .withBody("Bad request as reported by import service"))
 
-        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/write", NoContent)
-
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
             body.asString should include ("Bad request as reported by import service")
           }
-      }
-
-      "should propagate unexpected errors from import service" in {
-        // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
-        importServiceServer
-          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(UnavailableForLegalReasons.intValue)
-            .withBody("import service message"))
-
-        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/write", NoContent)
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(UnavailableForLegalReasons)
-          body.asString should include ("import service message")
-        }
       }
 
       "should 403 if import service access is forbidden" in {
@@ -1080,158 +1045,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
       }
 
-      "should 403 if workspace access not permitted" in {
-        // set the import service mock server to be successful. We expect this test to fail when calling checkIamActionWithLock.
-        // if we mistakenly succeed when calling checkIamActionWithLock, by ignoring its response, make sure that the import
-        // service mock keeps succeeding so the final assert that looks for Forbidden will fail the test.
-        importServiceServer
-          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(Created.intValue)
-            .withBody("""{"id":"123","status":"RUNNING"}"""))
-
-        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/write", Forbidden, body = Some("import service message"))
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(Forbidden)
-            body.asString should include ("import service message")
-          }
-      }
-
-      "should 404 if workspace not found" in {
-        // set the import service mock server to be successful. We expect this test to fail when calling checkIamActionWithLock.
-        // if we mistakenly succeed when calling checkIamActionWithLock, by ignoring its response, make sure that the import
-        // service mock keeps succeeding so the final assert that looks for NotFound will fail the test.
-        importServiceServer
-          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(Created.intValue)
-            .withBody("""{"id":"123","status":"RUNNING"}"""))
-
-        // note the extra "XXXX" appended to the workspace name in the path; this makes it such that the Rawls
-        // mock will not find the workspace.
-        stubRawlsService(HttpMethods.GET, s"${workspacesPath}XXXX/checkIamActionWithLock/write", NotFound)
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(NotFound)
-          }
-      }
-
-      "should 202 (Accepted) if everything validated and import request was accepted" in {
-
-        val responsePayload = JsObject(
-          ("id", JsString(UUID.randomUUID().toString)),
-          ("status", JsString("Pending"))
-        )
-
-        importServiceServer
-          .when(request()
-            .withMethod("POST")
-            .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(Created.intValue)
-            .withBody(responsePayload.compactPrint)
-            .withHeader("Content-Type", "application/json"))
-
-        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/write", NoContent)
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(Accepted)
-            body.asString.parseJson should be (responsePayload) // to address string-formatting issues
-          }
-      }
-
-    }
-
-    "WorkspaceService importPFB job-status Tests" - {
-
-      "should 403 if import service access is forbidden" in {
-
-        val jobId = UUID.randomUUID().toString
-
-        importServiceServer
-          .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(Forbidden.intValue)
-            .withBody("Missing Authorization: Bearer token in header"))
-
-        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", NoContent)
-
-        (Get(s"$pfbImportPath/$jobId")
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(Forbidden)
-          body.asString should include ("Missing Authorization: Bearer token in header")
-        }
-      }
-
-      "should 403 if workspace access not permitted" in {
-
-        val jobId = UUID.randomUUID().toString
-
-        // set the import service mock server to be successful. We expect this test to fail when calling checkIamActionWithLock.
-        // if we mistakenly succeed when calling checkIamActionWithLock, by ignoring its response, make sure that the import
-        // service mock keeps succeeding so the final assert that looks for Forbidden will fail the test.
-        importServiceServer
-          .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(Created.intValue)
-            .withBody("""{"id":"123","status":"RUNNING"}"""))
-
-        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", Forbidden, body = Some("import service message"))
-
-        (Get(s"$pfbImportPath/$jobId")
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(Forbidden)
-          body.asString should include ("import service message")
-        }
-      }
-
-      "should 404 if workspace not found" in {
-
-        val jobId = UUID.randomUUID().toString
-
-        // set the import service mock server to be successful. We expect this test to fail when calling checkIamActionWithLock.
-        // if we mistakenly succeed when calling checkIamActionWithLock, by ignoring its response, make sure that the import
-        // service mock keeps succeeding so the final assert that looks for NotFound will fail the test.
-        importServiceServer
-          .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(Created.intValue)
-            .withBody("""{"id":"123","status":"RUNNING"}"""))
-
-        // note the extra "XXXX" appended to the workspace name in the path; this makes it such that the Rawls
-        // mock will not find the workspace.
-        stubRawlsService(HttpMethods.GET, s"${workspacesPath}XXXX/checkIamActionWithLock/read", NotFound)
-
-        (Get(s"$pfbImportPath/$jobId")
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(NotFound)
-        }
-      }
-
-      "should propagate unexpected errors from import service" in {
-
-        val jobId = UUID.randomUUID().toString
-
+      "should propagate any other errors from import service" in {
         // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
         importServiceServer
-          .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
+          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
           .respond(org.mockserver.model.HttpResponse.response()
             .withStatusCode(UnavailableForLegalReasons.intValue)
             .withBody("import service message"))
 
-        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", NoContent)
-
-        (Get(s"$pfbImportPath/$jobId")
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(UnavailableForLegalReasons)
@@ -1239,35 +1061,70 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
 
-      "should 200 (OK) if everything validated and we return import status" in {
+      "should 202 (Accepted) if everything validated and import request was accepted" in {
+
+        val jobId = UUID.randomUUID().toString
+        val pfbPath = "https://good.avro"
+
+        val importSvcResponsePayload = ImportServiceResponse(jobId = jobId, status = "Pending", message = None)
+
+        val orchExpectedPayload = PfbImportRequest(url = Some(pfbPath),
+                                                   jobId = Some(jobId),
+                                                   workspace = Some(WorkspaceName(workspace.namespace, workspace.name)),
+                                                   user = None)
+
+        importServiceServer
+          .when(request()
+            .withMethod("POST")
+            .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(Created.intValue)
+            .withBody(importSvcResponsePayload.toJson.compactPrint)
+            .withHeader("Content-Type", "application/json"))
+
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(Accepted)
+            body.asString.parseJson should be (orchExpectedPayload.toJson)
+          }
+      }
+
+    }
+
+    "WorkspaceService importPFB job-status Tests" - {
+
+      "Successful passthrough should return OK with payload" in {
 
         val jobId = UUID.randomUUID().toString
 
-        val importServiceResponsePayload = JsObject(
+        val responsePayload = JsObject(
           ("id", JsString(jobId)),
           ("status", JsString("Running"))
         )
 
-        // for backwards compatibiilty reasons, orch returns a different payload than import service
-        val expectedOrchResponsePayload = JsObject(
-          ("jobId", JsString(jobId)),
-          ("status", JsString("Running"))
-        )
-
         importServiceServer
-          .when(request().withMethod("GET").withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
+          .when(request()
+            .withMethod("GET")
+            .withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
           .respond(org.mockserver.model.HttpResponse.response()
             .withStatusCode(OK.intValue)
-            .withBody(importServiceResponsePayload.compactPrint)
+            .withBody(responsePayload.compactPrint)
             .withHeader("Content-Type", "application/json"))
-
-        stubRawlsService(HttpMethods.GET, s"$workspacesPath/checkIamActionWithLock/read", NoContent)
 
         (Get(s"$pfbImportPath/$jobId")
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          body.asString.parseJson should be (expectedOrchResponsePayload) // to address string-formatting issues
+          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+        }
+      }
+
+      "Passthrough should not pass unrecognized HTTP verbs" in {
+        (Delete(s"$pfbImportPath/dummyJobId")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(MethodNotAllowed)
         }
       }
     }
