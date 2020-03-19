@@ -48,7 +48,6 @@ object EntityClient {
   case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
 
   case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo)
-  case class PFBImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo)
 
   def props(entityClientConstructor: (RequestContext, ModelSchema) => EntityClient, requestContext: RequestContext,
             modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = {
@@ -147,8 +146,6 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
       importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
     case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo) =>
       importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) pipeTo sender
-    case PFBImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo) =>
-      pfbImportStatus(workspaceNamespace, workspaceName, jobId, userInfo) pipeTo sender
   }
 
 
@@ -421,25 +418,6 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
           case otherResp =>
             RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
         }
-      }
-    }
-  }
-
-  def pfbImportStatus(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[PerRequestMessage] = {
-
-    validateUpsertPermissions(userInfo, workspaceNamespace, workspaceName) flatMap { _ =>
-      val importServiceUrl = s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports/$jobId"
-
-      userAuthedRequest(Get(importServiceUrl))(userInfo) map {
-        case resp if resp.status == OK =>
-          val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
-
-          // for backwards compatibility, we return a different model than import service does
-          val responsePayload = ImportStatusResponse.apply(importServiceResponse)
-
-          RequestComplete(OK, responsePayload)
-        case otherResp =>
-          RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
       }
     }
   }
