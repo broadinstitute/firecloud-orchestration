@@ -383,42 +383,30 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
 
   def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
 
-    // initial validation of the presigned url provided as an argument
-    def validatePfbUrl(pfbRequest: PfbImportRequest)(op: URL => Future[PerRequestMessage]) = {
-      val pfbUrl = try {
-        new URL(pfbRequest.url)
-      } catch {
-        case e: Exception => throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, s"Invalid URL: ${pfbRequest.url}", e))
-      }
-      val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
+    def enc(str: String) = java.net.URLEncoder.encode(str, "utf-8")
 
-      if (!acceptableProtocols.contains(pfbUrl.getProtocol)) {
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "Invalid URL protocol: must be https only"))
-      }
+    // the payload to Import Service sends "path" and filetype.  Here, we force-hardcode filetype because this API
+    // should only be used for PFBs.
+    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbRequest.url, filetype = "pfb")
 
-      // TODO: add real (semantic) validation for origins, to ensure caller isn't supplying malice
-      op(pfbUrl)
-    }
+    val importServiceUrl = s"${FireCloudConfig.ImportService.server}/${enc(workspaceNamespace)}/${enc(workspaceName)}/imports"
 
-    // validate presigned URL
-    validatePfbUrl(pfbRequest) { pfbUrl =>
-      // verify workspace existence and permissions
-      validateUpsertPermissions(userInfo, workspaceNamespace, workspaceName, "write") flatMap { _ =>
-        // the payload to Import Service sends the path
-        val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbUrl.toString, filetype = "pfb")
-        // TODO: AS-155: always encode namespace/name
-        val importServiceUrl = s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports"
+    userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) map {
+      case resp if resp.status == Created =>
+        val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
+        // for backwards compatibility, we return Accepted(202), even though import service returns Created(201),
+        // and we return a different response payload than what import service returns.
 
-        userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) map {
-          case resp if resp.status == Created =>
-            val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
-            // for backwards compatibility, we return Accepted(202), even though import service returns Created(201)
-            // TODO: AS-155: this returns "id", not "jobId" as in the status endpoint
-            RequestComplete(Accepted, importServiceResponse)
-          case otherResp =>
-            RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
-        }
-      }
+        val responsePayload:PfbImportRequest = pfbRequest.copy(
+          jobId = Some(importServiceResponse.jobId),
+          user = None,
+          workspace = Some(WorkspaceName(workspaceNamespace, workspaceName))
+        )
+
+        RequestComplete(Accepted, responsePayload)
+      case otherResp =>
+        RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
+
     }
   }
 

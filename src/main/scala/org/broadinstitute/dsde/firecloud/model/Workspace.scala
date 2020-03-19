@@ -39,24 +39,9 @@ case class ImportServiceRequest(
   filetype: String)
 
 case class ImportServiceResponse(
-  id: String,
+  jobId: String,
   status: String,
-  error_message: Option[String])
-
-object ImportStatusResponse {
-  def apply(importServiceResponse: ImportServiceResponse): ImportStatusResponse = {
-    new ImportStatusResponse(
-      jobId = importServiceResponse.id,
-      status = importServiceResponse.status,
-      message = importServiceResponse.error_message)
-  }
-}
-
-case class ImportStatusResponse(
-   jobId: String,
-   status: String,
-   message: Option[String])
-
+  message: Option[String])
 
 case class MethodConfigurationId(
   name: Option[String] = None,

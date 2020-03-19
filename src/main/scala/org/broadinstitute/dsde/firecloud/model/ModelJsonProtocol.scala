@@ -230,7 +230,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impPfbImportRequest = jsonFormat4(PfbImportRequest)
   implicit val impImportServiceRequest = jsonFormat2(ImportServiceRequest)
   implicit val impImportServiceResponse = jsonFormat3(ImportServiceResponse)
-  implicit val impImportStatusResponse = jsonFormat3(ImportStatusResponse.apply)
 
   implicit val impWorkspaceStorageCostEstimate = jsonFormat1(WorkspaceStorageCostEstimate)
 
