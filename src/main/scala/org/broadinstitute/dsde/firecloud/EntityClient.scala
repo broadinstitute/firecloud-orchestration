@@ -367,20 +367,6 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
     }
   }
 
-  // ask Rawls if we have permission on this workspace. For writes, Rawls will also check if the workspace is locked.
-  private def validateUpsertPermissions(userInfo: UserInfo, workspaceNamespace: String, workspaceName: String, action: String = "read"): Future[Boolean] = {
-    val pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]] = authHeaders(requestContext) ~> sendRec
-
-    def enc(s: String) = java.net.URLEncoder.encode(s, "utf-8")
-
-    val checkUrl = s"${Rawls.workspacesUrl}/${enc(workspaceNamespace)}/${enc(workspaceName)}/checkIamActionWithLock/$action"
-
-    userAuthedRequest(Get(checkUrl))(userInfo: UserInfo) map {
-      case resp if resp.status == NoContent => true
-      case resp => throw new FireCloudExceptionWithErrorReport(ErrorReport(resp.status, resp.entity.asString)) // bubble up errors
-    }
-  }
-
   def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
 
     def enc(str: String) = java.net.URLEncoder.encode(str, "utf-8")
