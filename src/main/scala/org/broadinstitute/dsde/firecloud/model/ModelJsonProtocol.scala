@@ -227,7 +227,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
   implicit val impUserImportPermission = jsonFormat2(UserImportPermission)
 
   implicit val impBagitImportRequest = jsonFormat2(BagitImportRequest)
-  implicit val impPfbImportRequest = jsonFormat4(PfbImportRequest)
+  implicit val impPfbImportRequest = jsonFormat1(PfbImportRequest)
+  implicit val impPfbImportResponse = jsonFormat3(PfbImportResponse)
   implicit val impImportServiceRequest = jsonFormat2(ImportServiceRequest)
   implicit val impImportServiceResponse = jsonFormat3(ImportServiceResponse)
 

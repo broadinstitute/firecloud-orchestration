@@ -28,11 +28,11 @@ case class EntityId(entityType: String, entityName: String)
 
 case class BagitImportRequest(bagitURL: String, format: String)
 
-case class PfbImportRequest(
-  url: Option[String],
-  jobId: Option[String] = None,
-  workspace: Option[WorkspaceName] = None,
-  user: Option[WorkbenchUserInfo] = None)
+case class PfbImportRequest(url: Option[String])
+
+case class PfbImportResponse(url: String,
+                             jobId: String,
+                             workspace: WorkspaceName)
 
 case class ImportServiceRequest(
   path: String,

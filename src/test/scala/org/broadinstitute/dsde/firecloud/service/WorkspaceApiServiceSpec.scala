@@ -1068,10 +1068,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         val importSvcResponsePayload = ImportServiceResponse(jobId = jobId, status = "Pending", message = None)
 
-        val orchExpectedPayload = PfbImportRequest(url = Some(pfbPath),
-                                                   jobId = Some(jobId),
-                                                   workspace = Some(WorkspaceName(workspace.namespace, workspace.name)),
-                                                   user = None)
+        val orchExpectedPayload = PfbImportResponse(url = pfbPath,
+                                                   jobId = jobId,
+                                                   workspace = WorkspaceName(workspace.namespace, workspace.name))
 
         importServiceServer
           .when(request()

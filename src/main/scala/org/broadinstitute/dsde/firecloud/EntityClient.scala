@@ -383,10 +383,10 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
         // for backwards compatibility, we return Accepted(202), even though import service returns Created(201),
         // and we return a different response payload than what import service returns.
 
-        val responsePayload:PfbImportRequest = pfbRequest.copy(
-          jobId = Some(importServiceResponse.jobId),
-          user = None,
-          workspace = Some(WorkspaceName(workspaceNamespace, workspaceName))
+        val responsePayload:PfbImportResponse = PfbImportResponse(
+          jobId = importServiceResponse.jobId,
+          url = pfbRequest.url.getOrElse(""),
+          workspace = WorkspaceName(workspaceNamespace, workspaceName)
         )
 
         RequestComplete(Accepted, responsePayload)
