@@ -9,11 +9,12 @@ object Dependencies {
   def excludeGuavaJDK5(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava-jdk5")
 
   val rootDependencies = Seq(
-    // proactively pull in latest versions of Jackson libs, instead of relying on the versions
+    // proactively pull in latest versions of Jackson libs and Netty codec, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     "com.fasterxml.jackson.core"     % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonHotfixV,
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
+    "io.netty"                       % "netty-codec"         % "4.1.46.Final",
 
     "org.apache.logging.log4j"       % "log4j-api"           % "2.8.2", // elasticsearch requires log4j ...
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.8.2", // ... but we redirect log4j to logback.
