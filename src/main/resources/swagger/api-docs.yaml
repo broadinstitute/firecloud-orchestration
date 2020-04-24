@@ -4897,7 +4897,7 @@ paths:
       summary: Returns registration and activation status for the current user
       parameters:
         - in: query
-          description: when set to true does not check the various enabled status of the user
+          description: when set to true does not check the various enabled statuses of the user
           name: userDetailsOnly
           required: false
           type: boolean
