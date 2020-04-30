@@ -34,6 +34,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with WorkspaceApiService
   with NotificationsApiService
   with StatusApiService
+  with SnapshotApiService
   with MethodsApiService
   with Ga4ghApiService
   with UserApiService
@@ -127,7 +128,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val apiRoutes = methodsApiServiceRoutes ~ profileRoutes ~ cromIamApiServiceRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
     nihRoutes ~ billingService.routes ~ trialApiServiceRoutes ~ shareLogServiceRoutes ~
-    staticNotebooksRoutes
+    staticNotebooksRoutes ~ snapshotRoutes
 
   val healthService = new HealthService with ActorRefFactoryContext
 

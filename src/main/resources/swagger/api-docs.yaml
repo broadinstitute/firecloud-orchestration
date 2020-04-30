@@ -4080,6 +4080,81 @@ paths:
           - email
           - profile
 
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/snapshots:
+    post:
+      x-passthrough: true
+      x-passthrough-target: rawls
+      responses:
+        201:
+          description: Created
+          schema:
+            $ref: '#/definitions/WMDataReferenceResponse'
+        404:
+          description: Workspace or snapshot not found
+      parameters:
+        - in: path
+          description: workspace namespace
+          name: workspaceNamespace
+          required: true
+          type: string
+        - in: path
+          description: workspace name
+          name: workspaceName
+          required: true
+          type: string
+        - in: body
+          description: Reference to the Data Repo snapshot
+          name: dataRepoSnapshot
+          required: true
+          schema:
+            $ref: '#/definitions/DataRepoSnapshot'
+      tags:
+        - Snapshots
+      summary: Add a reference to a snapshot in the Terra Data Repo
+      operationId: createDataRepoSnapshot
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/snapshots/{snapshotId}:
+    post:
+      x-passthrough: true
+      x-passthrough-target: rawls
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/WMDataReferenceResponse'
+        404:
+          description: Workspace or snapshot not found
+      parameters:
+        - in: path
+          description: workspace namespace
+          name: workspaceNamespace
+          required: true
+          type: string
+        - in: path
+          description: workspace name
+          name: workspaceName
+          required: true
+          type: string
+        - in: path
+          description: The snapshot ID
+          name: snapshotId
+          required: true
+          type: string
+      tags:
+        - Snapshots
+      summary: Get a reference to a snapshot in the Terra Data Repo
+      operationId: getDataRepoSnapshot
+      security:
+        - googleoauth:
+            - openid
+            - email
+            - profile
+
   /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
     get:
       x-passthrough: false
@@ -5944,6 +6019,16 @@ definitions:
       curator:
         type: boolean
 
+  DataRepoSnapshot:
+    description: A Data Repo snapshot
+    properties:
+      snapshotId:
+        type: string
+        description: The ID of the snapshot in Terra Data Repo
+      name:
+        type: string
+        description: The name of the snapshot
+
   DatasetPermission:
     type: object
     properties:
@@ -7016,6 +7101,22 @@ definitions:
         type: string
         default: ""
 
+  ResourceDescription:
+    description: A description of a resource from Workspace Manager
+    properties:
+      resource_id:
+        type: string
+      workspace_id:
+        type: string
+      application_id:
+        type: string
+      is_visible:
+        type: string
+      owner:
+        type: string
+      attributes:
+        type: string
+
   SearchTermRef:
     type: object
     properties:
@@ -7561,6 +7662,24 @@ definitions:
         additionalProperties: {}
       methodConfiguration:
         $ref: '#/definitions/MethodConfiguration'
+
+  WMDataReferenceResponse:
+    description: A Data Reference definition from Workspace Manager
+    properties:
+      referenceId:
+        type: string
+      name:
+        type: string
+      resourceDescription:
+        $ref: '#/definitions/ResourceDescription'
+      referenceType:
+        type: string
+      reference:
+        type: object
+      credentialId:
+        type: string
+      cloningInstructions:
+        type: string
 
   Workflow:
     description: ''
