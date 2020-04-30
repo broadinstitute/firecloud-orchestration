@@ -8,7 +8,7 @@ import spray.http.HttpMethods
 object SnapshotApiService {
   val rawlsBasePath = FireCloudConfig.Rawls.baseUrl
 
-  def createDataRepoSnapshotURL(namespace: String, name: String) = rawlsBasePath + s"/workspaces/${namespace}/${name}"
+  def createDataRepoSnapshotURL(namespace: String, name: String) = rawlsBasePath + s"/workspaces/${namespace}/${name}/snapshots"
   def getDataRepoSnapshotURL(namespace: String, name: String, snapshotId: String) = rawlsBasePath + s"/workspaces/${namespace}/${name}/snapshots/${snapshotId}"
 }
 
