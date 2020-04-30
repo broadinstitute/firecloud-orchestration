@@ -7104,13 +7104,13 @@ definitions:
   ResourceDescription:
     description: A description of a resource from Workspace Manager
     properties:
-      resource_id:
+      resourceId:
         type: string
-      workspace_id:
+      workspaceId:
         type: string
-      application_id:
+      applicationId:
         type: string
-      is_visible:
+      isVisible:
         type: string
       owner:
         type: string
