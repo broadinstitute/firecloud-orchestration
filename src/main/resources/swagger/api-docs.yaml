@@ -4092,16 +4092,8 @@ paths:
         404:
           description: Workspace or snapshot not found
       parameters:
-        - in: path
-          description: workspace namespace
-          name: workspaceNamespace
-          required: true
-          type: string
-        - in: path
-          description: workspace name
-          name: workspaceName
-          required: true
-          type: string
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - in: body
           description: Reference to the Data Repo snapshot
           name: dataRepoSnapshot
@@ -4112,14 +4104,9 @@ paths:
         - Snapshots
       summary: Add a reference to a snapshot in the Terra Data Repo
       operationId: createDataRepoSnapshot
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/snapshots/{snapshotId}:
-    post:
+    get:
       x-passthrough: true
       x-passthrough-target: rawls
       responses:
@@ -4130,16 +4117,8 @@ paths:
         404:
           description: Workspace or snapshot not found
       parameters:
-        - in: path
-          description: workspace namespace
-          name: workspaceNamespace
-          required: true
-          type: string
-        - in: path
-          description: workspace name
-          name: workspaceName
-          required: true
-          type: string
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
         - in: path
           description: The snapshot ID
           name: snapshotId
@@ -4149,11 +4128,6 @@ paths:
         - Snapshots
       summary: Get a reference to a snapshot in the Terra Data Repo
       operationId: getDataRepoSnapshot
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
     get:
