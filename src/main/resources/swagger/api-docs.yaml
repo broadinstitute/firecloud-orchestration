@@ -4088,7 +4088,7 @@ paths:
         201:
           description: Created
           schema:
-            $ref: '#/definitions/WMDataReferenceResponse'
+            $ref: '#/definitions/DataRepoSnapshotReference'
         404:
           description: Workspace or snapshot not found
       parameters:
@@ -4113,7 +4113,7 @@ paths:
         200:
           description: OK
           schema:
-            $ref: '#/definitions/WMDataReferenceResponse'
+            $ref: '#/definitions/DataRepoSnapshotReference'
         404:
           description: Workspace or snapshot not found
       parameters:
@@ -7075,22 +7075,6 @@ definitions:
         type: string
         default: ""
 
-  ResourceDescription:
-    description: A description of a resource from Workspace Manager
-    properties:
-      resourceId:
-        type: string
-      workspaceId:
-        type: string
-      applicationId:
-        type: string
-      isVisible:
-        type: boolean
-      owner:
-        type: string
-      attributes:
-        type: string
-
   SearchTermRef:
     type: object
     properties:
@@ -7637,21 +7621,19 @@ definitions:
       methodConfiguration:
         $ref: '#/definitions/MethodConfiguration'
 
-  WMDataReferenceResponse:
+  DataRepoSnapshotReference:
     description: A Data Reference definition from Workspace Manager
     properties:
       referenceId:
         type: string
       name:
         type: string
-      resourceDescription:
-        $ref: '#/definitions/ResourceDescription'
+      workspaceId:
+        type: string
       referenceType:
         type: string
       reference:
         type: object
-      credentialId:
-        type: string
       cloningInstructions:
         type: string
 
