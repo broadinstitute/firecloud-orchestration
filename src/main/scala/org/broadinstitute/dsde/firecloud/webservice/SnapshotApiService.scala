@@ -16,7 +16,7 @@ trait SnapshotApiService extends FireCloudDirectives with UserInfoDirectives {
 
   val snapshotRoutes =
     pathPrefix("api") {
-      pathPrefix("workspaces" / Segment / Segment ) { (namespace, name) =>
+      pathPrefix("workspaces" / Segment / Segment / "snapshots") { (namespace, name) =>
         pathEnd {
           post {
             passthrough(SnapshotApiService.createDataRepoSnapshotURL(namespace, name), HttpMethods.POST)
