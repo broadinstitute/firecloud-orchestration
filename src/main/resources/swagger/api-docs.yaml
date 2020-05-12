@@ -4091,6 +4091,8 @@ paths:
             $ref: '#/definitions/DataRepoSnapshotReference'
         404:
           description: Workspace or snapshot not found
+        500:
+          description: Internal Error
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
@@ -4116,6 +4118,8 @@ paths:
             $ref: '#/definitions/DataRepoSnapshotReference'
         404:
           description: Workspace or snapshot not found
+        500:
+          description: Internal Error
       parameters:
         - $ref: '#/parameters/workspaceNamespaceParam'
         - $ref: '#/parameters/workspaceNameParam'
@@ -4128,6 +4132,28 @@ paths:
         - Snapshots
       summary: Get a reference to a snapshot in the Terra Data Repo
       operationId: getDataRepoSnapshot
+    delete:
+      x-passthrough: true
+      x-passthrough-target: rawls
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Workspace or snapshot not found
+        500:
+          description: Internal Error
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: path
+          description: The snapshot ID
+          name: snapshotId
+          required: true
+          type: string
+      tags:
+        - Snapshots
+      summary: Delete a workspace reference to a snapshot in the Terra Data Repo
+      operationId: deleteDataRepoSnapshot
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
     get:
