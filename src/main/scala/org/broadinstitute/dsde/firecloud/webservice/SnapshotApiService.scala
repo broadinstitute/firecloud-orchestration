@@ -8,7 +8,7 @@ import spray.http.HttpMethods
 object SnapshotApiService {
   val rawlsBasePath = FireCloudConfig.Rawls.baseUrl
 
-  def createDataRepoSnapshotURL(namespace: String, name: String) = rawlsBasePath + s"/workspaces/${namespace}/${name}/snapshots"
+  def dataRepoSnapshotBaseURL(namespace: String, name: String) = rawlsBasePath + s"/workspaces/${namespace}/${name}/snapshots"
   def dataRepoSnapshotURL(namespace: String, name: String, snapshotId: String) = rawlsBasePath + s"/workspaces/${namespace}/${name}/snapshots/${snapshotId}"
 }
 
@@ -19,7 +19,10 @@ trait SnapshotApiService extends FireCloudDirectives with UserInfoDirectives {
       pathPrefix("workspaces" / Segment / Segment / "snapshots") { (namespace, name) =>
         pathEnd {
           post {
-            passthrough(SnapshotApiService.createDataRepoSnapshotURL(namespace, name), HttpMethods.POST)
+            passthrough(SnapshotApiService.dataRepoSnapshotBaseURL(namespace, name), HttpMethods.POST)
+          } ~
+          get {
+            passthrough(SnapshotApiService.dataRepoSnapshotBaseURL(namespace, name), HttpMethods.GET)
           }
         }
       } ~
