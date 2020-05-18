@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectives
 import org.broadinstitute.dsde.firecloud.utils.UserInfoDirectives
-import spray.http.HttpMethods
+import spray.http.{HttpMethods, Uri}
 
 object SnapshotApiService {
   val rawlsBasePath = FireCloudConfig.Rawls.baseUrl
@@ -23,8 +23,8 @@ trait SnapshotApiService extends FireCloudDirectives with UserInfoDirectives {
             passthrough(SnapshotApiService.createDataRepoSnapshotURL(namespace, name), HttpMethods.POST)
           } ~
           get {
-            parameters("offset", "limit") { (offset, limit) =>
-              passthrough(SnapshotApiService.listDataRepoSnapshotURL(namespace, name, offset, limit), HttpMethods.GET)
+            extract(_.request.uri.query) { query =>
+              passthrough(Uri(FireCloudConfig.Rawls.baseUrl).withQuery(query), HttpMethods.GET)
             }
           }
         }

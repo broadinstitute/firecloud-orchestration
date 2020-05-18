@@ -4123,16 +4123,8 @@ paths:
           schema:
             $ref: '#/definitions/ErrorReport'
       parameters:
-      - in: path
-        description: The workspace namespace
-        name: namespace
-        required: true
-        type: string
-      - in: path
-        description: The workspace name
-        name: name
-        required: true
-        type: string
+      - $ref: '#/parameters/workspaceNamespaceParam'
+      - $ref: '#/parameters/workspaceNameParam'
       - in: query
         name: offset
         description: The number of items to skip before starting to collect the result set.
