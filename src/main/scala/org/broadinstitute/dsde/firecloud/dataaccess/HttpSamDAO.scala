@@ -1,5 +1,8 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets.UTF_8
+
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
@@ -39,7 +42,7 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
   }
 
   override def getUserIds(email: RawlsUserEmail)(implicit userInfo: WithAccessToken): Future[UserIdInfo] = {
-    authedRequestToObject[UserIdInfo](Get(samGetUserIdsUrl.format(email.value)))
+    authedRequestToObject[UserIdInfo](Get(samGetUserIdsUrl.format(URLEncoder.encode(email.value, UTF_8.name))))
   }
 
   override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
