@@ -1,5 +1,8 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets.UTF_8
+
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
@@ -35,14 +38,14 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   def samManagedGroup(groupName: WorkbenchGroupName): String = samManagedGroupBase + s"/$groupName"
   def samManagedGroupRequestAccess(groupName: WorkbenchGroupName): String = samManagedGroup(groupName) + "/requestAccess"
   def samManagedGroupPolicy(groupName: WorkbenchGroupName, policyName: ManagedGroupRole): String = samManagedGroup(groupName) + s"/$policyName"
-  def samManagedGroupAlterMember(groupName: WorkbenchGroupName, policyName: ManagedGroupRole, email: WorkbenchEmail): String = samManagedGroupPolicy(groupName, policyName) + s"/$email"
+  def samManagedGroupAlterMember(groupName: WorkbenchGroupName, policyName: ManagedGroupRole, email: WorkbenchEmail): String = samManagedGroupPolicy(groupName, policyName) + s"/${URLEncoder.encode(email.value, UTF_8.name)}"
 
   val samResourceBase: String = FireCloudConfig.Sam.baseUrl + s"/api/resource"
   def samResource(resourceTypeName: String, resourceId: String): String = samResourceBase + s"/$resourceTypeName/$resourceId"
   def samResourceRoles(resourceTypeName: String, resourceId: String): String = samResource(resourceTypeName, resourceId) + "/roles"
   def samResourcePolicies(resourceTypeName: String, resourceId: String): String = samResource(resourceTypeName, resourceId) + "/policies"
   def samResourcePolicy(resourceTypeName: String, resourceId: String, policyName: String): String = samResourcePolicies(resourceTypeName, resourceId) + s"/$policyName"
-  def samResourcePolicyAlterMember(resourceTypeName: String, resourceId: String, policyName: String, email: WorkbenchEmail): String = samResourcePolicy(resourceTypeName, resourceId, policyName) + s"/$email"
+  def samResourcePolicyAlterMember(resourceTypeName: String, resourceId: String, policyName: String, email: WorkbenchEmail): String = samResourcePolicy(resourceTypeName, resourceId, policyName) + s"/${URLEncoder.encode(email.value, UTF_8.name)}"
 
 
   val samResourcesBase: String = FireCloudConfig.Sam.baseUrl + s"/api/resources/v1"
