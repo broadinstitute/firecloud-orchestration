@@ -23,10 +23,8 @@ trait SnapshotApiService extends FireCloudDirectives with UserInfoDirectives {
             passthrough(SnapshotApiService.createDataRepoSnapshotURL(namespace, name), HttpMethods.POST)
           } ~
           get {
-            pathPrefix("workspaces" / Segment / Segment / "snapshots") { (namespace, name) =>
-              extract(_.request.uri.query) { query =>
-                passthrough(Uri(SnapshotApiService.listDataRepoSnapshotURL(namespace, name)).withQuery(query), HttpMethods.GET)
-              }
+            extract(_.request.uri.query) { query =>
+              passthrough(Uri(SnapshotApiService.listDataRepoSnapshotURL(namespace, name)).withQuery(query), HttpMethods.GET)
             }
           }
         }
