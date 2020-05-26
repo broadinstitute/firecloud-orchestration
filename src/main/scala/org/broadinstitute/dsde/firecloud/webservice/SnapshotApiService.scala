@@ -9,7 +9,7 @@ object SnapshotApiService {
   val rawlsBasePath = FireCloudConfig.Rawls.baseUrl
 
   def createDataRepoSnapshotURL(namespace: String, name: String) = rawlsBasePath + s"/workspaces/${namespace}/${name}/snapshots"
-  def listDataRepoSnapshotURL(namespace:String, name:String, offset:String, limit:String) = rawlsBasePath + s"/workspaces/${namespace}/${name}/snapshots?limit=" + limit + "&offset=" + offset
+  def listDataRepoSnapshotURL(namespace:String, name:String) = rawlsBasePath + s"/workspaces/${namespace}/${name}/snapshots"
   def dataRepoSnapshotURL(namespace: String, name: String, snapshotId: String) = rawlsBasePath + s"/workspaces/${namespace}/${name}/snapshots/${snapshotId}"
 }
 
@@ -23,8 +23,10 @@ trait SnapshotApiService extends FireCloudDirectives with UserInfoDirectives {
             passthrough(SnapshotApiService.createDataRepoSnapshotURL(namespace, name), HttpMethods.POST)
           } ~
           get {
-            extract(_.request.uri.query) { query =>
-              passthrough(Uri(FireCloudConfig.Rawls.baseUrl).withQuery(query), HttpMethods.GET)
+            pathPrefix("workspaces" / Segment / Segment / "snapshots") { (namespace, name) =>
+              extract(_.request.uri.query) { query =>
+                passthrough(Uri(SnapshotApiService.listDataRepoSnapshotURL(namespace, name)).withQuery(query), HttpMethods.GET)
+              }
             }
           }
         }
