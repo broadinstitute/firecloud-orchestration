@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import java.util.UUID
+
 import org.apache.commons.io.IOUtils
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
@@ -14,9 +16,8 @@ import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.Header
+import org.mockserver.model.{Header, JsonBody, NottableString, Parameter}
 import org.mockserver.model.HttpRequest._
-import org.mockserver.model.NottableString
 import org.mockserver.socket.SSLFactory
 import org.scalatest.BeforeAndAfterEach
 import spray.http._
@@ -25,7 +26,6 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
-import org.mockserver.model.JsonBody
 import spray.routing.RequestContext
 
 object WorkspaceApiServiceSpec {
@@ -152,7 +152,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   var rawlsServer: ClientAndServer = _
   var bagitServer: ClientAndServer = _
-  var arrowServer: ClientAndServer = _
+  var importServiceServer: ClientAndServer = _
 
   /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
     *
@@ -253,13 +253,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   override def beforeAll(): Unit = {
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
     bagitServer = startClientAndServer(MockUtils.bagitServerPort)
-    arrowServer = startClientAndServer(MockUtils.arrowServerPort)
+    importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
   }
 
   override def afterAll(): Unit = {
     rawlsServer.stop
     bagitServer.stop
-    arrowServer.stop
+    importServiceServer.stop
   }
 
   override def beforeEach(): Unit = {
@@ -267,7 +267,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   override def afterEach(): Unit = {
-    arrowServer.reset
+    importServiceServer.reset
     this.searchDao.reset
   }
 
@@ -1013,194 +1013,195 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-    "WorkspaceService PFB Tests" - {
-      "should 400 if PFB URL is empty" in {
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":""}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute((workspaceRoutes)) ~> check {
-            status should equal(BadRequest)
-          })
-      }
+    "WorkspaceService importPFB Tests" - {
 
-      "should 400 if PFB URL is not https" in {
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"http://missing.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(BadRequest)
-          }
-      }
-
-      // ignored: Arrow requests are now async
-      "should 400 if arrow indicates a bad request" ignore {
-        // This may be caused by either orch giving arrow a bad request or the client giving a URL
-        // that results in a bad request. We'll surface 400 in both cases in order to avoid hiding
-        // the latter case behind a 500.
-        arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls"))
+      "should 400 if import service indicates a bad request" in {
+        importServiceServer
+          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
           .respond(org.mockserver.model.HttpResponse.response()
             .withStatusCode(400)
-            .withBody("Bad request encountered when accessing PFB data"))
+            .withBody("Bad request as reported by import service"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
-            body.asString should include ("Bad request encountered when accessing PFB data")
+            body.asString should include ("Bad request as reported by import service")
           }
       }
 
-      // ignored: Arrow requests are now async
-      "should 401 if avro file access is unauthorized" ignore {
-        arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls"))
+      "should 403 if import service access is forbidden" in {
+        importServiceServer
+          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
           .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(401)
-            .withBody("unauthorized.avro not found"))
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://unauthorized.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(Unauthorized)
-            body.asString should include ("unauthorized.avro not found")
-          }
-      }
-
-      // ignored: Arrow requests are now async
-      "should 403 if avro file access is forbidden" ignore {
-        arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(403)
-            .withBody("forbidden.avro not found"))
+            .withStatusCode(Forbidden.intValue)
+            .withBody("Missing Authorization: Bearer token in header"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://forbidden.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Forbidden)
-            body.asString should include ("forbidden.avro not found")
+            body.asString should include ("Missing Authorization: Bearer token in header")
           }
       }
 
-      // ignored: Arrow requests are now async
-      "should 404 if avro file is not found" ignore {
-        arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls"))
+      "should propagate any other errors from import service" in {
+        // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
+        importServiceServer
+          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
           .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(404)
-            .withBody("missing.avro not found"))
+            .withStatusCode(UnavailableForLegalReasons.intValue)
+            .withBody("import service message"))
 
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://missing.avro"}"""))
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(NotFound)
-            body.asString should include ("missing.avro not found")
-          }
+          status should equal(UnavailableForLegalReasons)
+          body.asString should include ("import service message")
+        }
       }
 
-      // ignored: Arrow requests are now async
-      "should 500 if arrow fails" ignore {
-        arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls"))
+      "should 202 (Accepted) if everything validated and import request was accepted" in {
+
+        val jobId = UUID.randomUUID().toString
+        val pfbPath = "https://good.avro"
+
+        val importSvcResponsePayload = ImportServiceResponse(jobId = jobId, status = "Pending", message = None)
+
+        val orchExpectedPayload = PfbImportResponse(url = pfbPath,
+                                                   jobId = jobId,
+                                                   workspace = WorkspaceName(workspace.namespace, workspace.name))
+
+        importServiceServer
+          .when(request()
+            .withMethod("POST")
+            .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
           .respond(org.mockserver.model.HttpResponse.response()
-          .withStatusCode(500)
-          .withBody("arrow error"))
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://missing.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(InternalServerError)
-            body.asString should include ("arrow error")
-          }
-      }
-
-      "should 401 if workspace access unauthorized" in {
-        arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls"))
-          .respond(org.mockserver.model.HttpResponse.response()
-          .withStatusCode(200)
-          .withBody("Pretend this is Rawls upsert JSON"))
-
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", Unauthorized, requestBody = Some("[]"), body = Some("workspace access unauthorized"))
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(Unauthorized)
-            body.asString should include ("workspace access unauthorized")
-          }
-      }
-
-      "should 403 if workspace access forbidden" in {
-        arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls"))
-          .respond(org.mockserver.model.HttpResponse.response()
-          .withStatusCode(200)
-          .withBody("Pretend this is Rawls upsert JSON"))
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", Forbidden, requestBody = Some("[]"), body = Some("workspace access forbidden"))
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(Forbidden)
-            body.asString should include ("workspace access forbidden")
-          }
-      }
-
-      "should 404 if workspace not found" in {
-        arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls"))
-          .respond(org.mockserver.model.HttpResponse.response()
-          .withStatusCode(200)
-          .withBody("Pretend this is Rawls upsert JSON"))
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NotFound, requestBody = Some("[]"), body = Some("workspace not found"))
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(NotFound)
-            body.asString should include ("workspace not found")
-          }
-      }
-
-      // ignored: the real rawls request to upsert entities is now async
-      "should 500 if rawls fails" ignore {
-        arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(200)
-            .withBody("Pretend this is Rawls upsert JSON"))
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", BadRequest, requestBody = Some("Pretend this is Rawls upsert JSON"), body = Some("Rawls is unhappy"))
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(InternalServerError)
-            body.asString should include ("Rawls is unhappy")
-          }
-      }
-
-      "should 202 if everything validated and import request was accepted" in {
-        arrowServer
-          .when(request().withMethod("POST").withPath("/avroToRawls").withHeaders(
-            Header.header("Accept-Encoding", "gzip"),
-            Header.header(NottableString.not("x-firecloud-id"), NottableString.string(".*")),
-            Header.header(NottableString.not("authorization"), NottableString.string(".*"))
-          ))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(200)
-            .withBody("Pretend this is Rawls upsert JSON"))
-        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent, requestBody = Some("[]"))
+            .withStatusCode(Created.intValue)
+            .withBody(importSvcResponsePayload.toJson.compactPrint)
+            .withHeader("Content-Type", "application/json"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Accepted)
+            body.asString.parseJson should be (orchExpectedPayload.toJson)
           }
       }
 
-      // ignored: real semantic validation not implemented yet
-      "should 400 if presigned URL is invalid" ignore {
-        fail("test not implemented")
+    }
+
+    "WorkspaceService importPFB job-status Tests" - {
+
+      "Successful passthrough should return OK with payload" in {
+
+        val jobId = UUID.randomUUID().toString
+
+        val responsePayload = JsObject(
+          ("id", JsString(jobId)),
+          ("status", JsString("Running"))
+        )
+
+        importServiceServer
+          .when(request()
+            .withMethod("GET")
+            .withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(OK.intValue)
+            .withBody(responsePayload.compactPrint)
+            .withHeader("Content-Type", "application/json"))
+
+        (Get(s"$pfbImportPath/$jobId")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(OK)
+          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+        }
+      }
+
+      "Passthrough should not pass unrecognized HTTP verbs" in {
+        (Delete(s"$pfbImportPath/dummyJobId")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(MethodNotAllowed)
+        }
+      }
+    }
+
+    "WorkspaceService importPFB list-jobs tests" - {
+
+      "Successful passthrough should return OK with payload" in {
+        val responsePayload = JsArray(
+          JsObject(
+            ("id", JsString(UUID.randomUUID().toString)),
+            ("status", JsString("Running"))
+          ),
+          JsObject(
+            ("id", JsString(UUID.randomUUID().toString)),
+            ("status", JsString("Error"))
+          ),
+          JsObject(
+            ("id", JsString(UUID.randomUUID().toString)),
+            ("status", JsString("ImAUnitTest"))
+          )
+        )
+
+        importServiceServer
+          .when(request()
+            .withMethod("GET")
+            .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(OK.intValue)
+            .withBody(responsePayload.compactPrint)
+            .withHeader("Content-Type", "application/json"))
+
+        (Get(pfbImportPath)
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(OK)
+          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+        }
+      }
+
+      "Passthrough should pass on querystrings" in {
+        val responsePayload = JsArray(
+          JsObject(
+            ("id", JsString(UUID.randomUUID().toString)),
+            ("status", JsString("Running"))
+          )
+        )
+
+        val k1 = UUID.randomUUID().toString
+        val v1 = UUID.randomUUID().toString
+        val k2 = UUID.randomUUID().toString
+        val v2 = UUID.randomUUID().toString
+
+        val queryString = s"$k1=$v1&$k2=$v2"
+
+        importServiceServer
+          .when(request()
+            .withMethod("GET")
+            .withPath(s"/${workspace.namespace}/${workspace.name}/imports")
+            .withQueryStringParameters(new Parameter(k1, v1), new Parameter(k2, v2)))
+          .respond(org.mockserver.model.HttpResponse.response()
+            .withStatusCode(OK.intValue)
+            .withBody(responsePayload.compactPrint)
+            .withHeader("Content-Type", "application/json"))
+
+        (Get(s"$pfbImportPath?$queryString")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(OK)
+          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+        }
+      }
+
+      "Passthrough should not pass unrecognized HTTP verbs" in {
+        (Delete(s"$pfbImportPath")
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(MethodNotAllowed)
+        }
       }
 
     }

@@ -3527,6 +3527,38 @@ paths:
           description: Internal Error
 
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importPFB:
+    get:
+      x-passthrough: false
+      tags:
+        - Entities
+      operationId: listImportPFBJobs
+      summary: List PFB import jobs in this workspace
+      description: >
+        Lists all imports for this workspace, optionally filtered to only those imports currently in progress
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/workspaceNamespaceParam'
+        - $ref: '#/parameters/workspaceNameParam'
+        - in: query
+          description: When true, filters to only those imports currently in progress
+          name: running_only
+          required: false
+          type: boolean
+          default: false
+      responses:
+        200:
+          description: Successful Request
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/PFBStatusResponse'
+        400:
+          description: Bad Request
+        404:
+          description: Workspace not found
+        500:
+          description: Internal Error
     post:
       x-passthrough: false
       tags:
@@ -3589,7 +3621,7 @@ paths:
           schema:
             $ref: '#/definitions/PFBStatusResponse'
         404:
-          description: job ID not found
+          description: workspace or job ID not found
         500:
           description: Internal Error
 
@@ -6821,15 +6853,9 @@ definitions:
       message:
         type: string
         description: extended explanation for the import job.
-      timestamp:
-        type: integer
-        format: int64
-        description: time of the response
     required:
       - jobId
       - status
-      - message
-      - timestamp
 
   Profile:
     type: object

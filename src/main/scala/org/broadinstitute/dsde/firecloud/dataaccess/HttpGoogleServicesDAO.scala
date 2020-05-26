@@ -135,11 +135,6 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       .refreshAccessToken().getTokenValue
   }
 
-  override def getAdminIdentityToken: String = {
-    getScopedServiceAccountCredentials(firecloudAdminSACreds, Seq("openid", "email"))
-      .idTokenWithAudience(EntityClient.avroToRawlsURL, List()).getTokenValue
-  }
-
   def getTrialBillingManagerAccessToken = {
     getScopedServiceAccountCredentials(trialBillingSACreds, authScopes ++ billingScope)
       .refreshAccessToken().getTokenValue
