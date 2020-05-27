@@ -6,7 +6,7 @@ object Dependencies {
   val jacksonV = "2.10.0"
   val jacksonHotfixV = "2.10.0" // for when only some of the Jackson libs have hotfix releases
 
-  def excludeGuavaJDK5(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava-jdk5")
+  def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
@@ -16,6 +16,7 @@ object Dependencies {
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
     "io.netty"                       % "netty-codec"         % "4.1.46.Final",
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.2",
+    "com.google.guava"               % "guava"               % "28.1-android",
     // END transitive dependency overrides
 
     "org.apache.logging.log4j"       % "log4j-api"           % "2.8.2", // elasticsearch requires log4j ...
@@ -26,9 +27,10 @@ object Dependencies {
 
     "org.broadinstitute.dsde.vault" %% "vault-common"        % "0.1-19-ca8b927"
       exclude("io.spray", "spray-routing_2.11"),
-    "org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-b9d04a47"
-      exclude("com.typesafe.scala-logging", "scala-logging_2.11") exclude("com.typesafe.akka", "akka-stream_2.11"),
-    "org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP",
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-b9d04a47")
+      exclude("com.typesafe.scala-logging", "scala-logging_2.11")
+      exclude("com.typesafe.akka", "akka-stream_2.11"),
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP"),
 
     "io.spray"                      %% "spray-can"                 % sprayV,
     "io.spray"                      %% "spray-json"                % "1.3.3",
@@ -48,14 +50,12 @@ object Dependencies {
       exclude("io.netty", "netty-buffer")
       exclude("io.netty", "netty-common"),
 
-    "com.google.guava"               % "guava"               % "28.1-android",
-
-    excludeGuavaJDK5("com.google.apis"     % "google-api-services-storage"      % "v1-rev20190910-1.30.3"),
-    excludeGuavaJDK5("com.google.apis"     % "google-api-services-sheets"       % "v4-rev20191001-1.30.3"),
-    excludeGuavaJDK5("com.google.apis"     % "google-api-services-cloudbilling" % "v1-rev20191005-1.30.3"),
-    excludeGuavaJDK5("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
-    excludeGuavaJDK5("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.18.0"),
-    excludeGuavaJDK5("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-storage"      % "v1-rev20190910-1.30.3"),
+    excludeGuava("com.google.apis"     % "google-api-services-sheets"       % "v4-rev20191001-1.30.3"),
+    excludeGuava("com.google.apis"     % "google-api-services-cloudbilling" % "v1-rev20191005-1.30.3"),
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
+    excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.18.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
     "org.webjars"                    % "swagger-ui"          % "2.2.5",
     "com.pauldijou"                 %% "jwt-core"            % "3.1.0",
