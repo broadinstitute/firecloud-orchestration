@@ -9,12 +9,14 @@ object Dependencies {
   def excludeGuavaJDK5(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava-jdk5")
 
   val rootDependencies = Seq(
-    // proactively pull in latest versions of Jackson libs and Netty codec, instead of relying on the versions
+    // proactively pull in latest versions of these libraries, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     "com.fasterxml.jackson.core"     % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonHotfixV,
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
     "io.netty"                       % "netty-codec"         % "4.1.46.Final",
+    "org.apache.lucene"              % "lucene-queryparser"  % "6.6.2",
+    // END transitive dependency overrides
 
     "org.apache.logging.log4j"       % "log4j-api"           % "2.8.2", // elasticsearch requires log4j ...
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.8.2", // ... but we redirect log4j to logback.
@@ -39,7 +41,12 @@ object Dependencies {
     "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,
     "com.typesafe.akka"             %% "akka-stream"               % akkaV,
 
-    "org.elasticsearch.client"       % "transport"           % "5.4.3",
+    "org.elasticsearch.client"       % "transport"           % "5.6.16"
+      exclude("io.netty", "netty-codec")
+      exclude("io.netty", "netty-transport")
+      exclude("io.netty", "netty-resolver")
+      exclude("io.netty", "netty-buffer")
+      exclude("io.netty", "netty-common"),
 
     "com.google.guava"               % "guava"               % "28.1-android",
 
