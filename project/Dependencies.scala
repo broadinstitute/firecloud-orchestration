@@ -29,7 +29,8 @@ object Dependencies {
       exclude("io.spray", "spray-routing_2.11"),
     excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-b9d04a47")
       exclude("com.typesafe.scala-logging", "scala-logging_2.11")
-      exclude("com.typesafe.akka", "akka-stream_2.11"),
+      exclude("com.typesafe.akka", "akka-stream_2.11")
+      exclude("com.google.code.findbugs", "jsr305"),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP"),
 
     "io.spray"                      %% "spray-can"                 % sprayV,
