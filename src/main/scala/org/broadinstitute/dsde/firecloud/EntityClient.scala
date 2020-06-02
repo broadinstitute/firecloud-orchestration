@@ -369,13 +369,11 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
 
   def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
 
-    def enc(str: String) = java.net.URLEncoder.encode(str, "utf-8")
-
     // the payload to Import Service sends "path" and filetype.  Here, we force-hardcode filetype because this API
     // should only be used for PFBs.
     val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbRequest.url.getOrElse(""), filetype = "pfb")
 
-    val importServiceUrl = s"${FireCloudConfig.ImportService.server}/${enc(workspaceNamespace)}/${enc(workspaceName)}/imports"
+    val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
 
     userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) map {
       case resp if resp.status == Created =>
