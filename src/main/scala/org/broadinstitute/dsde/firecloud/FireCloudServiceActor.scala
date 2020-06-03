@@ -187,16 +187,11 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     }
   )
 
-  private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/2.2.5"
+  private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/3.25.0"
 
   val swaggerUiService = {
     path("") {
       get {
-        parameter("url") {urlparam =>
-          requestUri {uri =>
-            redirect(uri.withQuery(Map.empty[String,String]), MovedPermanently)
-          }
-        } ~
         serveIndex()
       }
     } ~
@@ -210,9 +205,8 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     // We have to be explicit about the paths here since we're matching at the root URL and we don't
     // want to catch all paths lest we circumvent Spray's not-found and method-not-allowed error
     // messages.
-    (pathSuffixTest("o2c.html") | pathSuffixTest("swagger-ui.js")
-        | pathPrefixTest("css" /) | pathPrefixTest("fonts" /) | pathPrefixTest("images" /)
-        | pathPrefixTest("lang" /) | pathPrefixTest("lib" /)) {
+      (pathPrefixTest("swagger-ui") | pathPrefixTest("oauth2") | pathSuffixTest("js")
+        | pathSuffixTest("css") | pathPrefixTest("favicon")) {
       get {
         getFromResourceDirectory(swaggerUiPath)
       }
@@ -226,18 +220,23 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
           """
             |        validatorUrl: null,
             |        apisSorter: "alpha",
-            |        operationsSorter: "alpha",
+            |        operationsSorter: "alpha"
           """.stripMargin
 
         HttpEntity(ContentType(MediaTypes.`text/html`),
           indexHtml
-            .replace("your-client-id", FireCloudConfig.Auth.googleClientId)
-            .replace("your-realms", FireCloudConfig.Auth.swaggerRealm)
-            .replace("your-app-name", FireCloudConfig.Auth.swaggerRealm)
-            .replace("scopeSeparator: \",\"", "scopeSeparator: \" \"")
-            .replace("jsonEditor: false,", "jsonEditor: false," + swaggerOptions)
-            .replace("url = \"http://petstore.swagger.io/v2/swagger.json\";",
-              "url = '/api-docs.yaml';")
+            .replace("""url: "https://petstore.swagger.io/v2/swagger.json"""", "url: '/api-docs.yaml'")
+            .replace("""layout: "StandaloneLayout"""", s"""layout: "StandaloneLayout", $swaggerOptions""")
+            .replace("window.ui = ui", s"""ui.initOAuth({
+                                          |        clientId: "${FireCloudConfig.Auth.googleClientId}",
+                                          |        clientSecret: "${FireCloudConfig.Auth.swaggerRealm}",
+                                          |        realm: "${FireCloudConfig.Auth.swaggerRealm}",
+                                          |        appName: "firecloud",
+                                          |        scopeSeparator: " ",
+                                          |        additionalQueryStringParams: {}
+                                          |      })
+                                          |      window.ui = ui
+                                          |      """.stripMargin)
         )
       }
     }
