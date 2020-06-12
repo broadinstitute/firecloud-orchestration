@@ -25,7 +25,7 @@ paths:
       requestBody:
         description: create project request
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/CreateRawlsBillingProjectFullRequest'
         required: true
@@ -411,7 +411,7 @@ paths:
       requestBody:
         description: Agora Entity
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/ConfigurationQuery'
         required: false
@@ -589,7 +589,7 @@ paths:
       requestBody:
         description: the ACLs to upsert
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/MethodConfigACL'
         required: true
@@ -652,7 +652,7 @@ paths:
       requestBody:
         description: the ACLs to upsert
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/MethodConfigACL'
         required: true
@@ -816,7 +816,7 @@ paths:
         description: |
           Custom labels submitted as JSON. Example: {"key-1":"value-1","key-2":"value-2"}
         content:
-          '*/*':
+          'application/json':
             schema:
               type: object
         required: true
@@ -1249,7 +1249,7 @@ paths:
         description: |
           Same query parameters as GET /query endpoint, submitted as a json list. Example: [{"status":"Success"},{"status":"Failed"}]
         content:
-          '*/*':
+          'application/json':
             schema:
               type: array
               items:
@@ -1665,7 +1665,7 @@ paths:
       requestBody:
         description: name of Method to look up
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/MethodID'
         required: true
@@ -1739,7 +1739,7 @@ paths:
       requestBody:
         description: Search terms and pagination parameters
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/SearchTermRef'
         required: false
@@ -1759,7 +1759,7 @@ paths:
       requestBody:
         description: Search terms and pagination parameters
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/SearchTermRef'
         required: false
@@ -1889,7 +1889,7 @@ paths:
       requestBody:
         description: Json array of group names, or empty array for no restrictions
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/StringArray'
         required: true
@@ -1996,7 +1996,7 @@ paths:
       requestBody:
         description: Library metadata
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/LibraryMetadataInput'
         required: true
@@ -2181,7 +2181,7 @@ paths:
       requestBody:
         description: Agora Entity
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/MethodQuery'
         required: false
@@ -2565,7 +2565,7 @@ paths:
       requestBody:
         description: the ACLs to upsert
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/MethodConfigACL'
         required: true
@@ -2628,7 +2628,7 @@ paths:
       requestBody:
         description: the ACLs to upsert
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/MethodConfigACL'
         required: true
@@ -2661,7 +2661,7 @@ paths:
       requestBody:
         description: method acls to upsert
         content:
-          '*/*':
+          'application/json':
             schema:
               type: array
               items:
@@ -2699,7 +2699,7 @@ paths:
       requestBody:
         description: JWT from NIH login
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/JWTWrapper'
         required: true
@@ -2909,7 +2909,7 @@ paths:
       requestBody:
         description: The preferences to set as a Map[String, String]
         content:
-          '*/*':
+          'application/json':
             schema:
               type: object
               additionalProperties:
@@ -3073,7 +3073,7 @@ paths:
       requestBody:
         description: Notebook ipynb file
         content:
-          '*/*':
+          'application/json':
             schema:
               type: string
         required: true
@@ -3153,7 +3153,7 @@ paths:
       requestBody:
         description: name of Method to use for template
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/MethodID'
         required: true
@@ -3198,7 +3198,7 @@ paths:
       requestBody:
         description: list of users on which to operate
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/StringArray'
         required: true
@@ -3352,7 +3352,7 @@ paths:
       requestBody:
         description: New workspace information
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/WorkspaceRequest'
         required: true
@@ -3561,7 +3561,7 @@ paths:
       requestBody:
         description: Series of ACL updates for workspace
         content:
-          '*/*':
+          'application/json':
             schema:
               type: array
               items:
@@ -3720,7 +3720,7 @@ paths:
       requestBody:
         description: Series of Catalog updates for workspace
         content:
-          '*/*':
+          'application/json':
             schema:
               type: array
               items:
@@ -3854,7 +3854,7 @@ paths:
       requestBody:
         description: Cloned workspace information
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/WorkspaceRequestClone'
         required: true
@@ -3972,7 +3972,7 @@ paths:
       requestBody:
         description: Entities to Copy
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/CopyEntity'
         required: true
@@ -4025,7 +4025,7 @@ paths:
       requestBody:
         description: Entities to delete
         content:
-          '*/*':
+          'application/json':
             schema:
               type: array
               items:
@@ -4179,7 +4179,7 @@ paths:
       requestBody:
         description: Update operations for attributes
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/AttributeUpdateOperationArray'
         required: false
@@ -4251,7 +4251,7 @@ paths:
       requestBody:
         description: Expression
         content:
-          '*/*':
+          'application/json':
             schema:
               type: string
         required: true
@@ -4506,7 +4506,7 @@ paths:
       requestBody:
         description: JSON object containing bagit URL
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/BagitRequest'
         required: true
@@ -4639,7 +4639,7 @@ paths:
       requestBody:
         description: JSON object containing PFB URL
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/PFBRequest'
         required: true
@@ -4869,7 +4869,7 @@ paths:
       requestBody:
         description: Method Config to Update
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/ConfigurationIngest'
         required: true
@@ -4929,7 +4929,7 @@ paths:
       requestBody:
         description: Method Config to Update
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/ConfigurationIngest'
         required: true
@@ -5029,7 +5029,7 @@ paths:
       requestBody:
         description: Method Config Rename
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/MethodConfigRename'
         required: true
@@ -5121,7 +5121,7 @@ paths:
       requestBody:
         description: Method Configuration to Copy
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/CopyConfigurationIngest'
         required: true
@@ -5166,7 +5166,7 @@ paths:
       requestBody:
         description: Method Configuration to Copy
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/PublishConfigurationIngest'
         required: true
@@ -5304,7 +5304,7 @@ paths:
       requestBody:
         description: Method Configuration contents
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/NewMethodConfigIngest'
         required: true
@@ -5347,7 +5347,7 @@ paths:
       requestBody:
         description: Users and/or configs on which to report, both optional
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/PermissionReportRequest'
         required: true
@@ -5484,7 +5484,7 @@ paths:
       requestBody:
         description: Post Submission
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/SubmissionRequest'
         required: true
@@ -5663,7 +5663,7 @@ paths:
       requestBody:
         description: Description of a submission.
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/SubmissionRequest'
         required: true
@@ -5937,7 +5937,7 @@ paths:
       requestBody:
         description: List of tags.
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/StringArray'
         required: true
@@ -5981,7 +5981,7 @@ paths:
       requestBody:
         description: List of tags.
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/StringArray'
         required: true
@@ -6025,7 +6025,7 @@ paths:
       requestBody:
         description: List of tags.
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/StringArray'
         required: true
@@ -6109,7 +6109,7 @@ paths:
           library metadata (republish will not happen). Use UpdateAttributes in the
           library section.
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/AttributeUpdateOperationArray'
         required: true
@@ -6156,7 +6156,7 @@ paths:
           should not be used to change library metadata (republish will not happen).
           Use UpdateAttributes in the library section
         content:
-          '*/*':
+          'application/json':
             schema:
               type: object
               additionalProperties:
@@ -6442,7 +6442,7 @@ paths:
       requestBody:
         description: Research Purpose Request
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/ResearchPurposeRequest'
         required: true
@@ -6463,7 +6463,7 @@ paths:
       requestBody:
         description: Structured Data Request
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/structuredDataRequest'
         required: true
@@ -6573,7 +6573,7 @@ paths:
       operationId: handleOauthCode
       requestBody:
         content:
-          '*/*':
+          'application/json':
             schema:
               required:
                 - code
@@ -6713,7 +6713,7 @@ paths:
       requestBody:
         description: A complete profile
         content:
-          '*/*':
+          'application/json':
             schema:
               $ref: '#/components/schemas/Profile'
         required: false
@@ -10238,14 +10238,14 @@ components:
     configACLPayload:
       description: the ACLs to upsert
       content:
-        '*/*':
+        'application/json':
           schema:
             $ref: '#/components/schemas/MethodConfigACL'
       required: true
     preferencesParam:
       description: The preferences to set as a Map[String, String]
       content:
-        '*/*':
+        'application/json':
           schema:
             type: object
             additionalProperties:
