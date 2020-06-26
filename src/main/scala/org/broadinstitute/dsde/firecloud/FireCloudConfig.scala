@@ -201,6 +201,8 @@ object FireCloudConfig {
     val spreadsheet = trial.getConfig("spreadsheet")
     val spreadsheetId = spreadsheet.getString("id")
     val spreadsheetUpdateFrequencyMinutes = spreadsheet.getInt("updateFrequencyMinutes")
+
+    val blocklist: Seq[String] = Try(trial.getStringList("domainBlocklist").asScala).toOption.getOrElse(Seq.empty[String])
   }
 
   object Metrics {

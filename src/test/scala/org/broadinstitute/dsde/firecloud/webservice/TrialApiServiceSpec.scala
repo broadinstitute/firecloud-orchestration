@@ -79,7 +79,10 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       (enrolledUser, enrolledProps),
       (invitedUser, enrolledProps),
       (terminatedUser, terminatedProps),
-      (finalizedUser, finalizedProps))
+      (finalizedUser, finalizedProps),
+      (blocklistOneUser, enabledProps),
+      (blocklistTwoUser, enabledProps)
+    )
 
     allUsersAndProps.foreach {
       case (user, props) =>
@@ -213,6 +216,17 @@ final class TrialApiServiceSpec extends BaseServiceSpec with UserApiService with
       s"enrollment as a terminated user via $enrollPath" - {
         "should be a BadRequest" in {
           Post(enrollPath) ~> dummyUserIdHeaders(terminatedUser) ~> userServiceRoutes ~> check {
+            status should equal(BadRequest)
+          }
+        }
+      }
+
+      s"enrollment as a user whose email domain is blocklisted via $enrollPath" - {
+        "should be a BadRequest" in {
+          Post(enrollPath) ~> dummyUserIdHeaders(blocklistOneUser, email = blocklistOneUserEmail) ~> userServiceRoutes ~> check {
+            status should equal(BadRequest)
+          }
+          Post(enrollPath) ~> dummyUserIdHeaders(blocklistTwoUser, email = blocklistTwoUserEmail) ~> userServiceRoutes ~> check {
             status should equal(BadRequest)
           }
         }
@@ -670,6 +684,8 @@ object TrialApiServiceSpec {
   val registeredUser = "registered-user"
   val unregisteredUser = "unregistered-user"
   val invitedUser = "invited-user"
+  val blocklistOneUser = "blocked-user-one"
+  val blocklistTwoUser = "blocked-user-two"
 
   val noTrialProps = Map.empty[String,String]
 
@@ -735,6 +751,8 @@ object TrialApiServiceSpec {
   val finalizedUserEmail = "finalized-user-email"
   val registeredUserEmail = "registered-user-email"
   val invitedUserEmail = "invited-user-email"
+  val blocklistOneUserEmail = "user@whatever.reseller.blahblah.co.c-iasdmasdfasdf.forbidden.net"
+  val blocklistTwoUserEmail = "user@notallowed.org"
 
   val dummy1UserInfo = WorkbenchUserInfo(userSubjectId = dummy1User, dummy1UserEmail)
   val dummy2UserInfo = WorkbenchUserInfo(userSubjectId = dummy2User, dummy2UserEmail)
@@ -746,6 +764,8 @@ object TrialApiServiceSpec {
   val finalizedUserInfo = WorkbenchUserInfo(userSubjectId = finalizedUser, finalizedUserEmail)
   val registeredUserInfo = WorkbenchUserInfo(userSubjectId = registeredUser, registeredUserEmail)
   val invitedUserInfo = WorkbenchUserInfo(userSubjectId = invitedUser, invitedUserEmail)
+  val blocklistOneUserInfo = WorkbenchUserInfo(userSubjectId = blocklistOneUser, blocklistOneUserEmail)
+  val blocklistTwoUserInfo = WorkbenchUserInfo(userSubjectId = blocklistTwoUser, blocklistTwoUserEmail)
 
 
   val dummy1UserRegInfo = RegistrationInfo(dummy1UserInfo, workbenchEnabled)
@@ -758,6 +778,8 @@ object TrialApiServiceSpec {
   val finalizedUserRegInfo = RegistrationInfo(finalizedUserInfo, workbenchEnabled)
   val registeredUserRegInfo = RegistrationInfo(registeredUserInfo, workbenchEnabled)
   val invitedUserRegInfo = RegistrationInfo(invitedUserInfo, workbenchEnabled)
+  val blocklistOneUserRegInfo = RegistrationInfo(blocklistOneUserInfo, workbenchEnabled)
+  val blocklistTwoUserRegInfo = RegistrationInfo(blocklistTwoUserInfo, workbenchEnabled)
 
   val registrationInfoByEmail = Map(
     dummy1User -> dummy1UserRegInfo,
@@ -769,6 +791,8 @@ object TrialApiServiceSpec {
     terminatedUser -> terminatedUserRegInfo,
     finalizedUser -> finalizedUserRegInfo,
     registeredUser -> registeredUserRegInfo,
-    invitedUser -> invitedUserRegInfo
+    invitedUser -> invitedUserRegInfo,
+    blocklistOneUser -> blocklistOneUserRegInfo,
+    blocklistTwoUser -> blocklistTwoUserRegInfo
   )
 }
