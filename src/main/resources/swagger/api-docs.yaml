@@ -8020,6 +8020,9 @@ components:
         deleted:
           type: boolean
           description: Is this config marked as deleted?
+        dataReferenceName:
+          type: string
+          description: the name of the data reference within this workspace to be used to derive input values
       description: ""
     MethodConfigurationName:
       required:
