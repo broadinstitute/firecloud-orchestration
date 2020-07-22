@@ -1294,6 +1294,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              type: object
               properties:
                 workflowSource:
                   type: string
@@ -4461,6 +4462,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              type: object
               required:
                 - attributes
               properties:
@@ -4548,6 +4550,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              type: object
               required:
                 - entities
               properties:
@@ -4731,6 +4734,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              type: object
               required:
                 - entities
               properties:
@@ -6212,10 +6216,7 @@ paths:
       summary: |
         Download GCS object using a cookie token
       description: |
-        **Important**: this file download does not work within the swagger UI. It is here for documentation
-        purposes. You can fill in the fields and submit; once you do so, you will get an error, but swagger
-        will populate the "Request URL" field. You can then copy and paste that field into a new tab to
-        achieve your download.
+        Download GCS object using a cookie token
       operationId: getStorageDownload
       parameters:
         - name: bucket
@@ -6234,7 +6235,7 @@ paths:
         200:
           description: Success
           content:
-            application/json:
+            application/octet-stream:
               schema:
                 type: string
                 format: binary
@@ -6328,10 +6329,6 @@ paths:
               schema:
                 type: string
                 format: binary
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
         404:
           description: Workspace or entity type does not exist
           content: {}
@@ -6396,10 +6393,6 @@ paths:
           description: Workspace entities of specified type in TSV format
           content:
             text/plain:
-              schema:
-                type: string
-                format: binary
-            application/octet-stream:
               schema:
                 type: string
                 format: binary
