@@ -26,13 +26,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers with OptionValues {
 
   "Expected security-related HTTP headers" - {
 
-    "parsed correctly during test suite setup" in {
+    "should be parsed correctly during test suite setup" in {
       expectedHeaders.size shouldBe 4
     }
 
     def executeHeaderTests(getUrl: String): Unit = {
       expectedHeaders foreach { hdr =>
-        s"'${hdr.name()}: ${hdr.value()}' should be returned from the $getUrl endpoint" in {
+        s"should return '${hdr.name()}: ${hdr.value()}' from the /$getUrl endpoint" in {
           val creds = UserPool.userConfig.Students.getRandomCredentials(1).head
           implicit val authToken: AuthToken = creds.makeAuthToken()
 
@@ -44,15 +44,17 @@ class HttpHeaderSpec extends FreeSpec with Matchers with OptionValues {
       }
     }
 
-    // unauthenticated endpoint
-    executeHeaderTests("status")
+    "on an unauthenticated endpoint" - {
+      executeHeaderTests("status")
+    }
 
-    // authenticated + registered endpoint
-    executeHeaderTests("api/profile/terra")
+    "on an authenticated and registered endpoint" - {
+      executeHeaderTests("api/profile/terra")
+    }
 
-    // authenticated but registration not required endpoint
-    executeHeaderTests("register/profile")
-
+    "on an authenticated but registration-not-required endpoint" - {
+      executeHeaderTests("register/profile")
+    }
   }
 
 }
