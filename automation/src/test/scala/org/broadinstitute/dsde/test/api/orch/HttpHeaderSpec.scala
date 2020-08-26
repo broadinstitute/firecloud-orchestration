@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.HttpHeader
 import org.broadinstitute.dsde.test.OrchConfig.Users
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.service.Orchestration
-import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
+import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig, UserPool}
 import org.broadinstitute.dsde.workbench.fixture.BillingFixtures
 import org.broadinstitute.dsde.workbench.service.{Sam, Thurloe}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -36,7 +36,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers with OptionValues {
           val creds = UserPool.userConfig.Students.getRandomCredentials(1).head
           implicit val authToken: AuthToken = creds.makeAuthToken()
 
-          val resp = Orchestration.getRequest(getUrl)
+          val resp = Orchestration.getRequest(ServiceTestConfig.FireCloud.orchApiUrl + getUrl)
           val actualHeader = resp.headers.find(_.lowercaseName() == hdr.lowercaseName())
           actualHeader.value.lowercaseName() shouldBe hdr.lowercaseName() // we just did a `find` on this, it should always be true
           actualHeader.value.value() shouldBe hdr.value()
@@ -45,13 +45,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers with OptionValues {
     }
 
     // unauthenticated endpoint
-    executeHeaderTests("/status")
+    executeHeaderTests("status")
 
     // authenticated + registered endpoint
-    executeHeaderTests("/api/profile/terra")
+    executeHeaderTests("api/profile/terra")
 
     // authenticated but registration not required endpoint
-    executeHeaderTests("/register/profile")
+    executeHeaderTests("register/profile")
 
   }
 
