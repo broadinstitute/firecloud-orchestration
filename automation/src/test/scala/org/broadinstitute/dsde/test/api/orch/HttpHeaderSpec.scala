@@ -1,16 +1,10 @@
 package org.broadinstitute.dsde.test.api.orch
 
 import akka.http.scaladsl.model.HttpHeader
-import org.broadinstitute.dsde.test.OrchConfig.Users
 import org.broadinstitute.dsde.workbench.auth.AuthToken
+import org.broadinstitute.dsde.workbench.config.{ServiceTestConfig, UserPool}
 import org.broadinstitute.dsde.workbench.service.Orchestration
-import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig, UserPool}
-import org.broadinstitute.dsde.workbench.fixture.BillingFixtures
-import org.broadinstitute.dsde.workbench.service.{Sam, Thurloe}
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.tagobjects.Retryable
-import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers, OptionValues}
+import org.scalatest.{FreeSpec, Matchers, OptionValues}
 
 class HttpHeaderSpec extends FreeSpec with Matchers with OptionValues {
 
@@ -27,7 +21,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers with OptionValues {
   "Expected security-related HTTP headers" - {
 
     "should be parsed correctly during test suite setup" in {
-      expectedHeaders.size shouldBe 4
+      expectedHeaders should have length 4
     }
 
     def executeHeaderTests(getUrl: String): Unit = {
