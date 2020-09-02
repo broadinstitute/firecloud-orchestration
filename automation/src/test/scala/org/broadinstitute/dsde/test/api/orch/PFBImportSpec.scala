@@ -16,6 +16,9 @@ class PFBImportSpec extends FreeSpec with Matchers
   val owner: Credentials = UserPool.chooseProjectOwner
   val ownerAuthToken: AuthToken = owner.makeAuthToken()
 
+  // maybe steal the test.avro from https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
+  val testPayload = Map("url" -> "gs://fixtures-for-tests/example.pfb")
+
   "Orchestration" - {
 
     "should import a PFB file via import service" - {
@@ -59,12 +62,12 @@ class PFBImportSpec extends FreeSpec with Matchers
 
             // call importPFB as reader
             val exception = intercept[RestException] {
-              Orchestration.postRequest(importURL(projectName, workspaceName), "{}")(reader.makeAuthToken())
+              Orchestration.postRequest(importURL(projectName, workspaceName), testPayload)(reader.makeAuthToken())
             }
 
             val exceptionObject = exception.message.parseJson.asJsObject
 
-            exceptionObject.fields("message").convertTo[String] should contain "insufficient permissions to perform operation on $projectName/$workspaceName"
+            exceptionObject.fields("message").convertTo[String] should include (s"insufficient permissions to perform operation on $projectName/$workspaceName")
             exceptionObject.fields("status").convertTo[Int] shouldBe 403
 
           } (ownerAuthToken)
