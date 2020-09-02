@@ -16,7 +16,8 @@ class PFBImportSpec extends FreeSpec with Matchers
   val owner: Credentials = UserPool.chooseProjectOwner
   val ownerAuthToken: AuthToken = owner.makeAuthToken()
 
-  // maybe steal the test.avro from https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
+  // maybe steal the test.avro from https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data ?
+  // or do a small export from BDC staging env ?
   val testPayload = Map("url" -> "gs://fixtures-for-tests/example.pfb")
 
   "Orchestration" - {
@@ -67,8 +68,9 @@ class PFBImportSpec extends FreeSpec with Matchers
 
             val exceptionObject = exception.message.parseJson.asJsObject
 
-            exceptionObject.fields("message").convertTo[String] should include (s"insufficient permissions to perform operation on $projectName/$workspaceName")
             exceptionObject.fields("status").convertTo[Int] shouldBe 403
+            exceptionObject.fields("message").convertTo[String] should include (s"Cannot perform the action write on $projectName/$workspaceName")
+
 
           } (ownerAuthToken)
         }
