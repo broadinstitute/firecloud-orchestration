@@ -149,51 +149,13 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
             val errorReport = exception.message.parseJson.convertTo[ErrorReport]
 
             errorReport.statusCode.value shouldBe StatusCodes.BadRequest
-            errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
+            errorReport.message should include (s"Object expected in field 'url'")
 
           } (ownerAuthToken)
         }
       }
-      "if the PFB does not exist" in {
-        implicit val token: AuthToken = ownerAuthToken
-        withCleanBillingProject(owner) { projectName =>
-          withWorkspace(projectName, prependUUID("reader-pfb-import")) { workspaceName =>
-            // Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
-
-            // call importPFB, specifying a PFB that doesn't exist
-            val exception = intercept[RestException] {
-              Orchestration.postRequest(importURL(projectName, workspaceName), Map(
-                "url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/public/intentionally-nonexistent.avro"))
-            }
-
-            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
-
-            errorReport.statusCode.value shouldBe StatusCodes.BadRequest
-            errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
-
-          } (ownerAuthToken)
-        }
-      }
-      "if the PFB is invalid" in {
-        implicit val token: AuthToken = ownerAuthToken
-        withCleanBillingProject(owner) { projectName =>
-          withWorkspace(projectName, prependUUID("reader-pfb-import")) { workspaceName =>
-            // Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
-
-            // call importPFB, specifying a .png file instead of a .pfb
-            val exception = intercept[RestException] {
-              Orchestration.postRequest(importURL(projectName, workspaceName), Map(
-                "url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/public/broad_logo.png"))
-            }
-
-            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
-
-            errorReport.statusCode.value shouldBe StatusCodes.BadRequest
-            errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
-
-          } (ownerAuthToken)
-        }
-      }
+      // N.B. other failures, such as an invalid PFB or PFB-not-found, fail asynchronously. Import Service accepts the
+      // job, starts to process it, and then will mark the job as failed. Is that worth testing here?
 
     }
   }
