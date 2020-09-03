@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.test.api.orch
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Materializer}
 import org.broadinstitute.dsde.workbench.auth.AuthToken
@@ -17,8 +17,9 @@ import org.scalatest.OptionValues._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Seconds, Span}
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import spray.json.DefaultJsonProtocol._
+//import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.concurrent.ExecutionContext
@@ -32,7 +33,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
 
   final implicit val system: ActorSystem = ActorSystem("PFBImportSpec")
   final implicit val context: ExecutionContext = system.dispatcher
-  final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(system))
+  final implicit val materializer: Materializer = ActorMaterializer(ActorMaterializerSettings(system))
   final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
 
   // this test.avro is copied from PyPFB's fixture at https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
@@ -59,24 +60,20 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
             // poll for completion as owner
             eventually {
               val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/$importJobId")
-              Unmarshal(resp.entity).to[String] map { respString =>
-                respString.parseJson.asJsObject.fields.get("status").value shouldBe "Done"
-              }
+              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe "Done"
             }
 
             // inspect data entities and confirm correct import as owner
             eventually {
               val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/entities")
-              Unmarshal(resp.entity).to[String] map { respString =>
-                respString.parseJson shouldBe expectedEntities
-              }
+              blockForStringBody(resp).parseJson shouldBe expectedEntities
             }
 
           }
         }
       }
 
-      "for writers of a workspace" ignore {
+      "for writers of a workspace" in {
         val writer = UserPool.chooseStudent
         val writerToken = writer.makeAuthToken()
 
@@ -94,17 +91,13 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
             // poll for completion as writer
             eventually {
               val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/$importJobId")(writerToken)
-              Unmarshal(resp.entity).to[String] map { respString =>
-                respString.parseJson.asJsObject.fields.get("status").value shouldBe "Done"
-              }
+              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe "Done"
             }
 
             // inspect data entities and confirm correct import as writer
             eventually {
               val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/entities")(writerToken)
-              Unmarshal(resp.entity).to[String] map { respString =>
-                respString.parseJson shouldBe expectedEntities
-              }
+              blockForStringBody(resp).parseJson shouldBe expectedEntities
             }
 
           } (ownerAuthToken)
@@ -161,6 +154,9 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
   }
 
   private def prependUUID(suffix: String): String = s"${UUID.randomUUID().toString}-$suffix"
+
+  private def blockForStringBody(response: HttpResponse): String =
+    Await.result(Unmarshal(response.entity).to[String], 5.seconds)
 
   private def importURL(projectName: String, wsName: String): String =
     s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$wsName/importPFB"
