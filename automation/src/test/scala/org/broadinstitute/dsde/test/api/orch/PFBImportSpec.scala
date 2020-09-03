@@ -2,13 +2,18 @@ package org.broadinstitute.dsde.test.api.orch
 
 import java.util.UUID
 
+import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig, UserPool}
 import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
+import org.broadinstitute.dsde.workbench.model.ErrorReport
+import org.broadinstitute.dsde.workbench.model.ErrorReportJsonSupport.ErrorReportFormat
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
 import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.OptionValues._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+
 
 class PFBImportSpec extends FreeSpec with Matchers
   with BillingFixtures with WorkspaceFixtures {
@@ -66,13 +71,10 @@ class PFBImportSpec extends FreeSpec with Matchers
               Orchestration.postRequest(importURL(projectName, workspaceName), testPayload)(reader.makeAuthToken())
             }
 
-            val exceptionObject = exception.message.parseJson.asJsObject
+            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
 
-            // exceptionObject.fields("status").convertTo[Int] shouldBe 403
-
-            exceptionObject.fields.keys should contain theSameElementsAs Seq("status", "message")
-            exceptionObject.fields("message").convertTo[String] should include (s"Cannot perform the action write on $projectName/$workspaceName")
-
+            errorReport.statusCode.value shouldBe StatusCodes.Forbidden
+            errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
 
           } (ownerAuthToken)
         }
