@@ -42,7 +42,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
   "Orchestration" - {
 
     "should import a PFB file via import service" - {
-      "for the owner of a workspace" ignore {
+      "for the owner of a workspace" in {
         implicit val token: AuthToken = ownerAuthToken
 
         withCleanBillingProject(owner) { projectName =>
