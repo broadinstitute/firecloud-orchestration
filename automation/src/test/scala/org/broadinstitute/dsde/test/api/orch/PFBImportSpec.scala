@@ -68,7 +68,9 @@ class PFBImportSpec extends FreeSpec with Matchers
 
             val exceptionObject = exception.message.parseJson.asJsObject
 
-            exceptionObject.fields("status").convertTo[Int] shouldBe 403
+            // exceptionObject.fields("status").convertTo[Int] shouldBe 403
+
+            exceptionObject.fields.keys should contain theSameElementsAs Seq("status", "message")
             exceptionObject.fields("message").convertTo[String] should include (s"Cannot perform the action write on $projectName/$workspaceName")
 
 
