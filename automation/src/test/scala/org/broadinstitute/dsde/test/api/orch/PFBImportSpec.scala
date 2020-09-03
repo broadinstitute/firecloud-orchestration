@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Materializer}
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig, UserPool}
 import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
@@ -30,11 +30,10 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
   val owner: Credentials = UserPool.chooseProjectOwner
   val ownerAuthToken: AuthToken = owner.makeAuthToken()
 
-  implicit val system: ActorSystem = ActorSystem("PFBImportSpec")
-  implicit val context: ExecutionContext = system.dispatcher
-  // final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
-  implicit val materializer: Materializer = ActorMaterializer()
-  implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
+  final implicit val system: ActorSystem = ActorSystem("PFBImportSpec")
+  final implicit val context: ExecutionContext = system.dispatcher
+  final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(system))
+  final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
 
   // this test.avro is copied from PyPFB's fixture at https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
   val testPayload = Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/public/test.avro")
@@ -43,7 +42,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
   "Orchestration" - {
 
     "should import a PFB file via import service" - {
-      "for the owner of a workspace" in {
+      "for the owner of a workspace" ignore {
         implicit val token: AuthToken = ownerAuthToken
 
         withCleanBillingProject(owner) { projectName =>
@@ -77,7 +76,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
         }
       }
 
-      "for writers of a workspace" in {
+      "for writers of a workspace" ignore {
         val writer = UserPool.chooseStudent
         val writerToken = writer.makeAuthToken()
 
