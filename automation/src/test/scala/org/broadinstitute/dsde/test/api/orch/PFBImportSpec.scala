@@ -27,16 +27,15 @@ import scala.concurrent.ExecutionContext
 import scala.io.Source
 
 class PFBImportSpec extends FreeSpec with Matchers with Eventually
-  with BillingFixtures with WorkspaceFixtures {
+  with BillingFixtures with WorkspaceFixtures with Orchestration {
 
   val owner: Credentials = UserPool.chooseProjectOwner
   val ownerAuthToken: AuthToken = owner.makeAuthToken()
 
-  final implicit val system: ActorSystem = ActorSystem("PFBImportSpec")
-  final implicit val materializer: Materializer = ActorMaterializer(ActorMaterializerSettings(system))
-  final implicit val context: ExecutionContext = system.dispatcher // for the eventually{} and async testing framework
-  private val customExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(new ForkJoinPool()) // for the futures being tested
-
+//  final implicit val system: ActorSystem = ActorSystem("PFBImportSpec")
+//  final implicit val materializer: Materializer = ActorMaterializer(ActorMaterializerSettings(system))
+//  final implicit val context: ExecutionContext = system.dispatcher // for the eventually{} and async testing framework
+//  private val customExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(new ForkJoinPool()) // for the futures being tested
 
   final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
 
@@ -160,9 +159,10 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
   private def prependUUID(suffix: String): String = s"${UUID.randomUUID().toString}-$suffix"
 
   private def blockForStringBody(response: HttpResponse): String = {
-    import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
-    implicit val executionContext: ExecutionContext = customExecutionContext
-    Await.result(Unmarshal(response.entity).to[String](um = stringUnmarshaller, ec = executionContext, mat = materializer), 5.seconds)
+    extractResponseString(response)
+//    import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
+//    implicit val executionContext: ExecutionContext = customExecutionContext
+//    Await.result(Unmarshal(response.entity).to[String](um = stringUnmarshaller, ec = executionContext, mat = materializer), 5.seconds)
   }
 
   private def importURL(projectName: String, wsName: String): String =
