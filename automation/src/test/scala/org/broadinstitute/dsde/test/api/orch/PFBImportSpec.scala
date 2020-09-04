@@ -38,11 +38,11 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 //  final implicit val context: ExecutionContext = system.dispatcher // for the eventually{} and async testing framework
 //  private val customExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(new ForkJoinPool()) // for the futures being tested
 
-  final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
+  final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(60, Seconds)), interval = scaled(Span(2, Seconds)))
 
   // this test.avro is copied from PyPFB's fixture at https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
-  val testPayload = Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/public/test.avro")
-  val expectedEntities: JsValue = Source.fromResource("PFBImportSpec-expected-entities.json").getLines().mkString.parseJson
+  private val testPayload = Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/public/test.avro")
+  lazy private val expectedEntities: JsValue = Source.fromResource("PFBImportSpec-expected-entities.json").getLines().mkString.parseJson
 
   "Orchestration" - {
 
@@ -59,12 +59,17 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
             // expect to get exactly one jobId back
             val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
             importJobIdValues should have size 1
+
+            logger.warn(s">>>>>>>>>>>>>>>>>>>>>> passed importJobId size check")
             val importJobId: String = importJobIdValues.head.toString
+            logger.warn(s">>>>>>>>>>>>>>>>>>>>>> using importJobId $importJobId")
+            logger.warn(s">>>>>>>>>>>>>>>>>>>>>> using job-status url ${importURL(projectName, workspaceName)}/$importJobId")
 
             // poll for completion as owner
 //            eventually {
-              val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/$importJobId")
-              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe "Done"
+              val resp: HttpResponse = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/$importJobId")
+              resp.status shouldBe StatusCodes.OK
+              // blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe "Done"
 //            }
 
             // inspect data entities and confirm correct import as owner
