@@ -15,7 +15,8 @@ import org.broadinstitute.dsde.workbench.model.ErrorReportJsonSupport.ErrorRepor
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
 import org.scalatest.{FreeSpec, Matchers}
 import org.scalatest.OptionValues._
-import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.time.{Seconds, Span}
 
 import scala.concurrent.Await
@@ -26,7 +27,7 @@ import spray.json._
 import scala.concurrent.ExecutionContext
 import scala.io.Source
 
-class PFBImportSpec extends FreeSpec with Matchers with Eventually
+class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFutures
   with BillingFixtures with WorkspaceFixtures with Orchestration {
 
   val owner: Credentials = UserPool.chooseProjectOwner
@@ -159,7 +160,8 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
   private def prependUUID(suffix: String): String = s"${UUID.randomUUID().toString}-$suffix"
 
   private def blockForStringBody(response: HttpResponse): String = {
-    extractResponseString(response)
+//    extractResponseString(response)
+    Unmarshal(response.entity).to[String].futureValue
 //    import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 //    implicit val executionContext: ExecutionContext = customExecutionContext
 //    Await.result(Unmarshal(response.entity).to[String](um = stringUnmarshaller, ec = executionContext, mat = materializer), 5.seconds)
