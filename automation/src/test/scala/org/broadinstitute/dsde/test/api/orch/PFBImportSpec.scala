@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.test.api.orch
 
 import java.util.UUID
+import java.util.concurrent.ForkJoinPool
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
@@ -32,8 +33,11 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
   val ownerAuthToken: AuthToken = owner.makeAuthToken()
 
   final implicit val system: ActorSystem = ActorSystem("PFBImportSpec")
-  final implicit val context: ExecutionContext = system.dispatcher
   final implicit val materializer: Materializer = ActorMaterializer(ActorMaterializerSettings(system))
+  final implicit val context: ExecutionContext = system.dispatcher // for the eventually{} and async testing framework
+  private val customExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(new ForkJoinPool()) // for the futures being tested
+
+
   final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
 
   // this test.avro is copied from PyPFB's fixture at https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
@@ -155,8 +159,11 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually
 
   private def prependUUID(suffix: String): String = s"${UUID.randomUUID().toString}-$suffix"
 
-  private def blockForStringBody(response: HttpResponse): String =
-    Await.result(Unmarshal(response.entity).to[String], 5.seconds)
+  private def blockForStringBody(response: HttpResponse): String = {
+    import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
+    implicit val executionContext: ExecutionContext = customExecutionContext
+    Await.result(Unmarshal(response.entity).to[String](um = stringUnmarshaller, ec = executionContext, mat = materializer), 5.seconds)
+  }
 
   private def importURL(projectName: String, wsName: String): String =
     s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$wsName/importPFB"
