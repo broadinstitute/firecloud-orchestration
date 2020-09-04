@@ -61,7 +61,10 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
             importJobIdValues should have size 1
 
             logger.warn(s">>>>>>>>>>>>>>>>>>>>>> passed importJobId size check")
-            val importJobId: String = importJobIdValues.head.toString
+            val importJobId: String = importJobIdValues.head match {
+              case js:JsString => js.value
+              case x => fail("got in invalid jobId: " + x.toString())
+            }
             logger.warn(s">>>>>>>>>>>>>>>>>>>>>> using importJobId $importJobId")
             logger.warn(s">>>>>>>>>>>>>>>>>>>>>> using job-status url ${importURL(projectName, workspaceName)}/$importJobId")
 
