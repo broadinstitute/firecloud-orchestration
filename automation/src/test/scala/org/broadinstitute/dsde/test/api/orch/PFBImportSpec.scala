@@ -69,11 +69,11 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
             logger.warn(s">>>>>>>>>>>>>>>>>>>>>> using job-status url ${importURL(projectName, workspaceName)}/$importJobId")
 
             // poll for completion as owner
-//            eventually {
+            eventually {
               val resp: HttpResponse = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/$importJobId")
               resp.status shouldBe StatusCodes.OK
-              // blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe "Done"
-//            }
+              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe "Done"
+            }
 
             // inspect data entities and confirm correct import as owner
 //            eventually {
