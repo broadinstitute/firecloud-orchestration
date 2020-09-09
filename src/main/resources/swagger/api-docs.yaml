@@ -326,6 +326,48 @@ paths:
             - profile
       x-passthrough: true
       x-passthrough-target: rawls
+  /api/user/billing/{projectName}:
+    delete:
+      tags:
+        - billing
+        - users
+      summary: delete billing project
+      description: delete billing project
+      operationId: deleteBillingProject
+      parameters:
+        - name: projectName
+          in: path
+          description: Name of the billing project
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successfully delete billing project
+          content: {}
+        400:
+          description: Project cannot be deleted because it contains workspaces.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        403:
+          description: You must be a project owner to delete billing project
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      security:
+        - authorization:
+            - openid
+            - email
+            - profile
   /api/configurations:
     get:
       tags:
