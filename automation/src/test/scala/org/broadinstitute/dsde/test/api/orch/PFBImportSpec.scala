@@ -38,7 +38,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 //  final implicit val context: ExecutionContext = system.dispatcher // for the eventually{} and async testing framework
 //  private val customExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(new ForkJoinPool()) // for the futures being tested
 
-  final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(60, Seconds)), interval = scaled(Span(2, Seconds)))
+  final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
 
   // this test.avro is copied from PyPFB's fixture at https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
   private val testPayload = Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/public/test.avro")
