@@ -76,10 +76,10 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
             }
 
             // inspect data entities and confirm correct import as owner
-//            eventually {
-//              val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/entities")
-//              blockForStringBody(resp).parseJson shouldBe expectedEntities
-//            }
+            eventually {
+              val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/entities")
+              blockForStringBody(resp).parseJson shouldBe expectedEntities
+            }
 
           }
         }
