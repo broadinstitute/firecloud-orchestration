@@ -74,7 +74,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
             // inspect data entities and confirm correct import as owner
             eventually {
-              val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/entities")
+              val resp = Orchestration.getRequest( s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
               blockForStringBody(resp).parseJson shouldBe expectedEntities
             }
 
@@ -108,7 +108,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
             // inspect data entities and confirm correct import as writer
             eventually {
-              val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/entities")(writerToken)
+              val resp = Orchestration.getRequest( s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")(writerToken)
               blockForStringBody(resp).parseJson shouldBe expectedEntities
             }
 
