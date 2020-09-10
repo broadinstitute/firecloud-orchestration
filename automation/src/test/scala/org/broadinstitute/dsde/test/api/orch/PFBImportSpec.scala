@@ -40,7 +40,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
 
             // call importPFB as owner
-            val postResponse: String = Orchestration.postRequest(importURL(projectName, workspaceName), testPayload)
+            val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)
             // expect to get exactly one jobId back
             val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
             importJobIdValues should have size 1
@@ -52,7 +52,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
             // poll for completion as owner
             eventually {
-              val resp: HttpResponse = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/$importJobId")
+              val resp: HttpResponse = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
               resp.status shouldBe StatusCodes.OK
               blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
             }
@@ -75,7 +75,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
           withWorkspace(projectName, prependUUID("writer-pfb-import"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
 
             // call importPFB as writer
-            val postResponse: String = Orchestration.postRequest(importURL(projectName, workspaceName), testPayload)(writerToken)
+            val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(writerToken)
             // expect to get exactly one jobId back
             val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
             importJobIdValues should have size 1
@@ -86,13 +86,13 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
             // poll for completion as writer
             eventually {
-              val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/$importJobId")(writerToken)
+              val resp = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")(writerToken)
               blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
             }
 
             // inspect data entities and confirm correct import as writer
             eventually {
-              val resp = Orchestration.getRequest( s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")(writerToken)
+              val resp = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/entities")(writerToken)
               blockForStringBody(resp).parseJson shouldBe expectedEntities
             }
 
@@ -101,7 +101,37 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
       }
     }
 
-    "should return an error when attempting to import a PFB file via import service" - {
+    "should asynchronously result in an error when attempting to import a PFB file via import service" - {
+      "if the file to be imported is invalid" in {
+        implicit val token: AuthToken = ownerAuthToken
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
+
+            // call importPFB as owner
+            val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB",
+              Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/this-intentionally-does-not-exist"))
+            // expect to get exactly one jobId back
+            val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
+            importJobIdValues should have size 1
+
+            val importJobId: String = importJobIdValues.head match {
+              case js:JsString => js.value
+              case x => fail("got in invalid jobId: " + x.toString())
+            }
+
+            // poll for completion as owner
+            eventually {
+              val resp: HttpResponse = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
+              resp.status shouldBe StatusCodes.OK
+              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Error")
+            }
+          }
+        }
+      }
+    }
+
+    "should synchronously return an error when attempting to import a PFB file via import service" - {
 
       "for readers of a workspace" in {
         val reader = UserPool.chooseStudent
@@ -111,7 +141,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
             // call importPFB as reader
             val exception = intercept[RestException] {
-              Orchestration.postRequest(importURL(projectName, workspaceName), testPayload)(reader.makeAuthToken())
+              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(reader.makeAuthToken())
             }
 
             val errorReport = exception.message.parseJson.convertTo[ErrorReport]
@@ -130,7 +160,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
             // call importPFB with a payload of the wrong shape
             val exception = intercept[RestException] {
-              Orchestration.postRequest(importURL(projectName, workspaceName), "this is a string, not json")
+              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", "this is a string, not json")
             }
 
             val errorReport = exception.message.parseJson.convertTo[ErrorReport]
@@ -141,8 +171,6 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
           } (ownerAuthToken)
         }
       }
-      // N.B. other failures, such as an invalid PFB or PFB-not-found, fail asynchronously. Import Service accepts the
-      // job, starts to process it, and then will mark the job as failed. Is that worth testing here?
 
     }
   }
@@ -152,7 +180,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
   private def blockForStringBody(response: HttpResponse): String =
     Unmarshal(response.entity).to[String].futureValue
 
-  private def importURL(projectName: String, wsName: String): String =
-    s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$wsName/importPFB"
+  private def workspaceUrl(projectName: String, wsName: String): String =
+    s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$wsName"
 
 }
