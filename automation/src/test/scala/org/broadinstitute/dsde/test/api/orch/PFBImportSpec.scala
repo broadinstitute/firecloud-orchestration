@@ -60,19 +60,16 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
             val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
             importJobIdValues should have size 1
 
-            logger.warn(s">>>>>>>>>>>>>>>>>>>>>> passed importJobId size check")
             val importJobId: String = importJobIdValues.head match {
               case js:JsString => js.value
               case x => fail("got in invalid jobId: " + x.toString())
             }
-            logger.warn(s">>>>>>>>>>>>>>>>>>>>>> using importJobId $importJobId")
-            logger.warn(s">>>>>>>>>>>>>>>>>>>>>> using job-status url ${importURL(projectName, workspaceName)}/$importJobId")
 
             // poll for completion as owner
             eventually {
               val resp: HttpResponse = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/$importJobId")
               resp.status shouldBe StatusCodes.OK
-              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe "Done"
+              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
             }
 
             // inspect data entities and confirm correct import as owner
@@ -85,7 +82,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
         }
       }
 
-      "for writers of a workspace" ignore {
+      "for writers of a workspace" in {
         val writer = UserPool.chooseStudent
         val writerToken = writer.makeAuthToken()
 
@@ -98,12 +95,15 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
             // expect to get exactly one jobId back
             val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
             importJobIdValues should have size 1
-            val importJobId: String = importJobIdValues.head.toString
+            val importJobId: String = importJobIdValues.head match {
+              case js:JsString => js.value
+              case x => fail("got in invalid jobId: " + x.toString())
+            }
 
             // poll for completion as writer
             eventually {
               val resp = Orchestration.getRequest( s"${importURL(projectName, workspaceName)}/$importJobId")(writerToken)
-              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe "Done"
+              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
             }
 
             // inspect data entities and confirm correct import as writer
