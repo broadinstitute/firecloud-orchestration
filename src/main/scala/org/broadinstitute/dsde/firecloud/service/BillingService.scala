@@ -6,7 +6,8 @@ import spray.routing._
 
 trait BillingService extends HttpService with PerRequestCreator with FireCloudDirectives {
   private val billingUrl = FireCloudConfig.Rawls.authUrl + "/billing"
-  
+  private val userBillingUrl = FireCloudConfig.Rawls.authUrl + "/user/billing"
+
   val routes: Route =
     pathPrefix("billing") {
       pathEnd {
@@ -36,5 +37,10 @@ trait BillingService extends HttpService with PerRequestCreator with FireCloudDi
           }
         }
       }
-    }
+    } ~
+      path("user" / "billing" / Segment) { projectId =>
+        delete {
+          passthrough(s"$userBillingUrl/$projectId", DELETE)
+        }
+      }
 }
