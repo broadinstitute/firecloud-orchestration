@@ -1,30 +1,21 @@
 package org.broadinstitute.dsde.test.api.orch
 
 import java.util.UUID
-import java.util.concurrent.ForkJoinPool
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Materializer}
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig, UserPool}
 import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
 import org.broadinstitute.dsde.workbench.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.ErrorReportJsonSupport.ErrorReportFormat
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
-import org.scalatest.{FreeSpec, Matchers}
 import org.scalatest.OptionValues._
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.time.{Seconds, Span}
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-//import spray.json.DefaultJsonProtocol._
+import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
-import scala.concurrent.ExecutionContext
 import scala.io.Source
 
 class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFutures
@@ -32,11 +23,6 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
   val owner: Credentials = UserPool.chooseProjectOwner
   val ownerAuthToken: AuthToken = owner.makeAuthToken()
-
-//  final implicit val system: ActorSystem = ActorSystem("PFBImportSpec")
-//  final implicit val materializer: Materializer = ActorMaterializer(ActorMaterializerSettings(system))
-//  final implicit val context: ExecutionContext = system.dispatcher // for the eventually{} and async testing framework
-//  private val customExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(new ForkJoinPool()) // for the futures being tested
 
   final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
 
@@ -52,7 +38,6 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
-            // Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
 
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(importURL(projectName, workspaceName), testPayload)
@@ -88,7 +73,6 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("writer-pfb-import"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
-            // Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
 
             // call importPFB as writer
             val postResponse: String = Orchestration.postRequest(importURL(projectName, workspaceName), testPayload)(writerToken)
@@ -124,7 +108,6 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("reader-pfb-import"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
-            // Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
 
             // call importPFB as reader
             val exception = intercept[RestException] {
@@ -144,7 +127,6 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
         implicit val token: AuthToken = ownerAuthToken
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("reader-pfb-import")) { workspaceName =>
-            // Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
 
             // call importPFB with a payload of the wrong shape
             val exception = intercept[RestException] {
@@ -167,13 +149,8 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
   private def prependUUID(suffix: String): String = s"${UUID.randomUUID().toString}-$suffix"
 
-  private def blockForStringBody(response: HttpResponse): String = {
-//    extractResponseString(response)
+  private def blockForStringBody(response: HttpResponse): String =
     Unmarshal(response.entity).to[String].futureValue
-//    import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
-//    implicit val executionContext: ExecutionContext = customExecutionContext
-//    Await.result(Unmarshal(response.entity).to[String](um = stringUnmarshaller, ec = executionContext, mat = materializer), 5.seconds)
-  }
 
   private def importURL(projectName: String, wsName: String): String =
     s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$wsName/importPFB"
