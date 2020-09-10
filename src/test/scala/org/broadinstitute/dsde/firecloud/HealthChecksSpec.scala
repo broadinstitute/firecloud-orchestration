@@ -23,14 +23,13 @@ class HealthChecksSpec extends BaseServiceSpec with ScalaFutures {
     .setLevel(ch.qos.logback.classic.Level.OFF)
 
   private def doChecks(healthChecks: HealthChecks) = {
-    Future.sequence(Seq(healthChecks.maybeRegisterAdminSA, healthChecks.maybeRegisterTrialBillingSA)).map(_.exists(_.isDefined))
+    Future.sequence(Seq(healthChecks.maybeRegisterAdminSA)).map(_.exists(_.isDefined))
   }
 
 
   "Startup checks" - {
     val tokens = Map(
-      "admin SA" -> app.googleServicesDAO.getAdminUserAccessToken,
-      "billing SA" -> app.googleServicesDAO.getTrialBillingManagerAccessToken
+      "admin SA" -> app.googleServicesDAO.getAdminUserAccessToken
     )
 
     "When automatic registration of SAs is disabled" - {

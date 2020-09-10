@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.util.NoSuchElementException
 
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO._
-import org.broadinstitute.dsde.firecloud.model.Trial.{TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, ProfileWrapper, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -168,21 +167,6 @@ class MockThurloeDAO extends ThurloeDAO {
   }
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
-
-  override def getTrialStatus(forUserId: String, callerToken: WithAccessToken) = {
-    Future.successful(
-      forUserId match {
-        case "enabled-user" =>
-          UserTrialStatus(forUserId, Some(TrialStates.Enabled), true, 0, 0, 0, 0, Some("date"))
-        case "disabled-user" => UserTrialStatus(ProfileWrapper(forUserId, List.empty))
-        case _ =>
-          UserTrialStatus(forUserId, Some(TrialStates.Terminated), true, 0, 0, 0, 0, None)
-      }
-    )
-  }
-
-  override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus): Future[Try[Unit]] =
-    Future.successful(Success(()))
 
   override def bulkUserQuery(userIds: List[String], keySelection: List[String]): Future[List[ProfileWrapper]] = {
 

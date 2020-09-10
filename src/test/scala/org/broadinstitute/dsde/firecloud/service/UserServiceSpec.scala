@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
 
-  val customApp = Application(agoraDao, new MockGoogleServicesFailedGroupsDAO(), ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, trialDao, new MockLogitDAO, new MockShareLogDAO)
+  val customApp = Application(agoraDao, new MockGoogleServicesFailedGroupsDAO(), ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, new MockLogitDAO, new MockShareLogDAO)
 
   val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(customApp)
 

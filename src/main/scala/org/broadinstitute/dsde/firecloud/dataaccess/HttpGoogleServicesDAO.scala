@@ -111,10 +111,6 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val anonymizedGroupRole = "MEMBER"
   val anonymizedGroupDeliverySettings = "ALL_MAIL"
 
-  // credentials for the trial billing service account, used for free trial duties
-  lazy private val trialBillingSACreds = ServiceAccountCredentials
-    .fromStream(new FileInputStream(FireCloudConfig.Auth.trialBillingSAJsonFile))
-
   private def getDelegatedCredentials(baseCreds: GoogleCredentials, user: String): GoogleCredentials= {
     baseCreds.createDelegated(user)
   }
@@ -134,18 +130,6 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
       .refreshAccessToken().getTokenValue
   }
-
-  def getTrialBillingManagerAccessToken = {
-    getScopedServiceAccountCredentials(trialBillingSACreds, authScopes ++ billingScope)
-      .refreshAccessToken().getTokenValue
-  }
-
-  def getTrialSpreadsheetAccessToken = {
-    getScopedServiceAccountCredentials(trialBillingSACreds, authScopes ++ spreadsheetScopes)
-      .refreshAccessToken().getTokenValue
-  }
-
-  def getTrialBillingManagerEmail = trialBillingSACreds.getClientEmail
 
   def getCloudBillingManager(credential: ServiceAccountCredentials): Cloudbilling = {
     new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(authScopes ++ billingScope))).setApplicationName(appName).build()
@@ -431,97 +415,6 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
     val pipeline: HttpRequest => Future[GooglePriceList] = sendReceive ~> decode(Gzip) ~> unmarshal[GooglePriceList]
     pipeline(Get(FireCloudConfig.GoogleCloud.priceListUrl))
-  }
-
-  /**
-    * Updates an existing google drive spreadsheet with the provided data.
-    *
-    * @param spreadsheetId  Spreadsheet ID
-    * @param newContent     ValueRange
-    * @return               JsObject representing the Google Update response
-    */
-  def updateSpreadsheet(spreadsheetId: String, newContent: ValueRange): JsObject = {
-
-    val service = new Sheets.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(trialBillingSACreds.createScoped(spreadsheetScopes))).setApplicationName("FireCloud").build()
-
-    // Retrieve existing records
-    val getExisting: Sheets#Spreadsheets#Values#Get = service.spreadsheets().values.get(spreadsheetId, "Sheet1")
-    val existingContent: ValueRange = getExisting.execute()
-
-    // Smart merge existing with new
-    val rows = updatePreservingOrder(newContent, existingContent)
-
-    // Send update
-    val response = service.spreadsheets().values().update(spreadsheetId, newContent.getRange, newContent.setValues(rows)).setValueInputOption("RAW").execute()
-    response.toString.parseJson.asJsObject
-  }
-
-  private def updatePreservingOrder(newContent: ValueRange, existingContent: ValueRange): List[java.util.List[AnyRef]] = {
-    val existingRecords =
-      // getValues may come through as an instantiated list of type null with zero entries due to Scala <> Java stuff
-      if (Try(existingContent.getValues.size()).toOption.getOrElse(0) > 0)
-        existingContent.getValues.tail.toList
-      else
-        List()
-
-    val header: java.util.List[AnyRef] = newContent.getValues.head
-    val newRecords: List[java.util.List[AnyRef]] = newContent.getValues.drop(1).toList
-
-    // Go through existing records and update them in place
-    val existingRecordsUpdated = existingRecords.map { existingRecord =>
-      val matchingNewRecord = newRecords.find { newRecordCandidate =>
-        newRecordCandidate.head == existingRecord.head
-      }
-
-      matchingNewRecord match {
-        case Some(newRecord) => newRecord // Overwrite the entire row in place, adequate unless we want to preserve user-added columns
-        case _ => existingRecord // Don't delete existing records that aren't in the new export
-      }
-    }
-
-    // Create new records for newly-added projects
-    val recordsToAppend = newRecords.filter { newRecordCandidate =>
-      !existingRecords.exists { existingRecordCandidate =>
-        existingRecordCandidate.head == newRecordCandidate.head
-      }
-    }
-
-    List(header) ++ existingRecordsUpdated ++ recordsToAppend
-  }
-
-  override def trialBillingManagerRemoveBillingAccount(project: String, targetUserEmail: String): Boolean = {
-    val projectName = s"projects/$project" // format needed by Google
-
-    // as the service account, get the current billing info to make sure we are removing the right thing.
-    // this call will fail if the free-tier billing account has already been removed from the project.
-    val billingService = getCloudBillingManager(trialBillingSACreds)
-
-    val readRequest = billingService.projects().getBillingInfo(projectName)
-    Try(executeGoogleRequest[ProjectBillingInfo](readRequest)) match {
-      case Failure(f) =>
-        logger.warn(s"Could not read billing info for free trial project $project at termination. This " +
-          "probably means the user has already swapped billing, but you may want to doublecheck.")
-        true
-      case Success(currentBillingInfo) =>
-        if (currentBillingInfo.getBillingAccountName != FireCloudConfig.Trial.billingAccount) {
-          // the project is not linked to the free-tier billing account. Don't change anything.
-          logger.warn(s"Free trial project $project has third-party billing account " +
-            s"${currentBillingInfo.getBillingAccountName}; not removing it.")
-          true
-        } else {
-          // At this point, we know that the user is a member of the project and that the project
-          // is on the free-trial billing account. We've done our due diligence - remove the billing.
-          // We do this by creating a ProjectBillingInfo with an empty account name - that's how Google
-          // indicates we want to remove the billing account association.
-          val noBillingInfo = new ProjectBillingInfo().setBillingAccountName("")
-          // generate the request to send to Google
-          val noBillingRequest = getCloudBillingManager(trialBillingSACreds)
-            .projects().updateBillingInfo(projectName, noBillingInfo)
-          // send the request
-          val updatedProject = executeGoogleRequest[ProjectBillingInfo](noBillingRequest)
-          updatedProject.getBillingEnabled != null && updatedProject.getBillingEnabled
-        }
-    }
   }
 
   override def deleteGoogleGroup(groupEmail: String): Unit = {

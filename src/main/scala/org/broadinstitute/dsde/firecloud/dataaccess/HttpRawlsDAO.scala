@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurati
 import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.AdminStatsFormat
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.Trial.{CreateRawlsBillingProjectFullRequest, RawlsBillingProjectMember, RawlsBillingProjectMembership}
+import org.broadinstitute.dsde.firecloud.model.Project.{CreateRawlsBillingProjectFullRequest, RawlsBillingProjectMember, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
@@ -24,7 +24,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsBillingProjectMember
-import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
+import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import spray.json._
 

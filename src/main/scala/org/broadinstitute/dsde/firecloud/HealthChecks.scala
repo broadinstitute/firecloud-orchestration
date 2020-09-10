@@ -11,7 +11,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object HealthChecks {
   val adminSaRegistered = Subsystems.Custom("is_admin_sa_registered")
-  val trialBillingSaRegistered = Subsystems.Custom("is_trial_billing_sa_registered")
 }
 
 class HealthChecks(app: Application, registerSAs: Boolean = true)
@@ -27,15 +26,6 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
   def maybeRegisterAdminSA:Future[Option[String]] =
     maybeRegisterServiceAccount("Admin SA",
       AccessToken(app.googleServicesDAO.getAdminUserAccessToken))
-
-  /**
-    * checks if the trial billing sa is registered and attempts to register if not
-    * @return Some(message) if there is a problem registering
-    */
-  def maybeRegisterTrialBillingSA:Future[Option[String]] =
-    maybeRegisterServiceAccount("Free trial billing SA",
-      AccessToken(app.googleServicesDAO.getTrialBillingManagerAccessToken))
-
 
   private def maybeRegisterServiceAccount(name: String, token: AccessToken): Future[Option[String]] = {
     val lookup = manageRegistration(name, app.samDAO.getRegistrationStatus(implicitly(token)))
@@ -73,9 +63,7 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
       Rawls -> app.rawlsDAO.status,
       Sam -> app.samDAO.status,
       Thurloe -> app.thurloeDAO.status,
-      adminSaRegistered -> maybeRegisterAdminSA.map(message => SubsystemStatus(message.isEmpty, message.map(List(_)))),
-      trialBillingSaRegistered -> maybeRegisterTrialBillingSA.map(message => SubsystemStatus(message.isEmpty, message.map(List(_))))
-      // TODO: add free-trial index as a monitorable healthcheck; requires updates to workbench-libs
+      adminSaRegistered -> maybeRegisterAdminSA.map(message => SubsystemStatus(message.isEmpty, message.map(List(_))))
     )
   }
 

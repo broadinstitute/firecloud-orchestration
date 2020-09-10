@@ -10,8 +10,8 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
 import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
-import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
-import org.broadinstitute.dsde.firecloud.model.Trial._
+import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
+import org.broadinstitute.dsde.firecloud.model.Project._
 import spray.json.{JsString, _}
 import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
 import spray.routing.directives.RouteDirectives.complete
@@ -347,12 +347,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport {
 
   implicit val impRawlsBillingProjectMembership = jsonFormat4(RawlsBillingProjectMembership)
 
-  implicit val impTrialProject = jsonFormat4(TrialProject.apply)
-  implicit val impCreateProjectsResponse = jsonFormat3(CreateProjectsResponse)
-
   implicit val impCreateRawlsBillingProjectFullRequestFormat = jsonFormat2(CreateRawlsBillingProjectFullRequest)
-  implicit val impSpreadsheetResponse = jsonFormat1(SpreadsheetResponse)
-
 
   implicit object ShareTypeFormat extends RootJsonFormat[ShareType.Value] {
     override def write(obj: ShareType.Value): JsValue = JsString(obj.toString)

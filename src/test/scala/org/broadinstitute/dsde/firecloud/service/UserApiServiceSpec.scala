@@ -5,7 +5,6 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.firecloud.webservice.{RegisterApiService, UserApiService}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
@@ -20,10 +19,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
 
   def actorRefFactory = system
 
-  val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
-
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
-  val trialServiceConstructor:() => TrialService = TrialService.constructor(app, trialProjectManager)
   val userServiceConstructor:(UserInfo) => UserService = UserService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _

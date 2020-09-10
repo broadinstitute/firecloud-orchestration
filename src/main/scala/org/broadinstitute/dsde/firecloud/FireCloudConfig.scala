@@ -24,9 +24,6 @@ object FireCloudConfig {
     // credentials for the rawls service account, used for signing GCS urls
     val rawlsSAJsonFile = auth.getString("rawlsSA")
 
-    // credentials for the trial billing service account, used for free trial duties
-    val trialBillingSAJsonFile = auth.getString("trialBillingSA")
-
     val swaggerRealm = auth.getString("swaggerRealm")
   }
 
@@ -165,7 +162,6 @@ object FireCloudConfig {
     val clusterName = elasticsearch.getString("clusterName")
     val indexName = elasticsearch.getString("index") // for library
     val ontologyIndexName = elasticsearch.getString("ontologyIndex")
-    val trialIndexName = elasticsearch.getString("trialIndex")
     val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
     val shareLogIndexName: String = elasticsearch.getString("shareLogIndex")
     val maxAggregations: Int = Try(elasticsearch.getInt("maxAggregations")).getOrElse(1000)
@@ -190,17 +186,6 @@ object FireCloudConfig {
     val baseConsentUrl = duos.getString("baseConsentUrl")
     val baseOntologyUrl = duos.getString("baseOntologyUrl")
     val dulvn = duos.getInt("dulvn")
-  }
-
-  object Trial {
-    private val trial = config.getConfig("trial")
-    val durationDays = trial.getInt("durationDays")
-    val managerGroup = trial.getString("managerGroup")
-    val billingAccount = trial.getString("billingAccount")
-    val projectBufferSize = trial.getInt("projectBufferSize")
-    val spreadsheet = trial.getConfig("spreadsheet")
-    val spreadsheetId = spreadsheet.getString("id")
-    val spreadsheetUpdateFrequencyMinutes = spreadsheet.getInt("updateFrequencyMinutes")
   }
 
   object Metrics {

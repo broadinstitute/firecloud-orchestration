@@ -53,31 +53,12 @@ class PermissionsSupportSpec extends PermissionsSupport with FreeSpecLike {
       assertResult("You must be in the appropriate group.") { x.errorReport.message }
     }
   }
-
-  "asTrialCampaignManager" - {
-    "should allow inner function to succeed if user is a member" in {
-      implicit val userInfo = UserInfo("", "charlie")
-      def command = asTrialCampaignManager { Future.successful(RequestComplete(StatusCodes.OK)) }
-      val x = Await.result(command, dur)
-      assertResult(RequestComplete(StatusCodes.OK)) { x }
-    }
-    "should throw FireCloudExceptionWithErrorReport if user is not a member" in {
-      implicit val userInfo = UserInfo("", "bob")
-      def command = asTrialCampaignManager { Future.successful(RequestComplete(StatusCodes.OK)) }
-      val x = intercept[FireCloudExceptionWithErrorReport] {
-        Await.result(command, dur)
-      }
-      assertResult(Some(StatusCodes.Forbidden)) { optAkka2sprayStatus(x.errorReport.statusCode) }
-      assertResult("You must be in the appropriate group.") { x.errorReport.message }
-    }
-  }
 }
 
 class PermissionsSupportMockSamDAO extends MockSamDAO {
   private val groupMap = Map(
     "apples" -> Seq("alice"),
-    "bananas" -> Seq("bob"),
-    "trial_managers" -> Seq("charlie") // the name "trial_managers" is defined in reference.conf
+    "bananas" -> Seq("bob")
   )
 
   override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
