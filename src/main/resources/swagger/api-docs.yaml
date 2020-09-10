@@ -329,8 +329,7 @@ paths:
   /api/user/billing/{projectName}:
     delete:
       tags:
-        - billing
-        - users
+        - Billing
       summary: delete billing project
       description: delete billing project
       operationId: deleteBillingProject
