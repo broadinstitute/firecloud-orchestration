@@ -1,0 +1,694 @@
+{
+  "submitted_aligned_reads": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "experimental_strategy",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "read_group",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "submitted_aligned_reads_id"
+  },
+  "somatic_annotation_workflow": {
+    "attributeNames": [
+      "project_id",
+      "simple_somatic_mutation",
+      "state",
+      "submitter_id",
+      "workflow_end_datetime",
+      "workflow_link",
+      "workflow_start_datetime",
+      "workflow_type",
+      "workflow_version"
+    ],
+    "count": 1,
+    "idName": "somatic_annotation_workflow_id"
+  },
+  "germline_variation_index": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "simple_germline_variation",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "germline_variation_index_id"
+  },
+  "participant": {
+    "attributeNames": [
+      "consent_type",
+      "days_to_lost_to_followup",
+      "disease_type",
+      "external_id",
+      "family_id",
+      "index_date",
+      "is_proband",
+      "lost_to_followup",
+      "primary_site",
+      "project_id",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "participant_id"
+  },
+  "read_group": {
+    "attributeNames": [
+      "adapter_name",
+      "adapter_sequence",
+      "aliquot",
+      "base_caller_name",
+      "base_caller_version",
+      "experiment_name",
+      "flow_cell_barcode",
+      "includes_spike_ins",
+      "instrument_model",
+      "is_paired_end",
+      "library_name",
+      "library_preparation_kit_catalog_number",
+      "library_preparation_kit_name",
+      "library_preparation_kit_vendor",
+      "library_preparation_kit_version",
+      "library_selection",
+      "library_strand",
+      "library_strategy",
+      "platform",
+      "project_id",
+      "read_group_name",
+      "read_length",
+      "RIN",
+      "sequencing_center",
+      "sequencing_date",
+      "size_selection_range",
+      "spike_ins_concentration",
+      "spike_ins_fasta",
+      "state",
+      "submitter_id",
+      "target_capture_kit_catalog_number",
+      "target_capture_kit_name",
+      "target_capture_kit_target_region",
+      "target_capture_kit_vendor",
+      "target_capture_kit_version",
+      "to_trim_adapter_sequence"
+    ],
+    "count": 1,
+    "idName": "read_group_id"
+  },
+  "diagnosis": {
+    "attributeNames": [
+      "age_at_event_days",
+      "diagnosis_category",
+      "external_id",
+      "icd_id_diagnosis",
+      "mondo_id_diagnosis",
+      "ncit_id_diagnosis",
+      "participant",
+      "primary_diagnosis",
+      "project_id",
+      "source_text_diagnosis",
+      "source_text_tumor_location",
+      "spatial_descriptor",
+      "state",
+      "submitter_id",
+      "tumor_location",
+      "uberon_id_tumor_location"
+    ],
+    "count": 1,
+    "idName": "diagnosis_id"
+  },
+  "aligned_reads_index": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "state",
+      "submitted_aligned_reads",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "aligned_reads_index_id"
+  },
+  "alignment_workflow": {
+    "attributeNames": [
+      "project_id",
+      "state",
+      "submitted_aligned_reads",
+      "submitter_id",
+      "workflow_end_datetime",
+      "workflow_link",
+      "workflow_start_datetime",
+      "workflow_type",
+      "workflow_version"
+    ],
+    "count": 1,
+    "idName": "alignment_workflow_id"
+  },
+  "submitted_unaligned_reads": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "experimental_strategy",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "read_group",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "submitted_unaligned_reads_id"
+  },
+  "biospecimen_supplement": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "participant",
+      "project_id",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "biospecimen_supplement_id"
+  },
+  "study_file": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "study_file_id"
+  },
+  "outcome": {
+    "attributeNames": [
+      "age_at_event_days",
+      "disease_related",
+      "participant",
+      "project_id",
+      "state",
+      "submitter_id",
+      "vital_status"
+    ],
+    "count": 1,
+    "idName": "outcome_id"
+  },
+  "annotation": {
+    "attributeNames": [
+      "category",
+      "classification",
+      "creator",
+      "legacy_created_datetime",
+      "legacy_updated_datetime",
+      "notes",
+      "participant",
+      "project_id",
+      "state",
+      "status",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "annotation_id"
+  },
+  "annotated_somatic_mutation": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "experimental_strategy",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "somatic_annotation_workflow",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "annotated_somatic_mutation_id"
+  },
+  "medical_history": {
+    "attributeNames": [
+      "asthma",
+      "coronary_artery_disease",
+      "hypertension",
+      "participant",
+      "project_id",
+      "state",
+      "stroke",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "medical_history_id"
+  },
+  "simple_germline_variation": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "experimental_strategy",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "simple_germline_variation_id"
+  },
+  "aligned_reads_metric": {
+    "attributeNames": [
+      "alignment_workflow",
+      "data_category",
+      "data_format",
+      "data_type",
+      "experimental_strategy",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "aligned_reads_metric_id"
+  },
+  "run_metadata": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "read_group",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "run_metadata_id"
+  },
+  "demographic": {
+    "attributeNames": [
+      "age_at_last_follow_up_days",
+      "cause_of_death",
+      "ethnicity",
+      "gender",
+      "participant",
+      "project_id",
+      "race",
+      "state",
+      "submitter_id",
+      "vital_status"
+    ],
+    "count": 1,
+    "idName": "demographic_id"
+  },
+  "experiment_metadata": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "read_group",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "experiment_metadata_id"
+  },
+  "slide": {
+    "attributeNames": [
+      "number_proliferating_cells",
+      "percent_eosinophil_infiltration",
+      "percent_granulocyte_infiltration",
+      "percent_inflam_infiltration",
+      "percent_lymphocyte_infiltration",
+      "percent_monocyte_infiltration",
+      "percent_necrosis",
+      "percent_neutrophil_infiltration",
+      "percent_normal_cells",
+      "percent_stromal_cells",
+      "percent_tumor_cells",
+      "percent_tumor_nuclei",
+      "project_id",
+      "sample",
+      "section_location",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "slide_id"
+  },
+  "investigator": {
+    "attributeNames": [
+      "institution",
+      "investigator_name",
+      "project_id",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "investigator_id"
+  },
+  "simple_somatic_mutation": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "experimental_strategy",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "somatic_mutation_calling_workflow",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "simple_somatic_mutation_id"
+  },
+  "somatic_mutation_calling_workflow": {
+    "attributeNames": [
+      "aligned_reads",
+      "project_id",
+      "state",
+      "submitter_id",
+      "workflow_end_datetime",
+      "workflow_link",
+      "workflow_start_datetime",
+      "workflow_type",
+      "workflow_version"
+    ],
+    "count": 1,
+    "idName": "somatic_mutation_calling_workflow_id"
+  },
+  "clinical_supplement": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "participant",
+      "project_id",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "clinical_supplement_id"
+  },
+  "sample": {
+    "attributeNames": [
+      "age_at_event_days",
+      "biospecimen_anatomic_site",
+      "composition",
+      "current_weight",
+      "days_to_collection",
+      "days_to_sample_procurement",
+      "diagnosis_pathologically_confirmed",
+      "external_id",
+      "initial_weight",
+      "intermediate_dimension",
+      "longest_dimension",
+      "method_of_sample_procurement",
+      "ncit_id_anatomical_site",
+      "ncit_id_tissue_type",
+      "participant",
+      "preservation_method",
+      "project_id",
+      "shortest_dimension",
+      "spatial_descriptor",
+      "state",
+      "submitter_id",
+      "time_between_clamping_and_freezing",
+      "time_between_excision_and_freezing",
+      "tissue_type",
+      "tumor_descriptor",
+      "uberon_id_anatomical_site"
+    ],
+    "count": 1,
+    "idName": "sample_id"
+  },
+  "family_relationship": {
+    "attributeNames": [
+      "participant",
+      "project_id",
+      "relative_to_participant_relation",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "family_relationship_id"
+  },
+  "germline_mutation_calling_workflow": {
+    "attributeNames": [
+      "project_id",
+      "state",
+      "submitted_aligned_reads",
+      "submitter_id",
+      "workflow_end_datetime",
+      "workflow_link",
+      "workflow_start_datetime",
+      "workflow_type",
+      "workflow_version"
+    ],
+    "count": 1,
+    "idName": "germline_mutation_calling_workflow_id"
+  },
+  "phenotype": {
+    "attributeNames": [
+      "age_at_event_days",
+      "hpo_id",
+      "observed",
+      "participant",
+      "phenotype",
+      "project_id",
+      "snomed_id_phenotype",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "phenotype_id"
+  },
+  "somatic_mutation_index": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "simple_somatic_mutation",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "somatic_mutation_index_id"
+  },
+  "slide_image": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "experimental_strategy",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "slide",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "slide_image_id"
+  },
+  "aligned_reads": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "experimental_strategy",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "platform",
+      "project_id",
+      "state",
+      "submitted_unaligned_reads",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "aligned_reads_id"
+  },
+  "family": {
+    "attributeNames": [
+      "external_id",
+      "project_id",
+      "state",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "family_id"
+  },
+  "analysis_metadata": {
+    "attributeNames": [
+      "data_category",
+      "data_format",
+      "data_type",
+      "file_format",
+      "file_name",
+      "file_size",
+      "file_state",
+      "file_url",
+      "md5sum",
+      "project_id",
+      "state",
+      "submitted_aligned_reads",
+      "submitter_id"
+    ],
+    "count": 1,
+    "idName": "analysis_metadata_id"
+  },
+  "aliquot": {
+    "attributeNames": [
+      "a260_a280_ratio",
+      "aliquot_quantity",
+      "amount",
+      "analyte_quantity",
+      "analyte_type",
+      "concentration",
+      "external_id",
+      "normal_tumor_genotype_snp_match",
+      "project_id",
+      "ribosomal_rna_28s_16s_ratio",
+      "sample",
+      "shipment_date",
+      "shipment_destination",
+      "shipment_origin",
+      "source_center",
+      "spectrophotometer_method",
+      "state",
+      "submitter_id",
+      "volume",
+      "well_number"
+    ],
+    "count": 1,
+    "idName": "aliquot_id"
+  },
+  "read_group_qc": {
+    "attributeNames": [
+      "adapter_content",
+      "basic_statistics",
+      "encoding",
+      "fastq_name",
+      "kmer_content",
+      "overrepresented_sequences",
+      "percent_gc_content",
+      "per_base_n_content",
+      "per_base_sequence_content",
+      "per_base_sequence_quality",
+      "per_sequence_gc_content",
+      "per_sequence_quality_score",
+      "per_tile_sequence_quality",
+      "project_id",
+      "read_group",
+      "sequence_duplication_levels",
+      "sequence_length_distribution",
+      "state",
+      "submitted_aligned_reads",
+      "submitter_id",
+      "total_sequences",
+      "workflow_end_datetime",
+      "workflow_link",
+      "workflow_start_datetime",
+      "workflow_type",
+      "workflow_version"
+    ],
+    "count": 1,
+    "idName": "read_group_qc_id"
+  }
+}
