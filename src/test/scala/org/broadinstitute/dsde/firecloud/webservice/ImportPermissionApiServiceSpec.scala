@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model.{Project, UserImportPermission, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impUserImportPermission
 import org.broadinstitute.dsde.firecloud.model.Project.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership}
-import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, UserService}
+import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService, UserService}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.ErrorReportFormat
 import spray.http.HttpMethods
@@ -20,6 +20,7 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
 
   val testApp = app.copy(rawlsDAO = new ImportPermissionMockRawlsDAO)
 
+  val trialServiceConstructor:() => TrialService = TrialService.constructor(testApp)
   val userServiceConstructor:(UserInfo) => UserService = UserService.constructor(testApp)
 
   "UserService /api/profile/importstatus endpoint tests" - {

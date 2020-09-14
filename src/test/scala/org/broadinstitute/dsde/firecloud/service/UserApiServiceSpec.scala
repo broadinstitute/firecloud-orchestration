@@ -20,6 +20,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
   def actorRefFactory = system
 
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
+  val trialServiceConstructor:() => TrialService = TrialService.constructor(app)
   val userServiceConstructor:(UserInfo) => UserService = UserService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
