@@ -3015,6 +3015,39 @@ paths:
           description: Internal Server Error
           content: {}
       x-passthrough: false
+  /api/profile/trial:
+    post:
+      tags:
+        - Profile
+      summary: Enroll or Finalize yourself in FireCloud free trial
+      description: |
+        * **Enroll:** starts an enabled user's trial and adds them to a billing project.
+        * **Finalize:** concludes a terminated user's trial progress.
+      operationId: userTrial
+      parameters:
+        - name: operation
+          in: query
+          description: operation user can perform
+          schema:
+            type: string
+            default: enroll
+            enum:
+              - enroll
+              - finalize
+      responses:
+        204:
+          description: Success (No Content)
+          content: {}
+        400:
+          description: Bad Request; invalid operation
+          content: {}
+        403:
+          description: Forbidden; user must agree to terms to be enrolled
+          content: {}
+        500:
+          description: Internal Server Error
+          content: {}
+      x-passthrough: false
   /api/refresh-token-status:
     get:
       tags:

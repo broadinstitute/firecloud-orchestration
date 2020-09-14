@@ -63,6 +63,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
+  val trialServiceConstructor: () => TrialService
   val userServiceConstructor: (UserInfo) => UserService
 
   val userServiceRoutes =
@@ -133,6 +134,25 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         delete {
           requireUserInfo() { userInfo => requestContext =>
             perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), DeleteTerraPreference)
+          }
+        }
+      } ~
+      pathPrefix("profile" / "trial") {
+        pathEnd {
+          post {
+            parameter("operation") { op =>
+              requireUserInfo() { userInfo => requestContext =>
+                val operation = op.toLowerCase match {
+                  case "finalize" => Some(TrialService.FinalizeUser(userInfo))
+                  case _ => None
+                }
+
+                if (operation.nonEmpty)
+                  perRequest(requestContext, TrialService.props(trialServiceConstructor), operation.get)
+                else
+                  requestContext.complete(BadRequest, ErrorReport(s"Invalid operation '$op'"))
+              }
+            }
           }
         }
       } ~
