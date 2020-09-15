@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
+import org.broadinstitute.dsde.firecloud.model.Project.UserTrialStatus
 import org.broadinstitute.dsde.firecloud.model.{BasicProfile, ProfileWrapper, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 
@@ -48,7 +48,6 @@ trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
     * @param forUserId the subjectid of the user whose trial status to get
     * @param callerToken the OAuth token of the person making the API call
     * @return the trial status for the specified user, or a default UserTrialStatus object
-
     */
   def getTrialStatus(forUserId: String, callerToken: WithAccessToken): Future[UserTrialStatus]
 

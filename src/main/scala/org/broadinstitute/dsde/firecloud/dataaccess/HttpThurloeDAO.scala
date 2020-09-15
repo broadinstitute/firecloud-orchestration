@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
+import org.broadinstitute.dsde.firecloud.model.Project.UserTrialStatus
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.webservice.UserApiService
@@ -79,6 +79,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     val profilePropertyMap = profile.propertyValueMap
     saveKeyValues(userInfo, profilePropertyMap).map(_ => ())
   }
+
   /**
     * get the UserTrialStatus associated with a specific user.
     *
@@ -108,7 +109,6 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
   override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus): Future[Try[Unit]] = {
     saveKeyValues(forUserId, callerToken, UserTrialStatus.toKVPs(trialStatus))
   }
-
 
   private def wrapExceptions[T](codeBlock: => Future[T]): Future[T] = {
     codeBlock.recover {

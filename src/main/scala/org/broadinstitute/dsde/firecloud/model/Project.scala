@@ -3,27 +3,13 @@ package org.broadinstitute.dsde.firecloud.model
 import java.time.Instant
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
-import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses.CreationStatus
-import org.broadinstitute.dsde.firecloud.model.Trial.TrialStates.TrialState
+import org.broadinstitute.dsde.firecloud.model.Project.CreationStatuses.CreationStatus
+import org.broadinstitute.dsde.firecloud.model.Project.TrialStates.TrialState
 import org.broadinstitute.dsde.rawls.model.{RawlsBillingProjectName, RawlsEnumeration, RawlsUserEmail}
 
 import scala.util.Try
 
-object Trial {
-  object TrialOperations {
-    sealed trait TrialOperation
-
-    case object Enable extends TrialOperation
-    case object Disable extends TrialOperation
-    case object Terminate extends TrialOperation
-
-    def withName(name: String): TrialOperation = name match {
-      case "enable" => Enable
-      case "disable" => Disable
-      case "terminate" => Terminate
-      case _ => throw new FireCloudException(s"Invalid trial operation: [$name]")
-    }
-  }
+object Project {
 
   // enum-style case objects to track a user's progress through the free trial
   object TrialStates {
@@ -82,15 +68,15 @@ object Trial {
 
   // "profile" object to hold all free trial-related information for a single user
   case class UserTrialStatus(
-      userId: String,
-      state: Option[TrialState],
-      userAgreed: Boolean,
-      enabledDate: Instant = Instant.ofEpochMilli(0), // timestamp a campaign manager granted the user trial permissions
-      enrolledDate: Instant = Instant.ofEpochMilli(0), // timestamp user started their trial
-      terminatedDate: Instant = Instant.ofEpochMilli(0), // timestamp user was actually terminated
-      expirationDate: Instant = Instant.ofEpochMilli(0), // timestamp user is due to face termination
-      billingProjectName: Option[String] = None
-    )
+                              userId: String,
+                              state: Option[TrialState],
+                              userAgreed: Boolean,
+                              enabledDate: Instant = Instant.ofEpochMilli(0), // timestamp a campaign manager granted the user trial permissions
+                              enrolledDate: Instant = Instant.ofEpochMilli(0), // timestamp user started their trial
+                              terminatedDate: Instant = Instant.ofEpochMilli(0), // timestamp user was actually terminated
+                              expirationDate: Instant = Instant.ofEpochMilli(0), // timestamp user is due to face termination
+                              billingProjectName: Option[String] = None
+                            )
 
   object UserTrialStatus {
     // convenience apply method that accepts epoch millisecond times instead of java.time.Instants
@@ -149,31 +135,6 @@ object Trial {
     }
 
   }
-
-  case class TrialProject(name: RawlsBillingProjectName, verified: Boolean, user: Option[WorkbenchUserInfo], status: Option[CreationStatus])
-  object TrialProject {
-    def apply(name: RawlsBillingProjectName) = new TrialProject(name, verified=false, user=None, status=None)
-  }
-
-  object StatusUpdate {
-    sealed trait Attempt
-
-    case object Success extends Attempt
-    case class Failure(msg: String) extends Attempt
-    case object NoChangeRequired extends Attempt
-    case class ServerError(msg: String) extends Attempt
-
-    def toName(status: Attempt): String = status match {
-      case Success => "Success"
-      case Failure(msg) => "Failure: " + msg
-      case NoChangeRequired => "NoChangeRequired"
-      case ServerError(msg) => "ServerError: " + msg
-    }
-  }
-
-  case class CreateProjectsResponse(success: Boolean, count: Int, message: Option[String])
-
-  case class SpreadsheetResponse(spreadsheetUrl: String)
 
   // following are horribly copied-and-pasted from rawls core, since they're not available as shared models
   case class CreateRawlsBillingProjectFullRequest(projectName: String, billingAccount: String)

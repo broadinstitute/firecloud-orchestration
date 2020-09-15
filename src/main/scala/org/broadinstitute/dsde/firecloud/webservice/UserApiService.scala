@@ -140,10 +140,9 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       pathPrefix("profile" / "trial") {
         pathEnd {
           post {
-            parameter("operation" ? "enroll") { op =>
+            parameter("operation") { op =>
               requireUserInfo() { userInfo => requestContext =>
                 val operation = op.toLowerCase match {
-                  case "enroll" => Some(TrialService.EnrollUser(userInfo))
                   case "finalize" => Some(TrialService.FinalizeUser(userInfo))
                   case _ => None
                 }
@@ -153,15 +152,6 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
                 else
                   requestContext.complete(BadRequest, ErrorReport(s"Invalid operation '$op'"))
               }
-            }
-          }
-        } ~
-        path("userAgreement") {
-          put {
-            requireUserInfo() { userInfo => requestContext =>
-              perRequest(requestContext,
-                TrialService.props(trialServiceConstructor),
-                TrialService.RecordUserAgreement(userInfo))
             }
           }
         }

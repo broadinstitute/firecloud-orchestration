@@ -2,11 +2,10 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
-import org.broadinstitute.dsde.firecloud.model.{Trial, UserImportPermission, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{Project, UserImportPermission, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impUserImportPermission
-import org.broadinstitute.dsde.firecloud.model.Trial.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership}
+import org.broadinstitute.dsde.firecloud.model.Project.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService, UserService}
-import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.ErrorReportFormat
 import spray.http.HttpMethods
@@ -21,8 +20,7 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
 
   val testApp = app.copy(rawlsDAO = new ImportPermissionMockRawlsDAO)
 
-  val trialProjectManager = system.actorOf(ProjectManager.props(testApp.rawlsDAO, testApp.trialDAO, testApp.googleServicesDAO), "trial-project-manager")
-  val trialServiceConstructor:() => TrialService = TrialService.constructor(testApp, trialProjectManager)
+  val trialServiceConstructor:() => TrialService = TrialService.constructor(testApp)
   val userServiceConstructor:(UserInfo) => UserService = UserService.constructor(testApp)
 
   "UserService /api/profile/importstatus endpoint tests" - {
@@ -111,7 +109,7 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
 
 class ImportPermissionMockRawlsDAO extends MockRawlsDAO {
 
-  override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Trial.RawlsBillingProjectMembership]] = {
+  override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Project.RawlsBillingProjectMembership]] = {
     parseTestToken(userToken)._2 match {
       case "hasProjects" => Future.successful(Seq(
         RawlsBillingProjectMembership(RawlsBillingProjectName("projectone"), ProjectRoles.User, CreationStatuses.Ready, None),

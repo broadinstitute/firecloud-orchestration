@@ -5,13 +5,11 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.metrics.MetricsActor
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
-import org.broadinstitute.dsde.firecloud.service.TrialService.UpdateBillingReport
 import org.slf4j.LoggerFactory
 import spray.http.StatusCodes._
 import spray.http._
 import spray.routing.{HttpServiceActor, RequestContext, Route}
 import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.trial.ProjectManager
 import org.broadinstitute.dsde.firecloud.webservice._
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
 import org.elasticsearch.client.transport.TransportClient
@@ -37,7 +35,6 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   with MethodsApiService
   with Ga4ghApiService
   with UserApiService
-  with TrialApiService
   with ShareLogApiService
   with ManagedGroupApiService
   with CromIamApiService
@@ -65,22 +62,19 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val consentDAO:ConsentDAO = new HttpConsentDAO
   val researchPurposeSupport:ResearchPurposeSupport = new ESResearchPurposeSupport(ontologyDAO)
   val searchDAO:SearchDAO = new ElasticSearchDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.indexName, researchPurposeSupport)
-  val trialDAO:TrialDAO = new ElasticSearchTrialDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.trialIndexName)
   val logitDAO:LogitDAO = if (logitMetricsEnabled)
       new HttpLogitDAO(FireCloudConfig.Metrics.logitUrl, FireCloudConfig.Metrics.logitApiKey.get)
     else
       new NoopLogitDAO
   val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
 
-  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, trialDAO, logitDAO, shareLogDAO)
+  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, logitDAO, shareLogDAO)
   val materializer: ActorMaterializer = ActorMaterializer()
 
   private val healthChecks = new HealthChecks(app)
   val healthMonitorChecks = healthChecks.healthMonitorChecks
   val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
   system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
-
-  val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
 
   if (logitMetricsEnabled) {
     val freq = FireCloudConfig.Metrics.logitFrequencyMinutes
@@ -104,21 +98,10 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
   val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
-  val trialServiceConstructor: () => TrialService = TrialService.constructor(app, trialProjectManager)
+  val trialServiceConstructor: () => TrialService = TrialService.constructor(app)
   val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
   val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
   val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
-
-  if (FireCloudConfig.Trial.spreadsheetId.nonEmpty && FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes > 0) {
-    val freq = FireCloudConfig.Trial.spreadsheetUpdateFrequencyMinutes
-    val scheduledTrialService = system.actorOf(TrialService.props(trialServiceConstructor), "trial-spreadsheet-actor")
-    // use a randomized startup delay to avoid multiple instances of this app executing on the same cycle
-    val initialDelay = 1 + scala.util.Random.nextInt(freq/2)
-    logger.info(s"Free credits spreadsheet updates are enabled: every $freq minutes, starting $initialDelay minutes from now.")
-    system.scheduler.schedule(initialDelay.minutes, freq.minutes, scheduledTrialService, UpdateBillingReport(FireCloudConfig.Trial.spreadsheetId))
-  } else {
-    logger.info("Free credits spreadsheet id or update frequency not found in configuration. Spreadsheet updates are disabled for this instance.")
-  }
 
   // routes under /api
   val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
@@ -126,7 +109,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
   val billingService = new BillingService with ActorRefFactoryContext
   val apiRoutes = methodsApiServiceRoutes ~ profileRoutes ~ cromIamApiServiceRoutes ~
     methodConfigurationService.routes ~ submissionsService.routes ~
-    nihRoutes ~ billingService.routes ~ trialApiServiceRoutes ~ shareLogServiceRoutes ~
+    nihRoutes ~ billingService.routes ~ shareLogServiceRoutes ~
     staticNotebooksRoutes
 
   val healthService = new HealthService with ActorRefFactoryContext

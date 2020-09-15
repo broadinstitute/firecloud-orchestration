@@ -49,11 +49,6 @@ object ESIntegrationSupport extends IntegrationTestConfig {
     new ElasticSearchOntologyDAO(client, FireCloudConfig.ElasticSearch.ontologyIndexName)
   }
 
-  lazy val trialDAO:TrialDAO = {
-    // use the temporary index name defined above
-    new ElasticSearchTrialDAO(client, itTestIndexName, RefreshPolicy.IMMEDIATE)
-  }
-
   lazy val shareLogDAO:ShareLogDAO = {
     new ElasticSearchShareLogDAO(client, itTestIndexName, RefreshPolicy.IMMEDIATE)
   }

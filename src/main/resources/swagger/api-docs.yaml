@@ -3048,23 +3048,6 @@ paths:
           description: Internal Server Error
           content: {}
       x-passthrough: false
-  /api/profile/trial/userAgreement:
-    put:
-      tags:
-        - Profile
-      summary: Set userAgreed flag to true
-      operationId: recordUserAgreement
-      responses:
-        204:
-          description: NoContent; userAgreed set to true
-          content: {}
-        403:
-          description: Forbidden; user is not eligible for free trial
-          content: {}
-        500:
-          description: Internal Server Error
-          content: {}
-      x-passthrough: false
   /api/refresh-token-status:
     get:
       tags:
@@ -3215,111 +3198,6 @@ paths:
       x-passthrough: true
       x-passthrough-target: rawls
       x-codegen-request-body-name: methodName
-  /api/trial/manager/{operation}:
-    post:
-      tags:
-        - Trial (FireCloud Credits)
-      summary: Update user status in the FireCloud Free Credits Program; for managers
-        of the Program only.
-      description: |
-        * **Enable** Add registered user(s) to FireCloud's internal record of users that are allowed to enroll (of their own accord, by clicking the Enroll button in the UI)
-        * **Disable** If a user has not yet enrolled themselves, we can still remove them from the trial. Reverse of the Enable operation.
-        * **Terminate** End the user's trial by removing their billing project from the FireCloud Free Credits Program billing account. The user will no longer be able to create workspaces in that billing project.
-      operationId: updateTrialUserStatus
-      parameters:
-        - name: operation
-          in: path
-          description: operation to perform on the specified users.
-          required: true
-          schema:
-            type: string
-            enum:
-              - enable
-              - disable
-              - terminate
-      requestBody:
-        description: list of users on which to operate
-        content:
-          'application/json':
-            schema:
-              $ref: '#/components/schemas/StringArray'
-        required: true
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TrialOperationResponse'
-        204:
-          description: Success (No Content)
-          content: {}
-        403:
-          description: Forbidden; you must be a campaign manager to call this endpoint.
-          content: {}
-        500:
-          description: Internal Server Error
-          content: {}
-      x-passthrough: false
-      x-codegen-request-body-name: users
-  /api/trial/manager/projects:
-    post:
-      tags:
-        - Trial (FireCloud Credits)
-      summary: Manage projects in the FireCloud Free Credits Program; for managers
-        of the Program only.
-      operationId: manageTrialProjects
-      parameters:
-        - name: operation
-          in: query
-          description: |
-            operation to perform on projects.
-            "Create" will create projects and verify those projects.
-            "Verify" will verify all unverified projects in the pool.
-            "Count" will return the number of projects in various statuses.
-            "Adopt" will enter a previously-created project into the pool without verifying it.
-            "Scratch" will mark a pool project as unavailable/errored and disassociate it from any user that claimed it.
-            "Report" will return a report of all claimed projects.
-          required: true
-          schema:
-            type: string
-            default: count
-            enum:
-              - create
-              - verify
-              - count
-              - adopt
-              - scratch
-              - report
-        - name: count
-          in: query
-          description: number of projects to create; only used for create operation
-          schema:
-            type: integer
-            format: int32
-        - name: project
-          in: query
-          description: name of project to adopt or scratch; only used for adopt and
-            scratch operations
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK; used for verify operation
-          content: {}
-        202:
-          description: Accepted; used for create operation
-          content: {}
-        400:
-          description: Bad Request. Creation already in progress or incorrect credentials.
-          content: {}
-        403:
-          description: You must be a campaign manager to call this endpoint.
-          content: {}
-        500:
-          description: Internal Server Error
-          content: {}
-      x-passthrough: false
   /version:
     get:
       tags:
@@ -9085,35 +8963,6 @@ components:
             )
       description: A tool descriptor is a metadata document that describes one or
         more tools.
-    TrialOperationResponse:
-      type: object
-      properties:
-        Success:
-          type: array
-          example:
-            - user1@email.com
-            - user2@email.com
-          items:
-            type: string
-        NoChangeRequired:
-          type: array
-          example:
-            - user2@gmail.com
-          items:
-            type: string
-        Failure:
-          type: array
-          example:
-            - name@gmail.com
-          items:
-            type: string
-        ServerError:
-          type: array
-          example:
-            - user@gmail.com
-          items:
-            type: string
-      description: The result of the operation for each user, grouped by the status
     Metadata:
       required:
         - api-version

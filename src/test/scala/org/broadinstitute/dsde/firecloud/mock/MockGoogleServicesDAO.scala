@@ -74,9 +74,6 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   val pubsubMessages = new LinkedBlockingQueue[String]()
 
   override def getAdminUserAccessToken: String = "adminUserAccessToken"
-  override def getTrialBillingManagerAccessToken: String = "billingManagerAccessToken"
-  override def getTrialBillingManagerEmail: String = "mock-trial-billing-mgr-email"
-  override def getTrialSpreadsheetAccessToken: String = "trialSpreadsheetAccessToken"
   override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = {
     objectKey match {
       case "target-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntarget-user".getBytes("UTF-8"))
@@ -100,10 +97,6 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
     Future.successful(GooglePriceList(GooglePrices(UsPriceItem(BigDecimal(0.01)), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
   }
-  override def updateSpreadsheet(spreadsheetId: String, content: ValueRange): JsObject = spreadsheetUpdateJson
-
-
-  override def trialBillingManagerRemoveBillingAccount(projectName: String, targetUserEmail: String): Boolean = false
 
   override def deleteGoogleGroup(groupEmail: String): Unit = Unit
   override def createGoogleGroup(groupName: String): Option[String] = Option("new-google-group@support.something.firecloud.org")

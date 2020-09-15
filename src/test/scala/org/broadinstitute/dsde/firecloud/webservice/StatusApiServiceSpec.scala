@@ -58,7 +58,7 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService {
     "should contain all the subsystems we care about" in {
       Get(statusPath) ~> statusRoutes ~> check {
         val statusCheckResponse = responseAs[StatusCheckResponse]
-        val expectedSystems = Set(Agora, Consent, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe, HealthChecks.adminSaRegistered, HealthChecks.trialBillingSaRegistered)
+        val expectedSystems = Set(Agora, Consent, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe, HealthChecks.adminSaRegistered)
         assertResult(expectedSystems) { statusCheckResponse.systems.keySet }
       }
     }
