@@ -1,15 +1,18 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.Actor
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.Directives._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.firecloud.service.{StorageService, FireCloudDirectives, PerRequestCreator}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, StorageService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import spray.routing._
 
-trait StorageApiService extends HttpService with PerRequestCreator with FireCloudDirectives with StandardUserInfoDirectives {
+import scala.concurrent.ExecutionContext
+
+trait StorageApiService extends FireCloudDirectives with StandardUserInfoDirectives {
 
   private final val ApiPrefix = "storage"
-  private implicit val executionContext = actorRefFactory.dispatcher
+  implicit val executionContext: ExecutionContext
 
   val storageServiceConstructor: UserInfo => StorageService
 
@@ -18,10 +21,7 @@ trait StorageApiService extends HttpService with PerRequestCreator with FireClou
       pathPrefix(ApiPrefix) {
         path(Segment / Rest) { (bucket, obj) =>
           requireUserInfo() { userInfo =>
-            requestContext =>
-              perRequest(requestContext,
-                StorageService.props(storageServiceConstructor, userInfo),
-                StorageService.GetObjectStats(bucket, obj))
+            complete { storageServiceConstructor(userInfo).GetObjectStats(bucket, obj) }
           }
         }
       }

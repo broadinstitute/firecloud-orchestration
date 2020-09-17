@@ -12,8 +12,8 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,32 +39,22 @@ object NihStatus {
 }
 
 object NihService {
-  sealed trait ServiceMessage
-  final case class GetNihStatus(userInfo: UserInfo) extends ServiceMessage
-  final case class UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) extends ServiceMessage
-  case object SyncAllWhitelists extends ServiceMessage
-  final case class SyncWhitelist(whitelistName: String) extends ServiceMessage
-
-  def props(service: () => NihServiceActor): Props = {
-    Props(service())
-  }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
     new NihServiceActor(app.samDAO, app.thurloeDAO, app.googleServicesDAO)
+
 }
 
 class NihServiceActor(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO)
-  (implicit val executionContext: ExecutionContext) extends Actor with NihService {
+  (implicit val executionContext: ExecutionContext) extends NihService {
 
-  override def receive = {
-    case GetNihStatus(userInfo: UserInfo) => getNihStatus(userInfo) pipeTo sender
-    case UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) => updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) pipeTo sender
-    case SyncAllWhitelists => syncAllNihWhitelistsAllUsers pipeTo sender
-    case SyncWhitelist(whitelistName) => syncWhitelistAllUsers(whitelistName) pipeTo sender
-  }
+  def GetNihStatus(userInfo: UserInfo) = getNihStatus(userInfo)
+  def UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) = updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink)
+  def SyncAllWhitelists = syncAllNihWhitelistsAllUsers
+  def SyncWhitelist(whitelistName: String) = syncWhitelistAllUsers(whitelistName)
 }
 
-trait NihService extends LazyLogging {
+trait NihService extends LazyLogging with SprayJsonSupport {
   implicit val executionContext: ExecutionContext
   val samDao: SamDAO
   val thurloeDao: ThurloeDAO

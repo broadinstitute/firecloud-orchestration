@@ -1,12 +1,17 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.AdminStatsFormat
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.Project.{CreateRawlsBillingProjectFullRequest, RawlsBillingProjectMember, RawlsBillingProjectMembership}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impRawlsBillingProjectMember, _}
+import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
+import org.broadinstitute.dsde.firecloud.model.Project.{RawlsBillingProjectMember, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
@@ -14,85 +19,89 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
 import org.broadinstitute.dsde.rawls.model.StatusJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
-import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.joda.time.DateTime
-import spray.client.pipelining._
-import spray.http.StatusCodes._
-import spray.http.{OAuth2BearerToken, StatusCodes, Uri}
-import spray.httpx.SprayJsonSupport._
-import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRawlsBillingProjectMember
-import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
-import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 import scala.util.control.NonFatal
 
 /**
   * Created by davidan on 9/23/16.
   */
-class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
-  extends RawlsDAO with RestJsonClient {
+class HttpRawlsDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
+  extends RawlsDAO with RestJsonClient with SprayJsonSupport {
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = {
-    userAuthedRequest( Get(rawlsAdminUrl) )(userInfo) map { response =>
+    userAuthedRequest(Get(rawlsAdminUrl))(userInfo) map { response =>
       response.status match {
-        case OK => true
-        case NotFound => false
+        case StatusCodes.OK => true
+        case StatusCodes.NotFound => false
         case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }
 
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = {
-    userAuthedRequest( Get(rawlsCuratorUrl) )(userInfo) map { response =>
+    userAuthedRequest(Get(rawlsCuratorUrl))(userInfo) map { response =>
       response.status match {
-        case OK => true
-        case NotFound => false
+        case StatusCodes.OK => true
+        case StatusCodes.NotFound => false
         case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
   }
 
   override def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse] =
-    authedRequestToObject[BucketUsageResponse]( Get(rawlsBucketUsageUrl(ns, name)) )
+    authedRequestToObject[BucketUsageResponse](Get(rawlsBucketUsageUrl(ns, name)))
 
   override def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]] =
-    authedRequestToObject[Seq[WorkspaceListResponse]] ( Get(rawlsWorkpacesUrl), label=Some("HttpRawlsDAO.getWorkspaces") )
+    authedRequestToObject[Seq[WorkspaceListResponse]](Get(rawlsWorkpacesUrl), label = Some("HttpRawlsDAO.getWorkspaces"))
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
-    authedRequestToObject[WorkspaceResponse]( Get(getWorkspaceUrl(ns, name)) )
+    authedRequestToObject[WorkspaceResponse](Get(getWorkspaceUrl(ns, name)))
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[WorkspaceDetails] =
-    authedRequestToObject[WorkspaceDetails]( Patch(getWorkspaceUrl(ns, name), attributeOperations) )
+    authedRequestToObject[WorkspaceDetails](Patch(getWorkspaceUrl(ns, name), attributeOperations))
 
   override def updateLibraryAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[WorkspaceDetails] =
-    authedRequestToObject[WorkspaceDetails]( Patch(getWorkspaceUrl(ns, name)+"/library", attributeOperations) )
+    authedRequestToObject[WorkspaceDetails](Patch(getWorkspaceUrl(ns, name) + "/library", attributeOperations))
 
   override def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL] =
-    authedRequestToObject[WorkspaceACL]( Get(getWorkspaceAclUrl(ns, name)) )
+    authedRequestToObject[WorkspaceACL](Get(getWorkspaceAclUrl(ns, name)))
 
-  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate],inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] =
-    authedRequestToObject[WorkspaceACLUpdateResponseList]( Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates) )
+  override def patchWorkspaceACL(ns: String, name: String, aclUpdates: Seq[WorkspaceACLUpdate], inviteUsersNotFound: Boolean)(implicit userToken: WithAccessToken): Future[WorkspaceACLUpdateResponseList] =
+    authedRequestToObject[WorkspaceACLUpdateResponseList](Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates))
 
   // you must be an admin to execute this method
   override def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[WorkspaceDetails]] = {
 
-    val allPublishedPipeline = addCredentials(userToken.accessToken) ~> sendReceive
-    allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
-      response.entity.as[Seq[WorkspaceDetails]] match {
-        case Right(srw) =>
-          logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
-          srw
-        case Left(error) =>
-          logger.warn(s"Could not unmarshal: ${error.toString}. Status code: ${response.status}.")
-          logger.info(s"body of reindex error response: ${response.entity}")
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "Could not unmarshal: " + error.toString))
+    //    val allPublishedPipeline = addCredentials(userToken.accessToken) ~> sendReceive
+    //    allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
+    //      response.entity.as[Seq[WorkspaceDetails]] match {
+    //        case Right(srw) =>
+    //          logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
+    //          srw
+    //        case Left(error) =>
+    //          logger.warn(s"Could not unmarshal: ${error.toString}. Status code: ${response.status}.")
+    //          logger.info(s"body of reindex error response: ${response.entity}")
+    //          throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Could not unmarshal: " + error.toString))
+    //      }
+    //    }
+
+    Try(authedRequestToObject[Seq[WorkspaceDetails]](Get(rawlsAdminWorkspaces))).recover {
+      case error: Throwable => {
+        logger.warn(s"Could not unmarshal: ${error.toString}. Status code: ${response.status}.")
+        logger.info(s"body of reindex error response: ${response.entity}")
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Could not unmarshal: " + error.toString))
       }
+    } map { srw =>
+      logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
+      srw
     }
+
   }
 
   override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats] = {
@@ -100,9 +109,9 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
       Map("startDate" -> startDate.toString, "endDate" -> endDate.toString) ++
         workspaceNamespace.map("workspaceNamespace" -> _) ++
         workspaceName.map("workspaceName" -> _)
-    val url = Uri(FireCloudConfig.Rawls.authUrl + "/admin/statistics").withQuery(queryParams)
+    val url = Uri(FireCloudConfig.Rawls.authUrl + "/admin/statistics").withQuery(Query.apply(queryParams))
     adminAuthedRequestToObject[AdminStats](Get(url)) recover {
-      case e:Exception =>
+      case e: Exception =>
         logger.error(s"HttpRawlsDAO.adminStats failed with ${e.getMessage}")
         throw e
     }
@@ -123,8 +132,11 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = encodeUri(FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name")
+
   private def getWorkspaceAclUrl(ns: String, name: String) = encodeUri(rawlsWorkspaceACLUrl(ns, name))
+
   private def patchWorkspaceAclUrl(ns: String, name: String, inviteUsersNotFound: Boolean) = rawlsWorkspaceACLUrl(ns, name) + rawlsWorkspaceACLQuerystring.format(inviteUsersNotFound)
+
   private def workspaceCatalogUrl(ns: String, name: String) = encodeUri(FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name/catalog")
 
   override def getCatalog(ns: String, name: String)(implicit userToken: WithAccessToken): Future[Seq[WorkspaceCatalog]] =
@@ -138,20 +150,8 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
     authedRequestToObject[Seq[AgoraConfigurationShort]](Get(rawlsWorkspaceMethodConfigsUrl(ns, name)), true)
   }
 
-  override def createProject(projectName: String, billingAccount: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
-    val create = CreateRawlsBillingProjectFullRequest(projectName, billingAccount)
-    userAuthedRequest(Post(FireCloudConfig.Rawls.authUrl + "/billing", create)).map { resp =>
-      resp.status.isSuccess
-    }
-  }
-
   override def getProjects(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMembership]] = {
-    userAuthedRequest(Get(FireCloudConfig.Rawls.authUrl + "/user/billing")).map { resp =>
-      resp.entity.as[Seq[RawlsBillingProjectMembership]] match {
-        case Right(obj) => obj
-        case Left(error) => throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
-      }
-    }
+    authedRequestToObject[Seq[RawlsBillingProjectMembership]](Get(FireCloudConfig.Rawls.authUrl + "/user/billing"))
   }
 
   override def getProjectMembers(projectId: String)(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMember]] = {
@@ -213,7 +213,7 @@ class HttpRawlsDAO( implicit val system: ActorSystem, implicit val executionCont
   }
 
   def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
-    authedRequestToObject[WorkspaceDeleteResponse]( Delete(getWorkspaceUrl(workspaceNamespace, workspaceName)) )
+    authedRequestToObject[WorkspaceDeleteResponse](Delete(getWorkspaceUrl(workspaceNamespace, workspaceName)))
   }
 
 }

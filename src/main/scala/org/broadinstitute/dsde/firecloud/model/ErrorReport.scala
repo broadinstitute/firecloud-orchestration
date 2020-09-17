@@ -1,33 +1,37 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.{HttpResponse, StatusCode}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
-import spray.client.pipelining.unmarshal
-import spray.http._
 import spray.json._
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.Materializer
+import scala.util.{Failure, Success}
+
 
 import scala.util.Try
 
 object ErrorReportExtensions {
-  object FCErrorReport {
+  object FCErrorReport extends SprayJsonSupport {
+
+    implicit val materializer: Materializer
 
     def apply(response: HttpResponse)(implicit ers: ErrorReportSource): ErrorReport = {
-      import spray.httpx.unmarshalling._
-      val (message, causes) = response.entity.as[ErrorReport] match {
-        case Right(re) => (re.message, Seq(re))
-        case Left(err) => (response.entity.asString, Seq.empty)
+      val (message, causes) = Try(Unmarshal(response.entity).to[ErrorReport]) match {
+        case Failure(re) => (re.getMessage, Seq(re))
+        case Success(err) => (response.entity.toString, Seq.empty)
       }
       new ErrorReport(ers.source, message, Option(response.status), causes, Seq.empty, None)
     }
 
     def tryUnmarshal(response: HttpResponse) =
-      Try { unmarshal[ErrorReport].apply(response) }
+      Try { Unmarshal(response.entity).to[ErrorReport] }
   }
 }
 
-object RequestCompleteWithErrorReport {
+object RequestCompleteWithErrorReport extends SprayJsonSupport {
 
   def apply(statusCode: StatusCode, message: String) =
     RequestComplete(statusCode, ErrorReport(statusCode, message))
@@ -37,17 +41,4 @@ object RequestCompleteWithErrorReport {
 
   def apply(statusCode: StatusCode, message: String, causes: Seq[ErrorReport]) =
     RequestComplete(statusCode, ErrorReport(statusCode, message, causes))
-}
-
-object HttpResponseWithErrorReport {
-
-  def apply(statusCode: StatusCode, message: String) =
-    HttpResponse(statusCode, ErrorReport(statusCode, message).toJson.compactPrint)
-
-  def apply(statusCode: StatusCode, throwable: Throwable) =
-    HttpResponse(statusCode, ErrorReport(statusCode, throwable).toJson.compactPrint)
-
-  def apply(statusCode: StatusCode, message: String, throwable: Throwable) =
-    HttpResponse(statusCode, ErrorReport(statusCode, message, throwable).toJson.compactPrint)
-
 }

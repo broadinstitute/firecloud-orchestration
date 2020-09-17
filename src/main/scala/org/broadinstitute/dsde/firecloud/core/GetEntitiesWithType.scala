@@ -2,7 +2,12 @@ package org.broadinstitute.dsde.firecloud.core
 
 import akka.actor.{Actor, Props}
 import akka.event.Logging
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.RequestContext
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.pattern.pipe
+import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.ProcessUrl
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.rawls.model.ErrorReport
@@ -11,16 +16,16 @@ import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.rawls.model.Entity
-import spray.client.pipelining._
-import spray.http.HttpEncodings._
-import spray.http.HttpHeaders.`Accept-Encoding`
-import spray.http.HttpResponse
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
-import spray.httpx.encoding.Gzip
+//import spray.client.pipelining._
+//import spray.http.HttpEncodings._
+//import spray.http.HttpHeaders.`Accept-Encoding`
+//import spray.http.HttpResponse
+//import spray.http.StatusCodes._
+//import spray.httpx.SprayJsonSupport._
+//import spray.httpx.encoding.Gzip
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsValue
-import spray.routing.RequestContext
+//import spray.routing.RequestContext
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -33,6 +38,7 @@ object GetEntitiesWithType {
 class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor with FireCloudRequestBuilding {
 
   implicit val system = context.system
+  implicit val materializer: Materializer
   import system.dispatcher
   import spray.json.DefaultJsonProtocol._
 
@@ -66,10 +72,15 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
         val allSucceeded = responses.forall(_.status == OK)
         allSucceeded match {
           case true =>
-            val entities = responses.flatMap(unmarshal[List[Entity]].apply)
-            RequestComplete(OK, entities)
+            val entityResponses = Future.traverse(responses) { resp => Unmarshal(resp).to[List[Entity]] }
+            entityResponses.map { entities => RequestComplete(OK, entities.flatten) }
           case false =>
             val errors = responses.filterNot(_.status == OK) map { e => (e, FCErrorReport.tryUnmarshal(e)) }
+
+            errors.map { case (response, errorReport) =>
+
+            }
+
             val errorReports = errors collect { case (_, Success(report)) => report }
             val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
             val errorMessage = {

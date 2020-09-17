@@ -31,14 +31,17 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import spray.client.pipelining._
-import spray.http.StatusCodes._
-import spray.http._
-import spray.httpx.SprayJsonSupport._
-import spray.httpx.UnsuccessfulResponseException
-import spray.httpx.encoding.Gzip
+//import spray.client.pipelining._
+//import spray.http.StatusCodes._
+//import spray.http._
+//import spray.httpx.SprayJsonSupport._
+//import spray.httpx.UnsuccessfulResponseException
+//import spray.httpx.encoding.Gzip
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, Uri}
 import spray.json._
-import spray.routing.RequestContext
+//import spray.routing.RequestContext
 
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global

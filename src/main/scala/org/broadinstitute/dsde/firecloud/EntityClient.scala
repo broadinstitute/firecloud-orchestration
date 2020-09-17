@@ -6,7 +6,11 @@ import java.text.SimpleDateFormat
 import java.util.zip.{ZipEntry, ZipFile}
 
 import akka.actor.{Actor, Props}
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.pattern.pipe
+import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityClient._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
@@ -19,17 +23,17 @@ import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, TSVFi
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, TSVLoadFile}
-import spray.client.pipelining._
-import spray.http.HttpEncodings._
-import spray.http.HttpHeaders.`Accept-Encoding`
-import spray.http.{HttpRequest, HttpResponse}
-import spray.http.StatusCodes._
-import spray.http._
-import spray.httpx.SprayJsonSupport._
-import spray.httpx.encoding.Gzip
+//import spray.client.pipelining._
+//import spray.http.HttpEncodings._
+//import spray.http.HttpHeaders.`Accept-Encoding`
+//import spray.http.{HttpRequest, HttpResponse}
+//import spray.http.StatusCodes._
+//import spray.http._
+//import spray.httpx.SprayJsonSupport._
+//import spray.httpx.encoding.Gzip
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-import spray.routing.RequestContext
+//import spray.routing.RequestContext
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Set
@@ -49,14 +53,8 @@ object EntityClient {
 
   case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo)
 
-  def props(entityClientConstructor: (RequestContext, ModelSchema) => EntityClient, requestContext: RequestContext,
-            modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = {
-    Props(entityClientConstructor(requestContext, modelSchema))
-  }
-
-  def constructor(app: Application)(requestContext: RequestContext,
-                                    modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
-    new EntityClient(requestContext, modelSchema, app.googleServicesDAO)
+  def constructor(app: Application)(modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
+    new EntityClient(modelSchema, app.googleServicesDAO)
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -124,8 +122,10 @@ object EntityClient {
 
 }
 
-class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDAO)(implicit val executionContext: ExecutionContext)
+class EntityClient(modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDAO)(implicit val executionContext: ExecutionContext)
   extends Actor with RestJsonClient with TSVFileSupport with LazyLogging {
+
+  implicit val materializer: Materializer
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
 
@@ -133,21 +133,12 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
   // we have ambiguous implicit ActorRefFactories from Actor and RestJsonClient, so we need to tell sendReceive which to use,
   // and we have to satisfy RestJsonClient's implicit
   override implicit val system = context.system
-  private def sendRec = sendReceive(context, executionContext)
+//  private def sendRec = sendReceive(context, executionContext)
   //  ========================
 
-
-  override def receive: Receive = {
-    case ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
-      val pipeline = authHeaders(requestContext) ~> sendRec
-      importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo sender
-    case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
-      val pipeline = authHeaders(requestContext) ~> sendRec
-      importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
-    case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo) =>
-      importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) pipeTo sender
-  }
-
+  def ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) = importEntitiesFromTSV(workspaceNamespace, workspaceName, tsvString)
+  def ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) = importBagit(workspaceNamespace, workspaceName, bagitRq)
+  def ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo) = importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo)
 
   /**
    * Returns the plural form of the entity type.
@@ -279,8 +270,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
 
   /**
    * Determines the TSV type from the first column header and routes it to the correct import function. */
-  def importEntitiesFromTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
+  def importEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
 
     def stripEntityType(entityTypeString: String): String = {
       val entityType = entityTypeString.stripSuffix("_id")
@@ -306,7 +296,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
         } else {
           tsv
         }
-      importEntitiesFromTSVLoadFile(pipeline, workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType)
+      importEntitiesFromTSVLoadFile(workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType)
     }
   }
 
@@ -375,21 +365,24 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
 
     val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
 
-    userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) map {
+    userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) flatMap {
       case resp if resp.status == Created =>
-        val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
+        val importServiceResponse = Unmarshal(resp).to[ImportServiceResponse]
+
         // for backwards compatibility, we return Accepted(202), even though import service returns Created(201),
         // and we return a different response payload than what import service returns.
 
-        val responsePayload:PfbImportResponse = PfbImportResponse(
-          jobId = importServiceResponse.jobId,
-          url = pfbRequest.url.getOrElse(""),
-          workspace = WorkspaceName(workspaceNamespace, workspaceName)
-        )
+        importServiceResponse.map { resp =>
+          val responsePayload:PfbImportResponse = PfbImportResponse(
+            jobId = resp.jobId,
+            url = pfbRequest.url.getOrElse(""),
+            workspace = WorkspaceName(workspaceNamespace, workspaceName)
+          )
 
-        RequestComplete(Accepted, responsePayload)
+          RequestComplete(Accepted, responsePayload)
+        }
       case otherResp =>
-        RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
+        Future.successful(RequestCompleteWithErrorReport(otherResp.status, otherResp.toString))
 
     }
   }

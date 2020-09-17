@@ -2,11 +2,13 @@ import sbt._
 
 object Dependencies {
   val akkaV = "2.4.19"
-  val sprayV = "1.3.4"
+  val akkaHttpV = "10.1.12"
   val jacksonV = "2.10.0"
   val jacksonHotfixV = "2.10.0" // for when only some of the Jackson libs have hotfix releases
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
+  val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
+  val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
@@ -25,19 +27,21 @@ object Dependencies {
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.7.2",
 
-    "org.broadinstitute.dsde.vault" %% "vault-common"        % "0.1-19-ca8b927"
-      exclude("io.spray", "spray-routing_2.11"),
+    "org.parboiled" % "parboiled-core" % "1.2.0",
     excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-b9d04a47")
       exclude("com.typesafe.scala-logging", "scala-logging_2.11")
       exclude("com.typesafe.akka", "akka-stream_2.11")
       exclude("com.google.code.findbugs", "jsr305"),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP"),
 
-    "io.spray"                      %% "spray-can"                 % sprayV,
-    "io.spray"                      %% "spray-json"                % "1.3.3",
-    "io.spray"                      %% "spray-client"              % sprayV,
-    "io.spray"                      %% "spray-routing-shapeless23" % sprayV,
-    "io.spray"                      %% "spray-testkit"             % sprayV   % "test",
+    "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
+    "com.typesafe.akka"   %%  "akka-contrib"         % akkaV,
+    "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
+    "com.typesafe.akka"   %%  "akka-http"            % akkaHttpV           excludeAll(excludeAkkaActor, excludeAkkaStream),
+    "com.typesafe.akka"   %%  "akka-http-spray-json" % akkaHttpV,
+    "com.typesafe.akka"   %%  "akka-testkit"         % akkaV     % "test",
+    "com.typesafe.akka"   %%  "akka-http-testkit"    % akkaHttpV % "test",
+
     "net.virtual-void"              %% "json-lenses"               % "0.6.2"  % "test",
     "com.typesafe.akka"             %% "akka-actor"                % akkaV,
     "com.typesafe.akka"             %% "akka-testkit"              % akkaV    % "test",

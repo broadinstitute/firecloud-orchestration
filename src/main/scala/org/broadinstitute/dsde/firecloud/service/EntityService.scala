@@ -1,21 +1,24 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.Props
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.core._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
-import spray.http.{HttpMethods, Uri}
+import spray.http.HttpMethods
 import spray.httpx.SprayJsonSupport._
 import spray.routing._
 
 import scala.util.Try
 
-trait EntityService extends HttpService with PerRequestCreator with FireCloudDirectives
-  with FireCloudRequestBuilding with StandardUserInfoDirectives {
+trait EntityService extends FireCloudDirectives
+  with FireCloudRequestBuilding with StandardUserInfoDirectives with DsdeHttpDAO {
 
   private implicit val executionContext = actorRefFactory.dispatcher
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -26,7 +29,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
         val baseRawlsEntitiesUrl = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
         path("entities_with_type") {
           get {
-            requireUserInfo() { _ => requestContext =>
+            requireUserInfo() { userInfo =>
               perRequest(requestContext, Props(new GetEntitiesWithTypeActor(requestContext)),
                 GetEntitiesWithType.ProcessUrl(encodeUri(baseRawlsEntitiesUrl)))
             }
@@ -40,7 +43,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
             } ~
               path("copy") {
                 post {
-                  requireUserInfo() { _ =>
+                  requireUserInfo() { userInfo =>
                     parameter('linkExistingEntities.?) { linkExistingEntities =>
                       entity(as[EntityCopyWithoutDestinationDefinition]) { copyRequest =>
                         val linkExistingEntitiesBool = Try(linkExistingEntities.getOrElse("false").toBoolean).getOrElse(false)
@@ -51,7 +54,7 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
                             entityType = copyRequest.entityType,
                             entityNames = copyRequest.entityNames)
                           val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl(linkExistingEntitiesBool), copyMethodConfig)
-                          externalHttpPerRequest(requestContext, extReq)
+                          complete { executeRequestAsUser(userInfo)(extReq) } //todo:???
                       }
                     }
                   }

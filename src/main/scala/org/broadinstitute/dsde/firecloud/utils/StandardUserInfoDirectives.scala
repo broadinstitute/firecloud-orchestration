@@ -1,46 +1,45 @@
 package org.broadinstitute.dsde.firecloud.utils
 
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.Directives.{headerValueByName, onSuccess}
+import org.broadinstitute.dsde.firecloud.dataaccess.SamDAO
+import org.broadinstitute.dsde.firecloud.model.RegistrationInfoV2
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.vault.common.util.ImplicitMagnet
-import spray.http.{HttpHeader, OAuth2BearerToken}
-import spray.routing.Directive1
-import spray.routing.Directives._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
-/**
- *
- * Copied wholesale from rawls on 15-Oct-2015, commit a9664c9f08d0681d6647e6611fd0c785aa8aa24a
- *
- * modified to also retrieve OIDC_CLAIM_sub/OIDC_CLAIM_user_id.
- * I could have removed the OIDC_access_token, OIDC_CLAIM_expires_in, and OIDC_CLAIM_email because we don't
- * use those in orchestration. However, they're quite lightweight, and I've left them in to keep diffs between
- * orchestration and rawls as clean as possible.
- *
- */
 trait StandardUserInfoDirectives extends UserInfoDirectives {
+  implicit val executionContext: ExecutionContext
+  val samDAO: SamDAO
 
-  def requireUserInfo(magnet: ImplicitMagnet[ExecutionContext]): Directive1[UserInfo] = {
-    implicit val ec = magnet.value
-    for(accessToken <- accessTokenHeaderDirective;
-        userEmail <- emailHeaderDirective;
-        accessTokenExpiresIn <- accessTokenExpiresInHeaderDirective;
-        id <- idHeaderDirective
-    ) yield UserInfo(userEmail, OAuth2BearerToken(accessToken), accessTokenExpiresIn.toLong, id)
+  val serviceAccountDomain = "\\S+@\\S+\\.iam\\.gserviceaccount\\.com".r
+
+  private def isServiceAccount(email: String) = {
+    serviceAccountDomain.pattern.matcher(email).matches
   }
 
-  private def accessTokenHeaderDirective: Directive1[String] = headerValueByName("OIDC_access_token")
-  private def accessTokenExpiresInHeaderDirective: Directive1[String] = headerValueByName("OIDC_CLAIM_expires_in")
-  private def emailHeaderDirective: Directive1[String] = headerValueByName("OIDC_CLAIM_email")
-  private def idHeaderDirective: Directive1[String] = headerValue(extractUniqueId)
-
-  def extractUniqueId: HttpHeader => Option[String] = {hdr:HttpHeader =>
-    hdr.name match {
-      case "OIDC_CLAIM_sub" => Some(hdr.value)
-      case "OIDC_CLAIM_user_id" => Some(hdr.value)
-      case _ => None
+  override def requireUserInfo: Directive1[UserInfo] = (
+    headerValueByName("OIDC_access_token") &
+      headerValueByName("OIDC_CLAIM_user_id") &
+      headerValueByName("OIDC_CLAIM_expires_in") &
+      headerValueByName("OIDC_CLAIM_email")
+    ) tflatMap {
+    case (token, userId, expiresIn, email) => {
+      val userInfo = UserInfo(email, OAuth2BearerToken(token), expiresIn.toLong, userId)
+      onSuccess(getWorkbenchUserEmailId(userInfo).map {
+        case Some(petOwnerUser) => UserInfo(petOwnerUser.userEmail, OAuth2BearerToken(token), expiresIn.toLong, petOwnerUser.userSubjectId)
+        case None => userInfo
+      })
     }
   }
 
-
+  private def getWorkbenchUserEmailId(userInfo:UserInfo):Future[Option[RegistrationInfoV2]] = {
+    if (isServiceAccount(userInfo.userEmail)) {
+      samDAO.getRegistrationStatusV2(userInfo)
+    }
+    else {
+      Future.successful(None)
+    }
+  }
 }
