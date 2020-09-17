@@ -1,10 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import spray.http.HttpMethods._
-import spray.routing._
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.server.Route
 
-trait BillingService extends HttpService with PerRequestCreator with FireCloudDirectives {
+trait BillingService extends FireCloudDirectives {
   private val billingUrl = FireCloudConfig.Rawls.authUrl + "/billing"
   private val userBillingUrl = FireCloudConfig.Rawls.authUrl + "/user/billing"
 

@@ -1,9 +1,9 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.parboiled.common.FileUtils
-import spray.http.{HttpMethod, Uri}
-import spray.http.MediaTypes._
-import spray.routing._
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.model.{HttpMethod, Uri}
+import akka.http.scaladsl.server.{Directives, Route}
 
 import scala.util.Try
 
@@ -20,7 +20,7 @@ object FireCloudDirectiveUtils {
   }
 }
 
-trait FireCloudDirectives extends spray.routing.Directives with PerRequestCreator with spray.httpx.RequestBuilding {
+trait FireCloudDirectives extends Directives with RequestBuilding {
   def respondWithJSON = respondWithMediaType(`application/json`)
 
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {

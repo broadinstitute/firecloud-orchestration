@@ -1,16 +1,15 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import spray.routing._
-import spray.http.MediaTypes.`text/html`
 
-trait StaticNotebooksApiService extends HttpService
-  with FireCloudDirectives
-  with StandardUserInfoDirectives {
+import scala.concurrent.ExecutionContext
 
-  private implicit val executionContext = actorRefFactory.dispatcher
+trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInfoDirectives {
+
+  implicit val executionContext: ExecutionContext
 
   val calhounStaticNotebooksRoot: String = FireCloudConfig.StaticNotebooks.baseUrl
   val calhounStaticNotebooksURL: String = s"$calhounStaticNotebooksRoot/api/convert"

@@ -3,11 +3,11 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.io.InputStream
 
 import akka.actor.ActorRefFactory
+import akka.http.scaladsl.model.HttpResponse
 import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import spray.http.HttpResponse
 
 import scala.concurrent.{ExecutionContext, Future}
 

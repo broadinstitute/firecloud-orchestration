@@ -6,8 +6,7 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateA
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
-import spray.http.StatusCodes
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -43,7 +42,7 @@ trait TSVFileSupport {
 
   def checkNumberOfRows(tsv: TSVLoadFile, rows: Int)(op: => Future[PerRequestMessage])(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
     if ((tsv.tsvData.length + (if (tsv.headers.isEmpty) 0 else 1)) != rows) {
-      Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest,
+      Future(RequestCompleteWithErrorReport(BadRequest,
         "Your file does not have the correct number of rows. There should be " + rows.toString))
     } else {
       op
@@ -53,7 +52,7 @@ trait TSVFileSupport {
   def checkFirstRowDistinct( tsv: TSVLoadFile )(op: => Future[PerRequestMessage])(implicit ec: ExecutionContext): Future[PerRequestMessage] = {
     val attributeNames = Seq(tsv.headers.head.stripPrefix("workspace:")) ++ tsv.headers.tail
     if (attributeNames.size != attributeNames.distinct.size) {
-      Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Duplicated attribute keys are not allowed"))
+      Future(RequestCompleteWithErrorReport(BadRequest, "Duplicated attribute keys are not allowed"))
     } else {
       op
     }

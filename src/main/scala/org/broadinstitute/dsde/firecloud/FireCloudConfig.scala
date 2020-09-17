@@ -5,8 +5,9 @@ import com.typesafe.config.{ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihWhitelist}
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
-import spray.http.Uri
-import spray.http.Uri.{Authority, Host}
+
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.{Authority, Host, Query}
 
 import scala.util.Try
 
@@ -93,7 +94,7 @@ object FireCloudConfig {
             case Some(f) => qMap + ("filterTerms" -> f)
             case _ => qMap
           }
-          baseEntityQueryUri.withQuery(filteredQMap)
+        baseEntityQueryUri.withQuery(Query(filteredQMap))
         case _ => baseEntityQueryUri
       }
     }

@@ -21,8 +21,8 @@ import spray.routing.RequestContext
 import scala.concurrent.Future
 
 object AgoraPermissionHandler {
-  case class Get(url: String)
-  case class Post(url: String, agoraPermissions: List[AgoraPermission])
+//  case class Get(url: String)
+//  case class Post(url: String, agoraPermissions: List[AgoraPermission])
   case class MultiUpsert(inputs: List[EntityAccessControlAgora])
   def props(requestContext: RequestContext): Props = Props(new GetEntitiesWithTypeActor(requestContext))
 

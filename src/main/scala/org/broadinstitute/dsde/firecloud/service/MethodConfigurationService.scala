@@ -1,19 +1,22 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.Actor
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.slf4j.LoggerFactory
-import spray.http.HttpMethods
-import spray.httpx.SprayJsonSupport._
-import spray.routing._
+//import spray.http.HttpMethods
+//import spray.httpx.SprayJsonSupport._
+//import spray.routing._
 
-class MethodConfigurationServiceActor extends Actor with MethodConfigurationService {
-  def actorRefFactory = context
-  def receive = runRoute(routes)
-}
+//class MethodConfigurationServiceActor extends Actor with MethodConfigurationService {
+//  def actorRefFactory = context
+//  def receive = runRoute(routes)
+//}
 
 object MethodConfigurationService {
   val remoteTemplatePath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/template"
@@ -45,69 +48,69 @@ object MethodConfigurationService {
 
 }
 
-trait MethodConfigurationService extends HttpService with PerRequestCreator with FireCloudDirectives {
+trait MethodConfigurationService extends FireCloudDirectives with SprayJsonSupport {
 
   private final val ApiPrefix = "workspaces"
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  val routes: Route =
+  val methodConfigurationRoutes: Route =
     path("template") {
       passthrough(MethodConfigurationService.remoteTemplateURL, HttpMethods.POST)
     } ~
-    path("inputsOutputs") {
-      passthrough(MethodConfigurationService.remoteInputsOutputsURL, HttpMethods.POST)
-    } ~
-    pathPrefix(ApiPrefix) {
-      pathPrefix(Segment / Segment / "method_configs") { (workspaceNamespace, workspaceName) =>
-        path("copyFromMethodRepo") {
-          post {
-            entity(as[CopyConfigurationIngest]) { ingest => requestContext =>
-              val copyMethodConfig = new MethodConfigurationCopy(
-                methodRepoName = ingest.configurationName,
-                methodRepoNamespace = ingest.configurationNamespace,
-                methodRepoSnapshotId = ingest.configurationSnapshotId,
-                destination = Option(MethodConfigurationId(
-                  name = ingest.destinationName,
-                  namespace = ingest.destinationNamespace,
-                  workspaceName = Option(WorkspaceName(
-                    namespace = workspaceNamespace,
-                    name = workspaceName)))))
-              val extReq = Post(MethodConfigurationService.remoteCopyFromMethodRepoConfigUrl, copyMethodConfig)
-              externalHttpPerRequest(requestContext, extReq)
+      path("inputsOutputs") {
+        passthrough(MethodConfigurationService.remoteInputsOutputsURL, HttpMethods.POST)
+      } ~
+      pathPrefix(ApiPrefix) {
+        pathPrefix(Segment / Segment / "method_configs") { (workspaceNamespace, workspaceName) =>
+          path("copyFromMethodRepo") {
+            post {
+              entity(as[CopyConfigurationIngest]) { ingest => requestContext =>
+                val copyMethodConfig = new MethodConfigurationCopy(
+                  methodRepoName = ingest.configurationName,
+                  methodRepoNamespace = ingest.configurationNamespace,
+                  methodRepoSnapshotId = ingest.configurationSnapshotId,
+                  destination = Option(MethodConfigurationId(
+                    name = ingest.destinationName,
+                    namespace = ingest.destinationNamespace,
+                    workspaceName = Option(WorkspaceName(
+                      namespace = workspaceNamespace,
+                      name = workspaceName)))))
+                val extReq = Post(MethodConfigurationService.remoteCopyFromMethodRepoConfigUrl, copyMethodConfig)
+                externalHttpPerRequest(requestContext, extReq)
+              }
             }
-          }
-        } ~ path("copyToMethodRepo") {
-          post {
-            entity(as[PublishConfigurationIngest]) { ingest => requestContext =>
-              val copyMethodConfig = new MethodConfigurationPublish(
-                methodRepoName = ingest.configurationName,
-                methodRepoNamespace = ingest.configurationNamespace,
-                source = Option(MethodConfigurationId(
-                  name = ingest.sourceName,
-                  namespace = ingest.sourceNamespace,
-                  workspaceName = Option(WorkspaceName(
-                    namespace = workspaceNamespace,
-                    name = workspaceName)))))
-              val extReq = Post(MethodConfigurationService.remoteCopyToMethodRepoConfigUrl, copyMethodConfig)
-              externalHttpPerRequest(requestContext, extReq)
+          } ~ path("copyToMethodRepo") {
+            post {
+              entity(as[PublishConfigurationIngest]) { ingest => requestContext =>
+                val copyMethodConfig = new MethodConfigurationPublish(
+                  methodRepoName = ingest.configurationName,
+                  methodRepoNamespace = ingest.configurationNamespace,
+                  source = Option(MethodConfigurationId(
+                    name = ingest.sourceName,
+                    namespace = ingest.sourceNamespace,
+                    workspaceName = Option(WorkspaceName(
+                      namespace = workspaceNamespace,
+                      name = workspaceName)))))
+                val extReq = Post(MethodConfigurationService.remoteCopyToMethodRepoConfigUrl, copyMethodConfig)
+                externalHttpPerRequest(requestContext, extReq)
+              }
             }
-          }
-        } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>
-          pathEnd {
-            passthrough(
-              encodeUri(MethodConfigurationService.remoteMethodConfigUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
-              HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE)
-          } ~
-          path("rename") {
-            passthrough(encodeUri(MethodConfigurationService.remoteMethodConfigRenameUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
-              HttpMethods.POST)
-          } ~
-          path("validate") {
-            passthrough(encodeUri(MethodConfigurationService.remoteMethodConfigValidateUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
-              HttpMethods.GET)
+          } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>
+            pathEnd {
+              passthrough(
+                encodeUri(MethodConfigurationService.remoteMethodConfigUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
+                HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE)
+            } ~
+              path("rename") {
+                passthrough(encodeUri(MethodConfigurationService.remoteMethodConfigRenameUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
+                  HttpMethods.POST)
+              } ~
+              path("validate") {
+                passthrough(encodeUri(MethodConfigurationService.remoteMethodConfigValidateUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
+                  HttpMethods.GET)
+              }
           }
         }
       }
-    }
 
 }

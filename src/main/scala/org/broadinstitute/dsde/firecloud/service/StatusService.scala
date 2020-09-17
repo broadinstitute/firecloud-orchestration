@@ -1,39 +1,32 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.ActorRef
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes
 import akka.pattern._
 import akka.util.Timeout
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.service.StatusService.CollectStatusInfo
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor.GetCurrentStatus
 import org.broadinstitute.dsde.workbench.util.health.StatusCheckResponse
 import org.broadinstitute.dsde.workbench.util.health.StatusJsonSupport.StatusCheckResponseFormat
-import spray.http.StatusCodes
-import spray.httpx.SprayJsonSupport
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 /**
- * Created by anichols on 4/5/17.
- */
+  * Created by anichols on 4/5/17.
+  */
 object StatusService {
-  def props(statusServiceConstructor: () => StatusService): Props = Props(statusServiceConstructor())
-
   def constructor(healthMonitor: ActorRef)()(implicit executionContext: ExecutionContext): StatusService = {
     new StatusService(healthMonitor)
   }
-
-  case class CollectStatusInfo()
 }
 
 class StatusService (val healthMonitor: ActorRef)
-                    (implicit protected val executionContext: ExecutionContext) extends Actor with SprayJsonSupport {
+                    (implicit protected val executionContext: ExecutionContext) extends SprayJsonSupport {
   implicit val timeout = Timeout(1.minute) // timeout for the ask to healthMonitor for GetCurrentStatus
 
-  override def receive: Receive = {
-    case CollectStatusInfo => collectStatusInfo() pipeTo sender
-  }
+  def CollectStatusInfo = collectStatusInfo()
 
   def collectStatusInfo(): Future[PerRequestMessage] = {
     (healthMonitor ? GetCurrentStatus).mapTo[StatusCheckResponse].map { statusCheckResponse =>

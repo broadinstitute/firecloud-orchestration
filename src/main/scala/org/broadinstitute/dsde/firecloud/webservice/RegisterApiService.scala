@@ -2,16 +2,17 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, PerRequestCreator, RegisterService}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, RegisterService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
-import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
-import spray.routing._
+import akka.http.scaladsl.server.Route
 
-trait RegisterApiService extends HttpService with PerRequestCreator with FireCloudDirectives with StandardUserInfoDirectives {
+import scala.concurrent.ExecutionContext
 
-  private implicit val executionContext = actorRefFactory.dispatcher
+trait RegisterApiService extends FireCloudDirectives with StandardUserInfoDirectives {
+
+  implicit val executionContext: ExecutionContext
   private lazy val log = LoggerFactory.getLogger(getClass)
 
   val registerServiceConstructor: () => RegisterService
@@ -20,12 +21,8 @@ trait RegisterApiService extends HttpService with PerRequestCreator with FireClo
     pathPrefix("register") {
       path("profile") {
         post {
-          requireUserInfo() { userInfo =>
-            entity(as[BasicProfile]) { basicProfile => requestContext =>
-              perRequest(requestContext, RegisterService.props(registerServiceConstructor),
-                RegisterService.CreateUpdateProfile(userInfo, basicProfile)
-              )
-            }
+          entity(as[BasicProfile]) { basicProfile =>
+            complete { registerServiceConstructor().CreateUpdateProfile(userInfo, basicProfile) }
           }
         }
       }
@@ -35,12 +32,8 @@ trait RegisterApiService extends HttpService with PerRequestCreator with FireClo
     pathPrefix("profile") {
       path("preferences") {
         post {
-          requireUserInfo() { userInfo =>
-            entity(as[Map[String, String]]) { preferences => requestContext =>
-              perRequest(requestContext, RegisterService.props(registerServiceConstructor),
-                RegisterService.UpdateProfilePreferences(userInfo, preferences)
-              )
-            }
+          entity(as[Map[String, String]]) { preferences =>
+            complete { registerServiceConstructor().UpdateProfilePreferences(userInfo, preferences) }
           }
         }
       }

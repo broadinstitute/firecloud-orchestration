@@ -1,20 +1,23 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import akka.actor.ActorRefFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.metrics.MetricsException
 import org.broadinstitute.dsde.firecloud.model.Metrics
 import org.broadinstitute.dsde.firecloud.model.Metrics.LogitMetric
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.LogitMetricFormat
-import spray.client.pipelining._
-import spray.http.HttpHeaders.RawHeader
-import spray.http.StatusCodes.Accepted
-import spray.httpx.SprayJsonSupport
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.{HttpEntity, HttpMethods, HttpRequest, MediaTypes, StatusCodes}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class HttpLogitDAO(logitUrl: String, logitApiKey: String)
-                  (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext) extends LogitDAO with SprayJsonSupport with LazyLogging {
+                  (implicit val system: ActorSystem, executionContext: ExecutionContext) extends LogitDAO with SprayJsonSupport with LazyLogging {
+
+  val http = Http(system)
 
   /*
     Requirements to send to Logit:
@@ -30,12 +33,14 @@ class HttpLogitDAO(logitUrl: String, logitApiKey: String)
   */
 
   override def recordMetric(metric: LogitMetric): Future[LogitMetric] = {
-    val pipeline = Put(logitUrl, metric) ~>
-      addHeader(RawHeader("LogType", Metrics.LOG_TYPE)) ~>
-      addHeader(RawHeader("ApiKey", logitApiKey)) ~>
-      sendReceive
+    val httpRequest = HttpRequest(
+      method = HttpMethods.PUT,
+      uri = logitUrl,
+      headers = List(RawHeader("LogType", Metrics.LOG_TYPE), RawHeader("ApiKey", logitApiKey)),
+      entity = metric
+    )
 
-    pipeline map { logitResponse =>
+    http.singleRequest(httpRequest) map { logitResponse =>
       logitResponse.status match {
         case Accepted =>
           logger.debug(s"Logit request succeeded: ${LogitMetricFormat.write(metric).compactPrint}")

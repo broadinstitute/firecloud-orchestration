@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.model.HttpMethods
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -9,15 +10,13 @@ import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.slf4j.LoggerFactory
-import spray.client.pipelining._
-import spray.http.HttpHeaders.Authorization
-import spray.http.StatusCodes._
-import spray.http.{HttpCredentials, HttpMethods, HttpResponse, StatusCode}
-import spray.httpx.SprayJsonSupport._
-import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol._
-import spray.routing._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.RequestContext
+import akka.http.scaladsl.model.{HttpMethods, StatusCode}
+import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials}
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
 object UserApiService {
@@ -57,9 +56,9 @@ object UserApiService {
 
 // TODO: this should use UserInfoDirectives, not StandardUserInfoDirectives. That would require a refactoring
 // of how we create service actors, so I'm pushing that work out to later.
-trait UserApiService extends HttpService with PerRequestCreator with FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
+trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
-  private implicit val executionContext = actorRefFactory.dispatcher
+  implicit val executionContext: ExecutionContext
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -115,25 +114,25 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       } ~
       path("profile" / "importstatus") {
         get {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), ImportPermission)
+          requireUserInfo() { userInfo =>
+            complete { userServiceConstructor(userInfo).ImportPermission }
           }
         }
       } ~
       path("profile" / "terra") {
         get {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), GetTerraPreference)
+          requireUserInfo() { userInfo =>
+            complete { userServiceConstructor(userInfo).GetTerraPreference }
           }
         } ~
         post {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), SetTerraPreference)
+          requireUserInfo() { userInfo =>
+            complete { userServiceConstructor(userInfo).SetTerraPreference }
           }
         } ~
         delete {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), DeleteTerraPreference)
+          requireUserInfo() { userInfo =>
+            complete { userServiceConstructor(userInfo).DeleteTerraPreference }
           }
         }
       } ~
@@ -178,10 +177,7 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         pathEnd {
           get {
             requireUserInfo() { userInfo =>
-              requestContext =>
-                perRequest(requestContext,
-                  UserService.props(userServiceConstructor, userInfo),
-                  UserService.GetAllUserKeys)
+              complete { userServiceConstructor(userInfo).GetAllUserKeys }
             }
           }
         }
