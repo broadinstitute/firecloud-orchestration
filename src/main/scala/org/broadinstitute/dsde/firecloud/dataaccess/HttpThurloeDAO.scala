@@ -107,17 +107,16 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
 
     val req = adminAuthedRequest(Get(queryUri), useFireCloudHeader = true,label = Some("HttpThurloeDAO.bulkUserQuery"))
 
-    req map { response =>
+    req flatMap { response =>
       response.status match {
         case StatusCodes.OK =>
-          //todo: rewrite as a for-comp?
-          val profileKVPs:Future[List[ProfileKVP]] = Unmarshal(response).to[List[ProfileKVP]]
-          val groupedByUser:Future[Map[String, List[ProfileKVP]]] = profileKVPs.map(x => x.groupBy(_.userId))
-          val x = groupedByUser.flatMap{
-            case(userId:String, kvps:List[ProfileKVP]) => ProfileWrapper(userId, kvps.map(_.keyValuePair))
+          val profileKVPsF:Future[List[ProfileKVP]] = Unmarshal(response).to[List[ProfileKVP]]
+          val groupedByUserF:Future[Map[String, List[ProfileKVP]]] = profileKVPsF.map(x => x.groupBy(_.userId))
+          groupedByUserF.map{ groupedByUser =>
+            groupedByUser.map {
+              case (userId: String, kvps: List[ProfileKVP]) => ProfileWrapper(userId, kvps.map(_.keyValuePair))
+            }.toList
           }
-
-          x
 
         case _ => throw new FireCloudException(s"Unable to execute bulkUserQuery from profile service: ${response.status} $response")
       }

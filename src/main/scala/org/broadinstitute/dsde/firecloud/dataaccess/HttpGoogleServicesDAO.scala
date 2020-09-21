@@ -4,6 +4,10 @@ import java.io
 import java.io.FileInputStream
 
 import akka.actor.ActorRefFactory
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
+import akka.http.scaladsl.unmarshalling.Unmarshaller
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
@@ -28,6 +32,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObject
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
+import org.broadinstitute.dsde.firecloud.utils.HttpClientUtilsGzip
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -82,7 +87,9 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
-object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging {
+object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with DsdeHttpDAO with SprayJsonSupport {
+
+  override val httpClientUtils = HttpClientUtilsGzip()
 
   // application name to use within Google api libraries
   private final val appName = "firecloud:orchestration"
@@ -233,20 +240,12 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     // explicitly use the Google Cloud Storage xml api here. The json api requires that storage apis are enabled in the
     // project in which a pet service account is created. The XML api does not have this limitation.
     val metadataRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
-    val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
-    metadataPipeline{metadataRequest} map { resp: HttpResponse =>
-      resp.status match {
-        case OK => xmlApiResponseToObject(resp, bucketName, objectKey)
-        case _ =>
-          // translate spray status code to akka-http status code
-          val code = akka.http.scaladsl.model.StatusCodes.getForKey(resp.status.intValue).getOrElse(
-            akka.http.scaladsl.model.StatusCodes.custom(resp.status.intValue, resp.status.defaultMessage)
-          )
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(code, code.reason))
+
+    executeRequestRaw(OAuth2BearerToken(authToken))(metadataRequest).map { response =>
+      response.status match {
+        case OK => xmlApiResponseToObject(response, bucketName, objectKey)
+        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response.status, response.status.reason))
       }
-    } recover {
-      case t: UnsuccessfulResponseException =>
-        throw new FireCloudExceptionWithErrorReport(FCErrorReport(t.response))
     }
   }
 
@@ -312,16 +311,15 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def objectAccessCheck(bucketName: String, objectKey: String, authToken: WithAccessToken)
                        (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
     val accessRequest = Head( HttpGoogleServicesDAO.getXmlApiMetadataUrl(bucketName, objectKey) )
-    val accessPipeline = addCredentials(authToken.accessToken) ~> sendReceive
-    accessPipeline{accessRequest}
+
+    executeRequestRaw(authToken.accessToken)(accessRequest)
   }
 
   def getUserProfile(accessToken: WithAccessToken)
                     (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
     val profileRequest = Get( "https://www.googleapis.com/oauth2/v3/userinfo" )
-    val profilePipeline = authHeaders(accessToken) ~> sendReceive
 
-    profilePipeline{profileRequest}
+    executeRequestRaw(accessToken.accessToken)(profileRequest)
   }
 
   // download "proxy" for GCS objects. When using a simple RESTful url to download from GCS, Chrome/GCS will look
@@ -336,7 +334,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   //      else
   //        redirect to a direct download in GCS
   def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
-                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[PerRequestMessage] = {
+                 (implicit executionContext: ExecutionContext): Future[PerRequestMessage] = {
 
     val objectStr = s"gs://$bucketName/$objectKey" // for logging
     // can we determine the current user's identity with Google?
@@ -346,7 +344,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           // user is known to Google. Extract the user's email and SID from the response, for logging
           import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOAuthUser
           import spray.json._
-          val oauthUser:Try[OAuthUser] = Try(userResponse.entity.asString.parseJson.convertTo[OAuthUser])
+          val oauthUser = Try(Unmarshaller.stringUnmarshaller.map(_.parseJson.convertTo[OAuthUser]))
           val userStr = (oauthUser getOrElse userResponse.entity).toString
           // Does the user have access to the target file?
           objectAccessCheck(bucketName, objectKey, userAuthToken) flatMap { objectResponse =>
@@ -363,13 +361,12 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                   logger.info(s"$userStr download via proxy allowed for [$objectStr]")
                   val gcsApiUrl = getXmlApiMetadataUrl(bucketName, objectKey)
                   val extReq = Get(gcsApiUrl)
-                  val proxyPipeline = addCredentials(userAuthToken.accessToken) ~> sendReceive
-                  // ensure we set the content-type correctly when proxying
-                  proxyPipeline(extReq) map { proxyResponse:HttpResponse =>
-                      proxyResponse.header[HttpHeaders.`Content-Type`] match {
+
+                  executeRequestRaw(userAuthToken.accessToken)(extReq).map { proxyResponse =>
+                    proxyResponse.header[`Content-Type`] match {
                       case Some(ct) =>
                         RequestCompleteWithHeaders((proxyResponse.status, proxyResponse.entity),
-                          HttpHeaders.`Content-Type`(ct.contentType)
+                          `Content-Type`(ct.contentType)
                         )
                       case None => RequestComplete((proxyResponse.status, proxyResponse.entity))
                     }
@@ -383,7 +380,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                         // the service account can read the object too. We are safe to sign a url.
                         logger.info(s"$userStr download via signed URL allowed for [$objectStr]")
                         val redirectUrl = getSignedUrl(bucketName, objectKey)
-                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, HttpHeaders.Location(Uri(redirectUrl)))
+                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, Location(Uri(redirectUrl)))
                       case _ =>
                         // the service account cannot read the object, even though the user can. We cannot
                         // make a signed url, because the service account won't have permission to sign it.
@@ -393,7 +390,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                         // generate direct link per https://cloud.google.com/storage/docs/authentication#cookieauth
                         logger.info(s"$userStr download via direct link allowed for [$objectStr]")
                         val redirectUrl = getDirectDownloadUrl(bucketName, objectKey)
-                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, HttpHeaders.Location(Uri(redirectUrl)))
+                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, Location(Uri(redirectUrl)))
 
                     }
                   }
@@ -401,23 +398,24 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
               case _ =>
                 // the user does not have access to the object.
-                val responseStr = objectResponse.entity.asString.replaceAll("\n","")
+                val responseStr = objectResponse.entity.toJson.compactPrint.replaceAll("\n","")
                 logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status}): $responseStr")
                 Future(RequestComplete(objectResponse))
             }
           }
         case _ =>
           // Google did not return a profile for this user; abort. Reloading will resolve the issue if it's caused by an expired token.
-          logger.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.asString}")
+          logger.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.toJson.compactPrint}")
           Future(RequestComplete((Unauthorized, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
       }
     }
   }
 
   /** Fetch the latest price list from Google. Returns only the subset of prices that we find we have use for. */
-  def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
-    val pipeline: HttpRequest => Future[GooglePriceList] = sendReceive ~> decode(Gzip) ~> unmarshal[GooglePriceList]
-    pipeline(Get(FireCloudConfig.GoogleCloud.priceListUrl))
+  def fetchPriceList(implicit executionContext: ExecutionContext): Future[GooglePriceList] = {
+    val httpReq = Get(FireCloudConfig.GoogleCloud.priceListUrl)
+
+    httpClientUtils.executeRequestUnmarshalResponse[GooglePriceList](http, httpReq)
   }
 
   override def deleteGoogleGroup(groupEmail: String): Unit = {

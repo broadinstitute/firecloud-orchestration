@@ -1,8 +1,9 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.model.headers.`Content-Type`
 import org.parboiled.common.FileUtils
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model.{HttpMethod, Uri}
+import akka.http.scaladsl.model.{ContentTypes, HttpHeader, HttpMethod, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 
 import scala.util.Try
@@ -21,7 +22,10 @@ object FireCloudDirectiveUtils {
 }
 
 trait FireCloudDirectives extends Directives with RequestBuilding {
-  def respondWithJSON = respondWithMediaType(`application/json`)
+
+  def respondWithJSON = extractRequest.flatMap { request =>
+    mapResponseHeaders(headers => headers :+ ContentTypes.`application/json`)
+  }
 
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
     passthrough(Uri(unencodedPath), methods: _*)

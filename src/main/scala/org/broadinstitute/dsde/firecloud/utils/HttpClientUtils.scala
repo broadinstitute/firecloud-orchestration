@@ -12,7 +12,7 @@ import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.rawls.RawlsExceptionWithErrorReport
-import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
@@ -23,6 +23,7 @@ import scala.util.Success
 trait HttpClientUtils extends LazyLogging {
   implicit val materializer: Materializer
   implicit val executionContext: ExecutionContext
+  implicit val errorReportSource = ErrorReportSource("FireCloud")
 
   def addHeader(httpRequest: HttpRequest, header: HttpHeader) = {
     httpRequest.copy(headers = httpRequest.headers :+ header)

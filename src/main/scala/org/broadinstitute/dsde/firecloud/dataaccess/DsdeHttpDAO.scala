@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.HttpExt
-import akka.http.scaladsl.model.{HttpHeader, HttpRequest, ResponseEntity}
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse, ResponseEntity}
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
@@ -37,6 +37,10 @@ trait DsdeHttpDAO extends LazyLogging {
 
   protected def executeRequestWithToken[T](accessToken: OAuth2BearerToken)(httpRequest: HttpRequest)(implicit um: Unmarshaller[ResponseEntity, T]): Future[T] = {
     httpClientUtils.executeRequestUnmarshalResponse[T](http, httpClientUtils.addHeader(httpRequest, authHeader(accessToken)))
+  }
+
+  protected def executeRequestRaw[T](accessToken: OAuth2BearerToken)(httpRequest: HttpRequest)(implicit um: Unmarshaller[ResponseEntity, T]): Future[HttpResponse] = {
+    httpClientUtils.executeRequest(http, httpClientUtils.addHeader(httpRequest, authHeader(accessToken)))
   }
 
   protected def pipeline[A](userInfo: UserInfo)(implicit um: Unmarshaller[ResponseEntity, A]) = executeRequestAsUser[A](userInfo) _
