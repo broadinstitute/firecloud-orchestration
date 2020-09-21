@@ -8,7 +8,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impProfileWrapper, impTerraPreference, impUserImportPermission}
-import org.broadinstitute.dsde.firecloud.model.Trial.CreationStatuses
+import org.broadinstitute.dsde.firecloud.model.Project.CreationStatuses
 import org.broadinstitute.dsde.firecloud.model.{ProfileWrapper, RequestCompleteWithErrorReport, TerraPreference, UserImportPermission, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels

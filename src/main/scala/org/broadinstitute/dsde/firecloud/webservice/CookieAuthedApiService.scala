@@ -3,15 +3,11 @@ package org.broadinstitute.dsde.firecloud.webservice
 import akka.actor.Props
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.Directives._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service._
 
 import scala.concurrent.ExecutionContext
-//import spray.http._
-//import spray.routing._
-
 import scala.language.postfixOps
 
 /**
@@ -57,14 +53,12 @@ trait CookieAuthedApiService extends FireCloudDirectives with FireCloudRequestBu
           }
         }
     } ~
-      path( "cookie-authed" / "download" / "b" / Segment / "o" / RestPath ) { (bucket, obj) =>
+      path( "cookie-authed" / "download" / "b" / Segment / "o" / RemainingPath ) { (bucket, obj) =>
         get {
-          cookie("FCtoken") { tokenCookie => requestContext =>
-            val userInfo = dummyUserInfo(tokenCookie.content)
+          cookie("FCtoken") { tokenCookie =>
+            val userInfo = dummyUserInfo(tokenCookie.value)
 
-            perRequest(requestContext,
-              StorageService.props(storageServiceConstructor, userInfo),
-              StorageService.GetDownload(bucket, obj.toString))
+            complete { storageServiceConstructor(userInfo).GetDownload(bucket, obj.toString) }
           }
         }
       }

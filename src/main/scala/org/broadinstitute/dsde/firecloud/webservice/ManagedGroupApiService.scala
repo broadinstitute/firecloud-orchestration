@@ -33,12 +33,12 @@ trait ManagedGroupApiService extends FireCloudRequestBuilding with FireCloudDire
               get {
                 complete { managedGroupServiceConstructor(userInfo).ListGroupMembers(WorkbenchGroupName(groupName)) }
               } ~
-                post {
-                  complete { managedGroupServiceConstructor(userInfo).CreateGroup(WorkbenchGroupName(groupName)) }
-                } ~
-                delete {
-                  omplete { managedGroupServiceConstructor(userInfo).DeleteGroup(WorkbenchGroupName(groupName)) }
-                }
+              post {
+                complete { managedGroupServiceConstructor(userInfo).CreateGroup(WorkbenchGroupName(groupName)) }
+              } ~
+              delete {
+                complete { managedGroupServiceConstructor(userInfo).DeleteGroup(WorkbenchGroupName(groupName)) }
+              }
             } ~
               path("requestAccess") {
                 post {

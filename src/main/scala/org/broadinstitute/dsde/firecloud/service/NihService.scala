@@ -1,19 +1,16 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.{Actor, ActorRefFactory, Props}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
-import akka.pattern._
+import akka.http.scaladsl.model.StatusCodes._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO, SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.NihService.{GetNihStatus, SyncAllWhitelists, SyncWhitelist, UpdateNihLinkAndSyncSelf}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,14 +36,12 @@ object NihStatus {
 }
 
 object NihService {
-
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
     new NihServiceActor(app.samDAO, app.thurloeDAO, app.googleServicesDAO)
-
 }
 
 class NihServiceActor(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO)
-  (implicit val executionContext: ExecutionContext) extends NihService {
+                     (implicit val executionContext: ExecutionContext) extends NihService {
 
   def GetNihStatus(userInfo: UserInfo) = getNihStatus(userInfo)
   def UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) = updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink)

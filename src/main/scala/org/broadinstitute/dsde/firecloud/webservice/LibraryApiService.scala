@@ -1,6 +1,8 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.DataUse._
@@ -9,12 +11,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{Curator, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, LibraryService, OntologyService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-//import spray.client.pipelining._
-//import spray.http.StatusCodes._
-//import spray.http.Uri
-//import spray.httpx.SprayJsonSupport._
 import spray.json._
-//import spray.routing._
 import spray.json.DefaultJsonProtocol._
 
 import scala.collection.JavaConverters._
@@ -71,7 +68,7 @@ trait LibraryApiService extends FireCloudRequestBuilding
         requireUserInfo() { userInfo =>
           path("duos" / "consent" / "orsp" / Segment) { (orspId) =>
             get { requestContext =>
-              val extReq = Get(Uri(consentUrl).withQuery(("name", orspId)))
+              val extReq = Get(Uri(consentUrl).withQuery(Uri.Query("name", orspId)))
               externalHttpPerRequest(requestContext, extReq)
             }
           } ~
@@ -106,18 +103,12 @@ trait LibraryApiService extends FireCloudRequestBuilding
                       parameter("validate" ? "false") { validationParam =>
                         val doValidate = java.lang.Boolean.valueOf(validationParam) // for lenient parsing
                         entity(as[String]) { rawAttrsString =>
-                          requestContext =>
-                            perRequest(requestContext,
-                              LibraryService.props(libraryServiceConstructor, userInfo),
-                              LibraryService.UpdateLibraryMetadata(namespace, name, rawAttrsString, doValidate))
+                          complete { libraryServiceConstructor(userInfo).UpdateLibraryMetadata(namespace, name, rawAttrsString, doValidate) }
                         }
                       }
                     } ~ {
                       get {
-                        requestContext =>
-                          perRequest(requestContext,
-                            LibraryService.props(libraryServiceConstructor, userInfo),
-                            LibraryService.GetLibraryMetadata(namespace, name))
+                        complete { libraryServiceConstructor(userInfo).GetLibraryMetadata(namespace, name) }
                       }
                     }
                   } ~
@@ -125,39 +116,27 @@ trait LibraryApiService extends FireCloudRequestBuilding
                       respondWithJSON {
                         put {
                           entity(as[Seq[String]]) { newGroups =>
-                            requestContext =>
-                              perRequest(requestContext,
-                                LibraryService.props(libraryServiceConstructor, userInfo),
-                                LibraryService.UpdateDiscoverableByGroups(namespace, name, newGroups))
+                            complete { libraryServiceConstructor(userInfo).UpdateDiscoverableByGroups(namespace, name, newGroups) }
                           }
                         } ~
                           get {
-                            requestContext =>
-                              perRequest(requestContext,
-                                LibraryService.props(libraryServiceConstructor, userInfo),
-                                LibraryService.GetDiscoverableByGroups(namespace, name))
+                            complete { libraryServiceConstructor(userInfo).GetDiscoverableByGroups(namespace, name) }
                           }
                       }
                     } ~
                     path("published") {
-                      post { requestContext =>
-                        perRequest(requestContext,
-                          LibraryService.props(libraryServiceConstructor, userInfo),
-                          LibraryService.SetPublishAttribute(namespace, name, true))
+                      post {
+                        complete { libraryServiceConstructor(userInfo).SetPublishAttribute(namespace, name, true) }
                       } ~
-                        delete { requestContext =>
-                          perRequest(requestContext,
-                            LibraryService.props(libraryServiceConstructor, userInfo),
-                            LibraryService.SetPublishAttribute(namespace, name, false))
+                        delete {
+                          complete { libraryServiceConstructor(userInfo).SetPublishAttribute(namespace, name, false) }
                         }
                     }
                 } ~
                 path("admin" / "reindex") {
                   post {
-                    respondWithJSON { requestContext =>
-                      perRequest(requestContext,
-                        LibraryService.props(libraryServiceConstructor, userInfo),
-                        LibraryService.IndexAll)
+                    respondWithJSON {
+                      complete { libraryServiceConstructor(userInfo).IndexAll }
                     }
                   }
                 } ~
@@ -165,10 +144,8 @@ trait LibraryApiService extends FireCloudRequestBuilding
                   pathEndOrSingleSlash {
                     post {
                       respondWithJSON {
-                        entity(as[LibrarySearchParams]) { params => requestContext =>
-                          perRequest(requestContext,
-                            LibraryService.props(libraryServiceConstructor, userInfo),
-                            LibraryService.FindDocuments(params))
+                        entity(as[LibrarySearchParams]) { params =>
+                          complete { libraryServiceConstructor(userInfo).FindDocuments(params) }
                         }
                       }
                     }
@@ -178,10 +155,8 @@ trait LibraryApiService extends FireCloudRequestBuilding
                   pathEndOrSingleSlash {
                     post {
                       respondWithJSON {
-                        entity(as[LibrarySearchParams]) { params => requestContext =>
-                          perRequest(requestContext,
-                            LibraryService.props(libraryServiceConstructor, userInfo),
-                            LibraryService.Suggest(params))
+                        entity(as[LibrarySearchParams]) { params =>
+                          complete { libraryServiceConstructor(userInfo).Suggest(params) }
                         }
                       }
                     }
@@ -191,10 +166,7 @@ trait LibraryApiService extends FireCloudRequestBuilding
                   get {
                     parameter('q) { text =>
                       respondWithJSON {
-                        requestContext =>
-                          perRequest(requestContext,
-                            LibraryService.props(libraryServiceConstructor, userInfo),
-                            LibraryService.PopulateSuggest(field, text))
+                        complete { libraryServiceConstructor(userInfo).PopulateSuggest(field, text) }
                       }
                     }
                   }

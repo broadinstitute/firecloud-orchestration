@@ -1,18 +1,16 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor._
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.marshalling.{Marshaller, ToResponseMarshaller}
 import akka.http.scaladsl.model.headers._
-import akka.event.Logging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
@@ -31,15 +29,9 @@ object WorkspaceService {
 }
 
 class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO, val ontologyDAO: OntologyDAO, val searchDAO: SearchDAO, val consentDAO: ConsentDAO, val shareLogDAO: ShareLogDAO)
-                      (implicit protected val executionContext: ExecutionContext) extends AttributeSupport with TSVFileSupport with PermissionsSupport with WorkspacePublishingSupport with SprayJsonSupport {
-
-  implicit val system = context.system
-
-  val log = Logging(system, getClass)
+                      (implicit protected val executionContext: ExecutionContext) extends AttributeSupport with TSVFileSupport with PermissionsSupport with WorkspacePublishingSupport with SprayJsonSupport with LazyLogging {
 
   implicit val userToken = argUserToken
-
-  import WorkspaceService._
 
   def GetCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo) = getCatalog(workspaceNamespace, workspaceName, userInfo)
   def UpdateCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog], userInfo: UserInfo) = updateCatalog(workspaceNamespace, workspaceName, updates, userInfo)

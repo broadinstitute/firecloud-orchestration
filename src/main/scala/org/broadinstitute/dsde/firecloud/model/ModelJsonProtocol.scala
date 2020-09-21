@@ -7,7 +7,8 @@ import org.broadinstitute.dsde.rawls.model._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.MalformedRequestContentRejection
+import akka.http.scaladsl.server.{MalformedRequestContentRejection, RejectionHandler}
+import akka.http.scaladsl.server.Directives._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
@@ -15,8 +16,6 @@ import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project._
 import spray.json.{JsString, _}
-//import spray.routing.{MalformedRequestContentRejection, RejectionHandler}
-//import spray.routing.directives.RouteDirectives.complete
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
 import org.broadinstitute.dsde.workbench.model.ValueObjectFormat
@@ -306,11 +305,9 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
   implicit val impDropwizardHealth = jsonFormat2(DropwizardHealth)
 
-
-
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
-  val entityExtractionRejectionHandler = RejectionHandler {
-    case MalformedRequestContentRejection(errorMsg, _) :: _ =>
+  val entityExtractionRejectionHandler = RejectionHandler.newBuilder().handle {
+    case MalformedRequestContentRejection(errorMsg, _) =>
       complete(BadRequest, errorMsg)
   }
 

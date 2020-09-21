@@ -31,7 +31,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
-  //  implicit val materializer: Materializer
+  implicit val materializer: Materializer
   val http = Http(system)
 
   private final val NoPerfLabel: Instant = Instant.MIN

@@ -1,22 +1,22 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.javadsl.model.HttpResponse
 import akka.http.scaladsl.model.HttpMethods
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{DsdeHttpDAO, HttpGoogleServicesDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.UserService.{DeleteTerraPreference, GetTerraPreference, ImportPermission, SetTerraPreference}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.slf4j.LoggerFactory
 import spray.json.DefaultJsonProtocol._
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.RequestContext
+import akka.http.scaladsl.server.{RequestContext, RouteResult}
 import akka.http.scaladsl.model.{HttpMethods, StatusCode}
-import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials}
+import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials, OAuth2BearerToken}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 object UserApiService {
@@ -56,7 +56,7 @@ object UserApiService {
 
 // TODO: this should use UserInfoDirectives, not StandardUserInfoDirectives. That would require a refactoring
 // of how we create service actors, so I'm pushing that work out to later.
-trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
+trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives with DsdeHttpDAO {
 
   implicit val executionContext: ExecutionContext
 
@@ -80,15 +80,16 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
             case None =>
               respondWithErrorReport(Unauthorized, "No authorization header in request.", requestContext)
             // browser sent Authorization header; try to query Sam for user status
-            case Some(_) =>
-              val pipeline = authHeaders(requestContext) ~> sendReceive
+            case Some(header) =>
+
               val version1 = !userDetailsOnly.exists(_.equalsIgnoreCase("true"))
-              pipeline(Get(UserApiService.samRegisterUserInfoURL)) onComplete {
-                case Success(response: HttpResponse) =>
-                  handleSamResponse(response, requestContext, version1)
+
+              executeRequestRaw(OAuth2BearerToken(header.token()))(Get(UserApiService.samRegisterUserInfoURL)) map { response =>
+                handleSamResponse(response, requestContext, version1)
+              } recover {
+                case error: Throwable =>
                 // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
-                case Failure(error) =>
-                  respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
+                respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
               }
           }
         }
@@ -140,16 +141,11 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
         pathEnd {
           post {
             parameter("operation") { op =>
-              requireUserInfo() { userInfo => requestContext =>
-                val operation = op.toLowerCase match {
-                  case "finalize" => Some(TrialService.FinalizeUser(userInfo))
-                  case _ => None
+              requireUserInfo() { userInfo =>
+                op.toLowerCase match {
+                  case "finalize" => complete { trialServiceConstructor().FinalizeUser(userInfo) }
+                  case _ => complete { BadRequest }
                 }
-
-                if (operation.nonEmpty)
-                  perRequest(requestContext, TrialService.props(trialServiceConstructor), operation.get)
-                else
-                  requestContext.complete(BadRequest, ErrorReport(s"Invalid operation '$op'"))
               }
             }
           }
@@ -184,11 +180,11 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
       }
     }
 
-  private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext): Unit = {
+  private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext): Future[RouteResult] = {
     requestContext.complete(statusCode, ErrorReport(statusCode=statusCode, message=message))
   }
 
-  private def respondWithErrorReport(statusCode: StatusCode, message: String, error: Throwable, requestContext: RequestContext): Unit = {
+  private def respondWithErrorReport(statusCode: StatusCode, message: String, error: Throwable, requestContext: RequestContext): Future[RouteResult] = {
     requestContext.complete(statusCode, ErrorReport(statusCode = statusCode, message = message, throwable = error))
   }
 
@@ -205,7 +201,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
         respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
       // Sam found the user; we'll try to parse the response and inspect it
       case OK =>
-        val respJson: Deserialized[RegistrationInfoV2] = response.entity.as[RegistrationInfoV2]
+        val respJson: Deserialized[RegistrationInfoV2] = responseAs[RegistrationInfoV2]
         handleOkResponse(respJson, requestContext, version1)
       case x =>
         // if we get any other error from Sam, pass that error on
