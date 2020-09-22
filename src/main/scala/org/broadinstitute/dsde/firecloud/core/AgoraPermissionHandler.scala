@@ -1,8 +1,10 @@
 package org.broadinstitute.dsde.firecloud.core
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.StatusCodes._
+import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.ACLNames._
@@ -63,7 +65,7 @@ object AgoraPermissionHandler { //rename to AgoraPermissionService
 
 }
 
-class AgoraPermissionActor(userInfo: WithAccessToken) extends LazyLogging
+class AgoraPermissionActor(userInfo: WithAccessToken)(implicit val system: ActorSystem, val materializer: Materializer, val executionContext: ExecutionContext) extends LazyLogging
   with FireCloudRequestBuilding with MethodsApiServiceUrls with DsdeHttpDAO {
 
   import spray.json.DefaultJsonProtocol._

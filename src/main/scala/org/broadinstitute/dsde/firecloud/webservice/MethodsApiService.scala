@@ -8,7 +8,9 @@ import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.core.{AgoraPermissionActor, AgoraPermissionHandler}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectives
+import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.rawls.model.AgoraMethod
 //import spray.http.{HttpMethods, Uri}
 //import spray.httpx.SprayJsonSupport._
@@ -26,7 +28,9 @@ trait MethodsApiServiceUrls {
   val localConfigsPath = "configurations"
 }
 
-trait MethodsApiService extends FireCloudDirectives with MethodsApiServiceUrls {
+trait MethodsApiService extends FireCloudDirectives with MethodsApiServiceUrls with StandardUserInfoDirectives {
+
+  val agoraPermissionService: UserInfo => AgoraPermissionActor
 
   val methodsApiServiceRoutes: Route =
   // routes that are valid for both configurations and methods
@@ -69,22 +73,22 @@ trait MethodsApiService extends FireCloudDirectives with MethodsApiServiceUrls {
           } ~
             path( "permissions") {
               val url = s"$passthroughBase/${urlify(namespace, name)}/$snapshotId/permissions"
-              get { requestContext =>
-                // pass to AgoraPermissionHandler
-                perRequest(requestContext,
-                  Props(new AgoraPermissionActor(requestContext)),
-                  AgoraPermissionHandler.Get(url))
+              get {
+                requireUserInfo() { userInfo =>
+                  // pass to AgoraPermissionHandler
+                  complete { agoraPermissionService(userInfo).GetAgoraPermission(url) }
+                }
               } ~
                 post {
                   // explicitly pull in the json-extraction error handler from ModelJsonProtocol
                   handleRejections(entityExtractionRejectionHandler) {
                     // take the body of the HTTP POST and construct a FireCloudPermission from it
-                    entity(as[List[FireCloudPermission]]) {
-                      fireCloudPermissions => requestContext =>
-                        perRequest(
-                          requestContext,
-                          Props(new AgoraPermissionActor(requestContext)),
-                          AgoraPermissionHandler.Post(url, fireCloudPermissions.map(_.toAgoraPermission)))
+                    entity(as[List[FireCloudPermission]]) { fireCloudPermissions =>
+                      requireUserInfo() { userInfo =>
+                        complete {
+                          agoraPermissionService(userInfo).CreateAgoraPermission(url, fireCloudPermissions.map(_.toAgoraPermission))
+                        }
+                      }
                     }
                   }
                 }
@@ -107,10 +111,9 @@ trait MethodsApiService extends FireCloudDirectives with MethodsApiServiceUrls {
                     val agoraPermissions = fireCloudPermissions map { fc =>
                       EntityAccessControlAgora(Method(fc.method), fc.acls.map(_.toAgoraPermission))
                     }
-                    perRequest(
-                      requestContext,
-                      Props(new AgoraPermissionActor(requestContext)),
-                      AgoraPermissionHandler.MultiUpsert(agoraPermissions))
+                    requireUserInfo() { userInfo =>
+                      complete { agoraPermissionService(userInfo).UpsertAgoraPermissions(agoraPermissions) }
+                    }
                 }
               }
             }

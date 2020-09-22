@@ -21,8 +21,10 @@ trait RegisterApiService extends FireCloudDirectives with StandardUserInfoDirect
     pathPrefix("register") {
       path("profile") {
         post {
-          entity(as[BasicProfile]) { basicProfile =>
-            complete { registerServiceConstructor().CreateUpdateProfile(userInfo, basicProfile) }
+          requireUserInfo() { userInfo =>
+            entity(as[BasicProfile]) { basicProfile =>
+              complete { registerServiceConstructor().CreateUpdateProfile(userInfo, basicProfile) }
+            }
           }
         }
       }
@@ -32,8 +34,10 @@ trait RegisterApiService extends FireCloudDirectives with StandardUserInfoDirect
     pathPrefix("profile") {
       path("preferences") {
         post {
-          entity(as[Map[String, String]]) { preferences =>
-            complete { registerServiceConstructor().UpdateProfilePreferences(userInfo, preferences) }
+          requireUserInfo() { userInfo =>
+            entity(as[Map[String, String]]) { preferences =>
+              complete { registerServiceConstructor().UpdateProfilePreferences(userInfo, preferences) }
+            }
           }
         }
       }

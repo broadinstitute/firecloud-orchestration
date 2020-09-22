@@ -8,7 +8,7 @@ trait BillingService extends FireCloudDirectives {
   private val billingUrl = FireCloudConfig.Rawls.authUrl + "/billing"
   private val userBillingUrl = FireCloudConfig.Rawls.authUrl + "/user/billing"
 
-  val routes: Route =
+  val billingServiceRoutes: Route =
     pathPrefix("billing") {
       pathEnd {
         post {
