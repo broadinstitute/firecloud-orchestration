@@ -1,33 +1,18 @@
 package org.broadinstitute.dsde.firecloud
 
-import akka.event.{Logging, LoggingAdapter}
-import akka.event.Logging.LogLevel
-import akka.http.scaladsl.model.{ContentType, HttpCharsets, HttpEntity, HttpRequest, MediaTypes, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpHeader, StatusCodes}
 import akka.http.scaladsl.server
-import akka.http.scaladsl.server.{Directive0, Route}
-import akka.http.scaladsl.server.RouteResult.Complete
-import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.scaladsl.Sink
-import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
-import org.broadinstitute.dsde.firecloud.metrics.MetricsActor
+import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
-
-import scala.concurrent.{ExecutionContext, Future}
-import org.slf4j.LoggerFactory
 import org.broadinstitute.dsde.firecloud.service._
+import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.webservice._
-import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
-import org.elasticsearch.client.transport.TransportClient
+import org.slf4j.LoggerFactory
 
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 import scala.language.postfixOps
 
-
-trait FireCloudApiService extends FireCloudDirectives
-  with CookieAuthedApiService
+trait FireCloudApiService extends CookieAuthedApiService
   with EntityService
   with ExportEntitiesApiService
   with LibraryApiService
@@ -39,6 +24,8 @@ trait FireCloudApiService extends FireCloudDirectives
   with WorkspaceApiService
   with NotificationsApiService
   with MethodConfigurationService
+  with BillingService
+  with SubmissionService
   with StatusApiService
   with MethodsApiService
   with Ga4ghApiService
@@ -62,24 +49,6 @@ trait FireCloudApiService extends FireCloudDirectives
   //  val elasticSearchClient: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
 
   //  val logitMetricsEnabled = FireCloudConfig.Metrics.logitApiKey.isDefined
-
-  //  val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora)
-  //  val rawlsDAO:RawlsDAO = new HttpRawlsDAO
-  //  val samDAO:SamDAO = new HttpSamDAO
-  //  val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
-  //  val googleServicesDAO:GoogleServicesDAO = HttpGoogleServicesDAO
-  //  val ontologyDAO:OntologyDAO = new ElasticSearchOntologyDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.ontologyIndexName)
-  //  val consentDAO:ConsentDAO = new HttpConsentDAO
-  //  val researchPurposeSupport:ResearchPurposeSupport = new ESResearchPurposeSupport(ontologyDAO)
-  //  val searchDAO:SearchDAO = new ElasticSearchDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.indexName, researchPurposeSupport)
-  //  val trialDAO:TrialDAO = new ElasticSearchTrialDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.trialIndexName)
-  //  val logitDAO:LogitDAO = if (logitMetricsEnabled)
-  //      new HttpLogitDAO(FireCloudConfig.Metrics.logitUrl, FireCloudConfig.Metrics.logitApiKey.get)
-  //    else
-  //      new NoopLogitDAO
-  //  val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
-
-  //  val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, trialDAO, logitDAO, shareLogDAO)
   //  val materializer: ActorMaterializer = ActorMaterializer()
 
   //  private val healthChecks = new HealthChecks(app)
@@ -87,7 +56,6 @@ trait FireCloudApiService extends FireCloudDirectives
   //  val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
   //  system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
   //
-  //  val trialProjectManager = system.actorOf(ProjectManager.props(app.rawlsDAO, app.trialDAO, app.googleServicesDAO), "trial-project-manager")
   //
   //  if (logitMetricsEnabled) {
   //    val freq = FireCloudConfig.Metrics.logitFrequencyMinutes
@@ -115,19 +83,8 @@ trait FireCloudApiService extends FireCloudDirectives
   val shareLogServiceConstructor: () => ShareLogService //= ShareLogService.constructor(app)
   val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService //= ManagedGroupService.constructor(app)
 
+  implicit val executionContext: ExecutionContext
   implicit val materializer: Materializer
-
-  // routes under /api
-  //  val methodConfigurationService = new MethodConfigurationService with ActorRefFactoryContext
-  //  val submissionsService = new SubmissionService with ActorRefFactoryContext
-  //  val billingService = new BillingService with ActorRefFactoryContext
-  //  val apiRoutes = methodsApiServiceRoutes ~ profileRoutes ~ cromIamApiServiceRoutes ~
-  //    methodConfigurationService.routes ~ submissionsService.routes ~
-  //    nihRoutes ~ billingService.routes ~ trialApiServiceRoutes ~ shareLogServiceRoutes ~
-  //    staticNotebooksRoutes
-
-  //  val healthService = new HealthService with ActorRefFactoryContext
-
 
   val logRequests = mapInnerRoute { route => requestContext =>
     log.debug(requestContext.request.toString)
@@ -135,14 +92,13 @@ trait FireCloudApiService extends FireCloudDirectives
   }
 
   // So we have the time when users send us error screenshots
-  val appendTimestampOnFailure = mapHttpResponse { response =>
+  val appendTimestampOnFailure = mapResponse { response =>
     if (response.status.isFailure) {
       try {
-        import spray.json.DefaultJsonProtocol._
         import spray.json._
         val dataMap = response.entity.asString.parseJson.convertTo[Map[String, JsValue]]
         val withTimestamp = dataMap + ("timestamp" -> JsNumber(System.currentTimeMillis()))
-        val contentType = response.header[HttpHeaders.`Content-Type`].map{_.contentType}.getOrElse(ContentTypes.`application/json`)
+        val contentType = response.header[HttpHeader.`Content-Type`].map{_.contentType}.getOrElse(ContentTypes.`application/json`)
         response.withEntity(HttpEntity(contentType, withTimestamp.toJson.prettyPrint + "\n"))
       } catch {
         // usually a failure to parse, if the response isn't JSON (e.g. HTML responses from Google)
@@ -152,9 +108,8 @@ trait FireCloudApiService extends FireCloudDirectives
   }
 
   // wraps route rejections in an ErrorReport
-  import org.broadinstitute.dsde.firecloud.model.errorReportRejectionHandler
 
-
+  // routes under /api
   def apiRoutes =
     options { complete(StatusCodes.OK) } ~
       withExecutionContext(ExecutionContext.global) {
@@ -162,20 +117,20 @@ trait FireCloudApiService extends FireCloudDirectives
           profileRoutes ~
           cromIamApiServiceRoutes ~
           methodConfigurationRoutes ~
-          submissionsService.routes ~
+          submissionServiceRoutes ~
           nihRoutes ~
-          billingService.routes ~
+          billingServiceRoutes ~
           shareLogServiceRoutes ~
           staticNotebooksRoutes
       }
 
-  def route: server.Route = (logRequestResult /* & appendTimestampOnFailure*/ ) {
+  def route: server.Route = (logRequests /* & appendTimestampOnFailure*/ ) {
     cromIamEngineRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~
       exportEntitiesRoutes ~
       entityRoutes ~
-      healthRoutes ~
+      healthServiceRoutes ~
       libraryRoutes ~
       namespaceRoutes ~
       oauthRoutes ~
@@ -197,30 +152,7 @@ trait FireCloudApiService extends FireCloudDirectives
       cookieAuthedRoutes
   }
 
-  // basis for logRequestResult lifted from http://stackoverflow.com/questions/32475471/how-does-one-log-akka-http-client-requests
-  private def logRequestResult: Directive0 = {
-    def entityAsString(entity: HttpEntity): Future[String] = {
-      entity.dataBytes
-        .map(_.decodeString(entity.contentType.charsetOption.getOrElse(HttpCharsets.`UTF-8`).value))
-        .runWith(Sink.head)
-    }
+  class FireCloudApiServiceImpl(exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor, entityClientConstructor: (ModelSchema) => EntityClient, libraryServiceConstructor: (UserInfo) => LibraryService, ontologyServiceConstructor: () => OntologyService, namespaceServiceConstructor: (UserInfo) => NamespaceService, nihServiceConstructor: () => NihServiceActor, registerServiceConstructor: () => RegisterService, storageServiceConstructor: (UserInfo) => StorageService, workspaceServiceConstructor: (WithAccessToken) => WorkspaceService, statusServiceConstructor: () => StatusService, permissionReportServiceConstructor: (UserInfo) => PermissionReportService, userServiceConstructor: (UserInfo) => UserService, shareLogServiceConstructor: () => ShareLogService, managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService)(implicit val executionContext: ExecutionContext, val materializer: Materializer) extends FireCloudApiService with StandardUserInfoDirectives
 
-    def myLoggingFunction(logger: LoggingAdapter)(req: HttpRequest)(res: Any): Unit = {
-      val entry = res match {
-        case Complete(resp) =>
-          val logLevel: LogLevel = resp.status.intValue / 100 match {
-            case 5 => Logging.ErrorLevel
-            case 4 => Logging.InfoLevel
-            case _ => Logging.DebugLevel
-          }
-          entityAsString(resp.entity).map(data => LogEntry(s"${req.method} ${req.uri}: ${resp.status} entity: $data", logLevel))
-        case other =>
-          Future.successful(LogEntry(s"$other", Logging.DebugLevel)) // I don't really know when this case happens
-      }
-      entry.map(_.logTo(logger))
-    }
-
-    DebuggingDirectives.logRequestResult(LoggingMagnet(log => myLoggingFunction(log)))
-  }
 
 }

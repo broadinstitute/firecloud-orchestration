@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -18,7 +19,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
 trait LibraryApiService extends FireCloudRequestBuilding
-  with FireCloudDirectives with StandardUserInfoDirectives {
+  with FireCloudDirectives with StandardUserInfoDirectives with DsdeHttpDAO {
 
   implicit val executionContext: ExecutionContext
 
@@ -68,8 +69,12 @@ trait LibraryApiService extends FireCloudRequestBuilding
         requireUserInfo() { userInfo =>
           path("duos" / "consent" / "orsp" / Segment) { (orspId) =>
             get { requestContext =>
-              val extReq = Get(Uri(consentUrl).withQuery(Uri.Query("name", orspId)))
-              externalHttpPerRequest(requestContext, extReq)
+              val extReq = Get(Uri(consentUrl).withQuery(Uri.Query(("name"->orspId))))
+
+              executeRequestRaw(userInfo.accessToken)(extReq).map { x =>
+                x
+                //requestContext.complete(x.)
+              }
             }
           } ~
             pathPrefix("library") {

@@ -228,6 +228,10 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
 
   private def respondWithUserDiagnostics(regInfo: RegistrationInfoV2, requestContext: RequestContext): Unit = {
     val pipeline = authHeaders(requestContext) ~> sendReceive
+
+    executeRequestRaw(userI)
+
+
     pipeline(Get(UserApiService.samRegisterUserDiagnosticsURL)) onComplete {
       case Success(response: HttpResponse) =>
         response.status match {

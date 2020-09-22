@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls._
 
 trait SubmissionService extends FireCloudDirectives {
   // TODO Resolve https://broadinstitute.atlassian.net/browse/GAWB-2807
-  val routes: Route = {
+  val submissionServiceRoutes: Route = {
     path("submissions" / "queueStatus") {
       get {
         passthrough(submissionQueueStatusUrl, GET)

@@ -18,13 +18,11 @@ trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInf
     path("staticNotebooks" / "convert") {
       requireUserInfo() { _ =>
         post {
-          respondWithMediaType(`text/html`) {
-            requestContext =>
-              // call Calhoun and pass its response back to our own caller
-              // can't use passthrough() here because that demands a JSON response
-              externalHttpPerRequest(requestContext,
-                Post(calhounStaticNotebooksURL, requestContext.request.entity))
-          }
+          requestContext =>
+            // call Calhoun and pass its response back to our own caller
+            // can't use passthrough() here because that demands a JSON response
+            externalHttpPerRequest(requestContext,
+              Post(calhounStaticNotebooksURL, requestContext.request.entity))
         }
       }
     }

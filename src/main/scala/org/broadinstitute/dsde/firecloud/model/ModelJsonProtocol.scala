@@ -309,7 +309,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   val entityExtractionRejectionHandler = RejectionHandler.newBuilder().handle {
     case MalformedRequestContentRejection(errorMsg, _) =>
       complete(BadRequest, errorMsg)
-  }
+  }.result()
 
   // See http://stackoverflow.com/questions/24526103/generic-spray-client and
   // https://gist.github.com/mikemckibben/fad4328de85a79a06bf3
