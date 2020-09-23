@@ -1,21 +1,15 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.Props
-import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpMethods, Uri}
 import akka.http.scaladsl.server.Route
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
-import org.broadinstitute.dsde.firecloud.core.{AgoraPermissionActor, AgoraPermissionHandler}
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.core.AgoraPermissionActor
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectives
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import org.broadinstitute.dsde.rawls.model.AgoraMethod
-//import spray.http.{HttpMethods, Uri}
-//import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
-//import spray.routing.{HttpService, Route}
 
 trait MethodsApiServiceUrls {
   val remoteMethodsPath = FireCloudConfig.Agora.authPrefix + "/methods"
