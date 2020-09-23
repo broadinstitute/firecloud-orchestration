@@ -6,6 +6,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
@@ -42,8 +43,8 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest(Get(rawlsAdminUrl))(userInfo) map { response =>
       response.status match {
-        case StatusCodes.OK => true
-        case StatusCodes.NotFound => false
+        case OK => true
+        case NotFound => false
         case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
@@ -52,8 +53,8 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest(Get(rawlsCuratorUrl))(userInfo) map { response =>
       response.status match {
-        case StatusCodes.OK => true
-        case StatusCodes.NotFound => false
+        case OK => true
+        case NotFound => false
         case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
