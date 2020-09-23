@@ -117,20 +117,20 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                 } ~
                 path("flexibleImportEntities") {
                   post {
-                    requireUserInfo() { _ =>
+                    requireUserInfo() { userInfo =>
                       formFields('entities) { entitiesTSV =>
                         //TODO: respondWithJson here and other places. it's deprecated so decide new solution
-                        complete { entityClientConstructor(FlexibleModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV) }
+                        complete { entityClientConstructor(FlexibleModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
                       }
                     }
                   }
                 } ~
                 path("importEntities") {
                   post {
-                    requireUserInfo() { _ =>
+                    requireUserInfo() { userInfo =>
                       formFields('entities) { entitiesTSV =>
                         //TODO: respondWithJson
-                        complete { entityClientConstructor(FirecloudModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV) }
+                        complete { entityClientConstructor(FirecloudModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
                       }
                     }
                   }
@@ -139,7 +139,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                   post {
                     requireUserInfo() { userInfo =>
                       entity(as[BagitImportRequest]) { bagitRq =>
-                        complete { entityClientConstructor(FirecloudModelSchema).ImportBagit(workspaceNamespace, workspaceName, bagitRq) }
+                        complete { entityClientConstructor(FirecloudModelSchema).ImportBagit(workspaceNamespace, workspaceName, bagitRq, userInfo) }
                       }
                     }
                   }
