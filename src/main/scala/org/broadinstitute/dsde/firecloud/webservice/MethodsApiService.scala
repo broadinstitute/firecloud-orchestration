@@ -107,7 +107,6 @@ trait MethodsApiService extends FireCloudDirectives with MethodsApiServiceUrls w
             put {
               handleRejections(entityExtractionRejectionHandler) {
                 entity(as[List[MethodAclPair]]) { fireCloudPermissions =>
-                  requestContext =>
                     val agoraPermissions = fireCloudPermissions map { fc =>
                       EntityAccessControlAgora(Method(fc.method), fc.acls.map(_.toAgoraPermission))
                     }

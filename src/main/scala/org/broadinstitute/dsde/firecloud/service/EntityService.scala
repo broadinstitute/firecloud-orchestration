@@ -11,9 +11,6 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
-import spray.http.HttpMethods
-import spray.httpx.SprayJsonSupport._
-import spray.routing._
 
 import scala.util.Try
 

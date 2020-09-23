@@ -84,7 +84,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
 
               val version1 = !userDetailsOnly.exists(_.equalsIgnoreCase("true"))
 
-              executeRequestRaw(OAuth2BearerToken(header.token()))(Get(UserApiService.samRegisterUserInfoURL)) map { response =>
+              executeRequestRaw(OAuth2BearerToken(header.token()))(Get(UserApiService.samRegisterUserInfoURL)) flatMap { response =>
                 handleSamResponse(response, requestContext, version1)
               } recover {
                 case error: Throwable =>
@@ -229,7 +229,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
   private def respondWithUserDiagnostics(regInfo: RegistrationInfoV2, requestContext: RequestContext): Unit = {
     val pipeline = authHeaders(requestContext) ~> sendReceive
 
-    executeRequestRaw(userI)
+//    executeRequestRaw(userI)
 
 
     pipeline(Get(UserApiService.samRegisterUserDiagnosticsURL)) onComplete {

@@ -11,14 +11,6 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.slf4j.LoggerFactory
-//import spray.http.HttpMethods
-//import spray.httpx.SprayJsonSupport._
-//import spray.routing._
-
-//class MethodConfigurationServiceActor extends Actor with MethodConfigurationService {
-//  def actorRefFactory = context
-//  def receive = runRoute(routes)
-//}
 
 object MethodConfigurationService {
   val remoteTemplatePath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/template"
@@ -79,7 +71,10 @@ trait MethodConfigurationService extends FireCloudDirectives with SprayJsonSuppo
                         namespace = workspaceNamespace,
                         name = workspaceName)))))
                   val extReq = Post(MethodConfigurationService.remoteCopyFromMethodRepoConfigUrl, copyMethodConfig)
-                  complete { executeRequestAsUser(userInfo)(extReq) }
+
+                  executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
+                    requestContext.complete(resp)
+                  }
               }
             }
           } ~ path("copyToMethodRepo") {
@@ -96,7 +91,10 @@ trait MethodConfigurationService extends FireCloudDirectives with SprayJsonSuppo
                         namespace = workspaceNamespace,
                         name = workspaceName)))))
                   val extReq = Post(MethodConfigurationService.remoteCopyToMethodRepoConfigUrl, copyMethodConfig)
-                  externalHttpPerRequest(requestContext, extReq)
+
+                  executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
+                    requestContext.complete(resp)
+                  }
               }
             }
           } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>
