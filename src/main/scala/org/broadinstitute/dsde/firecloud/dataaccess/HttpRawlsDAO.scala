@@ -1,10 +1,13 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
@@ -13,7 +16,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impRawlsBillin
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{RawlsBillingProjectMember, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtils, HttpClientUtilsStandard, RestJsonClient}
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
 import org.broadinstitute.dsde.rawls.model.StatusJsonSupport._
@@ -25,14 +28,16 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 import scala.util.control.NonFatal
 
 /**
   * Created by davidan on 9/23/16.
   */
-class HttpRawlsDAO(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
-  extends RawlsDAO with RestJsonClient with SprayJsonSupport {
+class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
+  extends RawlsDAO with RestJsonClient with SprayJsonSupport with DsdeHttpDAO {
+
+  override val http = Http(system)
+  override val httpClientUtils = HttpClientUtilsStandard()
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest(Get(rawlsAdminUrl))(userInfo) map { response =>
@@ -77,31 +82,18 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val executionConte
 
   // you must be an admin to execute this method
   override def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[WorkspaceDetails]] = {
-
-    //    val allPublishedPipeline = addCredentials(userToken.accessToken) ~> sendReceive
-    //    allPublishedPipeline(Get(rawlsAdminWorkspaces)) map {response =>
-    //      response.entity.as[Seq[WorkspaceDetails]] match {
-    //        case Right(srw) =>
-    //          logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
-    //          srw
-    //        case Left(error) =>
-    //          logger.warn(s"Could not unmarshal: ${error.toString}. Status code: ${response.status}.")
-    //          logger.info(s"body of reindex error response: ${response.entity}")
-    //          throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Could not unmarshal: " + error.toString))
-    //      }
-    //    }
-
-    Try(authedRequestToObject[Seq[WorkspaceDetails]](Get(rawlsAdminWorkspaces))).recover {
-      case error: Throwable => {
-        logger.warn(s"Could not unmarshal: ${error.toString}. Status code: ${response.status}.")
-        logger.info(s"body of reindex error response: ${response.entity}")
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Could not unmarshal: " + error.toString))
+    executeRequestRaw[Seq[WorkspaceDetails]](userToken.accessToken)(Get(rawlsAdminWorkspaces)).flatMap { response =>
+      if(response.status.isSuccess()) {
+        Unmarshal(response).to[Seq[WorkspaceDetails]].map { srw =>
+          logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
+          srw
+        }
       }
-    } map { srw =>
-      logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
-      srw
+      else {
+        logger.info(s"body of reindex error response: ${response.entity}")
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Could not unmarshal: " + response.entity))
+      }
     }
-
   }
 
   override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats] = {

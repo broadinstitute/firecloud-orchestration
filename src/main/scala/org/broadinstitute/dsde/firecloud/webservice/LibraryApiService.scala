@@ -71,19 +71,15 @@ trait LibraryApiService extends FireCloudRequestBuilding
             get { requestContext =>
               val extReq = Get(Uri(consentUrl).withQuery(Uri.Query(("name"->orspId))))
 
-              executeRequestRaw(userInfo.accessToken)(extReq).map { x =>
-                x
-                //requestContext.complete(x.)
+              executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
+                requestContext.complete(resp)
               }
             }
           } ~
             pathPrefix("library") {
               path("user" / "role" / "curator") {
                 get { requestContext =>
-                  val pipeline = authHeaders(requestContext) ~> sendReceive
-                  pipeline {
-                    Get(rawlsCuratorUrl)
-                  } map { response =>
+                  executeRequestRaw(userInfo.accessToken)(Get(rawlsCuratorUrl)).flatMap { response =>
                     response.status match {
                       case OK => requestContext.complete(OK, Curator(true))
                       case NotFound => requestContext.complete(OK, Curator(false))

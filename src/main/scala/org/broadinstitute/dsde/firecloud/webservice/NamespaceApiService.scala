@@ -27,7 +27,7 @@ trait NamespaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
           post {
             // explicitly pull in the json-extraction error handler from ModelJsonProtocol
             handleRejections(entityExtractionRejectionHandler) {
-              entity(as[List[FireCloudPermission]]) { permissions => requestContext =>
+              entity(as[List[FireCloudPermission]]) { permissions =>
                 complete { namespaceServiceConstructor(userInfo).PostPermissions(namespace, agoraEntity, permissions) }
               }
             }

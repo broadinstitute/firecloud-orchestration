@@ -83,7 +83,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse]
 
-  def createProject(projectName: String, billingAccount: String)(implicit userToken: WithAccessToken): Future[Boolean]
   def getProjects(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMembership]]
 
   def getProjectMembers(projectId: String)(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMember]]

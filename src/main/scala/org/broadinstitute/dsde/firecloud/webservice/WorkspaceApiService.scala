@@ -2,34 +2,35 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import java.text.SimpleDateFormat
 
-import akka.actor.Props
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{RequestContext, Route}
+import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PermissionReportService, WorkspaceService}
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtilsStandard, StandardUserInfoDirectives}
 import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.slf4j.{Logger, LoggerFactory}
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-//import spray.http._
-//import spray.httpx.unmarshalling._
-//import spray.httpx.SprayJsonSupport._
-//import spray.routing._
 
 import scala.concurrent.ExecutionContext
 
 trait WorkspaceApiService extends FireCloudRequestBuilding
-  with FireCloudDirectives with StandardUserInfoDirectives {
+  with FireCloudDirectives with StandardUserInfoDirectives with DsdeHttpDAO {
 
   implicit val executionContext: ExecutionContext
+
+  override val http = Http(system)
+  override val httpClientUtils = HttpClientUtilsStandard()
 
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
 
@@ -38,7 +39,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
 
   val workspaceServiceConstructor: WithAccessToken => WorkspaceService
   val permissionReportServiceConstructor: UserInfo => PermissionReportService
-  val entityClientConstructor: (ModelSchema) => EntityClient //todo: get rid of requestcontext?
+  val entityClientConstructor: (ModelSchema) => EntityClient
 
   private val filename = "-workspace-attributes.tsv"
 
@@ -105,11 +106,11 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                   } ~
                     post {
                       requireUserInfo() { _ =>
-                        entity(as[MethodConfiguration]) { methodConfig => requestContext =>
+                        entity(as[MethodConfiguration]) { methodConfig =>
                           if (!methodConfig.outputs.exists { param => param._2.value.startsWith("this.library:") || param._2.value.startsWith("workspace.library:")})
                             passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
                           else
-                            requestContext.complete(StatusCodes.Forbidden, ErrorReport("Methods and configurations can not create or modify library attributes"))
+                            complete(StatusCodes.Forbidden, ErrorReport("Methods and configurations can not create or modify library attributes"))
                         }
                       }
                     }
@@ -138,7 +139,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                   post {
                     requireUserInfo() { userInfo =>
                       entity(as[BagitImportRequest]) { bagitRq =>
-                        complete { entityCleitnConstructor(FirecloudModelSchema).ImportBagit(workspaceNamespace, workspaceName, bagitRq) }
+                        complete { entityClientConstructor(FirecloudModelSchema).ImportBagit(workspaceNamespace, workspaceName, bagitRq) }
                       }
                     }
                   }
@@ -147,9 +148,8 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                   post {
                     requireUserInfo() { userInfo =>
                       entity(as[PfbImportRequest]) { pfbRequest =>
-                        respondWithJSON { requestContext =>
-                          perRequest(requestContext, EntityClient.props(entityClientConstructor, requestContext, FlexibleModelSchema),
-                            EntityClient.ImportPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo))
+                        respondWithJSON {
+                          complete { entityClientConstructor(FlexibleModelSchema).ImportPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
                         }
                       }
                     }
@@ -157,7 +157,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                     get {
                       requireUserInfo() { _ =>
                         extract(_.request.uri.query()) { query =>
-                          passthrough(Uri(encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")).withQuery(query()), HttpMethods.GET)
+                          passthrough(Uri(encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")).withQuery(query), HttpMethods.GET)
                         }
                       }
                     }
@@ -263,12 +263,15 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                 } ~
                 path("clone") {
                   post {
-                    requireUserInfo() { _ =>
+                    requireUserInfo() { userInfo =>
                       entity(as[WorkspaceRequest]) { createRequest => requestContext =>
                         // the only reason this is not a passthrough is because library needs to overwrite any publish and discoverableByGroups values
                         val extReq = Post(workspacePath + "/clone",
                           createRequest.copy(attributes = createRequest.attributes + (AttributeName("library","published") -> AttributeBoolean(false)) + (AttributeName("library","discoverableByGroups") -> AttributeValueEmptyList)))
-                        externalHttpPerRequest(requestContext, extReq)
+
+                        executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
+                          requestContext.complete(resp)
+                        }
                       }
                     }
                   }
