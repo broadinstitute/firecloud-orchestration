@@ -15,6 +15,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{RequestContext, RouteResult}
 import akka.http.scaladsl.model.{HttpMethods, StatusCode}
 import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials, OAuth2BearerToken}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -227,33 +228,26 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
   }
 
   private def respondWithUserDiagnostics(regInfo: RegistrationInfoV2, requestContext: RequestContext): Unit = {
-    val pipeline = authHeaders(requestContext) ~> sendReceive
+    val authorizationHeader: HttpCredentials = (requestContext.request.headers collect {
+      case Authorization(h) => h
+    }).head //if we've gotten here, the header already exists. Will instead pass it through since that's "safer", TODO
 
-//    executeRequestRaw(userI)
-
-
-    pipeline(Get(UserApiService.samRegisterUserDiagnosticsURL)) onComplete {
-      case Success(response: HttpResponse) =>
-        response.status match {
-          case InternalServerError =>
-            respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
-          case OK =>
-            response.entity.as[WorkbenchEnabledV2] match {
-              case Right(diagnostics) =>
-                if (diagnostics.inAllUsersGroup && diagnostics.inGoogleProxyGroup) {
-                  val v1RegInfo = RegistrationInfo(WorkbenchUserInfo(regInfo.userSubjectId, regInfo.userEmail), WorkbenchEnabled(diagnostics.inGoogleProxyGroup, diagnostics.enabled, diagnostics.inAllUsersGroup))
-                  requestContext.complete(OK, v1RegInfo)
-                } else {
-                  respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
-                }
-              case Left(_) =>
-                respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
+    executeRequestRaw(OAuth2BearerToken(authorizationHeader.token()))(Get(UserApiService.samRegisterUserDiagnosticsURL)).map { response =>
+      response.status match {
+        case InternalServerError =>
+          respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
+        case OK =>
+          Unmarshal(response).to[WorkbenchEnabledV2].map { diagnostics =>
+            if (diagnostics.inAllUsersGroup && diagnostics.inGoogleProxyGroup) {
+              val v1RegInfo = RegistrationInfo(WorkbenchUserInfo(regInfo.userSubjectId, regInfo.userEmail), WorkbenchEnabled(diagnostics.inGoogleProxyGroup, diagnostics.enabled, diagnostics.inAllUsersGroup))
+              requestContext.complete(OK, v1RegInfo)
+            } else {
+              respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
             }
-          case x =>
-            respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
-        }
-      case Failure(error) =>
-        respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
+          }
+        case x =>
+          respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
+      }
     }
   }
 }
