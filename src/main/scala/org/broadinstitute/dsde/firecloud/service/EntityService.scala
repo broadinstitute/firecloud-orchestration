@@ -12,12 +12,13 @@ import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
 
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 trait EntityService extends FireCloudDirectives
   with FireCloudRequestBuilding with StandardUserInfoDirectives with DsdeHttpDAO {
 
-  private implicit val executionContext = actorRefFactory.dispatcher
+  implicit val executionContext: ExecutionContext
   lazy val log = LoggerFactory.getLogger(getClass)
 
   def entityRoutes: Route =
@@ -51,7 +52,10 @@ trait EntityService extends FireCloudDirectives
                             entityType = copyRequest.entityType,
                             entityNames = copyRequest.entityNames)
                           val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl(linkExistingEntitiesBool), copyMethodConfig)
-                          complete { executeRequestAsUser(userInfo)(extReq) } //todo:???
+
+                          executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
+                            requestContext.complete(resp)
+                          }
                       }
                     }
                   }
@@ -86,13 +90,16 @@ trait EntityService extends FireCloudDirectives
           pathPrefix("entityQuery" / Segment) { entityType =>
             pathEnd {
               get {
-                requireUserInfo() { _ => requestContext =>
+                requireUserInfo() { userInfo => requestContext =>
                   val requestUri = requestContext.request.uri
                   val entityQueryUri = FireCloudConfig.Rawls.
                     entityQueryUriFromWorkspaceAndQuery(workspaceNamespace, workspaceName, entityType).
-                    withQuery(requestUri.query)
+                    withQuery(requestUri.query())
                   val extReq = Get(entityQueryUri)
-                  externalHttpPerRequest(requestContext, extReq)
+
+                  executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
+                    requestContext.complete(resp)
+                  }
                 }
               }
             }
