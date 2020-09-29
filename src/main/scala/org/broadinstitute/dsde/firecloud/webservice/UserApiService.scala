@@ -165,8 +165,8 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
         }
       } ~
       path("userinfo") {
-        requireUserInfo() { userInfo => requestContext =>
-          requestContext.complete(HttpGoogleServicesDAO.getUserProfile(userInfo))
+        requireUserInfo() { userInfo =>
+          complete { HttpGoogleServicesDAO.getUserProfile(userInfo) }
         }
       } ~
       pathPrefix("profile") {

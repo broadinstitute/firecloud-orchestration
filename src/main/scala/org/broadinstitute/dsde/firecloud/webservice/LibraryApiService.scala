@@ -68,12 +68,10 @@ trait LibraryApiService extends FireCloudRequestBuilding
       pathPrefix("api") {
         requireUserInfo() { userInfo =>
           path("duos" / "consent" / "orsp" / Segment) { (orspId) =>
-            get { requestContext =>
+            get {
               val extReq = Get(Uri(consentUrl).withQuery(Uri.Query(("name"->orspId))))
 
-              executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
-                requestContext.complete(resp)
-              }
+              complete { executeRequestRaw(userInfo.accessToken)(extReq) }
             }
           } ~
             pathPrefix("library") {

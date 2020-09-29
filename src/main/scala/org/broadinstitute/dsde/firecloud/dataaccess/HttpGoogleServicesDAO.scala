@@ -235,7 +235,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
 
   def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
-                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
+                    (implicit executionContext: ExecutionContext): Future[ObjectMetadata] = {
 
     // explicitly use the Google Cloud Storage xml api here. The json api requires that storage apis are enabled in the
     // project in which a pet service account is created. The XML api does not have this limitation.
@@ -309,14 +309,14 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   def objectAccessCheck(bucketName: String, objectKey: String, authToken: WithAccessToken)
-                       (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
+                       (implicit executionContext: ExecutionContext): Future[HttpResponse] = {
     val accessRequest = Head( HttpGoogleServicesDAO.getXmlApiMetadataUrl(bucketName, objectKey) )
 
     executeRequestRaw(authToken.accessToken)(accessRequest)
   }
 
   def getUserProfile(accessToken: WithAccessToken)
-                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
+                    (implicit executionContext: ExecutionContext): Future[HttpResponse] = {
     val profileRequest = Get( "https://www.googleapis.com/oauth2/v3/userinfo" )
 
     executeRequestRaw(accessToken.accessToken)(profileRequest)

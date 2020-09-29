@@ -59,42 +59,36 @@ trait MethodConfigurationService extends FireCloudDirectives with SprayJsonSuppo
           path("copyFromMethodRepo") {
             post {
               entity(as[CopyConfigurationIngest]) { ingest =>
-                requestContext =>
-                  val copyMethodConfig = new MethodConfigurationCopy(
-                    methodRepoName = ingest.configurationName,
-                    methodRepoNamespace = ingest.configurationNamespace,
-                    methodRepoSnapshotId = ingest.configurationSnapshotId,
-                    destination = Option(MethodConfigurationId(
-                      name = ingest.destinationName,
-                      namespace = ingest.destinationNamespace,
-                      workspaceName = Option(WorkspaceName(
-                        namespace = workspaceNamespace,
-                        name = workspaceName)))))
-                  val extReq = Post(MethodConfigurationService.remoteCopyFromMethodRepoConfigUrl, copyMethodConfig)
+                val copyMethodConfig = new MethodConfigurationCopy(
+                  methodRepoName = ingest.configurationName,
+                  methodRepoNamespace = ingest.configurationNamespace,
+                  methodRepoSnapshotId = ingest.configurationSnapshotId,
+                  destination = Option(MethodConfigurationId(
+                    name = ingest.destinationName,
+                    namespace = ingest.destinationNamespace,
+                    workspaceName = Option(WorkspaceName(
+                      namespace = workspaceNamespace,
+                      name = workspaceName)))))
+                val extReq = Post(MethodConfigurationService.remoteCopyFromMethodRepoConfigUrl, copyMethodConfig)
 
-                  executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
-                    requestContext.complete(resp)
-                  }
+                complete { executeRequestRaw(userInfo.accessToken)(extReq) }
               }
             }
           } ~ path("copyToMethodRepo") {
             post {
               entity(as[PublishConfigurationIngest]) { ingest =>
-                requestContext =>
-                  val copyMethodConfig = new MethodConfigurationPublish(
-                    methodRepoName = ingest.configurationName,
-                    methodRepoNamespace = ingest.configurationNamespace,
-                    source = Option(MethodConfigurationId(
-                      name = ingest.sourceName,
-                      namespace = ingest.sourceNamespace,
-                      workspaceName = Option(WorkspaceName(
-                        namespace = workspaceNamespace,
-                        name = workspaceName)))))
-                  val extReq = Post(MethodConfigurationService.remoteCopyToMethodRepoConfigUrl, copyMethodConfig)
+                val copyMethodConfig = new MethodConfigurationPublish(
+                  methodRepoName = ingest.configurationName,
+                  methodRepoNamespace = ingest.configurationNamespace,
+                  source = Option(MethodConfigurationId(
+                    name = ingest.sourceName,
+                    namespace = ingest.sourceNamespace,
+                    workspaceName = Option(WorkspaceName(
+                      namespace = workspaceNamespace,
+                      name = workspaceName)))))
+                val extReq = Post(MethodConfigurationService.remoteCopyToMethodRepoConfigUrl, copyMethodConfig)
 
-                  executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
-                    requestContext.complete(resp)
-                  }
+                complete { executeRequestRaw(userInfo.accessToken)(extReq) }
               }
             }
           } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>
