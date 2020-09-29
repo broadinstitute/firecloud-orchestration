@@ -36,6 +36,7 @@ object Dependencies {
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"         % akkaV,
+    "com.typesafe.akka"   %%  "akka-http-core"       % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
     "com.typesafe.akka"   %%  "akka-http"            % akkaHttpV           excludeAll(excludeAkkaActor, excludeAkkaStream),
     "com.typesafe.akka"   %%  "akka-http-spray-json" % akkaHttpV,

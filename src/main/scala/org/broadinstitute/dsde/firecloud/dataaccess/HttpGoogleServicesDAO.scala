@@ -1,11 +1,8 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.io
 import java.io.FileInputStream
 
-import akka.actor.ActorRefFactory
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
@@ -13,40 +10,29 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
 import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
-import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
 import com.google.api.services.admin.directory.model.{Group, Member}
+import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
 import com.google.api.services.cloudbilling.Cloudbilling
-import com.google.api.services.cloudbilling.model.ProjectBillingInfo
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
 import com.google.api.services.sheets.v4.SheetsScopes
-import com.google.api.services.sheets.v4.Sheets
-import com.google.api.services.sheets.v4.model.ValueRange
 import com.google.api.services.storage.model.Objects
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.HttpClientUtilsGzip
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-//import spray.client.pipelining._
-//import spray.http.StatusCodes._
-//import spray.http._
-//import spray.httpx.SprayJsonSupport._
-//import spray.httpx.UnsuccessfulResponseException
-//import spray.httpx.encoding.Gzip
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, Uri}
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
 import spray.json._
-//import spray.routing.RequestContext
+import spray.json.DefaultJsonProtocol
 
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -73,7 +59,7 @@ case class UsPriceItem(us: BigDecimal)
   */
 case class UsTieredPriceItem(tiers: Map[Long, BigDecimal])
 
-object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
+object GooglePriceListJsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val UsPriceItemFormat = jsonFormat1(UsPriceItem)
   implicit object UsTieredPriceItemFormat extends RootJsonFormat[UsTieredPriceItem] {
     override def write(value: UsTieredPriceItem): JsValue = ???
