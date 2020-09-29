@@ -45,7 +45,6 @@ trait EntityService extends FireCloudDirectives
                     parameter('linkExistingEntities.?) { linkExistingEntities =>
                       entity(as[EntityCopyWithoutDestinationDefinition]) { copyRequest =>
                         val linkExistingEntitiesBool = Try(linkExistingEntities.getOrElse("false").toBoolean).getOrElse(false)
-                        requestContext =>
                           val copyMethodConfig = new EntityCopyDefinition(
                             sourceWorkspace = copyRequest.sourceWorkspace,
                             destinationWorkspace = WorkspaceName(workspaceNamespace, workspaceName),
@@ -53,9 +52,8 @@ trait EntityService extends FireCloudDirectives
                             entityNames = copyRequest.entityNames)
                           val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl(linkExistingEntitiesBool), copyMethodConfig)
 
-                          executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
-                            requestContext.complete(resp)
-                          }
+
+                          complete { executeRequestRaw(userInfo.accessToken)(extReq) }
                       }
                     }
                   }

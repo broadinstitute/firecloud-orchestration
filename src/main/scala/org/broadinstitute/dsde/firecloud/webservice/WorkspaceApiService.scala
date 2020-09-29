@@ -264,14 +264,12 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                 path("clone") {
                   post {
                     requireUserInfo() { userInfo =>
-                      entity(as[WorkspaceRequest]) { createRequest => requestContext =>
+                      entity(as[WorkspaceRequest]) { createRequest =>
                         // the only reason this is not a passthrough is because library needs to overwrite any publish and discoverableByGroups values
                         val extReq = Post(workspacePath + "/clone",
                           createRequest.copy(attributes = createRequest.attributes + (AttributeName("library","published") -> AttributeBoolean(false)) + (AttributeName("library","discoverableByGroups") -> AttributeValueEmptyList)))
 
-                        executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
-                          requestContext.complete(resp)
-                        }
+                        complete { executeRequestRaw(userInfo.accessToken)(extReq) }
                       }
                     }
                   }

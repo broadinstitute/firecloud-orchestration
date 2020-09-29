@@ -23,11 +23,11 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
   def getUserProfile(accessToken: WithAccessToken)
-                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse]
+                    (implicit executionContext: ExecutionContext): Future[HttpResponse]
   def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
-                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[PerRequestMessage]
+                 (implicit executionContext: ExecutionContext): Future[PerRequestMessage]
   def getObjectMetadata(bucketName: String, objectKey: String, userAuthToken: String)
-                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata]
+                    (implicit executionContext: ExecutionContext): Future[ObjectMetadata]
 
   def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String]
   def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String
