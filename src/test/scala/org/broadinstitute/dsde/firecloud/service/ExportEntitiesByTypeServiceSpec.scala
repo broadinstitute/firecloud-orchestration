@@ -35,7 +35,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val nonModelEntitiesBigQueryTSVPath = "/api/workspaces/broad-dsde-dev/nonModel/entities/bigQuery/tsv"
   val nonModelEntitiesBigQuerySetTSVPath = "/api/workspaces/broad-dsde-dev/nonModelSet/entities/bigQuery_set/tsv"
   val nonModelEntitiesPairTSVPath = "/api/workspaces/broad-dsde-dev/nonModelPair/entities/pair/tsv"
-  val namespacedEntitiesTSVPath = "/api/workspaces/broad-dsde-dev/namespacedEntities/entities/study/tsv"
 
   // Pick the first few headers from the list of available sample headers:
   val filterProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.take(5).map(_.name)
@@ -118,33 +117,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           validateLineCount(chunks, 2)
           entity.asString.startsWith("entity:") should be(true)
           entity.asString.contains("names") should be(true)
-        }
-      }
-    }
-
-    "when calling GET on exporting a non-FC model entity type with namespaced attributes" - {
-      "OK response is returned and file is entity type when model is flexible" in {
-        Get(namespacedEntitiesTSVPath + "?model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
-          handled should be(true)
-          status should be(OK)
-          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "study.tsv")))
-          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, MockRawlsDAO.namespacedEntities.length)
-
-          // confirm headers
-          entity.asString.trim.split('\t') should contain theSameElementsAs(List("entity:study_id") ++ MockRawlsDAO.namespacedMetadata("study").attributeNames)
-
-          // columns are returned in a deterministic but not easily-predictable order (hashmaps are involved deep inside).
-          // so it's very difficult for this unit test to check ordering of TSV values. If this test starts failing myseteriously,
-          // it is possible a Java- or Scala- internal ordering changed. To be more lenient, use theSameElementsAs instead of
-          // theSameElementsInOrderAs in the following assertions.
-          val bodyLines = asStringBody(chunks)
-          bodyLines.length shouldBe MockRawlsDAO.namespacedEntities.length // effecively the same assertion as validateLineCount
-          bodyLines.head.split("\t") should contain theSameElementsInOrderAs(List("first", "default-foovalue", "namespaced-foovalue", "first-id"))
-          bodyLines.tail.head.split("\t") should contain theSameElementsInOrderAs(List("second", "default-bar", "namespaced-bar", "second-id"))
         }
       }
     }
@@ -367,10 +339,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           }
       }
     }
-  }
-
-  private def asStringBody(chunks: List[MessageChunk]): List[String] = {
-    chunks.flatMap(c => scala.io.Source.fromString(c.data.asString).getLines())
   }
 
   private def validateLineCount(chunks: List[MessageChunk], count: Int): Unit = {
