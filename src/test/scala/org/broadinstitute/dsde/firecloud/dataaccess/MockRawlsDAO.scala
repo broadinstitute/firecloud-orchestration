@@ -106,6 +106,19 @@ object MockRawlsDAO {
     Entity("PB&J", "pair", Map(AttributeName.withDefaultNS("names") -> AttributeValueList(Seq(AttributeString("PeanutButter"), AttributeString("Jelly")))))
   )
 
+  val namespacedEntities = List(
+    Entity("first", "study", Map(
+      AttributeName.withDefaultNS("foo") -> AttributeString("default-foovalue"),
+      AttributeName.fromDelimitedName("tag:study_id") -> AttributeString("first-id"),
+      AttributeName.fromDelimitedName("tag:foo") -> AttributeString("namespaced-foovalue")
+    )),
+    Entity("second", "study", Map(
+      AttributeName.withDefaultNS("foo") -> AttributeString("default-bar"),
+      AttributeName.fromDelimitedName("tag:study_id") -> AttributeString("second-id"),
+      AttributeName.fromDelimitedName("tag:foo") -> AttributeString("namespaced-bar")
+    ))
+  )
+
   val nonModelBigQueryMetadata = Map(
     "bigQuery" -> EntityTypeMetadata(
       count = 2,
@@ -123,6 +136,12 @@ object MockRawlsDAO {
       count = 2,
       idName = "pair_id",
       attributeNames = Seq("names")))
+
+  val namespacedMetadata = Map(
+    "study" -> EntityTypeMetadata(
+      count = 2,
+      idName = "study_id",
+      attributeNames = Seq("foo", "tag:foo", "tag:study_id")))
 
 }
 
@@ -344,6 +363,13 @@ class MockRawlsDAO extends RawlsDAO {
         results = nonModelPairEntities
       )
       Future.successful(queryResponse)
+    } else if (workspaceName == "namespacedEntities") {
+      val queryResponse: EntityQueryResponse = EntityQueryResponse(
+        parameters = query,
+        resultMetadata = EntityQueryResultMetadata(unfilteredCount = 2, filteredCount = 2, filteredPageCount = 1),
+        results = namespacedEntities
+      )
+      Future.successful(queryResponse)
     } else {
       val queryResponse: EntityQueryResponse = EntityQueryResponse(
         parameters = query,
@@ -369,6 +395,8 @@ class MockRawlsDAO extends RawlsDAO {
       Future.successful(nonModelBigQuerySetMetadata)
     } else if (workspaceName == "nonModelPair") {
       Future.successful(nonModelPairMetadata)
+    } else if (workspaceName == "namespacedEntities") {
+      Future.successful(namespacedMetadata)
     } else {
       Future.successful(validEntitiesMetadata)
     }

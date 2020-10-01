@@ -71,6 +71,13 @@ class TSVParserSpec extends FlatSpec {
     }
   }
 
+  it should "handle attributes in namespaces" in {
+    val expected = MockTSVLoadFiles.validNamespacedAttributes
+    assertResult(expected) {
+      TSVParser.parse(MockTSVStrings.namespacedAttributes)
+    }
+  }
+
   it should "handle windows newline separators" in {
     val expected = MockTSVLoadFiles.validQuotedValues
     assertResult(expected) {
