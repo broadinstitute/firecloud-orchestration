@@ -8,6 +8,7 @@ import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.{CookieAuthedApiService, ExportEntitiesApiService}
+import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeString, Entity}
 import spray.http._
 import spray.http.StatusCodes._
 
@@ -35,6 +36,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val nonModelEntitiesBigQueryTSVPath = "/api/workspaces/broad-dsde-dev/nonModel/entities/bigQuery/tsv"
   val nonModelEntitiesBigQuerySetTSVPath = "/api/workspaces/broad-dsde-dev/nonModelSet/entities/bigQuery_set/tsv"
   val nonModelEntitiesPairTSVPath = "/api/workspaces/broad-dsde-dev/nonModelPair/entities/pair/tsv"
+  val namespacedEntitiesTSVPath = "/api/workspaces/broad-dsde-dev/namespacedEntities/entities/study/tsv"
 
   // Pick the first few headers from the list of available sample headers:
   val filterProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.take(5).map(_.name)
@@ -117,6 +119,45 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           validateLineCount(chunks, 2)
           entity.asString.startsWith("entity:") should be(true)
           entity.asString.contains("names") should be(true)
+        }
+      }
+    }
+
+    "when calling GET on exporting a non-FC model entity type with namespaced attributes" - {
+      "OK response is returned and file is entity type when model is flexible" in {
+        Get(namespacedEntitiesTSVPath + "?model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
+          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
+          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
+          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "study.tsv")))
+          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
+          validateLineCount(chunks, MockRawlsDAO.namespacedEntities.length)
+
+          // confirm headers
+          val colheaders = entity.asString.trim.split('\t')
+          colheaders should contain theSameElementsAs(List("entity:study_id") ++ MockRawlsDAO.namespacedMetadata("study").attributeNames)
+
+          val bodyLines = asStringBody(chunks)
+          bodyLines.length shouldBe MockRawlsDAO.namespacedEntities.length // effectively the same assertion as validateLineCount
+
+          // reconstitute entities so we can assert equality.
+          // loop through the (non-header) lines of the TSV
+          val reconstitutedEntities = bodyLines.map { line =>
+            // split on tabs to get each cell
+            val cellValues = line.split("\t")
+            cellValues.length shouldBe colheaders.length
+            // loop through cells to build the name-value attributes. The order of cells matches the order of the headers.
+            // the first column is always the id, so skip the first column.
+            // note the use of idx+1 below to seek into the colheaders, since we use cellValues.tail but don't use colheaders.tail
+            val attrs = cellValues.tail.zipWithIndex.map {
+              case (cellValue, idx) => AttributeName.fromDelimitedName(colheaders(idx+1)) -> AttributeString(cellValue)
+            }
+            Entity(cellValues.head, "study", attrs.toMap)
+          }
+
+          reconstitutedEntities shouldBe MockRawlsDAO.namespacedEntities
         }
       }
     }
@@ -339,6 +380,10 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           }
       }
     }
+  }
+
+  private def asStringBody(chunks: List[MessageChunk]): List[String] = {
+    chunks.flatMap(c => scala.io.Source.fromString(c.data.asString).getLines())
   }
 
   private def validateLineCount(chunks: List[MessageChunk], count: Int): Unit = {
