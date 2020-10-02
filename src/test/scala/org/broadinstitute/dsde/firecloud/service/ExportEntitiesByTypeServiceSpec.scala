@@ -8,6 +8,7 @@ import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.{CookieAuthedApiService, ExportEntitiesApiService}
+import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeString, Entity}
 import spray.http._
 import spray.http.StatusCodes._
 
@@ -135,16 +136,28 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           validateLineCount(chunks, MockRawlsDAO.namespacedEntities.length)
 
           // confirm headers
-          entity.asString.trim.split('\t') should contain theSameElementsAs(List("entity:study_id") ++ MockRawlsDAO.namespacedMetadata("study").attributeNames)
+          val colheaders = entity.asString.trim.split('\t')
+          colheaders should contain theSameElementsAs(List("entity:study_id") ++ MockRawlsDAO.namespacedMetadata("study").attributeNames)
 
-          // columns are returned in a deterministic but not easily-predictable order (hashmaps are involved deep inside).
-          // so it's very difficult for this unit test to check ordering of TSV values. If this test starts failing myseteriously,
-          // it is possible a Java- or Scala- internal ordering changed. To be more lenient, use theSameElementsAs instead of
-          // theSameElementsInOrderAs in the following assertions.
           val bodyLines = asStringBody(chunks)
-          bodyLines.length shouldBe MockRawlsDAO.namespacedEntities.length // effecively the same assertion as validateLineCount
-          bodyLines.head.split("\t") should contain theSameElementsInOrderAs(List("first", "default-foovalue", "namespaced-foovalue", "first-id"))
-          bodyLines.tail.head.split("\t") should contain theSameElementsInOrderAs(List("second", "default-bar", "namespaced-bar", "second-id"))
+          bodyLines.length shouldBe MockRawlsDAO.namespacedEntities.length // effectively the same assertion as validateLineCount
+
+          // reconstitute entities so we can assert equality.
+          // loop through the (non-header) lines of the TSV
+          val reconstitutedEntities = bodyLines.map { line =>
+            // split on tabs to get each cell
+            val cellValues = line.split("\t")
+            cellValues.length shouldBe colheaders.length
+            // loop through cells to build the name-value attributes. The order of cells matches the order of the headers.
+            // the first column is always the id, so skip the first column.
+            // note the use of idx+1 below to seek into the colheaders, since we use cellValues.tail but don't use colheaders.tail
+            val attrs = cellValues.tail.zipWithIndex.map {
+              case (cellValue, idx) => AttributeName.fromDelimitedName(colheaders(idx+1)) -> AttributeString(cellValue)
+            }
+            Entity(cellValues.head, "study", attrs.toMap)
+          }
+
+          reconstitutedEntities shouldBe MockRawlsDAO.namespacedEntities
         }
       }
     }
