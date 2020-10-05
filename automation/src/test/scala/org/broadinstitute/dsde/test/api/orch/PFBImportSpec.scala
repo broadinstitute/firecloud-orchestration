@@ -4,6 +4,8 @@ import java.util.UUID
 
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import org.broadinstitute.dsde.rawls.model.EntityTypeMetadata
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.EntityTypeMetadataFormat
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig, UserPool}
 import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
@@ -28,7 +30,8 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
   // this test.avro is copied from PyPFB's fixture at https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
   private val testPayload = Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/public/test.avro")
-  lazy private val expectedEntities: JsValue = Source.fromResource("PFBImportSpec-expected-entities.json").getLines().mkString.parseJson
+  lazy private val expectedEntities: Map[String, EntityTypeMetadata] = Source.fromResource("PFBImportSpec-expected-entities.json").getLines().mkString
+    .parseJson.convertTo[Map[String, EntityTypeMetadata]]
 
   "Orchestration" - {
 
@@ -60,7 +63,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
             // inspect data entities and confirm correct import as owner
             eventually {
               val resp = Orchestration.getRequest( s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
-              blockForStringBody(resp).parseJson shouldBe expectedEntities
+              compareMetadata(blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]], expectedEntities)
             }
 
           }
@@ -93,7 +96,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
             // inspect data entities and confirm correct import as writer
             eventually {
               val resp = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/entities")(writerToken)
-              blockForStringBody(resp).parseJson shouldBe expectedEntities
+              compareMetadata(blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]], expectedEntities)
             }
 
           } (ownerAuthToken)
@@ -182,5 +185,19 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
   private def workspaceUrl(projectName: String, wsName: String): String =
     s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$wsName"
+
+  private def compareMetadata(left: Map[String, EntityTypeMetadata], right: Map[String, EntityTypeMetadata]): Unit = {
+    // we don't care about ordering of keys
+    left.keys should contain theSameElementsAs right.keys
+
+    left.foreach {
+      case (entityType: String, leftMetadata: EntityTypeMetadata) =>
+        val rightMetadata = right(entityType)
+        leftMetadata.idName shouldBe rightMetadata.idName
+        leftMetadata.count shouldBe rightMetadata.count
+        // we don't care about ordering of attribute names
+        leftMetadata.attributeNames should contain theSameElementsAs rightMetadata.attributeNames
+    }
+  }
 
 }
