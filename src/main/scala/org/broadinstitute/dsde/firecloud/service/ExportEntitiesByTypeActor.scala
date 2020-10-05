@@ -2,7 +2,8 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.Done
 import akka.actor.{Actor, ActorRef, Props}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpCharsets, HttpEntity, HttpResponse, MediaTypes, StatusCodes}
+//import akka.http.scaladsl.
 import akka.pattern.pipe
 import akka.stream._
 import akka.stream.scaladsl._

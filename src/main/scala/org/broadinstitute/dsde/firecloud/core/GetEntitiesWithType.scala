@@ -2,13 +2,18 @@ package org.broadinstitute.dsde.firecloud.core
 
 import akka.actor.{Actor, Props}
 import akka.event.Logging
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.coding.Gzip
+import akka.http.scaladsl.model.{HttpHeader, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.TransferEncodings.gzip
+import akka.http.scaladsl.model.headers.{RawHeader, `Accept-Encoding`}
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.pattern.pipe
+import akka.pattern.PipeToSupport
 import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.ProcessUrl
+import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
@@ -35,7 +40,7 @@ object GetEntitiesWithType {
   def props(requestContext: RequestContext): Props = Props(new GetEntitiesWithTypeActor(requestContext))
 }
 
-class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor with FireCloudRequestBuilding {
+class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor with FireCloudRequestBuilding with DsdeHttpDAO {
 
   implicit val system = context.system
   implicit val materializer: Materializer
@@ -47,15 +52,22 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
   def receive = {
     case ProcessUrl(url: String) =>
       log.debug("Processing entity type map for url: " + url)
-      val pipeline = authHeaders(requestContext) ~> addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
-      val entityTypesFuture: Future[HttpResponse] = pipeline { Get(url) }
-      val allEntitiesResponse = entityTypesFuture.flatMap { response =>
+//      val pipeline = authHeaders(requestContext) ~> addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
+
+      val request = Get(url)//.withHeaders(`Accept-Encoding`(gzip)) //TODO: add headers and decoding
+
+//      val entityTypesFuture: Future[HttpResponse] = pipeline { Get(url) }
+      val allEntitiesResponse = executeRequestRaw(null)(request).flatMap { response => //todo pass userInfo thru to this from request
         response.status match {
           case x if x == OK =>
-            val entityTypes: List[String] = unmarshal[Map[String, JsValue]].apply(response).keys.toList
-            val entityUrls: List[String] = entityTypes.map(s => FireCloudDirectiveUtils.encodeUri(s"$url/$s"))
-            val entityFutures: List[Future[HttpResponse]] = entityUrls map { entitiesUrl => pipeline { Get(entitiesUrl) } }
-            getEntitiesForTypesResponse(Future sequence entityFutures, entityTypes)
+//            val entityTypes: List[String] = unmarshal[Map[String, JsValue]].apply(response).keys.toList
+
+            Unmarshal(response).to[Map[String, JsValue]].flatMap { entityTypeMap =>
+              val entityTypes = entityTypeMap.keys.toList
+              val entityUrls: List[String] = entityTypes.map(s => FireCloudDirectiveUtils.encodeUri(s"$url/$s"))
+              val entityFutures: List[Future[HttpResponse]] = entityUrls map { entitiesUrl => executeRequestRaw(null)(Get(entitiesUrl)) }
+              getEntitiesForTypesResponse(Future sequence entityFutures, entityTypes)
+            }
           case x =>
             Future(RequestComplete(response))
         }

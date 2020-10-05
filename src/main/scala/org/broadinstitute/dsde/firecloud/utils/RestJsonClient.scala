@@ -113,7 +113,7 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
 
   private def resultsToObject[T](resp: Future[HttpResponse], label: Option[String] = None, tick: Instant = NoPerfLabel)
                                 (implicit unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] = {
-    resp map { response =>
+    resp flatMap { response =>
 
       if (label.nonEmpty && tick != NoPerfLabel) {
         val tock = Instant.now()
@@ -122,9 +122,8 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
 
       response.status match {
         case s if s.isSuccess =>
-          Unmarshal(response.entity).to[T] match {
-            case Right(obj) => obj
-            case Left(error) => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
+          Unmarshal(response.entity).to[T].recoverWith {
+            throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
           }
         case f => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
