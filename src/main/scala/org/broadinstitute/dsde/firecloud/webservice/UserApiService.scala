@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.javadsl.model.HttpResponse
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.HttpMethods
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{DsdeHttpDAO, HttpGoogleServicesDAO}
@@ -85,13 +85,20 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
 
               val version1 = !userDetailsOnly.exists(_.equalsIgnoreCase("true"))
 
-              executeRequestRaw(OAuth2BearerToken(header.token()))(Get(UserApiService.samRegisterUserInfoURL)) flatMap { response =>
+              executeRequestRaw(OAuth2BearerToken(header.token()))(Get(UserApiService.samRegisterUserInfoURL)).map { response =>
                 handleSamResponse(response, requestContext, version1)
-              } recover {
-                case error: Throwable =>
-                // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
-                respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
+              } recoverWith {
+                case error: Throwable => respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
               }
+
+
+//              executeRequestRaw(OAuth2BearerToken(header.token()))(Get(UserApiService.samRegisterUserInfoURL)) map { response =>
+//                handleSamResponse(response, requestContext, version1)
+//              }) //recover {
+////                case error: Throwable =>
+////                // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
+////                respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
+////              }
           }
         }
       }
@@ -202,28 +209,24 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
         respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
       // Sam found the user; we'll try to parse the response and inspect it
       case OK =>
-        val respJson: Deserialized[RegistrationInfoV2] = responseAs[RegistrationInfoV2]
-        handleOkResponse(respJson, requestContext, version1)
+        Unmarshal(response).to[RegistrationInfoV2].map { regInfo =>
+          handleOkResponse(regInfo, requestContext, version1)
+        }
       case x =>
         // if we get any other error from Sam, pass that error on
         respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
     }
   }
 
-  private def handleOkResponse(respJson: Deserialized[RegistrationInfoV2], requestContext: RequestContext, version1: Boolean): Unit = {
-    respJson match {
-      case Right(regInfo) =>
-        if (regInfo.enabled) {
-          if (version1) {
-            respondWithUserDiagnostics(regInfo, requestContext)
-          } else {
-            requestContext.complete(OK, regInfo)
-          }
-        } else {
-          respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
-        }
-      case Left(_) =>
-        respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
+  private def handleOkResponse(regInfo: RegistrationInfoV2, requestContext: RequestContext, version1: Boolean): Unit = {
+    if (regInfo.enabled) {
+      if (version1) {
+        respondWithUserDiagnostics(regInfo, requestContext)
+      } else {
+        requestContext.complete(OK, regInfo)
+      }
+    } else {
+      respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
     }
   }
 

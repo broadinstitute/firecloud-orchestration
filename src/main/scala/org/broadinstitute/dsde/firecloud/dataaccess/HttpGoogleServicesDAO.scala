@@ -28,10 +28,11 @@ import org.broadinstitute.dsde.firecloud.utils.HttpClientUtilsGzip
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
-import spray.json._
+import spray.json.{JsString, _}
 import spray.json.DefaultJsonProtocol
 
 import scala.collection.JavaConversions._
