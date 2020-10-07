@@ -37,23 +37,16 @@ object NihStatus {
 
 object NihService {
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new NihServiceActor(app.samDAO, app.thurloeDAO, app.googleServicesDAO)
+    new NihService(app.samDAO, app.thurloeDAO, app.googleServicesDAO)
 }
 
-class NihServiceActor(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO)
-                     (implicit val executionContext: ExecutionContext) extends NihService {
+class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO)
+                (implicit val executionContext: ExecutionContext) extends LazyLogging with SprayJsonSupport {
 
   def GetNihStatus(userInfo: UserInfo) = getNihStatus(userInfo)
   def UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) = updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink)
   def SyncAllWhitelists = syncAllNihWhitelistsAllUsers
   def SyncWhitelist(whitelistName: String) = syncWhitelistAllUsers(whitelistName)
-}
-
-trait NihService extends LazyLogging with SprayJsonSupport {
-  implicit val executionContext: ExecutionContext
-  val samDao: SamDAO
-  val thurloeDao: ThurloeDAO
-  val googleDao: GoogleServicesDAO
 
   def getAdminAccessToken: WithAccessToken = UserInfo(googleDao.getAdminUserAccessToken, "")
 
