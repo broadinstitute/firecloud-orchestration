@@ -102,10 +102,8 @@ object EntityClient {
 
 }
 
-class EntityClient(modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDAO)(implicit val system: ActorSystem, val materializer: Materializer, val executionContext: ExecutionContext)
+class EntityClient(modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDAO)(implicit val executionContext: ExecutionContext)
   extends RestJsonClient with TSVFileSupport with LazyLogging with DsdeHttpDAO {
-
-  override val httpClientUtils = HttpClientUtilsStandard()
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
 

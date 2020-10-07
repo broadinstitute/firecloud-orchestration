@@ -1,8 +1,11 @@
 package org.broadinstitute.dsde.firecloud
 
+import akka.actor.{ActorRefFactory, ActorSystem}
 import akka.http.scaladsl.model.{ContentTypes, HttpHeader, StatusCodes}
 import akka.http.scaladsl.server
 import akka.stream.Materializer
+import org.broadinstitute.dsde.firecloud.core.{AgoraPermissionActor, GetEntitiesWithType, GetEntitiesWithTypeActor}
+import org.broadinstitute.dsde.firecloud.dataaccess.SamDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -68,20 +71,24 @@ trait FireCloudApiService extends CookieAuthedApiService
   //    logger.info("Logit apikey not found in configuration. Logit metrics are disabled for this instance.")
   //  }
 
-  val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor //= ExportEntitiesByTypeActor.constructor(app, materializer)
-  val entityClientConstructor: (ModelSchema) => EntityClient //= EntityClient.constructor(app)
-  val libraryServiceConstructor: (UserInfo) => LibraryService //= LibraryService.constructor(app)
-  val ontologyServiceConstructor: () => OntologyService //= OntologyService.constructor(app)
-  val namespaceServiceConstructor: (UserInfo) => NamespaceService //= NamespaceService.constructor(app)
-  val nihServiceConstructor: () => NihServiceActor //= NihService.constructor(app)
-  val registerServiceConstructor: () => RegisterService //= RegisterService.constructor(app)
-  val storageServiceConstructor: (UserInfo) => StorageService //= StorageService.constructor(app)
-  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService //= WorkspaceService.constructor(app)
-  val statusServiceConstructor: () => StatusService //= StatusService.constructor(healthMonitor)
-  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService //= PermissionReportService.constructor(app)
-  val userServiceConstructor: (UserInfo) => UserService //= UserService.constructor(app)
-  val shareLogServiceConstructor: () => ShareLogService //= ShareLogService.constructor(app)
-  val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService //= ManagedGroupService.constructor(app)
+  val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor
+  val entityClientConstructor: (ModelSchema) => EntityClient
+  val libraryServiceConstructor: (UserInfo) => LibraryService
+  val ontologyServiceConstructor: () => OntologyService
+  val namespaceServiceConstructor: (UserInfo) => NamespaceService
+  val nihServiceConstructor: () => NihServiceActor
+  val registerServiceConstructor: () => RegisterService
+  val storageServiceConstructor: (UserInfo) => StorageService
+  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService
+  val statusServiceConstructor: () => StatusService
+  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService
+  val userServiceConstructor: (UserInfo) => UserService
+  val shareLogServiceConstructor: () => ShareLogService
+  val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService
+  val getEntitiesWithTypeConstructor: (UserInfo) => GetEntitiesWithTypeActor
+  val trialServiceConstructor: () => TrialService
+  val samDAO: SamDAO
+  val agoraPermissionService: (UserInfo) => AgoraPermissionActor
 
   implicit val executionContext: ExecutionContext
   implicit val materializer: Materializer
@@ -152,7 +159,6 @@ trait FireCloudApiService extends CookieAuthedApiService
       cookieAuthedRoutes
   }
 
-  class FireCloudApiServiceImpl(exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor, entityClientConstructor: (ModelSchema) => EntityClient, libraryServiceConstructor: (UserInfo) => LibraryService, ontologyServiceConstructor: () => OntologyService, namespaceServiceConstructor: (UserInfo) => NamespaceService, nihServiceConstructor: () => NihServiceActor, registerServiceConstructor: () => RegisterService, storageServiceConstructor: (UserInfo) => StorageService, workspaceServiceConstructor: (WithAccessToken) => WorkspaceService, statusServiceConstructor: () => StatusService, permissionReportServiceConstructor: (UserInfo) => PermissionReportService, userServiceConstructor: (UserInfo) => UserService, shareLogServiceConstructor: () => ShareLogService, managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService)(implicit val executionContext: ExecutionContext, val materializer: Materializer) extends FireCloudApiService with StandardUserInfoDirectives
-
-
 }
+
+class FireCloudApiServiceImpl(val samDAO: SamDAO, val agoraPermissionService: (UserInfo) => AgoraPermissionActor, val trialServiceConstructor: () => TrialService, val getEntitiesWithTypeConstructor: (UserInfo) => GetEntitiesWithTypeActor, val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor, val entityClientConstructor: (ModelSchema) => EntityClient, val libraryServiceConstructor: (UserInfo) => LibraryService, val ontologyServiceConstructor: () => OntologyService, val namespaceServiceConstructor: (UserInfo) => NamespaceService, val nihServiceConstructor: () => NihServiceActor, val registerServiceConstructor: () => RegisterService, val storageServiceConstructor: (UserInfo) => StorageService, val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService, val statusServiceConstructor: () => StatusService, val permissionReportServiceConstructor: (UserInfo) => PermissionReportService, val userServiceConstructor: (UserInfo) => UserService, val shareLogServiceConstructor: () => ShareLogService, val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService)(implicit val actorRefFactory: ActorRefFactory, implicit val executionContext: ExecutionContext, val materializer: Materializer, val system: ActorSystem) extends FireCloudApiService with StandardUserInfoDirectives

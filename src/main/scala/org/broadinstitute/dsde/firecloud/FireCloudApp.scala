@@ -42,9 +42,27 @@ object FireCloudApp extends App with LazyLogging {
       new NoopLogitDAO
     val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
 
+    import org.broadinstitute.dsde.firecloud.FireCloudApiService;
 
-    val service = new FireCloudApiService (
-
+    val service = new FireCloudApiServiceImpl(
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
     )
 
     for {

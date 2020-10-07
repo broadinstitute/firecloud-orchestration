@@ -6,14 +6,15 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.StatusCodes._
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
+import org.broadinstitute.dsde.firecloud.Application
+import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, DsdeHttpDAO}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.ACLNames._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, EntityAccessControlAgora, FireCloudPermission, MethodAclPair}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.utils.HttpClientUtilsStandard
+import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtilsStandard, RestJsonClient}
 import org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceUrls
 import org.broadinstitute.dsde.rawls.model.MethodRepoMethod
 
@@ -60,28 +61,21 @@ object AgoraPermissionHandler { //rename to AgoraPermissionService
     }
   }
 
-  def constructor()(userInfo: WithAccessToken)(implicit executionContext: ExecutionContext) =
-    new AgoraPermissionActor(userInfo)
+  def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
+    new AgoraPermissionActor(userInfo, app.agoraDAO)
 
 }
 
-class AgoraPermissionActor(userInfo: WithAccessToken)(implicit val executionContext: ExecutionContext) extends LazyLogging
-  with FireCloudRequestBuilding with MethodsApiServiceUrls with DsdeHttpDAO {
+class AgoraPermissionActor(userInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit val executionContext: ExecutionContext) extends LazyLogging {
 
   import spray.json.DefaultJsonProtocol._
 
-  implicit val materializer: Materializer
+  def GetAgoraPermission(url: String): Future[PerRequestMessage] = getAgoraPermission(url, userInfo)
+  def CreateAgoraPermission(url: String, agoraPermissions: List[AgoraPermission]): Future[PerRequestMessage] = createAgoraPermission(url, agoraPermissions, userInfo)
+  def UpsertAgoraPermissions(inputs: List[EntityAccessControlAgora]): Future[PerRequestMessage] = batchInsertAgoraPermissions(inputs, userInfo)
 
-//  override val http = Http(system)
-//  override val httpClientUtils = HttpClientUtilsStandard()
-
-  def GetAgoraPermission(url: String) = executeAndCreateAgoraResponse(Get(url))
-  def CreateAgoraPermission(url: String, agoraPermissions: List[AgoraPermission]) = executeAndCreateAgoraResponse(Post(url, agoraPermissions))
-  def UpsertAgoraPermissions(inputs: List[EntityAccessControlAgora]) = multiUpsert(inputs)
-
-  def executeAndCreateAgoraResponse(request: HttpRequest): Future[PerRequestMessage] = {
-
-    executeRequestWithToken[List[AgoraPermission]](userInfo.accessToken)(request).map { agoraPermissions =>
+  def getAgoraPermission(url: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+    agoraDAO.getPermission(url)(userInfo).map { agoraPermissions =>
       try {
         val fireCloudPermissions = agoraPermissions.map(_.toFireCloudPermission)
         RequestComplete(OK, fireCloudPermissions)
@@ -96,11 +90,24 @@ class AgoraPermissionActor(userInfo: WithAccessToken)(implicit val executionCont
     }
   }
 
-  def multiUpsert(inputs: List[EntityAccessControlAgora]): Future[PerRequestMessage] = {
+  def createAgoraPermission(url: String, agoraPermissions: List[AgoraPermission], userInfo: UserInfo): Future[PerRequestMessage] = {
+    agoraDAO.createPermission(url, agoraPermissions)(userInfo).map { agoraPermissions =>
+      try {
+        val fireCloudPermissions = agoraPermissions.map(_.toFireCloudPermission)
+        RequestComplete(OK, fireCloudPermissions)
+      } catch {
+        // TODO: more specific and graceful error-handling
+        case e: Exception =>
+          RequestCompleteWithErrorReport(InternalServerError, "Failed to interpret methods " +
+            "server response: " + e.getMessage)
+      }
+    } recoverWith {
+      case e: Throwable => Future(RequestCompleteWithErrorReport(InternalServerError, e.getMessage))
+    }
+  }
 
-    val upsertRequest = Put(remoteMultiPermissionsUrl, inputs)
-
-    executeRequestWithToken[List[EntityAccessControlAgora]](userInfo.accessToken)(upsertRequest).map { agoraResponse =>
+  def batchInsertAgoraPermissions(inputs: List[EntityAccessControlAgora], userInfo: UserInfo): Future[PerRequestMessage] = {
+    agoraDAO.batchCreatePermissions(inputs)(userInfo).map { agoraResponse =>
       try {
         val fcResponse = agoraResponse.map { eaca =>
           val mrm = MethodRepoMethod(eaca.entity.namespace.get, eaca.entity.name.get, eaca.entity.snapshotId.get)

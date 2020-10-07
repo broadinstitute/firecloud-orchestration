@@ -16,18 +16,18 @@ package object model {
   implicit val errorReportSource = ErrorReportSource("FireCloud")
 
   // adapted from https://gist.github.com/jrudolph/9387700
-  implicit val errorReportRejectionHandler = RejectionHandler {
-    case MalformedRequestContentRejection(errorMsg, _) :: _ =>
-      ctx => ctx.complete(StatusCodes.BadRequest, ErrorReport(StatusCodes.BadRequest, errorMsg))
-    case x if RejectionHandler.Default.isDefinedAt(x) =>
-      ctx => RejectionHandler.Default(x) {
-        ctx.withHttpResponseMapped {
-          case resp@HttpResponse(statusCode, HttpEntity.NonEmpty(ContentType(`text/plain`, _), msg), _, _) =>
-//            import spray.httpx.marshalling
-            resp.withEntity(marshalling.marshalUnsafe(ErrorReport(statusCode, msg.asString)))
-        }
-      }
-  }
+//  implicit val errorReportRejectionHandler = RejectionHandler {
+//    case MalformedRequestContentRejection(errorMsg, _) :: _ =>
+//      ctx => ctx.complete(StatusCodes.BadRequest, ErrorReport(StatusCodes.BadRequest, errorMsg))
+//    case x if RejectionHandler.Default.isDefinedAt(x) =>
+//      ctx => RejectionHandler.Default(x) {
+//        ctx.withHttpResponseMapped {
+//          case resp@HttpResponse(statusCode, HttpEntity.NonEmpty(ContentType(`text/plain`, _), msg), _, _) =>
+////            import spray.httpx.marshalling
+//            resp.withEntity(marshalling.marshalUnsafe(ErrorReport(statusCode, msg.asString)))
+//        }
+//      }
+//  }
 
 //  implicit val errorReportRejectionHandler = RejectionHandler.newBuilder().handle {
 //    case MalformedRequestContentRejection(errorMsg, _) =>

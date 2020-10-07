@@ -1,7 +1,8 @@
 package org.broadinstitute.dsde.firecloud.core
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.event.Logging
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.coding.Gzip
 import akka.http.scaladsl.model.{HttpHeader, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
@@ -15,12 +16,12 @@ import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.ProcessUrl
 import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.{Entity, ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.rawls.model.Entity
+import org.broadinstitute.dsde.firecloud.utils.HttpClientUtilsStandard
 //import spray.client.pipelining._
 //import spray.http.HttpEncodings._
 //import spray.http.HttpHeaders.`Accept-Encoding`
@@ -38,15 +39,15 @@ import scala.util.{Failure, Success}
 object GetEntitiesWithType {
   case class ProcessUrl(url: String)
 
-  def constructor(userInfo: UserInfo) = new GetEntitiesWithTypeActor(userInfo)
+  def constructor(userInfo: UserInfo)(implicit materializer: Materializer, system: ActorSystem) = new GetEntitiesWithTypeActor(userInfo)
 }
 
-class GetEntitiesWithTypeActor(userInfo: UserInfo) extends Actor with FireCloudRequestBuilding with DsdeHttpDAO {
+class GetEntitiesWithTypeActor(userInfo: UserInfo)(implicit val materializer: Materializer, system: ActorSystem) extends FireCloudRequestBuilding with DsdeHttpDAO {
 
-  implicit val system = context.system
-  implicit val materializer: Materializer
-  import system.dispatcher
+  override val http = Http(system)
+  override val httpClientUtils = HttpClientUtilsStandard()
   import spray.json.DefaultJsonProtocol._
+  implicit val errorReportSource = ErrorReportSource("FireCloud")
 
   val log = Logging(system, getClass)
 
@@ -80,13 +81,14 @@ class GetEntitiesWithTypeActor(userInfo: UserInfo) extends Actor with FireCloudR
 
   def getEntitiesForTypesResponse(future: Future[List[HttpResponse]], entityTypes: List[String]): Future[PerRequestMessage] = {
     import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
-    future.map {
+    future.flatMap {
       responses =>
         val allSucceeded = responses.forall(_.status == OK)
         allSucceeded match {
           case true =>
             val entityResponses = Future.traverse(responses) { resp => Unmarshal(resp).to[List[Entity]] }
-            entityResponses.map { entities => RequestComplete(OK, entities.flatten) }
+            val x = entityResponses.map { entities => RequestComplete(OK, entities.flatten) }
+            x
           case false =>
             val errors = responses.filterNot(_.status == OK) map { e =>
               (
@@ -99,21 +101,26 @@ class GetEntitiesWithTypeActor(userInfo: UserInfo) extends Actor with FireCloudR
 
             }
 
-            val errorReports = errors collect { case (_, Success(report)) => report }
-            val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
-            val errorMessage = {
-              val baseMessage = "%d failures out of %d attempts retrieving entityUrls.  Errors: %s"
-                .format(errors.size, entityTypes.size, errors mkString ",")
-              if (missingReports.isEmpty) baseMessage
-              else {
-                val supplementalErrorMessage = "Additionally, %d of these failures did not provide error reports: %s"
-                  .format(missingReports.size, missingReports mkString ",")
-                baseMessage + "\n" + supplementalErrorMessage
-              }
-            }
-            RequestCompleteWithErrorReport(InternalServerError, errorMessage, errorReports)
+//            val errorReports = errors collect { case (_, Success(report)) => report }
+//            val missingReports = errors collect { case (originalError, Failure(_)) => originalError }
+//            val errorMessage = {
+//              val baseMessage = "%d failures out of %d attempts retrieving entityUrls.  Errors: %s"
+//                .format(errors.size, entityTypes.size, errors mkString ",")
+//              if (missingReports.isEmpty) baseMessage
+//              else {
+//                val supplementalErrorMessage = "Additionally, %d of these failures did not provide error reports: %s"
+//                  .format(missingReports.size, missingReports mkString ",")
+//                baseMessage + "\n" + supplementalErrorMessage
+//              }
+//            }
+            val errorMessage = "TODO"
+            Future.successful(RequestCompleteWithErrorReport(InternalServerError, errorMessage))
         }
     } recover { case e:Throwable =>  RequestCompleteWithErrorReport(InternalServerError, e.getMessage) }
   }
+
+}
+
+object GetEntitiesWithTypeActor {
 
 }

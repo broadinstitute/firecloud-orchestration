@@ -43,7 +43,8 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
         RequestComplete(OK, perms map AgoraPermissionHandler.toFireCloudPermission)
     } recover {
       case e: FireCloudExceptionWithErrorReport =>
-        RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport)
+//        RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport)
+        RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError))
       case e: Throwable =>
         RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
     }

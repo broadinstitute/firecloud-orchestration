@@ -19,5 +19,9 @@ trait AgoraDAO extends ReportsSubsystemStatus {
 
   def getMultiEntityPermissions(entityType: AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]]
 
+  def batchCreatePermissions(inputs: List[EntityAccessControlAgora])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]]
+  def getPermission(url: String)(implicit userInfo: UserInfo): Future[List[AgoraPermission]]
+  def createPermission(url: String,  agoraPermissions: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]]
+
   override def serviceName:String = AgoraDAO.serviceName
 }
