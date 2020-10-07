@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.HttpRequest

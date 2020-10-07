@@ -31,7 +31,7 @@ object FireCloudApp extends App with LazyLogging {
     val rawlsDAO:RawlsDAO = new HttpRawlsDAO
     val samDAO:SamDAO = new HttpSamDAO
     val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
-    val googleServicesDAO:GoogleServicesDAO = HttpGoogleServicesDAO
+    val googleServicesDAO:GoogleServicesDAO = new HttpGoogleServicesDAO
     val ontologyDAO:OntologyDAO = new ElasticSearchOntologyDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.ontologyIndexName)
     val consentDAO:ConsentDAO = new HttpConsentDAO
     val researchPurposeSupport:ResearchPurposeSupport = new ESResearchPurposeSupport(ontologyDAO)

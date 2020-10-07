@@ -8,6 +8,7 @@ import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.PerRequest._
