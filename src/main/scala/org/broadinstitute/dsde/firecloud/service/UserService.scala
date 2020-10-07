@@ -42,6 +42,7 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
   def SetTerraPreference = setTerraPreference(userToken)
   def DeleteTerraPreference = deleteTerraPreference(userToken)
   def GetAllUserKeys = getAllUserKeys(userToken)
+  def GetUserProfileGoogle = getUserProfileGoogle(userToken)
 
   def importPermission(implicit userToken: UserInfo): Future[PerRequestMessage] = {
     // start two requests, in parallel, to fire off workspace list and billing project list
@@ -204,4 +205,11 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
       }
     }
   }
+
+  def getUserProfileGoogle(userToken: UserInfo): Future[PerRequestMessage] = {
+    googleServicesDAO.getUserProfile(userToken).map { resp =>
+      RequestComplete(resp)
+    }
+  }
+
 }

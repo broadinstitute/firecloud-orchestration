@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.HttpMethods
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.{DsdeHttpDAO, HttpGoogleServicesDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -165,7 +166,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
       } ~
       path("userinfo") {
         requireUserInfo() { userInfo =>
-          complete { HttpGoogleServicesDAO.getUserProfile(userInfo) }
+          complete { userServiceConstructor(userInfo).GetUserProfileGoogle }
         }
       } ~
       pathPrefix("profile") {

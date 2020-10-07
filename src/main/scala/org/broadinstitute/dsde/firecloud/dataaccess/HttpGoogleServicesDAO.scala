@@ -2,10 +2,13 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.io.FileInputStream
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
 import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
@@ -34,6 +37,7 @@ import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
 import spray.json.{JsString, _}
 import spray.json.DefaultJsonProtocol
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.stream.Materializer
 
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -74,13 +78,7 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol with SprayJsonSup
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
-object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with DsdeHttpDAO with SprayJsonSupport {
-
-  override val httpClientUtils = HttpClientUtilsGzip()
-
-  // application name to use within Google api libraries
-  private final val appName = "firecloud:orchestration"
-
+object HttpGoogleServicesDAO {
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
@@ -91,12 +89,37 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val billingScope = Seq("https://www.googleapis.com/auth/cloud-billing")
   val spreadsheetScopes = Seq(SheetsScopes.SPREADSHEETS)
 
-  val httpTransport = GoogleNetHttpTransport.newTrustedTransport
-  val jsonFactory = JacksonFactory.getDefaultInstance
+  private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials = {
+    baseCreds.createScoped(scopes)
+  }
+
+  private def getScopedServiceAccountCredentials(baseCreds: ServiceAccountCredentials, scopes: Seq[String]): ServiceAccountCredentials = {
+    getScopedCredentials(baseCreds, scopes) match {
+      case sa:ServiceAccountCredentials => sa
+      case ex => throw new Exception(s"Excpected a ServiceAccountCredentials instance, got a ${ex.getClass.getName}")
+    }
+  }
 
   // credentials for orchestration's "firecloud" service account, used for admin duties
   lazy private val firecloudAdminSACreds = ServiceAccountCredentials
     .fromStream(new FileInputStream(FireCloudConfig.Auth.firecloudAdminSAJsonFile))
+
+  def getAdminUserAccessToken = {
+    getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
+      .refreshAccessToken().getTokenValue
+  }
+}
+
+class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext) extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with DsdeHttpDAO with SprayJsonSupport {
+
+  override val http = Http(system)
+  override val httpClientUtils = HttpClientUtilsGzip()
+
+  // application name to use within Google api libraries
+  private final val appName = "firecloud:orchestration"
+
+  val httpTransport = GoogleNetHttpTransport.newTrustedTransport
+  val jsonFactory = JacksonFactory.getDefaultInstance
 
   // credentials for the rawls service account, used for signing GCS urls
   lazy private val rawlsSACreds = ServiceAccountCredentials
@@ -110,22 +133,6 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   private def getDelegatedCredentials(baseCreds: GoogleCredentials, user: String): GoogleCredentials= {
     baseCreds.createDelegated(user)
-  }
-
-  private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials = {
-    baseCreds.createScoped(scopes)
-  }
-
-  private def getScopedServiceAccountCredentials(baseCreds: ServiceAccountCredentials, scopes: Seq[String]): ServiceAccountCredentials = {
-    getScopedCredentials(baseCreds, scopes) match {
-      case sa:ServiceAccountCredentials => sa
-      case ex => throw new Exception(s"Excpected a ServiceAccountCredentials instance, got a ${ex.getClass.getName}")
-    }
-  }
-
-  def getAdminUserAccessToken = {
-    getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
-      .refreshAccessToken().getTokenValue
   }
 
   def getCloudBillingManager(credential: ServiceAccountCredentials): Cloudbilling = {
@@ -297,7 +304,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
   def objectAccessCheck(bucketName: String, objectKey: String, authToken: WithAccessToken)
                        (implicit executionContext: ExecutionContext): Future[HttpResponse] = {
-    val accessRequest = Head( HttpGoogleServicesDAO.getXmlApiMetadataUrl(bucketName, objectKey) )
+    val accessRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
 
     executeRequestRaw(authToken.accessToken)(accessRequest)
   }
@@ -525,5 +532,10 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       val pubsubRequest = new PublishRequest().setMessages(pubsubMessages)
       Future(executeGoogleRequest(pubSub.projects().topics().publish(fullyQualifiedTopic, pubsubRequest)))
     }.map(_ => ())
+  }
+
+  override def getAdminUserAccessToken = {
+    getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
+      .refreshAccessToken().getTokenValue
   }
 }
