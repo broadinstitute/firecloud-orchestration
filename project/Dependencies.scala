@@ -58,7 +58,8 @@ object Dependencies {
     excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.18.0"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "org.webjars"                    % "swagger-ui"          % "3.25.0",
+    "org.webjars.npm"                % "swagger-ui-dist"     % "3.35.0",
+    "org.webjars"                    % "webjars-locator"     % "0.40",
     "com.pauldijou"                 %% "jwt-core"            % "3.1.0",
     "com.sun.mail"                   % "javax.mail"          % "1.5.6",
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",

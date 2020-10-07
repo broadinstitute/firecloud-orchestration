@@ -6884,8 +6884,8 @@ components:
           }
         ]
       items:
-        $ref: '#/components/schemas/AtttributeUpdateOperation'
-    AtttributeUpdateOperation:
+        $ref: '#/components/schemas/AttributeUpdateOperation'
+    AttributeUpdateOperation:
       required:
         - op
       type: object
@@ -6904,7 +6904,7 @@ components:
         propertyName: op
     AddUpdateAttribute:
       allOf:
-        - $ref: '#/components/schemas/AtttributeUpdateOperation'
+        - $ref: '#/components/schemas/AttributeUpdateOperation'
         - type: object
           properties:
             attributeName:
@@ -6915,7 +6915,7 @@ components:
               description: Value to add/update. Accepts strings, numbers, booleans.
     RemoveAttribute:
       allOf:
-        - $ref: '#/components/schemas/AtttributeUpdateOperation'
+        - $ref: '#/components/schemas/AttributeUpdateOperation'
         - type: object
           properties:
             attributeName:
@@ -6923,7 +6923,7 @@ components:
               description: The name of attribute to remove
     AddListMember:
       allOf:
-        - $ref: '#/components/schemas/AtttributeUpdateOperation'
+        - $ref: '#/components/schemas/AttributeUpdateOperation'
         - type: object
           properties:
             attributeListName:
@@ -6934,7 +6934,7 @@ components:
               description: The attribute to add to the list
     RemoveListMember:
       allOf:
-        - $ref: '#/components/schemas/AtttributeUpdateOperation'
+        - $ref: '#/components/schemas/AttributeUpdateOperation'
         - type: object
           properties:
             attributeListName:
@@ -6945,7 +6945,7 @@ components:
               description: The attribute to remove from the list
     CreateAttributeEntityReferenceList:
       allOf:
-        - $ref: '#/components/schemas/AtttributeUpdateOperation'
+        - $ref: '#/components/schemas/AttributeUpdateOperation'
         - type: object
           properties:
             attributeListName:
@@ -6954,7 +6954,7 @@ components:
                 create. This is a non-destructive operation.
     CreateAttributeValueList:
       allOf:
-        - $ref: '#/components/schemas/AtttributeUpdateOperation'
+        - $ref: '#/components/schemas/AttributeUpdateOperation'
         - type: object
           properties:
             attributeName:

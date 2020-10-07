@@ -5,17 +5,17 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.metrics.MetricsActor
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
-import org.slf4j.LoggerFactory
-import spray.http.StatusCodes._
-import spray.http._
-import spray.routing.{HttpServiceActor, RequestContext, Route}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.webservice._
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
 import org.elasticsearch.client.transport.TransportClient
+import org.slf4j.LoggerFactory
+import org.webjars.WebJarAssetLocator
+import spray.http._
+import spray.routing.{HttpServiceActor, RequestContext, Route}
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 import scala.language.postfixOps
 
 
@@ -170,7 +170,7 @@ class FireCloudServiceActor extends HttpServiceActor with FireCloudDirectives
     }
   )
 
-  private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/3.25.0"
+  private val swaggerUiPath = new WebJarAssetLocator().getFullPath("swagger-ui-dist", "index.html").replace("/index.html", "")
 
   val swaggerUiService = {
     path("") {

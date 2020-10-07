@@ -34,7 +34,6 @@ object Dependencies {
     "com.google.api-client" % "google-api-client" % "1.22.0" excludeAll (
       ExclusionRule("com.google.guava", "guava-jdk5"),
       ExclusionRule("org.apache.httpcomponents", "httpclient")),
-    "org.webjars"           %  "swagger-ui"    % "2.2.5",
     "com.typesafe.akka"   %%  "akka-http-core"     % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-stream-testkit" % akkaV,
     "com.typesafe.akka"   %%  "akka-http"           % akkaHttpV,
