@@ -8,9 +8,10 @@ import akka.http.scaladsl.Http
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.stream.ActorMaterializer
-
-import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, ConsentDAO, ESResearchPurposeSupport, ElasticSearchDAO, ElasticSearchOntologyDAO, ElasticSearchShareLogDAO, GoogleServicesDAO, HttpAgoraDAO, HttpConsentDAO, HttpGoogleServicesDAO, HttpLogitDAO, HttpRawlsDAO, HttpSamDAO, HttpThurloeDAO, LogitDAO, NoopLogitDAO, OntologyDAO, RawlsDAO, ResearchPurposeSupport, SamDAO, SearchDAO, ShareLogDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, ConsentDAO, ESResearchPurposeSupport, ElasticSearchDAO, ElasticSearchOntologyDAO, ElasticSearchShareLogDAO, GoogleServicesDAO, HttpAgoraDAO, HttpConsentDAO, HttpGoogleServicesDAO, HttpImportServiceDAO, HttpLogitDAO, HttpRawlsDAO, HttpSamDAO, HttpThurloeDAO, ImportServiceDAO, LogitDAO, NoopLogitDAO, OntologyDAO, RawlsDAO, ResearchPurposeSupport, SamDAO, SearchDAO, ShareLogDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
+import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, ExportEntitiesByTypeActor, ExportEntitiesByTypeArguments, LibraryService, ManagedGroupService, NamespaceService, NihService, OntologyService, PermissionReportService, RegisterService, ShareLogService, StatusService, StorageService, TrialService, UserService, WorkspaceService}
 import org.elasticsearch.client.transport.TransportClient
 
 object FireCloudApp extends App with LazyLogging {
@@ -41,27 +42,47 @@ object FireCloudApp extends App with LazyLogging {
     else
       new NoopLogitDAO
     val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
+    val importServiceDAO:ImportServiceDAO = new HttpImportServiceDAO
+
+    val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, logitDAO, shareLogDAO, importServiceDAO)
 
     import org.broadinstitute.dsde.firecloud.FireCloudApiService;
 
+    val agoraPermissionServiceConstructor: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
+    val trialServiceConstructor: () => TrialService = TrialService.constructor(app)
+    val exportEntitiesByTypeActorConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
+    val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
+    val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
+    val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
+    val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
+    val nihServiceConstructor: () => NihService = NihService.constructor(app)
+    val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
+    val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
+    val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
+    val statusServiceConstructor: () => StatusService = StatusService.constructor(null)
+    val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
+    val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
+    val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
+    val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
+
     val service = new FireCloudApiServiceImpl(
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
+      samDAO,
+      agoraPermissionServiceConstructor,
+      trialServiceConstructor,
+      exportEntitiesByTypeActorConstructor,
+      entityServiceConstructor,
+      libraryServiceConstructor,
+      ontologyServiceConstructor,
+      namespaceServiceConstructor,
+      nihServiceConstructor,
+      registerServiceConstructor,
+      storageServiceConstructor,
+      workspaceServiceConstructor,
+      statusServiceConstructor,
+      permissionReportServiceConstructor,
+      userServiceConstructor,
+      shareLogServiceConstructor,
+      managedGroupServiceConstructor
     )
 
     for {
