@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.util.concurrent.ConcurrentHashMap
 
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
@@ -37,7 +37,7 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
   val testApp = app.copy(rawlsDAO = new MockTagsRawlsDao)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(testApp)
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(testApp)
-  val entityClientConstructor: (RequestContext, ModelSchema) => EntityClient = EntityClient.constructor(app)
+  val entityServiceConstructor: (RequestContext, ModelSchema) => EntityService = EntityService.constructor(app)
 
   private def randUUID = java.util.UUID.randomUUID.toString
 

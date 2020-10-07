@@ -3,11 +3,10 @@ package org.broadinstitute.dsde.firecloud.webservice
 import akka.http.scaladsl.model.{HttpMethods, Uri}
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.core.AgoraPermissionActor
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.firecloud.service.FireCloudDirectives
+import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, FireCloudDirectives}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.json.DefaultJsonProtocol._
 
@@ -24,7 +23,7 @@ trait MethodsApiServiceUrls {
 
 trait MethodsApiService extends FireCloudDirectives with MethodsApiServiceUrls with StandardUserInfoDirectives {
 
-  val agoraPermissionService: UserInfo => AgoraPermissionActor
+  val agoraPermissionService: UserInfo => AgoraPermissionService
 
   val methodsApiServiceRoutes: Route =
   // routes that are valid for both configurations and methods

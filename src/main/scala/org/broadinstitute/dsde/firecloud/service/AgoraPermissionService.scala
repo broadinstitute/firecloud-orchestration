@@ -1,26 +1,19 @@
-package org.broadinstitute.dsde.firecloud.core
+package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.StatusCodes._
-import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
-import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, DsdeHttpDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.ACLNames._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, EntityAccessControlAgora, FireCloudPermission, MethodAclPair}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
-import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
+import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtilsStandard, RestJsonClient}
-import org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceUrls
 import org.broadinstitute.dsde.rawls.model.MethodRepoMethod
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object AgoraPermissionHandler { //rename to AgoraPermissionService
+object AgoraPermissionService {
 
   // convenience method to translate a FireCloudPermission object to an AgoraPermission object
   def toAgoraPermission(fireCloudPermission: FireCloudPermission):AgoraPermission = {
@@ -62,11 +55,11 @@ object AgoraPermissionHandler { //rename to AgoraPermissionService
   }
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new AgoraPermissionActor(userInfo, app.agoraDAO)
+    new AgoraPermissionService(userInfo, app.agoraDAO)
 
 }
 
-class AgoraPermissionActor(userInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit val executionContext: ExecutionContext) extends LazyLogging {
+class AgoraPermissionService(userInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit val executionContext: ExecutionContext) extends LazyLogging {
 
   import spray.json.DefaultJsonProtocol._
 

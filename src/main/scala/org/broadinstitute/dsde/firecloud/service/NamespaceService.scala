@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
-import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impFireCloudPermission
@@ -32,7 +31,7 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
   }
 
   def postFireCloudPermissions(ns: String, entity: String, permissions: List[FireCloudPermission]): Future[PerRequestMessage] = {
-    val agoraPermissionsToPost = permissions map { permission => AgoraPermissionHandler.toAgoraPermission(permission) }
+    val agoraPermissionsToPost = permissions map { permission => AgoraPermissionService.toAgoraPermission(permission) }
     val agoraPermissionsPosted = agoraDAO.postNamespacePermissions(ns, entity, agoraPermissionsToPost)
     delegatePermissionsResponse(agoraPermissionsPosted)
   }
@@ -40,7 +39,7 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
   private def delegatePermissionsResponse(agoraPerms: Future[List[AgoraPermission]]): Future[PerRequestMessage] = {
     agoraPerms map {
       perms =>
-        RequestComplete(OK, perms map AgoraPermissionHandler.toFireCloudPermission)
+        RequestComplete(OK, perms map AgoraPermissionService.toFireCloudPermission)
     } recover {
       case e: FireCloudExceptionWithErrorReport =>
 //        RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport)

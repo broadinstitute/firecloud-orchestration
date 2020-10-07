@@ -1,27 +1,26 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.Props
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Route
-import org.broadinstitute.dsde.firecloud.core.{GetEntitiesWithTypeActor, _}
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
+import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-trait EntityService extends FireCloudDirectives
+trait EntityApiService extends FireCloudDirectives
   with FireCloudRequestBuilding with StandardUserInfoDirectives with DsdeHttpDAO {
 
   implicit val executionContext: ExecutionContext
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  val getEntitiesWithTypeConstructor: UserInfo => GetEntitiesWithTypeActor
+  val entityServiceConstructor: (ModelSchema) => EntityService
 
   def entityRoutes: Route =
     pathPrefix("api") {
@@ -30,7 +29,8 @@ trait EntityService extends FireCloudDirectives
         path("entities_with_type") {
           get {
             requireUserInfo() { userInfo =>
-              complete { getEntitiesWithTypeConstructor(userInfo).ProcessUrl(encodeUri(baseRawlsEntitiesUrl)) }
+              //the model schema doesn't matter for this one. TODO: make it Optional
+              complete { entityServiceConstructor(FlexibleModelSchema).GetEntitiesWithType(workspaceNamespace, workspaceName, userInfo) }
             }
           }
         } ~

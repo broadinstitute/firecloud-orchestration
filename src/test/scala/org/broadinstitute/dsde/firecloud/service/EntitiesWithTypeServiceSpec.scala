@@ -9,12 +9,12 @@ import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import spray.http.StatusCodes._
 import spray.json._
-
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.webservice.EntityApiService
 
-class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityService {
+class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityApiService {
 
   def actorRefFactory = system
 
