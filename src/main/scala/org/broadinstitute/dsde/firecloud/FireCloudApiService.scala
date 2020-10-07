@@ -92,20 +92,20 @@ trait FireCloudApiService extends CookieAuthedApiService
   }
 
   // So we have the time when users send us error screenshots
-  val appendTimestampOnFailure = mapResponse { response =>
-    if (response.status.isFailure) {
-      try {
-        import spray.json._
-        val dataMap = response.entity.asString.parseJson.convertTo[Map[String, JsValue]]
-        val withTimestamp = dataMap + ("timestamp" -> JsNumber(System.currentTimeMillis()))
-        val contentType = response.header[HttpHeader.`Content-Type`].map{_.contentType}.getOrElse(ContentTypes.`application/json`)
-        response.withEntity(HttpEntity(contentType, withTimestamp.toJson.prettyPrint + "\n"))
-      } catch {
-        // usually a failure to parse, if the response isn't JSON (e.g. HTML responses from Google)
-        case e: Exception => response
-      }
-    } else response
-  }
+//  val appendTimestampOnFailure = mapResponse { response =>
+//    if (response.status.isFailure) {
+//      try {
+//        import spray.json._
+//        val dataMap = response.entity.asString.parseJson.convertTo[Map[String, JsValue]]
+//        val withTimestamp = dataMap + ("timestamp" -> JsNumber(System.currentTimeMillis()))
+//        val contentType = response.header[HttpHeader.`Content-Type`].map{_.contentType}.getOrElse(ContentTypes.`application/json`)
+//        response.withEntity(HttpEntity(contentType, withTimestamp.toJson.prettyPrint + "\n"))
+//      } catch {
+//        // usually a failure to parse, if the response isn't JSON (e.g. HTML responses from Google)
+//        case e: Exception => response
+//      }
+//    } else response
+//  }
 
   // wraps route rejections in an ErrorReport
 

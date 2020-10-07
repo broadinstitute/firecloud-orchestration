@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.unmarshalling._
@@ -15,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Created by anichols on 4/21/17.
   */
-trait ReportsSubsystemStatus {
+trait ReportsSubsystemStatus extends SprayJsonSupport {
 
   implicit val materializer: Materializer
 
@@ -24,7 +25,7 @@ trait ReportsSubsystemStatus {
   def serviceName: String
 
   def getStatusFromDropwizardChecks(response: Future[HttpResponse])(implicit ec: ExecutionContext): Future[SubsystemStatus] = {
-    response map { resp =>
+    response flatMap { resp =>
       Unmarshal(resp).to[Map[String, DropwizardHealth]].map { dwStatus =>
         val ok = dwStatus.values.forall(_.healthy)
         val errors = dwStatus.

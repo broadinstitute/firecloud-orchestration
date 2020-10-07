@@ -22,11 +22,10 @@ trait ExportEntitiesApiService extends FireCloudDirectives with FireCloudRequest
       parameters('attributeNames.?, 'model.?) { (attributeNamesString, modelString) =>
         requireUserInfo() { userInfo =>
           get {
-            requestContext =>
-              val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
-              val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
-              val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
-              actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
+            val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+            val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
+
+            complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities }
           }
         }
       }

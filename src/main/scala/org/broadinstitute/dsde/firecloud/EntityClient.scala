@@ -109,8 +109,8 @@ class EntityClient(modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDA
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
 
-  def ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo) = importEntitiesFromTSV(workspaceNamespace, workspaceName, tsvString)
-  def ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest, userInfo: UserInfo) = importBagit(workspaceNamespace, workspaceName, bagitRq)
+  def ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo) = importEntitiesFromTSV(workspaceNamespace, workspaceName, tsvString, userInfo)
+  def ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest, userInfo: UserInfo) = importBagit(workspaceNamespace, workspaceName, bagitRq, userInfo)
   def ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo) = importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo)
 
   /**
@@ -236,7 +236,7 @@ class EntityClient(modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDA
 
   /**
    * Determines the TSV type from the first column header and routes it to the correct import function. */
-  def importEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
+  def importEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo): Future[PerRequestMessage] = {
 
     def stripEntityType(entityTypeString: String): String = {
       val entityType = entityTypeString.stripSuffix("_id")
@@ -262,11 +262,11 @@ class EntityClient(modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDA
         } else {
           tsv
         }
-      importEntitiesFromTSVLoadFile(workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType)
+      importEntitiesFromTSVLoadFile(workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType, userInfo)
     }
   }
 
-  def importBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest): Future[PerRequestMessage] = {
+  def importBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
     if(bagitRq.format != "TSV") {
       Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid format; for now, you must place the string \"TSV\" here"))
     } else {
@@ -302,8 +302,8 @@ class EntityClient(modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDA
                 case _ =>
                   for {
                     // This should vomit back errors from rawls.
-                    participantResult <- participantsStr.map(ps => importEntitiesFromTSV(workspaceNamespace, workspaceName, ps)).getOrElse(Future.successful(RequestComplete(OK)))
-                    sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(workspaceNamespace, workspaceName, ss)).getOrElse(Future.successful(RequestComplete(OK)))
+                    participantResult <- participantsStr.map(ps => importEntitiesFromTSV(workspaceNamespace, workspaceName, ps, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
+                    sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(workspaceNamespace, workspaceName, ss, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
                   } yield {
                     participantResult match {
                       case RequestComplete((OK, _)) => sampleResult

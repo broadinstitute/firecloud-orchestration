@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.actor.Props
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Route
-import org.broadinstitute.dsde.firecloud.core._
+import org.broadinstitute.dsde.firecloud.core.{GetEntitiesWithTypeActor, _}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
@@ -21,6 +21,8 @@ trait EntityService extends FireCloudDirectives
   implicit val executionContext: ExecutionContext
   lazy val log = LoggerFactory.getLogger(getClass)
 
+  val getEntitiesWithTypeConstructor: UserInfo => GetEntitiesWithTypeActor
+
   def entityRoutes: Route =
     pathPrefix("api") {
       pathPrefix("workspaces" / Segment / Segment) { (workspaceNamespace, workspaceName) =>
@@ -28,8 +30,7 @@ trait EntityService extends FireCloudDirectives
         path("entities_with_type") {
           get {
             requireUserInfo() { userInfo =>
-              perRequest(requestContext, Props(new GetEntitiesWithTypeActor(requestContext)),
-                GetEntitiesWithType.ProcessUrl(encodeUri(baseRawlsEntitiesUrl)))
+              complete { getEntitiesWithTypeConstructor(userInfo).ProcessUrl(encodeUri(baseRawlsEntitiesUrl)) }
             }
           }
         } ~

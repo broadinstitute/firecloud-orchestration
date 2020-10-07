@@ -148,9 +148,9 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                   post {
                     requireUserInfo() { userInfo =>
                       entity(as[PfbImportRequest]) { pfbRequest =>
-                        respondWithJSON {
+//                        respondWithJSON {
                           complete { entityClientConstructor(FlexibleModelSchema).ImportPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
-                        }
+//                        }
                       }
                     }
                   } ~
@@ -199,9 +199,9 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                   post {
                     requireUserInfo() { userInfo =>
                       formFields('attributes) { attributesTSV =>
-                        respondWithJSON {
+//                        respondWithJSON {
                           complete { workspaceServiceConstructor(userInfo).ImportAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV) }
-                        }
+//                        }
                       }
                     }
                   }

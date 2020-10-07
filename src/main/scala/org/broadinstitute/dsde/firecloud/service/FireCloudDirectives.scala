@@ -3,8 +3,9 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.http.scaladsl.model.headers.`Content-Type`
 import org.parboiled.common.FileUtils
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader, HttpMethod, MediaType, Uri}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader, HttpMethod, HttpResponse, MediaType, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
+import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 
 import scala.util.Try
 
@@ -21,11 +22,11 @@ object FireCloudDirectiveUtils {
   }
 }
 
-trait FireCloudDirectives extends Directives with RequestBuilding {
+trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpDAO {
 
-  def respondWithJSON = extractRequest.flatMap { request =>
-    mapResponseHeaders(headers => headers :+ ContentTypes.`application/json`)
-  }
+//  def respondWithJSON = extractRequest.flatMap { request =>
+//    mapResponseHeaders(headers => headers :+ ContentTypes.`application/json`)
+//  }
 
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
     passthrough(Uri(unencodedPath), methods: _*)
@@ -43,16 +44,18 @@ trait FireCloudDirectives extends Directives with RequestBuilding {
     val outMethod = new RequestBuilder(inMethod)
     // POST, PUT, PATCH
     if (inMethod.isEntityAccepted) {
-      method(inMethod) {
-        respondWithJSON { requestContext =>
-          externalHttpPerRequest(requestContext, outMethod(uri, requestContext.request.entity))
-        }
+      method(inMethod) { requestContext =>
+
+        executeRequest(requestContext.request)
+
+//          externalHttpPerRequest(requestContext, outMethod(uri, requestContext.request.entity))
       }
     }
     else {
       // GET, DELETE
       method(inMethod) { requestContext =>
-        externalHttpPerRequest(requestContext, outMethod(uri))
+        executeRequest(requestContext.request)
+//        externalHttpPerRequest(requestContext, outMethod(uri))
       }
     }
   }
