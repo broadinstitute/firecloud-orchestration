@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.io.FileInputStream
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
@@ -34,6 +33,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
 import spray.json.{JsString, _}
 import spray.json.DefaultJsonProtocol
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -352,10 +352,11 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                   executeRequestRaw(userAuthToken.accessToken)(extReq).map { proxyResponse =>
                     proxyResponse.header[`Content-Type`] match {
                       case Some(ct) =>
-                        RequestCompleteWithHeaders((proxyResponse.status, proxyResponse.entity),
-                          `Content-Type`(ct.contentType)
-                        )
-                      case None => RequestComplete((proxyResponse.status, proxyResponse.entity))
+                        RequestComplete(proxyResponse.status)
+//                        RequestCompleteWithHeaders((proxyResponse.status, proxyResponse.entity),
+//                          `Content-Type`(ct.contentType)
+//                        )
+                      case None => RequestComplete(proxyResponse.status)//RequestComplete((proxyResponse.status, proxyResponse.entity))
                     }
                   }
                 } else {
@@ -385,14 +386,14 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
 
               case _ =>
                 // the user does not have access to the object.
-                val responseStr = objectResponse.entity.toJson.compactPrint.replaceAll("\n","")
-                logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status}): $responseStr")
-                Future(RequestComplete(objectResponse))
+//                val responseStr = objectResponse.entity.toJson.compactPrint.replaceAll("\n","")
+//                logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status}): $responseStr")
+                Future(RequestComplete("TODO"))
             }
           }
         case _ =>
           // Google did not return a profile for this user; abort. Reloading will resolve the issue if it's caused by an expired token.
-          logger.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.toJson.compactPrint}")
+          logger.warn(s"Unknown user attempted download for [$objectStr] and was denied.")
           Future(RequestComplete((Unauthorized, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
       }
     }

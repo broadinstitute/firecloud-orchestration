@@ -85,20 +85,12 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
 
               val version1 = !userDetailsOnly.exists(_.equalsIgnoreCase("true"))
 
-              executeRequestRaw(OAuth2BearerToken(header.token()))(Get(UserApiService.samRegisterUserInfoURL)).map { response =>
+              executeRequestRaw(OAuth2BearerToken(header.token()))(Get(UserApiService.samRegisterUserInfoURL)).flatMap { response =>
                 handleSamResponse(response, requestContext, version1)
               } recoverWith {
+                // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
                 case error: Throwable => respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
               }
-
-
-//              executeRequestRaw(OAuth2BearerToken(header.token()))(Get(UserApiService.samRegisterUserInfoURL)) map { response =>
-//                handleSamResponse(response, requestContext, version1)
-//              }) //recover {
-////                case error: Throwable =>
-////                // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
-////                respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
-////              }
           }
         }
       }
@@ -196,7 +188,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
     requestContext.complete(statusCode, ErrorReport(statusCode = statusCode, message = message, throwable = error))
   }
 
-  private def handleSamResponse(response: HttpResponse, requestContext: RequestContext, version1: Boolean): Unit = {
+  private def handleSamResponse(response: HttpResponse, requestContext: RequestContext, version1: Boolean): Future[RouteResult] = {
     response.status match {
       // Sam rejected our request. User is either invalid or their token timed out; this is truly unauthorized
       case Unauthorized =>
@@ -209,7 +201,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
         respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
       // Sam found the user; we'll try to parse the response and inspect it
       case OK =>
-        Unmarshal(response).to[RegistrationInfoV2].map { regInfo =>
+        Unmarshal(response).to[RegistrationInfoV2].flatMap { regInfo =>
           handleOkResponse(regInfo, requestContext, version1)
         }
       case x =>
@@ -218,7 +210,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
     }
   }
 
-  private def handleOkResponse(regInfo: RegistrationInfoV2, requestContext: RequestContext, version1: Boolean): Unit = {
+  private def handleOkResponse(regInfo: RegistrationInfoV2, requestContext: RequestContext, version1: Boolean): Future[RouteResult] = {
     if (regInfo.enabled) {
       if (version1) {
         respondWithUserDiagnostics(regInfo, requestContext)
@@ -230,17 +222,17 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
     }
   }
 
-  private def respondWithUserDiagnostics(regInfo: RegistrationInfoV2, requestContext: RequestContext): Unit = {
+  private def respondWithUserDiagnostics(regInfo: RegistrationInfoV2, requestContext: RequestContext): Future[RouteResult] = {
     val authorizationHeader: HttpCredentials = (requestContext.request.headers collect {
       case Authorization(h) => h
     }).head //if we've gotten here, the header already exists. Will instead pass it through since that's "safer", TODO
 
-    executeRequestRaw(OAuth2BearerToken(authorizationHeader.token()))(Get(UserApiService.samRegisterUserDiagnosticsURL)).map { response =>
+    executeRequestRaw(OAuth2BearerToken(authorizationHeader.token()))(Get(UserApiService.samRegisterUserDiagnosticsURL)).flatMap { response =>
       response.status match {
         case InternalServerError =>
           respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
         case OK =>
-          Unmarshal(response).to[WorkbenchEnabledV2].map { diagnostics =>
+          Unmarshal(response).to[WorkbenchEnabledV2].flatMap { diagnostics =>
             if (diagnostics.inAllUsersGroup && diagnostics.inGoogleProxyGroup) {
               val v1RegInfo = RegistrationInfo(WorkbenchUserInfo(regInfo.userSubjectId, regInfo.userEmail), WorkbenchEnabled(diagnostics.inGoogleProxyGroup, diagnostics.enabled, diagnostics.inAllUsersGroup))
               requestContext.complete(OK, v1RegInfo)

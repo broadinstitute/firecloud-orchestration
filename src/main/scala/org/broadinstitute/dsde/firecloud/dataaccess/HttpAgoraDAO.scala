@@ -11,14 +11,16 @@ import org.broadinstitute.dsde.workbench.util.health.{StatusCheckResponse, Subsy
 import org.broadinstitute.dsde.workbench.util.health.StatusJsonSupport.{StatusCheckResponseFormat, SubsystemStatusFormat}
 import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
 import akka.http.scaladsl.model.Uri
+import akka.stream.Materializer
+import org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceUrls
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
-  extends AgoraDAO with SprayJsonSupport with RestJsonClient {
+class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
+  extends AgoraDAO with SprayJsonSupport with RestJsonClient with MethodsApiServiceUrls {
 
   private def getNamespaceUrl(ns: String, entity: String): String = {
     s"${config.authUrl}/$entity/$ns/permissions"
@@ -36,6 +38,18 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
 
   override def getMultiEntityPermissions(entityType: AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]] = {
     authedRequestToObject[List[EntityAccessControlAgora]]( Post(getMultiEntityPermissionUrl(entityType), entities) )
+  }
+
+  override def batchCreatePermissions(inputs: List[EntityAccessControlAgora])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]] = {
+    authedRequestToObject[List[EntityAccessControlAgora]](Put(remoteMultiPermissionsUrl, inputs))
+  }
+
+  override def getPermission(url: String)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
+    authedRequestToObject[List[AgoraPermission]](Get(url))
+  }
+
+  override def createPermission(url: String,  agoraPermissions: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
+    authedRequestToObject[List[AgoraPermission]](Post(url, agoraPermissions))
   }
 
   override def status: Future[SubsystemStatus] = {

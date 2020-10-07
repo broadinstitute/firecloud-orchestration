@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.`Content-Type`
 import org.parboiled.common.FileUtils
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader, HttpMethod, HttpResponse, MediaType, Uri}
+import akka.http.scaladsl.server.RouteResult.Complete
 import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 
@@ -46,15 +47,15 @@ trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpD
     if (inMethod.isEntityAccepted) {
       method(inMethod) { requestContext =>
 
-        executeRequest(requestContext.request)
+        requestContext.complete(executeRequestRawWithoutToken(requestContext.request))
 
-//          externalHttpPerRequest(requestContext, outMethod(uri, requestContext.request.entity))
+//        externalHttpPerRequest(requestContext, outMethod(uri, requestContext.request.entity))
       }
     }
     else {
       // GET, DELETE
       method(inMethod) { requestContext =>
-        executeRequest(requestContext.request)
+        requestContext.complete(executeRequestRawWithoutToken(requestContext.request))
 //        externalHttpPerRequest(requestContext, outMethod(uri))
       }
     }

@@ -15,11 +15,9 @@ import scala.language.postfixOps
   */
 trait CookieAuthedApiService extends FireCloudDirectives with FireCloudRequestBuilding with LazyLogging {
 
-  implicit def actorRefFactory: ActorRefFactory
-
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
 
-  private implicit val executionContext = actorRefFactory.dispatcher
+  implicit val executionContext: ExecutionContext
 
   val storageServiceConstructor: UserInfo => StorageService
 
@@ -38,9 +36,6 @@ trait CookieAuthedApiService extends FireCloudDirectives with FireCloudRequestBu
           val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
 
           complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities }
-
-//          val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
-//          actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
         }
       } ~
         // this endpoint allows saving the URL for later use (firecloud-app#80)
@@ -53,9 +48,6 @@ trait CookieAuthedApiService extends FireCloudDirectives with FireCloudRequestBu
               val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
 
               complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities }
-
-//                val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
-//                actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
             }
           }
         }

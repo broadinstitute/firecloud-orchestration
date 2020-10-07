@@ -21,10 +21,8 @@ import scala.util.Try
 /**
   * Created by mbemis on 10/21/16.
   */
-class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
+class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext, implicit val materializer: Materializer )
   extends ThurloeDAO with RestJsonClient with SprayJsonSupport {
-
-  implicit val materializer: Materializer
 
   override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] = {
     wrapExceptions {

@@ -1,4 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
+import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
@@ -12,7 +13,7 @@ import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) extends OntologyDAO with ElasticSearchDAOSupport {
+class ElasticSearchOntologyDAO(client: TransportClient, indexName: String)(implicit val materializer: Materializer) extends OntologyDAO with ElasticSearchDAOSupport {
 
   private final val datatype = "ontology_term"
 
