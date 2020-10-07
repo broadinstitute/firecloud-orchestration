@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockAgoraDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
@@ -27,7 +27,7 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(testApp)
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(testApp)
-  val entityClientConstructor: (RequestContext, ModelSchema) => EntityClient = EntityClient.constructor(app)
+  val entityServiceConstructor: (RequestContext, ModelSchema) => EntityService = EntityService.constructor(app)
 
   def permissionReportPath(ns:String,name:String) = s"/api/workspaces/$ns/$name/permissionReport"
 

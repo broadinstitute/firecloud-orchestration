@@ -61,7 +61,6 @@ object FireCloudApp extends App with LazyLogging {
       null,
       null,
       null,
-      null,
       null
     )
 

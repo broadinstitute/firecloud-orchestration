@@ -4,7 +4,6 @@ import akka.actor.{Actor, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
 import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -61,7 +60,7 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
         agoraMethodReference match {
           case Some(agora) =>
             EntityAccessControl(Some(Method(config.methodRepoMethod, agora.entity.managers, agora.entity.public)),
-              MethodConfigurationName(config), agora.acls map AgoraPermissionHandler.toFireCloudPermission, agora.message)
+              MethodConfigurationName(config), agora.acls map AgoraPermissionService.toFireCloudPermission, agora.message)
           case None => EntityAccessControl(None, MethodConfigurationName(config), Seq.empty[FireCloudPermission], Some("referenced method not found."))
         }
       }

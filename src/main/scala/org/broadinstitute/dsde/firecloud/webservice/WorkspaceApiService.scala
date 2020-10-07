@@ -16,7 +16,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PermissionReportService, WorkspaceService}
 import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtilsStandard, StandardUserInfoDirectives}
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.slf4j.{Logger, LoggerFactory}
 import spray.json._
@@ -39,7 +39,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
 
   val workspaceServiceConstructor: WithAccessToken => WorkspaceService
   val permissionReportServiceConstructor: UserInfo => PermissionReportService
-  val entityClientConstructor: (ModelSchema) => EntityClient
+  val entityServiceConstructor: (ModelSchema) => EntityService
 
   private val filename = "-workspace-attributes.tsv"
 
@@ -120,7 +120,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                     requireUserInfo() { userInfo =>
                       formFields('entities) { entitiesTSV =>
                         //TODO: respondWithJson here and other places. it's deprecated so decide new solution
-                        complete { entityClientConstructor(FlexibleModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
+                        complete { entityServiceConstructor(FlexibleModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
                       }
                     }
                   }
@@ -130,7 +130,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                     requireUserInfo() { userInfo =>
                       formFields('entities) { entitiesTSV =>
                         //TODO: respondWithJson
-                        complete { entityClientConstructor(FirecloudModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
+                        complete { entityServiceConstructor(FirecloudModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
                       }
                     }
                   }
@@ -139,7 +139,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                   post {
                     requireUserInfo() { userInfo =>
                       entity(as[BagitImportRequest]) { bagitRq =>
-                        complete { entityClientConstructor(FirecloudModelSchema).ImportBagit(workspaceNamespace, workspaceName, bagitRq, userInfo) }
+                        complete { entityServiceConstructor(FirecloudModelSchema).ImportBagit(workspaceNamespace, workspaceName, bagitRq, userInfo) }
                       }
                     }
                   }
@@ -149,7 +149,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding
                     requireUserInfo() { userInfo =>
                       entity(as[PfbImportRequest]) { pfbRequest =>
 //                        respondWithJSON {
-                          complete { entityClientConstructor(FlexibleModelSchema).ImportPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
+                          complete { entityServiceConstructor(FlexibleModelSchema).ImportPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
 //                        }
                       }
                     }
