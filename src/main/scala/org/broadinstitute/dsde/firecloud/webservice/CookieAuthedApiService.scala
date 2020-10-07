@@ -32,12 +32,15 @@ trait CookieAuthedApiService extends FireCloudDirectives with FireCloudRequestBu
       // this endpoint allows an arbitrary number of attribute names in the POST body (GAWB-1435)
       // but the URL cannot be saved for later use (firecloud-app#80)
       post {
-        formFields('FCtoken, 'attributeNames.?, 'model.?) { (tokenValue, attributeNamesString, modelString) => requestContext =>
+        formFields('FCtoken, 'attributeNames.?, 'model.?) { (tokenValue, attributeNamesString, modelString) =>
           val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
           val userInfo = dummyUserInfo(tokenValue)
-          val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
-          val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
-          actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
+          val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
+
+          complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities }
+
+//          val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
+//          actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
         }
       } ~
         // this endpoint allows saving the URL for later use (firecloud-app#80)
@@ -45,12 +48,14 @@ trait CookieAuthedApiService extends FireCloudDirectives with FireCloudRequestBu
         get {
           cookie("FCtoken") { tokenCookie =>
             parameters('attributeNames.?, 'model.?) { (attributeNamesString, modelString) =>
-              requestContext =>
-                val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
-                val userInfo = dummyUserInfo(tokenCookie.value)
-                val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
-                val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
-                actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
+              val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+              val userInfo = dummyUserInfo(tokenCookie.value)
+              val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
+
+              complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities }
+
+//                val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
+//                actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
             }
           }
         }

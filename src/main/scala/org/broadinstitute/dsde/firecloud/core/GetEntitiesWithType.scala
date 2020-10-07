@@ -16,7 +16,7 @@ import org.broadinstitute.dsde.firecloud.core.GetEntitiesWithType.ProcessUrl
 import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.rawls.model.ErrorReport
-import org.broadinstitute.dsde.firecloud.model.RequestCompleteWithErrorReport
+import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -37,10 +37,11 @@ import scala.util.{Failure, Success}
 
 object GetEntitiesWithType {
   case class ProcessUrl(url: String)
-  def props(requestContext: RequestContext): Props = Props(new GetEntitiesWithTypeActor(requestContext))
+
+  def constructor(userInfo: UserInfo) = new GetEntitiesWithTypeActor(userInfo)
 }
 
-class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor with FireCloudRequestBuilding with DsdeHttpDAO {
+class GetEntitiesWithTypeActor(userInfo: UserInfo) extends Actor with FireCloudRequestBuilding with DsdeHttpDAO {
 
   implicit val system = context.system
   implicit val materializer: Materializer
@@ -49,32 +50,32 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
 
   val log = Logging(system, getClass)
 
-  def receive = {
-    case ProcessUrl(url: String) =>
-      log.debug("Processing entity type map for url: " + url)
-//      val pipeline = authHeaders(requestContext) ~> addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
+  def ProcessUrl(url: String) = processUrl(url)
 
-      val request = Get(url)//.withHeaders(`Accept-Encoding`(gzip)) //TODO: add headers and decoding
+  def processUrl(url: String) = {
+    log.debug("Processing entity type map for url: " + url)
 
-//      val entityTypesFuture: Future[HttpResponse] = pipeline { Get(url) }
-      val allEntitiesResponse = executeRequestRaw(null)(request).flatMap { response => //todo pass userInfo thru to this from request
-        response.status match {
-          case x if x == OK =>
-//            val entityTypes: List[String] = unmarshal[Map[String, JsValue]].apply(response).keys.toList
+    //      val pipeline = authHeaders(requestContext) ~> addHeader(`Accept-Encoding`(gzip)) ~> sendReceive ~> decode(Gzip)
 
-            Unmarshal(response).to[Map[String, JsValue]].flatMap { entityTypeMap =>
-              val entityTypes = entityTypeMap.keys.toList
-              val entityUrls: List[String] = entityTypes.map(s => FireCloudDirectiveUtils.encodeUri(s"$url/$s"))
-              val entityFutures: List[Future[HttpResponse]] = entityUrls map { entitiesUrl => executeRequestRaw(null)(Get(entitiesUrl)) }
-              getEntitiesForTypesResponse(Future sequence entityFutures, entityTypes)
-            }
-          case x =>
-            Future(RequestComplete(response))
-        }
-      } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage) }
-      allEntitiesResponse pipeTo context.parent
-    case _ =>
-      Future(RequestCompleteWithErrorReport(BadRequest, "Invalid message received")) pipeTo context.parent
+    val request = Get(url) //.withHeaders(`Accept-Encoding`(gzip)) //TODO: add headers and decoding
+
+    //      val entityTypesFuture: Future[HttpResponse] = pipeline { Get(url) }
+    val allEntitiesResponse = executeRequestRaw(null)(request).flatMap { response => //todo pass userInfo thru to this from request
+      response.status match {
+        case x if x == OK =>
+          //            val entityTypes: List[String] = unmarshal[Map[String, JsValue]].apply(response).keys.toList
+
+          Unmarshal(response).to[Map[String, JsValue]].flatMap { entityTypeMap =>
+            val entityTypes = entityTypeMap.keys.toList
+            val entityUrls: List[String] = entityTypes.map(s => FireCloudDirectiveUtils.encodeUri(s"$url/$s"))
+            val entityFutures: List[Future[HttpResponse]] = entityUrls map { entitiesUrl => executeRequestRaw(null)(Get(entitiesUrl)) }
+            getEntitiesForTypesResponse(Future sequence entityFutures, entityTypes)
+          }
+        case x =>
+          Future(RequestComplete(response))
+      }
+    } recover { case e: Throwable => RequestCompleteWithErrorReport(InternalServerError, e.getMessage) }
+    allEntitiesResponse
   }
 
   def getEntitiesForTypesResponse(future: Future[List[HttpResponse]], entityTypes: List[String]): Future[PerRequestMessage] = {
@@ -87,7 +88,12 @@ class GetEntitiesWithTypeActor(requestContext: RequestContext) extends Actor wit
             val entityResponses = Future.traverse(responses) { resp => Unmarshal(resp).to[List[Entity]] }
             entityResponses.map { entities => RequestComplete(OK, entities.flatten) }
           case false =>
-            val errors = responses.filterNot(_.status == OK) map { e => (e, FCErrorReport.tryUnmarshal(e)) }
+            val errors = responses.filterNot(_.status == OK) map { e =>
+              (
+                e,
+                ErrorReport(statusCode = e.status, "test")
+              )
+            }
 
             errors.map { case (response, errorReport) =>
 

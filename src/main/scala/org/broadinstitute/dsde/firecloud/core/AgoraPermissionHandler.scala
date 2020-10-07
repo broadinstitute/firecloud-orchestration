@@ -65,13 +65,15 @@ object AgoraPermissionHandler { //rename to AgoraPermissionService
 
 }
 
-class AgoraPermissionActor(userInfo: WithAccessToken)(implicit val system: ActorSystem, val materializer: Materializer, val executionContext: ExecutionContext) extends LazyLogging
+class AgoraPermissionActor(userInfo: WithAccessToken)(implicit val executionContext: ExecutionContext) extends LazyLogging
   with FireCloudRequestBuilding with MethodsApiServiceUrls with DsdeHttpDAO {
 
   import spray.json.DefaultJsonProtocol._
 
-  override val http = Http(system)
-  override val httpClientUtils = HttpClientUtilsStandard()
+  implicit val materializer: Materializer
+
+//  override val http = Http(system)
+//  override val httpClientUtils = HttpClientUtilsStandard()
 
   def GetAgoraPermission(url: String) = executeAndCreateAgoraResponse(Get(url))
   def CreateAgoraPermission(url: String, agoraPermissions: List[AgoraPermission]) = executeAndCreateAgoraResponse(Post(url, agoraPermissions))

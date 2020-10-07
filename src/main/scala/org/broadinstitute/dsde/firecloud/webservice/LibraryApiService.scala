@@ -39,30 +39,30 @@ trait LibraryApiService extends FireCloudRequestBuilding
       } ~
         path("researchPurposeQuery") {
           post {
-            respondWithJSON {
+//            respondWithJSON {
               entity(as[ResearchPurposeRequest]) { researchPurposeRequest =>
                 complete { ontologyServiceConstructor().ResearchPurposeQuery(researchPurposeRequest) }
               }
-            }
+//            }
           }
         } ~
         path("structuredData") {
           post {
-            respondWithJSON {
+//            respondWithJSON {
               entity(as[StructuredDataRequest]) { request =>
                 complete { ontologyServiceConstructor().DataUseLimitation(request) }
               }
-            }
+//            }
           }
         }
     } ~
       pathPrefix("schemas") {
         path("library-attributedefinitions-v1") {
-          respondWithJSON {
+//          respondWithJSON {
             withResourceFileContents(LibraryService.schemaLocation) { jsonContents =>
               complete(StatusCodes.OK, jsonContents)
             }
-          }
+//          }
         }
       } ~
       pathPrefix("api") {
@@ -89,10 +89,10 @@ trait LibraryApiService extends FireCloudRequestBuilding
                 path("groups") {
                   pathEndOrSingleSlash {
                     get {
-                      respondWithJSON {
+//                      respondWithJSON {
                         requestContext =>
                           requestContext.complete(OK, FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSeq)
-                      }
+//                      }
                     }
                   }
                 } ~
@@ -112,7 +112,7 @@ trait LibraryApiService extends FireCloudRequestBuilding
                     }
                   } ~
                     path("discoverableGroups") {
-                      respondWithJSON {
+//                      respondWithJSON {
                         put {
                           entity(as[Seq[String]]) { newGroups =>
                             complete { libraryServiceConstructor(userInfo).UpdateDiscoverableByGroups(namespace, name, newGroups) }
@@ -121,7 +121,7 @@ trait LibraryApiService extends FireCloudRequestBuilding
                           get {
                             complete { libraryServiceConstructor(userInfo).GetDiscoverableByGroups(namespace, name) }
                           }
-                      }
+//                      }
                     } ~
                     path("published") {
                       post {
@@ -134,18 +134,18 @@ trait LibraryApiService extends FireCloudRequestBuilding
                 } ~
                 path("admin" / "reindex") {
                   post {
-                    respondWithJSON {
+//                    respondWithJSON {
                       complete { libraryServiceConstructor(userInfo).IndexAll }
-                    }
+//                    }
                   }
                 } ~
                 pathPrefix("search") {
                   pathEndOrSingleSlash {
                     post {
-                      respondWithJSON {
+//                      respondWithJSON {
                         entity(as[LibrarySearchParams]) { params =>
                           complete { libraryServiceConstructor(userInfo).FindDocuments(params) }
-                        }
+//                        }
                       }
                     }
                   }
@@ -153,20 +153,20 @@ trait LibraryApiService extends FireCloudRequestBuilding
                 pathPrefix("suggest") {
                   pathEndOrSingleSlash {
                     post {
-                      respondWithJSON {
+//                      respondWithJSON {
                         entity(as[LibrarySearchParams]) { params =>
                           complete { libraryServiceConstructor(userInfo).Suggest(params) }
                         }
-                      }
+//                      }
                     }
                   }
                 } ~
                 pathPrefix("populate" / "suggest" / Segment ) { (field) =>
                   get {
                     parameter('q) { text =>
-                      respondWithJSON {
+//                      respondWithJSON {
                         complete { libraryServiceConstructor(userInfo).PopulateSuggest(field, text) }
-                      }
+//                      }
                     }
                   }
                 }
