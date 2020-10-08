@@ -3,9 +3,8 @@ package org.broadinstitute.dsde.firecloud.webservice
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model._
-import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, NihService}
 import org.broadinstitute.dsde.firecloud.utils.{DateUtils, StandardUserInfoDirectives}
 import org.slf4j.LoggerFactory

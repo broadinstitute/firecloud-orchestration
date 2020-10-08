@@ -56,7 +56,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   def UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) = updateDiscoverableByGroups(ns, name, newGroups)
   def GetDiscoverableByGroups(ns: String, name: String) = getDiscoverableByGroups(ns, name)
   def SetPublishAttribute(ns: String, name: String, value: Boolean) = setWorkspaceIsPublished(ns, name, value)
-  def IndexAll = asAdmin {indexAll}
+  def IndexAll = asAdmin {indexAllWorkspaces}
   def FindDocuments(criteria: LibrarySearchParams) = findDocuments(criteria)
   def Suggest(criteria: LibrarySearchParams) = suggest(criteria)
   def PopulateSuggest(field: String, text: String) = populateSuggest(field: String, text: String)
@@ -181,7 +181,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
-  def indexAll: Future[PerRequestMessage] = {
+  def indexAllWorkspaces: Future[PerRequestMessage] = {
     logger.info("reindex: requesting workspaces from rawls ...")
     rawlsDAO.getAllLibraryPublishedWorkspaces flatMap { workspaces: Seq[WorkspaceDetails] =>
       if (workspaces.isEmpty)
