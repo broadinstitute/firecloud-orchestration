@@ -1,18 +1,17 @@
 package org.broadinstitute.dsde.firecloud
 
-import scala.concurrent.duration._
-import akka.actor.{ActorSystem, Props}
-import com.typesafe.scalalogging.LazyLogging
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.ExecutionContext.Implicits.global
 import akka.stream.ActorMaterializer
-import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, ConsentDAO, ESResearchPurposeSupport, ElasticSearchDAO, ElasticSearchOntologyDAO, ElasticSearchShareLogDAO, GoogleServicesDAO, HttpAgoraDAO, HttpConsentDAO, HttpGoogleServicesDAO, HttpImportServiceDAO, HttpLogitDAO, HttpRawlsDAO, HttpSamDAO, HttpThurloeDAO, ImportServiceDAO, LogitDAO, NoopLogitDAO, OntologyDAO, RawlsDAO, ResearchPurposeSupport, SamDAO, SearchDAO, ShareLogDAO, ThurloeDAO}
+import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
-import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, ExportEntitiesByTypeActor, ExportEntitiesByTypeArguments, LibraryService, ManagedGroupService, NamespaceService, NihService, OntologyService, PermissionReportService, RegisterService, ShareLogService, StatusService, StorageService, TrialService, UserService, WorkspaceService}
+import org.broadinstitute.dsde.firecloud.service._
 import org.elasticsearch.client.transport.TransportClient
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object FireCloudApp extends App with LazyLogging {
 
@@ -44,9 +43,7 @@ object FireCloudApp extends App with LazyLogging {
     val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
     val importServiceDAO:ImportServiceDAO = new HttpImportServiceDAO
 
-    val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, logitDAO, shareLogDAO, importServiceDAO)
-
-    import org.broadinstitute.dsde.firecloud.FireCloudApiService;
+    val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, logitDAO, shareLogDAO, importServiceDAO);
 
     val agoraPermissionServiceConstructor: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
     val trialServiceConstructor: () => TrialService = TrialService.constructor(app)

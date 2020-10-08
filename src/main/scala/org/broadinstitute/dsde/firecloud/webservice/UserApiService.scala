@@ -1,25 +1,20 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials, OAuth2BearerToken}
+import akka.http.scaladsl.model.{HttpMethods, HttpResponse, StatusCode}
+import akka.http.scaladsl.server.{RequestContext, RouteResult}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.{DsdeHttpDAO, HttpGoogleServicesDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.slf4j.LoggerFactory
-import spray.json.DefaultJsonProtocol._
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.{RequestContext, RouteResult}
-import akka.http.scaladsl.model.{HttpMethods, StatusCode}
-import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials, OAuth2BearerToken}
-import akka.http.scaladsl.unmarshalling.Unmarshal
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 object UserApiService {
   val remoteGetKeyPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.get
