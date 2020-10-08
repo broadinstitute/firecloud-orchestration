@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PermissionRep
 import org.broadinstitute.dsde.rawls.model.{MethodConfigurationShort, MethodRepoMethod, _}
 import org.scalatest.BeforeAndAfterEach
 import spray.http.{HttpMethods, HttpResponse}
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.routing.RequestContext

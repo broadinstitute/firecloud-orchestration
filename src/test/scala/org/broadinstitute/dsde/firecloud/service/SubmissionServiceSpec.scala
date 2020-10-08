@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 

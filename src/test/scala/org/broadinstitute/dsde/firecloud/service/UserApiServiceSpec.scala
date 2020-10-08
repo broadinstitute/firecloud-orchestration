@@ -9,11 +9,12 @@ import org.broadinstitute.dsde.firecloud.webservice.{RegisterApiService, UserApi
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import spray.http.HttpMethods
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService {
 

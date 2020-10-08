@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.scalatest.concurrent.ScalaFutures
-import spray.http.StatusCodes.{InternalServerError, NotFound}
+import akka.http.scaladsl.model.StatusCodes.{InternalServerError, NotFound}
 
 import scala.collection.mutable
 import scala.concurrent.duration._

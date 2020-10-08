@@ -5,8 +5,8 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermiss
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.webservice.NamespaceApiService
-import spray.http.HttpMethods
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 

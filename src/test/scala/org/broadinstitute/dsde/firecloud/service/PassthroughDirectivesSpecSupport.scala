@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.service.PassthroughDirectivesSpec._
 import org.broadinstitute.dsde.firecloud.service.PassthroughDirectivesSpecSupport._
 import org.mockserver.mock.action.ExpectationCallback
 import org.mockserver.model.{HttpRequest, HttpResponse}
-import spray.http.StatusCodes.OK
+import akka.http.scaladsl.model.StatusCodes.OK
 import spray.http.Uri
 import spray.http.Uri.Path
 import spray.json.DefaultJsonProtocol._

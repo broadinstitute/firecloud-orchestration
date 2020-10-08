@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.webservice.NotificationsApiService
-import spray.http.HttpMethods.GET
+import akka.http.scaladsl.model.HttpMethods.GET
 
 /**
   * We don't create a mock server so we can differentiate between methods that get passed through (and result in

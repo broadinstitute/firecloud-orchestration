@@ -2,15 +2,15 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.spray2akkaStatus
 import org.broadinstitute.dsde.firecloud.utils.TestRequestBuilding
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FreeSpec, Matchers}
-import spray.http.HttpMethods._
-import spray.http.{HttpMethod, StatusCode}
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.HttpMethod
+import akka.http.scaladsl.model.StatusCode
 import spray.httpx.SprayJsonSupport._
-import spray.routing.Route
-import spray.testkit.ScalatestRouteTest
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 
 import scala.concurrent.duration._
 
@@ -28,7 +28,7 @@ trait ServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest wit
   def errorReportCheck(source: String, statusCode: StatusCode): Unit = {
     val report = responseAs[ErrorReport]
     report.source should be(source)
-    report.statusCode.get should be(spray2akkaStatus(statusCode))
+    report.statusCode.get should be(statusCode)
   }
 
   def checkIfPassedThrough(route: Route, method: HttpMethod, uri: String, toBeHandled: Boolean): Unit = {

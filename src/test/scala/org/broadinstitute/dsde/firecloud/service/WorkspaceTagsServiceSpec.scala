@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMem
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import org.scalatest.{Assertions, BeforeAndAfterEach}
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.routing.RequestContext

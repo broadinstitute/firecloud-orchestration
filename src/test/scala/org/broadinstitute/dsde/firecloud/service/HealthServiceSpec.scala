@@ -1,10 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import spray.http.StatusCodes._
-import spray.routing.HttpService
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-
-class HealthServiceSpec extends ServiceSpec with HttpService with HealthService {
+class HealthServiceSpec extends ServiceSpec with HealthService {
 
   def actorRefFactory = system
 

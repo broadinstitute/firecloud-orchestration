@@ -8,8 +8,12 @@ import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.{CookieAuthedApiService, ExportEntitiesApiService}
-import spray.http._
-import spray.http.StatusCodes._
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{ContentType, HttpCharsets, MediaTypes}
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.`Content-Disposition`
+import akka.http.scaladsl.testkit.RouteTestTimeout
 
 import scala.concurrent.duration._
 
@@ -112,7 +116,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
           chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "pair.tsv")))
+          headers should contain(`Content-Disposition`.apply("attachment", Map("filename" -> "pair.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
           validateLineCount(chunks, 2)
           entity.asString.startsWith("entity:") should be(true)

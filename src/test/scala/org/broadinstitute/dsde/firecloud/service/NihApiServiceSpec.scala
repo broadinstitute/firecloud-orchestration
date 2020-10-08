@@ -7,7 +7,8 @@ import org.broadinstitute.dsde.firecloud.model.JWTWrapper
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.workbench.model.WorkbenchEmail
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.concurrent.ExecutionContext
 

@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
-import spray.http.HttpMethods.{GET, DELETE, POST}
+import akka.http.scaladsl.model.HttpMethods.{GET, DELETE, POST}
 
 /**
   * We don't create a mock server so we can differentiate between methods that get passed through (and result in

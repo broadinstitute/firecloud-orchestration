@@ -7,10 +7,11 @@ import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpCallback.callback
 import org.mockserver.model.HttpRequest.request
 import spray.http.{HttpMethods, Uri}
-import spray.http.HttpMethods._
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.StatusCodes._
 import spray.httpx.SprayJsonSupport
 import spray.routing.HttpServiceBase
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 object PassthroughDirectivesSpec {
   val echoPort = 9123

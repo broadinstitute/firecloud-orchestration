@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.service.{LibraryService, WorkspaceApiSe
 import org.broadinstitute.dsde.rawls.model.{StatusCheckResponse => RawlsStatus, SubsystemStatus => RawlsSubsystemStatus, _}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.joda.time.DateTime
-import spray.http.StatusCodes
+import akka.http.scaladsl.model.StatusCodes
 import MockRawlsDAO._
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort

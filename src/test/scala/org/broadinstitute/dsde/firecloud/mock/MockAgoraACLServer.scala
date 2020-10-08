@@ -7,7 +7,7 @@ import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes._
 import spray.json._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impAgoraPermission, impEntityAccessControlAgora}
 import DefaultJsonProtocol._

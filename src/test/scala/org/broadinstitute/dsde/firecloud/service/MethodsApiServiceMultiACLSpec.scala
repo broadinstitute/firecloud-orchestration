@@ -5,8 +5,8 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impFireCloudPermission, impMethodAclPair}
 import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 import org.broadinstitute.dsde.rawls.model.MethodRepoMethod
-import spray.http.HttpMethods
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json._

@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import org.scalatest.FreeSpecLike
-import spray.http.StatusCodes
+import akka.http.scaladsl.model.StatusCodes
 
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, ExecutionContext, Future}
