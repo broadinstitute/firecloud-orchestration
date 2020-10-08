@@ -8,8 +8,8 @@ import org.broadinstitute.dsde.firecloud.model.Project.{CreationStatuses, Projec
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, TrialService, UserService}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.ErrorReportFormat
-import spray.http.HttpMethods
-import spray.http.StatusCodes.{InternalServerError, OK}
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes.{InternalServerError, OK}
 import spray.httpx.SprayJsonSupport
 
 import scala.concurrent.Future

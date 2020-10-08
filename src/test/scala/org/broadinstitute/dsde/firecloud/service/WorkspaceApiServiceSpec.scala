@@ -21,8 +21,8 @@ import org.mockserver.model.HttpRequest._
 import org.mockserver.model.{JsonBody, Parameter}
 import org.mockserver.socket.SSLFactory
 import org.scalatest.BeforeAndAfterEach
-import spray.http.StatusCodes._
 import spray.http._
+import akka.http.scaladsl.model.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json._

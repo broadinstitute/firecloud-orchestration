@@ -3,8 +3,8 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData._
 import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLServer
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
-import spray.http.HttpMethods
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
 import spray.json._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._

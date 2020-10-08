@@ -8,9 +8,10 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
 import org.mockserver.model.HttpRequest._
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes._
 import spray.json._
 import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.webservice.EntityApiService

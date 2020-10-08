@@ -13,8 +13,8 @@ import org.mockserver.model.HttpResponse.response
 import org.mockserver.model.{HttpRequest, HttpResponse}
 import org.scalatest.Matchers
 import spray.http.HttpMethod
-import spray.http.HttpMethods._
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.StatusCodes._
 
 final class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
 

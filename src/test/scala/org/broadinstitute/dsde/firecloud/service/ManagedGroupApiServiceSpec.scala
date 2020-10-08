@@ -8,8 +8,9 @@ import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupNa
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpRequest.request
-import spray.http.HttpMethods
-import spray.http.StatusCodes.{Created, NoContent, OK}
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import akka.http.scaladsl.model.StatusCodes.{Created, NoContent, OK}
 
 /**
   * Created by mbemis on 4/2/18.

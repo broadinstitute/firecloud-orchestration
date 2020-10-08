@@ -7,6 +7,7 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import spray.http.{HttpMethods, Uri}
 import spray.httpx.SprayJsonSupport
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with SprayJsonSupport {
 

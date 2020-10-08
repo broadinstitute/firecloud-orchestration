@@ -7,7 +7,7 @@ import spray.json.DefaultJsonProtocol._
 import org.mockserver.mock.action.ExpectationCallback
 import org.mockserver.model.HttpResponse._
 import org.mockserver.model.{HttpRequest, HttpResponse}
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes._
 import spray.json._
 
 class ValidEntityDeleteCallback extends ExpectationCallback {

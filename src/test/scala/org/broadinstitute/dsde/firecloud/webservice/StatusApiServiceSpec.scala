@@ -5,8 +5,8 @@ import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, StatusService
 import org.broadinstitute.dsde.workbench.util.health.StatusJsonSupport.StatusCheckResponseFormat
 import org.broadinstitute.dsde.workbench.util.health.Subsystems._
 import org.broadinstitute.dsde.workbench.util.health.{HealthMonitor, StatusCheckResponse}
-import spray.http.HttpMethods.GET
-import spray.http.StatusCodes.OK
+import akka.http.scaladsl.model.HttpMethods.GET
+import akka.http.scaladsl.model.StatusCodes.OK
 import spray.httpx.SprayJsonSupport._
 
 import scala.concurrent.duration._

@@ -6,8 +6,9 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse
-import spray.http.HttpMethods._
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 final class BillingServiceSpec extends ServiceSpec with BillingService {
   def actorRefFactory = system

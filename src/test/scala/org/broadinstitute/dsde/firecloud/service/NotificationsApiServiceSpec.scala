@@ -3,8 +3,8 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.webservice.NotificationsApiService
 import spray.http.{HttpMethod, StatusCode}
-import spray.http.HttpMethods.GET
-import spray.http.StatusCodes.{MethodNotAllowed, NotFound, OK}
+import akka.http.scaladsl.model.HttpMethods.GET
+import akka.http.scaladsl.model.StatusCodes.{MethodNotAllowed, NotFound, OK}
 
 final class NotificationsApiServiceSpec extends ServiceSpec with NotificationsApiService {
 

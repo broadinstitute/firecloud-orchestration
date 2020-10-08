@@ -12,7 +12,15 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUp
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.joda.time.DateTime
-import spray.http.StatusCodes
+import akka.http.scaladsl.model.StatusCodes
+import MockRawlsDAO._
+import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
+import org.broadinstitute.dsde.firecloud.model.Project.{ProjectRoles, RawlsBillingProjectMember}
+import org.broadinstitute.dsde.rawls.model
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

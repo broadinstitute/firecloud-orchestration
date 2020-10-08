@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, RegisterService}
-import spray.http.StatusCodes.{BadRequest, NoContent}
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, NoContent}
 import spray.http.StatusCode
 import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol

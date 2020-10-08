@@ -5,7 +5,7 @@ import java.util.zip.ZipFile
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.scalatest.BeforeAndAfterEach
-import spray.http.StatusCodes
+import akka.http.scaladsl.model.StatusCodes
 
 import scala.concurrent.Future
 

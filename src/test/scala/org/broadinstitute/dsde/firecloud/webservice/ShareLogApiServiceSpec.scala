@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, ShareLogService}
 import spray.http.OAuth2BearerToken
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 
 final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiService {

@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.mockserver.integration.ClientAndServer
-import spray.http.HttpMethods.{DELETE, GET, POST, PUT}
+import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST, PUT}
 
 /**
   * We don't create a mock server so we can differentiate between methods that get passed through (and result in
