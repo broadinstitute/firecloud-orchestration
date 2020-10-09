@@ -52,25 +52,25 @@ final class BillingServiceSpec extends ServiceSpec with BillingService {
 
   "BillingService" - {
     "create project" in {
-      Post("/billing") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      Post("/billing") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
         status should be(Created)
       }
     }
 
     "list project members" in {
-      Get("/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      Get("/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
         status should be(OK)
       }
     }
 
     "add user" in {
-      Put("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      Put("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
         status should be(OK)
       }
     }
 
     "remove user" in {
-      Delete("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      Delete("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
         status should be(OK)
       }
     }

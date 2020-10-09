@@ -28,19 +28,19 @@ final class SubmissionServiceNegativeSpec extends ServiceSpec with SubmissionSer
   "SubmissionService" - {
     "non-GET requests hitting the /submissions/queueStatus path are not passed through" in {
       allHttpMethodsExcept(GET) foreach { method =>
-        checkIfPassedThrough(routes, method, "/submissions/queueStatus", toBeHandled = false)
+        checkIfPassedThrough(submissionServiceRoutes, method, "/submissions/queueStatus", toBeHandled = false)
       }
     }
 
     "non-GET requests hitting the /workspaces/*/*/submissionsCount path are not passed through" in {
       allHttpMethodsExcept(GET) foreach { method =>
-        checkIfPassedThrough(routes, method, localSubmissionsCountPath, toBeHandled = false)
+        checkIfPassedThrough(submissionServiceRoutes, method, localSubmissionsCountPath, toBeHandled = false)
       }
     }
 
     "non-GET/POST requests hitting the /workspaces/*/*/submissions path are not passed through" in {
       allHttpMethodsExcept(GET, POST) foreach { method =>
-        checkIfPassedThrough(routes, method, localSubmissionsPath, toBeHandled = false)
+        checkIfPassedThrough(submissionServiceRoutes, method, localSubmissionsPath, toBeHandled = false)
       }
     }
 
@@ -48,25 +48,25 @@ final class SubmissionServiceNegativeSpec extends ServiceSpec with SubmissionSer
       // Also excluding DELETE and GET since the path matches
       // /workspaces/*/*/submissions/{submissionId} APIs as well
       allHttpMethodsExcept(DELETE, GET, POST) foreach { method =>
-        checkIfPassedThrough(routes, method, s"$localSubmissionsPath/validate", toBeHandled = false)
+        checkIfPassedThrough(submissionServiceRoutes, method, s"$localSubmissionsPath/validate", toBeHandled = false)
       }
     }
 
     "non-DELETE/GET requests hitting the /workspaces/*/*/submissions/* path are not passed through" in {
       allHttpMethodsExcept(DELETE, GET) foreach { method =>
-        checkIfPassedThrough(routes, method, localSubmissionIdPath, toBeHandled = false)
+        checkIfPassedThrough(submissionServiceRoutes, method, localSubmissionIdPath, toBeHandled = false)
       }
     }
 
     "non-GET requests hitting the /workspaces/*/*/submissions/*/workflows/workflowId path are not passed through" in {
       allHttpMethodsExcept(GET) foreach { method =>
-        checkIfPassedThrough(routes, method, s"$localSubmissionIdPath/workflows/workflowId", toBeHandled = false)
+        checkIfPassedThrough(submissionServiceRoutes, method, s"$localSubmissionIdPath/workflows/workflowId", toBeHandled = false)
       }
     }
 
     "non-GET requests hitting the /workspaces/*/*/submissions/*/workflows/workflowId/outputs path are not passed through" in {
       allHttpMethodsExcept(GET) foreach { method =>
-        checkIfPassedThrough(routes, method, s"$localSubmissionIdPath/workflows/workflowId/outputs", toBeHandled = false)
+        checkIfPassedThrough(submissionServiceRoutes, method, s"$localSubmissionIdPath/workflows/workflowId/outputs", toBeHandled = false)
       }
     }
   }

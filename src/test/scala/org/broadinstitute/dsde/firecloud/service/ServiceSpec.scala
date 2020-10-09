@@ -3,19 +3,24 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.TestRequestBuilding
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FreeSpec, Matchers}
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.HttpMethod
 import akka.http.scaladsl.model.StatusCode
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.ActorMaterializer
+
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import akka.testkit.TestKitBase
 
 import scala.concurrent.duration._
 
 // common Service Spec to be inherited by service tests
-trait ServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with TestRequestBuilding {
+trait ServiceSpec extends FreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with TestRequestBuilding with TestKitBase {
 
   implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
 
