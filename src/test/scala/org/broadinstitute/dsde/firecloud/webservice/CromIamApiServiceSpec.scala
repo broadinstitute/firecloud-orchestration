@@ -1,12 +1,11 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.ActorRefFactory
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.{HttpMethods, Uri}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import spray.http.{HttpMethods, Uri}
-import spray.httpx.SprayJsonSupport
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with SprayJsonSupport {
@@ -288,6 +287,4 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
     }
 
   }
-
-  override def actorRefFactory: ActorRefFactory = system
 }

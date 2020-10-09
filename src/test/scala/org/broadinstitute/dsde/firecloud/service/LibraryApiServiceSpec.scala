@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
@@ -16,11 +17,13 @@ import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import org.scalatest.BeforeAndAfterEach
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Directives._
 import spray.http._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.json.lenses.JsonLenses._
 import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.collection.JavaConverters._
 

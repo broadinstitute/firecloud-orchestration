@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes._
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
 
