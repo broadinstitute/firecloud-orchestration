@@ -1,14 +1,14 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
 import akka.http.scaladsl.model.StatusCodes._
-import spray.httpx.SprayJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
+final class SubmissionServiceSpec extends ServiceSpec with SubmissionService with SprayJsonSupport {
 
   def actorRefFactory = system
 

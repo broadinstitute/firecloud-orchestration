@@ -3,11 +3,12 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.util.UUID
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpHeader, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.google.api.services.sheets.v4.model.ValueRange
 import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
 import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
-import spray.http.HttpHeaders.RawHeader
-import spray.http._
 import spray.json._
 
 import scala.collection.JavaConverters._
@@ -62,7 +63,8 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
     val response = HttpResponse(status = StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`, json))
 
     import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
-    val objectMetadata = response.entity.asString.parseJson.convertTo[ObjectMetadata]
+
+    val objectMetadata = Await.result(Unmarshal(response).to[ObjectMetadata], Duration.Inf)
 
     objectMetadata.bucket should equal("test-bucket")
     objectMetadata.name should equal("test-composite-object")

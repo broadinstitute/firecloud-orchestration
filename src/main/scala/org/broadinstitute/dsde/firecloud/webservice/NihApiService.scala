@@ -1,7 +1,8 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
@@ -13,7 +14,7 @@ import pdi.jwt.{Jwt, JwtAlgorithm}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
-trait NihApiService extends FireCloudDirectives with StandardUserInfoDirectives {
+trait NihApiService extends Directives with RequestBuilding with StandardUserInfoDirectives {
 
   implicit val executionContext: ExecutionContext
   lazy val log = LoggerFactory.getLogger(getClass)

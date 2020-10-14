@@ -2,9 +2,9 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import java.io.File
 
+import akka.http.scaladsl.model.Uri.Authority
 import com.typesafe.config.ConfigFactory
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import spray.http.Uri.Authority
 
 trait IntegrationTestConfig {
   val unitTestConf = ConfigFactory.load()

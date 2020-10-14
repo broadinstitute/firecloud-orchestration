@@ -1,11 +1,12 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, RegisterService}
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, NoContent}
-import spray.http.StatusCode
-import spray.httpx.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCode
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.Future
@@ -14,9 +15,9 @@ import scala.util.Success
 final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiService
   with DefaultJsonProtocol with SprayJsonSupport {
 
-  def actorRefFactory = system
+//  def actorRefFactory = system
 
-  val registerServiceConstructor:() => RegisterService =
+  override val registerServiceConstructor:() => RegisterService =
     RegisterService.constructor(app.copy(thurloeDAO = new RegisterApiServiceSpecThurloeDAO))
 
   "RegisterApiService" - {

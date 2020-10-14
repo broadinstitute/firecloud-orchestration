@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLServer
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impFireCloudPermission, impMethodAclPair}
@@ -7,13 +8,12 @@ import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 import org.broadinstitute.dsde.rawls.model.MethodRepoMethod
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes._
-import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 
-class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService {
+class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService with SprayJsonSupport {
 
   def actorRefFactory = system
 

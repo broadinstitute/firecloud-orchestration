@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
 import org.broadinstitute.dsde.firecloud.model._
@@ -10,13 +11,12 @@ import org.mockserver.model.HttpCallback._
 import org.mockserver.model.HttpRequest._
 import akka.http.scaladsl.model.StatusCodes._
 import spray.json._
-import spray.httpx.SprayJsonSupport._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.webservice.EntityApiService
 
-class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService {
+class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with SprayJsonSupport {
 
   def actorRefFactory = system
 

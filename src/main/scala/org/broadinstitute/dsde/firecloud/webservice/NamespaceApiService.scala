@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.{ModelJsonProtocol, UserInfo}
@@ -11,8 +12,7 @@ import spray.json._
 
 import scala.concurrent.ExecutionContext
 
-trait NamespaceApiService extends FireCloudRequestBuilding with FireCloudDirectives
-  with StandardUserInfoDirectives {
+trait NamespaceApiService extends Directives with RequestBuilding with StandardUserInfoDirectives {
 
   implicit val executionContext: ExecutionContext
 

@@ -6,7 +6,7 @@ import java.util.Date
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.firecloud.model._
 import org.mockserver.model.Header
-import spray.http.StatusCode
+import akka.http.scaladsl.model.StatusCode
 
 object MockUtils {
 

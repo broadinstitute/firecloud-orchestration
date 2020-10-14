@@ -94,7 +94,7 @@ object FireCloudConfig {
             case Some(f) => qMap + ("filterTerms" -> f)
             case _ => qMap
           }
-        baseEntityQueryUri.withQuery(Query(filteredQMap))
+          baseEntityQueryUri.withQuery(Query(filteredQMap))
         case _ => baseEntityQueryUri
       }
     }

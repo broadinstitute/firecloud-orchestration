@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.client.RequestBuilding
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.ManagedGroupService._
@@ -8,11 +9,11 @@ import org.broadinstitute.dsde.firecloud.utils.UserInfoDirectives
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import org.slf4j.LoggerFactory
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directives, Route}
 
 import scala.concurrent.ExecutionContext
 
-trait ManagedGroupApiService extends FireCloudRequestBuilding with FireCloudDirectives with UserInfoDirectives {
+trait ManagedGroupApiService extends Directives with RequestBuilding with UserInfoDirectives {
 
   implicit val executionContext: ExecutionContext
 
