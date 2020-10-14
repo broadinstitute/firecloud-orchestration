@@ -6,8 +6,8 @@ import org.broadinstitute.dsde.firecloud.service.PassthroughDirectivesSpecSuppor
 import org.mockserver.mock.action.ExpectationCallback
 import org.mockserver.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes.OK
-import spray.http.Uri
-import spray.http.Uri.Path
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.{Path, Query}
 import spray.json.DefaultJsonProtocol._
 
 import scala.collection.JavaConversions._
@@ -21,12 +21,12 @@ class EchoCallback extends ExpectationCallback {
 
     val sprayuri = Uri(echoUrl)
       .withPath(Path(httpRequest.getPath.getValue))
-      .withQuery(sprayparams)
+      .withQuery(Query(sprayparams))
 
     val requestInfo = RequestInfo(
       httpRequest.getMethod.getValue,
       sprayuri.path.toString,
-      sprayuri.query.toMap,
+      sprayuri.query().toMap,
       sprayuri.toString()
     )
 

@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
@@ -22,13 +23,12 @@ import spray.http._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.json.lenses.JsonLenses._
-import spray.httpx.SprayJsonSupport._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.collection.JavaConverters._
 
 
-class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach {
+class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
   var consentServer: ClientAndServer = _

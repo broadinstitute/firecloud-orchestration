@@ -7,7 +7,6 @@ import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.webservice.NamespaceApiService
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes._
-import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 

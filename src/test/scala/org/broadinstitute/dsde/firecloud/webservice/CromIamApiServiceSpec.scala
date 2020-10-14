@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpMethods, Uri}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
@@ -122,7 +123,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery("includeKey=hit&includeKey=hitFailure")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("includeKey=hit&includeKey=hitFailure"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -195,7 +196,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery("start=start%20value&end=end%20value")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("start=start%20value&end=end%20value"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -237,7 +238,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery("workflowA=workflowA%20value&workflowB=workflowB%20value")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("workflowA=workflowA%20value&workflowB=workflowB%20value"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)

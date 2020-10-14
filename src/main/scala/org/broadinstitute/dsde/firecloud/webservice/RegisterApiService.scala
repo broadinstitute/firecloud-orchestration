@@ -1,16 +1,17 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.client.RequestBuilding
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, RegisterService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
 import spray.json.DefaultJsonProtocol._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directives, Route}
 
 import scala.concurrent.ExecutionContext
 
-trait RegisterApiService extends FireCloudDirectives with StandardUserInfoDirectives {
+trait RegisterApiService extends Directives with RequestBuilding with StandardUserInfoDirectives {
 
   implicit val executionContext: ExecutionContext
   private lazy val log = LoggerFactory.getLogger(getClass)

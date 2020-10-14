@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model.{Project, UserImportPermission, UserInfo, WithAccessToken}
@@ -10,7 +11,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.ErrorReportFormat
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes.{InternalServerError, OK}
-import spray.httpx.SprayJsonSupport
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.concurrent.Future
 

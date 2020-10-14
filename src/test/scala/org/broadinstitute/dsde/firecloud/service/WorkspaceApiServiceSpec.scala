@@ -2,7 +2,8 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.util.UUID
 
-import javax.net.ssl.HttpsURLConnection
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethod, HttpMethods, MediaTypes, StatusCode, Uri}
 import org.apache.commons.io.IOUtils
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
@@ -21,12 +22,11 @@ import org.mockserver.model.HttpRequest._
 import org.mockserver.model.{JsonBody, Parameter}
 import org.mockserver.socket.SSLFactory
 import org.scalatest.BeforeAndAfterEach
-import spray.http._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.model.StatusCodes._
-import spray.httpx.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
 import spray.json._
-import spray.routing.RequestContext
+import spray.json.DefaultJsonProtocol._
+import javax.net.ssl.HttpsURLConnection
 
 object WorkspaceApiServiceSpec {
 
@@ -48,7 +48,7 @@ object WorkspaceApiServiceSpec {
 
 }
 
-class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
+class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
 
@@ -102,7 +102,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app.copy(shareLogDAO = localShareLogDao))
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
-  val entityServiceConstructor: (RequestContext, ModelSchema) => EntityService = EntityService.constructor(app)
+  val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
 
   val nihProtectedAuthDomain = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
 
@@ -1169,7 +1169,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+          request.getBody.asString.parseJson should be (responsePayload) // to address string-formatting issues
         }
       }
 

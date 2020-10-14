@@ -1,8 +1,9 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.{ActorRefFactory, Props}
+import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service._
@@ -13,7 +14,7 @@ import scala.language.postfixOps
 /**
   * Created by dvoet on 11/16/16.
   */
-trait CookieAuthedApiService extends FireCloudDirectives with FireCloudRequestBuilding with LazyLogging {
+trait CookieAuthedApiService extends Directives with RequestBuilding with LazyLogging {
 
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
 

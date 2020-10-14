@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import spray.http.{HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.mock.{MockGoogleServicesDAO, MockUtils}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils.samServerPort
 import org.broadinstitute.dsde.firecloud.model.{ManagedGroupRoles, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.webservice.ManagedGroupApiService
@@ -11,15 +11,18 @@ import org.mockserver.model.HttpRequest.request
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.model.StatusCodes.{Created, NoContent, OK}
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockAgoraDAO, MockConsentDAO, MockLogitDAO, MockOntologyDAO, MockRawlsDAO, MockResearchPurposeSupport, MockSamDAO, MockSearchDAO, MockShareLogDAO, MockThurloeDAO}
+
+import scala.concurrent.ExecutionContext
 
 /**
   * Created by mbemis on 4/2/18.
   */
-class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiService {
+class ManagedGroupApiServiceSpec extends BaseServiceSpec with ApiServiceSpec {
 
   def actorRefFactory = system
 
-  val managedGroupServiceConstructor:(WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
+  case class TestApiService(agoraDao: MockAgoraDAO, googleDao: MockGoogleServicesDAO, ontologyDao: MockOntologyDAO, consentDao: MockConsentDAO, rawlsDao: MockRawlsDAO, samDao: MockSamDAO, searchDao: MockSearchDAO, researchPurposeSupport: MockResearchPurposeSupport, thurloeDao: MockThurloeDAO, logitDao: MockLogitDAO, shareLogDao: MockShareLogDAO)(implicit val executionContext: ExecutionContext) extends ApiServices
 
   val uniqueId = "normal-user"
 

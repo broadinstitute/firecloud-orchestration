@@ -18,8 +18,7 @@ import spray.json.DefaultJsonProtocol._
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
-trait LibraryApiService extends FireCloudRequestBuilding
-  with FireCloudDirectives with StandardUserInfoDirectives with DsdeHttpDAO {
+trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirectives with DsdeHttpDAO {
 
   implicit val executionContext: ExecutionContext
 

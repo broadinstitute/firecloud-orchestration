@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpMethod
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.service.ServiceSpec
@@ -12,7 +13,6 @@ import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse.response
 import org.mockserver.model.{HttpRequest, HttpResponse}
 import org.scalatest.Matchers
-import spray.http.HttpMethod
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes._
 
