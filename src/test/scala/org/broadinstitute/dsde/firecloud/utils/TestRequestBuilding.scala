@@ -21,6 +21,6 @@ trait TestRequestBuilding extends FireCloudRequestBuilding {
   }
 
   def dummyCookieAuthHeaders: RequestTransformer = {
-    addHeader(Cookie(HttpCookie("FCtoken", dummyToken)))
+    addHeader(Cookie("FCtoken", dummyToken))
   }
 }

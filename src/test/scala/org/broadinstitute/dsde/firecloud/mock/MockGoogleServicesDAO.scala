@@ -13,7 +13,6 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.JsObject
 import spray.json._
-import spray.routing.RequestContext
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}

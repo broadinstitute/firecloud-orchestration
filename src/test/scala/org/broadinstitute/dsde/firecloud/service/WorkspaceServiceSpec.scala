@@ -20,7 +20,7 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(customApp)
 
-  lazy val ws: WorkspaceService = TestActorRef(WorkspaceService.props(workspaceServiceConstructor, AccessToken(OAuth2BearerToken("")))).underlyingActor
+  lazy val ws: WorkspaceService = workspaceServiceConstructor(AccessToken(OAuth2BearerToken("")))
 
   override def beforeEach(): Unit = {
     searchDao.reset
