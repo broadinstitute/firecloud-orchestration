@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethod, HttpMethods, MediaTypes, StatusCode, Uri}
 import org.apache.commons.io.IOUtils
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
@@ -24,6 +25,7 @@ import org.mockserver.socket.SSLFactory
 import org.scalatest.BeforeAndAfterEach
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.Uri.Query
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
@@ -436,7 +438,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.nonEmpty)
+          assert(entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.nonEmpty)
         }
       }
 
@@ -447,7 +449,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.isEmpty)
+          assert(entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.isEmpty)
         }
       }
 
@@ -475,7 +477,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         Seq("allRepos" -> "true", "allRepos" -> "false", "allRepos" -> "banana") foreach { query =>
           stubRawlsService(HttpMethods.GET, methodconfigsPath, OK, None, Some(query))
 
-          Get(Uri(methodconfigsPath).withQuery(query)) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          Get(Uri(methodconfigsPath).withQuery(Query(query))) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             rawlsServer.verify(request().withPath(methodconfigsPath).withMethod("GET").withQueryStringParameter(query._1, query._2))
 
             status should equal(OK)
@@ -1025,8 +1027,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(BadRequest)
-            body.asString should include ("Bad request as reported by import service")
+            status should equal(BadRequest)
+            request.getBodyAsString should include ("Bad request as reported by import service")
           }
       }
 
@@ -1041,7 +1043,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Forbidden)
-            body.asString should include ("Missing Authorization: Bearer token in header")
+            request.getBodyAsString should include ("Missing Authorization: Bearer token in header")
           }
       }
 
@@ -1057,7 +1059,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(UnavailableForLegalReasons)
-          body.asString should include ("import service message")
+          request.getBodyAsString should include ("import service message")
         }
       }
 
@@ -1085,7 +1087,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Accepted)
-            body.asString.parseJson should be (orchExpectedPayload.toJson)
+            request.getBodyAsString.parseJson should be (orchExpectedPayload.toJson)
           }
       }
 
@@ -1115,7 +1117,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+          request.getBodyAsString.parseJson should be (responsePayload) // to address string-formatting issues
         }
       }
 
@@ -1159,7 +1161,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          request.getBody.asString.parseJson should be (responsePayload) // to address string-formatting issues
+          request.getBodyAsString.parseJson should be (responsePayload) // to address string-formatting issues
         }
       }
 
@@ -1192,7 +1194,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+          request.getBodyAsString.parseJson should be (responsePayload) // to address string-formatting issues
         }
       }
 

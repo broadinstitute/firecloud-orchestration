@@ -20,7 +20,8 @@ class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
   val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(customApp)
 
   val userToken: UserInfo = UserInfo("me@me.com", OAuth2BearerToken(""), 3600, "111")
-  lazy val userService: UserService = UserService.props(userServiceConstructor, userToken)
+
+  lazy val userService: UserService = userServiceConstructor(userToken)
 
   "UserService " - {
     "getNewAnonymousGroupName" - { // this indirectly tests getWord

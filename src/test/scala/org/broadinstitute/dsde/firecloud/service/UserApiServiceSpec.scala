@@ -210,14 +210,14 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
       "if anonymousGroup KVP does not exist, it gets assigned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
             .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
         }
       }
       "if anonymousGroup key exists but value is empty, a new group gets assigned, and MethodNotAllowed is not returned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(userWithEmptyGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
             .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
           status shouldNot equal(MethodNotAllowed)
@@ -225,7 +225,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
       "existing anonymousGroup is not overwritten, and MethodNotAllowed is not returned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(userWithGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
             .flatMap(_.value).equals(Option("existing-google-group@support.something.firecloud.org")))
           status shouldNot equal(MethodNotAllowed)
@@ -233,7 +233,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
       "a user with no contact email still gets assigned a new anonymousGroup, and MethodNotAllowed is not returned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(userWithNoContactEmail) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
             .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
           status shouldNot equal(MethodNotAllowed)

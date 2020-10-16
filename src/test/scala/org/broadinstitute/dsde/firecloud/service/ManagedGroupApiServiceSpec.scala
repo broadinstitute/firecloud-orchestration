@@ -18,11 +18,11 @@ import scala.concurrent.ExecutionContext
 /**
   * Created by mbemis on 4/2/18.
   */
-class ManagedGroupApiServiceSpec extends BaseServiceSpec with ApiServiceSpec {
+class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiService {
 
   def actorRefFactory = system
 
-  case class TestApiService(agoraDao: MockAgoraDAO, googleDao: MockGoogleServicesDAO, ontologyDao: MockOntologyDAO, consentDao: MockConsentDAO, rawlsDao: MockRawlsDAO, samDao: MockSamDAO, searchDao: MockSearchDAO, researchPurposeSupport: MockResearchPurposeSupport, thurloeDao: MockThurloeDAO, logitDao: MockLogitDAO, shareLogDao: MockShareLogDAO)(implicit val executionContext: ExecutionContext) extends ApiServices
+  val managedGroupServiceConstructor:(WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
 
   val uniqueId = "normal-user"
 
