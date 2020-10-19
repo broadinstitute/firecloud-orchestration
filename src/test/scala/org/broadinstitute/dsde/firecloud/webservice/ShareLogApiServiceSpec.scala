@@ -13,7 +13,10 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 
-final class ShareLogApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with ShareLogApiService {
+final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiService {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   final val sharingUser = UserInfo("fake1@gmail.com", OAuth2BearerToken(dummyToken), 3600L, "fake1")
 
   private def getUserHeaders(userId: String, email: String) = dummyUserIdHeaders(userId, dummyToken, email)

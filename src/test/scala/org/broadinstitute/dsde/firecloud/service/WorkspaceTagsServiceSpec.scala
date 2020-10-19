@@ -24,9 +24,11 @@ import scala.concurrent.{ExecutionContext, Future}
   * Remember that the responses from the tag apis are sorted, so the expected values in unit
   * tests may look funny - it's the sorting.
   */
-class WorkspaceTagsServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
+class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   // Mock remote endpoints
   private final val workspacesRoot = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath

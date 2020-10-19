@@ -12,10 +12,12 @@ import spray.json.DefaultJsonProtocol
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-final class RegisterApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with RegisterApiService
+final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiService
   with DefaultJsonProtocol with SprayJsonSupport {
 
 //  def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   override val registerServiceConstructor:() => RegisterService =
     RegisterService.constructor(app.copy(thurloeDAO = new RegisterApiServiceSpecThurloeDAO))

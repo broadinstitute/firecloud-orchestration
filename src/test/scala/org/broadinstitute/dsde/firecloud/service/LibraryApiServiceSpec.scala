@@ -31,9 +31,10 @@ import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.Duration
 
 
-class LibraryApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach with SprayJsonSupport {
+class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   var consentServer: ClientAndServer = _
 
   lazy val isCuratorPath = "/api/library/user/role/curator"

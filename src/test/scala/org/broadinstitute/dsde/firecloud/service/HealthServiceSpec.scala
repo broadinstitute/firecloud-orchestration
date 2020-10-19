@@ -7,9 +7,11 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.concurrent.ExecutionContext
 
-class HealthServiceSpec(override val executionContext: ExecutionContext) extends ServiceSpec with HealthService {
+class HealthServiceSpec extends ServiceSpec with HealthService {
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   "HealthService" - {
 

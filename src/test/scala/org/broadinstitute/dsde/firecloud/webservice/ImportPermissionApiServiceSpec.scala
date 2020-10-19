@@ -15,9 +15,11 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ImportPermissionApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with UserApiService with SprayJsonSupport {
+class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService with SprayJsonSupport {
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val testApp = app.copy(rawlsDAO = new ImportPermissionMockRawlsDAO)
 

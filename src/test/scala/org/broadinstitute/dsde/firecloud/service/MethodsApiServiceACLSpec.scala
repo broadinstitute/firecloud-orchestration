@@ -16,9 +16,11 @@ import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 import scala.concurrent.ExecutionContext
 
 
-class MethodsApiServiceACLSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with ServiceSpec with MethodsApiService with SprayJsonSupport {
+class MethodsApiServiceACLSpec extends BaseServiceSpec with ServiceSpec with MethodsApiService with SprayJsonSupport {
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val agoraPermissionService: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
 

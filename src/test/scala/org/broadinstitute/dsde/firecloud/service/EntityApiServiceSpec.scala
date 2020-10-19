@@ -18,9 +18,11 @@ import org.broadinstitute.dsde.firecloud.webservice.EntityApiService
 
 import scala.concurrent.ExecutionContext
 
-class EntityApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with EntityApiService with SprayJsonSupport {
+class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with SprayJsonSupport {
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
 
