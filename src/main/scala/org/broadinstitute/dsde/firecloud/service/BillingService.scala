@@ -21,13 +21,6 @@ trait BillingService extends HttpService with PerRequestCreator with FireCloudDi
             passthrough(s"$billingUrl/$projectId/members", GET)
           }
         } ~
-          path("googleRole" / Segment / Segment) { (googleRole, email) =>
-            (delete | put) {
-              extract(_.request.method) { method =>
-                passthrough(s"$billingUrl/$projectId/googleRole/$googleRole/$email", method)
-              }
-            }
-          } ~
         // workbench project role: owner or user
         path(Segment / Segment) { (workbenchRole, email) =>
           (delete | put) {
