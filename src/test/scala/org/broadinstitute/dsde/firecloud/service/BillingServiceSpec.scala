@@ -59,6 +59,7 @@ final class BillingServiceSpec extends ServiceSpec with BillingService {
 
     "list project members" in {
       Get("/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
+        println(request.getPath)
         status should be(OK)
       }
     }

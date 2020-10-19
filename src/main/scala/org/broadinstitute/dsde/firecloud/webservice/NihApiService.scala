@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, NihService}
+import org.broadinstitute.dsde.firecloud.service.NihService
 import org.broadinstitute.dsde.firecloud.utils.{DateUtils, StandardUserInfoDirectives}
 import org.slf4j.LoggerFactory
 import pdi.jwt.{Jwt, JwtAlgorithm}

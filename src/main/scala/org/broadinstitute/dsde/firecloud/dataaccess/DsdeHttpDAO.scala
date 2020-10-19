@@ -1,18 +1,18 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.{Http, HttpExt}
-import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse, ResponseEntity}
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse, ResponseEntity}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtils, HttpClientUtilsGzip, HttpClientUtilsStandard}
+import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtils, HttpClientUtilsStandard}
 import org.broadinstitute.dsde.rawls.RawlsExceptionWithErrorReport
-import scala.concurrent.ExecutionContext.Implicits.global
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 /**
   * Created by dvoet on 9/2/15.
@@ -20,7 +20,6 @@ import scala.concurrent.{ExecutionContext, Future}
 trait DsdeHttpDAO extends LazyLogging {
   protected implicit val system: ActorSystem
   protected implicit val materializer: Materializer
-//  protected implicit val executionContext: ExecutionContext
 
   val http = Http(system)
   val httpClientUtils:HttpClientUtils = HttpClientUtilsStandard()
@@ -44,6 +43,7 @@ trait DsdeHttpDAO extends LazyLogging {
     httpClientUtils.executeRequest(http, httpClientUtils.addHeader(httpRequest, authHeader(accessToken)))
   }
 
+  //todo: rename this, the name makes no sense. try executeRequestFromRequestContext or something
   protected def executeRequestRawWithoutToken[T](httpRequest: HttpRequest)(implicit um: Unmarshaller[ResponseEntity, T]): Future[HttpResponse] = {
     httpClientUtils.executeRequest(http, httpRequest)
   }

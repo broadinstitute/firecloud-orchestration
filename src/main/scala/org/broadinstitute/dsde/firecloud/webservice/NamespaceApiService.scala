@@ -2,13 +2,12 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.server.{Directives, Route}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
-import org.broadinstitute.dsde.firecloud.model.{ModelJsonProtocol, UserInfo}
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, NamespaceService}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.service.NamespaceService
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.json.DefaultJsonProtocol._
-import spray.json._
 
 import scala.concurrent.ExecutionContext
 
