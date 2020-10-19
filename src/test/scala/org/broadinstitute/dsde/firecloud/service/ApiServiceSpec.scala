@@ -25,29 +25,29 @@ trait ApiServiceSpec extends FlatSpec with Matchers with ScalatestRouteTest with
   // intermittent failures occur on requests not completing in time
   implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
 
-//  def actorRefFactory = system
+  def actorRefFactory = system
 
-//  trait ApiServices extends NihApiService {
-//    val agoraDao: MockAgoraDAO
-//    val googleDao: MockGoogleServicesDAO
-//    val ontologyDao: MockOntologyDAO
-//    val consentDao: MockConsentDAO
-//    val rawlsDao: MockRawlsDAO
-//    val samDao: MockSamDAO
-//    val searchDao: MockSearchDAO
-//    val researchPurposeSupport: MockResearchPurposeSupport
-//    val thurloeDao: MockThurloeDAO
-//    val logitDao: LogitDAO
-//    val shareLogDao: MockShareLogDAO
-//    val importServiceDao: ImportServiceDAO
-//
-//    def actorRefFactory = system
-//
-//    val nihServiceConstructor = NihService.constructor(
-//      new Application(agoraDao, googleDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, logitDao, shareLogDao, importServiceDao)
-//    )_
-//
-//  }
+  trait ApiServices extends NihApiService {
+    val agoraDao: MockAgoraDAO
+    val googleDao: MockGoogleServicesDAO
+    val ontologyDao: MockOntologyDAO
+    val consentDao: MockConsentDAO
+    val rawlsDao: MockRawlsDAO
+    val samDao: MockSamDAO
+    val searchDao: MockSearchDAO
+    val researchPurposeSupport: MockResearchPurposeSupport
+    val thurloeDao: MockThurloeDAO
+    val logitDao: LogitDAO
+    val shareLogDao: MockShareLogDAO
+    val importServiceDao: ImportServiceDAO
+
+    def actorRefFactory = system
+
+    val nihServiceConstructor = NihService.constructor(
+      new Application(agoraDao, googleDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, logitDao, shareLogDao, importServiceDao)
+    )_
+
+  }
 
   // lifted from rawls. prefer this to using theSameElementsAs directly, because its functionality depends on whitespace
   def assertSameElements[T](expected: TraversableOnce[T], actual: TraversableOnce[T]): Unit = {
@@ -56,21 +56,21 @@ trait ApiServiceSpec extends FlatSpec with Matchers with ScalatestRouteTest with
 
 }
 
-trait ApiServices extends RegisterApiService with NihApiService with ManagedGroupApiService {
-
-  val app = new Application()
-
-  override val samDAO = new MockSamDAO
-
-//  def actorRefFactory = system
-//  override implicit val materializer = ActorMaterializer()
-
-//  override val httpClientUtils = HttpClientUtilsStandard()
-
-  override val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
-  override val nihServiceConstructor: () => NihService = NihService.constructor(app)
-  //  override val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
-  //  override val trialServiceConstructor: () => TrialService = TrialService.constructor(app)
-  override val managedGroupServiceConstructor: WithAccessToken => ManagedGroupService = ManagedGroupService.constructor(app)
-
-}
+//trait ApiServices extends RegisterApiService with NihApiService with ManagedGroupApiService {
+//
+//  val app = new Application()
+//
+//  override val samDAO = new MockSamDAO
+//
+////  def actorRefFactory = system
+////  override implicit val materializer = ActorMaterializer()
+//
+////  override val httpClientUtils = HttpClientUtilsStandard()
+//
+//  override val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
+//  override val nihServiceConstructor: () => NihService = NihService.constructor(app)
+//  //  override val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
+//  //  override val trialServiceConstructor: () => TrialService = TrialService.constructor(app)
+//  override val managedGroupServiceConstructor: WithAccessToken => ManagedGroupService = ManagedGroupService.constructor(app)
+//
+//}

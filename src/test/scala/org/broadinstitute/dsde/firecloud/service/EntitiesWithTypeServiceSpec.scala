@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model._
@@ -15,9 +15,13 @@ import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.webservice.EntityApiService
 
-class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityApiService with SprayJsonSupport {
+import scala.concurrent.ExecutionContext
+
+class EntitiesWithTypeServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with EntityApiService with SprayJsonSupport {
 
   def actorRefFactory = system
+
+  val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
 
   // Due to the large volume of service specific test cases, generate them here to prevent the
   // extra clutter
@@ -118,5 +122,4 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityApiService 
     }
 
   }
-
 }

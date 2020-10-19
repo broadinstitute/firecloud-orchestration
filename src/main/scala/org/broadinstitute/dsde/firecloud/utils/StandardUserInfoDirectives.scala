@@ -10,16 +10,8 @@ import org.broadinstitute.dsde.firecloud.model.UserInfo
 import scala.concurrent.{ExecutionContext, Future}
 
 trait StandardUserInfoDirectives extends UserInfoDirectives {
-  implicit val executionContext: ExecutionContext
-  val samDAO: SamDAO
 
-  val serviceAccountDomain = "\\S+@\\S+\\.iam\\.gserviceaccount\\.com".r
-
-  private def isServiceAccount(email: String) = {
-    serviceAccountDomain.pattern.matcher(email).matches
-  }
-
-  override def requireUserInfo: Directive1[UserInfo] = (
+  def requireUserInfo: Directive1[UserInfo] = (
     headerValueByName("OIDC_access_token") &
       headerValueByName("OIDC_CLAIM_user_id") &
       headerValueByName("OIDC_CLAIM_expires_in") &
@@ -27,19 +19,8 @@ trait StandardUserInfoDirectives extends UserInfoDirectives {
     ) tflatMap {
     case (token, userId, expiresIn, email) => {
       val userInfo = UserInfo(email, OAuth2BearerToken(token), expiresIn.toLong, userId)
-      onSuccess(getWorkbenchUserEmailId(userInfo).map {
-        case Some(petOwnerUser) => UserInfo(petOwnerUser.userEmail, OAuth2BearerToken(token), expiresIn.toLong, petOwnerUser.userSubjectId)
-        case None => userInfo
-      })
+      onSuccess(Future.successful(userInfo))
     }
   }
 
-  private def getWorkbenchUserEmailId(userInfo:UserInfo):Future[Option[RegistrationInfoV2]] = {
-    if (isServiceAccount(userInfo.userEmail)) {
-      samDAO.getRegistrationStatusV2(userInfo)
-    }
-    else {
-      Future.successful(None)
-    }
-  }
 }

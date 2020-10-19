@@ -13,9 +13,9 @@ import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes.{InternalServerError, OK}
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService with SprayJsonSupport {
+class ImportPermissionApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with UserApiService with SprayJsonSupport {
 
   def actorRefFactory = system
 

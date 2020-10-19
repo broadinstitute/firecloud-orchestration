@@ -1,10 +1,11 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
-import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
+import akka.stream.Materializer
+//import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.scalatest.FreeSpec
 
-class OntologyAutocompleteSpec extends FreeSpec {
+class OntologyAutocompleteSpec(implicit val materializer: Materializer) extends FreeSpec with ESIntegrationSupport {
 
 
   "Ontology Autocompete" - {

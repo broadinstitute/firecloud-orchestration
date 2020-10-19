@@ -2,35 +2,27 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import java.text.SimpleDateFormat
 
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.server.{RequestContext, Route}
-import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
-import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.firecloud.model._
+import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
+import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PermissionReportService, WorkspaceService}
-import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtilsStandard, StandardUserInfoDirectives}
+import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
+import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
+import org.broadinstitute.dsde.rawls.model._
 import org.slf4j.{Logger, LoggerFactory}
-import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 
-trait WorkspaceApiService extends FireCloudRequestBuilding
-  with FireCloudDirectives with StandardUserInfoDirectives with DsdeHttpDAO {
+trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
   implicit val executionContext: ExecutionContext
-
-  override val http = Http(system)
-  override val httpClientUtils = HttpClientUtilsStandard()
 
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
 

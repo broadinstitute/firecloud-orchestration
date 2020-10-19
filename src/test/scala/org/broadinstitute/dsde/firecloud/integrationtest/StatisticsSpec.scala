@@ -1,14 +1,15 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
+import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
+//import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.Document
 import org.broadinstitute.dsde.firecloud.model.Metrics.NumSubjects
 import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeNumber, AttributeString}
 import org.scalatest.{BeforeAndAfterEach, FreeSpec, Matchers}
 
-class StatisticsSpec extends FreeSpec with Matchers with BeforeAndAfterEach with LazyLogging {
+class StatisticsSpec(implicit val materializer: Materializer) extends FreeSpec with Matchers with BeforeAndAfterEach with LazyLogging with ESIntegrationSupport{
 
   /* Conf file contains one or more workspace namespaces, referenced via FireCloudConfig.Metrics.libraryNamespaces.
      We filter Library datasets to just those namespaces when calculating metrics.

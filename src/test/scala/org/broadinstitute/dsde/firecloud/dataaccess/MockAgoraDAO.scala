@@ -33,4 +33,9 @@ class MockAgoraDAO extends AgoraDAO {
     Future(SubsystemStatus(ok = true, None))
   }
 
+  override def batchCreatePermissions(inputs: List[EntityAccessControlAgora])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]] = ???
+
+  override def getPermission(url: String)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = ???
+
+  override def createPermission(url: String, agoraPermissions: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = ???
 }

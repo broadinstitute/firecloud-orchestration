@@ -9,10 +9,10 @@ import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import spray.json.DefaultJsonProtocol
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiService
+final class RegisterApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with RegisterApiService
   with DefaultJsonProtocol with SprayJsonSupport {
 
 //  def actorRefFactory = system

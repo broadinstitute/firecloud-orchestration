@@ -17,14 +17,14 @@ import spray.json.DefaultJsonProtocol._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /** Unit tests for workspace tag apis.
   *
   * Remember that the responses from the tag apis are sorted, so the expected values in unit
   * tests may look funny - it's the sorting.
   */
-class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
+class WorkspaceTagsServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
 

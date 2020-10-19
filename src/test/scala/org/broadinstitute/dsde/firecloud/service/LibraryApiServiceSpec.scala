@@ -27,11 +27,11 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.Duration
 
 
-class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach with SprayJsonSupport {
+class LibraryApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
   var consentServer: ClientAndServer = _
@@ -110,15 +110,15 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
     val consentError = ConsentError(message = "Unapproved", code = BadRequest.intValue)
     val consentNotFound = ConsentError(message = "Not Found", code = NotFound.intValue)
 
-    val okGet = request().withMethod("GET").withPath(consentPath).withHeader(authHeader(OAuth2BearerToken(dummyToken))).withQueryStringParameter("name", "12345")
+    val okGet = request().withMethod("GET").withPath(consentPath).withHeader("Authorization", "dummyToken").withQueryStringParameter("name", "12345")
     val okResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(OK.intValue).withBody(consent.toJson.prettyPrint)
     consentServer.when(okGet).respond(okResponse)
 
-    val badRequestGet = request().withMethod("GET").withPath(consentPath).withHeader(OAuth2BearerToken(dummyToken)).withQueryStringParameter("name", "unapproved")
+    val badRequestGet = request().withMethod("GET").withPath(consentPath).withHeader("Authorization", "dummyToken").withQueryStringParameter("name", "unapproved")
     val badRequestResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(BadRequest.intValue).withBody(consentError.toJson.prettyPrint)
     consentServer.when(badRequestGet).respond(badRequestResponse)
 
-    val notFoundGet = request().withMethod("GET").withPath(consentPath).withHeader(OAuth2BearerToken(dummyToken)).withQueryStringParameter("name", "missing")
+    val notFoundGet = request().withMethod("GET").withPath(consentPath).withHeader("Authorization", "dummyToken").withQueryStringParameter("name", "missing")
     val notFoundResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(NotFound.intValue).withBody(consentNotFound.toJson.prettyPrint)
     consentServer.when(notFoundGet).respond(notFoundResponse)
   }

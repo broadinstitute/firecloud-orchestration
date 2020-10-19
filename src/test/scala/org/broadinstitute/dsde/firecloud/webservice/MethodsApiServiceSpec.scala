@@ -1,10 +1,11 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethod
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.service.ServiceSpec
+import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, BaseServiceSpec, ServiceSpec}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.mock.action.ExpectationCallback
@@ -15,12 +16,18 @@ import org.mockserver.model.{HttpRequest, HttpResponse}
 import org.scalatest.Matchers
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes._
+import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.utils.HttpClientUtilsGzip
 
-final class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
+import scala.concurrent.ExecutionContext
+
+final class MethodsApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with ServiceSpec with MethodsApiService {
 
   def actorRefFactory:ActorSystem = system
 
   var methodsServer: ClientAndServer = _
+
+  val agoraPermissionService: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
 
   case class Api(localPath: String, verb: HttpMethod, remotePath: String, allowQueryParams: Boolean)
 

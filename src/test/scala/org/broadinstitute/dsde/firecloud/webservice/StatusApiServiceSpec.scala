@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.workbench.util.health.{HealthMonitor, StatusCheck
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.StatusCodes.OK
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 
@@ -16,7 +17,7 @@ import scala.concurrent.duration._
     workbench-libs. Here, we test routing, de/serialization, and the config we send into
     the HealthMonitor.
  */
-class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with SprayJsonSupport {
+class StatusApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with StatusApiService with SprayJsonSupport {
 
   def actorRefFactory = system
 

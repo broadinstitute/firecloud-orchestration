@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.Application
@@ -10,6 +11,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.rawls.model.MethodRepoMethod
+import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -59,9 +61,7 @@ object AgoraPermissionService {
 
 }
 
-class AgoraPermissionService(userInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit val executionContext: ExecutionContext) extends LazyLogging {
-
-  import spray.json.DefaultJsonProtocol._
+class AgoraPermissionService(userInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit val executionContext: ExecutionContext) extends LazyLogging with SprayJsonSupport {
 
   def GetAgoraPermission(url: String): Future[PerRequestMessage] = getAgoraPermission(url, userInfo)
   def CreateAgoraPermission(url: String, agoraPermissions: List[AgoraPermission]): Future[PerRequestMessage] = createAgoraPermission(url, agoraPermissions, userInfo)

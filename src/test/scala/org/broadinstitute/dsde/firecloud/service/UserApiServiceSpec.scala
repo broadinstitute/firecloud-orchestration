@@ -17,12 +17,10 @@ import spray.json.DefaultJsonProtocol._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.Duration
 
-class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService with SprayJsonSupport {
-
-//  def actorRefFactory = system
+class UserApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with RegisterApiService with UserApiService with SprayJsonSupport {
 
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app)

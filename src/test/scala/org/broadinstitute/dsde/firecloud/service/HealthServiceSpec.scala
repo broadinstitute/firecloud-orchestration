@@ -5,7 +5,9 @@ import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-class HealthServiceSpec extends ServiceSpec with HealthService {
+import scala.concurrent.ExecutionContext
+
+class HealthServiceSpec(override val executionContext: ExecutionContext) extends ServiceSpec with HealthService {
 
   def actorRefFactory = system
 

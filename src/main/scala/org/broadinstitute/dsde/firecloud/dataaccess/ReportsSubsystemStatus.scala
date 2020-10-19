@@ -18,13 +18,11 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 trait ReportsSubsystemStatus extends SprayJsonSupport {
 
-  implicit val materializer: Materializer
-
   def status: Future[SubsystemStatus]
 
   def serviceName: String
 
-  def getStatusFromDropwizardChecks(response: Future[HttpResponse])(implicit ec: ExecutionContext): Future[SubsystemStatus] = {
+  def getStatusFromDropwizardChecks(response: Future[HttpResponse])(implicit ec: ExecutionContext, materializer: Materializer): Future[SubsystemStatus] = {
     response flatMap { resp =>
       Unmarshal(resp).to[Map[String, DropwizardHealth]].map { dwStatus =>
         val ok = dwStatus.values.forall(_.healthy)

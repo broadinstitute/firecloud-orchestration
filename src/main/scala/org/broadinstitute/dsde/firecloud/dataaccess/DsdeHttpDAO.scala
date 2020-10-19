@@ -1,15 +1,16 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.HttpExt
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse, ResponseEntity}
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.firecloud.utils.HttpClientUtils
+import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtils, HttpClientUtilsGzip, HttpClientUtilsStandard}
 import org.broadinstitute.dsde.rawls.RawlsExceptionWithErrorReport
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -19,10 +20,10 @@ import scala.concurrent.{ExecutionContext, Future}
 trait DsdeHttpDAO extends LazyLogging {
   protected implicit val system: ActorSystem
   protected implicit val materializer: Materializer
-  protected implicit val executionContext: ExecutionContext
+//  protected implicit val executionContext: ExecutionContext
 
-  protected def http: HttpExt
-  protected def httpClientUtils: HttpClientUtils
+  val http = Http(system)
+  val httpClientUtils:HttpClientUtils = HttpClientUtilsStandard()
 
   protected def authHeader(userInfo: UserInfo): HttpHeader = authHeader(userInfo.accessToken)
   protected def authHeader(accessToken: OAuth2BearerToken): HttpHeader = Authorization(accessToken)

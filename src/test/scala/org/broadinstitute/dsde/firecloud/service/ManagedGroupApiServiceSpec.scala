@@ -18,7 +18,7 @@ import scala.concurrent.ExecutionContext
 /**
   * Created by mbemis on 4/2/18.
   */
-class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiService {
+class ManagedGroupApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with ManagedGroupApiService {
 
   def actorRefFactory = system
 

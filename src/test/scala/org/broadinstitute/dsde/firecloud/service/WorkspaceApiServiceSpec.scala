@@ -30,6 +30,8 @@ import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
 
+import scala.concurrent.ExecutionContext
+
 object WorkspaceApiServiceSpec {
 
   val publishedWorkspace = WorkspaceDetails(
@@ -50,7 +52,7 @@ object WorkspaceApiServiceSpec {
 
 }
 
-class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
+class WorkspaceApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
 
@@ -232,7 +234,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsServiceWithError(method: HttpMethod, path: String, status: StatusCode) = {
     rawlsServer.reset()
     rawlsServer
-      .when(request().withMethod(method.name).withPath(path).withHeader(authHeader))
+      .when(request().withMethod(method.name).withPath(path).withHeader("Authorization", "dummyToken"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)

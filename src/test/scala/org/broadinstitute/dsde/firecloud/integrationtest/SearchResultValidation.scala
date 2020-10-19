@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
 import org.broadinstitute.dsde.firecloud.dataaccess.{ElasticSearchDAO, MockResearchPurposeSupport}
-import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
+//import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurpose
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
@@ -14,7 +14,7 @@ import spray.json.DefaultJsonProtocol._
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, MINUTES}
 
-trait SearchResultValidation {
+trait SearchResultValidation extends ESIntegrationSupport {
 
   val dur = Duration(2, MINUTES)
 

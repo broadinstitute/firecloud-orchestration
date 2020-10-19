@@ -17,11 +17,12 @@ import akka.http.scaladsl.model.headers.{Connection, `Content-Disposition`}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.unmarshalling.Unmarshal
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 //TODO: re-enable all of these once ExportEntitiesByTypeService is fully re-implemented
 
-class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService {
+class ExportEntitiesByTypeServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService {
 
 //  override val storageServiceConstructor: UserInfo => StorageService = StorageService.constructor(app)
 //
@@ -31,8 +32,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 //  def actorRefFactory: ActorSystem = system
 //
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, ActorMaterializer())
+  val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
 
-//
+  //
 //  val largeFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/large/entities/sample/tsv"
 //  val largeFireCloudEntitiesSampleSetTSVPath = "/api/workspaces/broad-dsde-dev/largeSampleSet/entities/sample_set/tsv"
 //  val validFireCloudEntitiesSampleSetTSVPath = "/api/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv"
