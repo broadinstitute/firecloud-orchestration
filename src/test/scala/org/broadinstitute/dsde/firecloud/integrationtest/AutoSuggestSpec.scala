@@ -1,15 +1,16 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
+import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOQuerySupport
-import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
+//import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Ignore, Matchers}
 import spray.json.{JsObject, JsString}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, MINUTES}
 
-class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with ElasticSearchDAOQuerySupport {
+class AutoSuggestSpec(implicit val materializer: Materializer) extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with ElasticSearchDAOQuerySupport with ESIntegrationSupport {
 
   override def beforeAll = {
     // use re-create here, since instantiating the DAO will create it in the first place

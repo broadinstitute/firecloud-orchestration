@@ -307,9 +307,7 @@ object MockTSVLoadFiles {
 
 object MockTSVFormData {
   private def wrapInMultipart( fieldName: String, data: String ): Multipart.FormData = {
-    Multipart.FormData( Seq( BodyPart( HttpEntity( ContentType(MediaType.text("plain"), HttpCharsets.`UTF-8`),
-      data),
-      fieldName)):_*)
+    Multipart.FormData(Seq(BodyPart(data, fieldName)):_*)
   }
 
   val missingTSVType = wrapInMultipart("entities", MockTSVStrings.missingTSVType)

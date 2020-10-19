@@ -2,9 +2,10 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import java.text.SimpleDateFormat
 
+import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.service._
 
 import scala.concurrent.ExecutionContext
@@ -16,7 +17,7 @@ object BuildTimeVersion {
   val versionJson = JsObject(Map("version" -> JsString(version.getOrElse("n/a"))))
 }
 
-trait StatusApiService extends FireCloudDirectives with SprayJsonSupport {
+trait StatusApiService extends Directives with RequestBuilding with SprayJsonSupport {
 
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   implicit val executionContext: ExecutionContext

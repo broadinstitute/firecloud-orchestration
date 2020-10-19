@@ -10,7 +10,9 @@ import akka.http.scaladsl.model.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
+import scala.concurrent.ExecutionContext
+
+class NamespaceApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with NamespaceApiService {
 
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
 

@@ -10,12 +10,17 @@ import spray.json._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impFireCloudPermission
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 
+import scala.concurrent.ExecutionContext
 
-class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService with SprayJsonSupport {
+
+class MethodsApiServiceACLSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with ServiceSpec with MethodsApiService with SprayJsonSupport {
 
   def actorRefFactory = system
+
+  val agoraPermissionService: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
 
   override def beforeAll(): Unit = {
     MockAgoraACLServer.startACLServer()

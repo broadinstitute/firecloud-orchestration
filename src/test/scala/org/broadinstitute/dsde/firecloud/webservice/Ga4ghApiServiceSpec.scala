@@ -10,7 +10,9 @@ import org.scalatest.BeforeAndAfterEach
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes._
 
-class Ga4ghApiServiceSpec extends BaseServiceSpec with Ga4ghApiService with BeforeAndAfterEach {
+import scala.concurrent.ExecutionContext
+
+class Ga4ghApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with Ga4ghApiService with BeforeAndAfterEach {
 
   def actorRefFactory: ActorSystem = system
 

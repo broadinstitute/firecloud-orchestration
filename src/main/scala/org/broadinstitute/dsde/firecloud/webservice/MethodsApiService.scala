@@ -1,14 +1,18 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.{HttpMethods, Uri}
+import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, FireCloudDirectives}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
+import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.json.DefaultJsonProtocol._
+
+import scala.concurrent.ExecutionContext
 
 trait MethodsApiServiceUrls {
   val remoteMethodsPath = FireCloudConfig.Agora.authPrefix + "/methods"
@@ -21,7 +25,9 @@ trait MethodsApiServiceUrls {
   val localConfigsPath = "configurations"
 }
 
-trait MethodsApiService extends FireCloudDirectives with MethodsApiServiceUrls with StandardUserInfoDirectives {
+trait MethodsApiService extends MethodsApiServiceUrls with FireCloudDirectives with StandardUserInfoDirectives {
+
+  implicit val executionContext: ExecutionContext
 
   val agoraPermissionService: UserInfo => AgoraPermissionService
 

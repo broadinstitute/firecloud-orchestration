@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.Actor
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Route
@@ -11,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.slf4j.LoggerFactory
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object MethodConfigurationService {
   val remoteTemplatePath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/template"
@@ -42,7 +42,7 @@ object MethodConfigurationService {
 
 }
 
-trait MethodConfigurationService extends FireCloudDirectives with SprayJsonSupport with DsdeHttpDAO with StandardUserInfoDirectives {
+trait MethodConfigurationService extends FireCloudDirectives with SprayJsonSupport with StandardUserInfoDirectives {
 
   private final val ApiPrefix = "workspaces"
   lazy val log = LoggerFactory.getLogger(getClass)

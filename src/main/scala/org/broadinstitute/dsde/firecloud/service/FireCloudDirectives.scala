@@ -1,12 +1,10 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.http.scaladsl.model.headers.`Content-Type`
-import org.parboiled.common.FileUtils
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader, HttpMethod, HttpResponse, MediaType, Uri}
-import akka.http.scaladsl.server.RouteResult.Complete
+import akka.http.scaladsl.model.{HttpMethod, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
+import org.parboiled.common.FileUtils
 
 import scala.util.Try
 

@@ -11,7 +11,9 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import spray.json.DefaultJsonProtocol._
 
-final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiService {
+import scala.concurrent.ExecutionContext
+
+final class ShareLogApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with ShareLogApiService {
   final val sharingUser = UserInfo("fake1@gmail.com", OAuth2BearerToken(dummyToken), 3600L, "fake1")
 
   private def getUserHeaders(userId: String, email: String) = dummyUserIdHeaders(userId, dummyToken, email)
@@ -23,9 +25,7 @@ final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiServi
   val localShareLogDao = new ShareLogApiServiceSpecShareLogDAO
 
   override val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app.copy(shareLogDAO = localShareLogDao))
-
-  override def actorRefFactory: ActorRefFactory = system
-
+  
   "ShareLogApiService" - {
     "when getting all sharees" in {
       Get(getShareesPath)  ~> getUserHeaders("fake1", "fake1@gmail.com") ~> sealRoute(shareLogServiceRoutes) ~> check {
