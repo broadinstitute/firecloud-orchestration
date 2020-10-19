@@ -1,14 +1,12 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
+import akka.http.scaladsl.model.{HttpMethods, Uri}
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
-import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
-import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, FireCloudDirectives, FireCloudRequestBuilding}
+import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, FireCloudDirectives}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.json.DefaultJsonProtocol._
 
