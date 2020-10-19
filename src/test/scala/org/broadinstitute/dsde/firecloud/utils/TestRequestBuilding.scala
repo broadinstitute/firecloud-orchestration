@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.headers.{Cookie, HttpCookie, OAuth2BearerToken, RawHeader}
+import akka.http.scaladsl.model.headers.{Cookie, OAuth2BearerToken, RawHeader}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 
 trait TestRequestBuilding extends FireCloudRequestBuilding {

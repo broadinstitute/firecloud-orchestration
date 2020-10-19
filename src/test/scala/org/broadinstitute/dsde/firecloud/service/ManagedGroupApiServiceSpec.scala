@@ -1,17 +1,9 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.mock.{MockGoogleServicesDAO, MockUtils}
-import org.broadinstitute.dsde.firecloud.mock.MockUtils.samServerPort
-import org.broadinstitute.dsde.firecloud.model.{ManagedGroupRoles, WithAccessToken}
-import org.broadinstitute.dsde.firecloud.webservice.ManagedGroupApiService
-import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
-import org.mockserver.integration.ClientAndServer
-import org.mockserver.integration.ClientAndServer.startClientAndServer
-import org.mockserver.model.HttpRequest.request
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.model.StatusCodes.{Created, NoContent, OK}
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockAgoraDAO, MockConsentDAO, MockLogitDAO, MockOntologyDAO, MockRawlsDAO, MockResearchPurposeSupport, MockSamDAO, MockSearchDAO, MockShareLogDAO, MockThurloeDAO}
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.model.WithAccessToken
+import org.broadinstitute.dsde.firecloud.webservice.ManagedGroupApiService
 
 import scala.concurrent.ExecutionContext
 
