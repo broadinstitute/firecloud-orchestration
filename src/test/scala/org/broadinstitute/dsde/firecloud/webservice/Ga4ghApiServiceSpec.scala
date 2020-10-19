@@ -12,9 +12,11 @@ import akka.http.scaladsl.model.StatusCodes._
 
 import scala.concurrent.ExecutionContext
 
-class Ga4ghApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with Ga4ghApiService with BeforeAndAfterEach {
+class Ga4ghApiServiceSpec extends BaseServiceSpec with Ga4ghApiService with BeforeAndAfterEach {
 
   def actorRefFactory: ActorSystem = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   var toolRegistryServer: ClientAndServer = _
   val toolPaths = List(

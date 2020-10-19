@@ -22,7 +22,9 @@ import scala.concurrent.duration._
 
 //TODO: re-enable all of these once ExportEntitiesByTypeService is fully re-implemented
 
-class ExportEntitiesByTypeServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService {
+class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
 //  override val storageServiceConstructor: UserInfo => StorageService = StorageService.constructor(app)
 //

@@ -20,7 +20,9 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.Duration
 
-class UserApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with RegisterApiService with UserApiService with SprayJsonSupport {
+class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService with SprayJsonSupport {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app)

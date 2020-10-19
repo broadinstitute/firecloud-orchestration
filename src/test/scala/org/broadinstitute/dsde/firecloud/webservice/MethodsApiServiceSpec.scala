@@ -21,9 +21,11 @@ import org.broadinstitute.dsde.firecloud.utils.HttpClientUtilsGzip
 
 import scala.concurrent.ExecutionContext
 
-final class MethodsApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with ServiceSpec with MethodsApiService {
+final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with MethodsApiService {
 
   def actorRefFactory:ActorSystem = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   var methodsServer: ClientAndServer = _
 

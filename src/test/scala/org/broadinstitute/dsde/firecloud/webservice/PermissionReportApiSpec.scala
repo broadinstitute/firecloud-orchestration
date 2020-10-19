@@ -17,11 +17,13 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class PermissionReportApiSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
+class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   import PermissionReportMockMethods._
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val testApp = app.copy(agoraDAO=new PermissionReportMockAgoraDAO(), rawlsDAO=new PermissionReportMockRawlsDAO())
 

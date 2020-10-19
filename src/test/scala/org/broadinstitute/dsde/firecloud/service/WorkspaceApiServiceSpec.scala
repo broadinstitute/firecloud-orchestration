@@ -52,9 +52,11 @@ object WorkspaceApiServiceSpec {
 
 }
 
-class WorkspaceApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
+class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val workspace = WorkspaceDetails(
     "namespace",

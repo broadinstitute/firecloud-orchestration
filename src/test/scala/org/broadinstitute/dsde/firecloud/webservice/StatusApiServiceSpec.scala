@@ -17,9 +17,11 @@ import scala.concurrent.duration._
     workbench-libs. Here, we test routing, de/serialization, and the config we send into
     the HealthMonitor.
  */
-class StatusApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with StatusApiService with SprayJsonSupport {
+class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with SprayJsonSupport {
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val healthMonitorChecks = new HealthChecks(app).healthMonitorChecks
   val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")

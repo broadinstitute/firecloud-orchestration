@@ -12,11 +12,13 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.concurrent.ExecutionContext
 
-class NamespaceApiServiceSpec(override val executionContext: ExecutionContext) extends BaseServiceSpec with NamespaceApiService {
+class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
 
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val urls = List("/api/methods/namespace/permissions", "/api/configurations/namespace/permissions")
 
