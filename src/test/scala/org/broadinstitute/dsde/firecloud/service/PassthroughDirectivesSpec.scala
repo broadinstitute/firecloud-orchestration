@@ -20,8 +20,6 @@ object PassthroughDirectivesSpec {
 
 final class PassthroughDirectivesSpec extends BaseServiceSpec with FireCloudDirectives with SprayJsonSupport {
 
-  def actorRefFactory = system
-
   var echoServer: ClientAndServer = _
 
   override def beforeAll = {

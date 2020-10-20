@@ -46,6 +46,7 @@ trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpD
     if (inMethod.isEntityAccepted) {
       method(inMethod) { requestContext =>
 
+        //TODO: these don't fully work yet (I'm certain)
         requestContext.complete(executeRequestRawWithoutToken(outMethod))
 
 //        externalHttpPerRequest(requestContext, outMethod(uri, requestContext.request.entity))
@@ -54,7 +55,7 @@ trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpD
     else {
       // GET, DELETE
       method(inMethod) { requestContext =>
-        requestContext.complete(executeRequestRawWithoutToken(requestContext.request))
+        requestContext.complete(executeRequestRawWithoutToken(outMethod))
 //        externalHttpPerRequest(requestContext, outMethod(uri))
       }
     }
