@@ -10,7 +10,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-final class BillingServiceSpec extends ServiceSpec with BillingService {
+final class BillingServiceSpec extends BaseServiceSpec with BillingService {
   def actorRefFactory = system
   var workspaceServer: ClientAndServer = _
 
@@ -53,13 +53,13 @@ final class BillingServiceSpec extends ServiceSpec with BillingService {
   "BillingService" - {
     "create project" in {
       Post("/billing") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
+        println(request())
         status should be(Created)
       }
     }
 
     "list project members" in {
       Get("/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
-        println(request.getPath)
         status should be(OK)
       }
     }
