@@ -7,6 +7,7 @@ import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, RegisterServi
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, NoContent}
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.FireCloudApiService
 import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -14,8 +15,6 @@ import scala.util.Success
 
 final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiService
   with DefaultJsonProtocol with SprayJsonSupport {
-
-//  def actorRefFactory = system
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
