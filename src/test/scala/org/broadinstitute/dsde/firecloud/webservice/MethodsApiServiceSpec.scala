@@ -105,7 +105,7 @@ final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with 
 
           val queryParamMsg = if (api.allowQueryParams) "allow" else "omit"
 
-          assertResult(api.verb.toString, "unexpected http verb in passthrough") {
+          assertResult(api.verb.value, "unexpected http verb in passthrough") {
             passthroughResult(0)
           }
           assertResult(api.remotePath, "unexpected uri path in passthrough") {
