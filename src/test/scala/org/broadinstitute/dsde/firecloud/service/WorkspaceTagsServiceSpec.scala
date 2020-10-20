@@ -27,8 +27,6 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   */
 class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
 
-  def actorRefFactory = system
-
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   // Mock remote endpoints
