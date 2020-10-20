@@ -45,6 +45,7 @@ trait DsdeHttpDAO extends LazyLogging {
 
   //todo: rename this, the name makes no sense. try executeRequestFromRequestContext or something
   protected def executeRequestRawWithoutToken[T](httpRequest: HttpRequest)(implicit um: Unmarshaller[ResponseEntity, T]): Future[HttpResponse] = {
+    println(httpRequest)
     httpClientUtils.executeRequest(http, httpRequest)
   }
 
