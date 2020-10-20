@@ -3,16 +3,37 @@ package org.broadinstitute.dsde.firecloud
 import akka.actor.{ActorRefFactory, ActorSystem}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server
+import akka.http.scaladsl.server.ExceptionHandler
 import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.dataaccess.SamDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.webservice._
+import akka.http.scaladsl.server.Directives._
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext
 import scala.language.postfixOps
+
+object FireCloudApiService {
+  val exceptionHandler = {
+
+    import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
+
+    implicit val errorReportSource = ErrorReportSource("FireCloud") //TODO make sure this doesn't clobber actual soures
+
+    ExceptionHandler {
+      case withErrorReport: FireCloudExceptionWithErrorReport =>
+        complete(withErrorReport.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError) -> withErrorReport.errorReport)
+      case e: Throwable =>
+        complete(StatusCodes.InternalServerError -> ErrorReport(e))
+    }
+  }
+}
 
 trait FireCloudApiService extends CookieAuthedApiService
   with EntityApiService
@@ -129,7 +150,7 @@ trait FireCloudApiService extends CookieAuthedApiService
           staticNotebooksRoutes
       }
 
-  def route: server.Route = (logRequests /* & appendTimestampOnFailure*/ ) {
+  def route: server.Route = (logRequests & handleExceptions(FireCloudApiService.exceptionHandler)/* & appendTimestampOnFailure*/ ) {
     cromIamEngineRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~

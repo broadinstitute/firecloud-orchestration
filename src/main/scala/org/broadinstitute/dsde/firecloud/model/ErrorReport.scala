@@ -21,6 +21,7 @@ object ErrorReportExtensions {
 //        case Failure(re) => (re.getMessage, Seq(re))
 //        case Success(err) => (response.entity.toString, Seq.empty)
 //      }
+
       new ErrorReport(ers.source, "TODO", Option(response.status), Seq.empty, Seq.empty, None)
     }
   }
