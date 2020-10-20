@@ -30,7 +30,9 @@ import spray.json._
 import spray.json.DefaultJsonProtocol._
 import javax.net.ssl.HttpsURLConnection
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 object WorkspaceApiServiceSpec {
 
@@ -710,6 +712,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
+            println(Await.result(response.entity.toStrict(1.minute).map(_.data.utf8String), Duration.Inf))
             errorReportCheck("FireCloud", BadRequest)
           }
         }

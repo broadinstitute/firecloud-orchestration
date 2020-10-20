@@ -41,14 +41,14 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
         assertPreferencesUpdate(payload, NoContent)
       }
 
-      "should refuse with a single non-whitelisted key" in {
+      "should refuse with a single disallowed key" in {
         val payload = Map(
           "abadkey" -> "astring"
         )
         assertPreferencesUpdate(payload, BadRequest)
       }
 
-      "should refuse with mixed notifications and non-whitelisted keys" in {
+      "should refuse with mixed notifications and disallowed keys" in {
         val payload = Map(
           "notifications/foo" -> "yes",
           "notifications/bar" ->  "no",

@@ -28,7 +28,6 @@ trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpD
 //  }
 
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
-    println(unencodedPath)
     passthrough(Uri(unencodedPath), methods: _*)
   }
 

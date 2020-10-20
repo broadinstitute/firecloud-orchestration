@@ -53,7 +53,6 @@ final class BillingServiceSpec extends BaseServiceSpec with BillingService {
   "BillingService" - {
     "create project" in {
       Post("/billing") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
-        println(request())
         status should be(Created)
       }
     }
