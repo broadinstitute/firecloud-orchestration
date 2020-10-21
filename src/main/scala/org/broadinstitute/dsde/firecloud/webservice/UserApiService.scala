@@ -199,6 +199,8 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
       case OK =>
         Unmarshal(response).to[RegistrationInfoV2].flatMap { regInfo =>
           handleOkResponse(regInfo, requestContext, version1)
+        } recoverWith {
+          case error: Throwable => respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
         }
       case x =>
         // if we get any other error from Sam, pass that error on
