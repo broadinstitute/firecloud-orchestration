@@ -65,7 +65,7 @@ trait CromIamApiService extends FireCloudRequestBuilding with FireCloudDirective
             }
           }
         } ~
-        path("backend" / "metadata" / Segment.repeat(1, Slash)) { operationId =>
+        path("backend" / "metadata" / Segment.repeat(0,1024, Slash)) { operationId =>
           get {
             passthrough(s"$rawlsWorkflowRoot/$workflowId/genomics/${operationId.mkString("/")}", HttpMethods.GET)
           }
