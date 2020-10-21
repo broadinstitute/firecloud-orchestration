@@ -32,8 +32,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializer, implicit val executionContext: ExecutionContext )
   extends SamDAO with RestJsonClient with SprayJsonSupport {
 
-  override val http = Http(system)
-
   override def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]] = {
     authedRequestToObject[Seq[UserPolicy]](Get(samListResources("workspace")), label=Some("HttpSamDAO.listWorkspaceResources"))
   }
@@ -128,10 +126,9 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
     }
   }
 
-  //TODO: do I really need to break out the singleRequest for this?
   override def status: Future[SubsystemStatus] = {
     for {
-      response <- http.singleRequest(Get(samStatusUrl))
+      response <- unAuthedRequest(Get(samStatusUrl))
       ok = response.status.isSuccess
       message <- if (ok) Future.successful(None) else Unmarshal(response.entity).to[String].map(Option(_))
     } yield {
