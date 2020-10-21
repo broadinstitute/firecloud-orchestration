@@ -169,7 +169,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None, requestBody: Option[String] = None): Unit = {
     rawlsServer.reset()
     val request = org.mockserver.model.HttpRequest.request()
-      .withHeader("authorization", "Bearer .*")
       .withMethod(method.name)
       .withPath(path)
     if (query.isDefined) request.withQueryStringParameter(query.get._1, query.get._2)
@@ -226,7 +225,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsServiceWithError(method: HttpMethod, path: String, status: StatusCode) = {
     rawlsServer.reset()
     rawlsServer
-      .when(request().withMethod(method.name).withPath(path).withHeader("Authorization", "dummyToken"))
+      .when(request().withMethod(method.name).withPath(path))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
