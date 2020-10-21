@@ -70,8 +70,7 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample")
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
@@ -83,8 +82,7 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid"))
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid")))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -94,8 +92,7 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entityQueryPath.format("broad-dsde-dev", "valid") + "/sample")
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entityQueryPath.format("broad-dsde-dev", "valid") + "/sample"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -105,8 +102,7 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("POST")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesEntitiesCopyPath)
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesEntitiesCopyPath))
       .callback(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityCopyCallback")
@@ -117,8 +113,7 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid") + "/sample")
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid") + "/sample"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
@@ -130,8 +125,7 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid"))
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid")))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
@@ -143,8 +137,7 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("POST")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/delete")
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/delete"))
       .callback(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityDeleteCallback")

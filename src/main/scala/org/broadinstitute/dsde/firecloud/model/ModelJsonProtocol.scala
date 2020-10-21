@@ -1,26 +1,26 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCode
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.{MalformedRequestContentRejection, RejectionHandler}
 import org.broadinstitute.dsde.firecloud.model.DUOS._
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
-import org.broadinstitute.dsde.rawls.model._
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.{MalformedRequestContentRejection, RejectionHandler}
-import akka.http.scaladsl.server.Directives._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
-import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
-import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project._
-import spray.json.{JsString, _}
+import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
+import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
+import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.ValueObjectFormat
-import org.broadinstitute.dsde.workbench.model.google.GoogleModelJsonSupport.InstantFormat
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
+import org.broadinstitute.dsde.workbench.model.google.GoogleModelJsonSupport.InstantFormat
+import spray.json.{JsString, _}
 
 import scala.util.{Failure, Success, Try}
 
