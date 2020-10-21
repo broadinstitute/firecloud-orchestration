@@ -1,9 +1,11 @@
 package org.broadinstitute.dsde.firecloud
 
 import akka.actor.{ActorRefFactory, ActorSystem}
-import akka.http.scaladsl.model.StatusCodes
+import akka.event.Logging.LogLevel
+import akka.event.{Logging, LoggingAdapter}
+import akka.http.scaladsl.model.{HttpCharsets, HttpEntity, HttpRequest, StatusCodes}
 import akka.http.scaladsl.server
-import akka.http.scaladsl.server.ExceptionHandler
+import akka.http.scaladsl.server.{Directive0, ExceptionHandler}
 import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.dataaccess.SamDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
@@ -13,10 +15,13 @@ import org.broadinstitute.dsde.firecloud.webservice._
 import akka.http.scaladsl.server.Directives._
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.server.RouteResult.Complete
+import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
+import akka.stream.scaladsl.Sink
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
 object FireCloudApiService {
@@ -24,7 +29,7 @@ object FireCloudApiService {
 
     import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
 
-    implicit val errorReportSource = ErrorReportSource("FireCloud") //TODO make sure this doesn't clobber actual soures
+    implicit val errorReportSource = ErrorReportSource("FireCloud") //TODO make sure this doesn't clobber source names globally
 
     ExceptionHandler {
       case withErrorReport: FireCloudExceptionWithErrorReport =>
@@ -63,34 +68,6 @@ trait FireCloudApiService extends CookieAuthedApiService
 
   override lazy val log = LoggerFactory.getLogger(getClass)
 
-  //  implicit val system = context.system
-  //
-  //  trait ActorRefFactoryContext {
-  //    def actorRefFactory = context
-  //  }
-
-  //  val elasticSearchClient: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
-
-  //  val logitMetricsEnabled = FireCloudConfig.Metrics.logitApiKey.isDefined
-  //  val materializer: ActorMaterializer = ActorMaterializer()
-
-  //  private val healthChecks = new HealthChecks(app)
-  //  val healthMonitorChecks = healthChecks.healthMonitorChecks
-  //  val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
-  //  system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
-  //
-  //
-  //  if (logitMetricsEnabled) {
-  //    val freq = FireCloudConfig.Metrics.logitFrequencyMinutes
-  //    val metricsActor = system.actorOf(MetricsActor.props(app), "metrics-actor")
-  //    // use a randomized startup delay to avoid multiple instances of this app executing on the same cycle
-  //    val initialDelay = 1 + scala.util.Random.nextInt(10)
-  //    logger.info(s"Logit metrics are enabled: every $freq minutes, starting $initialDelay minutes from now.")
-  //    system.scheduler.schedule(initialDelay.minutes, freq.minutes, metricsActor, MetricsActor.RecordMetrics)
-  //  } else {
-  //    logger.info("Logit apikey not found in configuration. Logit metrics are disabled for this instance.")
-  //  }
-
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor
   val entityServiceConstructor: (ModelSchema) => EntityService
   val libraryServiceConstructor: (UserInfo) => LibraryService
@@ -112,9 +89,29 @@ trait FireCloudApiService extends CookieAuthedApiService
   implicit val executionContext: ExecutionContext
   implicit val materializer: Materializer
 
-  val logRequests = mapInnerRoute { route => requestContext =>
-    log.debug(requestContext.request.toString)
-    route(requestContext)
+  // basis for logRequestResult lifted from http://stackoverflow.com/questions/32475471/how-does-one-log-akka-http-client-requests
+  private def logRequestResult: Directive0 = {
+    def entityAsString(entity: HttpEntity): Future[String] = {
+      entity.dataBytes
+        .map(_.decodeString(entity.contentType.charsetOption.getOrElse(HttpCharsets.`UTF-8`).value))
+        .runWith(Sink.head)
+    }
+
+    def myLoggingFunction(logger: LoggingAdapter)(req: HttpRequest)(res: Any): Unit = {
+      val entry = res match {
+        case Complete(resp) =>
+          val logLevel: LogLevel = resp.status.intValue / 100 match {
+            case 5 => Logging.ErrorLevel
+            case _ => Logging.DebugLevel
+          }
+          entityAsString(resp.entity).map(data => LogEntry(s"${req.method} ${req.uri}: ${resp.status} entity: $data", logLevel))
+        case other =>
+          Future.successful(LogEntry(s"$other", Logging.DebugLevel)) // I don't really know when this case happens
+      }
+      entry.map(_.logTo(logger))
+    }
+
+    DebuggingDirectives.logRequestResult(LoggingMagnet(log => myLoggingFunction(log)))
   }
 
   // So we have the time when users send us error screenshots
@@ -150,7 +147,7 @@ trait FireCloudApiService extends CookieAuthedApiService
           staticNotebooksRoutes
       }
 
-  def route: server.Route = (logRequests & handleExceptions(FireCloudApiService.exceptionHandler)/* & appendTimestampOnFailure*/ ) {
+  def route: server.Route = (logRequestResult & handleExceptions(FireCloudApiService.exceptionHandler)/* & appendTimestampOnFailure*/ ) {
     cromIamEngineRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~

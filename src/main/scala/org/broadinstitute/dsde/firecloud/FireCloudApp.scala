@@ -6,8 +6,10 @@ import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
+import org.broadinstitute.dsde.firecloud.metrics.MetricsActor
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
+import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
 import org.elasticsearch.client.transport.TransportClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -43,7 +45,7 @@ object FireCloudApp extends App with LazyLogging {
     val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
     val importServiceDAO:ImportServiceDAO = new HttpImportServiceDAO
 
-    val app:Application = new Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, logitDAO, shareLogDAO, importServiceDAO);
+    val app:Application = Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, logitDAO, shareLogDAO, importServiceDAO);
 
     val agoraPermissionServiceConstructor: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
     val trialServiceConstructor: () => TrialService = TrialService.constructor(app)
@@ -61,6 +63,24 @@ object FireCloudApp extends App with LazyLogging {
     val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
     val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
     val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
+
+    //Boot HealthMonitor actor
+    val healthChecks = new HealthChecks(app)
+    val healthMonitorChecks = healthChecks.healthMonitorChecks
+    val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
+    system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
+
+    //Boot Logit metrics actor
+    if (logitMetricsEnabled) {
+      val freq = FireCloudConfig.Metrics.logitFrequencyMinutes
+      val metricsActor = system.actorOf(MetricsActor.props(app), "metrics-actor")
+      // use a randomized startup delay to avoid multiple instances of this app executing on the same cycle
+      val initialDelay = 1 + scala.util.Random.nextInt(10)
+      logger.info(s"Logit metrics are enabled: every $freq minutes, starting $initialDelay minutes from now.")
+      system.scheduler.schedule(initialDelay.minutes, freq.minutes, metricsActor, MetricsActor.RecordMetrics)
+    } else {
+      logger.info("Logit apikey not found in configuration. Logit metrics are disabled for this instance.")
+    }
 
     val service = new FireCloudApiServiceImpl(
       samDAO,
