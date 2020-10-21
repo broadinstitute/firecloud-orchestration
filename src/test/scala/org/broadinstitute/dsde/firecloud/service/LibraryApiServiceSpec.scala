@@ -111,15 +111,15 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
     val consentError = ConsentError(message = "Unapproved", code = BadRequest.intValue)
     val consentNotFound = ConsentError(message = "Not Found", code = NotFound.intValue)
 
-    val okGet = request().withMethod("GET").withPath(consentPath).withHeader("Authorization", "dummyToken").withQueryStringParameter("name", "12345")
+    val okGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "12345")
     val okResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(OK.intValue).withBody(consent.toJson.prettyPrint)
     consentServer.when(okGet).respond(okResponse)
 
-    val badRequestGet = request().withMethod("GET").withPath(consentPath).withHeader("Authorization", "dummyToken").withQueryStringParameter("name", "unapproved")
+    val badRequestGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "unapproved")
     val badRequestResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(BadRequest.intValue).withBody(consentError.toJson.prettyPrint)
     consentServer.when(badRequestGet).respond(badRequestResponse)
 
-    val notFoundGet = request().withMethod("GET").withPath(consentPath).withHeader("Authorization", "dummyToken").withQueryStringParameter("name", "missing")
+    val notFoundGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "missing")
     val notFoundResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(NotFound.intValue).withBody(consentNotFound.toJson.prettyPrint)
     consentServer.when(notFoundGet).respond(notFoundResponse)
   }
