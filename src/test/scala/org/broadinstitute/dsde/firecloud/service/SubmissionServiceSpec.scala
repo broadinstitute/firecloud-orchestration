@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-final class SubmissionServiceSpec extends ServiceSpec with SubmissionService with SprayJsonSupport {
+final class SubmissionServiceSpec extends BaseServiceSpec with SubmissionService with SprayJsonSupport {
 
   def actorRefFactory = system
 
