@@ -45,8 +45,7 @@ class HttpLogitDAO(logitUrl: String, logitApiKey: String)
     val request = Put(logitUrl, metric)
       .addHeaders(List(logType, apiKey).asJava)
 
-    //TODO: get rid of dummy token here, executeRequestRaw should be re-worked/cleaned up a bit
-    executeRequestRaw(OAuth2BearerToken("dummy"))(request).map { logitResponse =>
+    executeRequestRawFromHttpRequest(request).map { logitResponse =>
       logitResponse.status match {
         case Accepted =>
           logger.debug(s"Logit request succeeded: ${LogitMetricFormat.write(metric).compactPrint}")

@@ -5,7 +5,7 @@ import java.time.Instant
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.coding.Gzip
-import akka.http.scaladsl.model.TransferEncodings.gzip
+import akka.http.scaladsl.coding._
 import akka.http.scaladsl.model.headers.{HttpEncodings, `Accept-Encoding`}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, ResponseEntity}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
@@ -15,14 +15,7 @@ import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorRepo
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
-//import spray.client.pipelining._
-//import spray.http.HttpEncodings._
-//import spray.http.HttpHeaders.`Accept-Encoding`
-//import spray.http.{HttpRequest, HttpResponse}
-//import spray.httpx.encoding.Gzip
-//import spray.httpx.unmarshalling._
 
-import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -71,12 +64,15 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
 
     val tick = if (label.nonEmpty) Instant.now() else NoPerfLabel
 
-    http.singleRequest(finalRequest) map { res =>
+    for {
+      response <- http.singleRequest(finalRequest)
+      decodedResponse <- if(compressed) Future.successful(decodeResponse(response)) else Future.successful(response)
+    } yield {
       if (tick != NoPerfLabel) {
         val tock = Instant.now()
-        perfLogger.info(perfmsg(label.get, res.status.value, tick, tock))
+        perfLogger.info(perfmsg(label.get, decodedResponse.status.value, tick, tock))
       }
-      if(compressed) res else res //TODO: actually decode message somewhere
+      decodedResponse
     }
   }
 
@@ -128,5 +124,16 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
         case f => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }
     }
+  }
+
+  private def decodeResponse(response: HttpResponse): HttpResponse = {
+    val decoder = response.encoding match {
+      case HttpEncodings.gzip => Gzip
+      case HttpEncodings.deflate => Deflate
+      case HttpEncodings.identity => NoCoding
+      case _ => NoCoding
+    }
+
+    decoder.decodeMessage(response)
   }
 }
