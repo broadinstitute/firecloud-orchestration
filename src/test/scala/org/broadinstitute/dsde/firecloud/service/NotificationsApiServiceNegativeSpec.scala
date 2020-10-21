@@ -8,9 +8,7 @@ import akka.http.scaladsl.model.HttpMethods.GET
   * We don't create a mock server so we can differentiate between methods that get passed through (and result in
   * InternalServerError) and those that aren't passed through at the first place (i.e. not 'handled')
   */
-final class NotificationsApiServiceNegativeSpec extends ServiceSpec with NotificationsApiService {
-
-  def actorRefFactory = system
+final class NotificationsApiServiceNegativeSpec extends BaseServiceSpec with NotificationsApiService {
 
   "NotificationsApiService" - {
     val namespace = MockWorkspaceServer.mockValidWorkspace.namespace

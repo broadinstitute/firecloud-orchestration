@@ -3,36 +3,33 @@ package org.broadinstitute.dsde.firecloud.service
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethod, HttpMethods, MediaTypes, StatusCode, Uri}
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import javax.net.ssl.HttpsURLConnection
 import org.apache.commons.io.IOUtils
-import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
-import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
-import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
+import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.{Header, JsonBody, NottableString, Parameter}
 import org.mockserver.model.HttpRequest._
+import org.mockserver.model.{JsonBody, Parameter}
 import org.mockserver.socket.SSLFactory
 import org.scalatest.BeforeAndAfterEach
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.Uri.Query
-import spray.json._
 import spray.json.DefaultJsonProtocol._
-import javax.net.ssl.HttpsURLConnection
+import spray.json._
 
+import scala.concurrent.duration.{Duration, _}
 import scala.concurrent.{Await, ExecutionContext}
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration._
 
 object WorkspaceApiServiceSpec {
 
