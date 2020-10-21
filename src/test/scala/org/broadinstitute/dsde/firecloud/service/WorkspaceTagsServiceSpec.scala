@@ -271,13 +271,7 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
 
   private def singlepassTest(tags: List[String], expected: List[String], method: RequestBuilder) = {
     val name = randUUID
-    val request = method(workspaceTagsPath(method.method.toString.toLowerCase, name), tags)
-    println(request)
-    println(Await.result(request.entity.toStrict(1.minute).map(_.data.utf8String), Duration.Inf))
-    val sr = sealRoute(workspaceRoutes)
-    println(sr)
-    request ~> dummyUserIdHeaders("1234") ~> sr ~> check {
-      println(Await.result(response.entity.toStrict(1.minute).map(_.data.utf8String), Duration.Inf))
+    method(workspaceTagsPath(method.method.value.toLowerCase, name), tags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
       status should be(OK)
       responseAs[List[String]] should be(expected)
     }
@@ -289,7 +283,7 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
       status should be(OK)
       responseAs[List[String]] should be(firstExpected)
 
-      secondMethod(workspaceTagsPath(secondMethod.method.toString.toLowerCase, name), secondTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+      secondMethod(workspaceTagsPath(secondMethod.method.value.toLowerCase, name), secondTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should be(OK)
         responseAs[List[String]] should be(secondExpected)
       }
