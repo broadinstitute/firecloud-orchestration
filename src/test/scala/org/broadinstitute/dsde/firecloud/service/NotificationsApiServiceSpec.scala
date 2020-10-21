@@ -7,9 +7,7 @@ import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.StatusCodes.{MethodNotAllowed, NotFound, OK}
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-final class NotificationsApiServiceSpec extends ServiceSpec with NotificationsApiService {
-
-  def actorRefFactory = system
+final class NotificationsApiServiceSpec extends BaseServiceSpec with NotificationsApiService {
 
   override def beforeAll(): Unit = {
     MockWorkspaceServer.startWorkspaceServer()
