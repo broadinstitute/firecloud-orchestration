@@ -2,12 +2,12 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Route
-import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
 import org.slf4j.LoggerFactory
 
@@ -29,7 +29,7 @@ trait EntityApiService extends FireCloudDirectives
         path("entities_with_type") {
           get {
             requireUserInfo() { userInfo =>
-              //the model schema doesn't matter for this one. TODO: make it Optional
+              //TODO: the model schema doesn't matter for this one. Ideally, make it Optional
               complete { entityServiceConstructor(FlexibleModelSchema).GetEntitiesWithType(workspaceNamespace, workspaceName, userInfo) }
             }
           }

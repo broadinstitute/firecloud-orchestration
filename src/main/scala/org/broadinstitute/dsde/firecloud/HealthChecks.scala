@@ -1,11 +1,11 @@
 package org.broadinstitute.dsde.firecloud
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.StatusCodes
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, RegistrationInfo, WorkbenchEnabled}
-import org.broadinstitute.dsde.workbench.util.health.{SubsystemStatus, Subsystems}
 import org.broadinstitute.dsde.workbench.util.health.Subsystems._
-import akka.http.scaladsl.model.StatusCodes
+import org.broadinstitute.dsde.workbench.util.health.{SubsystemStatus, Subsystems}
 
 import scala.concurrent.{ExecutionContext, Future}
 
