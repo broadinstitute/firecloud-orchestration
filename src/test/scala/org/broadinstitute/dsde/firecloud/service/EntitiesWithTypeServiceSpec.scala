@@ -51,21 +51,21 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityApiService 
     // Valid cases
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(validFireCloudPath + "entities").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(validFireCloudPath + "entities"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(Map("participant"->1, "sample"->1).toJson.compactPrint).withStatusCode(OK.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(validFireCloudPath + "entities/sample").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(validFireCloudPath + "entities/sample"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(validSampleEntities.toJson.compactPrint).withStatusCode(OK.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(validFireCloudPath + "entities/participant").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(validFireCloudPath + "entities/participant"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(validParticipants.toJson.compactPrint).withStatusCode(OK.intValue)
@@ -74,21 +74,21 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityApiService 
     // Invalid cases:
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(invalidFireCloudPath + "entities").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(invalidFireCloudPath + "entities"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody(List("participant", "sample").toJson.compactPrint).withStatusCode(OK.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(invalidFireCloudPath + "entities/sample").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(invalidFireCloudPath + "entities/sample"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody("Error").withStatusCode(InternalServerError.intValue)
       )
     workspaceServer
       .when(
-        request().withMethod("GET").withPath(invalidFireCloudPath + "entities/participant").withHeader(MockUtils.authHeader))
+        request().withMethod("GET").withPath(invalidFireCloudPath + "entities/participant"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withBody("Error").withStatusCode(InternalServerError.intValue)
