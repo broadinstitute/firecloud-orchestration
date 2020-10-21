@@ -83,7 +83,6 @@ object FireCloudApp extends App with LazyLogging {
     }
 
     val service = new FireCloudApiServiceImpl(
-      samDAO,
       agoraPermissionServiceConstructor,
       trialServiceConstructor,
       exportEntitiesByTypeActorConstructor,
