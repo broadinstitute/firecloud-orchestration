@@ -46,6 +46,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def PatchTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) = patchTags(workspaceNamespace, workspaceName, tags)
   def DeleteTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) = deleteTags(workspaceNamespace, workspaceName, tags)
   def DeleteWorkspace(workspaceNamespace: String, workspaceName: String) = deleteWorkspace(workspaceNamespace, workspaceName)
+  def CloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest) = cloneWorkspace(workspaceNamespace, workspaceName, cloneRequest)
 
   def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
     rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
@@ -201,6 +202,12 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
         case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
         case e: Throwable => RequestComplete(StatusCodes.InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
       }
+    }
+  }
+
+  def cloneWorkspace(namespace: String, name: String, cloneRequest: WorkspaceRequest): Future[PerRequestMessage] = {
+    rawlsDAO.cloneWorkspace(namespace, name, cloneRequest).map { res =>
+      RequestComplete(StatusCodes.Created, res)
     }
   }
 

@@ -37,10 +37,7 @@ import scala.util.control.NonFatal
   * Created by davidan on 9/23/16.
   */
 class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
-  extends RawlsDAO with RestJsonClient with SprayJsonSupport with DsdeHttpDAO {
-
-  override val http = Http(system)
-  override val httpClientUtils = HttpClientUtilsStandard()
+  extends RawlsDAO with RestJsonClient with SprayJsonSupport {
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest(Get(rawlsAdminUrl))(userInfo) map { response =>
@@ -85,7 +82,7 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
 
   // you must be an admin to execute this method
   override def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[WorkspaceDetails]] = {
-    executeRequestRaw[Seq[WorkspaceDetails]](userToken.accessToken)(Get(rawlsAdminWorkspaces)).flatMap { response =>
+    userAuthedRequest(Get(rawlsAdminWorkspaces)).flatMap { response =>
       if(response.status.isSuccess()) {
         Unmarshal(response).to[Seq[WorkspaceDetails]].map { srw =>
           logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
@@ -127,6 +124,8 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
   }
 
   private def getWorkspaceUrl(ns: String, name: String) = encodeUri(FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name")
+
+  private def getWorkspaceCloneUrl(ns: String, name: String) = encodeUri(FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name/clone")
 
   private def getWorkspaceAclUrl(ns: String, name: String) = encodeUri(rawlsWorkspaceACLUrl(ns, name))
 
@@ -222,8 +221,12 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
     }
   }
 
-  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
+  override def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
     authedRequestToObject[WorkspaceDeleteResponse](Delete(getWorkspaceUrl(workspaceNamespace, workspaceName)))
+  }
+
+  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {
+    authedRequestToObject[WorkspaceDetails](Post(getWorkspaceCloneUrl(workspaceNamespace, workspaceName), cloneRequest))
   }
 
 }

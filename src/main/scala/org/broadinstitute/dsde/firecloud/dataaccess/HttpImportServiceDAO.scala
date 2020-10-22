@@ -17,10 +17,7 @@ import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import scala.concurrent.{ExecutionContext, Future}
 
 class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
-  extends ImportServiceDAO with DsdeHttpDAO with RestJsonClient with SprayJsonSupport {
-
-  override val http = Http(system)
-  override val httpClientUtils = HttpClientUtilsStandard()
+  extends ImportServiceDAO with RestJsonClient with SprayJsonSupport {
 
   override def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
 

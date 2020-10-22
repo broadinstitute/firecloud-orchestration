@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.server.Route
@@ -62,9 +62,8 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
         requireUserInfo() { userInfo =>
           path("duos" / "consent" / "orsp" / Segment) { (orspId) =>
             get {
-              val extReq = Get(Uri(consentUrl).withQuery(Uri.Query(("name"->orspId))))
-
-              complete { executeRequestRaw(userInfo.accessToken)(extReq) }
+              //note: not a true passthrough, slight manipulation of the query params here
+              passthrough(Uri(consentUrl).withQuery(Uri.Query(("name"->orspId))), HttpMethods.GET)
             }
           } ~
             pathPrefix("library") {
