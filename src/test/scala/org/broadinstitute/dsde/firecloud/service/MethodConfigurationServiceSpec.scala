@@ -107,7 +107,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
         path =>
           s"POST on $path" - {
             "should not receive a MethodNotAllowed" in {
-              Post(path) ~> sealRoute(methodConfigurationRoutes) ~> check {
+              Post(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
                 status shouldNot equal(MethodNotAllowed)
               }
             }
@@ -117,7 +117,11 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
             "should receive a MethodNotAllowed" in {
               List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) map {
                 method =>
-                  new RequestBuilder(method)(path) ~> sealRoute(methodConfigurationRoutes) ~> check {
+                  new RequestBuilder(method)(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
+                    import scala.concurrent.duration._
+                    response.entity.toStrict(1.second).map { x =>
+                      println(x.data.utf8String)
+                    }
                     status should equal(MethodNotAllowed)
                   }
               }
@@ -135,7 +139,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
         "should not receive a MethodNotAllowed" in {
           List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(localMethodConfigPath) ~> sealRoute(methodConfigurationRoutes) ~> check {
+              new RequestBuilder(method)(localMethodConfigPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
                 status shouldNot equal(MethodNotAllowed)
               }
           }
@@ -144,7 +148,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
 
       s"PATCH on $localMethodConfigPath " - {
         "should receive a MethodNotAllowed" in {
-          Patch(localMethodConfigPath) ~> sealRoute(methodConfigurationRoutes) ~> check {
+          Patch(localMethodConfigPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -154,7 +158,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
 
       s"POST on $localMethodConfigRenamePath " - {
         "should not receive a MethodNotAllowed" in {
-          Post(localMethodConfigRenamePath) ~> sealRoute(methodConfigurationRoutes) ~> check {
+          Post(localMethodConfigRenamePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
             status shouldNot equal(MethodNotAllowed)
           }
         }
@@ -164,7 +168,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
         "should receive a MethodNotAllowed" in {
           List(HttpMethods.GET, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(localMethodConfigRenamePath) ~> sealRoute(methodConfigurationRoutes) ~> check {
+              new RequestBuilder(method)(localMethodConfigRenamePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
                 status should equal(MethodNotAllowed)
               }
           }
@@ -175,7 +179,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
 
       s"GET on $localMethodConfigValidatePath " - {
         "should not receive a MethodNotAllowed" in {
-          Get(localMethodConfigValidatePath) ~> sealRoute(methodConfigurationRoutes) ~> check {
+          Get(localMethodConfigValidatePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
             status shouldNot equal(MethodNotAllowed)
           }
         }
@@ -185,7 +189,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
         "should receive a MethodNotAllowed" in {
           List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.POST, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(localMethodConfigValidatePath) ~> sealRoute(methodConfigurationRoutes) ~> check {
+              new RequestBuilder(method)(localMethodConfigValidatePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
                 status should equal(MethodNotAllowed)
               }
           }
@@ -209,7 +213,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
 
       s"when calling POST on the $validCopyFromRepoUrl path with valid workspace and configuration data" - {
         "Created response is returned" in {
-          Post(validCopyFromRepoUrl, configurationCopyFormData) ~> sealRoute(methodConfigurationRoutes) ~> check {
+          Post(validCopyFromRepoUrl, configurationCopyFormData) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
             status should equal(Created)
           }
         }
@@ -219,7 +223,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
         "should receive a MethodNotAllowed" in {
           List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(validCopyFromRepoUrl, configurationCopyFormData) ~> sealRoute(methodConfigurationRoutes) ~> check {
+              new RequestBuilder(method)(validCopyFromRepoUrl, configurationCopyFormData) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
                 status should equal(MethodNotAllowed)
               }
           }
@@ -241,7 +245,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
 
       s"when calling POST on the $validCopyToRepoUrl path with valid workspace and configuration data" - {
         "Created response is returned" in {
-          Post(validCopyToRepoUrl, configurationPublishFormData) ~> sealRoute(methodConfigurationRoutes) ~> check {
+          Post(validCopyToRepoUrl, configurationPublishFormData) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
             status should equal(Created)
           }
         }
@@ -251,7 +255,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
         "should receive a MethodNotAllowed" in {
           List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(validCopyToRepoUrl, configurationPublishFormData) ~> sealRoute(methodConfigurationRoutes) ~> check {
+              new RequestBuilder(method)(validCopyToRepoUrl, configurationPublishFormData) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
                 status should equal(MethodNotAllowed)
               }
           }
