@@ -4,12 +4,12 @@ import akka.actor.{ActorRefFactory, ActorSystem}
 import akka.event.Logging.LogLevel
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.{HttpCharsets, HttpEntity, HttpRequest, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, HttpEntity, HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult.Complete
 import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
-import akka.http.scaladsl.server.{Directive0, ExceptionHandler}
+import akka.http.scaladsl.server.{Directive0, ExceptionHandler, MalformedRequestContentRejection, MethodRejection, RejectionHandler}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
@@ -23,11 +23,15 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
 object FireCloudApiService {
+
+  import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
+  import spray.json._
+
+  implicit val errorReportSource = ErrorReportSource("FireCloud") //TODO make sure this doesn't clobber source names globally
+
   val exceptionHandler = {
 
     import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
-
-    implicit val errorReportSource = ErrorReportSource("FireCloud") //TODO make sure this doesn't clobber source names globally
 
     ExceptionHandler {
       case withErrorReport: FireCloudExceptionWithErrorReport =>
@@ -36,6 +40,22 @@ object FireCloudApiService {
         complete(StatusCodes.InternalServerError -> ErrorReport(e))
     }
   }
+
+  //TODO: Verify that this doesn't clobber all of the other default rejection handling
+  implicit def customRejectionHandler = RejectionHandler.newBuilder().handle {
+    case MalformedRequestContentRejection(errorMsg, _) =>
+      complete { (StatusCodes.BadRequest, ErrorReport(StatusCodes.BadRequest, errorMsg)) }
+  }.handleAll[MethodRejection] { _ =>
+    complete { StatusCodes.MethodNotAllowed }
+  }.result().mapRejectionResponse {
+    case resp@HttpResponse(statusCode, _, ent: HttpEntity.Strict, _) => {
+      // since all Akka default rejection responses are Strict this will handle all rejections
+      val message = ent.data.utf8String.replaceAll("\"", """\"""")
+
+      resp.withEntity(HttpEntity(ContentTypes.`application/json`, ErrorReport(statusCode, message).toJson.toString))
+    }
+  }
+
 }
 
 trait FireCloudApiService extends CookieAuthedApiService
