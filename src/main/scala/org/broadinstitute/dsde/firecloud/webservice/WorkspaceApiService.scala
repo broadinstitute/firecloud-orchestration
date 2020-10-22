@@ -111,7 +111,6 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   post {
                     requireUserInfo() { userInfo =>
                       formFields('entities) { entitiesTSV =>
-                        //TODO: respondWithJson here and other places. it's deprecated so decide new solution
                         complete { entityServiceConstructor(FlexibleModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
                       }
                     }
@@ -121,7 +120,6 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   post {
                     requireUserInfo() { userInfo =>
                       formFields('entities) { entitiesTSV =>
-                        //TODO: respondWithJson
                         complete { entityServiceConstructor(FirecloudModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
                       }
                     }
@@ -140,9 +138,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   post {
                     requireUserInfo() { userInfo =>
                       entity(as[PfbImportRequest]) { pfbRequest =>
-//                        respondWithJSON {
-                          complete { entityServiceConstructor(FlexibleModelSchema).ImportPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
-//                        }
+                        complete { entityServiceConstructor(FlexibleModelSchema).ImportPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
                       }
                     }
                   } ~
@@ -191,9 +187,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   post {
                     requireUserInfo() { userInfo =>
                       formFields('attributes) { attributesTSV =>
-//                        respondWithJSON {
-                          complete { workspaceServiceConstructor(userInfo).ImportAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV) }
-//                        }
+                        complete { workspaceServiceConstructor(userInfo).ImportAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV) }
                       }
                     }
                   }

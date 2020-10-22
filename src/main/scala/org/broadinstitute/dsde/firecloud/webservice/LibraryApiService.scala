@@ -38,30 +38,24 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
       } ~
         path("researchPurposeQuery") {
           post {
-//            respondWithJSON {
-              entity(as[ResearchPurposeRequest]) { researchPurposeRequest =>
-                complete { ontologyServiceConstructor().ResearchPurposeQuery(researchPurposeRequest) }
-              }
-//            }
+            entity(as[ResearchPurposeRequest]) { researchPurposeRequest =>
+              complete { ontologyServiceConstructor().ResearchPurposeQuery(researchPurposeRequest) }
+            }
           }
         } ~
         path("structuredData") {
           post {
-//            respondWithJSON {
-              entity(as[StructuredDataRequest]) { request =>
-                complete { ontologyServiceConstructor().DataUseLimitation(request) }
-              }
-//            }
+            entity(as[StructuredDataRequest]) { request =>
+              complete { ontologyServiceConstructor().DataUseLimitation(request) }
+            }
           }
         }
     } ~
       pathPrefix("schemas") {
         path("library-attributedefinitions-v1") {
-//          respondWithJSON {
-            withResourceFileContents(LibraryService.schemaLocation) { jsonContents =>
-              complete(StatusCodes.OK, jsonContents)
-            }
-//          }
+          withResourceFileContents(LibraryService.schemaLocation) { jsonContents =>
+            complete(StatusCodes.OK, jsonContents)
+          }
         }
       } ~
       pathPrefix("api") {
@@ -87,11 +81,8 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
               } ~
                 path("groups") {
                   pathEndOrSingleSlash {
-                    get {
-//                      respondWithJSON {
-                        requestContext =>
-                          requestContext.complete(OK, FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSeq)
-//                      }
+                    get { requestContext =>
+                      requestContext.complete(OK, FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSeq)
                     }
                   }
                 } ~
@@ -111,16 +102,14 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
                     }
                   } ~
                     path("discoverableGroups") {
-//                      respondWithJSON {
-                        put {
-                          entity(as[Seq[String]]) { newGroups =>
-                            complete { libraryServiceConstructor(userInfo).UpdateDiscoverableByGroups(namespace, name, newGroups) }
-                          }
-                        } ~
-                          get {
-                            complete { libraryServiceConstructor(userInfo).GetDiscoverableByGroups(namespace, name) }
-                          }
-//                      }
+                      put {
+                        entity(as[Seq[String]]) { newGroups =>
+                          complete { libraryServiceConstructor(userInfo).UpdateDiscoverableByGroups(namespace, name, newGroups) }
+                        }
+                      } ~
+                        get {
+                          complete { libraryServiceConstructor(userInfo).GetDiscoverableByGroups(namespace, name) }
+                        }
                     } ~
                     path("published") {
                       post {
@@ -133,18 +122,14 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
                 } ~
                 path("admin" / "reindex") {
                   post {
-//                    respondWithJSON {
-                      complete { libraryServiceConstructor(userInfo).IndexAll }
-//                    }
+                    complete { libraryServiceConstructor(userInfo).IndexAll }
                   }
                 } ~
                 pathPrefix("search") {
                   pathEndOrSingleSlash {
                     post {
-//                      respondWithJSON {
-                        entity(as[LibrarySearchParams]) { params =>
-                          complete { libraryServiceConstructor(userInfo).FindDocuments(params) }
-//                        }
+                      entity(as[LibrarySearchParams]) { params =>
+                        complete { libraryServiceConstructor(userInfo).FindDocuments(params) }
                       }
                     }
                   }
@@ -152,20 +137,16 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
                 pathPrefix("suggest") {
                   pathEndOrSingleSlash {
                     post {
-//                      respondWithJSON {
-                        entity(as[LibrarySearchParams]) { params =>
-                          complete { libraryServiceConstructor(userInfo).Suggest(params) }
-                        }
-//                      }
+                      entity(as[LibrarySearchParams]) { params =>
+                        complete { libraryServiceConstructor(userInfo).Suggest(params) }
+                      }
                     }
                   }
                 } ~
                 pathPrefix("populate" / "suggest" / Segment ) { (field) =>
                   get {
                     parameter('q) { text =>
-//                      respondWithJSON {
-                        complete { libraryServiceConstructor(userInfo).PopulateSuggest(field, text) }
-//                      }
+                      complete { libraryServiceConstructor(userInfo).PopulateSuggest(field, text) }
                     }
                   }
                 }
