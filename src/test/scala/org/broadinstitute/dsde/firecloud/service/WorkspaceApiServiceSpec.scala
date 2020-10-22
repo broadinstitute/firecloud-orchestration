@@ -590,7 +590,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map())
       Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
+        rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.compactPrint))
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
@@ -601,7 +601,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
       Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
+        rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.compactPrint))
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
@@ -618,7 +618,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       val orchestrationRequest: WorkspaceRequest = WorkspaceRequest("namespace", "name", Map())
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
+        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.compactPrint))
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
@@ -629,7 +629,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       val orchestrationRequest: WorkspaceRequest = WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
+        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.compactPrint))
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
