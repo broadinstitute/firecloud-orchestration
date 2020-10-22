@@ -41,22 +41,18 @@ trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpD
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
 
   private def generateExternalHttpPerRequestForMethod(uri: Uri, inMethod: HttpMethod) = {
-    val outMethod = new RequestBuilder(inMethod)(uri)
     // POST, PUT, PATCH
     if (inMethod.isEntityAccepted) {
       method(inMethod) { requestContext =>
-
-        //TODO: these don't fully work yet (I'm certain)
+        val outMethod = new RequestBuilder(inMethod)(uri, requestContext.request.entity)
         requestContext.complete(executeRequestRawFromHttpRequest(outMethod))
-
-//        externalHttpPerRequest(requestContext, outMethod(uri, requestContext.request.entity))
       }
     }
     else {
       // GET, DELETE
       method(inMethod) { requestContext =>
+        val outMethod = new RequestBuilder(inMethod)(uri)
         requestContext.complete(executeRequestRawFromHttpRequest(outMethod))
-//        externalHttpPerRequest(requestContext, outMethod(uri))
       }
     }
   }
