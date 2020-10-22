@@ -13,17 +13,13 @@ import org.broadinstitute.dsde.firecloud.model.Metrics
 import org.broadinstitute.dsde.firecloud.model.Metrics.LogitMetric
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.LogitMetricFormat
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.utils.HttpClientUtilsStandard
+import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtilsStandard, RestJsonClient}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 class HttpLogitDAO(logitUrl: String, logitApiKey: String)
-                  (implicit val system: ActorSystem, val materializer: Materializer, implicit val executionContext: ExecutionContext) extends LogitDAO with SprayJsonSupport with LazyLogging with DsdeHttpDAO with FireCloudRequestBuilding {
-
-  override val http = Http(system)
-  override val httpClientUtils = HttpClientUtilsStandard()
-
+                  (implicit val system: ActorSystem, val materializer: Materializer, implicit val executionContext: ExecutionContext) extends LogitDAO with SprayJsonSupport with LazyLogging with RestJsonClient with FireCloudRequestBuilding {
   /*
     Requirements to send to Logit:
       - Valid JSON content
@@ -45,7 +41,7 @@ class HttpLogitDAO(logitUrl: String, logitApiKey: String)
     val request = Put(logitUrl, metric)
       .addHeaders(List(logType, apiKey).asJava)
 
-    executeRequestRawFromHttpRequest(request).map { logitResponse =>
+    unAuthedRequest(request).map { logitResponse =>
       logitResponse.status match {
         case Accepted =>
           logger.debug(s"Logit request succeeded: ${LogitMetricFormat.write(metric).compactPrint}")
