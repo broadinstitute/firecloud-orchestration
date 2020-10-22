@@ -30,29 +30,22 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
   private final val NoPerfLabel: Instant = Instant.MIN
 
   def unAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                      connector: Option[ActorRef] = None, label: Option[String] = None): Future[HttpResponse] = {
+                      label: Option[String] = None): Future[HttpResponse] = {
     implicit val userInfo:WithAccessToken = null
-    doRequest(None)(req, compressed, useFireCloudHeader, connector, label)
+    doRequest(None)(req, compressed, useFireCloudHeader, label)
   }
 
   def userAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                        connector: Option[ActorRef] = None, label: Option[String] = None)
+                        label: Option[String] = None)
                        (implicit userInfo: WithAccessToken): Future[HttpResponse] =
-    doRequest(Option(addCredentials(userInfo.accessToken)))(req, compressed, useFireCloudHeader, connector, label)
+    doRequest(Option(addCredentials(userInfo.accessToken)))(req, compressed, useFireCloudHeader, label)
 
   def adminAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                         connector: Option[ActorRef] = None, label: Option[String] = None): Future[HttpResponse] =
-    doRequest(Option(addAdminCredentials))(req, compressed, useFireCloudHeader, connector, label)
+                         label: Option[String] = None): Future[HttpResponse] =
+    doRequest(Option(addAdminCredentials))(req, compressed, useFireCloudHeader, label)
 
   private def doRequest(addCreds: Option[RequestTransformer])(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                                                              connector: Option[ActorRef] = None, label: Option[String] = None): Future[HttpResponse] = {
-    //    val sr = if (connector.isDefined) {
-    //      sendReceive(connector.get)(executionContext, futureTimeout = 60.seconds)
-    //    } else {
-    //      sendReceive
-    //    }
-    //TODO: ask David An about the above connector code
-
+                                                              label: Option[String] = None): Future[HttpResponse] = {
     val intermediateRequest = (compressed, useFireCloudHeader) match {
       case (true, true) => req.addHeader(`Accept-Encoding`(HttpEncodings.gzip)).addHeader(fireCloudHeader)
       case (true, false) => req.addHeader(`Accept-Encoding`(HttpEncodings.gzip))
@@ -77,16 +70,16 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
   }
 
   def authedRequestToObject[T](req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                               connector: Option[ActorRef] = None, label: Option[String] = None)
+                               label: Option[String] = None)
                               (implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] = {
-    requestToObject(true, req, compressed, useFireCloudHeader, connector, label)
+    requestToObject(true, req, compressed, useFireCloudHeader, label)
   }
 
   def unAuthedRequestToObject[T](req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                                 connector: Option[ActorRef] = None, label: Option[String] = None)
+                                 label: Option[String] = None)
                                 (implicit unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] = {
     implicit val userInfo:WithAccessToken = null
-    requestToObject(false, req, compressed, useFireCloudHeader, connector, label)
+    requestToObject(false, req, compressed, useFireCloudHeader, label)
   }
 
   def adminAuthedRequestToObject[T](req:HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false)
@@ -95,14 +88,14 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
   }
 
   private def requestToObject[T](auth: Boolean, req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                                 connector: Option[ActorRef] = None, label: Option[String] = None)
+                                 label: Option[String] = None)
                                 (implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] = {
     val tick = if (label.nonEmpty) Instant.now() else NoPerfLabel
 
     val resp = if(auth) {
-      userAuthedRequest(req, compressed, useFireCloudHeader, connector)
+      userAuthedRequest(req, compressed, useFireCloudHeader)
     } else {
-      unAuthedRequest(req, compressed, useFireCloudHeader, connector)
+      unAuthedRequest(req, compressed, useFireCloudHeader)
     }
     resultsToObject(resp, label, tick)
   }
