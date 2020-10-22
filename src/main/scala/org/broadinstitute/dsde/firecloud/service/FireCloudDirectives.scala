@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model.{HttpMethod, Uri}
+import akka.http.scaladsl.model.{ContentTypes, HttpMethod, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.parboiled.common.FileUtils
@@ -23,10 +23,6 @@ object FireCloudDirectiveUtils {
 
 trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpDAO {
 
-//  def respondWithJSON = extractRequest.flatMap { request =>
-//    mapResponseHeaders(headers => headers :+ ContentTypes.`application/json`)
-//  }
-
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
     passthrough(Uri(unencodedPath), methods: _*)
   }
@@ -34,7 +30,6 @@ trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpD
   // Danger: it is a common mistake to pass in a URI that omits the query parameters included in the original request to Orch.
   // To preserve the query, extract it and attach it to the passthrough URI using `.withQuery(query)`.
   def passthrough(uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
-    println(uri.path)
     generateExternalHttpPerRequestForMethod(uri, inMethod)
   } reduce (_ ~ _)
 
