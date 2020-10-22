@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, WorkspaceAccessLevels}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import spray.http.StatusCodes
@@ -49,7 +49,7 @@ trait PermissionsSupport {
     tryIsAdmin(userInfo) flatMap { isadmin =>
       if (!isadmin) {
         rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo.asInstanceOf[WithAccessToken]) map { ws =>
-          ws.accessLevel >= neededLevel
+          ws.accessLevel.getOrElse(WorkspaceAccessLevels.NoAccess) >= neededLevel
         }
       } else {
         Future.successful(true)

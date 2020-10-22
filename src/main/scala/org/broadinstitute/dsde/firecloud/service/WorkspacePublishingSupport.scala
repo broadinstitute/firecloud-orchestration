@@ -39,7 +39,7 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
   }
 
   def isPublished(workspace: WorkspaceDetails): Boolean = {
-    workspace.attributes.get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
+    workspace.attributes.getOrElse(Map.empty).get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
   }
 
   def setWorkspacePublishedStatus(ws: WorkspaceDetails, publishArg: Boolean, rawlsDAO: RawlsDAO, ontologyDAO: OntologyDAO, searchDAO: SearchDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {

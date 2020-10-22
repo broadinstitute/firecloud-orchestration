@@ -98,7 +98,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
 
   def getDiscoverableByGroups(ns: String, name: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) map { workspaceResponse =>
-      val groups = workspaceResponse.workspace.attributes.get(discoverableWSAttribute) match {
+      val groups = workspaceResponse.workspace.attributes.getOrElse(Map.empty).get(discoverableWSAttribute) match {
         case Some(vals:AttributeValueList) => vals.list.collect{
           case s:AttributeString => s.value
         }
@@ -147,7 +147,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
 
             // this is technically vulnerable to a race condition in which the workspace attributes have changed
             // between the time we retrieved them and here, where we update them.
-            val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, userAttrs,
+            val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes.getOrElse(Map.empty), userAttrs,
               k => k.namespace == AttributeName.libraryNamespace && !skipAttributes.contains(k))
             internalPatchWorkspaceAndRepublish(ns, name, allOperations, published) map (RequestComplete(_))
           }
@@ -157,7 +157,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
 
   def getLibraryMetadata(ns: String, name: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
-      val allAttrs = workspaceResponse.workspace.attributes
+      val allAttrs = workspaceResponse.workspace.attributes.getOrElse(Map.empty)
       val libAttrs = allAttrs.filter {
         case ((LibraryService.publishedFlag,v)) => false
         case ((k,v)) if k.namespace == AttributeName.libraryNamespace => true
@@ -183,7 +183,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
       val currentPublished = isPublished(workspaceResponse)
       // only need to validate metadata if we are actually publishing
       val (invalid, errorMessage) = if (publishArg && !currentPublished)
-        isInvalid(workspaceResponse.workspace.attributes.toJson.compactPrint)
+        isInvalid(workspaceResponse.workspace.attributes.getOrElse(Map.empty).toJson.compactPrint)
       else
         (false, None)
 

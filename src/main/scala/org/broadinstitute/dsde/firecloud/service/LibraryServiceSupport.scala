@@ -69,11 +69,11 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
       val annotatedWorkspaces = workspaces map { ws =>
         // does this workspace have an orsp id?
-        ws.attributes.get(orspIdAttribute) match {
+        ws.attributes.getOrElse(Map.empty).get(orspIdAttribute) match {
           case Some(s:AttributeString) =>
             val orspAttrs = restrictionMap.getOrElse(s.value, Map.empty[AttributeName, Attribute])
-            val newAttrs = replaceDataUseAttributes(ws.attributes, orspAttrs)
-            ws.copy(attributes = newAttrs)
+            val newAttrs = replaceDataUseAttributes(ws.attributes.getOrElse(Map.empty), orspAttrs)
+            ws.copy(attributes = Option(newAttrs))
           case _ =>
             // this workspace does not have an ORSP id; leave it untouched
             ws
@@ -84,7 +84,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
   }
 
   private def indexableDocument(workspace: WorkspaceDetails, parentCache: Map[String,Seq[TermParent]], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Document = {
-    val attrfields_subset = workspace.attributes.filter(_._1.namespace == AttributeName.libraryNamespace)
+    val attrfields_subset = workspace.attributes.getOrElse(Map.empty).filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {
         case "discoverableByGroups" => AttributeName.withDefaultNS(ElasticSearch.fieldDiscoverableByGroups) -> value
@@ -95,10 +95,10 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       AttributeName.withDefaultNS("name") -> AttributeString(workspace.name),
       AttributeName.withDefaultNS("namespace") -> AttributeString(workspace.namespace),
       AttributeName.withDefaultNS("workspaceId") -> AttributeString(workspace.workspaceId),
-      AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(workspace.authorizationDomain.map(group => AttributeString(group.membersGroupName.value)).toSeq)
+      AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(workspace.authorizationDomain.getOrElse(Set.empty).map(group => AttributeString(group.membersGroupName.value)).toSeq)
     )
 
-    val tagfields = workspace.attributes.get(AttributeName.withTagsNS()) match {
+    val tagfields = workspace.attributes.getOrElse(Map.empty).get(AttributeName.withTagsNS()) match {
       case Some(t) => Map(AttributeName.withTagsNS() -> t)
       case None => Map()
     }
@@ -109,7 +109,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
     val fields = (attrfields -- durAttributeNames) ++ idfields ++ tagfields ++ dur ++ displayDur
 
-    workspace.attributes.get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
+    workspace.attributes.getOrElse(Map.empty).get(AttributeName.withLibraryNS("diseaseOntologyID")) match {
       case Some(id: AttributeString) =>
         val parents = parentCache.get(id.value)
         val parentFields = if (parents.isDefined) {
@@ -124,8 +124,8 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   def uniqueWorkspaceStringAttributes(workspaces: Seq[WorkspaceDetails], attributeName: AttributeName): Set[String] = {
     val valueSeq:Seq[String] = workspaces.collect {
-      case w if w.attributes.contains(attributeName) =>
-        w.attributes(attributeName)
+      case w if w.attributes.getOrElse(Map.empty).contains(attributeName) =>
+        w.attributes.getOrElse(Map.empty)(attributeName)
     }.collect {
       case s:AttributeString => s.value
     }
@@ -183,7 +183,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       }
     }
 
-    val current = convert(workspaceResponse.workspace.attributes.get(LibraryService.discoverableWSAttribute))
+    val current = convert(workspaceResponse.workspace.attributes.getOrElse(Map.empty).get(LibraryService.discoverableWSAttribute))
     val newvals = convert(userAttrs.get(LibraryService.discoverableWSAttribute))
 
     current.toSet != newvals.toSet
