@@ -1,20 +1,14 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives.complete
-import akka.http.scaladsl.server.{MalformedRequestContentRejection, MethodRejection, RejectionHandler}
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudApiService}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
-import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudApiService}
 import org.scalatest.BeforeAndAfter
 
 class BaseServiceSpec extends ServiceSpec with BeforeAndAfter {
 
   // this gets fed into sealRoute so that exceptions are handled the same in tests as in real life
   implicit val exceptionHandler = FireCloudApiService.exceptionHandler
-//  implicit val defaultErrorReportRejectionHandler = FireCloudApiService.defaultErrorReportRejectionHandler
-  implicit val customRejectionHandler = FireCloudApiService.customRejectionHandler
 
   val agoraDao:MockAgoraDAO = new MockAgoraDAO
   val googleServicesDao:MockGoogleServicesDAO = new MockGoogleServicesDAO
