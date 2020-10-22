@@ -9358,8 +9358,7 @@ components:
           properties: {}
         copyFilesWithPrefix:
           type: string
-          description: Used for clone operations only; the prefix for files to copy
-            between source and destination workspace buckets
+          description: Used for clone operations only; the prefix for files to copy between source and destination workspace buckets
         noWorkspaceOwner:
           type: boolean
           description: Optional, false if not specified. If true, the workspace is created with a Billing Project owner but no workspace owner. Requires being a Billing Project owner.

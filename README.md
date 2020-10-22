@@ -28,6 +28,7 @@ FireCloud Orchestration Service
     - When running via sbt/revolver (i.e. using the re-start command), you can just run in sbt normally - the config is preset for you in build.sbt.
 * We push new features to a feature-branch and make pull requests against master.
 * New paths to external endpoints should be added to `src/main/resources/configurations.conf`. Existing endpoint URLs are configured in `application.conf` and `test.conf`
+* Local Orchestration URL: https://local.broadinstitute.org:10443/
 
 ## Building and Running
 
