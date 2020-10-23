@@ -49,7 +49,10 @@ trait PermissionsSupport {
     tryIsAdmin(userInfo) flatMap { isadmin =>
       if (!isadmin) {
         rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo.asInstanceOf[WithAccessToken]) map { ws =>
-          ws.accessLevel.getOrElse(WorkspaceAccessLevels.NoAccess) >= neededLevel
+          ws.accessLevel match {
+            case Some(accessLevel) => accessLevel >= neededLevel
+            case None => false
+          }
         }
       } else {
         Future.successful(true)
